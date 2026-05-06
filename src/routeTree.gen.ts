@@ -20,6 +20,22 @@ import { Route as AuthenticatedPoolsRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedModelsRouteImport } from './routes/_authenticated/models'
 import { Route as AuthenticatedBootstrapRouteImport } from './routes/_authenticated/bootstrap'
 import { Route as AuthenticatedAttachmentsRouteImport } from './routes/_authenticated/attachments'
+import { Route as AuthenticatedRoutesIndexRouteImport } from './routes/_authenticated/routes.index'
+import { Route as AuthenticatedRatelimitsIndexRouteImport } from './routes/_authenticated/ratelimits.index'
+import { Route as AuthenticatedProvidersIndexRouteImport } from './routes/_authenticated/providers.index'
+import { Route as AuthenticatedModelsIndexRouteImport } from './routes/_authenticated/models.index'
+import { Route as AuthenticatedRoutesNewRouteImport } from './routes/_authenticated/routes.new'
+import { Route as AuthenticatedRoutesNameRouteImport } from './routes/_authenticated/routes.$name'
+import { Route as AuthenticatedRatelimitsNewRouteImport } from './routes/_authenticated/ratelimits.new'
+import { Route as AuthenticatedRatelimitsNameRouteImport } from './routes/_authenticated/ratelimits.$name'
+import { Route as AuthenticatedProvidersNewRouteImport } from './routes/_authenticated/providers.new'
+import { Route as AuthenticatedProvidersNameRouteImport } from './routes/_authenticated/providers.$name'
+import { Route as AuthenticatedModelsNewRouteImport } from './routes/_authenticated/models.new'
+import { Route as AuthenticatedModelsNameRouteImport } from './routes/_authenticated/models.$name'
+import { Route as AuthenticatedRoutesNameEditRouteImport } from './routes/_authenticated/routes.$name.edit'
+import { Route as AuthenticatedRatelimitsNameEditRouteImport } from './routes/_authenticated/ratelimits.$name.edit'
+import { Route as AuthenticatedProvidersNameEditRouteImport } from './routes/_authenticated/providers.$name.edit'
+import { Route as AuthenticatedModelsNameEditRouteImport } from './routes/_authenticated/models.$name.edit'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -76,30 +92,150 @@ const AuthenticatedAttachmentsRoute =
     path: '/attachments',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedRoutesIndexRoute =
+  AuthenticatedRoutesIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedRoutesRoute,
+  } as any)
+const AuthenticatedRatelimitsIndexRoute =
+  AuthenticatedRatelimitsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedRatelimitsRoute,
+  } as any)
+const AuthenticatedProvidersIndexRoute =
+  AuthenticatedProvidersIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedProvidersRoute,
+  } as any)
+const AuthenticatedModelsIndexRoute =
+  AuthenticatedModelsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedModelsRoute,
+  } as any)
+const AuthenticatedRoutesNewRoute = AuthenticatedRoutesNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => AuthenticatedRoutesRoute,
+} as any)
+const AuthenticatedRoutesNameRoute = AuthenticatedRoutesNameRouteImport.update({
+  id: '/$name',
+  path: '/$name',
+  getParentRoute: () => AuthenticatedRoutesRoute,
+} as any)
+const AuthenticatedRatelimitsNewRoute =
+  AuthenticatedRatelimitsNewRouteImport.update({
+    id: '/new',
+    path: '/new',
+    getParentRoute: () => AuthenticatedRatelimitsRoute,
+  } as any)
+const AuthenticatedRatelimitsNameRoute =
+  AuthenticatedRatelimitsNameRouteImport.update({
+    id: '/$name',
+    path: '/$name',
+    getParentRoute: () => AuthenticatedRatelimitsRoute,
+  } as any)
+const AuthenticatedProvidersNewRoute =
+  AuthenticatedProvidersNewRouteImport.update({
+    id: '/new',
+    path: '/new',
+    getParentRoute: () => AuthenticatedProvidersRoute,
+  } as any)
+const AuthenticatedProvidersNameRoute =
+  AuthenticatedProvidersNameRouteImport.update({
+    id: '/$name',
+    path: '/$name',
+    getParentRoute: () => AuthenticatedProvidersRoute,
+  } as any)
+const AuthenticatedModelsNewRoute = AuthenticatedModelsNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => AuthenticatedModelsRoute,
+} as any)
+const AuthenticatedModelsNameRoute = AuthenticatedModelsNameRouteImport.update({
+  id: '/$name',
+  path: '/$name',
+  getParentRoute: () => AuthenticatedModelsRoute,
+} as any)
+const AuthenticatedRoutesNameEditRoute =
+  AuthenticatedRoutesNameEditRouteImport.update({
+    id: '/edit',
+    path: '/edit',
+    getParentRoute: () => AuthenticatedRoutesNameRoute,
+  } as any)
+const AuthenticatedRatelimitsNameEditRoute =
+  AuthenticatedRatelimitsNameEditRouteImport.update({
+    id: '/edit',
+    path: '/edit',
+    getParentRoute: () => AuthenticatedRatelimitsNameRoute,
+  } as any)
+const AuthenticatedProvidersNameEditRoute =
+  AuthenticatedProvidersNameEditRouteImport.update({
+    id: '/edit',
+    path: '/edit',
+    getParentRoute: () => AuthenticatedProvidersNameRoute,
+  } as any)
+const AuthenticatedModelsNameEditRoute =
+  AuthenticatedModelsNameEditRouteImport.update({
+    id: '/edit',
+    path: '/edit',
+    getParentRoute: () => AuthenticatedModelsNameRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/login': typeof LoginRoute
   '/attachments': typeof AuthenticatedAttachmentsRoute
   '/bootstrap': typeof AuthenticatedBootstrapRoute
-  '/models': typeof AuthenticatedModelsRoute
+  '/models': typeof AuthenticatedModelsRouteWithChildren
   '/pools': typeof AuthenticatedPoolsRoute
-  '/providers': typeof AuthenticatedProvidersRoute
-  '/ratelimits': typeof AuthenticatedRatelimitsRoute
-  '/routes': typeof AuthenticatedRoutesRoute
+  '/providers': typeof AuthenticatedProvidersRouteWithChildren
+  '/ratelimits': typeof AuthenticatedRatelimitsRouteWithChildren
+  '/routes': typeof AuthenticatedRoutesRouteWithChildren
   '/secrets': typeof AuthenticatedSecretsRoute
+  '/models/$name': typeof AuthenticatedModelsNameRouteWithChildren
+  '/models/new': typeof AuthenticatedModelsNewRoute
+  '/providers/$name': typeof AuthenticatedProvidersNameRouteWithChildren
+  '/providers/new': typeof AuthenticatedProvidersNewRoute
+  '/ratelimits/$name': typeof AuthenticatedRatelimitsNameRouteWithChildren
+  '/ratelimits/new': typeof AuthenticatedRatelimitsNewRoute
+  '/routes/$name': typeof AuthenticatedRoutesNameRouteWithChildren
+  '/routes/new': typeof AuthenticatedRoutesNewRoute
+  '/models/': typeof AuthenticatedModelsIndexRoute
+  '/providers/': typeof AuthenticatedProvidersIndexRoute
+  '/ratelimits/': typeof AuthenticatedRatelimitsIndexRoute
+  '/routes/': typeof AuthenticatedRoutesIndexRoute
+  '/models/$name/edit': typeof AuthenticatedModelsNameEditRoute
+  '/providers/$name/edit': typeof AuthenticatedProvidersNameEditRoute
+  '/ratelimits/$name/edit': typeof AuthenticatedRatelimitsNameEditRoute
+  '/routes/$name/edit': typeof AuthenticatedRoutesNameEditRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/attachments': typeof AuthenticatedAttachmentsRoute
   '/bootstrap': typeof AuthenticatedBootstrapRoute
-  '/models': typeof AuthenticatedModelsRoute
   '/pools': typeof AuthenticatedPoolsRoute
-  '/providers': typeof AuthenticatedProvidersRoute
-  '/ratelimits': typeof AuthenticatedRatelimitsRoute
-  '/routes': typeof AuthenticatedRoutesRoute
   '/secrets': typeof AuthenticatedSecretsRoute
   '/': typeof AuthenticatedIndexRoute
+  '/models/$name': typeof AuthenticatedModelsNameRouteWithChildren
+  '/models/new': typeof AuthenticatedModelsNewRoute
+  '/providers/$name': typeof AuthenticatedProvidersNameRouteWithChildren
+  '/providers/new': typeof AuthenticatedProvidersNewRoute
+  '/ratelimits/$name': typeof AuthenticatedRatelimitsNameRouteWithChildren
+  '/ratelimits/new': typeof AuthenticatedRatelimitsNewRoute
+  '/routes/$name': typeof AuthenticatedRoutesNameRouteWithChildren
+  '/routes/new': typeof AuthenticatedRoutesNewRoute
+  '/models': typeof AuthenticatedModelsIndexRoute
+  '/providers': typeof AuthenticatedProvidersIndexRoute
+  '/ratelimits': typeof AuthenticatedRatelimitsIndexRoute
+  '/routes': typeof AuthenticatedRoutesIndexRoute
+  '/models/$name/edit': typeof AuthenticatedModelsNameEditRoute
+  '/providers/$name/edit': typeof AuthenticatedProvidersNameEditRoute
+  '/ratelimits/$name/edit': typeof AuthenticatedRatelimitsNameEditRoute
+  '/routes/$name/edit': typeof AuthenticatedRoutesNameEditRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -107,13 +243,29 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_authenticated/attachments': typeof AuthenticatedAttachmentsRoute
   '/_authenticated/bootstrap': typeof AuthenticatedBootstrapRoute
-  '/_authenticated/models': typeof AuthenticatedModelsRoute
+  '/_authenticated/models': typeof AuthenticatedModelsRouteWithChildren
   '/_authenticated/pools': typeof AuthenticatedPoolsRoute
-  '/_authenticated/providers': typeof AuthenticatedProvidersRoute
-  '/_authenticated/ratelimits': typeof AuthenticatedRatelimitsRoute
-  '/_authenticated/routes': typeof AuthenticatedRoutesRoute
+  '/_authenticated/providers': typeof AuthenticatedProvidersRouteWithChildren
+  '/_authenticated/ratelimits': typeof AuthenticatedRatelimitsRouteWithChildren
+  '/_authenticated/routes': typeof AuthenticatedRoutesRouteWithChildren
   '/_authenticated/secrets': typeof AuthenticatedSecretsRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/models/$name': typeof AuthenticatedModelsNameRouteWithChildren
+  '/_authenticated/models/new': typeof AuthenticatedModelsNewRoute
+  '/_authenticated/providers/$name': typeof AuthenticatedProvidersNameRouteWithChildren
+  '/_authenticated/providers/new': typeof AuthenticatedProvidersNewRoute
+  '/_authenticated/ratelimits/$name': typeof AuthenticatedRatelimitsNameRouteWithChildren
+  '/_authenticated/ratelimits/new': typeof AuthenticatedRatelimitsNewRoute
+  '/_authenticated/routes/$name': typeof AuthenticatedRoutesNameRouteWithChildren
+  '/_authenticated/routes/new': typeof AuthenticatedRoutesNewRoute
+  '/_authenticated/models/': typeof AuthenticatedModelsIndexRoute
+  '/_authenticated/providers/': typeof AuthenticatedProvidersIndexRoute
+  '/_authenticated/ratelimits/': typeof AuthenticatedRatelimitsIndexRoute
+  '/_authenticated/routes/': typeof AuthenticatedRoutesIndexRoute
+  '/_authenticated/models/$name/edit': typeof AuthenticatedModelsNameEditRoute
+  '/_authenticated/providers/$name/edit': typeof AuthenticatedProvidersNameEditRoute
+  '/_authenticated/ratelimits/$name/edit': typeof AuthenticatedRatelimitsNameEditRoute
+  '/_authenticated/routes/$name/edit': typeof AuthenticatedRoutesNameEditRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -128,18 +280,46 @@ export interface FileRouteTypes {
     | '/ratelimits'
     | '/routes'
     | '/secrets'
+    | '/models/$name'
+    | '/models/new'
+    | '/providers/$name'
+    | '/providers/new'
+    | '/ratelimits/$name'
+    | '/ratelimits/new'
+    | '/routes/$name'
+    | '/routes/new'
+    | '/models/'
+    | '/providers/'
+    | '/ratelimits/'
+    | '/routes/'
+    | '/models/$name/edit'
+    | '/providers/$name/edit'
+    | '/ratelimits/$name/edit'
+    | '/routes/$name/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
     | '/attachments'
     | '/bootstrap'
-    | '/models'
     | '/pools'
+    | '/secrets'
+    | '/'
+    | '/models/$name'
+    | '/models/new'
+    | '/providers/$name'
+    | '/providers/new'
+    | '/ratelimits/$name'
+    | '/ratelimits/new'
+    | '/routes/$name'
+    | '/routes/new'
+    | '/models'
     | '/providers'
     | '/ratelimits'
     | '/routes'
-    | '/secrets'
-    | '/'
+    | '/models/$name/edit'
+    | '/providers/$name/edit'
+    | '/ratelimits/$name/edit'
+    | '/routes/$name/edit'
   id:
     | '__root__'
     | '/_authenticated'
@@ -153,6 +333,22 @@ export interface FileRouteTypes {
     | '/_authenticated/routes'
     | '/_authenticated/secrets'
     | '/_authenticated/'
+    | '/_authenticated/models/$name'
+    | '/_authenticated/models/new'
+    | '/_authenticated/providers/$name'
+    | '/_authenticated/providers/new'
+    | '/_authenticated/ratelimits/$name'
+    | '/_authenticated/ratelimits/new'
+    | '/_authenticated/routes/$name'
+    | '/_authenticated/routes/new'
+    | '/_authenticated/models/'
+    | '/_authenticated/providers/'
+    | '/_authenticated/ratelimits/'
+    | '/_authenticated/routes/'
+    | '/_authenticated/models/$name/edit'
+    | '/_authenticated/providers/$name/edit'
+    | '/_authenticated/ratelimits/$name/edit'
+    | '/_authenticated/routes/$name/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -239,17 +435,253 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAttachmentsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/routes/': {
+      id: '/_authenticated/routes/'
+      path: '/'
+      fullPath: '/routes/'
+      preLoaderRoute: typeof AuthenticatedRoutesIndexRouteImport
+      parentRoute: typeof AuthenticatedRoutesRoute
+    }
+    '/_authenticated/ratelimits/': {
+      id: '/_authenticated/ratelimits/'
+      path: '/'
+      fullPath: '/ratelimits/'
+      preLoaderRoute: typeof AuthenticatedRatelimitsIndexRouteImport
+      parentRoute: typeof AuthenticatedRatelimitsRoute
+    }
+    '/_authenticated/providers/': {
+      id: '/_authenticated/providers/'
+      path: '/'
+      fullPath: '/providers/'
+      preLoaderRoute: typeof AuthenticatedProvidersIndexRouteImport
+      parentRoute: typeof AuthenticatedProvidersRoute
+    }
+    '/_authenticated/models/': {
+      id: '/_authenticated/models/'
+      path: '/'
+      fullPath: '/models/'
+      preLoaderRoute: typeof AuthenticatedModelsIndexRouteImport
+      parentRoute: typeof AuthenticatedModelsRoute
+    }
+    '/_authenticated/routes/new': {
+      id: '/_authenticated/routes/new'
+      path: '/new'
+      fullPath: '/routes/new'
+      preLoaderRoute: typeof AuthenticatedRoutesNewRouteImport
+      parentRoute: typeof AuthenticatedRoutesRoute
+    }
+    '/_authenticated/routes/$name': {
+      id: '/_authenticated/routes/$name'
+      path: '/$name'
+      fullPath: '/routes/$name'
+      preLoaderRoute: typeof AuthenticatedRoutesNameRouteImport
+      parentRoute: typeof AuthenticatedRoutesRoute
+    }
+    '/_authenticated/ratelimits/new': {
+      id: '/_authenticated/ratelimits/new'
+      path: '/new'
+      fullPath: '/ratelimits/new'
+      preLoaderRoute: typeof AuthenticatedRatelimitsNewRouteImport
+      parentRoute: typeof AuthenticatedRatelimitsRoute
+    }
+    '/_authenticated/ratelimits/$name': {
+      id: '/_authenticated/ratelimits/$name'
+      path: '/$name'
+      fullPath: '/ratelimits/$name'
+      preLoaderRoute: typeof AuthenticatedRatelimitsNameRouteImport
+      parentRoute: typeof AuthenticatedRatelimitsRoute
+    }
+    '/_authenticated/providers/new': {
+      id: '/_authenticated/providers/new'
+      path: '/new'
+      fullPath: '/providers/new'
+      preLoaderRoute: typeof AuthenticatedProvidersNewRouteImport
+      parentRoute: typeof AuthenticatedProvidersRoute
+    }
+    '/_authenticated/providers/$name': {
+      id: '/_authenticated/providers/$name'
+      path: '/$name'
+      fullPath: '/providers/$name'
+      preLoaderRoute: typeof AuthenticatedProvidersNameRouteImport
+      parentRoute: typeof AuthenticatedProvidersRoute
+    }
+    '/_authenticated/models/new': {
+      id: '/_authenticated/models/new'
+      path: '/new'
+      fullPath: '/models/new'
+      preLoaderRoute: typeof AuthenticatedModelsNewRouteImport
+      parentRoute: typeof AuthenticatedModelsRoute
+    }
+    '/_authenticated/models/$name': {
+      id: '/_authenticated/models/$name'
+      path: '/$name'
+      fullPath: '/models/$name'
+      preLoaderRoute: typeof AuthenticatedModelsNameRouteImport
+      parentRoute: typeof AuthenticatedModelsRoute
+    }
+    '/_authenticated/routes/$name/edit': {
+      id: '/_authenticated/routes/$name/edit'
+      path: '/edit'
+      fullPath: '/routes/$name/edit'
+      preLoaderRoute: typeof AuthenticatedRoutesNameEditRouteImport
+      parentRoute: typeof AuthenticatedRoutesNameRoute
+    }
+    '/_authenticated/ratelimits/$name/edit': {
+      id: '/_authenticated/ratelimits/$name/edit'
+      path: '/edit'
+      fullPath: '/ratelimits/$name/edit'
+      preLoaderRoute: typeof AuthenticatedRatelimitsNameEditRouteImport
+      parentRoute: typeof AuthenticatedRatelimitsNameRoute
+    }
+    '/_authenticated/providers/$name/edit': {
+      id: '/_authenticated/providers/$name/edit'
+      path: '/edit'
+      fullPath: '/providers/$name/edit'
+      preLoaderRoute: typeof AuthenticatedProvidersNameEditRouteImport
+      parentRoute: typeof AuthenticatedProvidersNameRoute
+    }
+    '/_authenticated/models/$name/edit': {
+      id: '/_authenticated/models/$name/edit'
+      path: '/edit'
+      fullPath: '/models/$name/edit'
+      preLoaderRoute: typeof AuthenticatedModelsNameEditRouteImport
+      parentRoute: typeof AuthenticatedModelsNameRoute
+    }
   }
 }
+
+interface AuthenticatedModelsNameRouteChildren {
+  AuthenticatedModelsNameEditRoute: typeof AuthenticatedModelsNameEditRoute
+}
+
+const AuthenticatedModelsNameRouteChildren: AuthenticatedModelsNameRouteChildren =
+  {
+    AuthenticatedModelsNameEditRoute: AuthenticatedModelsNameEditRoute,
+  }
+
+const AuthenticatedModelsNameRouteWithChildren =
+  AuthenticatedModelsNameRoute._addFileChildren(
+    AuthenticatedModelsNameRouteChildren,
+  )
+
+interface AuthenticatedModelsRouteChildren {
+  AuthenticatedModelsNameRoute: typeof AuthenticatedModelsNameRouteWithChildren
+  AuthenticatedModelsNewRoute: typeof AuthenticatedModelsNewRoute
+  AuthenticatedModelsIndexRoute: typeof AuthenticatedModelsIndexRoute
+}
+
+const AuthenticatedModelsRouteChildren: AuthenticatedModelsRouteChildren = {
+  AuthenticatedModelsNameRoute: AuthenticatedModelsNameRouteWithChildren,
+  AuthenticatedModelsNewRoute: AuthenticatedModelsNewRoute,
+  AuthenticatedModelsIndexRoute: AuthenticatedModelsIndexRoute,
+}
+
+const AuthenticatedModelsRouteWithChildren =
+  AuthenticatedModelsRoute._addFileChildren(AuthenticatedModelsRouteChildren)
+
+interface AuthenticatedProvidersNameRouteChildren {
+  AuthenticatedProvidersNameEditRoute: typeof AuthenticatedProvidersNameEditRoute
+}
+
+const AuthenticatedProvidersNameRouteChildren: AuthenticatedProvidersNameRouteChildren =
+  {
+    AuthenticatedProvidersNameEditRoute: AuthenticatedProvidersNameEditRoute,
+  }
+
+const AuthenticatedProvidersNameRouteWithChildren =
+  AuthenticatedProvidersNameRoute._addFileChildren(
+    AuthenticatedProvidersNameRouteChildren,
+  )
+
+interface AuthenticatedProvidersRouteChildren {
+  AuthenticatedProvidersNameRoute: typeof AuthenticatedProvidersNameRouteWithChildren
+  AuthenticatedProvidersNewRoute: typeof AuthenticatedProvidersNewRoute
+  AuthenticatedProvidersIndexRoute: typeof AuthenticatedProvidersIndexRoute
+}
+
+const AuthenticatedProvidersRouteChildren: AuthenticatedProvidersRouteChildren =
+  {
+    AuthenticatedProvidersNameRoute:
+      AuthenticatedProvidersNameRouteWithChildren,
+    AuthenticatedProvidersNewRoute: AuthenticatedProvidersNewRoute,
+    AuthenticatedProvidersIndexRoute: AuthenticatedProvidersIndexRoute,
+  }
+
+const AuthenticatedProvidersRouteWithChildren =
+  AuthenticatedProvidersRoute._addFileChildren(
+    AuthenticatedProvidersRouteChildren,
+  )
+
+interface AuthenticatedRatelimitsNameRouteChildren {
+  AuthenticatedRatelimitsNameEditRoute: typeof AuthenticatedRatelimitsNameEditRoute
+}
+
+const AuthenticatedRatelimitsNameRouteChildren: AuthenticatedRatelimitsNameRouteChildren =
+  {
+    AuthenticatedRatelimitsNameEditRoute: AuthenticatedRatelimitsNameEditRoute,
+  }
+
+const AuthenticatedRatelimitsNameRouteWithChildren =
+  AuthenticatedRatelimitsNameRoute._addFileChildren(
+    AuthenticatedRatelimitsNameRouteChildren,
+  )
+
+interface AuthenticatedRatelimitsRouteChildren {
+  AuthenticatedRatelimitsNameRoute: typeof AuthenticatedRatelimitsNameRouteWithChildren
+  AuthenticatedRatelimitsNewRoute: typeof AuthenticatedRatelimitsNewRoute
+  AuthenticatedRatelimitsIndexRoute: typeof AuthenticatedRatelimitsIndexRoute
+}
+
+const AuthenticatedRatelimitsRouteChildren: AuthenticatedRatelimitsRouteChildren =
+  {
+    AuthenticatedRatelimitsNameRoute:
+      AuthenticatedRatelimitsNameRouteWithChildren,
+    AuthenticatedRatelimitsNewRoute: AuthenticatedRatelimitsNewRoute,
+    AuthenticatedRatelimitsIndexRoute: AuthenticatedRatelimitsIndexRoute,
+  }
+
+const AuthenticatedRatelimitsRouteWithChildren =
+  AuthenticatedRatelimitsRoute._addFileChildren(
+    AuthenticatedRatelimitsRouteChildren,
+  )
+
+interface AuthenticatedRoutesNameRouteChildren {
+  AuthenticatedRoutesNameEditRoute: typeof AuthenticatedRoutesNameEditRoute
+}
+
+const AuthenticatedRoutesNameRouteChildren: AuthenticatedRoutesNameRouteChildren =
+  {
+    AuthenticatedRoutesNameEditRoute: AuthenticatedRoutesNameEditRoute,
+  }
+
+const AuthenticatedRoutesNameRouteWithChildren =
+  AuthenticatedRoutesNameRoute._addFileChildren(
+    AuthenticatedRoutesNameRouteChildren,
+  )
+
+interface AuthenticatedRoutesRouteChildren {
+  AuthenticatedRoutesNameRoute: typeof AuthenticatedRoutesNameRouteWithChildren
+  AuthenticatedRoutesNewRoute: typeof AuthenticatedRoutesNewRoute
+  AuthenticatedRoutesIndexRoute: typeof AuthenticatedRoutesIndexRoute
+}
+
+const AuthenticatedRoutesRouteChildren: AuthenticatedRoutesRouteChildren = {
+  AuthenticatedRoutesNameRoute: AuthenticatedRoutesNameRouteWithChildren,
+  AuthenticatedRoutesNewRoute: AuthenticatedRoutesNewRoute,
+  AuthenticatedRoutesIndexRoute: AuthenticatedRoutesIndexRoute,
+}
+
+const AuthenticatedRoutesRouteWithChildren =
+  AuthenticatedRoutesRoute._addFileChildren(AuthenticatedRoutesRouteChildren)
 
 interface AuthenticatedRouteChildren {
   AuthenticatedAttachmentsRoute: typeof AuthenticatedAttachmentsRoute
   AuthenticatedBootstrapRoute: typeof AuthenticatedBootstrapRoute
-  AuthenticatedModelsRoute: typeof AuthenticatedModelsRoute
+  AuthenticatedModelsRoute: typeof AuthenticatedModelsRouteWithChildren
   AuthenticatedPoolsRoute: typeof AuthenticatedPoolsRoute
-  AuthenticatedProvidersRoute: typeof AuthenticatedProvidersRoute
-  AuthenticatedRatelimitsRoute: typeof AuthenticatedRatelimitsRoute
-  AuthenticatedRoutesRoute: typeof AuthenticatedRoutesRoute
+  AuthenticatedProvidersRoute: typeof AuthenticatedProvidersRouteWithChildren
+  AuthenticatedRatelimitsRoute: typeof AuthenticatedRatelimitsRouteWithChildren
+  AuthenticatedRoutesRoute: typeof AuthenticatedRoutesRouteWithChildren
   AuthenticatedSecretsRoute: typeof AuthenticatedSecretsRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
 }
@@ -257,11 +689,11 @@ interface AuthenticatedRouteChildren {
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAttachmentsRoute: AuthenticatedAttachmentsRoute,
   AuthenticatedBootstrapRoute: AuthenticatedBootstrapRoute,
-  AuthenticatedModelsRoute: AuthenticatedModelsRoute,
+  AuthenticatedModelsRoute: AuthenticatedModelsRouteWithChildren,
   AuthenticatedPoolsRoute: AuthenticatedPoolsRoute,
-  AuthenticatedProvidersRoute: AuthenticatedProvidersRoute,
-  AuthenticatedRatelimitsRoute: AuthenticatedRatelimitsRoute,
-  AuthenticatedRoutesRoute: AuthenticatedRoutesRoute,
+  AuthenticatedProvidersRoute: AuthenticatedProvidersRouteWithChildren,
+  AuthenticatedRatelimitsRoute: AuthenticatedRatelimitsRouteWithChildren,
+  AuthenticatedRoutesRoute: AuthenticatedRoutesRouteWithChildren,
   AuthenticatedSecretsRoute: AuthenticatedSecretsRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
 }

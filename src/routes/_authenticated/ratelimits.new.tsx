@@ -1,0 +1,127 @@
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
+import { useCreateRateLimit } from "#/api/hooks/ratelimits";
+import type { ApiErrorBody } from "#/api/types/errors";
+import { ApiError } from "#/api/types/errors";
+import type {
+	RateLimitCreate,
+	RateLimitSource,
+	RateLimitStrategy,
+} from "#/api/types/ratelimit";
+import type { FieldDef, FormValues } from "#/components/ResourceForm";
+import { ResourceForm } from "#/components/ResourceForm";
+import { toast } from "#/components/Toast";
+
+export const Route = createFileRoute("/_authenticated/ratelimits/new")({
+	component: NewRateLimitPage,
+});
+
+const STRATEGY_OPTIONS: { value: RateLimitStrategy; label: string }[] = [
+	{ value: "fixed_window", label: "Fixed Window" },
+	{ value: "sliding_window", label: "Sliding Window" },
+	{ value: "token_bucket", label: "Token Bucket" },
+];
+
+const SOURCE_OPTIONS: { value: RateLimitSource; label: string }[] = [
+	{ value: "ip", label: "IP Address" },
+	{ value: "api_key", label: "API Key" },
+	{ value: "user", label: "User" },
+	{ value: "global", label: "Global" },
+];
+
+const FIELDS: FieldDef[] = [
+	{
+		name: "name",
+		label: "Name",
+		type: "text",
+		required: true,
+		placeholder: "default-rl",
+	},
+	{
+		name: "strategy",
+		label: "Strategy",
+		type: "select",
+		required: true,
+		options: STRATEGY_OPTIONS,
+	},
+	{
+		name: "window",
+		label: "Window (seconds)",
+		type: "number",
+		required: true,
+		placeholder: "60",
+	},
+	{
+		name: "amount",
+		label: "Amount (requests/tokens)",
+		type: "number",
+		required: true,
+		placeholder: "100",
+	},
+	{
+		name: "source",
+		label: "Source",
+		type: "select",
+		required: true,
+		options: SOURCE_OPTIONS,
+	},
+];
+
+const VALID_STRATEGIES = new Set<string>([
+	"fixed_window",
+	"sliding_window",
+	"token_bucket",
+]);
+const VALID_SOURCES = new Set<string>(["ip", "api_key", "user", "global"]);
+
+function toStrategy(v: string | string[]): RateLimitStrategy {
+	const s = typeof v === "string" ? v : "";
+	return VALID_STRATEGIES.has(s) ? (s as RateLimitStrategy) : "fixed_window";
+}
+
+function toSource(v: string | string[]): RateLimitSource {
+	const s = typeof v === "string" ? v : "";
+	return VALID_SOURCES.has(s) ? (s as RateLimitSource) : "global";
+}
+
+function NewRateLimitPage() {
+	const navigate = useNavigate();
+	const createRateLimit = useCreateRateLimit();
+	const [serverError, setServerError] = useState<ApiErrorBody | undefined>();
+
+	async function handleSubmit(values: FormValues) {
+		setServerError(undefined);
+		const payload: RateLimitCreate = {
+			name: String(values.name ?? ""),
+			strategy: toStrategy(values.strategy),
+			window: Number(values.window),
+			amount: Number(values.amount),
+			source: toSource(values.source),
+		};
+		try {
+			await createRateLimit.mutateAsync(payload);
+			toast("success", `Rate limit "${payload.name}" created.`);
+			void navigate({
+				to: "/ratelimits/$name",
+				params: { name: payload.name },
+			});
+		} catch (err) {
+			if (err instanceof ApiError) {
+				setServerError(err.body);
+			} else {
+				toast("error", "Failed to create rate limit.");
+			}
+		}
+	}
+
+	return (
+		<ResourceForm
+			title="New Rate Limit"
+			fields={FIELDS}
+			onSubmit={handleSubmit}
+			onCancel={() => void navigate({ to: "/ratelimits" })}
+			isPending={createRateLimit.isPending}
+			serverError={serverError}
+		/>
+	);
+}
