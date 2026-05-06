@@ -11,17 +11,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
+      - uses: oven-sh/setup-bun@v2
         with:
-          version: 10
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'pnpm'
+          bun-version: latest
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: bun install --frozen-lockfile
 
       - name: Start Relay container
         id: relay
@@ -46,13 +41,13 @@ jobs:
 
       - name: Regenerate types
         if: steps.relay.outputs.relay_up == 'true'
-        run: OPENAPI_URL=http://localhost:8080/openapi.json pnpm gen:api
+        run: OPENAPI_URL=http://localhost:8080/openapi.json bun run gen:api
 
       - name: Fail on drift
         if: steps.relay.outputs.relay_up == 'true'
         run: |
           if ! git diff --exit-code src/api/types.gen.ts; then
-            echo "::error::API type drift detected — run 'pnpm gen:api' locally and commit the result."
+            echo "::error::API type drift detected — run 'bun run gen:api' locally and commit the result."
             exit 1
           fi
           echo "No drift detected."

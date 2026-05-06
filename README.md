@@ -2,6 +2,8 @@
 
 Operator admin UI for [Wyolet Relay](https://github.com/wyolet/relay) — a high-throughput LLM router.
 
+Linear project: [Wyolet Relay](https://linear.app/aliboyev/project/wyolet-relay-66b6cdcde707) (team `PER`). All issues for this UI are tracked there.
+
 This repo produces a static SPA (`dist/`) that is embedded into the Relay Go binary via `//go:embed` (see [PER-273](https://linear.app/aliboyev/issue/PER-273)). It is served at the `/ui/` path prefix.
 
 ## Tech stack
@@ -12,26 +14,26 @@ This repo produces a static SPA (`dist/`) that is embedded into the Relay Go bin
 - Tailwind CSS v4
 - openapi-typescript + openapi-fetch (typed API client from `/openapi.json`)
 - Biome (lint + format — replaces eslint/prettier)
-- pnpm
+- bun
 
 ## Local development
 
 ```bash
-pnpm install
-pnpm dev          # Vite dev server on http://localhost:5173/ui/
+bun install
+bun run dev          # Vite dev server on http://localhost:5173/ui/
 ```
 
 Point the dev server proxy at a running Relay instance for live API calls:
 
 ```bash
-OPENAPI_URL=http://localhost:8080/openapi.json pnpm gen:api   # regenerate types
-pnpm dev
+OPENAPI_URL=http://localhost:8080/openapi.json bun run gen:api   # regenerate types
+bun run dev
 ```
 
 ## Building
 
 ```bash
-pnpm build        # outputs to dist/
+bun run build        # outputs to dist/
 ```
 
 ## Type generation
@@ -39,8 +41,8 @@ pnpm build        # outputs to dist/
 API types are generated from the Relay OpenAPI spec:
 
 ```bash
-pnpm gen:api                                                    # uses http://localhost:8080/openapi.json
-OPENAPI_URL=https://my-relay-host/openapi.json pnpm gen:api    # custom URL
+bun run gen:api                                                    # uses http://localhost:8080/openapi.json
+OPENAPI_URL=https://my-relay-host/openapi.json bun run gen:api    # custom URL
 ```
 
 Generated file: `src/api/types.gen.ts` — commit after regenerating.
@@ -48,7 +50,7 @@ Generated file: `src/api/types.gen.ts` — commit after regenerating.
 ## CI
 
 ```bash
-pnpm ci           # typecheck + lint (runs in GitHub Actions on every push/PR)
+bun run ci           # typecheck + lint (runs in GitHub Actions on every push/PR)
 ```
 
 ## Releasing
