@@ -185,11 +185,11 @@ function PoolDetailInner() {
 
 			<div className="flex items-start justify-between mb-6">
 				<div>
-					<h1 className="text-2xl font-bold text-gray-900 font-mono">
+					<h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100 font-mono">
 						{pool.name}
 					</h1>
 					{/* TODO: replace with real health from /admin/keypool/:pool/health when endpoint is available */}
-					<span className="mt-1 inline-flex items-center gap-1 text-xs text-green-700 bg-green-50 border border-green-200 rounded-full px-2 py-0.5">
+					<span className="mt-1 inline-flex items-center gap-1 text-xs text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-full px-2 py-0.5">
 						Health: ok
 					</span>
 				</div>
@@ -197,7 +197,7 @@ function PoolDetailInner() {
 					<Link
 						to="/pools/$name/edit"
 						params={{ name }}
-						className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+						className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-zinc-300 bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
 					>
 						Edit
 					</Link>
@@ -212,7 +212,7 @@ function PoolDetailInner() {
 			</div>
 
 			{/* Tabs */}
-			<div className="border-b border-gray-200 mb-6">
+			<div className="border-b border-gray-200 dark:border-zinc-800 mb-6">
 				<nav className="flex gap-4" aria-label="Pool detail tabs">
 					{tabs.map((tab) => (
 						<button
@@ -222,8 +222,8 @@ function PoolDetailInner() {
 							className={[
 								"pb-3 text-sm font-medium border-b-2 transition-colors",
 								activeTab === tab.id
-									? "border-blue-600 text-blue-600"
-									: "border-transparent text-gray-500 hover:text-gray-700",
+									? "border-blue-600 text-blue-600 dark:text-blue-400"
+									: "border-transparent text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-300",
 							].join(" ")}
 						>
 							{tab.label}
@@ -234,7 +234,7 @@ function PoolDetailInner() {
 
 			{/* Spec tab */}
 			{activeTab === "spec" && (
-				<dl className="divide-y divide-gray-100 rounded-lg border border-gray-200 bg-white">
+				<dl className="divide-y divide-gray-100 dark:divide-zinc-800 rounded-lg border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
 					{[
 						{ label: "Name", value: pool.name },
 						{ label: "Provider", value: pool.provider },
@@ -244,8 +244,10 @@ function PoolDetailInner() {
 							key={f.label}
 							className="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4"
 						>
-							<dt className="text-sm font-medium text-gray-500">{f.label}</dt>
-							<dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+							<dt className="text-sm font-medium text-gray-500 dark:text-zinc-400">
+								{f.label}
+							</dt>
+							<dd className="mt-1 text-sm text-gray-900 dark:text-zinc-100 sm:col-span-2 sm:mt-0">
 								{f.value}
 							</dd>
 						</div>
@@ -262,21 +264,21 @@ function PoolDetailInner() {
 							placeholder="Search secrets…"
 							value={secretSearch}
 							onChange={(e) => setSecretSearch(e.target.value)}
-							className="w-full max-w-sm border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+							className="w-full max-w-sm border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-400"
 						/>
 					</div>
 
 					{/* Attached secrets as removable chips */}
 					{pool.secrets.length > 0 && (
 						<div className="mb-6">
-							<p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+							<p className="text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wide mb-2">
 								Attached
 							</p>
 							<div className="flex flex-wrap gap-2">
 								{displayedAttachedSecrets.map((secret) => (
 									<span
 										key={secret}
-										className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 border border-blue-200"
+										className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800"
 									>
 										<Link
 											to="/secrets/$name"
@@ -291,7 +293,7 @@ function PoolDetailInner() {
 											aria-label={`Remove ${secret}`}
 											disabled={updatePool.isPending}
 											onClick={() => void handleRemoveSecret(secret)}
-											className="ml-0.5 text-blue-600 hover:text-red-600 transition-colors disabled:opacity-50"
+											className="ml-0.5 text-blue-600 dark:text-blue-400 hover:text-red-600 dark:hover:text-red-400 transition-colors disabled:opacity-50"
 										>
 											×
 										</button>
@@ -304,7 +306,7 @@ function PoolDetailInner() {
 					{/* Available secrets as checkboxes */}
 					{availableSecrets.length > 0 && (
 						<div>
-							<p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+							<p className="text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wide mb-2">
 								Available
 							</p>
 							<div className="flex flex-wrap gap-2">
@@ -314,7 +316,7 @@ function PoolDetailInner() {
 										type="button"
 										disabled={updatePool.isPending}
 										onClick={() => void handleAddSecret(s.name)}
-										className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 transition-colors disabled:opacity-50"
+										className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-white dark:bg-zinc-900 text-gray-700 dark:text-zinc-300 border border-gray-300 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
 									>
 										+ {s.name}
 									</button>
@@ -324,7 +326,7 @@ function PoolDetailInner() {
 					)}
 
 					{pool.secrets.length === 0 && availableSecrets.length === 0 && (
-						<p className="text-sm text-gray-500">
+						<p className="text-sm text-gray-500 dark:text-zinc-400">
 							{secretSearch
 								? `No secrets matching "${secretSearch}".`
 								: "No secrets configured."}
@@ -337,7 +339,7 @@ function PoolDetailInner() {
 			{activeTab === "ratelimits" && (
 				<div>
 					<div className="flex items-center justify-between mb-4">
-						<p className="text-sm text-gray-600">
+						<p className="text-sm text-gray-600 dark:text-zinc-400">
 							Rate limit attachments for this pool.
 						</p>
 						<button
@@ -350,28 +352,30 @@ function PoolDetailInner() {
 					</div>
 
 					{attachmentsData.items.length === 0 ? (
-						<p className="text-sm text-gray-500">No rate limits attached.</p>
+						<p className="text-sm text-gray-500 dark:text-zinc-400">
+							No rate limits attached.
+						</p>
 					) : (
-						<div className="overflow-x-auto rounded-lg border border-gray-200">
+						<div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-zinc-800">
 							<table className="w-full text-sm">
-								<thead className="bg-gray-50 border-b border-gray-200">
+								<thead className="bg-gray-50 dark:bg-zinc-800 border-b border-gray-200 dark:border-zinc-700">
 									<tr>
-										<th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+										<th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wide">
 											Rate Limit
 										</th>
-										<th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+										<th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wide">
 											Meter
 										</th>
-										<th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+										<th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wide">
 											Status
 										</th>
 										<th className="px-4 py-3" />
 									</tr>
 								</thead>
-								<tbody className="divide-y divide-gray-100">
+								<tbody className="divide-y divide-gray-100 dark:divide-zinc-800">
 									{attachmentsData.items.map((att) => (
-										<tr key={att.id}>
-											<td className="px-4 py-3 text-gray-900">
+										<tr key={att.id} className="bg-white dark:bg-zinc-900">
+											<td className="px-4 py-3 text-gray-900 dark:text-zinc-100">
 												<Link
 													to="/ratelimits/$name"
 													params={{ name: att.ratelimit_name }}
@@ -380,10 +384,12 @@ function PoolDetailInner() {
 													{att.ratelimit_name}
 												</Link>
 											</td>
-											<td className="px-4 py-3 text-gray-700">{att.meter}</td>
+											<td className="px-4 py-3 text-gray-700 dark:text-zinc-300">
+												{att.meter}
+											</td>
 											<td className="px-4 py-3">
 												{/* TODO: render quota utilization gauge when backend exposes usage data */}
-												<span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+												<span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300">
 													Active
 												</span>
 											</td>
@@ -406,16 +412,16 @@ function PoolDetailInner() {
 
 					{/* Add attachment dialog */}
 					{showAddAttachment && (
-						<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-							<div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
-								<h2 className="text-lg font-semibold text-gray-900 mb-4">
+						<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 dark:bg-black/60">
+							<div className="bg-white dark:bg-zinc-900 rounded-xl shadow-xl dark:shadow-black/40 w-full max-w-md p-6">
+								<h2 className="text-lg font-semibold text-gray-900 dark:text-zinc-100 mb-4">
 									Add Rate Limit Attachment
 								</h2>
 								<div className="space-y-4">
 									<div>
 										<label
 											htmlFor="attach-ratelimit"
-											className="block text-sm font-medium text-gray-700 mb-1"
+											className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1"
 										>
 											Rate Limit
 										</label>
@@ -423,7 +429,7 @@ function PoolDetailInner() {
 											id="attach-ratelimit"
 											value={attachRateLimit}
 											onChange={(e) => setAttachRateLimit(e.target.value)}
-											className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+											className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
 										>
 											<option value="">— select —</option>
 											{rateLimitsData.items.map((rl) => (
@@ -436,7 +442,7 @@ function PoolDetailInner() {
 									<div>
 										<label
 											htmlFor="attach-meter"
-											className="block text-sm font-medium text-gray-700 mb-1"
+											className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1"
 										>
 											Meter
 										</label>
@@ -446,7 +452,7 @@ function PoolDetailInner() {
 											onChange={(e) =>
 												setAttachMeter(e.target.value as AttachmentMeter)
 											}
-											className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+											className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
 										>
 											<option value="requests">Requests</option>
 											<option value="tokens">Tokens</option>
@@ -466,7 +472,7 @@ function PoolDetailInner() {
 									<button
 										type="button"
 										onClick={() => setShowAddAttachment(false)}
-										className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+										className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-zinc-300 bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
 									>
 										Cancel
 									</button>
@@ -491,7 +497,11 @@ function PoolDetailInner() {
 
 function PoolDetailPage() {
 	return (
-		<Suspense fallback={<div className="text-gray-500 text-sm">Loading…</div>}>
+		<Suspense
+			fallback={
+				<div className="text-gray-500 dark:text-zinc-400 text-sm">Loading…</div>
+			}
+		>
 			<PoolDetailInner />
 		</Suspense>
 	);

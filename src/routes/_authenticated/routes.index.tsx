@@ -37,7 +37,11 @@ function RoutesList() {
 
 function RoutesPage() {
 	return (
-		<Suspense fallback={<div className="text-gray-500 text-sm">Loading…</div>}>
+		<Suspense
+			fallback={
+				<div className="text-gray-500 dark:text-zinc-400 text-sm">Loading…</div>
+			}
+		>
 			<RoutesList />
 		</Suspense>
 	);

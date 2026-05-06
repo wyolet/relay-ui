@@ -12,19 +12,9 @@ const BASE_URL =
  */
 async function fetchWhoami(): Promise<{ authenticated: boolean }> {
 	const { response } = await apiClient.GET("/admin/whoami");
-	// Any non-OK (401 unauthenticated, 5xx backend down) → treat as
-	// unauthenticated so the guard redirects to login rather than tripping the
-	// error boundary.
-	if (!response.ok) {
-		return { authenticated: false };
-	}
-	try {
-		const body = (await response.json()) as Record<string, unknown>;
-		if (body.authenticated === true) return { authenticated: true };
-	} catch {
-		// ignore parse errors
-	}
-	return { authenticated: false };
+	// 200 → authenticated. Body shape doesn't matter; presence of a 2xx is the
+	// signal. Any non-OK (401 unauthenticated, 5xx backend down) → unauthenticated.
+	return { authenticated: response.ok };
 }
 
 export const whoamiQueryOptions = queryOptions({

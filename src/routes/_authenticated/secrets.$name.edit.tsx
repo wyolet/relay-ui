@@ -73,12 +73,12 @@ function EditSecretInner() {
 
 	return (
 		<div>
-			<h1 className="text-2xl font-bold text-gray-900 mb-6">
+			<h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100 mb-6">
 				Edit Secret: <span className="font-mono">{name}</span>
 			</h1>
 
 			{serverError && (
-				<div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+				<div className="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 px-4 py-3 text-sm text-red-700 dark:text-red-300">
 					<p className="font-medium">{serverError.message}</p>
 				</div>
 			)}
@@ -90,7 +90,7 @@ function EditSecretInner() {
 			>
 				{/* Kind toggle */}
 				<div>
-					<span className="block text-sm font-medium text-gray-700 mb-2">
+					<span className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-2">
 						Mode
 					</span>
 					<div className="flex gap-2">
@@ -103,7 +103,7 @@ function EditSecretInner() {
 									"px-4 py-2 text-sm font-medium rounded-lg border transition-colors",
 									kind === k
 										? "bg-blue-600 text-white border-blue-600"
-										: "bg-white text-gray-700 border-gray-300 hover:bg-gray-50",
+										: "bg-white dark:bg-zinc-900 text-gray-700 dark:text-zinc-300 border-gray-300 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-800",
 								].join(" ")}
 							>
 								{k === "stored" ? "Stored value" : "Env var"}
@@ -117,7 +117,7 @@ function EditSecretInner() {
 					<div>
 						<label
 							htmlFor="env_var"
-							className="block text-sm font-medium text-gray-700 mb-1"
+							className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1"
 						>
 							Environment variable name{" "}
 							<span className="ml-1 text-red-500" aria-hidden="true">
@@ -130,13 +130,16 @@ function EditSecretInner() {
 							value={envVar}
 							onChange={(e) => setEnvVar(e.target.value)}
 							placeholder="OPENAI_API_KEY"
-							className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-400"
+							className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm font-mono bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-400"
 						/>
-						<p className="mt-1 text-xs text-gray-500">
+						<p className="mt-1 text-xs text-gray-500 dark:text-zinc-400">
 							Set this env var on your relay deployment.
 						</p>
 						{errs.envVar && (
-							<p role="alert" className="mt-1 text-xs text-red-600">
+							<p
+								role="alert"
+								className="mt-1 text-xs text-red-600 dark:text-red-400"
+							>
 								{errs.envVar}
 							</p>
 						)}
@@ -148,7 +151,7 @@ function EditSecretInner() {
 					<div>
 						<label
 							htmlFor="stored_value"
-							className="block text-sm font-medium text-gray-700 mb-1"
+							className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1"
 						>
 							New secret value{" "}
 							<span className="ml-1 text-red-500" aria-hidden="true">
@@ -162,14 +165,17 @@ function EditSecretInner() {
 							value={storedValue}
 							onChange={(e) => setStoredValue(e.target.value)}
 							placeholder="Enter new value"
-							className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+							className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-400"
 						/>
-						<p className="mt-1 text-xs text-gray-500">
+						<p className="mt-1 text-xs text-gray-500 dark:text-zinc-400">
 							The current masked value is:{" "}
 							<span className="font-mono">{secret.masked_value ?? "—"}</span>
 						</p>
 						{errs.storedValue && (
-							<p role="alert" className="mt-1 text-xs text-red-600">
+							<p
+								role="alert"
+								className="mt-1 text-xs text-red-600 dark:text-red-400"
+							>
 								{errs.storedValue}
 							</p>
 						)}
@@ -190,7 +196,7 @@ function EditSecretInner() {
 						onClick={() =>
 							void navigate({ to: "/secrets/$name", params: { name } })
 						}
-						className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors"
+						className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-zinc-300 bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-800 disabled:opacity-50 transition-colors"
 					>
 						Cancel
 					</button>
@@ -202,7 +208,11 @@ function EditSecretInner() {
 
 function EditSecretPage() {
 	return (
-		<Suspense fallback={<div className="text-gray-500 text-sm">Loading…</div>}>
+		<Suspense
+			fallback={
+				<div className="text-gray-500 dark:text-zinc-400 text-sm">Loading…</div>
+			}
+		>
 			<EditSecretInner />
 		</Suspense>
 	);

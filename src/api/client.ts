@@ -11,4 +11,5 @@ export const apiClient = createClient<paths>({
 		typeof window !== "undefined"
 			? window.location.origin
 			: "http://localhost:8080",
+	credentials: "include",
 });

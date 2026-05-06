@@ -64,15 +64,15 @@ function SecretDetailInner() {
 			{/* Header */}
 			<div className="flex items-start justify-between mb-6">
 				<div className="flex items-center gap-3">
-					<h1 className="text-2xl font-bold text-gray-900 font-mono">
+					<h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100 font-mono">
 						{secret.name}
 					</h1>
 					<span
 						className={[
 							"inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
 							secret.kind === "stored"
-								? "bg-purple-100 text-purple-800"
-								: "bg-green-100 text-green-800",
+								? "bg-purple-100 dark:bg-purple-950 text-purple-800 dark:text-purple-300"
+								: "bg-green-100 dark:bg-green-950 text-green-800 dark:text-green-300",
 						].join(" ")}
 					>
 						{secret.kind}
@@ -82,7 +82,7 @@ function SecretDetailInner() {
 					<Link
 						to="/secrets/$name/edit"
 						params={{ name }}
-						className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+						className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-zinc-300 bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
 					>
 						Edit
 					</Link>
@@ -97,16 +97,20 @@ function SecretDetailInner() {
 			</div>
 
 			{/* Detail fields */}
-			<dl className="divide-y divide-gray-100 rounded-lg border border-gray-200 bg-white mb-8">
+			<dl className="divide-y divide-gray-100 dark:divide-zinc-800 rounded-lg border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 mb-8">
 				<div className="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4">
-					<dt className="text-sm font-medium text-gray-500">Name</dt>
-					<dd className="mt-1 text-sm text-gray-900 font-mono sm:col-span-2 sm:mt-0">
+					<dt className="text-sm font-medium text-gray-500 dark:text-zinc-400">
+						Name
+					</dt>
+					<dd className="mt-1 text-sm text-gray-900 dark:text-zinc-100 font-mono sm:col-span-2 sm:mt-0">
 						{secret.name}
 					</dd>
 				</div>
 				<div className="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4">
-					<dt className="text-sm font-medium text-gray-500">Kind</dt>
-					<dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+					<dt className="text-sm font-medium text-gray-500 dark:text-zinc-400">
+						Kind
+					</dt>
+					<dd className="mt-1 text-sm text-gray-900 dark:text-zinc-100 sm:col-span-2 sm:mt-0">
 						{secret.kind}
 					</dd>
 				</div>
@@ -114,16 +118,18 @@ function SecretDetailInner() {
 				{secret.kind === "env" && (
 					<>
 						<div className="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4">
-							<dt className="text-sm font-medium text-gray-500">
+							<dt className="text-sm font-medium text-gray-500 dark:text-zinc-400">
 								Environment variable
 							</dt>
-							<dd className="mt-1 text-sm text-gray-900 font-mono sm:col-span-2 sm:mt-0">
-								{secret.env_var ?? <span className="text-gray-400">—</span>}
+							<dd className="mt-1 text-sm text-gray-900 dark:text-zinc-100 font-mono sm:col-span-2 sm:mt-0">
+								{secret.env_var ?? (
+									<span className="text-gray-400 dark:text-zinc-500">—</span>
+								)}
 							</dd>
 						</div>
 						<div className="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4">
-							<dt className="text-sm font-medium text-gray-500" />
-							<dd className="mt-1 text-xs text-gray-500 sm:col-span-2 sm:mt-0">
+							<dt className="text-sm font-medium text-gray-500 dark:text-zinc-400" />
+							<dd className="mt-1 text-xs text-gray-500 dark:text-zinc-400 sm:col-span-2 sm:mt-0">
 								Set this env var on your relay deployment.
 							</dd>
 						</div>
@@ -132,17 +138,19 @@ function SecretDetailInner() {
 
 				{secret.kind === "stored" && (
 					<div className="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4">
-						<dt className="text-sm font-medium text-gray-500">Masked value</dt>
-						<dd className="mt-1 text-sm text-gray-900 font-mono sm:col-span-2 sm:mt-0 flex items-center gap-3">
+						<dt className="text-sm font-medium text-gray-500 dark:text-zinc-400">
+							Masked value
+						</dt>
+						<dd className="mt-1 text-sm text-gray-900 dark:text-zinc-100 font-mono sm:col-span-2 sm:mt-0 flex items-center gap-3">
 							<span>
 								{secret.masked_value ?? (
-									<span className="text-gray-400">—</span>
+									<span className="text-gray-400 dark:text-zinc-500">—</span>
 								)}
 							</span>
 							<button
 								type="button"
 								onClick={() => setRotating(true)}
-								className="px-3 py-1 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
+								className="px-3 py-1 text-xs font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900 transition-colors"
 							>
 								Rotate value
 							</button>
@@ -153,11 +161,11 @@ function SecretDetailInner() {
 
 			{/* References */}
 			<section>
-				<h2 className="text-lg font-semibold text-gray-900 mb-3">
+				<h2 className="text-lg font-semibold text-gray-900 dark:text-zinc-100 mb-3">
 					Referenced by pools
 				</h2>
 				{referencingPools.length === 0 ? (
-					<p className="text-sm text-gray-500">
+					<p className="text-sm text-gray-500 dark:text-zinc-400">
 						No pools reference this secret.
 					</p>
 				) : (
@@ -197,7 +205,11 @@ function SecretDetailInner() {
 
 function SecretDetailPage() {
 	return (
-		<Suspense fallback={<div className="text-gray-500 text-sm">Loading…</div>}>
+		<Suspense
+			fallback={
+				<div className="text-gray-500 dark:text-zinc-400 text-sm">Loading…</div>
+			}
+		>
 			<SecretDetailInner />
 		</Suspense>
 	);

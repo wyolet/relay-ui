@@ -1,11 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
+import { Moon, Sun } from "lucide-react";
 import { useAuth } from "#/api/auth";
 import {
 	providersQueryOptions,
 	secretsQueryOptions,
 	versionQueryOptions,
 } from "#/api/queries/dashboard";
+import type { Theme } from "#/lib/theme";
+import { useTheme } from "#/lib/theme";
 import { ToastContainer } from "./Toast";
 
 interface NavItem {
@@ -24,6 +27,36 @@ const NAV_ITEMS: NavItem[] = [
 	{ to: "/attachments", label: "Attachments" },
 ];
 
+const THEME_CYCLE: Theme[] = ["light", "dark", "system"];
+
+function nextTheme(current: Theme): Theme {
+	const idx = THEME_CYCLE.indexOf(current);
+	return THEME_CYCLE[(idx + 1) % THEME_CYCLE.length] ?? "system";
+}
+
+function ThemeIcon({ theme }: { theme: Theme }) {
+	const prefersDark =
+		typeof window !== "undefined" &&
+		window.matchMedia("(prefers-color-scheme: dark)").matches;
+	if (theme === "dark") return <Moon className="w-4 h-4" />;
+	if (theme === "light") return <Sun className="w-4 h-4" />;
+	// system
+	return prefersDark ? (
+		<Moon className="w-4 h-4" />
+	) : (
+		<Sun className="w-4 h-4" />
+	);
+}
+
+function themeLabel(theme: Theme): string {
+	if (theme === "light") return "Theme: light";
+	if (theme === "dark") return "Theme: dark";
+	const prefersDark =
+		typeof window !== "undefined" &&
+		window.matchMedia("(prefers-color-scheme: dark)").matches;
+	return `Theme: system (${prefersDark ? "dark" : "light"})`;
+}
+
 function useIsBootstrapEmpty() {
 	const { data: providers } = useQuery({
 		...providersQueryOptions,
@@ -41,13 +74,14 @@ export function Layout() {
 	const showBootstrap = useIsBootstrapEmpty();
 	const routerState = useRouterState();
 	const currentPath = routerState.location.pathname;
+	const { theme, setTheme } = useTheme();
 
 	return (
-		<div className="flex min-h-screen bg-gray-50">
+		<div className="flex min-h-screen bg-gray-50 dark:bg-zinc-950">
 			{/* Sidebar */}
-			<nav className="w-56 bg-white border-r border-gray-200 flex flex-col shrink-0">
-				<div className="h-14 flex items-center px-4 border-b border-gray-200">
-					<span className="text-sm font-semibold text-gray-800 truncate">
+			<nav className="w-56 bg-white dark:bg-zinc-900 border-r border-gray-200 dark:border-zinc-800 flex flex-col shrink-0">
+				<div className="h-14 flex items-center px-4 border-b border-gray-200 dark:border-zinc-800">
+					<span className="text-sm font-semibold text-gray-800 dark:text-zinc-100 truncate">
 						Wyolet Relay
 					</span>
 				</div>
@@ -64,16 +98,16 @@ export function Layout() {
 									className={[
 										"block px-3 py-2 rounded-md text-sm transition-colors",
 										isActive
-											? "bg-blue-50 text-blue-700 font-medium"
-											: "text-gray-700 hover:bg-gray-100",
+											? "bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 font-medium"
+											: "text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800",
 									].join(" ")}
 									activeProps={{
 										className:
-											"bg-blue-50 text-blue-700 font-medium block px-3 py-2 rounded-md text-sm transition-colors",
+											"bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 font-medium block px-3 py-2 rounded-md text-sm transition-colors",
 									}}
 									inactiveProps={{
 										className:
-											"text-gray-700 hover:bg-gray-100 block px-3 py-2 rounded-md text-sm transition-colors",
+											"text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 block px-3 py-2 rounded-md text-sm transition-colors",
 									}}
 								>
 									{item.label}
@@ -85,14 +119,14 @@ export function Layout() {
 						<li key="/bootstrap">
 							<Link
 								to="/bootstrap"
-								className="block px-3 py-2 rounded-md text-sm transition-colors text-gray-700 hover:bg-gray-100"
+								className="block px-3 py-2 rounded-md text-sm transition-colors text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800"
 								activeProps={{
 									className:
-										"bg-blue-50 text-blue-700 font-medium block px-3 py-2 rounded-md text-sm transition-colors",
+										"bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 font-medium block px-3 py-2 rounded-md text-sm transition-colors",
 								}}
 								inactiveProps={{
 									className:
-										"text-gray-700 hover:bg-gray-100 block px-3 py-2 rounded-md text-sm transition-colors",
+										"text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 block px-3 py-2 rounded-md text-sm transition-colors",
 								}}
 							>
 								Bootstrap
@@ -105,11 +139,11 @@ export function Layout() {
 			{/* Main content */}
 			<div className="flex-1 flex flex-col min-w-0">
 				{/* Header */}
-				<header className="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-6 shrink-0">
-					<span className="text-base font-semibold text-gray-900">
+				<header className="h-14 bg-white dark:bg-zinc-900 border-b border-gray-200 dark:border-zinc-800 flex items-center justify-between px-6 shrink-0">
+					<span className="text-base font-semibold text-gray-900 dark:text-zinc-100">
 						Wyolet Relay
 					</span>
-					<div className="flex items-center gap-4 text-xs text-gray-500">
+					<div className="flex items-center gap-4 text-xs text-gray-500 dark:text-zinc-400">
 						{versionData && (
 							<span>
 								backend <span className="font-mono">{versionData.version}</span>
@@ -123,8 +157,17 @@ export function Layout() {
 						</span>
 						<button
 							type="button"
+							title={themeLabel(theme)}
+							aria-label={themeLabel(theme)}
+							onClick={() => setTheme(nextTheme(theme))}
+							className="p-1.5 rounded-md text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
+						>
+							<ThemeIcon theme={theme} />
+						</button>
+						<button
+							type="button"
 							onClick={() => void logout()}
-							className="text-sm text-gray-600 hover:text-gray-900 font-medium transition-colors"
+							className="text-sm text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100 font-medium transition-colors"
 						>
 							Logout
 						</button>

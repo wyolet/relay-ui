@@ -1,8 +1,15 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { AuthError, useAuth } from "#/api/auth";
+import { AuthError, useAuth, whoamiQueryOptions } from "#/api/auth";
 
-export const Route = createFileRoute("/login")({ component: LoginPage });
+export const Route = createFileRoute("/login")({
+	async beforeLoad({ context }) {
+		const whoami =
+			await context.queryClient.ensureQueryData(whoamiQueryOptions);
+		if (whoami.authenticated) throw redirect({ to: "/" });
+	},
+	component: LoginPage,
+});
 
 function LoginPage() {
 	const navigate = useNavigate();
@@ -30,16 +37,20 @@ function LoginPage() {
 	}
 
 	return (
-		<div className="min-h-screen bg-gray-50 flex items-center justify-center">
-			<div className="bg-white rounded-2xl shadow-lg p-10 w-full max-w-sm">
-				<h1 className="text-2xl font-bold text-gray-900 mb-1">Relay Admin</h1>
-				<p className="text-sm text-gray-500 mb-8">Sign in to continue</p>
+		<div className="min-h-screen bg-gray-50 dark:bg-zinc-950 flex items-center justify-center">
+			<div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-lg dark:shadow-black/40 p-10 w-full max-w-sm">
+				<h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100 mb-1">
+					Relay Admin
+				</h1>
+				<p className="text-sm text-gray-500 dark:text-zinc-400 mb-8">
+					Sign in to continue
+				</p>
 
 				<form onSubmit={handleSubmit} className="space-y-4">
 					<div>
 						<label
 							htmlFor="token"
-							className="block text-sm font-medium text-gray-700 mb-1"
+							className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1"
 						>
 							Admin token
 						</label>
@@ -50,13 +61,13 @@ function LoginPage() {
 							required
 							value={token}
 							onChange={(e) => setToken(e.currentTarget.value)}
-							className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+							className="w-full rounded-lg border border-gray-300 dark:border-zinc-700 px-3 py-2 text-sm text-gray-900 dark:text-zinc-100 bg-white dark:bg-zinc-800 placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
 							placeholder="••••••••"
 						/>
 					</div>
 
 					{error !== null && (
-						<p role="alert" className="text-sm text-red-600">
+						<p role="alert" className="text-sm text-red-600 dark:text-red-400">
 							{error}
 						</p>
 					)}

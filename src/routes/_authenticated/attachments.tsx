@@ -149,12 +149,12 @@ function AddAttachmentDialog({ onClose }: AddDialogProps) {
 			role="dialog"
 			aria-modal="true"
 			aria-labelledby="add-attachment-title"
-			className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+			className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 dark:bg-black/60"
 		>
-			<div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+			<div className="bg-white dark:bg-zinc-900 rounded-xl shadow-xl dark:shadow-black/40 w-full max-w-md p-6">
 				<h2
 					id="add-attachment-title"
-					className="text-lg font-semibold text-gray-900 mb-4"
+					className="text-lg font-semibold text-gray-900 dark:text-zinc-100 mb-4"
 				>
 					Add Attachment
 				</h2>
@@ -163,7 +163,7 @@ function AddAttachmentDialog({ onClose }: AddDialogProps) {
 					<div>
 						<label
 							htmlFor="add-parent-kind"
-							className="block text-sm font-medium text-gray-700 mb-1"
+							className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1"
 						>
 							Parent Kind
 						</label>
@@ -173,7 +173,7 @@ function AddAttachmentDialog({ onClose }: AddDialogProps) {
 							onChange={(e) =>
 								handleKindChange(e.target.value as AttachmentParentKind)
 							}
-							className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+							className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
 						>
 							<option value="pool">Pool</option>
 							<option value="secret">Secret</option>
@@ -185,7 +185,7 @@ function AddAttachmentDialog({ onClose }: AddDialogProps) {
 					<div>
 						<label
 							htmlFor="add-parent-name"
-							className="block text-sm font-medium text-gray-700 mb-1"
+							className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1"
 						>
 							Parent Name
 						</label>
@@ -193,7 +193,7 @@ function AddAttachmentDialog({ onClose }: AddDialogProps) {
 							id="add-parent-name"
 							value={parentName}
 							onChange={(e) => setParentName(e.target.value)}
-							className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+							className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
 						>
 							<option value="">— select —</option>
 							{parentNames.map((n) => (
@@ -208,7 +208,7 @@ function AddAttachmentDialog({ onClose }: AddDialogProps) {
 					<div>
 						<label
 							htmlFor="add-ratelimit"
-							className="block text-sm font-medium text-gray-700 mb-1"
+							className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1"
 						>
 							Rate Limit
 						</label>
@@ -216,7 +216,7 @@ function AddAttachmentDialog({ onClose }: AddDialogProps) {
 							id="add-ratelimit"
 							value={ratelimitName}
 							onChange={(e) => setRatelimitName(e.target.value)}
-							className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+							className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
 						>
 							<option value="">— select —</option>
 							{rateLimitsData.items.map((rl) => (
@@ -231,7 +231,7 @@ function AddAttachmentDialog({ onClose }: AddDialogProps) {
 					<div>
 						<label
 							htmlFor="add-meter"
-							className="block text-sm font-medium text-gray-700 mb-1"
+							className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1"
 						>
 							Meter
 						</label>
@@ -239,7 +239,7 @@ function AddAttachmentDialog({ onClose }: AddDialogProps) {
 							id="add-meter"
 							value={meter}
 							onChange={(e) => setMeter(e.target.value as AttachmentMeter)}
-							className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+							className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
 						>
 							<option value="requests">Requests</option>
 							<option value="tokens">Tokens</option>
@@ -262,7 +262,7 @@ function AddAttachmentDialog({ onClose }: AddDialogProps) {
 					<button
 						type="button"
 						onClick={onClose}
-						className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+						className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-zinc-300 bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
 					>
 						Cancel
 					</button>
@@ -355,8 +355,10 @@ function AttachmentsInner() {
 			{/* Header */}
 			<div className="flex items-center justify-between mb-6">
 				<div>
-					<h1 className="text-2xl font-bold text-gray-900">Attachments</h1>
-					<p className="text-sm text-gray-500 mt-1">
+					<h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100">
+						Attachments
+					</h1>
+					<p className="text-sm text-gray-500 dark:text-zinc-400 mt-1">
 						Rate limit attachments across all resources.
 					</p>
 				</div>
@@ -375,7 +377,7 @@ function AttachmentsInner() {
 				<select
 					value={kindFilter}
 					onChange={(e) => setKindFilter(e.target.value as KindFilter)}
-					className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+					className="border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
 					aria-label="Filter by parent kind"
 				>
 					<option value="all">All kinds</option>
@@ -390,7 +392,7 @@ function AttachmentsInner() {
 					placeholder="Filter parent name…"
 					value={parentNameFilter}
 					onChange={(e) => setParentNameFilter(e.target.value)}
-					className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 min-w-40"
+					className="border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-400 min-w-40"
 					aria-label="Filter by parent name"
 				/>
 
@@ -400,7 +402,7 @@ function AttachmentsInner() {
 					placeholder="Filter rate limit…"
 					value={rateLimitFilter}
 					onChange={(e) => setRateLimitFilter(e.target.value)}
-					className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 min-w-40"
+					className="border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-400 min-w-40"
 					aria-label="Filter by rate limit name"
 				/>
 
@@ -408,7 +410,7 @@ function AttachmentsInner() {
 				<select
 					value={meterFilter}
 					onChange={(e) => setMeterFilter(e.target.value as MeterFilter)}
-					className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+					className="border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
 					aria-label="Filter by meter"
 				>
 					<option value="all">All meters</option>
@@ -420,50 +422,50 @@ function AttachmentsInner() {
 
 			{/* Main table */}
 			{filteredItems.length === 0 ? (
-				<div className="rounded-lg border border-gray-200 bg-white p-10 text-center">
-					<p className="text-sm text-gray-500">
+				<div className="rounded-lg border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-10 text-center">
+					<p className="text-sm text-gray-500 dark:text-zinc-400">
 						{allItems.length === 0
 							? 'No attachments configured. Click "Add attachment" to create one.'
 							: "No attachments match the current filters."}
 					</p>
 				</div>
 			) : (
-				<div className="overflow-x-auto rounded-lg border border-gray-200 mb-8">
+				<div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-zinc-800 mb-8">
 					<table className="w-full text-sm">
-						<thead className="bg-gray-50 border-b border-gray-200">
+						<thead className="bg-gray-50 dark:bg-zinc-800 border-b border-gray-200 dark:border-zinc-700">
 							<tr>
-								<th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+								<th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wide">
 									Parent Kind
 								</th>
-								<th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+								<th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wide">
 									Parent Name
 								</th>
-								<th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+								<th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wide">
 									Rate Limit
 								</th>
-								<th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+								<th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wide">
 									Meter
 								</th>
-								<th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+								<th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wide">
 									Created At
 								</th>
 								<th className="px-4 py-3" />
 							</tr>
 						</thead>
-						<tbody className="divide-y divide-gray-100">
+						<tbody className="divide-y divide-gray-100 dark:divide-zinc-800">
 							{filteredItems.map((att) => {
 								const dupKey = `${att.parent_kind}|${att.parent_name}|${att.meter}`;
 								const isDuplicate = duplicateMeterKeys.has(dupKey);
 								const rowClass = isDuplicate
 									? "bg-amber-50 dark:bg-amber-950/30"
-									: "bg-white";
+									: "bg-white dark:bg-zinc-900";
 								const dupTooltip = isDuplicate
 									? "Duplicate meter: this parent has multiple RateLimits on the same meter; behavior is implementation-defined"
 									: undefined;
 
 								return (
 									<tr key={att.id} className={rowClass} title={dupTooltip}>
-										<td className="px-4 py-3 text-gray-700 capitalize">
+										<td className="px-4 py-3 text-gray-700 dark:text-zinc-300 capitalize">
 											{att.parent_kind}
 										</td>
 										<td className="px-4 py-3">
@@ -478,8 +480,10 @@ function AttachmentsInner() {
 												{att.ratelimit_name}
 											</Link>
 										</td>
-										<td className="px-4 py-3 text-gray-700">{att.meter}</td>
-										<td className="px-4 py-3 text-gray-500 text-xs">
+										<td className="px-4 py-3 text-gray-700 dark:text-zinc-300">
+											{att.meter}
+										</td>
+										<td className="px-4 py-3 text-gray-500 dark:text-zinc-400 text-xs">
 											{new Date(att.created_at).toLocaleString()}
 										</td>
 										<td className="px-4 py-3 text-right">
@@ -505,32 +509,32 @@ function AttachmentsInner() {
 			{/* Orphaned Rate Limits section */}
 			{orphanedRateLimits.length > 0 && (
 				<div>
-					<h2 className="text-base font-semibold text-gray-700 mb-2 flex items-center gap-2">
+					<h2 className="text-base font-semibold text-gray-700 dark:text-zinc-300 mb-2 flex items-center gap-2">
 						<span className="inline-block w-2.5 h-2.5 rounded-full bg-amber-400" />
 						Orphaned Rate Limits
-						<span className="text-xs font-normal text-gray-500">
+						<span className="text-xs font-normal text-gray-500 dark:text-zinc-400">
 							— defined but not attached to any resource
 						</span>
 					</h2>
-					<div className="overflow-x-auto rounded-lg border border-amber-200">
+					<div className="overflow-x-auto rounded-lg border border-amber-200 dark:border-amber-800">
 						<table className="w-full text-sm">
-							<thead className="bg-amber-50 border-b border-amber-200">
+							<thead className="bg-amber-50 dark:bg-amber-950 border-b border-amber-200 dark:border-amber-800">
 								<tr>
-									<th className="px-4 py-3 text-left text-xs font-semibold text-amber-700 uppercase tracking-wide">
+									<th className="px-4 py-3 text-left text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wide">
 										Rate Limit
 									</th>
-									<th className="px-4 py-3 text-left text-xs font-semibold text-amber-700 uppercase tracking-wide">
+									<th className="px-4 py-3 text-left text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wide">
 										Strategy
 									</th>
-									<th className="px-4 py-3 text-left text-xs font-semibold text-amber-700 uppercase tracking-wide">
+									<th className="px-4 py-3 text-left text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wide">
 										Window
 									</th>
-									<th className="px-4 py-3 text-left text-xs font-semibold text-amber-700 uppercase tracking-wide">
+									<th className="px-4 py-3 text-left text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wide">
 										Amount
 									</th>
 								</tr>
 							</thead>
-							<tbody className="divide-y divide-amber-100">
+							<tbody className="divide-y divide-amber-100 dark:divide-amber-900">
 								{orphanedRateLimits.map((rl) => (
 									<tr
 										key={rl.name}
@@ -541,14 +545,20 @@ function AttachmentsInner() {
 											<Link
 												to="/ratelimits/$name"
 												params={{ name: rl.name }}
-												className="text-amber-700 hover:underline font-mono text-xs"
+												className="text-amber-700 dark:text-amber-400 hover:underline font-mono text-xs"
 											>
 												{rl.name}
 											</Link>
 										</td>
-										<td className="px-4 py-3 text-amber-800">{rl.strategy}</td>
-										<td className="px-4 py-3 text-amber-800">{rl.window}</td>
-										<td className="px-4 py-3 text-amber-800">{rl.amount}</td>
+										<td className="px-4 py-3 text-amber-800 dark:text-amber-300">
+											{rl.strategy}
+										</td>
+										<td className="px-4 py-3 text-amber-800 dark:text-amber-300">
+											{rl.window}
+										</td>
+										<td className="px-4 py-3 text-amber-800 dark:text-amber-300">
+											{rl.amount}
+										</td>
 									</tr>
 								))}
 							</tbody>
@@ -569,7 +579,11 @@ function AttachmentsInner() {
 
 function AttachmentsPage() {
 	return (
-		<Suspense fallback={<div className="text-gray-500 text-sm">Loading…</div>}>
+		<Suspense
+			fallback={
+				<div className="text-gray-500 dark:text-zinc-400 text-sm">Loading…</div>
+			}
+		>
 			<AttachmentsInner />
 		</Suspense>
 	);

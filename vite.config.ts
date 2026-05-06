@@ -26,6 +26,9 @@ const config = defineConfig({
     'import.meta.env.VITE_UI_VERSION': JSON.stringify(pkg.version),
   },
   server: {
+    host: true,
+    allowedHosts: ['relay.wyolet.dev', '.wyolet.dev', 'localhost'],
+    hmr: { host: 'relay.wyolet.dev', clientPort: 443, protocol: 'wss' },
     proxy: {
       '/admin': proxy,
       '/v1': proxy,

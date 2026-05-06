@@ -19,9 +19,10 @@ export const Route = createFileRoute("/_authenticated/")({
 // --- health tile ---
 
 const STATUS_COLORS: Record<HealthStatusLevel, string> = {
-	ok: "bg-green-50 border-green-200",
-	degraded: "bg-yellow-50 border-yellow-200",
-	error: "bg-red-50 border-red-200",
+	ok: "bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800",
+	degraded:
+		"bg-yellow-50 dark:bg-yellow-950 border-yellow-200 dark:border-yellow-800",
+	error: "bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800",
 };
 
 const STATUS_DOT: Record<HealthStatusLevel, string> = {
@@ -46,16 +47,16 @@ function HealthTile({ label, subsystem }: HealthTileProps) {
 				<span
 					className={`w-2 h-2 rounded-full shrink-0 ${STATUS_DOT[level]}`}
 				/>
-				<span className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
+				<span className="text-xs font-semibold text-gray-700 dark:text-zinc-300 uppercase tracking-wide">
 					{label}
 				</span>
 			</div>
-			<span className="text-sm font-medium text-gray-900 capitalize">
+			<span className="text-sm font-medium text-gray-900 dark:text-zinc-100 capitalize">
 				{level}
 			</span>
 			{subsystem?.error && (
 				<span
-					className="text-xs text-gray-500 truncate"
+					className="text-xs text-gray-500 dark:text-zinc-400 truncate"
 					title={subsystem.error}
 				>
 					{subsystem.error}
@@ -74,11 +75,11 @@ interface CountCardProps {
 
 function CountCard({ label, count }: CountCardProps) {
 	return (
-		<div className="rounded-lg border border-gray-200 bg-white p-4 flex flex-col gap-1">
-			<span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+		<div className="rounded-lg border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 flex flex-col gap-1">
+			<span className="text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wide">
 				{label}
 			</span>
-			<span className="text-2xl font-bold text-gray-900 tabular-nums">
+			<span className="text-2xl font-bold text-gray-900 dark:text-zinc-100 tabular-nums">
 				{count ?? "—"}
 			</span>
 		</div>
@@ -89,9 +90,11 @@ function CountCard({ label, count }: CountCardProps) {
 
 function WelcomePanel() {
 	return (
-		<div className="rounded-xl border border-blue-200 bg-blue-50 p-8 text-center max-w-lg mx-auto mt-8">
-			<h2 className="text-xl font-bold text-gray-900 mb-2">Welcome to Relay</h2>
-			<p className="text-gray-600 mb-6 text-sm">
+		<div className="rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950 p-8 text-center max-w-lg mx-auto mt-8">
+			<h2 className="text-xl font-bold text-gray-900 dark:text-zinc-100 mb-2">
+				Welcome to Relay
+			</h2>
+			<p className="text-gray-600 dark:text-zinc-400 mb-6 text-sm">
 				Your catalog is empty. Run the bootstrap wizard to add your first
 				provider and secret.
 			</p>
@@ -110,11 +113,11 @@ function WelcomePanel() {
 function MetricsPending() {
 	return (
 		<section>
-			<h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
+			<h2 className="text-sm font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wide mb-3">
 				Drop Counters
 			</h2>
 			{/* TODO: implement when backend exposes GET /admin/metrics */}
-			<div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 px-6 py-4 text-sm text-gray-500">
+			<div className="rounded-lg border border-dashed border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 px-6 py-4 text-sm text-gray-500 dark:text-zinc-400">
 				Metrics endpoint pending — drop counters will appear here once the relay
 				backend exposes <code className="font-mono">/admin/metrics</code>.
 			</div>
@@ -142,7 +145,7 @@ function DashboardInner() {
 
 			{/* Health tiles */}
 			<section>
-				<h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
+				<h2 className="text-sm font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wide mb-3">
 					Health
 				</h2>
 				<div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -158,7 +161,7 @@ function DashboardInner() {
 
 			{/* Quick stats */}
 			<section>
-				<h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
+				<h2 className="text-sm font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wide mb-3">
 					Catalog
 				</h2>
 				<div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
@@ -177,9 +180,15 @@ function DashboardInner() {
 function DashboardPage() {
 	return (
 		<div>
-			<h1 className="text-2xl font-bold text-gray-900 mb-6">Dashboard</h1>
+			<h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100 mb-6">
+				Dashboard
+			</h1>
 			<Suspense
-				fallback={<div className="text-gray-500 text-sm">Loading…</div>}
+				fallback={
+					<div className="text-gray-500 dark:text-zinc-400 text-sm">
+						Loading…
+					</div>
+				}
 			>
 				<DashboardInner />
 			</Suspense>
