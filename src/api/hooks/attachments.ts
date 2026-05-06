@@ -14,6 +14,14 @@ import type {
 
 // --- Query options ---
 
+/** Fetch all attachments across all parents (no filter). */
+export const allAttachmentsQueryOptions = queryOptions({
+	queryKey: ["attachments", "all"] as const,
+	queryFn: () => adminGet<AttachmentsListResponse>("/admin/attachments"),
+	staleTime: 30_000,
+	gcTime: 5 * 60_000,
+});
+
 export function attachmentsQueryOptions(params: {
 	parent_kind: AttachmentParentKind;
 	parent_name: string;
@@ -34,6 +42,11 @@ export function attachmentsQueryOptions(params: {
 
 // --- Hooks ---
 
+/** Hook: all attachments across all parents. */
+export function useAllAttachments() {
+	return useSuspenseQuery(allAttachmentsQueryOptions);
+}
+
 export function useAttachments(params: {
 	parent_kind: AttachmentParentKind;
 	parent_name: string;
@@ -53,6 +66,9 @@ export function useCreateAttachment() {
 					{ parent_kind: vars.parent_kind, parent_name: vars.parent_name },
 				],
 			});
+			void queryClient.invalidateQueries({
+				queryKey: allAttachmentsQueryOptions.queryKey,
+			});
 		},
 	});
 }
@@ -69,6 +85,22 @@ export function useDeleteAttachment(params: {
 			void queryClient.invalidateQueries({
 				queryKey: ["attachments", params],
 			});
+			void queryClient.invalidateQueries({
+				queryKey: allAttachmentsQueryOptions.queryKey,
+			});
+		},
+	});
+}
+
+/** Delete an attachment from the global view (no parent context needed). */
+export function useDeleteAttachmentGlobal() {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: (id: string) =>
+			adminDelete(`/admin/attachments/${encodeURIComponent(id)}`),
+		onSuccess: () => {
+			// Invalidate all attachment queries
+			void queryClient.invalidateQueries({ queryKey: ["attachments"] });
 		},
 	});
 }
