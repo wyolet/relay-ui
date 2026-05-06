@@ -14,7 +14,8 @@
     "format": "biome format ./src",
     "check": "biome check ./src",
     "ci": "bun run typecheck && bun run lint",
-    "gen:api": "openapi-typescript ${OPENAPI_URL:-http://localhost:8080/openapi.json} -o src/api/types.gen.ts"
+    "gen:api": "openapi-typescript ${OPENAPI_URL:-http://localhost:8080/openapi.json} -o src/api/types.gen.ts",
+    "gen:api:live": "curl -sk https://relay.wyolet.dev/openapi.json | bun x openapi-typescript /dev/stdin -o src/api/types.gen.ts"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.80.5",

@@ -1,20 +1,16 @@
+import type { components } from "#/api/types.gen";
+
 /**
- * Standard error shape returned by the Relay backend on 4xx responses.
+ * Standard error inner shape returned by the Relay backend.
+ * Derived from OpenAPI schema `components.schemas.OpenAIErrorInner`.
  */
+export type ApiErrorBody = components["schemas"]["OpenAIErrorInner"];
 
-export interface ApiErrorReference {
-	kind: string;
-	name: string;
-}
-
-export interface ApiErrorBody {
-	message: string;
-	references?: ApiErrorReference[];
-}
-
-export interface ApiErrorResponse {
-	error: ApiErrorBody;
-}
+/**
+ * Top-level error envelope from the Relay backend.
+ * Derived from OpenAPI schema `components.schemas.OpenAIError`.
+ */
+export type ApiErrorResponse = components["schemas"]["OpenAIError"];
 
 export class ApiError extends Error {
 	readonly status: number;

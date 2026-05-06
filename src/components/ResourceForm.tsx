@@ -1,4 +1,3 @@
-import { useNavigate } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { useState } from "react";
 import type { ApiErrorBody } from "#/api/types/errors";
@@ -75,20 +74,6 @@ function validate(
 // Component
 // ---------------------------------------------------------------------------
 
-/** Navigate to a reference detail page from a server error. The `kind` maps to the plural route. */
-function ReferenceLink({ kind, name }: { kind: string; name: string }) {
-	const navigate = useNavigate();
-	return (
-		<button
-			type="button"
-			onClick={() => void navigate({ to: `/${kind}s/${name}` as never })}
-			className="underline hover:no-underline"
-		>
-			{kind}/{name}
-		</button>
-	);
-}
-
 interface ResourceFormProps {
 	title: string;
 	fields: FieldDef[];
@@ -146,16 +131,7 @@ export function ResourceForm({
 			{/* Server error banner */}
 			{serverError && (
 				<div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-					<p className="font-medium mb-1">{serverError.message}</p>
-					{serverError.references && serverError.references.length > 0 && (
-						<ul className="list-disc list-inside space-y-0.5">
-							{serverError.references.map((ref) => (
-								<li key={`${ref.kind}/${ref.name}`}>
-									<ReferenceLink kind={ref.kind} name={ref.name} />
-								</li>
-							))}
-						</ul>
-					)}
+					<p className="font-medium">{serverError.message}</p>
 				</div>
 			)}
 

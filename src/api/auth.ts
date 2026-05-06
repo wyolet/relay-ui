@@ -1,24 +1,30 @@
 import { queryOptions, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { WhoamiResponse } from "./auth-types";
+import { apiClient } from "./client";
 
 const BASE_URL =
 	typeof window !== "undefined"
 		? window.location.origin
 		: "http://localhost:8080";
 
-async function fetchWhoami(): Promise<WhoamiResponse> {
-	const res = await fetch(`${BASE_URL}/admin/whoami`, {
-		credentials: "include",
-	});
-	if (!res.ok) {
-		// 401 → treat as unauthenticated rather than throwing, so the guard can
-		// redirect without hitting the global error boundary.
-		if (res.status === 401) {
-			return { authenticated: false };
-		}
-		throw new Error(`Whoami failed: ${res.status}`);
+/**
+ * GET /admin/whoami — the spec has content?: never for the 200 body, but the
+ * real backend returns { authenticated: boolean }. We parse it safely.
+ */
+async function fetchWhoami(): Promise<{ authenticated: boolean }> {
+	const { response } = await apiClient.GET("/admin/whoami");
+	// Any non-OK (401 unauthenticated, 5xx backend down) → treat as
+	// unauthenticated so the guard redirects to login rather than tripping the
+	// error boundary.
+	if (!response.ok) {
+		return { authenticated: false };
 	}
-	return res.json() as Promise<WhoamiResponse>;
+	try {
+		const body = (await response.json()) as Record<string, unknown>;
+		if (body.authenticated === true) return { authenticated: true };
+	} catch {
+		// ignore parse errors
+	}
+	return { authenticated: false };
 }
 
 export const whoamiQueryOptions = queryOptions({
@@ -36,7 +42,9 @@ export function useAuth() {
 	const authenticated = data?.authenticated ?? false;
 
 	async function login(token: string): Promise<void> {
-		const res = await fetch(`${BASE_URL}/admin/ui-login`, {
+		// The spec has requestBody?: never for /admin/login but the real backend
+		// accepts { token } as JSON. Use raw fetch so we can pass the body.
+		const res = await fetch(`${BASE_URL}/admin/login`, {
 			method: "POST",
 			credentials: "include",
 			headers: { "Content-Type": "application/json" },
@@ -56,10 +64,8 @@ export function useAuth() {
 	}
 
 	async function logout(): Promise<void> {
-		await fetch(`${BASE_URL}/admin/ui-logout`, {
-			method: "POST",
-			credentials: "include",
-		});
+		// Use apiClient for the typed POST /admin/logout
+		await apiClient.POST("/admin/logout");
 		await queryClient.invalidateQueries({
 			queryKey: whoamiQueryOptions.queryKey,
 		});

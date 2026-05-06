@@ -1,9 +1,10 @@
 /**
  * Typed fetch helpers for the Relay admin API.
  *
- * Uses plain fetch (not openapi-fetch) because the CRUD endpoints are not yet
- * in the generated OpenAPI spec. All errors are parsed into ApiError so callers
- * get structured error information.
+ * Uses plain fetch (not openapi-fetch) because the CRUD resource endpoints
+ * return `content?: never` in the generated spec (the backend responds with
+ * real bodies but they are not yet described in the OpenAPI schema). All
+ * errors are parsed into ApiError so callers get structured error information.
  */
 
 import { ApiError, type ApiErrorResponse } from "./types/errors";
@@ -18,7 +19,10 @@ async function parseError(res: Response): Promise<ApiError> {
 		const body = (await res.json()) as ApiErrorResponse;
 		return new ApiError(res.status, body.error);
 	} catch {
-		return new ApiError(res.status, { message: `HTTP ${res.status}` });
+		return new ApiError(res.status, {
+			message: `HTTP ${res.status}`,
+			type: "api_error",
+		});
 	}
 }
 

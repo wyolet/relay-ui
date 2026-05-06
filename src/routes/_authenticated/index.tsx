@@ -1,14 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Suspense, useEffect, useState } from "react";
-import type {
-	HealthStatusLevel,
-	HealthSubsystem,
-	MetricsResponse,
-} from "#/api/dashboard-types";
+import { Suspense } from "react";
+import type { HealthStatusLevel, HealthSubsystem } from "#/api/dashboard-types";
 import {
 	healthzQueryOptions,
-	metricsQueryOptions,
 	modelsQueryOptions,
 	poolsQueryOptions,
 	providersQueryOptions,
@@ -20,68 +15,6 @@ import {
 export const Route = createFileRoute("/_authenticated/")({
 	component: DashboardPage,
 });
-
-// --- sparkline hook ---
-
-const RING_SIZE = 12;
-
-function useMetricsRing(
-	_key: keyof MetricsResponse,
-	current: number | undefined,
-) {
-	const [ring, setRing] = useState<number[]>([]);
-
-	useEffect(() => {
-		if (current === undefined) return;
-		setRing((prev) => {
-			const next = [...prev, current];
-			return next.length > RING_SIZE
-				? next.slice(next.length - RING_SIZE)
-				: next;
-		});
-	}, [current]);
-
-	return ring;
-}
-
-// --- sparkline SVG ---
-
-interface SparklineProps {
-	values: number[];
-	width?: number;
-	height?: number;
-}
-
-function Sparkline({ values, width = 60, height = 20 }: SparklineProps) {
-	if (values.length < 2) {
-		return <svg width={width} height={height} aria-hidden="true" />;
-	}
-	const min = Math.min(...values);
-	const max = Math.max(...values);
-	const range = max - min || 1;
-	const step = width / (values.length - 1);
-
-	const points = values
-		.map((v, i) => {
-			const x = i * step;
-			const y = height - ((v - min) / range) * (height - 2) - 1;
-			return `${x.toFixed(1)},${y.toFixed(1)}`;
-		})
-		.join(" ");
-
-	return (
-		<svg width={width} height={height} aria-hidden="true">
-			<polyline
-				points={points}
-				fill="none"
-				stroke="currentColor"
-				strokeWidth="1.5"
-				strokeLinejoin="round"
-				strokeLinecap="round"
-			/>
-		</svg>
-	);
-}
 
 // --- health tile ---
 
@@ -132,35 +65,6 @@ function HealthTile({ label, subsystem }: HealthTileProps) {
 	);
 }
 
-// --- drop counter tile ---
-
-interface DropTileProps {
-	label: string;
-	metricKey: keyof MetricsResponse;
-	metricsData: MetricsResponse | undefined;
-}
-
-function DropTile({ label, metricKey, metricsData }: DropTileProps) {
-	const current = metricsData?.[metricKey];
-	const ring = useMetricsRing(metricKey, current);
-
-	return (
-		<div className="rounded-lg border border-gray-200 bg-white p-4 flex flex-col gap-2">
-			<span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-				{label}
-			</span>
-			<div className="flex items-end justify-between gap-2">
-				<span className="text-2xl font-bold text-gray-900 tabular-nums">
-					{current ?? "—"}
-				</span>
-				<span className="text-gray-400">
-					<Sparkline values={ring} />
-				</span>
-			</div>
-		</div>
-	);
-}
-
 // --- count card ---
 
 interface CountCardProps {
@@ -201,11 +105,27 @@ function WelcomePanel() {
 	);
 }
 
+// --- metrics placeholder ---
+
+function MetricsPending() {
+	return (
+		<section>
+			<h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
+				Drop Counters
+			</h2>
+			{/* TODO: implement when backend exposes GET /admin/metrics */}
+			<div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 px-6 py-4 text-sm text-gray-500">
+				Metrics endpoint pending — drop counters will appear here once the relay
+				backend exposes <code className="font-mono">/admin/metrics</code>.
+			</div>
+		</section>
+	);
+}
+
 // --- dashboard inner (uses suspense queries) ---
 
 function DashboardInner() {
 	const { data: healthz } = useQuery(healthzQueryOptions);
-	const { data: metrics } = useQuery(metricsQueryOptions);
 	const { data: providers } = useQuery(providersQueryOptions);
 	const { data: secrets } = useQuery(secretsQueryOptions);
 	const { data: pools } = useQuery(poolsQueryOptions);
@@ -233,34 +153,8 @@ function DashboardInner() {
 				</div>
 			</section>
 
-			{/* Drop counter tiles */}
-			<section>
-				<h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-					Drop Counters
-				</h2>
-				<div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-					<DropTile
-						label="Eventlog Dropped"
-						metricKey="eventlog_dropped"
-						metricsData={metrics}
-					/>
-					<DropTile
-						label="OTEL Dropped"
-						metricKey="otel_dropped"
-						metricsData={metrics}
-					/>
-					<DropTile
-						label="Metadata Rejected"
-						metricKey="metadata_rejected"
-						metricsData={metrics}
-					/>
-					<DropTile
-						label="Auth Rejected"
-						metricKey="auth_rejected"
-						metricsData={metrics}
-					/>
-				</div>
-			</section>
+			{/* Metrics placeholder — /admin/metrics does not exist yet */}
+			<MetricsPending />
 
 			{/* Quick stats */}
 			<section>

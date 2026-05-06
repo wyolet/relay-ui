@@ -38,14 +38,14 @@ bun run build        # outputs to dist/
 
 ## Type generation
 
-API types are generated from the Relay OpenAPI spec:
+API types are generated from the Relay OpenAPI spec via the Makefile:
 
 ```bash
-bun run gen:api                                                    # uses http://localhost:8080/openapi.json
-OPENAPI_URL=https://my-relay-host/openapi.json bun run gen:api    # custom URL
+make gen                          # fetches from https://relay.wyolet.dev/openapi.json
+RELAY_URL=http://localhost:8080 make gen  # custom URL (uses curl -sk to avoid TLS issues)
 ```
 
-Generated file: `src/api/types.gen.ts` — commit after regenerating.
+Generated file: `src/api/types.gen.ts` — commit after regenerating. Do not edit by hand.
 
 ## CI
 

@@ -2,7 +2,6 @@ import { queryOptions } from "@tanstack/react-query";
 import type {
 	HealthzResponse,
 	ListResponse,
-	MetricsResponse,
 	VersionResponse,
 } from "#/api/dashboard-types";
 
@@ -24,13 +23,8 @@ export const versionQueryOptions = queryOptions({
 	gcTime: 10 * 60_000,
 });
 
-export const metricsQueryOptions = queryOptions({
-	queryKey: ["admin", "metrics"] as const,
-	queryFn: () => fetchJson<MetricsResponse>("/admin/metrics"),
-	staleTime: 0,
-	gcTime: 60_000,
-	refetchInterval: 5_000,
-});
+// NOTE: /admin/metrics does NOT exist on the live backend — endpoint is pending.
+// metricsQueryOptions has been removed; the dashboard shows a placeholder instead.
 
 export const healthzQueryOptions = queryOptions({
 	queryKey: ["healthz"] as const,

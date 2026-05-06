@@ -14,7 +14,7 @@ Path aliases: `#/*` and `@/*` → `src/*`. Package manager: bun.
 - `bun run typecheck` — `tsc --noEmit` (must pass; see TypeScript rules)
 - `bun run check` — biome check
 - `bun run ci` — typecheck + lint (run before declaring work done)
-- `bun run gen:api` — regenerate `src/api/types.gen.ts` from OpenAPI
+- `make gen` — regenerate `src/api/types.gen.ts` from `RELAY_URL` (default `https://relay.wyolet.dev`). Uses `curl -sk` to avoid TLS issues. `bun run gen:api` also works against `http://localhost:8080`.
 
 ## TypeScript rules (non-negotiable)
 
