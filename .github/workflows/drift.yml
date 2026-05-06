@@ -1,0 +1,58 @@
+name: API Drift Check
+
+on:
+  schedule:
+    - cron: '0 3 * * *'   # nightly at 03:00 UTC
+  workflow_dispatch:
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Start Relay container
+        id: relay
+        continue-on-error: true
+        run: |
+          docker pull ghcr.io/wyolet/relay:latest 2>&1
+          docker run -d --name relay -p 8080:8080 ghcr.io/wyolet/relay:latest
+          # Wait up to 30s for the server to be ready
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8080/openapi.json > /dev/null; then
+              echo "relay_up=true" >> $GITHUB_OUTPUT
+              break
+            fi
+            sleep 1
+          done
+
+      - name: Skip if relay image unavailable
+        if: steps.relay.outcome == 'failure' || steps.relay.outputs.relay_up != 'true'
+        run: |
+          echo "::warning::wyolet/relay Docker image not reachable — skipping drift check (expected until PER-273 ships)."
+          exit 0
+
+      - name: Regenerate types
+        if: steps.relay.outputs.relay_up == 'true'
+        run: OPENAPI_URL=http://localhost:8080/openapi.json pnpm gen:api
+
+      - name: Fail on drift
+        if: steps.relay.outputs.relay_up == 'true'
+        run: |
+          if ! git diff --exit-code src/api/types.gen.ts; then
+            echo "::error::API type drift detected — run 'pnpm gen:api' locally and commit the result."
+            exit 1
+          fi
+          echo "No drift detected."
