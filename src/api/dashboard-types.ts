@@ -23,35 +23,35 @@
  */
 
 export interface VersionResponse {
-  version: string
+	version: string;
 }
 
-export type HealthStatusLevel = 'ok' | 'degraded' | 'error'
+export type HealthStatusLevel = "ok" | "degraded" | "error";
 
 export interface HealthSubsystem {
-  status: HealthStatusLevel
-  error?: string
+	status: HealthStatusLevel;
+	error?: string;
 }
 
 export interface HealthzResponse {
-  catalog: HealthSubsystem
-  state: HealthSubsystem
-  eventlog: HealthSubsystem
-  otel: HealthSubsystem
+	catalog: HealthSubsystem;
+	state: HealthSubsystem;
+	eventlog: HealthSubsystem;
+	otel: HealthSubsystem;
 }
 
 export interface MetricsResponse {
-  eventlog_dropped: number
-  otel_dropped: number
-  metadata_rejected: number
-  auth_rejected: number
+	eventlog_dropped: number;
+	otel_dropped: number;
+	metadata_rejected: number;
+	auth_rejected: number;
 }
 
 /** Minimal shape sufficient for counting items in a list endpoint. */
 export interface NamedItem {
-  name: string
+	name: string;
 }
 
 export interface ListResponse {
-  items: NamedItem[]
+	items: NamedItem[];
 }

@@ -10,42 +10,153 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
-import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
+import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedSecretsRouteImport } from './routes/_authenticated/secrets'
+import { Route as AuthenticatedRoutesRouteImport } from './routes/_authenticated/routes'
+import { Route as AuthenticatedRatelimitsRouteImport } from './routes/_authenticated/ratelimits'
+import { Route as AuthenticatedProvidersRouteImport } from './routes/_authenticated/providers'
+import { Route as AuthenticatedPoolsRouteImport } from './routes/_authenticated/pools'
+import { Route as AuthenticatedModelsRouteImport } from './routes/_authenticated/models'
+import { Route as AuthenticatedBootstrapRouteImport } from './routes/_authenticated/bootstrap'
+import { Route as AuthenticatedAttachmentsRouteImport } from './routes/_authenticated/attachments'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const AuthenticatedRoute = AuthenticatedRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedSecretsRoute = AuthenticatedSecretsRouteImport.update({
+  id: '/secrets',
+  path: '/secrets',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedRoutesRoute = AuthenticatedRoutesRouteImport.update({
+  id: '/routes',
+  path: '/routes',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedRatelimitsRoute = AuthenticatedRatelimitsRouteImport.update({
+  id: '/ratelimits',
+  path: '/ratelimits',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedProvidersRoute = AuthenticatedProvidersRouteImport.update({
+  id: '/providers',
+  path: '/providers',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedPoolsRoute = AuthenticatedPoolsRouteImport.update({
+  id: '/pools',
+  path: '/pools',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedModelsRoute = AuthenticatedModelsRouteImport.update({
+  id: '/models',
+  path: '/models',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedBootstrapRoute = AuthenticatedBootstrapRouteImport.update({
+  id: '/bootstrap',
+  path: '/bootstrap',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedAttachmentsRoute =
+  AuthenticatedAttachmentsRouteImport.update({
+    id: '/attachments',
+    path: '/attachments',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
+  '/': typeof AuthenticatedIndexRoute
   '/login': typeof LoginRoute
+  '/attachments': typeof AuthenticatedAttachmentsRoute
+  '/bootstrap': typeof AuthenticatedBootstrapRoute
+  '/models': typeof AuthenticatedModelsRoute
+  '/pools': typeof AuthenticatedPoolsRoute
+  '/providers': typeof AuthenticatedProvidersRoute
+  '/ratelimits': typeof AuthenticatedRatelimitsRoute
+  '/routes': typeof AuthenticatedRoutesRoute
+  '/secrets': typeof AuthenticatedSecretsRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/attachments': typeof AuthenticatedAttachmentsRoute
+  '/bootstrap': typeof AuthenticatedBootstrapRoute
+  '/models': typeof AuthenticatedModelsRoute
+  '/pools': typeof AuthenticatedPoolsRoute
+  '/providers': typeof AuthenticatedProvidersRoute
+  '/ratelimits': typeof AuthenticatedRatelimitsRoute
+  '/routes': typeof AuthenticatedRoutesRoute
+  '/secrets': typeof AuthenticatedSecretsRoute
+  '/': typeof AuthenticatedIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
+  '/_authenticated/attachments': typeof AuthenticatedAttachmentsRoute
+  '/_authenticated/bootstrap': typeof AuthenticatedBootstrapRoute
+  '/_authenticated/models': typeof AuthenticatedModelsRoute
+  '/_authenticated/pools': typeof AuthenticatedPoolsRoute
+  '/_authenticated/providers': typeof AuthenticatedProvidersRoute
+  '/_authenticated/ratelimits': typeof AuthenticatedRatelimitsRoute
+  '/_authenticated/routes': typeof AuthenticatedRoutesRoute
+  '/_authenticated/secrets': typeof AuthenticatedSecretsRoute
+  '/_authenticated/': typeof AuthenticatedIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/attachments'
+    | '/bootstrap'
+    | '/models'
+    | '/pools'
+    | '/providers'
+    | '/ratelimits'
+    | '/routes'
+    | '/secrets'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login'
-  id: '__root__' | '/' | '/login'
+  to:
+    | '/login'
+    | '/attachments'
+    | '/bootstrap'
+    | '/models'
+    | '/pools'
+    | '/providers'
+    | '/ratelimits'
+    | '/routes'
+    | '/secrets'
+    | '/'
+  id:
+    | '__root__'
+    | '/_authenticated'
+    | '/login'
+    | '/_authenticated/attachments'
+    | '/_authenticated/bootstrap'
+    | '/_authenticated/models'
+    | '/_authenticated/pools'
+    | '/_authenticated/providers'
+    | '/_authenticated/ratelimits'
+    | '/_authenticated/routes'
+    | '/_authenticated/secrets'
+    | '/_authenticated/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
+  AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   LoginRoute: typeof LoginRoute
 }
 
@@ -58,18 +169,109 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/': {
+      id: '/_authenticated/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/secrets': {
+      id: '/_authenticated/secrets'
+      path: '/secrets'
+      fullPath: '/secrets'
+      preLoaderRoute: typeof AuthenticatedSecretsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/routes': {
+      id: '/_authenticated/routes'
+      path: '/routes'
+      fullPath: '/routes'
+      preLoaderRoute: typeof AuthenticatedRoutesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/ratelimits': {
+      id: '/_authenticated/ratelimits'
+      path: '/ratelimits'
+      fullPath: '/ratelimits'
+      preLoaderRoute: typeof AuthenticatedRatelimitsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/providers': {
+      id: '/_authenticated/providers'
+      path: '/providers'
+      fullPath: '/providers'
+      preLoaderRoute: typeof AuthenticatedProvidersRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/pools': {
+      id: '/_authenticated/pools'
+      path: '/pools'
+      fullPath: '/pools'
+      preLoaderRoute: typeof AuthenticatedPoolsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/models': {
+      id: '/_authenticated/models'
+      path: '/models'
+      fullPath: '/models'
+      preLoaderRoute: typeof AuthenticatedModelsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/bootstrap': {
+      id: '/_authenticated/bootstrap'
+      path: '/bootstrap'
+      fullPath: '/bootstrap'
+      preLoaderRoute: typeof AuthenticatedBootstrapRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/attachments': {
+      id: '/_authenticated/attachments'
+      path: '/attachments'
+      fullPath: '/attachments'
+      preLoaderRoute: typeof AuthenticatedAttachmentsRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
   }
 }
 
+interface AuthenticatedRouteChildren {
+  AuthenticatedAttachmentsRoute: typeof AuthenticatedAttachmentsRoute
+  AuthenticatedBootstrapRoute: typeof AuthenticatedBootstrapRoute
+  AuthenticatedModelsRoute: typeof AuthenticatedModelsRoute
+  AuthenticatedPoolsRoute: typeof AuthenticatedPoolsRoute
+  AuthenticatedProvidersRoute: typeof AuthenticatedProvidersRoute
+  AuthenticatedRatelimitsRoute: typeof AuthenticatedRatelimitsRoute
+  AuthenticatedRoutesRoute: typeof AuthenticatedRoutesRoute
+  AuthenticatedSecretsRoute: typeof AuthenticatedSecretsRoute
+  AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+}
+
+const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedAttachmentsRoute: AuthenticatedAttachmentsRoute,
+  AuthenticatedBootstrapRoute: AuthenticatedBootstrapRoute,
+  AuthenticatedModelsRoute: AuthenticatedModelsRoute,
+  AuthenticatedPoolsRoute: AuthenticatedPoolsRoute,
+  AuthenticatedProvidersRoute: AuthenticatedProvidersRoute,
+  AuthenticatedRatelimitsRoute: AuthenticatedRatelimitsRoute,
+  AuthenticatedRoutesRoute: AuthenticatedRoutesRoute,
+  AuthenticatedSecretsRoute: AuthenticatedSecretsRoute,
+  AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+}
+
+const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
+  AuthenticatedRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
+  AuthenticatedRoute: AuthenticatedRouteWithChildren,
   LoginRoute: LoginRoute,
 }
 export const routeTree = rootRouteImport

@@ -1,21 +1,21 @@
-import ReactDOM from 'react-dom/client'
-import { RouterProvider } from '@tanstack/react-router'
-import { QueryClient } from '@tanstack/react-query'
-import { getRouter } from './router'
+import { QueryClient } from "@tanstack/react-query";
+import { RouterProvider } from "@tanstack/react-router";
+import ReactDOM from "react-dom/client";
+import { getRouter } from "./router";
 
 const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: false,
-    },
-  },
-})
+	defaultOptions: {
+		queries: {
+			retry: false,
+		},
+	},
+});
 
-const router = getRouter(queryClient)
+const router = getRouter(queryClient);
 
-const rootElement = document.getElementById('app')
+const rootElement = document.getElementById("app");
 
 if (rootElement && !rootElement.innerHTML) {
-  const root = ReactDOM.createRoot(rootElement)
-  root.render(<RouterProvider router={router} />)
+	const root = ReactDOM.createRoot(rootElement);
+	root.render(<RouterProvider router={router} />);
 }

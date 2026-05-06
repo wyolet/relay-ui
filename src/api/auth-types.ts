@@ -8,13 +8,13 @@
  */
 
 export interface WhoamiResponse {
-  authenticated: boolean
+	authenticated: boolean;
 }
 
 export interface UiLoginRequest {
-  token: string
+	token: string;
 }
 
 export interface UiLoginResponse {
-  authenticated: boolean
+	authenticated: boolean;
 }

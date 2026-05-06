@@ -8,6 +8,6 @@
 
 // Placeholder — no spec wired yet. Will be populated once wyolet/relay
 // exposes /openapi.json (tracked in PER-273).
-export type paths = Record<string, never>
-export type components = { schemas: Record<string, never> }
-export type operations = Record<string, never>
+export type paths = Record<string, never>;
+export type components = { schemas: Record<string, never> };
+export type operations = Record<string, never>;
