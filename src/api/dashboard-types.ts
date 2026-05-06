@@ -3,7 +3,7 @@
  *
  * NOTE: These endpoints (GET /admin/version, GET /admin/metrics, GET /healthz,
  * and per-kind list endpoints) are expected to be added to the relay OpenAPI
- * spec in a future ticket. When `pnpm gen:api` is run against a relay backend
+ * spec in a future ticket. When `bun run gen:api` is run against a relay backend
  * that includes these routes, delete this file and derive types from
  * `paths` / `components` in types.gen.ts.
  *
