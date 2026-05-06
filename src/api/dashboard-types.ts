@@ -38,6 +38,12 @@ export interface HealthzResponse {
 	state: HealthSubsystem;
 	eventlog: HealthSubsystem;
 	otel: HealthSubsystem;
+	/**
+	 * Present when the relay backend has detected a configured master key.
+	 * Backend assumption (PER-280): /healthz exposes this boolean after the
+	 * operator sets RELAY_MASTER_KEY and restarts the deployment.
+	 */
+	master_key_configured?: boolean;
 }
 
 export interface MetricsResponse {
