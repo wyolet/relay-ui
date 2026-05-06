@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { poolsListQueryOptions, usePools } from "#/api/hooks/pools";
 import { secretsListQueryOptions, useSecrets } from "#/api/hooks/secrets";
-import type { Secret } from "#/api/types/secret";
+import type { SecretResponse } from "#/api/types/secret";
 import type { ColumnDef } from "#/components/ResourceList";
 import { ResourceList } from "#/components/ResourceList";
 
@@ -16,7 +16,7 @@ export const Route = createFileRoute("/_authenticated/secrets/")({
 });
 
 /** Row shape for the list — augmented with reference count. */
-interface SecretRow extends Secret {
+interface SecretRow extends SecretResponse {
 	refCount: number;
 }
 
@@ -24,27 +24,27 @@ function SecretsList() {
 	const { data: secretsData } = useSecrets();
 	const { data: poolsData } = usePools();
 
-	const rows: SecretRow[] = secretsData.items.map((secret) => ({
+	const rows: SecretRow[] = (secretsData.items ?? []).map((secret) => ({
 		...secret,
-		refCount: poolsData.items.filter((pool) =>
-			pool.spec.secrets.includes(secret.metadata.name),
+		refCount: (poolsData.items ?? []).filter((pool) =>
+			(pool.spec.secrets ?? []).includes(secret.name),
 		).length,
 	}));
 
 	const COLUMNS: ColumnDef<SecretRow>[] = [
-		{ key: "name", label: "Name", render: (r) => r.metadata.name },
+		{ key: "name", label: "Name", render: (r) => r.name },
 		{
 			key: "kind",
 			label: "Kind",
-			render: (r) => r.spec.kind,
+			render: (r) => r.valueFrom.kind,
 		},
 		{
 			key: "value",
 			label: "Value / Env Var",
 			render: (r) =>
-				r.spec.kind === "stored"
-					? (r.spec.masked_value ?? "—")
-					: (r.spec.env_var ?? "—"),
+				r.valueFrom.kind === "stored"
+					? (r.valueFrom.value_masked ?? "—")
+					: (r.valueFrom.env ?? "—"),
 		},
 		{
 			key: "refCount",
@@ -60,7 +60,7 @@ function SecretsList() {
 			columns={COLUMNS}
 			createTo="/secrets/new"
 			detailTo={(name) => `/secrets/${name}`}
-			getName={(r) => r.metadata.name}
+			getName={(r) => r.name}
 			emptyMessage="No secrets configured."
 		/>
 	);

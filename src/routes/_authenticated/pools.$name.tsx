@@ -43,6 +43,9 @@ function PoolDetailInner() {
 	const [confirming, setConfirming] = useState(false);
 	const [secretSearch, setSecretSearch] = useState("");
 
+	const poolSecrets = pool.spec.secrets ?? [];
+	const rateLimits = pool.spec.rateLimits ?? [];
+
 	async function handleDelete() {
 		try {
 			await deletePool.mutateAsync(name);
@@ -58,12 +61,12 @@ function PoolDetailInner() {
 	}
 
 	async function handleRemoveSecret(secret: string) {
-		const newSecrets = pool.spec.secrets.filter((s) => s !== secret);
+		const newSecrets = poolSecrets.filter((s) => s !== secret);
 		const payload: PoolUpdate = {
+			metadata: pool.metadata,
 			spec: {
 				provider: pool.spec.provider,
 				secrets: newSecrets,
-				default: pool.spec.default,
 				rateLimits: pool.spec.rateLimits,
 			},
 		};
@@ -80,13 +83,13 @@ function PoolDetailInner() {
 	}
 
 	async function handleAddSecret(secret: string) {
-		if (pool.spec.secrets.includes(secret)) return;
-		const newSecrets = [...pool.spec.secrets, secret];
+		if (poolSecrets.includes(secret)) return;
+		const newSecrets = [...poolSecrets, secret];
 		const payload: PoolUpdate = {
+			metadata: pool.metadata,
 			spec: {
 				provider: pool.spec.provider,
 				secrets: newSecrets,
-				default: pool.spec.default,
 				rateLimits: pool.spec.rateLimits,
 			},
 		};
@@ -102,22 +105,20 @@ function PoolDetailInner() {
 		}
 	}
 
-	const allSecrets = secretsData.items;
-	const attachedSecrets = new Set(pool.spec.secrets);
+	const allSecrets = secretsData.items ?? [];
+	const attachedSecrets = new Set(poolSecrets);
 	const availableSecrets = allSecrets.filter(
 		(s) =>
-			!attachedSecrets.has(s.metadata.name) &&
-			s.metadata.name.toLowerCase().includes(secretSearch.toLowerCase()),
+			!attachedSecrets.has(s.name) &&
+			s.name.toLowerCase().includes(secretSearch.toLowerCase()),
 	);
-	const displayedAttachedSecrets = pool.spec.secrets.filter((s) =>
+	const displayedAttachedSecrets = poolSecrets.filter((s) =>
 		s.toLowerCase().includes(secretSearch.toLowerCase()),
 	);
 
-	const rateLimits = pool.spec.rateLimits ?? [];
-
 	const tabs: { id: Tab; label: string }[] = [
 		{ id: "spec", label: "Spec" },
-		{ id: "secrets", label: `Secrets (${pool.spec.secrets.length})` },
+		{ id: "secrets", label: `Secrets (${poolSecrets.length})` },
 		{ id: "ratelimits", label: `Rate Limits (${rateLimits.length})` },
 	];
 
@@ -185,7 +186,6 @@ function PoolDetailInner() {
 					{[
 						{ label: "Name", value: pool.metadata.name },
 						{ label: "Provider", value: pool.spec.provider },
-						{ label: "Default Pool", value: pool.spec.default ? "Yes" : "No" },
 					].map((f) => (
 						<div
 							key={f.label}
@@ -216,7 +216,7 @@ function PoolDetailInner() {
 					</div>
 
 					{/* Attached secrets as removable chips */}
-					{pool.spec.secrets.length > 0 && (
+					{poolSecrets.length > 0 && (
 						<div className="mb-6">
 							<p className="text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wide mb-2">
 								Attached
@@ -259,20 +259,20 @@ function PoolDetailInner() {
 							<div className="flex flex-wrap gap-2">
 								{availableSecrets.map((s) => (
 									<button
-										key={s.metadata.name}
+										key={s.name}
 										type="button"
 										disabled={updatePool.isPending}
-										onClick={() => void handleAddSecret(s.metadata.name)}
+										onClick={() => void handleAddSecret(s.name)}
 										className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-white dark:bg-zinc-900 text-gray-700 dark:text-zinc-300 border border-gray-300 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
 									>
-										+ {s.metadata.name}
+										+ {s.name}
 									</button>
 								))}
 							</div>
 						</div>
 					)}
 
-					{pool.spec.secrets.length === 0 && availableSecrets.length === 0 && (
+					{poolSecrets.length === 0 && availableSecrets.length === 0 && (
 						<p className="text-sm text-gray-500 dark:text-zinc-400">
 							{secretSearch
 								? `No secrets matching "${secretSearch}".`
@@ -318,14 +318,14 @@ function PoolDetailInner() {
 								</thead>
 								<tbody className="divide-y divide-gray-100 dark:divide-zinc-800">
 									{rateLimits.map((rl) => (
-										<tr key={rl.name} className="bg-white dark:bg-zinc-900">
+										<tr key={rl.ref} className="bg-white dark:bg-zinc-900">
 											<td className="px-4 py-3 text-gray-900 dark:text-zinc-100">
 												<Link
 													to="/ratelimits/$name"
-													params={{ name: rl.name }}
+													params={{ name: rl.ref }}
 													className="text-blue-600 hover:underline"
 												>
-													{rl.name}
+													{rl.ref}
 												</Link>
 											</td>
 											<td className="px-4 py-3 text-gray-700 dark:text-zinc-300">

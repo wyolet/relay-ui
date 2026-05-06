@@ -14,8 +14,12 @@ export const Route = createFileRoute("/_authenticated/providers/")({
 const COLUMNS: ColumnDef<Provider>[] = [
 	{ key: "name", label: "Name", render: (r) => r.metadata.name },
 	{ key: "kind", label: "Kind", render: (r) => r.spec.kind },
-	{ key: "endpoint", label: "Endpoint", render: (r) => r.spec.endpoint },
-	{ key: "secret", label: "Secret", render: (r) => r.spec.secret ?? "—" },
+	{ key: "baseURL", label: "Base URL", render: (r) => r.spec.baseURL },
+	{
+		key: "default",
+		label: "Default",
+		render: (r) => (r.spec.default ? "Yes" : "No"),
+	},
 ];
 
 function ProvidersList() {
@@ -23,7 +27,7 @@ function ProvidersList() {
 	return (
 		<ResourceList
 			title="Providers"
-			items={data.items}
+			items={data.items ?? []}
 			columns={COLUMNS}
 			createTo="/providers/new"
 			detailTo={(name) => `/providers/${name}`}

@@ -27,8 +27,9 @@ function ProviderDetailInner() {
 	const fields: DetailField[] = [
 		{ label: "Name", value: provider.metadata.name },
 		{ label: "Kind", value: provider.spec.kind },
-		{ label: "Endpoint", value: provider.spec.endpoint },
-		{ label: "Secret", value: provider.spec.secret ?? "—" },
+		{ label: "Base URL", value: provider.spec.baseURL },
+		{ label: "Default", value: provider.spec.default ? "Yes" : "No" },
+		{ label: "Default Pool", value: provider.spec.defaultPool ?? "—" },
 	];
 
 	async function handleDelete() {

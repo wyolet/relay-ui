@@ -20,18 +20,11 @@ export const Route = createFileRoute("/_authenticated/routes/$name/edit")({
 
 const FIELDS: FieldDef[] = [
 	{
-		name: "pool",
-		label: "Pool name",
+		name: "models",
+		label: "Models (comma-separated)",
 		type: "text",
 		required: true,
-		placeholder: "my-pool",
-	},
-	{
-		name: "acl",
-		label: "ACL spec",
-		type: "textarea",
-		rows: 6,
-		placeholder: "allow *\ndeny admin",
+		placeholder: "gpt-4o, llama3",
 	},
 ];
 
@@ -44,10 +37,16 @@ function EditRouteInner() {
 
 	async function handleSubmit(values: FormValues) {
 		setServerError(undefined);
+		const modelsRaw = String(values.models ?? "");
+		const models = modelsRaw
+			.split(",")
+			.map((m) => m.trim())
+			.filter(Boolean);
 		const payload: RelayRouteUpdate = {
+			metadata: route.metadata,
 			spec: {
-				pool: String(values.pool ?? ""),
-				acl: String(values.acl ?? ""),
+				models: models.length > 0 ? models : null,
+				default: route.spec.default,
 			},
 		};
 		try {
@@ -68,8 +67,7 @@ function EditRouteInner() {
 			title={`Edit Route: ${name}`}
 			fields={FIELDS}
 			initialValues={{
-				pool: route.spec.pool,
-				acl: route.spec.acl,
+				models: (route.spec.models ?? []).join(", "),
 			}}
 			onSubmit={handleSubmit}
 			onCancel={() => void navigate({ to: "/routes/$name", params: { name } })}

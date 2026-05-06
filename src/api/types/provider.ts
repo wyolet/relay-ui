@@ -1,46 +1,12 @@
-/**
- * Hand-written types for Provider CRUD endpoints (PER-276).
- *
- * Backend assumptions:
- * - GET  /admin/providers            → { items: Provider[] }
- * - GET  /admin/providers/:name      → Provider
- * - POST /admin/providers            → Provider  (201)
- * - PUT  /admin/providers/:name      → Provider  (200)
- * - DELETE /admin/providers/:name    → 204
- *
- * All CRUD payloads use a k8s-style { metadata, spec } envelope.
- *
- * Error shape (4xx):
- *   { error: { message: string; references?: Array<{ kind: string; name: string }> } }
- */
+import type { components } from "#/api/types.gen";
 
-export type ProviderKind = "openai" | "ollama";
+export type Provider = components["schemas"]["Provider"];
+export type ProviderSpec = components["schemas"]["ProviderSpec"];
+export type ProviderListResponse =
+	components["schemas"]["ListOutputProviderBody"];
 
-export interface ProviderMetadata {
-	name: string;
-	[k: string]: unknown;
-}
+/** POST body: full envelope (same shape as the resource) */
+export type ProviderCreate = components["schemas"]["Provider"];
 
-export interface ProviderSpec {
-	kind: ProviderKind;
-	endpoint: string;
-	/** Name of the secret used for API-key auth. Ollama providers typically omit this. */
-	secret?: string;
-}
-
-export interface Provider {
-	metadata: ProviderMetadata;
-	spec: ProviderSpec;
-}
-
-/** POST body: full envelope */
-export type ProviderCreate = Provider;
-
-/** PUT body: spec only (name is in URL path) */
-export interface ProviderUpdate {
-	spec: ProviderSpec;
-}
-
-export interface ProvidersListResponse {
-	items: Provider[];
-}
+/** PUT body: full envelope (same shape as the resource) */
+export type ProviderUpdate = components["schemas"]["Provider"];

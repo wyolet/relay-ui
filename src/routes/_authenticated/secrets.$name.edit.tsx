@@ -1,49 +1,32 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Suspense, useState } from "react";
 import {
-	rateLimitsListQueryOptions,
-	useRateLimits,
-} from "#/api/hooks/ratelimits";
-import {
 	secretDetailQueryOptions,
 	useSecret,
 	useUpdateSecret,
 } from "#/api/hooks/secrets";
 import type { ApiErrorBody } from "#/api/types/errors";
 import { ApiError } from "#/api/types/errors";
-import type { RateLimitRef } from "#/api/types/ratelimit";
 import type { SecretKind, SecretUpdate } from "#/api/types/secret";
-import { RateLimitsEditor } from "#/components/RateLimitsEditor";
 import { toast } from "#/components/Toast";
 
 export const Route = createFileRoute("/_authenticated/secrets/$name/edit")({
 	loader: ({ context, params }) =>
-		Promise.all([
-			context.queryClient.ensureQueryData(
-				secretDetailQueryOptions(params.name),
-			),
-			context.queryClient.ensureQueryData(rateLimitsListQueryOptions),
-		]),
+		context.queryClient.ensureQueryData(secretDetailQueryOptions(params.name)),
 	component: EditSecretPage,
 });
-
-// TODO: When backend confirms that /healthz includes `master_key_configured: boolean`,
-// fetch useHealthz() here and disable stored mode with an inline alert if false.
-// For now, treat absent field as "available" — stored mode is always enabled.
 
 function EditSecretInner() {
 	const { name } = Route.useParams();
 	const { data: secret } = useSecret(name);
-	const { data: rateLimitsData } = useRateLimits();
 	const updateSecret = useUpdateSecret(name);
 	const navigate = useNavigate();
 
-	const [kind, setKind] = useState<SecretKind>(secret.spec.kind);
-	const [envVar, setEnvVar] = useState(secret.spec.env_var ?? "");
-	const [storedValue, setStoredValue] = useState("");
-	const [rateLimits, setRateLimits] = useState<RateLimitRef[]>(
-		secret.spec.rateLimits ?? [],
+	const [kind, setKind] = useState<SecretKind>(
+		secret.valueFrom.kind === "stored" ? "stored" : "env",
 	);
+	const [envVar, setEnvVar] = useState(secret.valueFrom.env ?? "");
+	const [storedValue, setStoredValue] = useState("");
 	const [serverError, setServerError] = useState<ApiErrorBody | undefined>();
 	const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 	const [submitted, setSubmitted] = useState(false);
@@ -66,13 +49,11 @@ function EditSecretInner() {
 
 		setServerError(undefined);
 		const payload: SecretUpdate = {
-			spec: {
-				value_from:
-					kind === "env"
-						? { kind: "env", env_var: envVar.trim() }
-						: { kind: "stored", value: storedValue },
-				rateLimits: rateLimits.length > 0 ? rateLimits : undefined,
-			},
+			name,
+			valueFrom:
+				kind === "env"
+					? { kind: "env", env: envVar.trim() }
+					: { kind: "stored", value: storedValue },
 		};
 		try {
 			await updateSecret.mutateAsync(payload);
@@ -189,7 +170,7 @@ function EditSecretInner() {
 						<p className="mt-1 text-xs text-gray-500 dark:text-zinc-400">
 							The current masked value is:{" "}
 							<span className="font-mono">
-								{secret.spec.masked_value ?? "—"}
+								{secret.valueFrom.value_masked ?? "—"}
 							</span>
 						</p>
 						{errs.storedValue && (
@@ -202,14 +183,6 @@ function EditSecretInner() {
 						)}
 					</div>
 				)}
-
-				<RateLimitsEditor
-					value={rateLimits}
-					onChange={setRateLimits}
-					availableRateLimits={rateLimitsData.items.map(
-						(rl) => rl.metadata.name,
-					)}
-				/>
 
 				<div className="flex gap-3 pt-2">
 					<button

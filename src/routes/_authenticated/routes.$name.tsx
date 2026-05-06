@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Suspense } from "react";
 import {
 	routeDetailQueryOptions,
@@ -25,21 +25,10 @@ function RouteDetailInner() {
 	const fields: DetailField[] = [
 		{ label: "Name", value: route.metadata.name },
 		{
-			label: "Pool",
-			value: (
-				<Link to="/pools" className="text-blue-600 hover:underline">
-					{route.spec.pool}
-				</Link>
-			),
+			label: "Models",
+			value: (route.spec.models ?? []).join(", ") || "—",
 		},
-		{
-			label: "ACL",
-			value: (
-				<pre className="whitespace-pre-wrap font-mono text-xs">
-					{route.spec.acl}
-				</pre>
-			),
-		},
+		{ label: "Default", value: route.spec.default ? "Yes" : "No" },
 	];
 
 	async function handleDelete() {

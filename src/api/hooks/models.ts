@@ -4,11 +4,12 @@ import {
 	useQueryClient,
 	useSuspenseQuery,
 } from "@tanstack/react-query";
-import { adminDelete, adminGet, adminPost, adminPut } from "#/api/fetch";
+import { apiClient } from "#/api/client";
+import { ApiError } from "#/api/types/errors";
 import type {
 	Model,
 	ModelCreate,
-	ModelsListResponse,
+	ModelListResponse,
 	ModelUpdate,
 } from "#/api/types/model";
 
@@ -16,7 +17,11 @@ import type {
 
 export const modelsListQueryOptions = queryOptions({
 	queryKey: ["models"] as const,
-	queryFn: () => adminGet<ModelsListResponse>("/admin/models"),
+	queryFn: async (): Promise<ModelListResponse> => {
+		const { data, error } = await apiClient.GET("/admin/models");
+		if (error) throw new ApiError(0, error.error);
+		return data;
+	},
 	staleTime: 30_000,
 	gcTime: 5 * 60_000,
 });
@@ -24,7 +29,13 @@ export const modelsListQueryOptions = queryOptions({
 export function modelDetailQueryOptions(name: string) {
 	return queryOptions({
 		queryKey: ["models", name] as const,
-		queryFn: () => adminGet<Model>(`/admin/models/${encodeURIComponent(name)}`),
+		queryFn: async (): Promise<Model> => {
+			const { data, error } = await apiClient.GET("/admin/models/{name}", {
+				params: { path: { name } },
+			});
+			if (error) throw new ApiError(0, error.error);
+			return data;
+		},
 		staleTime: 30_000,
 		gcTime: 5 * 60_000,
 	});
@@ -43,7 +54,11 @@ export function useModel(name: string) {
 export function useCreateModel() {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: (data: ModelCreate) => adminPost<Model>("/admin/models", data),
+		mutationFn: async (body: ModelCreate): Promise<Model> => {
+			const { data, error } = await apiClient.POST("/admin/models", { body });
+			if (error) throw new ApiError(0, error.error);
+			return data;
+		},
 		onMutate: async (newModel) => {
 			await queryClient.cancelQueries({ queryKey: ["models"] });
 			const previous = queryClient.getQueryData(
@@ -51,13 +66,13 @@ export function useCreateModel() {
 			);
 			queryClient.setQueryData(
 				modelsListQueryOptions.queryKey,
-				(old: ModelsListResponse | undefined) => {
+				(old: ModelListResponse | undefined) => {
 					if (!old) return old;
 					const optimistic: Model = {
 						metadata: { name: newModel.metadata.name },
 						spec: { ...newModel.spec },
 					};
-					return { items: [...old.items, optimistic] };
+					return { items: [...(old.items ?? []), optimistic] };
 				},
 			);
 			return { previous };
@@ -79,8 +94,14 @@ export function useCreateModel() {
 export function useUpdateModel(name: string) {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: (data: ModelUpdate) =>
-			adminPut<Model>(`/admin/models/${encodeURIComponent(name)}`, data),
+		mutationFn: async (body: ModelUpdate): Promise<Model> => {
+			const { data, error } = await apiClient.PUT("/admin/models/{name}", {
+				params: { path: { name } },
+				body,
+			});
+			if (error) throw new ApiError(0, error.error);
+			return data;
+		},
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: ["models"] });
 		},
@@ -90,8 +111,12 @@ export function useUpdateModel(name: string) {
 export function useDeleteModel() {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: (name: string) =>
-			adminDelete(`/admin/models/${encodeURIComponent(name)}`),
+		mutationFn: async (name: string): Promise<void> => {
+			const { error } = await apiClient.DELETE("/admin/models/{name}", {
+				params: { path: { name } },
+			});
+			if (error) throw new ApiError(0, error.error);
+		},
 		onMutate: async (name) => {
 			await queryClient.cancelQueries({ queryKey: ["models"] });
 			const previous = queryClient.getQueryData(
@@ -99,10 +124,10 @@ export function useDeleteModel() {
 			);
 			queryClient.setQueryData(
 				modelsListQueryOptions.queryKey,
-				(old: ModelsListResponse | undefined) => {
+				(old: ModelListResponse | undefined) => {
 					if (!old) return old;
 					return {
-						items: old.items.filter((m) => m.metadata.name !== name),
+						items: (old.items ?? []).filter((m) => m.metadata.name !== name),
 					};
 				},
 			);

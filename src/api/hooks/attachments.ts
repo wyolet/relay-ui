@@ -1,32 +1,39 @@
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
-import { adminGet } from "#/api/fetch";
-import type {
-	AttachmentParentKind,
-	AttachmentsListResponse,
-} from "#/api/types/attachment";
+import { apiClient } from "#/api/client";
+import type { AttachmentListResponse } from "#/api/types/attachment";
+import { ApiError } from "#/api/types/errors";
 
 // --- Query options ---
 
 /** Fetch all attachments across all parents (no filter). Read-only view. */
 export const allAttachmentsQueryOptions = queryOptions({
 	queryKey: ["attachments", "all"] as const,
-	queryFn: () => adminGet<AttachmentsListResponse>("/admin/attachments"),
+	queryFn: async (): Promise<AttachmentListResponse> => {
+		const { data, error } = await apiClient.GET("/admin/attachments");
+		if (error) throw new ApiError(0, error.error);
+		return data;
+	},
 	staleTime: 30_000,
 	gcTime: 5 * 60_000,
 });
 
 export function attachmentsQueryOptions(params: {
-	parent_kind: AttachmentParentKind;
+	parent_kind: string;
 	parent_name: string;
 }) {
 	return queryOptions({
 		queryKey: ["attachments", params] as const,
-		queryFn: () => {
-			const qs = new URLSearchParams({
-				parent_kind: params.parent_kind,
-				parent_name: params.parent_name,
-			}).toString();
-			return adminGet<AttachmentsListResponse>(`/admin/attachments?${qs}`);
+		queryFn: async (): Promise<AttachmentListResponse> => {
+			const { data, error } = await apiClient.GET("/admin/attachments", {
+				params: {
+					query: {
+						parent_kind: params.parent_kind,
+						parent_name: params.parent_name,
+					},
+				},
+			});
+			if (error) throw new ApiError(0, error.error);
+			return data;
 		},
 		staleTime: 30_000,
 		gcTime: 5 * 60_000,
@@ -41,7 +48,7 @@ export function useAllAttachments() {
 }
 
 export function useAttachments(params: {
-	parent_kind: AttachmentParentKind;
+	parent_kind: string;
 	parent_name: string;
 }) {
 	return useSuspenseQuery(attachmentsQueryOptions(params));

@@ -11,7 +11,7 @@ help: ## Show available targets
 gen: ## Regenerate src/api/types.gen.ts from RELAY_URL (default: https://relay.wyolet.dev)
 	@tmp=$$(mktemp /tmp/openapi-XXXXXX.json); \
 	echo "Fetching OpenAPI spec from $(RELAY_URL)/openapi.json …"; \
-	curl -sk "$(RELAY_URL)/openapi.json" -o "$$tmp"; \
+	curl -sk -H 'Cache-Control: no-cache' "$(RELAY_URL)/openapi.json?nocache=$$(date +%s)" -o "$$tmp"; \
 	echo "Running openapi-typescript …"; \
 	bun x openapi-typescript "$$tmp" -o src/api/types.gen.ts; \
 	rm -f "$$tmp"; \

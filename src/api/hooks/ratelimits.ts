@@ -4,11 +4,12 @@ import {
 	useQueryClient,
 	useSuspenseQuery,
 } from "@tanstack/react-query";
-import { adminDelete, adminGet, adminPost, adminPut } from "#/api/fetch";
+import { apiClient } from "#/api/client";
+import { ApiError } from "#/api/types/errors";
 import type {
 	RateLimit,
 	RateLimitCreate,
-	RateLimitsListResponse,
+	RateLimitListResponse,
 	RateLimitUpdate,
 } from "#/api/types/ratelimit";
 
@@ -16,7 +17,11 @@ import type {
 
 export const rateLimitsListQueryOptions = queryOptions({
 	queryKey: ["ratelimits"] as const,
-	queryFn: () => adminGet<RateLimitsListResponse>("/admin/ratelimits"),
+	queryFn: async (): Promise<RateLimitListResponse> => {
+		const { data, error } = await apiClient.GET("/admin/ratelimits");
+		if (error) throw new ApiError(0, error.error);
+		return data;
+	},
 	staleTime: 30_000,
 	gcTime: 5 * 60_000,
 });
@@ -24,8 +29,13 @@ export const rateLimitsListQueryOptions = queryOptions({
 export function rateLimitDetailQueryOptions(name: string) {
 	return queryOptions({
 		queryKey: ["ratelimits", name] as const,
-		queryFn: () =>
-			adminGet<RateLimit>(`/admin/ratelimits/${encodeURIComponent(name)}`),
+		queryFn: async (): Promise<RateLimit> => {
+			const { data, error } = await apiClient.GET("/admin/ratelimits/{name}", {
+				params: { path: { name } },
+			});
+			if (error) throw new ApiError(0, error.error);
+			return data;
+		},
 		staleTime: 30_000,
 		gcTime: 5 * 60_000,
 	});
@@ -44,8 +54,13 @@ export function useRateLimit(name: string) {
 export function useCreateRateLimit() {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: (data: RateLimitCreate) =>
-			adminPost<RateLimit>("/admin/ratelimits", data),
+		mutationFn: async (body: RateLimitCreate): Promise<RateLimit> => {
+			const { data, error } = await apiClient.POST("/admin/ratelimits", {
+				body,
+			});
+			if (error) throw new ApiError(0, error.error);
+			return data;
+		},
 		onMutate: async (newRL) => {
 			await queryClient.cancelQueries({ queryKey: ["ratelimits"] });
 			const previous = queryClient.getQueryData(
@@ -53,13 +68,13 @@ export function useCreateRateLimit() {
 			);
 			queryClient.setQueryData(
 				rateLimitsListQueryOptions.queryKey,
-				(old: RateLimitsListResponse | undefined) => {
+				(old: RateLimitListResponse | undefined) => {
 					if (!old) return old;
 					const optimistic: RateLimit = {
 						metadata: { name: newRL.metadata.name },
 						spec: { ...newRL.spec },
 					};
-					return { items: [...old.items, optimistic] };
+					return { items: [...(old.items ?? []), optimistic] };
 				},
 			);
 			return { previous };
@@ -81,11 +96,14 @@ export function useCreateRateLimit() {
 export function useUpdateRateLimit(name: string) {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: (data: RateLimitUpdate) =>
-			adminPut<RateLimit>(
-				`/admin/ratelimits/${encodeURIComponent(name)}`,
-				data,
-			),
+		mutationFn: async (body: RateLimitUpdate): Promise<RateLimit> => {
+			const { data, error } = await apiClient.PUT("/admin/ratelimits/{name}", {
+				params: { path: { name } },
+				body,
+			});
+			if (error) throw new ApiError(0, error.error);
+			return data;
+		},
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: ["ratelimits"] });
 		},
@@ -95,8 +113,12 @@ export function useUpdateRateLimit(name: string) {
 export function useDeleteRateLimit() {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: (name: string) =>
-			adminDelete(`/admin/ratelimits/${encodeURIComponent(name)}`),
+		mutationFn: async (name: string): Promise<void> => {
+			const { error } = await apiClient.DELETE("/admin/ratelimits/{name}", {
+				params: { path: { name } },
+			});
+			if (error) throw new ApiError(0, error.error);
+		},
 		onMutate: async (name) => {
 			await queryClient.cancelQueries({ queryKey: ["ratelimits"] });
 			const previous = queryClient.getQueryData(
@@ -104,10 +126,10 @@ export function useDeleteRateLimit() {
 			);
 			queryClient.setQueryData(
 				rateLimitsListQueryOptions.queryKey,
-				(old: RateLimitsListResponse | undefined) => {
+				(old: RateLimitListResponse | undefined) => {
 					if (!old) return old;
 					return {
-						items: old.items.filter((rl) => rl.metadata.name !== name),
+						items: (old.items ?? []).filter((rl) => rl.metadata.name !== name),
 					};
 				},
 			);

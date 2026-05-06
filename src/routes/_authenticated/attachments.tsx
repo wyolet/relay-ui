@@ -1,15 +1,9 @@
 /**
- * Global attachments view — READ-ONLY (PER-279 updated).
+ * Global attachments view — READ-ONLY.
  *
- * Attachments are now derived from inline spec.rateLimits[] on Pool/Secret/Model
+ * Attachments are derived from inline spec.rateLimits[] on Pool/Model
  * resources. This page shows the read-only derived view from GET /admin/attachments.
  * To add/remove rate limits, edit the parent resource directly.
- *
- * Design decisions:
- * - Banner at top explains the read-only nature and how to manage rate limits.
- * - Orphaned RateLimits: rendered in a separate "Orphaned Rate Limits" section.
- * - Duplicate-meter rows: detected client-side, highlighted amber.
- * - Parent name cells link to the parent's edit page for quick navigation.
  */
 
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -22,10 +16,6 @@ import {
 	rateLimitsListQueryOptions,
 	useRateLimits,
 } from "#/api/hooks/ratelimits";
-import type {
-	AttachmentMeter,
-	AttachmentParentKind,
-} from "#/api/types/attachment";
 
 export const Route = createFileRoute("/_authenticated/attachments")({
 	loader: ({ context }) =>
@@ -38,13 +28,14 @@ export const Route = createFileRoute("/_authenticated/attachments")({
 
 // ---- Filter state ----
 
-type KindFilter = "all" | AttachmentParentKind;
-type MeterFilter = "all" | AttachmentMeter;
+type KindFilter = "all" | "Pool" | "Secret" | "Model";
+type MeterFilter = "all" | "requests" | "tokens" | "concurrency";
 
 // ---- Parent-name link helper — links to parent's edit page ----
 
-function parentEditLink(kind: AttachmentParentKind, name: string) {
-	if (kind === "pool") {
+function parentEditLink(kind: string, name: string) {
+	const lowerKind = kind.toLowerCase();
+	if (lowerKind === "pool") {
 		return (
 			<Link
 				to="/pools/$name/edit"
@@ -55,7 +46,7 @@ function parentEditLink(kind: AttachmentParentKind, name: string) {
 			</Link>
 		);
 	}
-	if (kind === "secret") {
+	if (lowerKind === "secret") {
 		return (
 			<Link
 				to="/secrets/$name/edit"
@@ -90,18 +81,17 @@ function AttachmentsInner() {
 	const [rateLimitFilter, setRateLimitFilter] = useState("");
 	const [meterFilter, setMeterFilter] = useState<MeterFilter>("all");
 
-	const allItems = attachmentsData.items;
+	const allItems = attachmentsData.items ?? [];
 
-	// Compute duplicate-meter set: key = `${parent_kind}|${parent_name}|${meter}`
-	// A key is "duplicate" if 2+ different ratelimit_names share it.
+	// Compute duplicate-meter set: key = `${parentKind}|${parentName}|${meter}`
 	const meterGroups = new Map<string, Set<string>>();
 	for (const att of allItems) {
-		const key = `${att.parent_kind}|${att.parent_name}|${att.meter}`;
+		const key = `${att.parentKind}|${att.parentName}|${att.meter}`;
 		const existing = meterGroups.get(key);
 		if (existing) {
-			existing.add(att.ratelimit_name);
+			existing.add(att.ratelimitName);
 		} else {
-			meterGroups.set(key, new Set([att.ratelimit_name]));
+			meterGroups.set(key, new Set([att.ratelimitName]));
 		}
 	}
 	const duplicateMeterKeys = new Set<string>();
@@ -112,22 +102,22 @@ function AttachmentsInner() {
 	}
 
 	// Orphaned rate limits
-	const attachedRlNames = new Set(allItems.map((a) => a.ratelimit_name));
-	const orphanedRateLimits = rateLimitsData.items.filter(
+	const attachedRlNames = new Set(allItems.map((a) => a.ratelimitName));
+	const orphanedRateLimits = (rateLimitsData.items ?? []).filter(
 		(rl) => !attachedRlNames.has(rl.metadata.name),
 	);
 
 	// Apply filters
 	const filteredItems = allItems.filter((att) => {
-		if (kindFilter !== "all" && att.parent_kind !== kindFilter) return false;
+		if (kindFilter !== "all" && att.parentKind !== kindFilter) return false;
 		if (
 			parentNameFilter &&
-			!att.parent_name.toLowerCase().includes(parentNameFilter.toLowerCase())
+			!att.parentName.toLowerCase().includes(parentNameFilter.toLowerCase())
 		)
 			return false;
 		if (
 			rateLimitFilter &&
-			!att.ratelimit_name.toLowerCase().includes(rateLimitFilter.toLowerCase())
+			!att.ratelimitName.toLowerCase().includes(rateLimitFilter.toLowerCase())
 		)
 			return false;
 		if (meterFilter !== "all" && att.meter !== meterFilter) return false;
@@ -150,8 +140,8 @@ function AttachmentsInner() {
 
 			{/* Read-only banner */}
 			<div className="mb-6 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950 px-4 py-3 text-sm text-blue-700 dark:text-blue-300">
-				Attachments are managed inline on Pool/Secret/Model resources. This view
-				is read-only. To add or remove rate limits, edit the parent resource
+				Attachments are managed inline on Pool/Model resources. This view is
+				read-only. To add or remove rate limits, edit the parent resource
 				directly — parent name links below go to the edit form.
 			</div>
 
@@ -165,9 +155,9 @@ function AttachmentsInner() {
 					aria-label="Filter by parent kind"
 				>
 					<option value="all">All kinds</option>
-					<option value="pool">Pool</option>
-					<option value="secret">Secret</option>
-					<option value="model">Model</option>
+					<option value="Pool">Pool</option>
+					<option value="Secret">Secret</option>
+					<option value="Model">Model</option>
 				</select>
 
 				{/* Parent name filter */}
@@ -209,7 +199,7 @@ function AttachmentsInner() {
 				<div className="rounded-lg border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-10 text-center">
 					<p className="text-sm text-gray-500 dark:text-zinc-400">
 						{allItems.length === 0
-							? "No attachments found. Add rate limits on Pool, Secret, or Model resources."
+							? "No attachments found. Add rate limits on Pool or Model resources."
 							: "No attachments match the current filters."}
 					</p>
 				</div>
@@ -230,44 +220,38 @@ function AttachmentsInner() {
 								<th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wide">
 									Meter
 								</th>
-								<th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wide">
-									Created At
-								</th>
 							</tr>
 						</thead>
 						<tbody className="divide-y divide-gray-100 dark:divide-zinc-800">
 							{filteredItems.map((att) => {
-								const dupKey = `${att.parent_kind}|${att.parent_name}|${att.meter}`;
+								const dupKey = `${att.parentKind}|${att.parentName}|${att.meter}`;
 								const isDuplicate = duplicateMeterKeys.has(dupKey);
 								const rowClass = isDuplicate
 									? "bg-amber-50 dark:bg-amber-950/30"
 									: "bg-white dark:bg-zinc-900";
 								const dupTooltip = isDuplicate
-									? "Duplicate meter: this parent has multiple RateLimits on the same meter; behavior is implementation-defined"
+									? "Duplicate meter: this parent has multiple RateLimits on the same meter"
 									: undefined;
 
 								return (
 									<tr key={att.id} className={rowClass} title={dupTooltip}>
 										<td className="px-4 py-3 text-gray-700 dark:text-zinc-300 capitalize">
-											{att.parent_kind}
+											{att.parentKind}
 										</td>
 										<td className="px-4 py-3">
-											{parentEditLink(att.parent_kind, att.parent_name)}
+											{parentEditLink(att.parentKind, att.parentName)}
 										</td>
 										<td className="px-4 py-3">
 											<Link
 												to="/ratelimits/$name"
-												params={{ name: att.ratelimit_name }}
+												params={{ name: att.ratelimitName }}
 												className="text-blue-600 hover:underline font-mono text-xs"
 											>
-												{att.ratelimit_name}
+												{att.ratelimitName}
 											</Link>
 										</td>
 										<td className="px-4 py-3 text-gray-700 dark:text-zinc-300">
 											{att.meter}
-										</td>
-										<td className="px-4 py-3 text-gray-500 dark:text-zinc-400 text-xs">
-											{new Date(att.created_at).toLocaleString()}
 										</td>
 									</tr>
 								);

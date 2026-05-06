@@ -31,17 +31,11 @@ const FIELDS: FieldDef[] = [
 		],
 	},
 	{
-		name: "endpoint",
-		label: "Endpoint URL",
+		name: "baseURL",
+		label: "Base URL",
 		type: "url",
 		required: true,
 		placeholder: "https://api.openai.com",
-	},
-	{
-		name: "secret",
-		label: "Secret name (optional)",
-		type: "text",
-		placeholder: "openai-key",
 	},
 ];
 
@@ -56,12 +50,8 @@ function NewProviderPage() {
 		const payload: ProviderCreate = {
 			metadata: { name },
 			spec: {
-				kind:
-					values.kind === "openai" || values.kind === "ollama"
-						? values.kind
-						: "openai",
-				endpoint: String(values.endpoint ?? ""),
-				secret: values.secret ? String(values.secret) : undefined,
+				kind: String(values.kind ?? "openai"),
+				baseURL: String(values.baseURL ?? ""),
 			},
 		};
 		try {

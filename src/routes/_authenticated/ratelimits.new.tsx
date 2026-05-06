@@ -3,11 +3,7 @@ import { useState } from "react";
 import { useCreateRateLimit } from "#/api/hooks/ratelimits";
 import type { ApiErrorBody } from "#/api/types/errors";
 import { ApiError } from "#/api/types/errors";
-import type {
-	RateLimitCreate,
-	RateLimitSource,
-	RateLimitStrategy,
-} from "#/api/types/ratelimit";
+import type { RateLimitCreate } from "#/api/types/ratelimit";
 import type { FieldDef, FormValues } from "#/components/ResourceForm";
 import { ResourceForm } from "#/components/ResourceForm";
 import { toast } from "#/components/Toast";
@@ -16,13 +12,13 @@ export const Route = createFileRoute("/_authenticated/ratelimits/new")({
 	component: NewRateLimitPage,
 });
 
-const STRATEGY_OPTIONS: { value: RateLimitStrategy; label: string }[] = [
+const STRATEGY_OPTIONS = [
 	{ value: "fixed_window", label: "Fixed Window" },
 	{ value: "sliding_window", label: "Sliding Window" },
 	{ value: "token_bucket", label: "Token Bucket" },
 ];
 
-const SOURCE_OPTIONS: { value: RateLimitSource; label: string }[] = [
+const SOURCE_OPTIONS = [
 	{ value: "ip", label: "IP Address" },
 	{ value: "api_key", label: "API Key" },
 	{ value: "user", label: "User" },
@@ -67,23 +63,6 @@ const FIELDS: FieldDef[] = [
 	},
 ];
 
-const VALID_STRATEGIES = new Set<string>([
-	"fixed_window",
-	"sliding_window",
-	"token_bucket",
-]);
-const VALID_SOURCES = new Set<string>(["ip", "api_key", "user", "global"]);
-
-function toStrategy(v: string | string[]): RateLimitStrategy {
-	const s = typeof v === "string" ? v : "";
-	return VALID_STRATEGIES.has(s) ? (s as RateLimitStrategy) : "fixed_window";
-}
-
-function toSource(v: string | string[]): RateLimitSource {
-	const s = typeof v === "string" ? v : "";
-	return VALID_SOURCES.has(s) ? (s as RateLimitSource) : "global";
-}
-
 function NewRateLimitPage() {
 	const navigate = useNavigate();
 	const createRateLimit = useCreateRateLimit();
@@ -95,10 +74,10 @@ function NewRateLimitPage() {
 		const payload: RateLimitCreate = {
 			metadata: { name },
 			spec: {
-				strategy: toStrategy(values.strategy),
+				strategy: String(values.strategy ?? "fixed_window"),
 				window: Number(values.window),
 				amount: Number(values.amount),
-				source: toSource(values.source),
+				source: String(values.source ?? "global"),
 			},
 		};
 		try {

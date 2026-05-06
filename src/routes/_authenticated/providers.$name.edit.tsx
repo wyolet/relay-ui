@@ -32,17 +32,11 @@ const FIELDS: FieldDef[] = [
 		],
 	},
 	{
-		name: "endpoint",
-		label: "Endpoint URL",
+		name: "baseURL",
+		label: "Base URL",
 		type: "url",
 		required: true,
 		placeholder: "https://api.openai.com",
-	},
-	{
-		name: "secret",
-		label: "Secret name (optional)",
-		type: "text",
-		placeholder: "openai-key",
 	},
 ];
 
@@ -56,13 +50,10 @@ function EditProviderInner() {
 	async function handleSubmit(values: FormValues) {
 		setServerError(undefined);
 		const payload: ProviderUpdate = {
+			metadata: { name },
 			spec: {
-				kind:
-					values.kind === "openai" || values.kind === "ollama"
-						? values.kind
-						: "openai",
-				endpoint: String(values.endpoint ?? ""),
-				secret: values.secret ? String(values.secret) : undefined,
+				kind: String(values.kind ?? provider.spec.kind),
+				baseURL: String(values.baseURL ?? ""),
 			},
 		};
 		try {
@@ -84,8 +75,7 @@ function EditProviderInner() {
 			fields={FIELDS}
 			initialValues={{
 				kind: provider.spec.kind,
-				endpoint: provider.spec.endpoint,
-				secret: provider.spec.secret ?? "",
+				baseURL: provider.spec.baseURL,
 			}}
 			onSubmit={handleSubmit}
 			onCancel={() =>

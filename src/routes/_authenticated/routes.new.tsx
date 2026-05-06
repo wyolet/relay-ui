@@ -21,18 +21,11 @@ const FIELDS: FieldDef[] = [
 		placeholder: "my-route",
 	},
 	{
-		name: "pool",
-		label: "Pool name",
+		name: "models",
+		label: "Models (comma-separated)",
 		type: "text",
 		required: true,
-		placeholder: "my-pool",
-	},
-	{
-		name: "acl",
-		label: "ACL spec",
-		type: "textarea",
-		rows: 6,
-		placeholder: "allow *\ndeny admin",
+		placeholder: "gpt-4o, llama3",
 	},
 ];
 
@@ -44,11 +37,15 @@ function NewRoutePage() {
 	async function handleSubmit(values: FormValues) {
 		setServerError(undefined);
 		const name = String(values.name ?? "");
+		const modelsRaw = String(values.models ?? "");
+		const models = modelsRaw
+			.split(",")
+			.map((m) => m.trim())
+			.filter(Boolean);
 		const payload: RelayRouteCreate = {
 			metadata: { name },
 			spec: {
-				pool: String(values.pool ?? ""),
-				acl: String(values.acl ?? ""),
+				models: models.length > 0 ? models : null,
 			},
 		};
 		try {

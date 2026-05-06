@@ -29,7 +29,7 @@ function RateLimitDetailInner() {
 		{ label: "Strategy", value: rl.spec.strategy },
 		{ label: "Window", value: `${rl.spec.window}s` },
 		{ label: "Amount", value: rl.spec.amount },
-		{ label: "Source", value: rl.spec.source },
+		{ label: "Source", value: rl.spec.source ?? "—" },
 	];
 
 	async function handleDelete() {

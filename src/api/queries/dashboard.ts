@@ -1,9 +1,8 @@
 import { queryOptions } from "@tanstack/react-query";
-import type {
-	HealthzResponse,
-	ListResponse,
-	VersionResponse,
-} from "#/api/dashboard-types";
+import { apiClient } from "#/api/client";
+import type { HealthzResponse, VersionResponse } from "#/api/dashboard-types";
+
+export type { VersionResponse };
 
 const BASE_URL =
 	typeof window !== "undefined"
@@ -18,14 +17,17 @@ async function fetchJson<T>(path: string): Promise<T> {
 
 export const versionQueryOptions = queryOptions({
 	queryKey: ["admin", "version"] as const,
-	queryFn: () => fetchJson<VersionResponse>("/admin/version"),
+	queryFn: async (): Promise<VersionResponse> => {
+		const { data, error } = await apiClient.GET("/admin/version");
+		if (error) throw new Error(error.error.message);
+		return data;
+	},
 	staleTime: 5 * 60_000,
 	gcTime: 10 * 60_000,
 });
 
-// NOTE: /admin/metrics does NOT exist on the live backend — endpoint is pending.
-// metricsQueryOptions has been removed; the dashboard shows a placeholder instead.
-
+// /healthz has content?: never in the spec but the real backend returns JSON.
+// Use raw fetch with the hand-written HealthzResponse shape.
 export const healthzQueryOptions = queryOptions({
 	queryKey: ["healthz"] as const,
 	queryFn: () => fetchJson<HealthzResponse>("/healthz"),
@@ -33,19 +35,3 @@ export const healthzQueryOptions = queryOptions({
 	gcTime: 60_000,
 	refetchInterval: 5_000,
 });
-
-function listQueryOptions(kind: string) {
-	return queryOptions({
-		queryKey: ["admin", "list", kind] as const,
-		queryFn: () => fetchJson<ListResponse>(`/admin/${kind}`),
-		staleTime: 30_000,
-		gcTime: 5 * 60_000,
-	});
-}
-
-export const providersQueryOptions = listQueryOptions("providers");
-export const poolsQueryOptions = listQueryOptions("pools");
-export const secretsQueryOptions = listQueryOptions("secrets");
-export const modelsQueryOptions = listQueryOptions("models");
-export const routesQueryOptions = listQueryOptions("routes");
-export const ratelimitsQueryOptions = listQueryOptions("ratelimits");

@@ -4,19 +4,24 @@ import {
 	useQueryClient,
 	useSuspenseQuery,
 } from "@tanstack/react-query";
-import { adminDelete, adminGet, adminPost, adminPut } from "#/api/fetch";
+import { apiClient } from "#/api/client";
+import { ApiError } from "#/api/types/errors";
 import type {
 	RelayRoute,
 	RelayRouteCreate,
 	RelayRouteUpdate,
-	RoutesListResponse,
+	RouteListResponse,
 } from "#/api/types/route";
 
 // --- Query options ---
 
 export const routesListQueryOptions = queryOptions({
 	queryKey: ["routes"] as const,
-	queryFn: () => adminGet<RoutesListResponse>("/admin/routes"),
+	queryFn: async (): Promise<RouteListResponse> => {
+		const { data, error } = await apiClient.GET("/admin/routes");
+		if (error) throw new ApiError(0, error.error);
+		return data;
+	},
 	staleTime: 30_000,
 	gcTime: 5 * 60_000,
 });
@@ -24,8 +29,13 @@ export const routesListQueryOptions = queryOptions({
 export function routeDetailQueryOptions(name: string) {
 	return queryOptions({
 		queryKey: ["routes", name] as const,
-		queryFn: () =>
-			adminGet<RelayRoute>(`/admin/routes/${encodeURIComponent(name)}`),
+		queryFn: async (): Promise<RelayRoute> => {
+			const { data, error } = await apiClient.GET("/admin/routes/{name}", {
+				params: { path: { name } },
+			});
+			if (error) throw new ApiError(0, error.error);
+			return data;
+		},
 		staleTime: 30_000,
 		gcTime: 5 * 60_000,
 	});
@@ -44,8 +54,11 @@ export function useRoute(name: string) {
 export function useCreateRoute() {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: (data: RelayRouteCreate) =>
-			adminPost<RelayRoute>("/admin/routes", data),
+		mutationFn: async (body: RelayRouteCreate): Promise<RelayRoute> => {
+			const { data, error } = await apiClient.POST("/admin/routes", { body });
+			if (error) throw new ApiError(0, error.error);
+			return data;
+		},
 		onMutate: async (newRoute) => {
 			await queryClient.cancelQueries({ queryKey: ["routes"] });
 			const previous = queryClient.getQueryData(
@@ -53,13 +66,13 @@ export function useCreateRoute() {
 			);
 			queryClient.setQueryData(
 				routesListQueryOptions.queryKey,
-				(old: RoutesListResponse | undefined) => {
+				(old: RouteListResponse | undefined) => {
 					if (!old) return old;
 					const optimistic: RelayRoute = {
 						metadata: { name: newRoute.metadata.name },
 						spec: { ...newRoute.spec },
 					};
-					return { items: [...old.items, optimistic] };
+					return { items: [...(old.items ?? []), optimistic] };
 				},
 			);
 			return { previous };
@@ -81,8 +94,14 @@ export function useCreateRoute() {
 export function useUpdateRoute(name: string) {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: (data: RelayRouteUpdate) =>
-			adminPut<RelayRoute>(`/admin/routes/${encodeURIComponent(name)}`, data),
+		mutationFn: async (body: RelayRouteUpdate): Promise<RelayRoute> => {
+			const { data, error } = await apiClient.PUT("/admin/routes/{name}", {
+				params: { path: { name } },
+				body,
+			});
+			if (error) throw new ApiError(0, error.error);
+			return data;
+		},
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: ["routes"] });
 		},
@@ -92,8 +111,12 @@ export function useUpdateRoute(name: string) {
 export function useDeleteRoute() {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: (name: string) =>
-			adminDelete(`/admin/routes/${encodeURIComponent(name)}`),
+		mutationFn: async (name: string): Promise<void> => {
+			const { error } = await apiClient.DELETE("/admin/routes/{name}", {
+				params: { path: { name } },
+			});
+			if (error) throw new ApiError(0, error.error);
+		},
 		onMutate: async (name) => {
 			await queryClient.cancelQueries({ queryKey: ["routes"] });
 			const previous = queryClient.getQueryData(
@@ -101,10 +124,10 @@ export function useDeleteRoute() {
 			);
 			queryClient.setQueryData(
 				routesListQueryOptions.queryKey,
-				(old: RoutesListResponse | undefined) => {
+				(old: RouteListResponse | undefined) => {
 					if (!old) return old;
 					return {
-						items: old.items.filter((r) => r.metadata.name !== name),
+						items: (old.items ?? []).filter((r) => r.metadata.name !== name),
 					};
 				},
 			);

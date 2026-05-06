@@ -2,11 +2,9 @@ import { useQuery } from "@tanstack/react-query";
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { Moon, Sun } from "lucide-react";
 import { useAuth } from "#/api/auth";
-import {
-	providersQueryOptions,
-	secretsQueryOptions,
-	versionQueryOptions,
-} from "#/api/queries/dashboard";
+import { providersListQueryOptions } from "#/api/hooks/providers";
+import { secretsListQueryOptions } from "#/api/hooks/secrets";
+import { versionQueryOptions } from "#/api/queries/dashboard";
 import type { Theme } from "#/lib/theme";
 import { useTheme } from "#/lib/theme";
 import { ToastContainer } from "./Toast";
@@ -59,12 +57,15 @@ function themeLabel(theme: Theme): string {
 
 function useIsBootstrapEmpty() {
 	const { data: providers } = useQuery({
-		...providersQueryOptions,
+		...providersListQueryOptions,
 		retry: false,
 	});
-	const { data: secrets } = useQuery({ ...secretsQueryOptions, retry: false });
+	const { data: secrets } = useQuery({
+		...secretsListQueryOptions,
+		retry: false,
+	});
 	return (
-		(providers?.items.length ?? 1) === 0 && (secrets?.items.length ?? 1) === 0
+		(providers?.items ?? []).length === 0 && (secrets?.items ?? []).length === 0
 	);
 }
 

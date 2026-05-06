@@ -11,18 +11,28 @@ export const Route = createFileRoute("/_authenticated/models/")({
 	component: ModelsPage,
 });
 
+function capabilitiesSummary(cap: Model["spec"]["capabilities"]): string {
+	if (!cap) return "—";
+	return (
+		Object.entries(cap)
+			.filter(([, v]) => v === true)
+			.map(([k]) => k)
+			.join(", ") || "—"
+	);
+}
+
 const COLUMNS: ColumnDef<Model>[] = [
 	{ key: "name", label: "Name", render: (r) => r.metadata.name },
 	{ key: "provider", label: "Provider", render: (r) => r.spec.provider },
 	{
-		key: "upstream_name",
+		key: "upstreamName",
 		label: "Upstream Name",
-		render: (r) => r.spec.upstream_name,
+		render: (r) => r.spec.upstreamName,
 	},
 	{
 		key: "capabilities",
 		label: "Capabilities",
-		render: (r) => r.spec.capabilities.join(", "),
+		render: (r) => capabilitiesSummary(r.spec.capabilities),
 	},
 ];
 
@@ -31,7 +41,7 @@ function ModelsList() {
 	return (
 		<ResourceList
 			title="Models"
-			items={data.items}
+			items={data.items ?? []}
 			columns={COLUMNS}
 			createTo="/models/new"
 			detailTo={(name) => `/models/${name}`}

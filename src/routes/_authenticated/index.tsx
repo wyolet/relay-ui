@@ -2,15 +2,13 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Suspense } from "react";
 import type { HealthStatusLevel, HealthSubsystem } from "#/api/dashboard-types";
-import {
-	healthzQueryOptions,
-	modelsQueryOptions,
-	poolsQueryOptions,
-	providersQueryOptions,
-	ratelimitsQueryOptions,
-	routesQueryOptions,
-	secretsQueryOptions,
-} from "#/api/queries/dashboard";
+import { modelsListQueryOptions } from "#/api/hooks/models";
+import { poolsListQueryOptions } from "#/api/hooks/pools";
+import { providersListQueryOptions } from "#/api/hooks/providers";
+import { rateLimitsListQueryOptions } from "#/api/hooks/ratelimits";
+import { routesListQueryOptions } from "#/api/hooks/routes";
+import { secretsListQueryOptions } from "#/api/hooks/secrets";
+import { healthzQueryOptions } from "#/api/queries/dashboard";
 
 export const Route = createFileRoute("/_authenticated/")({
 	component: DashboardPage,
@@ -129,15 +127,16 @@ function MetricsPending() {
 
 function DashboardInner() {
 	const { data: healthz } = useQuery(healthzQueryOptions);
-	const { data: providers } = useQuery(providersQueryOptions);
-	const { data: secrets } = useQuery(secretsQueryOptions);
-	const { data: pools } = useQuery(poolsQueryOptions);
-	const { data: models } = useQuery(modelsQueryOptions);
-	const { data: routes } = useQuery(routesQueryOptions);
-	const { data: ratelimits } = useQuery(ratelimitsQueryOptions);
+	const { data: providers } = useQuery(providersListQueryOptions);
+	const { data: secrets } = useQuery(secretsListQueryOptions);
+	const { data: pools } = useQuery(poolsListQueryOptions);
+	const { data: models } = useQuery(modelsListQueryOptions);
+	const { data: routes } = useQuery(routesListQueryOptions);
+	const { data: ratelimits } = useQuery(rateLimitsListQueryOptions);
 
 	const catalogEmpty =
-		(providers?.items.length ?? 0) === 0 && (secrets?.items.length ?? 0) === 0;
+		(providers?.items ?? []).length === 0 &&
+		(secrets?.items ?? []).length === 0;
 
 	return (
 		<div className="space-y-8">
@@ -165,12 +164,12 @@ function DashboardInner() {
 					Catalog
 				</h2>
 				<div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-					<CountCard label="Providers" count={providers?.items.length} />
-					<CountCard label="Pools" count={pools?.items.length} />
-					<CountCard label="Secrets" count={secrets?.items.length} />
-					<CountCard label="Models" count={models?.items.length} />
-					<CountCard label="Routes" count={routes?.items.length} />
-					<CountCard label="Rate Limits" count={ratelimits?.items.length} />
+					<CountCard label="Providers" count={providers?.items?.length} />
+					<CountCard label="Pools" count={pools?.items?.length} />
+					<CountCard label="Secrets" count={secrets?.items?.length} />
+					<CountCard label="Models" count={models?.items?.length} />
+					<CountCard label="Routes" count={routes?.items?.length} />
+					<CountCard label="Rate Limits" count={ratelimits?.items?.length} />
 				</div>
 			</section>
 		</div>

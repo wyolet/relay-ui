@@ -4,11 +4,12 @@ import {
 	useQueryClient,
 	useSuspenseQuery,
 } from "@tanstack/react-query";
-import { adminDelete, adminGet, adminPost, adminPut } from "#/api/fetch";
+import { apiClient } from "#/api/client";
+import { ApiError } from "#/api/types/errors";
 import type {
 	Provider,
 	ProviderCreate,
-	ProvidersListResponse,
+	ProviderListResponse,
 	ProviderUpdate,
 } from "#/api/types/provider";
 
@@ -16,7 +17,11 @@ import type {
 
 export const providersListQueryOptions = queryOptions({
 	queryKey: ["providers"] as const,
-	queryFn: () => adminGet<ProvidersListResponse>("/admin/providers"),
+	queryFn: async (): Promise<ProviderListResponse> => {
+		const { data, error } = await apiClient.GET("/admin/providers");
+		if (error) throw new ApiError(0, error.error);
+		return data;
+	},
 	staleTime: 30_000,
 	gcTime: 5 * 60_000,
 });
@@ -24,8 +29,13 @@ export const providersListQueryOptions = queryOptions({
 export function providerDetailQueryOptions(name: string) {
 	return queryOptions({
 		queryKey: ["providers", name] as const,
-		queryFn: () =>
-			adminGet<Provider>(`/admin/providers/${encodeURIComponent(name)}`),
+		queryFn: async (): Promise<Provider> => {
+			const { data, error } = await apiClient.GET("/admin/providers/{name}", {
+				params: { path: { name } },
+			});
+			if (error) throw new ApiError(0, error.error);
+			return data;
+		},
 		staleTime: 30_000,
 		gcTime: 5 * 60_000,
 	});
@@ -44,8 +54,13 @@ export function useProvider(name: string) {
 export function useCreateProvider() {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: (data: ProviderCreate) =>
-			adminPost<Provider>("/admin/providers", data),
+		mutationFn: async (body: ProviderCreate): Promise<Provider> => {
+			const { data, error } = await apiClient.POST("/admin/providers", {
+				body,
+			});
+			if (error) throw new ApiError(0, error.error);
+			return data;
+		},
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: ["providers"] });
 		},
@@ -56,13 +71,13 @@ export function useCreateProvider() {
 			);
 			queryClient.setQueryData(
 				providersListQueryOptions.queryKey,
-				(old: ProvidersListResponse | undefined) => {
+				(old: ProviderListResponse | undefined) => {
 					if (!old) return old;
 					const optimistic: Provider = {
 						metadata: { name: newProvider.metadata.name },
 						spec: { ...newProvider.spec },
 					};
-					return { items: [...old.items, optimistic] };
+					return { items: [...(old.items ?? []), optimistic] };
 				},
 			);
 			return { previous };
@@ -81,8 +96,14 @@ export function useCreateProvider() {
 export function useUpdateProvider(name: string) {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: (data: ProviderUpdate) =>
-			adminPut<Provider>(`/admin/providers/${encodeURIComponent(name)}`, data),
+		mutationFn: async (body: ProviderUpdate): Promise<Provider> => {
+			const { data, error } = await apiClient.PUT("/admin/providers/{name}", {
+				params: { path: { name } },
+				body,
+			});
+			if (error) throw new ApiError(0, error.error);
+			return data;
+		},
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: ["providers"] });
 		},
@@ -92,8 +113,12 @@ export function useUpdateProvider(name: string) {
 export function useDeleteProvider() {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: (name: string) =>
-			adminDelete(`/admin/providers/${encodeURIComponent(name)}`),
+		mutationFn: async (name: string): Promise<void> => {
+			const { error } = await apiClient.DELETE("/admin/providers/{name}", {
+				params: { path: { name } },
+			});
+			if (error) throw new ApiError(0, error.error);
+		},
 		onMutate: async (name) => {
 			await queryClient.cancelQueries({ queryKey: ["providers"] });
 			const previous = queryClient.getQueryData(
@@ -101,10 +126,10 @@ export function useDeleteProvider() {
 			);
 			queryClient.setQueryData(
 				providersListQueryOptions.queryKey,
-				(old: ProvidersListResponse | undefined) => {
+				(old: ProviderListResponse | undefined) => {
 					if (!old) return old;
 					return {
-						items: old.items.filter((p) => p.metadata.name !== name),
+						items: (old.items ?? []).filter((p) => p.metadata.name !== name),
 					};
 				},
 			);

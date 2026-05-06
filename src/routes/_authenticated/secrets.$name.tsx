@@ -34,8 +34,8 @@ function SecretDetailInner() {
 	const [confirming, setConfirming] = useState(false);
 	const [rotating, setRotating] = useState(false);
 
-	const referencingPools = poolsData.items.filter((pool) =>
-		pool.spec.secrets.includes(name),
+	const referencingPools = (poolsData.items ?? []).filter((pool) =>
+		(pool.spec.secrets ?? []).includes(name),
 	);
 
 	async function handleDelete() {
@@ -52,6 +52,8 @@ function SecretDetailInner() {
 		}
 	}
 
+	const isStored = secret.valueFrom.kind === "stored";
+
 	return (
 		<div>
 			{/* Back nav */}
@@ -65,17 +67,17 @@ function SecretDetailInner() {
 			<div className="flex items-start justify-between mb-6">
 				<div className="flex items-center gap-3">
 					<h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100 font-mono">
-						{secret.metadata.name}
+						{secret.name}
 					</h1>
 					<span
 						className={[
 							"inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
-							secret.spec.kind === "stored"
+							isStored
 								? "bg-purple-100 dark:bg-purple-950 text-purple-800 dark:text-purple-300"
 								: "bg-green-100 dark:bg-green-950 text-green-800 dark:text-green-300",
 						].join(" ")}
 					>
-						{secret.spec.kind}
+						{secret.valueFrom.kind}
 					</span>
 				</div>
 				<div className="flex gap-2">
@@ -103,7 +105,7 @@ function SecretDetailInner() {
 						Name
 					</dt>
 					<dd className="mt-1 text-sm text-gray-900 dark:text-zinc-100 font-mono sm:col-span-2 sm:mt-0">
-						{secret.metadata.name}
+						{secret.name}
 					</dd>
 				</div>
 				<div className="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4">
@@ -111,18 +113,18 @@ function SecretDetailInner() {
 						Kind
 					</dt>
 					<dd className="mt-1 text-sm text-gray-900 dark:text-zinc-100 sm:col-span-2 sm:mt-0">
-						{secret.spec.kind}
+						{secret.valueFrom.kind}
 					</dd>
 				</div>
 
-				{secret.spec.kind === "env" && (
+				{!isStored && (
 					<>
 						<div className="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4">
 							<dt className="text-sm font-medium text-gray-500 dark:text-zinc-400">
 								Environment variable
 							</dt>
 							<dd className="mt-1 text-sm text-gray-900 dark:text-zinc-100 font-mono sm:col-span-2 sm:mt-0">
-								{secret.spec.env_var ?? (
+								{secret.valueFrom.env ?? (
 									<span className="text-gray-400 dark:text-zinc-500">—</span>
 								)}
 							</dd>
@@ -136,14 +138,14 @@ function SecretDetailInner() {
 					</>
 				)}
 
-				{secret.spec.kind === "stored" && (
+				{isStored && (
 					<div className="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4">
 						<dt className="text-sm font-medium text-gray-500 dark:text-zinc-400">
 							Masked value
 						</dt>
 						<dd className="mt-1 text-sm text-gray-900 dark:text-zinc-100 font-mono sm:col-span-2 sm:mt-0 flex items-center gap-3">
 							<span>
-								{secret.spec.masked_value ?? (
+								{secret.valueFrom.value_masked ?? (
 									<span className="text-gray-400 dark:text-zinc-500">—</span>
 								)}
 							</span>

@@ -14,7 +14,7 @@ import { secretsListQueryOptions, useSecrets } from "#/api/hooks/secrets";
 import type { ApiErrorBody } from "#/api/types/errors";
 import { ApiError } from "#/api/types/errors";
 import type { PoolUpdate } from "#/api/types/pool";
-import type { RateLimitRef } from "#/api/types/ratelimit";
+import type { RateLimitAttachment } from "#/api/types/ratelimit";
 import { RateLimitsEditor } from "#/components/RateLimitsEditor";
 import { toast } from "#/components/Toast";
 
@@ -38,13 +38,12 @@ function EditPoolFormInner() {
 	const { data: rateLimitsData } = useRateLimits();
 	const updatePool = useUpdatePool(name);
 
+	const poolSecrets = pool.spec.secrets ?? [];
+
 	const [provider, setProvider] = useState(pool.spec.provider);
-	const [selectedSecrets, setSelectedSecrets] = useState<string[]>(
-		pool.spec.secrets,
-	);
-	const [isDefault, setIsDefault] = useState(pool.spec.default ?? false);
+	const [selectedSecrets, setSelectedSecrets] = useState<string[]>(poolSecrets);
 	const [secretSearch, setSecretSearch] = useState("");
-	const [rateLimits, setRateLimits] = useState<RateLimitRef[]>(
+	const [rateLimits, setRateLimits] = useState<RateLimitAttachment[]>(
 		pool.spec.rateLimits ?? [],
 	);
 	const [serverError, setServerError] = useState<ApiErrorBody | undefined>();
@@ -68,10 +67,10 @@ function EditPoolFormInner() {
 
 		setServerError(undefined);
 		const payload: PoolUpdate = {
+			metadata: pool.metadata,
 			spec: {
 				provider,
-				secrets: selectedSecrets,
-				default: isDefault || undefined,
+				secrets: selectedSecrets.length > 0 ? selectedSecrets : null,
 				rateLimits: rateLimits.length > 0 ? rateLimits : undefined,
 			},
 		};
@@ -88,9 +87,9 @@ function EditPoolFormInner() {
 		}
 	}
 
-	const allSecrets = secretsData.items;
+	const allSecrets = secretsData.items ?? [];
 	const filteredSecrets = allSecrets.filter((s) =>
-		s.metadata.name.toLowerCase().includes(secretSearch.toLowerCase()),
+		s.name.toLowerCase().includes(secretSearch.toLowerCase()),
 	);
 
 	return (
@@ -124,7 +123,7 @@ function EditPoolFormInner() {
 						className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
 					>
 						<option value="">— select —</option>
-						{providersData.items.map((p) => (
+						{(providersData.items ?? []).map((p) => (
 							<option key={p.metadata.name} value={p.metadata.name}>
 								{p.metadata.name}
 							</option>
@@ -162,10 +161,10 @@ function EditPoolFormInner() {
 					) : (
 						<div className="flex flex-wrap gap-2">
 							{filteredSecrets.map((s) => {
-								const checked = selectedSecrets.includes(s.metadata.name);
+								const checked = selectedSecrets.includes(s.name);
 								return (
 									<label
-										key={s.metadata.name}
+										key={s.name}
 										className={[
 											"flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border cursor-pointer select-none transition-colors",
 											checked
@@ -177,9 +176,9 @@ function EditPoolFormInner() {
 											type="checkbox"
 											className="sr-only"
 											checked={checked}
-											onChange={() => toggleSecret(s.metadata.name)}
+											onChange={() => toggleSecret(s.name)}
 										/>
-										{s.metadata.name}
+										{s.name}
 									</label>
 								);
 							})}
@@ -187,24 +186,10 @@ function EditPoolFormInner() {
 					)}
 				</div>
 
-				<div>
-					<label className="flex items-center gap-2 cursor-pointer">
-						<input
-							type="checkbox"
-							checked={isDefault}
-							onChange={(e) => setIsDefault(e.target.checked)}
-							className="rounded border-gray-300 dark:border-zinc-600"
-						/>
-						<span className="text-sm font-medium text-gray-700 dark:text-zinc-300">
-							Set as default pool
-						</span>
-					</label>
-				</div>
-
 				<RateLimitsEditor
 					value={rateLimits}
 					onChange={setRateLimits}
-					availableRateLimits={rateLimitsData.items.map(
+					availableRateLimits={(rateLimitsData.items ?? []).map(
 						(rl) => rl.metadata.name,
 					)}
 				/>

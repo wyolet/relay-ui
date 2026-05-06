@@ -1,59 +1,18 @@
-/**
- * Hand-written types for RateLimit CRUD endpoints (PER-276).
- *
- * Backend assumptions:
- * - GET  /admin/ratelimits            → { items: RateLimit[] }
- * - GET  /admin/ratelimits/:name      → RateLimit
- * - POST /admin/ratelimits            → RateLimit  (201)
- * - PUT  /admin/ratelimits/:name      → RateLimit  (200)
- * - DELETE /admin/ratelimits/:name    → 204
- *
- * All CRUD payloads use a k8s-style { metadata, spec } envelope.
- */
+import type { components } from "#/api/types.gen";
 
-export type RateLimitStrategy =
-	| "fixed_window"
-	| "sliding_window"
-	| "token_bucket";
-export type RateLimitSource = "ip" | "api_key" | "user" | "global";
+export type RateLimit = components["schemas"]["RateLimit"];
+export type RateLimitSpec = components["schemas"]["RateLimitSpec"];
+export type RateLimitListResponse =
+	components["schemas"]["ListOutputRateLimitBody"];
 
 /**
- * Reference to a RateLimit resource embedded in a parent spec's rateLimits[].
- * Used by Pool, Secret, and Model to declare their inline rate limit attachments.
+ * Inline attachment reference embedded in Pool/Model spec rateLimits[].
+ * Schema name: RateLimitAttachment — fields: { ref: string; meter: string }
  */
-export interface RateLimitRef {
-	/** Name of the ratelimit resource. */
-	name: string;
-	meter: "requests" | "tokens" | "concurrency";
-}
+export type RateLimitAttachment = components["schemas"]["RateLimitAttachment"];
 
-export interface RateLimitMetadata {
-	name: string;
-	[k: string]: unknown;
-}
+/** POST body: full envelope (same shape as the resource) */
+export type RateLimitCreate = components["schemas"]["RateLimit"];
 
-export interface RateLimitSpec {
-	strategy: RateLimitStrategy;
-	/** Window duration in seconds. */
-	window: number;
-	/** Maximum number of requests (or tokens for token_bucket) in the window. */
-	amount: number;
-	source: RateLimitSource;
-}
-
-export interface RateLimit {
-	metadata: RateLimitMetadata;
-	spec: RateLimitSpec;
-}
-
-/** POST body: full envelope */
-export type RateLimitCreate = RateLimit;
-
-/** PUT body: spec only (name is in URL path) */
-export interface RateLimitUpdate {
-	spec: RateLimitSpec;
-}
-
-export interface RateLimitsListResponse {
-	items: RateLimit[];
-}
+/** PUT body: full envelope (same shape as the resource) */
+export type RateLimitUpdate = components["schemas"]["RateLimit"];

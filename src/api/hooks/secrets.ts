@@ -4,11 +4,12 @@ import {
 	useQueryClient,
 	useSuspenseQuery,
 } from "@tanstack/react-query";
-import { adminDelete, adminGet, adminPost, adminPut } from "#/api/fetch";
+import { apiClient } from "#/api/client";
+import { ApiError } from "#/api/types/errors";
 import type {
-	Secret,
 	SecretCreate,
-	SecretsListResponse,
+	SecretListResponse,
+	SecretResponse,
 	SecretUpdate,
 } from "#/api/types/secret";
 
@@ -16,7 +17,11 @@ import type {
 
 export const secretsListQueryOptions = queryOptions({
 	queryKey: ["secrets"] as const,
-	queryFn: () => adminGet<SecretsListResponse>("/admin/secrets"),
+	queryFn: async (): Promise<SecretListResponse> => {
+		const { data, error } = await apiClient.GET("/admin/secrets");
+		if (error) throw new ApiError(0, error.error);
+		return data;
+	},
 	staleTime: 30_000,
 	gcTime: 5 * 60_000,
 });
@@ -24,8 +29,13 @@ export const secretsListQueryOptions = queryOptions({
 export function secretDetailQueryOptions(name: string) {
 	return queryOptions({
 		queryKey: ["secrets", name] as const,
-		queryFn: () =>
-			adminGet<Secret>(`/admin/secrets/${encodeURIComponent(name)}`),
+		queryFn: async (): Promise<SecretResponse> => {
+			const { data, error } = await apiClient.GET("/admin/secrets/{name}", {
+				params: { path: { name } },
+			});
+			if (error) throw new ApiError(0, error.error);
+			return data;
+		},
 		staleTime: 30_000,
 		gcTime: 5 * 60_000,
 	});
@@ -44,8 +54,11 @@ export function useSecret(name: string) {
 export function useCreateSecret() {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: (data: SecretCreate) =>
-			adminPost<Secret>("/admin/secrets", data),
+		mutationFn: async (body: SecretCreate): Promise<SecretResponse> => {
+			const { data, error } = await apiClient.POST("/admin/secrets", { body });
+			if (error) throw new ApiError(0, error.error);
+			return data;
+		},
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: ["secrets"] });
 		},
@@ -55,8 +68,14 @@ export function useCreateSecret() {
 export function useUpdateSecret(name: string) {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: (data: SecretUpdate) =>
-			adminPut<Secret>(`/admin/secrets/${encodeURIComponent(name)}`, data),
+		mutationFn: async (body: SecretUpdate): Promise<SecretResponse> => {
+			const { data, error } = await apiClient.PUT("/admin/secrets/{name}", {
+				params: { path: { name } },
+				body,
+			});
+			if (error) throw new ApiError(0, error.error);
+			return data;
+		},
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: ["secrets"] });
 		},
@@ -66,8 +85,12 @@ export function useUpdateSecret(name: string) {
 export function useDeleteSecret() {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: (name: string) =>
-			adminDelete(`/admin/secrets/${encodeURIComponent(name)}`),
+		mutationFn: async (name: string): Promise<void> => {
+			const { error } = await apiClient.DELETE("/admin/secrets/{name}", {
+				params: { path: { name } },
+			});
+			if (error) throw new ApiError(0, error.error);
+		},
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: ["secrets"] });
 		},

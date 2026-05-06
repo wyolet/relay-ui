@@ -31,7 +31,6 @@ import {
 } from "#/api/hooks/providers";
 import { secretsListQueryOptions, useCreateSecret } from "#/api/hooks/secrets";
 import { healthzQueryOptions } from "#/api/queries/dashboard";
-import type { ProviderKind } from "#/api/types/provider";
 import type { SecretKind } from "#/api/types/secret";
 
 // ---------------------------------------------------------------------------
@@ -330,13 +329,13 @@ function ProviderStep({ search }: ProviderStepProps) {
 	const navigate = useNavigate({ from: "/bootstrap" });
 	const createProvider = useCreateProvider();
 	const [name, setName] = useState("openai");
-	const [kind, setKind] = useState<ProviderKind>("openai");
-	const [endpoint, setEndpoint] = useState("https://api.openai.com");
+	const [kind, setKind] = useState("openai");
+	const [baseURL, setBaseURL] = useState("https://api.openai.com");
 
 	function handleSubmit(e: React.FormEvent) {
 		e.preventDefault();
 		createProvider.mutate(
-			{ metadata: { name }, spec: { kind, endpoint } },
+			{ metadata: { name }, spec: { kind, baseURL } },
 			{
 				onSuccess: () => {
 					void navigate({
@@ -388,7 +387,7 @@ function ProviderStep({ search }: ProviderStepProps) {
 					<select
 						id="provider-kind"
 						value={kind}
-						onChange={(e) => setKind(e.target.value as ProviderKind)}
+						onChange={(e) => setKind(e.target.value)}
 						className="w-full rounded-lg border border-gray-300 dark:border-zinc-700 px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
 					>
 						<option value="openai">OpenAI</option>
@@ -399,15 +398,15 @@ function ProviderStep({ search }: ProviderStepProps) {
 				<div>
 					<label
 						className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1"
-						htmlFor="provider-endpoint"
+						htmlFor="provider-base-url"
 					>
-						Endpoint URL
+						Base URL
 					</label>
 					<input
-						id="provider-endpoint"
+						id="provider-base-url"
 						type="url"
-						value={endpoint}
-						onChange={(e) => setEndpoint(e.target.value)}
+						value={baseURL}
+						onChange={(e) => setBaseURL(e.target.value)}
 						required
 						className="w-full rounded-lg border border-gray-300 dark:border-zinc-700 px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
 					/>
@@ -423,7 +422,7 @@ function ProviderStep({ search }: ProviderStepProps) {
 
 				<button
 					type="submit"
-					disabled={createProvider.isPending || !name || !endpoint}
+					disabled={createProvider.isPending || !name || !baseURL}
 					className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-60"
 				>
 					{createProvider.isPending ? "Creating…" : "Next →"}
@@ -458,11 +457,11 @@ function SecretStep({ search }: SecretStepProps) {
 		e.preventDefault();
 		const valueFrom =
 			kind === "env"
-				? { kind: "env" as const, env_var: envVar }
+				? { kind: "env" as const, env: envVar }
 				: { kind: "stored" as const, value: storedValue };
 
 		createSecret.mutate(
-			{ metadata: { name }, spec: { value_from: valueFrom } },
+			{ name, valueFrom },
 			{
 				onSuccess: () => {
 					void navigate({
@@ -633,7 +632,9 @@ function PoolStep({ search }: PoolStepProps) {
 
 	const [name, setName] = useState("default");
 	const [provider, setProvider] = useState(
-		search.provider ?? providersQuery.data.items[0]?.metadata.name ?? "",
+		search.provider ??
+			(providersQuery.data.items ?? [])[0]?.metadata.name ??
+			"",
 	);
 	const [selectedSecrets, setSelectedSecrets] = useState<string[]>(
 		search.secret ? [search.secret] : [],
@@ -652,7 +653,10 @@ function PoolStep({ search }: PoolStepProps) {
 		createPool.mutate(
 			{
 				metadata: { name },
-				spec: { provider, secrets: selectedSecrets, default: true },
+				spec: {
+					provider,
+					secrets: selectedSecrets.length > 0 ? selectedSecrets : null,
+				},
 			},
 			{
 				onSuccess: () => {
@@ -708,7 +712,7 @@ function PoolStep({ search }: PoolStepProps) {
 						onChange={(e) => setProvider(e.target.value)}
 						className="w-full rounded-lg border border-gray-300 dark:border-zinc-700 px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
 					>
-						{providersQuery.data.items.map((p) => (
+						{(providersQuery.data.items ?? []).map((p) => (
 							<option key={p.metadata.name} value={p.metadata.name}>
 								{p.metadata.name}
 							</option>
@@ -721,23 +725,23 @@ function PoolStep({ search }: PoolStepProps) {
 						Secrets
 					</span>
 					<div className="space-y-2">
-						{secretsQuery.data.items.map((s) => (
+						{(secretsQuery.data.items ?? []).map((s) => (
 							<label
-								key={s.metadata.name}
+								key={s.name}
 								className="flex items-center gap-2 cursor-pointer"
 							>
 								<input
 									type="checkbox"
-									checked={selectedSecrets.includes(s.metadata.name)}
-									onChange={() => toggleSecret(s.metadata.name)}
+									checked={selectedSecrets.includes(s.name)}
+									onChange={() => toggleSecret(s.name)}
 									className="h-4 w-4 rounded border-gray-300 dark:border-zinc-600 text-blue-600"
 								/>
 								<span className="text-sm text-gray-900 dark:text-zinc-100">
-									{s.metadata.name}
+									{s.name}
 								</span>
 							</label>
 						))}
-						{secretsQuery.data.items.length === 0 && (
+						{(secretsQuery.data.items ?? []).length === 0 && (
 							<p className="text-sm text-gray-400 dark:text-zinc-500">
 								No secrets found.
 							</p>
@@ -780,7 +784,9 @@ function ModelStep({ search }: ModelStepProps) {
 	const providersQuery = useSuspenseQuery(providersListQueryOptions);
 
 	const defaultProvider =
-		search.provider ?? providersQuery.data.items[0]?.metadata.name ?? "";
+		search.provider ??
+		(providersQuery.data.items ?? [])[0]?.metadata.name ??
+		"";
 	const [name, setName] = useState("gpt-4o");
 	const [provider, setProvider] = useState(defaultProvider);
 	const [upstreamName, setUpstreamName] = useState("gpt-4o");
@@ -798,7 +804,7 @@ function ModelStep({ search }: ModelStepProps) {
 		createModel.mutate(
 			{
 				metadata: { name },
-				spec: { provider, upstream_name: upstreamName, capabilities: ["chat"] },
+				spec: { provider, upstreamName },
 			},
 			{
 				onSuccess: () => {
@@ -854,7 +860,7 @@ function ModelStep({ search }: ModelStepProps) {
 						onChange={(e) => setProvider(e.target.value)}
 						className="w-full rounded-lg border border-gray-300 dark:border-zinc-700 px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
 					>
-						{providersQuery.data.items.map((p) => (
+						{(providersQuery.data.items ?? []).map((p) => (
 							<option key={p.metadata.name} value={p.metadata.name}>
 								{p.metadata.name}
 							</option>
@@ -1070,9 +1076,9 @@ function ResumeComputer({ initialSearch }: ResumeComputerProps) {
 	const poolsQuery = useSuspenseQuery(poolsListQueryOptions);
 	const secretsQuery = useSuspenseQuery(secretsListQueryOptions);
 
-	const hasProviders = providersQuery.data.items.length > 0;
-	const hasPools = poolsQuery.data.items.length > 0;
-	const hasSecrets = secretsQuery.data.items.length > 0;
+	const hasProviders = (providersQuery.data.items ?? []).length > 0;
+	const hasPools = (poolsQuery.data.items ?? []).length > 0;
+	const hasSecrets = (secretsQuery.data.items ?? []).length > 0;
 
 	// If catalog is non-empty and no explicit step param, redirect to dashboard
 	if (

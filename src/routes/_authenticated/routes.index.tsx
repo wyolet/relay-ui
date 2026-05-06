@@ -13,11 +13,15 @@ export const Route = createFileRoute("/_authenticated/routes/")({
 
 const COLUMNS: ColumnDef<RelayRoute>[] = [
 	{ key: "name", label: "Name", render: (r) => r.metadata.name },
-	{ key: "pool", label: "Pool", render: (r) => r.spec.pool },
 	{
-		key: "acl",
-		label: "ACL (preview)",
-		render: (r) => r.spec.acl.split("\n")[0] ?? "",
+		key: "models",
+		label: "Models",
+		render: (r) => (r.spec.models ?? []).join(", ") || "—",
+	},
+	{
+		key: "default",
+		label: "Default",
+		render: (r) => (r.spec.default ? "Yes" : "No"),
 	},
 ];
 
@@ -26,7 +30,7 @@ function RoutesList() {
 	return (
 		<ResourceList
 			title="Routes"
-			items={data.items}
+			items={data.items ?? []}
 			columns={COLUMNS}
 			createTo="/routes/new"
 			detailTo={(name) => `/routes/${name}`}

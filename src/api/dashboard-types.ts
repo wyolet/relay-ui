@@ -1,15 +1,17 @@
 /**
- * Hand-written types for dashboard endpoints whose response bodies are not yet
- * described in the OpenAPI spec (all admin/healthz 200 responses have
- * `content?: never` in types.gen.ts — the spec describes only error shapes).
+ * Hand-written types for dashboard endpoints whose response bodies are not
+ * described in the OpenAPI spec (/healthz has content?: never in the generated
+ * spec — the spec only describes error shapes there).
  *
- * NOTE: /admin/metrics does NOT exist on the live backend. The metrics section
- * has been removed from the dashboard (TODO: add when backend exposes the endpoint).
+ * NOTE: /admin/metrics does NOT exist on the live backend.
+ * NOTE: /admin/version is now in the schema as VersionResponse; we re-export it
+ *       from here for backwards compat with dashboard.ts which imports VersionResponse.
  */
 
-export interface VersionResponse {
-	version: string;
-}
+import type { components } from "#/api/types.gen";
+
+/** Re-export from the generated schema so importers don't break. */
+export type VersionResponse = components["schemas"]["VersionResponse"];
 
 export type HealthStatusLevel = "ok" | "degraded" | "error";
 
@@ -25,17 +27,6 @@ export interface HealthzResponse {
 	otel: HealthSubsystem;
 	/**
 	 * Present when the relay backend has a configured master key.
-	 * Backend assumption: /healthz exposes this boolean after the operator sets
-	 * RELAY_MASTER_KEY and restarts the deployment.
 	 */
 	master_key_configured?: boolean;
-}
-
-/** Minimal shape sufficient for counting items in a list endpoint. */
-export interface NamedItem {
-	name: string;
-}
-
-export interface ListResponse {
-	items: NamedItem[];
 }

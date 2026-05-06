@@ -17,12 +17,7 @@ const COLUMNS: ColumnDef<Pool>[] = [
 	{
 		key: "secrets",
 		label: "Secrets",
-		render: (r) => r.spec.secrets.length,
-	},
-	{
-		key: "default",
-		label: "Default",
-		render: (r) => (r.spec.default ? "Yes" : "No"),
+		render: (r) => (r.spec.secrets ?? []).length,
 	},
 	{
 		key: "health",
@@ -38,7 +33,7 @@ function PoolsList() {
 	return (
 		<ResourceList
 			title="Pools"
-			items={data.items}
+			items={data.items ?? []}
 			columns={COLUMNS}
 			createTo="/pools/new"
 			detailTo={(name) => `/pools/${name}`}

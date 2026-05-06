@@ -1,31 +1,27 @@
 /**
- * Inline rate limits editor for Pool, Secret, and Model forms.
- * Renders a list of RateLimitRef rows with ratelimit + meter selects,
+ * Inline rate limits editor for Pool and Model forms.
+ * Renders a list of RateLimitAttachment rows with ratelimit ref + meter selects,
  * a remove button per row, and an "Add row" button.
  */
 import { useRef, useState } from "react";
-import type { RateLimitRef } from "#/api/types/ratelimit";
+import type { RateLimitAttachment } from "#/api/types/ratelimit";
 
 interface RateLimitsEditorProps {
-	value: RateLimitRef[];
-	onChange: (next: RateLimitRef[]) => void;
+	value: RateLimitAttachment[];
+	onChange: (next: RateLimitAttachment[]) => void;
 	availableRateLimits: string[];
 }
 
-const METER_OPTIONS: RateLimitRef["meter"][] = [
-	"requests",
-	"tokens",
-	"concurrency",
-];
+const METER_OPTIONS: string[] = ["requests", "tokens", "concurrency"];
 
 // Internal row has a stable unique id for keying.
 interface Row {
 	id: number;
-	ref: RateLimitRef;
+	attachment: RateLimitAttachment;
 }
 
-function toRows(refs: RateLimitRef[], startId: number): Row[] {
-	return refs.map((ref, i) => ({ id: startId + i, ref }));
+function toRows(attachments: RateLimitAttachment[], startId: number): Row[] {
+	return attachments.map((attachment, i) => ({ id: startId + i, attachment }));
 }
 
 export function RateLimitsEditor({
@@ -38,23 +34,23 @@ export function RateLimitsEditor({
 
 	function emit(next: Row[]) {
 		setRows(next);
-		onChange(next.map((r) => r.ref));
+		onChange(next.map((r) => r.attachment));
 	}
 
 	function addRow() {
 		const first = availableRateLimits[0] ?? "";
 		const id = counter.current++;
-		emit([...rows, { id, ref: { name: first, meter: "requests" } }]);
+		emit([...rows, { id, attachment: { ref: first, meter: "requests" } }]);
 	}
 
 	function removeRow(id: number) {
 		emit(rows.filter((r) => r.id !== id));
 	}
 
-	function updateRow(id: number, patch: Partial<RateLimitRef>) {
+	function updateRow(id: number, patch: Partial<RateLimitAttachment>) {
 		emit(
 			rows.map((r) =>
-				r.id === id ? { ...r, ref: { ...r.ref, ...patch } } : r,
+				r.id === id ? { ...r, attachment: { ...r.attachment, ...patch } } : r,
 			),
 		);
 	}
@@ -85,8 +81,8 @@ export function RateLimitsEditor({
 						<div key={row.id} className="flex items-center gap-2">
 							<select
 								aria-label={`Rate limit name for row ${idx + 1}`}
-								value={row.ref.name}
-								onChange={(e) => updateRow(row.id, { name: e.target.value })}
+								value={row.attachment.ref}
+								onChange={(e) => updateRow(row.id, { ref: e.target.value })}
 								className="flex-1 border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
 							>
 								{availableRateLimits.map((name) => (
@@ -97,12 +93,8 @@ export function RateLimitsEditor({
 							</select>
 							<select
 								aria-label={`Meter for row ${idx + 1}`}
-								value={row.ref.meter}
-								onChange={(e) =>
-									updateRow(row.id, {
-										meter: e.target.value as RateLimitRef["meter"],
-									})
-								}
+								value={row.attachment.meter}
+								onChange={(e) => updateRow(row.id, { meter: e.target.value })}
 								className="border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
 							>
 								{METER_OPTIONS.map((m) => (

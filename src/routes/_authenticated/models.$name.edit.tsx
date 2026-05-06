@@ -11,8 +11,8 @@ import {
 } from "#/api/hooks/ratelimits";
 import type { ApiErrorBody } from "#/api/types/errors";
 import { ApiError } from "#/api/types/errors";
-import type { ModelCapability, ModelUpdate } from "#/api/types/model";
-import type { RateLimitRef } from "#/api/types/ratelimit";
+import type { ModelUpdate } from "#/api/types/model";
+import type { RateLimitAttachment } from "#/api/types/ratelimit";
 import { RateLimitsEditor } from "#/components/RateLimitsEditor";
 import type { FieldDef, FormValues } from "#/components/ResourceForm";
 import { ResourceForm } from "#/components/ResourceForm";
@@ -27,13 +27,6 @@ export const Route = createFileRoute("/_authenticated/models/$name/edit")({
 	component: EditModelPage,
 });
 
-const CAPABILITY_OPTIONS: { value: ModelCapability; label: string }[] = [
-	{ value: "chat", label: "Chat" },
-	{ value: "embeddings", label: "Embeddings" },
-	{ value: "completions", label: "Completions" },
-	{ value: "vision", label: "Vision" },
-];
-
 const FIELDS: FieldDef[] = [
 	{
 		name: "provider",
@@ -43,44 +36,25 @@ const FIELDS: FieldDef[] = [
 		placeholder: "my-provider",
 	},
 	{
-		name: "upstream_name",
+		name: "upstreamName",
 		label: "Upstream model name",
 		type: "text",
 		required: true,
 		placeholder: "gpt-4o",
 	},
 	{
-		name: "capabilities",
-		label: "Capabilities",
-		type: "multiselect",
-		required: true,
-		options: CAPABILITY_OPTIONS,
-	},
-	{
-		name: "input_per_million",
+		name: "input",
 		label: "Input cost per 1M tokens (USD)",
 		type: "number",
 		placeholder: "2.50",
 	},
 	{
-		name: "output_per_million",
+		name: "output",
 		label: "Output cost per 1M tokens (USD)",
 		type: "number",
 		placeholder: "10.00",
 	},
 ];
-
-const ALL_CAPABILITIES = new Set<string>([
-	"chat",
-	"embeddings",
-	"completions",
-	"vision",
-]);
-
-function toCapabilities(value: string | string[]): ModelCapability[] {
-	const arr = Array.isArray(value) ? value : [];
-	return arr.filter((v): v is ModelCapability => ALL_CAPABILITIES.has(v));
-}
 
 function EditModelInner() {
 	const { name } = Route.useParams();
@@ -89,27 +63,27 @@ function EditModelInner() {
 	const updateModel = useUpdateModel(name);
 	const navigate = useNavigate();
 	const [serverError, setServerError] = useState<ApiErrorBody | undefined>();
-	const [rateLimits, setRateLimits] = useState<RateLimitRef[]>(
+	const [rateLimits, setRateLimits] = useState<RateLimitAttachment[]>(
 		model.spec.rateLimits ?? [],
 	);
 
 	async function handleSubmit(values: FormValues) {
 		setServerError(undefined);
-		const inputPM = Number(values.input_per_million);
-		const outputPM = Number(values.output_per_million);
+		const inputVal = Number(values.input);
+		const outputVal = Number(values.output);
 		const hasPricing =
-			!Number.isNaN(inputPM) &&
-			!Number.isNaN(outputPM) &&
-			String(values.input_per_million).trim() !== "" &&
-			String(values.output_per_million).trim() !== "";
+			!Number.isNaN(inputVal) &&
+			!Number.isNaN(outputVal) &&
+			String(values.input).trim() !== "" &&
+			String(values.output).trim() !== "";
 
 		const payload: ModelUpdate = {
+			metadata: model.metadata,
 			spec: {
 				provider: String(values.provider ?? ""),
-				upstream_name: String(values.upstream_name ?? ""),
-				capabilities: toCapabilities(values.capabilities),
+				upstreamName: String(values.upstreamName ?? ""),
 				pricing: hasPricing
-					? { input_per_million: inputPM, output_per_million: outputPM }
+					? { input: inputVal, output: outputVal }
 					: undefined,
 				rateLimits: rateLimits.length > 0 ? rateLimits : undefined,
 			},
@@ -134,14 +108,9 @@ function EditModelInner() {
 				fields={FIELDS}
 				initialValues={{
 					provider: model.spec.provider,
-					upstream_name: model.spec.upstream_name,
-					capabilities: model.spec.capabilities,
-					input_per_million: model.spec.pricing
-						? String(model.spec.pricing.input_per_million)
-						: "",
-					output_per_million: model.spec.pricing
-						? String(model.spec.pricing.output_per_million)
-						: "",
+					upstreamName: model.spec.upstreamName,
+					input: model.spec.pricing ? String(model.spec.pricing.input) : "",
+					output: model.spec.pricing ? String(model.spec.pricing.output) : "",
 				}}
 				onSubmit={handleSubmit}
 				onCancel={() =>
@@ -153,7 +122,7 @@ function EditModelInner() {
 					<RateLimitsEditor
 						value={rateLimits}
 						onChange={setRateLimits}
-						availableRateLimits={rateLimitsData.items.map(
+						availableRateLimits={(rateLimitsData.items ?? []).map(
 							(rl) => rl.metadata.name,
 						)}
 					/>

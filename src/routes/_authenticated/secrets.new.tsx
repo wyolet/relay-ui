@@ -1,37 +1,23 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Suspense, useState } from "react";
-import {
-	rateLimitsListQueryOptions,
-	useRateLimits,
-} from "#/api/hooks/ratelimits";
 import { useCreateSecret } from "#/api/hooks/secrets";
 import type { ApiErrorBody } from "#/api/types/errors";
 import { ApiError } from "#/api/types/errors";
-import type { RateLimitRef } from "#/api/types/ratelimit";
 import type { SecretCreate, SecretKind } from "#/api/types/secret";
-import { RateLimitsEditor } from "#/components/RateLimitsEditor";
 import { toast } from "#/components/Toast";
 
 export const Route = createFileRoute("/_authenticated/secrets/new")({
-	loader: ({ context }) =>
-		context.queryClient.ensureQueryData(rateLimitsListQueryOptions),
 	component: NewSecretPage,
 });
-
-// TODO: When backend confirms that /healthz includes `master_key_configured: boolean`,
-// fetch useHealthz() here and disable stored mode with an inline alert if false.
-// For now, treat absent field as "available" — stored mode is always enabled.
 
 function NewSecretInner() {
 	const navigate = useNavigate();
 	const createSecret = useCreateSecret();
-	const { data: rateLimitsData } = useRateLimits();
 
 	const [name, setName] = useState("");
 	const [kind, setKind] = useState<SecretKind>("stored");
 	const [envVar, setEnvVar] = useState("");
 	const [storedValue, setStoredValue] = useState("");
-	const [rateLimits, setRateLimits] = useState<RateLimitRef[]>([]);
 	const [serverError, setServerError] = useState<ApiErrorBody | undefined>();
 	const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 	const [submitted, setSubmitted] = useState(false);
@@ -56,19 +42,15 @@ function NewSecretInner() {
 		setServerError(undefined);
 		const trimmedName = name.trim();
 		const payload: SecretCreate = {
-			metadata: { name: trimmedName },
-			spec: {
-				value_from:
-					kind === "env"
-						? { kind: "env", env_var: envVar.trim() }
-						: { kind: "stored", value: storedValue },
-				rateLimits: rateLimits.length > 0 ? rateLimits : undefined,
-			},
+			name: trimmedName,
+			valueFrom:
+				kind === "env"
+					? { kind: "env", env: envVar.trim() }
+					: { kind: "stored", value: storedValue },
 		};
 		try {
 			await createSecret.mutateAsync(payload);
 			// SECURITY: cleartext value is never echoed after this point.
-			// The API response contains only the masked form.
 			toast("success", `Secret "${trimmedName}" created.`);
 			void navigate({
 				to: "/secrets/$name",
@@ -220,14 +202,6 @@ function NewSecretInner() {
 						)}
 					</div>
 				)}
-
-				<RateLimitsEditor
-					value={rateLimits}
-					onChange={setRateLimits}
-					availableRateLimits={rateLimitsData.items.map(
-						(rl) => rl.metadata.name,
-					)}
-				/>
 
 				<div className="flex gap-3 pt-2">
 					<button

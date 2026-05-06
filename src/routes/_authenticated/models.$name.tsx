@@ -16,6 +16,18 @@ export const Route = createFileRoute("/_authenticated/models/$name")({
 	component: ModelDetailPage,
 });
 
+function capabilitiesSummary(
+	cap: ReturnType<typeof useModel>["data"]["spec"]["capabilities"],
+): string {
+	if (!cap) return "—";
+	return (
+		Object.entries(cap)
+			.filter(([, v]) => v === true)
+			.map(([k]) => k)
+			.join(", ") || "—"
+	);
+}
+
 function ModelDetailInner() {
 	const { name } = Route.useParams();
 	const { data: model } = useModel(name);
@@ -36,12 +48,15 @@ function ModelDetailInner() {
 				</Link>
 			),
 		},
-		{ label: "Upstream Name", value: model.spec.upstream_name },
-		{ label: "Capabilities", value: model.spec.capabilities.join(", ") },
+		{ label: "Upstream Name", value: model.spec.upstreamName },
+		{
+			label: "Capabilities",
+			value: capabilitiesSummary(model.spec.capabilities),
+		},
 		{
 			label: "Pricing",
 			value: model.spec.pricing
-				? `$${model.spec.pricing.input_per_million}/1M in · $${model.spec.pricing.output_per_million}/1M out`
+				? `$${model.spec.pricing.input}/1M in · $${model.spec.pricing.output}/1M out`
 				: "—",
 		},
 	];
