@@ -8,6 +8,8 @@
  * - PUT    /admin/secrets/:name      → Secret  (200, never returns cleartext)
  * - DELETE /admin/secrets/:name      → 204
  *
+ * All CRUD payloads use a k8s-style { metadata, spec } envelope.
+ *
  * Secret shape:
  * - kind === 'env':    env_var is present, masked_value is absent
  * - kind === 'stored': masked_value is present (e.g. "sk-...A1B2"), env_var is absent
@@ -18,23 +20,9 @@
  * For now, absent === available (we don't block stored-mode creation).
  */
 
+import type { RateLimitRef } from "./ratelimit";
+
 export type SecretKind = "env" | "stored";
-
-export interface Secret {
-	name: string;
-	kind: SecretKind;
-	/** Present when kind === 'stored'. Masked form, e.g. "sk-...A1B2". Never cleartext. */
-	masked_value?: string;
-	/** Present when kind === 'env'. The environment variable name on the relay host. */
-	env_var?: string;
-}
-
-export interface SecretCreate {
-	name: string;
-	value_from: EnvValueFrom | StoredValueFrom;
-}
-
-export type SecretUpdate = Omit<SecretCreate, "name">;
 
 export interface EnvValueFrom {
 	kind: "env";
@@ -44,6 +32,44 @@ export interface EnvValueFrom {
 export interface StoredValueFrom {
 	kind: "stored";
 	value: string;
+}
+
+export interface SecretMetadata {
+	name: string;
+	[k: string]: unknown;
+}
+
+export interface SecretSpec {
+	kind: SecretKind;
+	/** Present when kind === 'stored'. Masked form, e.g. "sk-...A1B2". Never cleartext. */
+	masked_value?: string;
+	/** Present when kind === 'env'. The environment variable name on the relay host. */
+	env_var?: string;
+	/** On create/update: provide value_from instead of masked_value. */
+	value_from?: EnvValueFrom | StoredValueFrom;
+	rateLimits?: RateLimitRef[];
+}
+
+export interface Secret {
+	metadata: SecretMetadata;
+	spec: SecretSpec;
+}
+
+/** POST body: full envelope with value_from in spec */
+export interface SecretCreate {
+	metadata: SecretMetadata;
+	spec: {
+		value_from: EnvValueFrom | StoredValueFrom;
+		rateLimits?: RateLimitRef[];
+	};
+}
+
+/** PUT body: spec only (name is in URL path) */
+export interface SecretUpdate {
+	spec: {
+		value_from: EnvValueFrom | StoredValueFrom;
+		rateLimits?: RateLimitRef[];
+	};
 }
 
 export interface SecretsListResponse {

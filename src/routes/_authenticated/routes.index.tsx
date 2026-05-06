@@ -12,12 +12,12 @@ export const Route = createFileRoute("/_authenticated/routes/")({
 });
 
 const COLUMNS: ColumnDef<RelayRoute>[] = [
-	{ key: "name", label: "Name", render: (r) => r.name },
-	{ key: "pool", label: "Pool", render: (r) => r.pool },
+	{ key: "name", label: "Name", render: (r) => r.metadata.name },
+	{ key: "pool", label: "Pool", render: (r) => r.spec.pool },
 	{
 		key: "acl",
 		label: "ACL (preview)",
-		render: (r) => r.acl.split("\n")[0] ?? "",
+		render: (r) => r.spec.acl.split("\n")[0] ?? "",
 	},
 ];
 
@@ -30,6 +30,7 @@ function RoutesList() {
 			columns={COLUMNS}
 			createTo="/routes/new"
 			detailTo={(name) => `/routes/${name}`}
+			getName={(r) => r.metadata.name}
 			emptyMessage="No routes configured."
 		/>
 	);

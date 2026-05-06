@@ -12,10 +12,10 @@ export const Route = createFileRoute("/_authenticated/providers/")({
 });
 
 const COLUMNS: ColumnDef<Provider>[] = [
-	{ key: "name", label: "Name", render: (r) => r.name },
-	{ key: "kind", label: "Kind", render: (r) => r.kind },
-	{ key: "endpoint", label: "Endpoint", render: (r) => r.endpoint },
-	{ key: "secret", label: "Secret", render: (r) => r.secret ?? "—" },
+	{ key: "name", label: "Name", render: (r) => r.metadata.name },
+	{ key: "kind", label: "Kind", render: (r) => r.spec.kind },
+	{ key: "endpoint", label: "Endpoint", render: (r) => r.spec.endpoint },
+	{ key: "secret", label: "Secret", render: (r) => r.spec.secret ?? "—" },
 ];
 
 function ProvidersList() {
@@ -27,6 +27,7 @@ function ProvidersList() {
 			columns={COLUMNS}
 			createTo="/providers/new"
 			detailTo={(name) => `/providers/${name}`}
+			getName={(r) => r.metadata.name}
 			emptyMessage="No providers configured."
 		/>
 	);

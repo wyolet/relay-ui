@@ -12,17 +12,17 @@ export const Route = createFileRoute("/_authenticated/models/")({
 });
 
 const COLUMNS: ColumnDef<Model>[] = [
-	{ key: "name", label: "Name", render: (r) => r.name },
-	{ key: "provider", label: "Provider", render: (r) => r.provider },
+	{ key: "name", label: "Name", render: (r) => r.metadata.name },
+	{ key: "provider", label: "Provider", render: (r) => r.spec.provider },
 	{
 		key: "upstream_name",
 		label: "Upstream Name",
-		render: (r) => r.upstream_name,
+		render: (r) => r.spec.upstream_name,
 	},
 	{
 		key: "capabilities",
 		label: "Capabilities",
-		render: (r) => r.capabilities.join(", "),
+		render: (r) => r.spec.capabilities.join(", "),
 	},
 ];
 
@@ -35,6 +35,7 @@ function ModelsList() {
 			columns={COLUMNS}
 			createTo="/models/new"
 			detailTo={(name) => `/models/${name}`}
+			getName={(r) => r.metadata.name}
 			emptyMessage="No models configured."
 		/>
 	);

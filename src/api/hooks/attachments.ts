@@ -1,20 +1,13 @@
-import {
-	queryOptions,
-	useMutation,
-	useQueryClient,
-	useSuspenseQuery,
-} from "@tanstack/react-query";
-import { adminDelete, adminGet, adminPost } from "#/api/fetch";
+import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
+import { adminGet } from "#/api/fetch";
 import type {
-	Attachment,
-	AttachmentCreate,
 	AttachmentParentKind,
 	AttachmentsListResponse,
 } from "#/api/types/attachment";
 
 // --- Query options ---
 
-/** Fetch all attachments across all parents (no filter). */
+/** Fetch all attachments across all parents (no filter). Read-only view. */
 export const allAttachmentsQueryOptions = queryOptions({
 	queryKey: ["attachments", "all"] as const,
 	queryFn: () => adminGet<AttachmentsListResponse>("/admin/attachments"),
@@ -42,7 +35,7 @@ export function attachmentsQueryOptions(params: {
 
 // --- Hooks ---
 
-/** Hook: all attachments across all parents. */
+/** Hook: all attachments across all parents. Read-only — derived from parent spec.rateLimits[]. */
 export function useAllAttachments() {
 	return useSuspenseQuery(allAttachmentsQueryOptions);
 }
@@ -52,55 +45,4 @@ export function useAttachments(params: {
 	parent_name: string;
 }) {
 	return useSuspenseQuery(attachmentsQueryOptions(params));
-}
-
-export function useCreateAttachment() {
-	const queryClient = useQueryClient();
-	return useMutation({
-		mutationFn: (data: AttachmentCreate) =>
-			adminPost<Attachment>("/admin/attachments", data),
-		onSuccess: (_data, vars) => {
-			void queryClient.invalidateQueries({
-				queryKey: [
-					"attachments",
-					{ parent_kind: vars.parent_kind, parent_name: vars.parent_name },
-				],
-			});
-			void queryClient.invalidateQueries({
-				queryKey: allAttachmentsQueryOptions.queryKey,
-			});
-		},
-	});
-}
-
-export function useDeleteAttachment(params: {
-	parent_kind: AttachmentParentKind;
-	parent_name: string;
-}) {
-	const queryClient = useQueryClient();
-	return useMutation({
-		mutationFn: (id: string) =>
-			adminDelete(`/admin/attachments/${encodeURIComponent(id)}`),
-		onSuccess: () => {
-			void queryClient.invalidateQueries({
-				queryKey: ["attachments", params],
-			});
-			void queryClient.invalidateQueries({
-				queryKey: allAttachmentsQueryOptions.queryKey,
-			});
-		},
-	});
-}
-
-/** Delete an attachment from the global view (no parent context needed). */
-export function useDeleteAttachmentGlobal() {
-	const queryClient = useQueryClient();
-	return useMutation({
-		mutationFn: (id: string) =>
-			adminDelete(`/admin/attachments/${encodeURIComponent(id)}`),
-		onSuccess: () => {
-			// Invalidate all attachment queries
-			void queryClient.invalidateQueries({ queryKey: ["attachments"] });
-		},
-	});
 }

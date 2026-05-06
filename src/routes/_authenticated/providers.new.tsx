@@ -52,19 +52,22 @@ function NewProviderPage() {
 
 	async function handleSubmit(values: FormValues) {
 		setServerError(undefined);
+		const name = String(values.name ?? "");
 		const payload: ProviderCreate = {
-			name: String(values.name ?? ""),
-			kind:
-				values.kind === "openai" || values.kind === "ollama"
-					? values.kind
-					: "openai",
-			endpoint: String(values.endpoint ?? ""),
-			secret: values.secret ? String(values.secret) : undefined,
+			metadata: { name },
+			spec: {
+				kind:
+					values.kind === "openai" || values.kind === "ollama"
+						? values.kind
+						: "openai",
+				endpoint: String(values.endpoint ?? ""),
+				secret: values.secret ? String(values.secret) : undefined,
+			},
 		};
 		try {
 			await createProvider.mutateAsync(payload);
-			toast("success", `Provider "${payload.name}" created.`);
-			void navigate({ to: "/providers/$name", params: { name: payload.name } });
+			toast("success", `Provider "${name}" created.`);
+			void navigate({ to: "/providers/$name", params: { name } });
 		} catch (err) {
 			if (err instanceof ApiError) {
 				setServerError(err.body);

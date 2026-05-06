@@ -27,22 +27,24 @@ function SecretsList() {
 	const rows: SecretRow[] = secretsData.items.map((secret) => ({
 		...secret,
 		refCount: poolsData.items.filter((pool) =>
-			pool.secrets.includes(secret.name),
+			pool.spec.secrets.includes(secret.metadata.name),
 		).length,
 	}));
 
 	const COLUMNS: ColumnDef<SecretRow>[] = [
-		{ key: "name", label: "Name", render: (r) => r.name },
+		{ key: "name", label: "Name", render: (r) => r.metadata.name },
 		{
 			key: "kind",
 			label: "Kind",
-			render: (r) => r.kind,
+			render: (r) => r.spec.kind,
 		},
 		{
 			key: "value",
 			label: "Value / Env Var",
 			render: (r) =>
-				r.kind === "stored" ? (r.masked_value ?? "—") : (r.env_var ?? "—"),
+				r.spec.kind === "stored"
+					? (r.spec.masked_value ?? "—")
+					: (r.spec.env_var ?? "—"),
 		},
 		{
 			key: "refCount",
@@ -58,6 +60,7 @@ function SecretsList() {
 			columns={COLUMNS}
 			createTo="/secrets/new"
 			detailTo={(name) => `/secrets/${name}`}
+			getName={(r) => r.metadata.name}
 			emptyMessage="No secrets configured."
 		/>
 	);

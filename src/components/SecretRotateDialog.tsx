@@ -21,7 +21,7 @@ export function SecretRotateDialog({ name, onClose }: SecretRotateDialogProps) {
 		setInlineError(undefined);
 		try {
 			await updateSecret.mutateAsync({
-				value_from: { kind: "stored", value },
+				spec: { value_from: { kind: "stored", value } },
 			});
 			// SECURITY: Clear the value from state immediately after successful
 			// submission so the cleartext never lingers in the DOM after success.

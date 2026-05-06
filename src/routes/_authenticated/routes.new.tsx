@@ -43,15 +43,18 @@ function NewRoutePage() {
 
 	async function handleSubmit(values: FormValues) {
 		setServerError(undefined);
+		const name = String(values.name ?? "");
 		const payload: RelayRouteCreate = {
-			name: String(values.name ?? ""),
-			pool: String(values.pool ?? ""),
-			acl: String(values.acl ?? ""),
+			metadata: { name },
+			spec: {
+				pool: String(values.pool ?? ""),
+				acl: String(values.acl ?? ""),
+			},
 		};
 		try {
 			await createRoute.mutateAsync(payload);
-			toast("success", `Route "${payload.name}" created.`);
-			void navigate({ to: "/routes/$name", params: { name: payload.name } });
+			toast("success", `Route "${name}" created.`);
+			void navigate({ to: "/routes/$name", params: { name } });
 		} catch (err) {
 			if (err instanceof ApiError) {
 				setServerError(err.body);

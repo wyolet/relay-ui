@@ -91,19 +91,22 @@ function NewRateLimitPage() {
 
 	async function handleSubmit(values: FormValues) {
 		setServerError(undefined);
+		const name = String(values.name ?? "");
 		const payload: RateLimitCreate = {
-			name: String(values.name ?? ""),
-			strategy: toStrategy(values.strategy),
-			window: Number(values.window),
-			amount: Number(values.amount),
-			source: toSource(values.source),
+			metadata: { name },
+			spec: {
+				strategy: toStrategy(values.strategy),
+				window: Number(values.window),
+				amount: Number(values.amount),
+				source: toSource(values.source),
+			},
 		};
 		try {
 			await createRateLimit.mutateAsync(payload);
-			toast("success", `Rate limit "${payload.name}" created.`);
+			toast("success", `Rate limit "${name}" created.`);
 			void navigate({
 				to: "/ratelimits/$name",
-				params: { name: payload.name },
+				params: { name },
 			});
 		} catch (err) {
 			if (err instanceof ApiError) {

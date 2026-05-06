@@ -25,11 +25,11 @@ function RateLimitDetailInner() {
 	const navigate = useNavigate();
 
 	const fields: DetailField[] = [
-		{ label: "Name", value: rl.name },
-		{ label: "Strategy", value: rl.strategy },
-		{ label: "Window", value: `${rl.window}s` },
-		{ label: "Amount", value: rl.amount },
-		{ label: "Source", value: rl.source },
+		{ label: "Name", value: rl.metadata.name },
+		{ label: "Strategy", value: rl.spec.strategy },
+		{ label: "Window", value: `${rl.spec.window}s` },
+		{ label: "Amount", value: rl.spec.amount },
+		{ label: "Source", value: rl.spec.source },
 	];
 
 	async function handleDelete() {
@@ -48,7 +48,7 @@ function RateLimitDetailInner() {
 
 	return (
 		<ResourceDetail
-			title={rl.name}
+			title={rl.metadata.name}
 			fields={fields}
 			editTo={`/ratelimits/${name}/edit`}
 			backTo="/ratelimits"

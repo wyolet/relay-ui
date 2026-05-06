@@ -45,8 +45,10 @@ function EditRouteInner() {
 	async function handleSubmit(values: FormValues) {
 		setServerError(undefined);
 		const payload: RelayRouteUpdate = {
-			pool: String(values.pool ?? ""),
-			acl: String(values.acl ?? ""),
+			spec: {
+				pool: String(values.pool ?? ""),
+				acl: String(values.acl ?? ""),
+			},
 		};
 		try {
 			await updateRoute.mutateAsync(payload);
@@ -66,8 +68,8 @@ function EditRouteInner() {
 			title={`Edit Route: ${name}`}
 			fields={FIELDS}
 			initialValues={{
-				pool: route.pool,
-				acl: route.acl,
+				pool: route.spec.pool,
+				acl: route.spec.acl,
 			}}
 			onSubmit={handleSubmit}
 			onCancel={() => void navigate({ to: "/routes/$name", params: { name } })}

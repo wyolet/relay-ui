@@ -73,7 +73,9 @@ export function useDeletePool() {
 				poolsListQueryOptions.queryKey,
 				(old: PoolsListResponse | undefined) => {
 					if (!old) return old;
-					return { items: old.items.filter((p) => p.name !== name) };
+					return {
+						items: old.items.filter((p) => p.metadata.name !== name),
+					};
 				},
 			);
 			return { previous };

@@ -12,17 +12,17 @@ export const Route = createFileRoute("/_authenticated/pools/")({
 });
 
 const COLUMNS: ColumnDef<Pool>[] = [
-	{ key: "name", label: "Name", render: (r) => r.name },
-	{ key: "provider", label: "Provider", render: (r) => r.provider },
+	{ key: "name", label: "Name", render: (r) => r.metadata.name },
+	{ key: "provider", label: "Provider", render: (r) => r.spec.provider },
 	{
 		key: "secrets",
 		label: "Secrets",
-		render: (r) => r.secrets.length,
+		render: (r) => r.spec.secrets.length,
 	},
 	{
 		key: "default",
 		label: "Default",
-		render: (r) => (r.default ? "Yes" : "No"),
+		render: (r) => (r.spec.default ? "Yes" : "No"),
 	},
 	{
 		key: "health",
@@ -42,6 +42,7 @@ function PoolsList() {
 			columns={COLUMNS}
 			createTo="/pools/new"
 			detailTo={(name) => `/pools/${name}`}
+			getName={(r) => r.metadata.name}
 			emptyMessage="No pools configured."
 		/>
 	);

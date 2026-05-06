@@ -1,20 +1,15 @@
 /**
- * Global attachments view (PER-279).
+ * Global attachments view — READ-ONLY (PER-279 updated).
+ *
+ * Attachments are now derived from inline spec.rateLimits[] on Pool/Secret/Model
+ * resources. This page shows the read-only derived view from GET /admin/attachments.
+ * To add/remove rate limits, edit the parent resource directly.
  *
  * Design decisions:
- * - Orphaned RateLimits (zero attachments): rendered as synthetic amber rows
- *   in a separate "Orphaned Rate Limits" section below the main table, with a
- *   tooltip explaining the issue. This is cleaner than mixing them inline
- *   because they have no attachment ID, no meter, and no parent — mixing them
- *   with real rows would require awkward null handling.
- * - Duplicate-meter rows: detected client-side by grouping on
- *   (parent_kind, parent_name, meter). Highlighted amber in-place with a
- *   title tooltip.
- * - Detach: uses inline window.confirm (not DeleteConfirm which requires
- *   typing the resource name) because attachments are recoverable — the user
- *   can re-attach at any time. This keeps the UX snappy.
- * - Add attachment dialog: parent kind → parent name (fetches pools/secrets/
- *   models list for the selected kind) → rate limit → meter.
+ * - Banner at top explains the read-only nature and how to manage rate limits.
+ * - Orphaned RateLimits: rendered in a separate "Orphaned Rate Limits" section.
+ * - Duplicate-meter rows: detected client-side, highlighted amber.
+ * - Parent name cells link to the parent's edit page for quick navigation.
  */
 
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -22,31 +17,21 @@ import { Suspense, useState } from "react";
 import {
 	allAttachmentsQueryOptions,
 	useAllAttachments,
-	useCreateAttachment,
-	useDeleteAttachmentGlobal,
 } from "#/api/hooks/attachments";
-import { modelsListQueryOptions, useModels } from "#/api/hooks/models";
-import { poolsListQueryOptions, usePools } from "#/api/hooks/pools";
 import {
 	rateLimitsListQueryOptions,
 	useRateLimits,
 } from "#/api/hooks/ratelimits";
-import { secretsListQueryOptions, useSecrets } from "#/api/hooks/secrets";
 import type {
 	AttachmentMeter,
 	AttachmentParentKind,
 } from "#/api/types/attachment";
-import { ApiError } from "#/api/types/errors";
-import { toast } from "#/components/Toast";
 
 export const Route = createFileRoute("/_authenticated/attachments")({
 	loader: ({ context }) =>
 		Promise.all([
 			context.queryClient.ensureQueryData(allAttachmentsQueryOptions),
 			context.queryClient.ensureQueryData(rateLimitsListQueryOptions),
-			context.queryClient.ensureQueryData(poolsListQueryOptions),
-			context.queryClient.ensureQueryData(secretsListQueryOptions),
-			context.queryClient.ensureQueryData(modelsListQueryOptions),
 		]),
 	component: AttachmentsPage,
 });
@@ -56,13 +41,13 @@ export const Route = createFileRoute("/_authenticated/attachments")({
 type KindFilter = "all" | AttachmentParentKind;
 type MeterFilter = "all" | AttachmentMeter;
 
-// ---- Parent-name link helper ----
+// ---- Parent-name link helper — links to parent's edit page ----
 
-function parentLink(kind: AttachmentParentKind, name: string) {
+function parentEditLink(kind: AttachmentParentKind, name: string) {
 	if (kind === "pool") {
 		return (
 			<Link
-				to="/pools/$name"
+				to="/pools/$name/edit"
 				params={{ name }}
 				className="text-blue-600 hover:underline font-mono text-xs"
 			>
@@ -73,7 +58,7 @@ function parentLink(kind: AttachmentParentKind, name: string) {
 	if (kind === "secret") {
 		return (
 			<Link
-				to="/secrets/$name"
+				to="/secrets/$name/edit"
 				params={{ name }}
 				className="text-blue-600 hover:underline font-mono text-xs"
 			>
@@ -84,191 +69,12 @@ function parentLink(kind: AttachmentParentKind, name: string) {
 	// model
 	return (
 		<Link
-			to="/models/$name"
+			to="/models/$name/edit"
 			params={{ name }}
 			className="text-blue-600 hover:underline font-mono text-xs"
 		>
 			{name}
 		</Link>
-	);
-}
-
-// ---- Add Attachment Dialog ----
-
-interface AddDialogProps {
-	onClose: () => void;
-}
-
-function AddAttachmentDialog({ onClose }: AddDialogProps) {
-	const { data: poolsData } = usePools();
-	const { data: secretsData } = useSecrets();
-	const { data: modelsData } = useModels();
-	const { data: rateLimitsData } = useRateLimits();
-
-	const [parentKind, setParentKind] = useState<AttachmentParentKind>("pool");
-	const [parentName, setParentName] = useState("");
-	const [ratelimitName, setRatelimitName] = useState("");
-	const [meter, setMeter] = useState<AttachmentMeter>("requests");
-
-	const createAttachment = useCreateAttachment();
-
-	const parentNames: string[] =
-		parentKind === "pool"
-			? poolsData.items.map((p) => p.name)
-			: parentKind === "secret"
-				? secretsData.items.map((s) => s.name)
-				: modelsData.items.map((m) => m.name);
-
-	async function handleSubmit() {
-		if (!parentName || !ratelimitName) return;
-		try {
-			await createAttachment.mutateAsync({
-				parent_kind: parentKind,
-				parent_name: parentName,
-				ratelimit_name: ratelimitName,
-				meter,
-			});
-			toast("success", "Attachment created.");
-			onClose();
-		} catch (err) {
-			if (err instanceof ApiError) {
-				toast("error", err.body.message);
-			} else {
-				toast("error", "Failed to create attachment.");
-			}
-		}
-	}
-
-	function handleKindChange(kind: AttachmentParentKind) {
-		setParentKind(kind);
-		setParentName("");
-	}
-
-	return (
-		<div
-			role="dialog"
-			aria-modal="true"
-			aria-labelledby="add-attachment-title"
-			className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 dark:bg-black/60"
-		>
-			<div className="bg-white dark:bg-zinc-900 rounded-xl shadow-xl dark:shadow-black/40 w-full max-w-md p-6">
-				<h2
-					id="add-attachment-title"
-					className="text-lg font-semibold text-gray-900 dark:text-zinc-100 mb-4"
-				>
-					Add Attachment
-				</h2>
-				<div className="space-y-4">
-					{/* Parent Kind */}
-					<div>
-						<label
-							htmlFor="add-parent-kind"
-							className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1"
-						>
-							Parent Kind
-						</label>
-						<select
-							id="add-parent-kind"
-							value={parentKind}
-							onChange={(e) =>
-								handleKindChange(e.target.value as AttachmentParentKind)
-							}
-							className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
-						>
-							<option value="pool">Pool</option>
-							<option value="secret">Secret</option>
-							<option value="model">Model</option>
-						</select>
-					</div>
-
-					{/* Parent Name */}
-					<div>
-						<label
-							htmlFor="add-parent-name"
-							className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1"
-						>
-							Parent Name
-						</label>
-						<select
-							id="add-parent-name"
-							value={parentName}
-							onChange={(e) => setParentName(e.target.value)}
-							className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
-						>
-							<option value="">— select —</option>
-							{parentNames.map((n) => (
-								<option key={n} value={n}>
-									{n}
-								</option>
-							))}
-						</select>
-					</div>
-
-					{/* Rate Limit */}
-					<div>
-						<label
-							htmlFor="add-ratelimit"
-							className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1"
-						>
-							Rate Limit
-						</label>
-						<select
-							id="add-ratelimit"
-							value={ratelimitName}
-							onChange={(e) => setRatelimitName(e.target.value)}
-							className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
-						>
-							<option value="">— select —</option>
-							{rateLimitsData.items.map((rl) => (
-								<option key={rl.name} value={rl.name}>
-									{rl.name}
-								</option>
-							))}
-						</select>
-					</div>
-
-					{/* Meter */}
-					<div>
-						<label
-							htmlFor="add-meter"
-							className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1"
-						>
-							Meter
-						</label>
-						<select
-							id="add-meter"
-							value={meter}
-							onChange={(e) => setMeter(e.target.value as AttachmentMeter)}
-							className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
-						>
-							<option value="requests">Requests</option>
-							<option value="tokens">Tokens</option>
-							<option value="concurrency">Concurrency</option>
-						</select>
-					</div>
-				</div>
-
-				<div className="flex gap-3 mt-6">
-					<button
-						type="button"
-						disabled={
-							!parentName || !ratelimitName || createAttachment.isPending
-						}
-						onClick={() => void handleSubmit()}
-						className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
-					>
-						{createAttachment.isPending ? "Creating…" : "Create"}
-					</button>
-					<button
-						type="button"
-						onClick={onClose}
-						className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-zinc-300 bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
-					>
-						Cancel
-					</button>
-				</div>
-			</div>
-		</div>
 	);
 }
 
@@ -278,14 +84,11 @@ function AttachmentsInner() {
 	const { data: attachmentsData } = useAllAttachments();
 	const { data: rateLimitsData } = useRateLimits();
 
-	const deleteAttachment = useDeleteAttachmentGlobal();
-
 	// Filters
 	const [kindFilter, setKindFilter] = useState<KindFilter>("all");
 	const [parentNameFilter, setParentNameFilter] = useState("");
 	const [rateLimitFilter, setRateLimitFilter] = useState("");
 	const [meterFilter, setMeterFilter] = useState<MeterFilter>("all");
-	const [showAddDialog, setShowAddDialog] = useState(false);
 
 	const allItems = attachmentsData.items;
 
@@ -311,7 +114,7 @@ function AttachmentsInner() {
 	// Orphaned rate limits
 	const attachedRlNames = new Set(allItems.map((a) => a.ratelimit_name));
 	const orphanedRateLimits = rateLimitsData.items.filter(
-		(rl) => !attachedRlNames.has(rl.name),
+		(rl) => !attachedRlNames.has(rl.metadata.name),
 	);
 
 	// Apply filters
@@ -331,29 +134,10 @@ function AttachmentsInner() {
 		return true;
 	});
 
-	async function handleDetach(id: string, rlName: string) {
-		if (
-			!window.confirm(
-				`Detach rate limit "${rlName}"? This can be re-added later.`,
-			)
-		)
-			return;
-		try {
-			await deleteAttachment.mutateAsync(id);
-			toast("success", "Attachment removed.");
-		} catch (err) {
-			if (err instanceof ApiError) {
-				toast("error", err.body.message);
-			} else {
-				toast("error", "Failed to remove attachment.");
-			}
-		}
-	}
-
 	return (
 		<div>
 			{/* Header */}
-			<div className="flex items-center justify-between mb-6">
+			<div className="flex items-center justify-between mb-4">
 				<div>
 					<h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100">
 						Attachments
@@ -362,13 +146,13 @@ function AttachmentsInner() {
 						Rate limit attachments across all resources.
 					</p>
 				</div>
-				<button
-					type="button"
-					onClick={() => setShowAddDialog(true)}
-					className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
-				>
-					+ Add attachment
-				</button>
+			</div>
+
+			{/* Read-only banner */}
+			<div className="mb-6 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950 px-4 py-3 text-sm text-blue-700 dark:text-blue-300">
+				Attachments are managed inline on Pool/Secret/Model resources. This view
+				is read-only. To add or remove rate limits, edit the parent resource
+				directly — parent name links below go to the edit form.
 			</div>
 
 			{/* Filters */}
@@ -425,7 +209,7 @@ function AttachmentsInner() {
 				<div className="rounded-lg border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-10 text-center">
 					<p className="text-sm text-gray-500 dark:text-zinc-400">
 						{allItems.length === 0
-							? 'No attachments configured. Click "Add attachment" to create one.'
+							? "No attachments found. Add rate limits on Pool, Secret, or Model resources."
 							: "No attachments match the current filters."}
 					</p>
 				</div>
@@ -449,7 +233,6 @@ function AttachmentsInner() {
 								<th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wide">
 									Created At
 								</th>
-								<th className="px-4 py-3" />
 							</tr>
 						</thead>
 						<tbody className="divide-y divide-gray-100 dark:divide-zinc-800">
@@ -469,7 +252,7 @@ function AttachmentsInner() {
 											{att.parent_kind}
 										</td>
 										<td className="px-4 py-3">
-											{parentLink(att.parent_kind, att.parent_name)}
+											{parentEditLink(att.parent_kind, att.parent_name)}
 										</td>
 										<td className="px-4 py-3">
 											<Link
@@ -485,18 +268,6 @@ function AttachmentsInner() {
 										</td>
 										<td className="px-4 py-3 text-gray-500 dark:text-zinc-400 text-xs">
 											{new Date(att.created_at).toLocaleString()}
-										</td>
-										<td className="px-4 py-3 text-right">
-											<button
-												type="button"
-												disabled={deleteAttachment.isPending}
-												onClick={() =>
-													void handleDetach(att.id, att.ratelimit_name)
-												}
-												className="text-sm text-red-600 hover:text-red-800 disabled:opacity-50 transition-colors"
-											>
-												Detach
-											</button>
 										</td>
 									</tr>
 								);
@@ -537,27 +308,27 @@ function AttachmentsInner() {
 							<tbody className="divide-y divide-amber-100 dark:divide-amber-900">
 								{orphanedRateLimits.map((rl) => (
 									<tr
-										key={rl.name}
+										key={rl.metadata.name}
 										className="bg-amber-50 dark:bg-amber-950/30"
 										title="Orphaned: no parent uses this RateLimit"
 									>
 										<td className="px-4 py-3">
 											<Link
 												to="/ratelimits/$name"
-												params={{ name: rl.name }}
+												params={{ name: rl.metadata.name }}
 												className="text-amber-700 dark:text-amber-400 hover:underline font-mono text-xs"
 											>
-												{rl.name}
+												{rl.metadata.name}
 											</Link>
 										</td>
 										<td className="px-4 py-3 text-amber-800 dark:text-amber-300">
-											{rl.strategy}
+											{rl.spec.strategy}
 										</td>
 										<td className="px-4 py-3 text-amber-800 dark:text-amber-300">
-											{rl.window}
+											{rl.spec.window}
 										</td>
 										<td className="px-4 py-3 text-amber-800 dark:text-amber-300">
-											{rl.amount}
+											{rl.spec.amount}
 										</td>
 									</tr>
 								))}
@@ -565,13 +336,6 @@ function AttachmentsInner() {
 						</table>
 					</div>
 				</div>
-			)}
-
-			{/* Add Attachment Dialog */}
-			{showAddDialog && (
-				<Suspense>
-					<AddAttachmentDialog onClose={() => setShowAddDialog(false)} />
-				</Suspense>
 			)}
 		</div>
 	);

@@ -7,6 +7,8 @@
  * - POST /admin/ratelimits            → RateLimit  (201)
  * - PUT  /admin/ratelimits/:name      → RateLimit  (200)
  * - DELETE /admin/ratelimits/:name    → 204
+ *
+ * All CRUD payloads use a k8s-style { metadata, spec } envelope.
  */
 
 export type RateLimitStrategy =
@@ -15,8 +17,22 @@ export type RateLimitStrategy =
 	| "token_bucket";
 export type RateLimitSource = "ip" | "api_key" | "user" | "global";
 
-export interface RateLimit {
+/**
+ * Reference to a RateLimit resource embedded in a parent spec's rateLimits[].
+ * Used by Pool, Secret, and Model to declare their inline rate limit attachments.
+ */
+export interface RateLimitRef {
+	/** Name of the ratelimit resource. */
 	name: string;
+	meter: "requests" | "tokens" | "concurrency";
+}
+
+export interface RateLimitMetadata {
+	name: string;
+	[k: string]: unknown;
+}
+
+export interface RateLimitSpec {
 	strategy: RateLimitStrategy;
 	/** Window duration in seconds. */
 	window: number;
@@ -25,15 +41,18 @@ export interface RateLimit {
 	source: RateLimitSource;
 }
 
-export interface RateLimitCreate {
-	name: string;
-	strategy: RateLimitStrategy;
-	window: number;
-	amount: number;
-	source: RateLimitSource;
+export interface RateLimit {
+	metadata: RateLimitMetadata;
+	spec: RateLimitSpec;
 }
 
-export type RateLimitUpdate = Omit<RateLimitCreate, "name">;
+/** POST body: full envelope */
+export type RateLimitCreate = RateLimit;
+
+/** PUT body: spec only (name is in URL path) */
+export interface RateLimitUpdate {
+	spec: RateLimitSpec;
+}
 
 export interface RateLimitsListResponse {
 	items: RateLimit[];

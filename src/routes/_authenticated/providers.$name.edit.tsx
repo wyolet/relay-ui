@@ -56,12 +56,14 @@ function EditProviderInner() {
 	async function handleSubmit(values: FormValues) {
 		setServerError(undefined);
 		const payload: ProviderUpdate = {
-			kind:
-				values.kind === "openai" || values.kind === "ollama"
-					? values.kind
-					: "openai",
-			endpoint: String(values.endpoint ?? ""),
-			secret: values.secret ? String(values.secret) : undefined,
+			spec: {
+				kind:
+					values.kind === "openai" || values.kind === "ollama"
+						? values.kind
+						: "openai",
+				endpoint: String(values.endpoint ?? ""),
+				secret: values.secret ? String(values.secret) : undefined,
+			},
 		};
 		try {
 			await updateProvider.mutateAsync(payload);
@@ -81,9 +83,9 @@ function EditProviderInner() {
 			title={`Edit Provider: ${name}`}
 			fields={FIELDS}
 			initialValues={{
-				kind: provider.kind,
-				endpoint: provider.endpoint,
-				secret: provider.secret ?? "",
+				kind: provider.spec.kind,
+				endpoint: provider.spec.endpoint,
+				secret: provider.spec.secret ?? "",
 			}}
 			onSubmit={handleSubmit}
 			onCancel={() =>

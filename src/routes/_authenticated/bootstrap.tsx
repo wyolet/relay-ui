@@ -336,7 +336,7 @@ function ProviderStep({ search }: ProviderStepProps) {
 	function handleSubmit(e: React.FormEvent) {
 		e.preventDefault();
 		createProvider.mutate(
-			{ name, kind, endpoint },
+			{ metadata: { name }, spec: { kind, endpoint } },
 			{
 				onSuccess: () => {
 					void navigate({
@@ -462,7 +462,7 @@ function SecretStep({ search }: SecretStepProps) {
 				: { kind: "stored" as const, value: storedValue };
 
 		createSecret.mutate(
-			{ name, value_from: valueFrom },
+			{ metadata: { name }, spec: { value_from: valueFrom } },
 			{
 				onSuccess: () => {
 					void navigate({
@@ -633,7 +633,7 @@ function PoolStep({ search }: PoolStepProps) {
 
 	const [name, setName] = useState("default");
 	const [provider, setProvider] = useState(
-		search.provider ?? providersQuery.data.items[0]?.name ?? "",
+		search.provider ?? providersQuery.data.items[0]?.metadata.name ?? "",
 	);
 	const [selectedSecrets, setSelectedSecrets] = useState<string[]>(
 		search.secret ? [search.secret] : [],
@@ -650,7 +650,10 @@ function PoolStep({ search }: PoolStepProps) {
 	function handleSubmit(e: React.FormEvent) {
 		e.preventDefault();
 		createPool.mutate(
-			{ name, provider, secrets: selectedSecrets, default: true },
+			{
+				metadata: { name },
+				spec: { provider, secrets: selectedSecrets, default: true },
+			},
 			{
 				onSuccess: () => {
 					void navigate({
@@ -706,8 +709,8 @@ function PoolStep({ search }: PoolStepProps) {
 						className="w-full rounded-lg border border-gray-300 dark:border-zinc-700 px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
 					>
 						{providersQuery.data.items.map((p) => (
-							<option key={p.name} value={p.name}>
-								{p.name}
+							<option key={p.metadata.name} value={p.metadata.name}>
+								{p.metadata.name}
 							</option>
 						))}
 					</select>
@@ -720,17 +723,17 @@ function PoolStep({ search }: PoolStepProps) {
 					<div className="space-y-2">
 						{secretsQuery.data.items.map((s) => (
 							<label
-								key={s.name}
+								key={s.metadata.name}
 								className="flex items-center gap-2 cursor-pointer"
 							>
 								<input
 									type="checkbox"
-									checked={selectedSecrets.includes(s.name)}
-									onChange={() => toggleSecret(s.name)}
+									checked={selectedSecrets.includes(s.metadata.name)}
+									onChange={() => toggleSecret(s.metadata.name)}
 									className="h-4 w-4 rounded border-gray-300 dark:border-zinc-600 text-blue-600"
 								/>
 								<span className="text-sm text-gray-900 dark:text-zinc-100">
-									{s.name}
+									{s.metadata.name}
 								</span>
 							</label>
 						))}
@@ -777,7 +780,7 @@ function ModelStep({ search }: ModelStepProps) {
 	const providersQuery = useSuspenseQuery(providersListQueryOptions);
 
 	const defaultProvider =
-		search.provider ?? providersQuery.data.items[0]?.name ?? "";
+		search.provider ?? providersQuery.data.items[0]?.metadata.name ?? "";
 	const [name, setName] = useState("gpt-4o");
 	const [provider, setProvider] = useState(defaultProvider);
 	const [upstreamName, setUpstreamName] = useState("gpt-4o");
@@ -793,7 +796,10 @@ function ModelStep({ search }: ModelStepProps) {
 	function handleSubmit(e: React.FormEvent) {
 		e.preventDefault();
 		createModel.mutate(
-			{ name, provider, upstream_name: upstreamName, capabilities: ["chat"] },
+			{
+				metadata: { name },
+				spec: { provider, upstream_name: upstreamName, capabilities: ["chat"] },
+			},
 			{
 				onSuccess: () => {
 					void navigate({
@@ -849,8 +855,8 @@ function ModelStep({ search }: ModelStepProps) {
 						className="w-full rounded-lg border border-gray-300 dark:border-zinc-700 px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
 					>
 						{providersQuery.data.items.map((p) => (
-							<option key={p.name} value={p.name}>
-								{p.name}
+							<option key={p.metadata.name} value={p.metadata.name}>
+								{p.metadata.name}
 							</option>
 						))}
 					</select>

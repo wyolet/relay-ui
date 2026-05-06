@@ -54,11 +54,8 @@ export function useCreateModel() {
 				(old: ModelsListResponse | undefined) => {
 					if (!old) return old;
 					const optimistic: Model = {
-						name: newModel.name,
-						provider: newModel.provider,
-						upstream_name: newModel.upstream_name,
-						capabilities: newModel.capabilities,
-						pricing: newModel.pricing,
+						metadata: { name: newModel.metadata.name },
+						spec: { ...newModel.spec },
 					};
 					return { items: [...old.items, optimistic] };
 				},
@@ -104,7 +101,9 @@ export function useDeleteModel() {
 				modelsListQueryOptions.queryKey,
 				(old: ModelsListResponse | undefined) => {
 					if (!old) return old;
-					return { items: old.items.filter((m) => m.name !== name) };
+					return {
+						items: old.items.filter((m) => m.metadata.name !== name),
+					};
 				},
 			);
 			return { previous };

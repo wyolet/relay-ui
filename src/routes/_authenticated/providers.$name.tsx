@@ -25,10 +25,10 @@ function ProviderDetailInner() {
 	const navigate = useNavigate();
 
 	const fields: DetailField[] = [
-		{ label: "Name", value: provider.name },
-		{ label: "Kind", value: provider.kind },
-		{ label: "Endpoint", value: provider.endpoint },
-		{ label: "Secret", value: provider.secret ?? "—" },
+		{ label: "Name", value: provider.metadata.name },
+		{ label: "Kind", value: provider.spec.kind },
+		{ label: "Endpoint", value: provider.spec.endpoint },
+		{ label: "Secret", value: provider.spec.secret ?? "—" },
 	];
 
 	async function handleDelete() {
@@ -47,7 +47,7 @@ function ProviderDetailInner() {
 
 	return (
 		<ResourceDetail
-			title={provider.name}
+			title={provider.metadata.name}
 			fields={fields}
 			editTo={`/providers/${name}/edit`}
 			backTo="/providers"

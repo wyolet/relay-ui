@@ -56,11 +56,8 @@ export function useCreateRateLimit() {
 				(old: RateLimitsListResponse | undefined) => {
 					if (!old) return old;
 					const optimistic: RateLimit = {
-						name: newRL.name,
-						strategy: newRL.strategy,
-						window: newRL.window,
-						amount: newRL.amount,
-						source: newRL.source,
+						metadata: { name: newRL.metadata.name },
+						spec: { ...newRL.spec },
 					};
 					return { items: [...old.items, optimistic] };
 				},
@@ -109,7 +106,9 @@ export function useDeleteRateLimit() {
 				rateLimitsListQueryOptions.queryKey,
 				(old: RateLimitsListResponse | undefined) => {
 					if (!old) return old;
-					return { items: old.items.filter((rl) => rl.name !== name) };
+					return {
+						items: old.items.filter((rl) => rl.metadata.name !== name),
+					};
 				},
 			);
 			return { previous };

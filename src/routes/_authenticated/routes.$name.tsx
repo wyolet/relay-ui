@@ -23,19 +23,21 @@ function RouteDetailInner() {
 	const navigate = useNavigate();
 
 	const fields: DetailField[] = [
-		{ label: "Name", value: route.name },
+		{ label: "Name", value: route.metadata.name },
 		{
 			label: "Pool",
 			value: (
 				<Link to="/pools" className="text-blue-600 hover:underline">
-					{route.pool}
+					{route.spec.pool}
 				</Link>
 			),
 		},
 		{
 			label: "ACL",
 			value: (
-				<pre className="whitespace-pre-wrap font-mono text-xs">{route.acl}</pre>
+				<pre className="whitespace-pre-wrap font-mono text-xs">
+					{route.spec.acl}
+				</pre>
 			),
 		},
 	];
@@ -56,7 +58,7 @@ function RouteDetailInner() {
 
 	return (
 		<ResourceDetail
-			title={route.name}
+			title={route.metadata.name}
 			fields={fields}
 			editTo={`/routes/${name}/edit`}
 			backTo="/routes"

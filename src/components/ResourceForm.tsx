@@ -83,8 +83,8 @@ interface ResourceFormProps {
 	isPending?: boolean;
 	/** Structured error from server (4xx). */
 	serverError?: ApiErrorBody;
-	/** Slot for additional UI between title and fields */
-	children?: ReactNode;
+	/** Extra content rendered after the main fields (e.g. rate limits editor). */
+	extraContent?: ReactNode;
 }
 
 export function ResourceForm({
@@ -95,6 +95,7 @@ export function ResourceForm({
 	onCancel,
 	isPending = false,
 	serverError,
+	extraContent,
 }: ResourceFormProps) {
 	const defaultValues: FormValues = {};
 	for (const f of fields) {
@@ -178,6 +179,8 @@ export function ResourceForm({
 						</div>
 					);
 				})}
+
+				{extraContent && <div>{extraContent}</div>}
 
 				<div className="flex gap-3 pt-2">
 					<button

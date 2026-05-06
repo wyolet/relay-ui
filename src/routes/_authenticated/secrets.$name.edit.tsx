@@ -1,18 +1,29 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Suspense, useState } from "react";
 import {
+	rateLimitsListQueryOptions,
+	useRateLimits,
+} from "#/api/hooks/ratelimits";
+import {
 	secretDetailQueryOptions,
 	useSecret,
 	useUpdateSecret,
 } from "#/api/hooks/secrets";
 import type { ApiErrorBody } from "#/api/types/errors";
 import { ApiError } from "#/api/types/errors";
-import type { SecretKind } from "#/api/types/secret";
+import type { RateLimitRef } from "#/api/types/ratelimit";
+import type { SecretKind, SecretUpdate } from "#/api/types/secret";
+import { RateLimitsEditor } from "#/components/RateLimitsEditor";
 import { toast } from "#/components/Toast";
 
 export const Route = createFileRoute("/_authenticated/secrets/$name/edit")({
 	loader: ({ context, params }) =>
-		context.queryClient.ensureQueryData(secretDetailQueryOptions(params.name)),
+		Promise.all([
+			context.queryClient.ensureQueryData(
+				secretDetailQueryOptions(params.name),
+			),
+			context.queryClient.ensureQueryData(rateLimitsListQueryOptions),
+		]),
 	component: EditSecretPage,
 });
 
@@ -23,12 +34,16 @@ export const Route = createFileRoute("/_authenticated/secrets/$name/edit")({
 function EditSecretInner() {
 	const { name } = Route.useParams();
 	const { data: secret } = useSecret(name);
+	const { data: rateLimitsData } = useRateLimits();
 	const updateSecret = useUpdateSecret(name);
 	const navigate = useNavigate();
 
-	const [kind, setKind] = useState<SecretKind>(secret.kind);
-	const [envVar, setEnvVar] = useState(secret.env_var ?? "");
+	const [kind, setKind] = useState<SecretKind>(secret.spec.kind);
+	const [envVar, setEnvVar] = useState(secret.spec.env_var ?? "");
 	const [storedValue, setStoredValue] = useState("");
+	const [rateLimits, setRateLimits] = useState<RateLimitRef[]>(
+		secret.spec.rateLimits ?? [],
+	);
 	const [serverError, setServerError] = useState<ApiErrorBody | undefined>();
 	const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 	const [submitted, setSubmitted] = useState(false);
@@ -50,13 +65,17 @@ function EditSecretInner() {
 		if (Object.keys(errs).length > 0) return;
 
 		setServerError(undefined);
-		try {
-			await updateSecret.mutateAsync({
+		const payload: SecretUpdate = {
+			spec: {
 				value_from:
 					kind === "env"
 						? { kind: "env", env_var: envVar.trim() }
 						: { kind: "stored", value: storedValue },
-			});
+				rateLimits: rateLimits.length > 0 ? rateLimits : undefined,
+			},
+		};
+		try {
+			await updateSecret.mutateAsync(payload);
 			// SECURITY: cleartext value is never echoed after this point.
 			toast("success", `Secret "${name}" updated.`);
 			void navigate({ to: "/secrets/$name", params: { name } });
@@ -169,7 +188,9 @@ function EditSecretInner() {
 						/>
 						<p className="mt-1 text-xs text-gray-500 dark:text-zinc-400">
 							The current masked value is:{" "}
-							<span className="font-mono">{secret.masked_value ?? "—"}</span>
+							<span className="font-mono">
+								{secret.spec.masked_value ?? "—"}
+							</span>
 						</p>
 						{errs.storedValue && (
 							<p
@@ -181,6 +202,14 @@ function EditSecretInner() {
 						)}
 					</div>
 				)}
+
+				<RateLimitsEditor
+					value={rateLimits}
+					onChange={setRateLimits}
+					availableRateLimits={rateLimitsData.items.map(
+						(rl) => rl.metadata.name,
+					)}
+				/>
 
 				<div className="flex gap-3 pt-2">
 					<button

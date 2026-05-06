@@ -1,12 +1,20 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { Suspense, useState } from "react";
+import {
+	rateLimitsListQueryOptions,
+	useRateLimits,
+} from "#/api/hooks/ratelimits";
 import { useCreateSecret } from "#/api/hooks/secrets";
 import type { ApiErrorBody } from "#/api/types/errors";
 import { ApiError } from "#/api/types/errors";
-import type { SecretKind } from "#/api/types/secret";
+import type { RateLimitRef } from "#/api/types/ratelimit";
+import type { SecretCreate, SecretKind } from "#/api/types/secret";
+import { RateLimitsEditor } from "#/components/RateLimitsEditor";
 import { toast } from "#/components/Toast";
 
 export const Route = createFileRoute("/_authenticated/secrets/new")({
+	loader: ({ context }) =>
+		context.queryClient.ensureQueryData(rateLimitsListQueryOptions),
 	component: NewSecretPage,
 });
 
@@ -14,14 +22,16 @@ export const Route = createFileRoute("/_authenticated/secrets/new")({
 // fetch useHealthz() here and disable stored mode with an inline alert if false.
 // For now, treat absent field as "available" — stored mode is always enabled.
 
-function NewSecretPage() {
+function NewSecretInner() {
 	const navigate = useNavigate();
 	const createSecret = useCreateSecret();
+	const { data: rateLimitsData } = useRateLimits();
 
 	const [name, setName] = useState("");
 	const [kind, setKind] = useState<SecretKind>("stored");
 	const [envVar, setEnvVar] = useState("");
 	const [storedValue, setStoredValue] = useState("");
+	const [rateLimits, setRateLimits] = useState<RateLimitRef[]>([]);
 	const [serverError, setServerError] = useState<ApiErrorBody | undefined>();
 	const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 	const [submitted, setSubmitted] = useState(false);
@@ -44,20 +54,25 @@ function NewSecretPage() {
 		if (Object.keys(errs).length > 0) return;
 
 		setServerError(undefined);
-		try {
-			await createSecret.mutateAsync({
-				name: name.trim(),
+		const trimmedName = name.trim();
+		const payload: SecretCreate = {
+			metadata: { name: trimmedName },
+			spec: {
 				value_from:
 					kind === "env"
 						? { kind: "env", env_var: envVar.trim() }
 						: { kind: "stored", value: storedValue },
-			});
+				rateLimits: rateLimits.length > 0 ? rateLimits : undefined,
+			},
+		};
+		try {
+			await createSecret.mutateAsync(payload);
 			// SECURITY: cleartext value is never echoed after this point.
 			// The API response contains only the masked form.
-			toast("success", `Secret "${name.trim()}" created.`);
+			toast("success", `Secret "${trimmedName}" created.`);
 			void navigate({
 				to: "/secrets/$name",
-				params: { name: name.trim() },
+				params: { name: trimmedName },
 			});
 		} catch (err) {
 			if (err instanceof ApiError) {
@@ -206,6 +221,14 @@ function NewSecretPage() {
 					</div>
 				)}
 
+				<RateLimitsEditor
+					value={rateLimits}
+					onChange={setRateLimits}
+					availableRateLimits={rateLimitsData.items.map(
+						(rl) => rl.metadata.name,
+					)}
+				/>
+
 				<div className="flex gap-3 pt-2">
 					<button
 						type="submit"
@@ -225,5 +248,17 @@ function NewSecretPage() {
 				</div>
 			</form>
 		</div>
+	);
+}
+
+function NewSecretPage() {
+	return (
+		<Suspense
+			fallback={
+				<div className="text-gray-500 dark:text-zinc-400 text-sm">Loading…</div>
+			}
+		>
+			<NewSecretInner />
+		</Suspense>
 	);
 }

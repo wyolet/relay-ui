@@ -5,16 +5,25 @@ import {
 	useModel,
 	useUpdateModel,
 } from "#/api/hooks/models";
+import {
+	rateLimitsListQueryOptions,
+	useRateLimits,
+} from "#/api/hooks/ratelimits";
 import type { ApiErrorBody } from "#/api/types/errors";
 import { ApiError } from "#/api/types/errors";
 import type { ModelCapability, ModelUpdate } from "#/api/types/model";
+import type { RateLimitRef } from "#/api/types/ratelimit";
+import { RateLimitsEditor } from "#/components/RateLimitsEditor";
 import type { FieldDef, FormValues } from "#/components/ResourceForm";
 import { ResourceForm } from "#/components/ResourceForm";
 import { toast } from "#/components/Toast";
 
 export const Route = createFileRoute("/_authenticated/models/$name/edit")({
 	loader: ({ context, params }) =>
-		context.queryClient.ensureQueryData(modelDetailQueryOptions(params.name)),
+		Promise.all([
+			context.queryClient.ensureQueryData(modelDetailQueryOptions(params.name)),
+			context.queryClient.ensureQueryData(rateLimitsListQueryOptions),
+		]),
 	component: EditModelPage,
 });
 
@@ -76,9 +85,13 @@ function toCapabilities(value: string | string[]): ModelCapability[] {
 function EditModelInner() {
 	const { name } = Route.useParams();
 	const { data: model } = useModel(name);
+	const { data: rateLimitsData } = useRateLimits();
 	const updateModel = useUpdateModel(name);
 	const navigate = useNavigate();
 	const [serverError, setServerError] = useState<ApiErrorBody | undefined>();
+	const [rateLimits, setRateLimits] = useState<RateLimitRef[]>(
+		model.spec.rateLimits ?? [],
+	);
 
 	async function handleSubmit(values: FormValues) {
 		setServerError(undefined);
@@ -91,12 +104,15 @@ function EditModelInner() {
 			String(values.output_per_million).trim() !== "";
 
 		const payload: ModelUpdate = {
-			provider: String(values.provider ?? ""),
-			upstream_name: String(values.upstream_name ?? ""),
-			capabilities: toCapabilities(values.capabilities),
-			pricing: hasPricing
-				? { input_per_million: inputPM, output_per_million: outputPM }
-				: undefined,
+			spec: {
+				provider: String(values.provider ?? ""),
+				upstream_name: String(values.upstream_name ?? ""),
+				capabilities: toCapabilities(values.capabilities),
+				pricing: hasPricing
+					? { input_per_million: inputPM, output_per_million: outputPM }
+					: undefined,
+				rateLimits: rateLimits.length > 0 ? rateLimits : undefined,
+			},
 		};
 		try {
 			await updateModel.mutateAsync(payload);
@@ -112,25 +128,38 @@ function EditModelInner() {
 	}
 
 	return (
-		<ResourceForm
-			title={`Edit Model: ${name}`}
-			fields={FIELDS}
-			initialValues={{
-				provider: model.provider,
-				upstream_name: model.upstream_name,
-				capabilities: model.capabilities,
-				input_per_million: model.pricing
-					? String(model.pricing.input_per_million)
-					: "",
-				output_per_million: model.pricing
-					? String(model.pricing.output_per_million)
-					: "",
-			}}
-			onSubmit={handleSubmit}
-			onCancel={() => void navigate({ to: "/models/$name", params: { name } })}
-			isPending={updateModel.isPending}
-			serverError={serverError}
-		/>
+		<div>
+			<ResourceForm
+				title={`Edit Model: ${name}`}
+				fields={FIELDS}
+				initialValues={{
+					provider: model.spec.provider,
+					upstream_name: model.spec.upstream_name,
+					capabilities: model.spec.capabilities,
+					input_per_million: model.spec.pricing
+						? String(model.spec.pricing.input_per_million)
+						: "",
+					output_per_million: model.spec.pricing
+						? String(model.spec.pricing.output_per_million)
+						: "",
+				}}
+				onSubmit={handleSubmit}
+				onCancel={() =>
+					void navigate({ to: "/models/$name", params: { name } })
+				}
+				isPending={updateModel.isPending}
+				serverError={serverError}
+				extraContent={
+					<RateLimitsEditor
+						value={rateLimits}
+						onChange={setRateLimits}
+						availableRateLimits={rateLimitsData.items.map(
+							(rl) => rl.metadata.name,
+						)}
+					/>
+				}
+			/>
+		</div>
 	);
 }
 

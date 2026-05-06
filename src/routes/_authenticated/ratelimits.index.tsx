@@ -15,11 +15,11 @@ export const Route = createFileRoute("/_authenticated/ratelimits/")({
 });
 
 const COLUMNS: ColumnDef<RateLimit>[] = [
-	{ key: "name", label: "Name", render: (r) => r.name },
-	{ key: "strategy", label: "Strategy", render: (r) => r.strategy },
-	{ key: "window", label: "Window (s)", render: (r) => r.window },
-	{ key: "amount", label: "Amount", render: (r) => r.amount },
-	{ key: "source", label: "Source", render: (r) => r.source },
+	{ key: "name", label: "Name", render: (r) => r.metadata.name },
+	{ key: "strategy", label: "Strategy", render: (r) => r.spec.strategy },
+	{ key: "window", label: "Window (s)", render: (r) => r.spec.window },
+	{ key: "amount", label: "Amount", render: (r) => r.spec.amount },
+	{ key: "source", label: "Source", render: (r) => r.spec.source },
 ];
 
 function RateLimitsList() {
@@ -31,6 +31,7 @@ function RateLimitsList() {
 			columns={COLUMNS}
 			createTo="/ratelimits/new"
 			detailTo={(name) => `/ratelimits/${name}`}
+			getName={(r) => r.metadata.name}
 			emptyMessage="No rate limits configured."
 		/>
 	);

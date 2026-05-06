@@ -1,14 +1,22 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useCreateModel } from "#/api/hooks/models";
+import {
+	rateLimitsListQueryOptions,
+	useRateLimits,
+} from "#/api/hooks/ratelimits";
 import type { ApiErrorBody } from "#/api/types/errors";
 import { ApiError } from "#/api/types/errors";
 import type { ModelCapability, ModelCreate } from "#/api/types/model";
+import type { RateLimitRef } from "#/api/types/ratelimit";
+import { RateLimitsEditor } from "#/components/RateLimitsEditor";
 import type { FieldDef, FormValues } from "#/components/ResourceForm";
 import { ResourceForm } from "#/components/ResourceForm";
 import { toast } from "#/components/Toast";
 
 export const Route = createFileRoute("/_authenticated/models/new")({
+	loader: ({ context }) =>
+		context.queryClient.ensureQueryData(rateLimitsListQueryOptions),
 	component: NewModelPage,
 });
 
@@ -74,10 +82,12 @@ function toCapabilities(value: string | string[]): ModelCapability[] {
 	return arr.filter((v): v is ModelCapability => ALL_CAPABILITIES.has(v));
 }
 
-function NewModelPage() {
+function NewModelInner() {
 	const navigate = useNavigate();
 	const createModel = useCreateModel();
+	const { data: rateLimitsData } = useRateLimits();
 	const [serverError, setServerError] = useState<ApiErrorBody | undefined>();
+	const [rateLimits, setRateLimits] = useState<RateLimitRef[]>([]);
 
 	async function handleSubmit(values: FormValues) {
 		setServerError(undefined);
@@ -89,19 +99,23 @@ function NewModelPage() {
 			String(values.input_per_million).trim() !== "" &&
 			String(values.output_per_million).trim() !== "";
 
+		const name = String(values.name ?? "");
 		const payload: ModelCreate = {
-			name: String(values.name ?? ""),
-			provider: String(values.provider ?? ""),
-			upstream_name: String(values.upstream_name ?? ""),
-			capabilities: toCapabilities(values.capabilities),
-			pricing: hasPricing
-				? { input_per_million: inputPM, output_per_million: outputPM }
-				: undefined,
+			metadata: { name },
+			spec: {
+				provider: String(values.provider ?? ""),
+				upstream_name: String(values.upstream_name ?? ""),
+				capabilities: toCapabilities(values.capabilities),
+				pricing: hasPricing
+					? { input_per_million: inputPM, output_per_million: outputPM }
+					: undefined,
+				rateLimits: rateLimits.length > 0 ? rateLimits : undefined,
+			},
 		};
 		try {
 			await createModel.mutateAsync(payload);
-			toast("success", `Model "${payload.name}" created.`);
-			void navigate({ to: "/models/$name", params: { name: payload.name } });
+			toast("success", `Model "${name}" created.`);
+			void navigate({ to: "/models/$name", params: { name } });
 		} catch (err) {
 			if (err instanceof ApiError) {
 				setServerError(err.body);
@@ -119,6 +133,27 @@ function NewModelPage() {
 			onCancel={() => void navigate({ to: "/models" })}
 			isPending={createModel.isPending}
 			serverError={serverError}
+			extraContent={
+				<RateLimitsEditor
+					value={rateLimits}
+					onChange={setRateLimits}
+					availableRateLimits={rateLimitsData.items.map(
+						(rl) => rl.metadata.name,
+					)}
+				/>
+			}
 		/>
+	);
+}
+
+function NewModelPage() {
+	return (
+		<Suspense
+			fallback={
+				<div className="text-gray-500 dark:text-zinc-400 text-sm">Loading…</div>
+			}
+		>
+			<NewModelInner />
+		</Suspense>
 	);
 }

@@ -56,9 +56,8 @@ export function useCreateRoute() {
 				(old: RoutesListResponse | undefined) => {
 					if (!old) return old;
 					const optimistic: RelayRoute = {
-						name: newRoute.name,
-						pool: newRoute.pool,
-						acl: newRoute.acl,
+						metadata: { name: newRoute.metadata.name },
+						spec: { ...newRoute.spec },
 					};
 					return { items: [...old.items, optimistic] };
 				},
@@ -104,7 +103,9 @@ export function useDeleteRoute() {
 				routesListQueryOptions.queryKey,
 				(old: RoutesListResponse | undefined) => {
 					if (!old) return old;
-					return { items: old.items.filter((r) => r.name !== name) };
+					return {
+						items: old.items.filter((r) => r.metadata.name !== name),
+					};
 				},
 			);
 			return { previous };

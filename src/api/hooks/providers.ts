@@ -59,10 +59,8 @@ export function useCreateProvider() {
 				(old: ProvidersListResponse | undefined) => {
 					if (!old) return old;
 					const optimistic: Provider = {
-						name: newProvider.name,
-						kind: newProvider.kind,
-						endpoint: newProvider.endpoint,
-						secret: newProvider.secret,
+						metadata: { name: newProvider.metadata.name },
+						spec: { ...newProvider.spec },
 					};
 					return { items: [...old.items, optimistic] };
 				},
@@ -105,7 +103,9 @@ export function useDeleteProvider() {
 				providersListQueryOptions.queryKey,
 				(old: ProvidersListResponse | undefined) => {
 					if (!old) return old;
-					return { items: old.items.filter((p) => p.name !== name) };
+					return {
+						items: old.items.filter((p) => p.metadata.name !== name),
+					};
 				},
 			);
 			return { previous };

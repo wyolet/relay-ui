@@ -8,24 +8,27 @@ export interface ColumnDef<T> {
 	sortable?: boolean;
 }
 
-interface ResourceListProps<T extends { name: string }> {
+interface ResourceListProps<T> {
 	title: string;
 	items: T[];
 	columns: ColumnDef<T>[];
 	/** Route path prefix — detail is `${basePath}/$name`, create is `${basePath}/new` */
 	createTo: string;
 	detailTo: (name: string) => string;
+	/** Extract the resource name from a row (used for search, navigation, and row key). */
+	getName: (row: T) => string;
 	emptyMessage?: string;
 }
 
 type SortDir = "asc" | "desc";
 
-export function ResourceList<T extends { name: string }>({
+export function ResourceList<T>({
 	title,
 	items,
 	columns,
 	createTo,
 	detailTo,
+	getName,
 	emptyMessage = "No items yet.",
 }: ResourceListProps<T>) {
 	const navigate = useNavigate();
@@ -39,13 +42,13 @@ export function ResourceList<T extends { name: string }>({
 	}
 
 	const filtered = items.filter((item) =>
-		item.name.toLowerCase().includes(search.toLowerCase()),
+		getName(item).toLowerCase().includes(search.toLowerCase()),
 	);
 
 	const sorted = [...filtered].sort((a, b) => {
 		const col = colByKey[sortKey];
-		const av = col ? col.render(a) : a.name;
-		const bv = col ? col.render(b) : b.name;
+		const av = col ? col.render(a) : getName(a);
+		const bv = col ? col.render(b) : getName(b);
 		const aStr = av === null || av === undefined ? "" : String(av);
 		const bStr = bv === null || bv === undefined ? "" : String(bv);
 		const cmp = aStr.localeCompare(bStr, undefined, { numeric: true });
@@ -133,26 +136,29 @@ export function ResourceList<T extends { name: string }>({
 							</tr>
 						</thead>
 						<tbody className="divide-y divide-gray-100 dark:divide-zinc-800">
-							{sorted.map((row) => (
-								<tr
-									key={row.name}
-									onClick={() => void navigate({ to: detailTo(row.name) })}
-									className="hover:bg-gray-50 dark:hover:bg-zinc-800 cursor-pointer transition-colors bg-white dark:bg-zinc-900"
-								>
-									{columns.map((col) => (
-										<td
-											key={col.key}
-											className="px-4 py-3 text-gray-900 dark:text-zinc-100"
-										>
-											{col.render(row) ?? (
-												<span className="text-gray-400 dark:text-zinc-500">
-													—
-												</span>
-											)}
-										</td>
-									))}
-								</tr>
-							))}
+							{sorted.map((row) => {
+								const rowName = getName(row);
+								return (
+									<tr
+										key={rowName}
+										onClick={() => void navigate({ to: detailTo(rowName) })}
+										className="hover:bg-gray-50 dark:hover:bg-zinc-800 cursor-pointer transition-colors bg-white dark:bg-zinc-900"
+									>
+										{columns.map((col) => (
+											<td
+												key={col.key}
+												className="px-4 py-3 text-gray-900 dark:text-zinc-100"
+											>
+												{col.render(row) ?? (
+													<span className="text-gray-400 dark:text-zinc-500">
+														—
+													</span>
+												)}
+											</td>
+										))}
+									</tr>
+								);
+							})}
 						</tbody>
 					</table>
 				</div>

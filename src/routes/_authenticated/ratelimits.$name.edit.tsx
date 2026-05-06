@@ -95,10 +95,12 @@ function EditRateLimitInner() {
 	async function handleSubmit(values: FormValues) {
 		setServerError(undefined);
 		const payload: RateLimitUpdate = {
-			strategy: toStrategy(values.strategy),
-			window: Number(values.window),
-			amount: Number(values.amount),
-			source: toSource(values.source),
+			spec: {
+				strategy: toStrategy(values.strategy),
+				window: Number(values.window),
+				amount: Number(values.amount),
+				source: toSource(values.source),
+			},
 		};
 		try {
 			await updateRateLimit.mutateAsync(payload);
@@ -118,10 +120,10 @@ function EditRateLimitInner() {
 			title={`Edit Rate Limit: ${name}`}
 			fields={FIELDS}
 			initialValues={{
-				strategy: rl.strategy,
-				window: String(rl.window),
-				amount: String(rl.amount),
-				source: rl.source,
+				strategy: rl.spec.strategy,
+				window: String(rl.spec.window),
+				amount: String(rl.spec.amount),
+				source: rl.spec.source,
 			}}
 			onSubmit={handleSubmit}
 			onCancel={() =>

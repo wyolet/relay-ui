@@ -23,25 +23,25 @@ function ModelDetailInner() {
 	const navigate = useNavigate();
 
 	const fields: DetailField[] = [
-		{ label: "Name", value: model.name },
+		{ label: "Name", value: model.metadata.name },
 		{
 			label: "Provider",
 			value: (
 				<Link
 					to="/providers/$name"
-					params={{ name: model.provider }}
+					params={{ name: model.spec.provider }}
 					className="text-blue-600 hover:underline"
 				>
-					{model.provider}
+					{model.spec.provider}
 				</Link>
 			),
 		},
-		{ label: "Upstream Name", value: model.upstream_name },
-		{ label: "Capabilities", value: model.capabilities.join(", ") },
+		{ label: "Upstream Name", value: model.spec.upstream_name },
+		{ label: "Capabilities", value: model.spec.capabilities.join(", ") },
 		{
 			label: "Pricing",
-			value: model.pricing
-				? `$${model.pricing.input_per_million}/1M in · $${model.pricing.output_per_million}/1M out`
+			value: model.spec.pricing
+				? `$${model.spec.pricing.input_per_million}/1M in · $${model.spec.pricing.output_per_million}/1M out`
 				: "—",
 		},
 	];
@@ -62,7 +62,7 @@ function ModelDetailInner() {
 
 	return (
 		<ResourceDetail
-			title={model.name}
+			title={model.metadata.name}
 			fields={fields}
 			editTo={`/models/${name}/edit`}
 			backTo="/models"

@@ -6,10 +6,16 @@ import {
 	useUpdatePool,
 } from "#/api/hooks/pools";
 import { providersListQueryOptions, useProviders } from "#/api/hooks/providers";
+import {
+	rateLimitsListQueryOptions,
+	useRateLimits,
+} from "#/api/hooks/ratelimits";
 import { secretsListQueryOptions, useSecrets } from "#/api/hooks/secrets";
 import type { ApiErrorBody } from "#/api/types/errors";
 import { ApiError } from "#/api/types/errors";
 import type { PoolUpdate } from "#/api/types/pool";
+import type { RateLimitRef } from "#/api/types/ratelimit";
+import { RateLimitsEditor } from "#/components/RateLimitsEditor";
 import { toast } from "#/components/Toast";
 
 export const Route = createFileRoute("/_authenticated/pools/$name/edit")({
@@ -18,6 +24,7 @@ export const Route = createFileRoute("/_authenticated/pools/$name/edit")({
 			context.queryClient.ensureQueryData(poolDetailQueryOptions(params.name)),
 			context.queryClient.ensureQueryData(secretsListQueryOptions),
 			context.queryClient.ensureQueryData(providersListQueryOptions),
+			context.queryClient.ensureQueryData(rateLimitsListQueryOptions),
 		]),
 	component: EditPoolPage,
 });
@@ -28,14 +35,18 @@ function EditPoolFormInner() {
 	const { data: pool } = usePool(name);
 	const { data: secretsData } = useSecrets();
 	const { data: providersData } = useProviders();
+	const { data: rateLimitsData } = useRateLimits();
 	const updatePool = useUpdatePool(name);
 
-	const [provider, setProvider] = useState(pool.provider);
+	const [provider, setProvider] = useState(pool.spec.provider);
 	const [selectedSecrets, setSelectedSecrets] = useState<string[]>(
-		pool.secrets,
+		pool.spec.secrets,
 	);
-	const [isDefault, setIsDefault] = useState(pool.default ?? false);
+	const [isDefault, setIsDefault] = useState(pool.spec.default ?? false);
 	const [secretSearch, setSecretSearch] = useState("");
+	const [rateLimits, setRateLimits] = useState<RateLimitRef[]>(
+		pool.spec.rateLimits ?? [],
+	);
 	const [serverError, setServerError] = useState<ApiErrorBody | undefined>();
 	const [submitted, setSubmitted] = useState(false);
 
@@ -57,9 +68,12 @@ function EditPoolFormInner() {
 
 		setServerError(undefined);
 		const payload: PoolUpdate = {
-			provider,
-			secrets: selectedSecrets,
-			default: isDefault || undefined,
+			spec: {
+				provider,
+				secrets: selectedSecrets,
+				default: isDefault || undefined,
+				rateLimits: rateLimits.length > 0 ? rateLimits : undefined,
+			},
 		};
 		try {
 			await updatePool.mutateAsync(payload);
@@ -76,7 +90,7 @@ function EditPoolFormInner() {
 
 	const allSecrets = secretsData.items;
 	const filteredSecrets = allSecrets.filter((s) =>
-		s.name.toLowerCase().includes(secretSearch.toLowerCase()),
+		s.metadata.name.toLowerCase().includes(secretSearch.toLowerCase()),
 	);
 
 	return (
@@ -111,8 +125,8 @@ function EditPoolFormInner() {
 					>
 						<option value="">— select —</option>
 						{providersData.items.map((p) => (
-							<option key={p.name} value={p.name}>
-								{p.name}
+							<option key={p.metadata.name} value={p.metadata.name}>
+								{p.metadata.name}
 							</option>
 						))}
 					</select>
@@ -148,10 +162,10 @@ function EditPoolFormInner() {
 					) : (
 						<div className="flex flex-wrap gap-2">
 							{filteredSecrets.map((s) => {
-								const checked = selectedSecrets.includes(s.name);
+								const checked = selectedSecrets.includes(s.metadata.name);
 								return (
 									<label
-										key={s.name}
+										key={s.metadata.name}
 										className={[
 											"flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border cursor-pointer select-none transition-colors",
 											checked
@@ -163,9 +177,9 @@ function EditPoolFormInner() {
 											type="checkbox"
 											className="sr-only"
 											checked={checked}
-											onChange={() => toggleSecret(s.name)}
+											onChange={() => toggleSecret(s.metadata.name)}
 										/>
-										{s.name}
+										{s.metadata.name}
 									</label>
 								);
 							})}
@@ -186,6 +200,14 @@ function EditPoolFormInner() {
 						</span>
 					</label>
 				</div>
+
+				<RateLimitsEditor
+					value={rateLimits}
+					onChange={setRateLimits}
+					availableRateLimits={rateLimitsData.items.map(
+						(rl) => rl.metadata.name,
+					)}
+				/>
 
 				<div className="flex gap-3 pt-2">
 					<button

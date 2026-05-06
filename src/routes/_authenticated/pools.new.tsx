@@ -2,10 +2,16 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Suspense, useState } from "react";
 import { useCreatePool } from "#/api/hooks/pools";
 import { providersListQueryOptions, useProviders } from "#/api/hooks/providers";
+import {
+	rateLimitsListQueryOptions,
+	useRateLimits,
+} from "#/api/hooks/ratelimits";
 import { secretsListQueryOptions, useSecrets } from "#/api/hooks/secrets";
 import type { ApiErrorBody } from "#/api/types/errors";
 import { ApiError } from "#/api/types/errors";
 import type { PoolCreate } from "#/api/types/pool";
+import type { RateLimitRef } from "#/api/types/ratelimit";
+import { RateLimitsEditor } from "#/components/RateLimitsEditor";
 import { toast } from "#/components/Toast";
 
 export const Route = createFileRoute("/_authenticated/pools/new")({
@@ -13,6 +19,7 @@ export const Route = createFileRoute("/_authenticated/pools/new")({
 		Promise.all([
 			context.queryClient.ensureQueryData(secretsListQueryOptions),
 			context.queryClient.ensureQueryData(providersListQueryOptions),
+			context.queryClient.ensureQueryData(rateLimitsListQueryOptions),
 		]),
 	component: NewPoolPage,
 });
@@ -22,12 +29,14 @@ function NewPoolFormInner() {
 	const createPool = useCreatePool();
 	const { data: secretsData } = useSecrets();
 	const { data: providersData } = useProviders();
+	const { data: rateLimitsData } = useRateLimits();
 
 	const [name, setName] = useState("");
 	const [provider, setProvider] = useState("");
 	const [selectedSecrets, setSelectedSecrets] = useState<string[]>([]);
 	const [isDefault, setIsDefault] = useState(false);
 	const [secretSearch, setSecretSearch] = useState("");
+	const [rateLimits, setRateLimits] = useState<RateLimitRef[]>([]);
 	const [serverError, setServerError] = useState<ApiErrorBody | undefined>();
 	const [submitted, setSubmitted] = useState(false);
 
@@ -50,15 +59,21 @@ function NewPoolFormInner() {
 
 		setServerError(undefined);
 		const payload: PoolCreate = {
-			name: name.trim(),
-			provider,
-			secrets: selectedSecrets,
-			default: isDefault || undefined,
+			metadata: { name: name.trim() },
+			spec: {
+				provider,
+				secrets: selectedSecrets,
+				default: isDefault || undefined,
+				rateLimits: rateLimits.length > 0 ? rateLimits : undefined,
+			},
 		};
 		try {
 			await createPool.mutateAsync(payload);
-			toast("success", `Pool "${payload.name}" created.`);
-			void navigate({ to: "/pools/$name", params: { name: payload.name } });
+			toast("success", `Pool "${payload.metadata.name}" created.`);
+			void navigate({
+				to: "/pools/$name",
+				params: { name: payload.metadata.name },
+			});
 		} catch (err) {
 			if (err instanceof ApiError) {
 				setServerError(err.body);
@@ -70,7 +85,7 @@ function NewPoolFormInner() {
 
 	const allSecrets = secretsData.items;
 	const filteredSecrets = allSecrets.filter((s) =>
-		s.name.toLowerCase().includes(secretSearch.toLowerCase()),
+		s.metadata.name.toLowerCase().includes(secretSearch.toLowerCase()),
 	);
 
 	return (
@@ -130,8 +145,8 @@ function NewPoolFormInner() {
 					>
 						<option value="">— select —</option>
 						{providersData.items.map((p) => (
-							<option key={p.name} value={p.name}>
-								{p.name}
+							<option key={p.metadata.name} value={p.metadata.name}>
+								{p.metadata.name}
 							</option>
 						))}
 					</select>
@@ -167,10 +182,10 @@ function NewPoolFormInner() {
 					) : (
 						<div className="flex flex-wrap gap-2">
 							{filteredSecrets.map((s) => {
-								const checked = selectedSecrets.includes(s.name);
+								const checked = selectedSecrets.includes(s.metadata.name);
 								return (
 									<label
-										key={s.name}
+										key={s.metadata.name}
 										className={[
 											"flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border cursor-pointer select-none transition-colors",
 											checked
@@ -182,9 +197,9 @@ function NewPoolFormInner() {
 											type="checkbox"
 											className="sr-only"
 											checked={checked}
-											onChange={() => toggleSecret(s.name)}
+											onChange={() => toggleSecret(s.metadata.name)}
 										/>
-										{s.name}
+										{s.metadata.name}
 									</label>
 								);
 							})}
@@ -205,6 +220,14 @@ function NewPoolFormInner() {
 						</span>
 					</label>
 				</div>
+
+				<RateLimitsEditor
+					value={rateLimits}
+					onChange={setRateLimits}
+					availableRateLimits={rateLimitsData.items.map(
+						(rl) => rl.metadata.name,
+					)}
+				/>
 
 				<div className="flex gap-3 pt-2">
 					<button
