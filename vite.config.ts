@@ -27,6 +27,8 @@ const config = defineConfig({
   },
   server: {
     host: true,
+    port: 5140,
+    strictPort: true,
     allowedHosts: ['relay.wyolet.dev', '.wyolet.dev', 'localhost'],
     hmr: { host: 'relay.wyolet.dev', clientPort: 443, protocol: 'wss' },
     proxy: {
