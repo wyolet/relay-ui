@@ -12,12 +12,17 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedUsageRouteImport } from './routes/_authenticated/usage'
+import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedSecretsRouteImport } from './routes/_authenticated/secrets'
 import { Route as AuthenticatedRoutesRouteImport } from './routes/_authenticated/routes'
+import { Route as AuthenticatedRoutersRouteImport } from './routes/_authenticated/routers'
 import { Route as AuthenticatedRatelimitsRouteImport } from './routes/_authenticated/ratelimits'
 import { Route as AuthenticatedProvidersRouteImport } from './routes/_authenticated/providers'
 import { Route as AuthenticatedPoolsRouteImport } from './routes/_authenticated/pools'
 import { Route as AuthenticatedModelsRouteImport } from './routes/_authenticated/models'
+import { Route as AuthenticatedLogsRouteImport } from './routes/_authenticated/logs'
+import { Route as AuthenticatedKeysRouteImport } from './routes/_authenticated/keys'
 import { Route as AuthenticatedBootstrapRouteImport } from './routes/_authenticated/bootstrap'
 import { Route as AuthenticatedAttachmentsRouteImport } from './routes/_authenticated/attachments'
 import { Route as AuthenticatedSecretsIndexRouteImport } from './routes/_authenticated/secrets.index'
@@ -59,6 +64,16 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedUsageRoute = AuthenticatedUsageRouteImport.update({
+  id: '/usage',
+  path: '/usage',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedSecretsRoute = AuthenticatedSecretsRouteImport.update({
   id: '/secrets',
   path: '/secrets',
@@ -67,6 +82,11 @@ const AuthenticatedSecretsRoute = AuthenticatedSecretsRouteImport.update({
 const AuthenticatedRoutesRoute = AuthenticatedRoutesRouteImport.update({
   id: '/routes',
   path: '/routes',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedRoutersRoute = AuthenticatedRoutersRouteImport.update({
+  id: '/routers',
+  path: '/routers',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedRatelimitsRoute = AuthenticatedRatelimitsRouteImport.update({
@@ -87,6 +107,16 @@ const AuthenticatedPoolsRoute = AuthenticatedPoolsRouteImport.update({
 const AuthenticatedModelsRoute = AuthenticatedModelsRouteImport.update({
   id: '/models',
   path: '/models',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedLogsRoute = AuthenticatedLogsRouteImport.update({
+  id: '/logs',
+  path: '/logs',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedKeysRoute = AuthenticatedKeysRouteImport.update({
+  id: '/keys',
+  path: '/keys',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedBootstrapRoute = AuthenticatedBootstrapRouteImport.update({
@@ -242,12 +272,17 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/attachments': typeof AuthenticatedAttachmentsRoute
   '/bootstrap': typeof AuthenticatedBootstrapRoute
+  '/keys': typeof AuthenticatedKeysRoute
+  '/logs': typeof AuthenticatedLogsRoute
   '/models': typeof AuthenticatedModelsRouteWithChildren
   '/pools': typeof AuthenticatedPoolsRouteWithChildren
   '/providers': typeof AuthenticatedProvidersRouteWithChildren
   '/ratelimits': typeof AuthenticatedRatelimitsRouteWithChildren
+  '/routers': typeof AuthenticatedRoutersRoute
   '/routes': typeof AuthenticatedRoutesRouteWithChildren
   '/secrets': typeof AuthenticatedSecretsRouteWithChildren
+  '/settings': typeof AuthenticatedSettingsRoute
+  '/usage': typeof AuthenticatedUsageRoute
   '/models/$name': typeof AuthenticatedModelsNameRouteWithChildren
   '/models/new': typeof AuthenticatedModelsNewRoute
   '/pools/$name': typeof AuthenticatedPoolsNameRouteWithChildren
@@ -277,6 +312,11 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/attachments': typeof AuthenticatedAttachmentsRoute
   '/bootstrap': typeof AuthenticatedBootstrapRoute
+  '/keys': typeof AuthenticatedKeysRoute
+  '/logs': typeof AuthenticatedLogsRoute
+  '/routers': typeof AuthenticatedRoutersRoute
+  '/settings': typeof AuthenticatedSettingsRoute
+  '/usage': typeof AuthenticatedUsageRoute
   '/': typeof AuthenticatedIndexRoute
   '/models/$name': typeof AuthenticatedModelsNameRouteWithChildren
   '/models/new': typeof AuthenticatedModelsNewRoute
@@ -309,12 +349,17 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_authenticated/attachments': typeof AuthenticatedAttachmentsRoute
   '/_authenticated/bootstrap': typeof AuthenticatedBootstrapRoute
+  '/_authenticated/keys': typeof AuthenticatedKeysRoute
+  '/_authenticated/logs': typeof AuthenticatedLogsRoute
   '/_authenticated/models': typeof AuthenticatedModelsRouteWithChildren
   '/_authenticated/pools': typeof AuthenticatedPoolsRouteWithChildren
   '/_authenticated/providers': typeof AuthenticatedProvidersRouteWithChildren
   '/_authenticated/ratelimits': typeof AuthenticatedRatelimitsRouteWithChildren
+  '/_authenticated/routers': typeof AuthenticatedRoutersRoute
   '/_authenticated/routes': typeof AuthenticatedRoutesRouteWithChildren
   '/_authenticated/secrets': typeof AuthenticatedSecretsRouteWithChildren
+  '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/usage': typeof AuthenticatedUsageRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/models/$name': typeof AuthenticatedModelsNameRouteWithChildren
   '/_authenticated/models/new': typeof AuthenticatedModelsNewRoute
@@ -348,12 +393,17 @@ export interface FileRouteTypes {
     | '/login'
     | '/attachments'
     | '/bootstrap'
+    | '/keys'
+    | '/logs'
     | '/models'
     | '/pools'
     | '/providers'
     | '/ratelimits'
+    | '/routers'
     | '/routes'
     | '/secrets'
+    | '/settings'
+    | '/usage'
     | '/models/$name'
     | '/models/new'
     | '/pools/$name'
@@ -383,6 +433,11 @@ export interface FileRouteTypes {
     | '/login'
     | '/attachments'
     | '/bootstrap'
+    | '/keys'
+    | '/logs'
+    | '/routers'
+    | '/settings'
+    | '/usage'
     | '/'
     | '/models/$name'
     | '/models/new'
@@ -414,12 +469,17 @@ export interface FileRouteTypes {
     | '/login'
     | '/_authenticated/attachments'
     | '/_authenticated/bootstrap'
+    | '/_authenticated/keys'
+    | '/_authenticated/logs'
     | '/_authenticated/models'
     | '/_authenticated/pools'
     | '/_authenticated/providers'
     | '/_authenticated/ratelimits'
+    | '/_authenticated/routers'
     | '/_authenticated/routes'
     | '/_authenticated/secrets'
+    | '/_authenticated/settings'
+    | '/_authenticated/usage'
     | '/_authenticated/'
     | '/_authenticated/models/$name'
     | '/_authenticated/models/new'
@@ -475,6 +535,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/usage': {
+      id: '/_authenticated/usage'
+      path: '/usage'
+      fullPath: '/usage'
+      preLoaderRoute: typeof AuthenticatedUsageRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/settings': {
+      id: '/_authenticated/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthenticatedSettingsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/secrets': {
       id: '/_authenticated/secrets'
       path: '/secrets'
@@ -487,6 +561,13 @@ declare module '@tanstack/react-router' {
       path: '/routes'
       fullPath: '/routes'
       preLoaderRoute: typeof AuthenticatedRoutesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/routers': {
+      id: '/_authenticated/routers'
+      path: '/routers'
+      fullPath: '/routers'
+      preLoaderRoute: typeof AuthenticatedRoutersRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/ratelimits': {
@@ -515,6 +596,20 @@ declare module '@tanstack/react-router' {
       path: '/models'
       fullPath: '/models'
       preLoaderRoute: typeof AuthenticatedModelsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/logs': {
+      id: '/_authenticated/logs'
+      path: '/logs'
+      fullPath: '/logs'
+      preLoaderRoute: typeof AuthenticatedLogsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/keys': {
+      id: '/_authenticated/keys'
+      path: '/keys'
+      fullPath: '/keys'
+      preLoaderRoute: typeof AuthenticatedKeysRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/bootstrap': {
@@ -887,24 +982,34 @@ const AuthenticatedSecretsRouteWithChildren =
 interface AuthenticatedRouteChildren {
   AuthenticatedAttachmentsRoute: typeof AuthenticatedAttachmentsRoute
   AuthenticatedBootstrapRoute: typeof AuthenticatedBootstrapRoute
+  AuthenticatedKeysRoute: typeof AuthenticatedKeysRoute
+  AuthenticatedLogsRoute: typeof AuthenticatedLogsRoute
   AuthenticatedModelsRoute: typeof AuthenticatedModelsRouteWithChildren
   AuthenticatedPoolsRoute: typeof AuthenticatedPoolsRouteWithChildren
   AuthenticatedProvidersRoute: typeof AuthenticatedProvidersRouteWithChildren
   AuthenticatedRatelimitsRoute: typeof AuthenticatedRatelimitsRouteWithChildren
+  AuthenticatedRoutersRoute: typeof AuthenticatedRoutersRoute
   AuthenticatedRoutesRoute: typeof AuthenticatedRoutesRouteWithChildren
   AuthenticatedSecretsRoute: typeof AuthenticatedSecretsRouteWithChildren
+  AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedUsageRoute: typeof AuthenticatedUsageRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAttachmentsRoute: AuthenticatedAttachmentsRoute,
   AuthenticatedBootstrapRoute: AuthenticatedBootstrapRoute,
+  AuthenticatedKeysRoute: AuthenticatedKeysRoute,
+  AuthenticatedLogsRoute: AuthenticatedLogsRoute,
   AuthenticatedModelsRoute: AuthenticatedModelsRouteWithChildren,
   AuthenticatedPoolsRoute: AuthenticatedPoolsRouteWithChildren,
   AuthenticatedProvidersRoute: AuthenticatedProvidersRouteWithChildren,
   AuthenticatedRatelimitsRoute: AuthenticatedRatelimitsRouteWithChildren,
+  AuthenticatedRoutersRoute: AuthenticatedRoutersRoute,
   AuthenticatedRoutesRoute: AuthenticatedRoutesRouteWithChildren,
   AuthenticatedSecretsRoute: AuthenticatedSecretsRouteWithChildren,
+  AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedUsageRoute: AuthenticatedUsageRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
 }
 

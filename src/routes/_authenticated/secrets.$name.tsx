@@ -58,7 +58,7 @@ function SecretDetailInner() {
 		<div>
 			{/* Back nav */}
 			<div className="mb-6">
-				<Link to="/secrets" className="text-sm text-blue-600 hover:underline">
+				<Link to="/secrets" className="text-sm text-brand-600 hover:underline">
 					← Secrets
 				</Link>
 			</div>
@@ -66,7 +66,7 @@ function SecretDetailInner() {
 			{/* Header */}
 			<div className="flex items-start justify-between mb-6">
 				<div className="flex items-center gap-3">
-					<h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100 font-mono">
+					<h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 font-mono">
 						{secret.name}
 					</h1>
 					<span
@@ -84,7 +84,7 @@ function SecretDetailInner() {
 					<Link
 						to="/secrets/$name/edit"
 						params={{ name }}
-						className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-zinc-300 bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
+						className="px-4 py-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
 					>
 						Edit
 					</Link>
@@ -99,20 +99,20 @@ function SecretDetailInner() {
 			</div>
 
 			{/* Detail fields */}
-			<dl className="divide-y divide-gray-100 dark:divide-zinc-800 rounded-lg border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 mb-8">
+			<dl className="divide-y divide-neutral-100 dark:divide-neutral-800 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 mb-8">
 				<div className="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4">
-					<dt className="text-sm font-medium text-gray-500 dark:text-zinc-400">
+					<dt className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
 						Name
 					</dt>
-					<dd className="mt-1 text-sm text-gray-900 dark:text-zinc-100 font-mono sm:col-span-2 sm:mt-0">
+					<dd className="mt-1 text-sm text-neutral-900 dark:text-neutral-100 font-mono sm:col-span-2 sm:mt-0">
 						{secret.name}
 					</dd>
 				</div>
 				<div className="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4">
-					<dt className="text-sm font-medium text-gray-500 dark:text-zinc-400">
+					<dt className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
 						Kind
 					</dt>
-					<dd className="mt-1 text-sm text-gray-900 dark:text-zinc-100 sm:col-span-2 sm:mt-0">
+					<dd className="mt-1 text-sm text-neutral-900 dark:text-neutral-100 sm:col-span-2 sm:mt-0">
 						{secret.valueFrom.kind}
 					</dd>
 				</div>
@@ -120,18 +120,18 @@ function SecretDetailInner() {
 				{!isStored && (
 					<>
 						<div className="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4">
-							<dt className="text-sm font-medium text-gray-500 dark:text-zinc-400">
+							<dt className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
 								Environment variable
 							</dt>
-							<dd className="mt-1 text-sm text-gray-900 dark:text-zinc-100 font-mono sm:col-span-2 sm:mt-0">
+							<dd className="mt-1 text-sm text-neutral-900 dark:text-neutral-100 font-mono sm:col-span-2 sm:mt-0">
 								{secret.valueFrom.env ?? (
-									<span className="text-gray-400 dark:text-zinc-500">—</span>
+									<span className="text-neutral-400 dark:text-neutral-500">—</span>
 								)}
 							</dd>
 						</div>
 						<div className="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4">
-							<dt className="text-sm font-medium text-gray-500 dark:text-zinc-400" />
-							<dd className="mt-1 text-xs text-gray-500 dark:text-zinc-400 sm:col-span-2 sm:mt-0">
+							<dt className="text-sm font-medium text-neutral-500 dark:text-neutral-400" />
+							<dd className="mt-1 text-xs text-neutral-500 dark:text-neutral-400 sm:col-span-2 sm:mt-0">
 								Set this env var on your relay deployment.
 							</dd>
 						</div>
@@ -140,19 +140,19 @@ function SecretDetailInner() {
 
 				{isStored && (
 					<div className="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4">
-						<dt className="text-sm font-medium text-gray-500 dark:text-zinc-400">
+						<dt className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
 							Masked value
 						</dt>
-						<dd className="mt-1 text-sm text-gray-900 dark:text-zinc-100 font-mono sm:col-span-2 sm:mt-0 flex items-center gap-3">
+						<dd className="mt-1 text-sm text-neutral-900 dark:text-neutral-100 font-mono sm:col-span-2 sm:mt-0 flex items-center gap-3">
 							<span>
 								{secret.valueFrom.value_masked ?? (
-									<span className="text-gray-400 dark:text-zinc-500">—</span>
+									<span className="text-neutral-400 dark:text-neutral-500">—</span>
 								)}
 							</span>
 							<button
 								type="button"
 								onClick={() => setRotating(true)}
-								className="px-3 py-1 text-xs font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900 transition-colors"
+								className="px-3 py-1 text-xs font-medium text-brand-700 dark:text-brand-300 bg-brand-50 dark:bg-brand-950 border border-brand-200 dark:border-brand-800 rounded-lg hover:bg-brand-100 dark:hover:bg-brand-900 transition-colors"
 							>
 								Rotate value
 							</button>
@@ -163,11 +163,11 @@ function SecretDetailInner() {
 
 			{/* References */}
 			<section>
-				<h2 className="text-lg font-semibold text-gray-900 dark:text-zinc-100 mb-3">
+				<h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-3">
 					Referenced by pools
 				</h2>
 				{referencingPools.length === 0 ? (
-					<p className="text-sm text-gray-500 dark:text-zinc-400">
+					<p className="text-sm text-neutral-500 dark:text-neutral-400">
 						No pools reference this secret.
 					</p>
 				) : (
@@ -177,7 +177,7 @@ function SecretDetailInner() {
 								<Link
 									to="/pools/$name"
 									params={{ name: pool.metadata.name }}
-									className="text-sm text-blue-600 hover:underline font-mono"
+									className="text-sm text-brand-600 hover:underline font-mono"
 								>
 									{pool.metadata.name}
 								</Link>
@@ -209,7 +209,7 @@ function SecretDetailPage() {
 	return (
 		<Suspense
 			fallback={
-				<div className="text-gray-500 dark:text-zinc-400 text-sm">Loading…</div>
+				<div className="text-neutral-500 dark:text-neutral-400 text-sm">Loading…</div>
 			}
 		>
 			<SecretDetailInner />

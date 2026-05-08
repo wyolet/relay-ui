@@ -127,7 +127,7 @@ export function ResourceForm({
 
 	return (
 		<div>
-			<h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100 mb-6">
+			<h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-6">
 				{title}
 			</h1>
 
@@ -152,7 +152,7 @@ export function ResourceForm({
 						<div key={field.name}>
 							<label
 								htmlFor={field.name}
-								className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1"
+								className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1"
 							>
 								{field.label}
 								{field.required && (
@@ -186,7 +186,7 @@ export function ResourceForm({
 					<button
 						type="submit"
 						disabled={isPending}
-						className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+						className="px-4 py-2 text-sm font-medium text-white bg-brand-600 rounded-lg hover:bg-brand-700 disabled:opacity-50 transition-colors"
 					>
 						{isPending ? "Saving…" : "Save"}
 					</button>
@@ -194,7 +194,7 @@ export function ResourceForm({
 						type="button"
 						onClick={onCancel}
 						disabled={isPending}
-						className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-zinc-300 bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-800 disabled:opacity-50 transition-colors"
+						className="px-4 py-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-50 transition-colors"
 					>
 						Cancel
 					</button>
@@ -216,7 +216,7 @@ interface FieldInputProps {
 
 function FieldInput({ field, value, onChange }: FieldInputProps) {
 	const inputClass =
-		"w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-400";
+		"w-full border border-neutral-300 dark:border-neutral-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-brand-400";
 
 	if (field.type === "textarea") {
 		return (
@@ -263,8 +263,8 @@ function FieldInput({ field, value, onChange }: FieldInputProps) {
 							className={[
 								"flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border cursor-pointer select-none transition-colors",
 								checked
-									? "bg-blue-600 text-white border-blue-600"
-									: "bg-white dark:bg-zinc-900 text-gray-700 dark:text-zinc-300 border-gray-300 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-800",
+									? "bg-brand-600 text-white border-brand-600"
+									: "bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-300 border-neutral-300 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800",
 							].join(" ")}
 						>
 							<input

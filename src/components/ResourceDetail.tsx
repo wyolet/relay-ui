@@ -38,19 +38,19 @@ export function ResourceDetail({
 	return (
 		<div>
 			<div className="mb-6 flex items-center gap-3">
-				<Link to={backTo} className="text-sm text-blue-600 hover:underline">
+				<Link to={backTo} className="text-sm text-brand-600 hover:underline">
 					← {backLabel}
 				</Link>
 			</div>
 
 			<div className="flex items-start justify-between mb-6">
-				<h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100 font-mono">
+				<h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 font-mono">
 					{title}
 				</h1>
 				<div className="flex gap-2">
 					<Link
 						to={editTo}
-						className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-zinc-300 bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
+						className="px-4 py-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
 					>
 						Edit
 					</Link>
@@ -64,18 +64,18 @@ export function ResourceDetail({
 				</div>
 			</div>
 
-			<dl className="divide-y divide-gray-100 dark:divide-zinc-800 rounded-lg border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+			<dl className="divide-y divide-neutral-100 dark:divide-neutral-800 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
 				{fields.map((f) => (
 					<div
 						key={f.label}
 						className="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4"
 					>
-						<dt className="text-sm font-medium text-gray-500 dark:text-zinc-400">
+						<dt className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
 							{f.label}
 						</dt>
-						<dd className="mt-1 text-sm text-gray-900 dark:text-zinc-100 sm:col-span-2 sm:mt-0">
+						<dd className="mt-1 text-sm text-neutral-900 dark:text-neutral-100 sm:col-span-2 sm:mt-0">
 							{f.value ?? (
-								<span className="text-gray-400 dark:text-zinc-500">—</span>
+								<span className="text-neutral-400 dark:text-neutral-500">—</span>
 							)}
 						</dd>
 					</div>

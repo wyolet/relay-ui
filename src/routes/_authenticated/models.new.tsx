@@ -127,7 +127,7 @@ function NewModelPage() {
 	return (
 		<Suspense
 			fallback={
-				<div className="text-gray-500 dark:text-zinc-400 text-sm">Loading…</div>
+				<div className="text-neutral-500 dark:text-neutral-400 text-sm">Loading…</div>
 			}
 		>
 			<NewModelInner />

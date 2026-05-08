@@ -67,12 +67,12 @@ export function ResourceList<T>({
 	return (
 		<div>
 			<div className="flex items-center justify-between mb-6">
-				<h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100">
+				<h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
 					{title}
 				</h1>
 				<Link
 					to={createTo}
-					className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+					className="inline-flex items-center gap-1.5 px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 transition-colors"
 				>
 					+ Create new
 				</Link>
@@ -84,12 +84,12 @@ export function ResourceList<T>({
 					placeholder="Search by name…"
 					value={search}
 					onChange={(e) => setSearch(e.target.value)}
-					className="w-full max-w-sm border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-400"
+					className="w-full max-w-sm border border-neutral-300 dark:border-neutral-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-brand-400"
 				/>
 			</div>
 
 			{sorted.length === 0 ? (
-				<div className="text-center py-16 text-gray-500 dark:text-zinc-400 text-sm">
+				<div className="text-center py-16 text-neutral-500 dark:text-neutral-400 text-sm">
 					{search ? (
 						<p>No results for "{search}"</p>
 					) : (
@@ -97,7 +97,7 @@ export function ResourceList<T>({
 							<p className="mb-4">{emptyMessage}</p>
 							<Link
 								to={createTo}
-								className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+								className="inline-flex items-center px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 transition-colors"
 							>
 								Create your first
 							</Link>
@@ -105,18 +105,18 @@ export function ResourceList<T>({
 					)}
 				</div>
 			) : (
-				<div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-zinc-800">
+				<div className="overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-800">
 					<table className="w-full text-sm">
-						<thead className="bg-gray-50 dark:bg-zinc-800 border-b border-gray-200 dark:border-zinc-700">
+						<thead className="bg-neutral-50 dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700">
 							<tr>
 								{columns.map((col) => (
 									<th
 										key={col.key}
 										scope="col"
 										className={[
-											"px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wide select-none",
+											"px-4 py-3 text-left text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wide select-none",
 											col.sortable !== false
-												? "cursor-pointer hover:text-gray-800 dark:hover:text-zinc-200"
+												? "cursor-pointer hover:text-neutral-800 dark:hover:text-neutral-200"
 												: "",
 										].join(" ")}
 										onClick={
@@ -135,22 +135,22 @@ export function ResourceList<T>({
 								))}
 							</tr>
 						</thead>
-						<tbody className="divide-y divide-gray-100 dark:divide-zinc-800">
+						<tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
 							{sorted.map((row) => {
 								const rowName = getName(row);
 								return (
 									<tr
 										key={rowName}
 										onClick={() => void navigate({ to: detailTo(rowName) })}
-										className="hover:bg-gray-50 dark:hover:bg-zinc-800 cursor-pointer transition-colors bg-white dark:bg-zinc-900"
+										className="hover:bg-neutral-50 dark:hover:bg-neutral-800 cursor-pointer transition-colors bg-white dark:bg-neutral-900"
 									>
 										{columns.map((col) => (
 											<td
 												key={col.key}
-												className="px-4 py-3 text-gray-900 dark:text-zinc-100"
+												className="px-4 py-3 text-neutral-900 dark:text-neutral-100"
 											>
 												{col.render(row) ?? (
-													<span className="text-gray-400 dark:text-zinc-500">
+													<span className="text-neutral-400 dark:text-neutral-500">
 														—
 													</span>
 												)}

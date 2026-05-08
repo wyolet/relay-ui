@@ -55,21 +55,21 @@ export function RateLimitsEditor({
 	return (
 		<div>
 			<div className="flex items-center justify-between mb-2">
-				<span className="block text-sm font-medium text-gray-700 dark:text-zinc-300">
+				<span className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
 					Rate Limits
 				</span>
 				<button
 					type="button"
 					onClick={addRow}
 					disabled={availableRateLimits.length === 0}
-					className="text-xs px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+					className="text-xs px-3 py-1 bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-50 transition-colors"
 				>
 					+ Add row
 				</button>
 			</div>
 
 			{rows.length === 0 ? (
-				<p className="text-sm text-gray-500 dark:text-zinc-400">
+				<p className="text-sm text-neutral-500 dark:text-neutral-400">
 					No rate limits attached.
 				</p>
 			) : (
@@ -80,7 +80,7 @@ export function RateLimitsEditor({
 								aria-label={`Rate limit name for row ${idx + 1}`}
 								value={row.attachment.Ref}
 								onChange={(e) => updateRow(row.id, { Ref: e.target.value })}
-								className="flex-1 border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
+								className="flex-1 border border-neutral-300 dark:border-neutral-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-brand-400"
 							>
 								{availableRateLimits.map((name) => (
 									<option key={name} value={name}>

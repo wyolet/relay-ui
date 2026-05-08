@@ -57,7 +57,7 @@ function ModelDetailInner() {
 				<Link
 					to="/providers/$name"
 					params={{ name: model.spec.provider }}
-					className="text-blue-600 hover:underline"
+					className="text-brand-600 hover:underline"
 				>
 					{model.spec.provider}
 				</Link>
@@ -105,7 +105,7 @@ function ModelDetailPage() {
 	return (
 		<Suspense
 			fallback={
-				<div className="text-gray-500 dark:text-zinc-400 text-sm">Loading…</div>
+				<div className="text-neutral-500 dark:text-neutral-400 text-sm">Loading…</div>
 			}
 		>
 			<ModelDetailInner />

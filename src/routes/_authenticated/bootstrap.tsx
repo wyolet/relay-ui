@@ -104,10 +104,10 @@ function Stepper({ currentStep }: StepperProps) {
 						className={[
 							"flex items-center gap-3 px-3 py-2 rounded-lg text-sm",
 							active
-								? "bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 font-semibold"
+								? "bg-brand-50 dark:bg-brand-950 text-brand-700 dark:text-brand-300 font-semibold"
 								: done
 									? "text-green-700 dark:text-green-400"
-									: "text-gray-400 dark:text-zinc-500",
+									: "text-neutral-400 dark:text-neutral-500",
 						].join(" ")}
 					>
 						{done ? (
@@ -183,10 +183,10 @@ function MasterKeyStep({ search }: MasterKeyStepProps) {
 	return (
 		<div className="space-y-6 max-w-xl">
 			<div>
-				<h2 className="text-xl font-bold text-gray-900 dark:text-zinc-100 mb-1">
+				<h2 className="text-xl font-bold text-neutral-900 dark:text-neutral-100 mb-1">
 					Master Key Setup
 				</h2>
-				<p className="text-sm text-gray-600 dark:text-zinc-400">
+				<p className="text-sm text-neutral-600 dark:text-neutral-400">
 					Relay can encrypt stored secrets at rest using a master key. Choose
 					how you want to manage API credentials.
 				</p>
@@ -197,12 +197,12 @@ function MasterKeyStep({ search }: MasterKeyStepProps) {
 					<button
 						type="button"
 						onClick={handleSkip}
-						className="flex-1 border border-gray-300 dark:border-zinc-700 rounded-lg px-4 py-3 text-sm text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors text-left"
+						className="flex-1 border border-neutral-300 dark:border-neutral-700 rounded-lg px-4 py-3 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors text-left"
 					>
 						<span className="font-semibold block mb-1">
 							Use env-ref secrets only
 						</span>
-						<span className="text-gray-500 dark:text-zinc-400">
+						<span className="text-neutral-500 dark:text-neutral-400">
 							API keys stay in environment variables. No master key needed.
 						</span>
 					</button>
@@ -210,12 +210,12 @@ function MasterKeyStep({ search }: MasterKeyStepProps) {
 						type="button"
 						onClick={handleGenerate}
 						disabled={generateMutation.isPending}
-						className="flex-1 border-2 border-blue-600 bg-blue-50 dark:bg-blue-950 rounded-lg px-4 py-3 text-sm text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900 transition-colors text-left disabled:opacity-60"
+						className="flex-1 border-2 border-brand-600 bg-brand-50 dark:bg-brand-950 rounded-lg px-4 py-3 text-sm text-brand-700 dark:text-brand-300 hover:bg-brand-100 dark:hover:bg-brand-900 transition-colors text-left disabled:opacity-60"
 					>
 						<span className="font-semibold block mb-1">
 							Generate master key
 						</span>
-						<span className="text-blue-600 dark:text-blue-400">
+						<span className="text-brand-600 dark:text-brand-400">
 							Relay encrypts stored secrets. Key is shown once.
 						</span>
 					</button>
@@ -247,13 +247,13 @@ function MasterKeyStep({ search }: MasterKeyStepProps) {
 
 					{/* Copy box */}
 					<div className="flex items-center gap-2">
-						<code className="flex-1 bg-gray-900 text-green-400 text-xs rounded-lg px-4 py-3 font-mono break-all select-all">
+						<code className="flex-1 bg-neutral-900 text-green-400 text-xs rounded-lg px-4 py-3 font-mono break-all select-all">
 							{generatedKey}
 						</code>
 						<button
 							type="button"
 							onClick={handleCopy}
-							className="shrink-0 px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg text-sm text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
+							className="shrink-0 px-3 py-2 border border-neutral-300 dark:border-neutral-700 rounded-lg text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
 						>
 							{copied ? "Copied!" : "Copy"}
 						</button>
@@ -265,9 +265,9 @@ function MasterKeyStep({ search }: MasterKeyStepProps) {
 							type="checkbox"
 							checked={confirmed}
 							onChange={(e) => setConfirmed(e.target.checked)}
-							className="mt-0.5 h-4 w-4 rounded border-gray-300 dark:border-zinc-600 text-blue-600"
+							className="mt-0.5 h-4 w-4 rounded border-neutral-300 dark:border-neutral-600 text-brand-600"
 						/>
-						<span className="text-sm text-gray-700 dark:text-zinc-300">
+						<span className="text-sm text-neutral-700 dark:text-neutral-300">
 							I have stored the master key securely.
 						</span>
 					</label>
@@ -275,25 +275,25 @@ function MasterKeyStep({ search }: MasterKeyStepProps) {
 					{/* Deployment instructions */}
 					{confirmed && (
 						<div className="space-y-3">
-							<p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">
+							<p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
 								Restart your Relay deployment with the master key:
 							</p>
 
 							<div>
-								<p className="text-xs text-gray-500 dark:text-zinc-400 mb-1">
+								<p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">
 									docker-compose
 								</p>
-								<pre className="bg-gray-900 text-green-400 text-xs rounded-lg px-4 py-3 overflow-x-auto font-mono whitespace-pre">
+								<pre className="bg-neutral-900 text-green-400 text-xs rounded-lg px-4 py-3 overflow-x-auto font-mono whitespace-pre">
 									{`environment:
   RELAY_MASTER_KEY: "${generatedKey}"`}
 								</pre>
 							</div>
 
 							<div>
-								<p className="text-xs text-gray-500 dark:text-zinc-400 mb-1">
+								<p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">
 									kubectl
 								</p>
-								<pre className="bg-gray-900 text-green-400 text-xs rounded-lg px-4 py-3 overflow-x-auto font-mono whitespace-pre">
+								<pre className="bg-neutral-900 text-green-400 text-xs rounded-lg px-4 py-3 overflow-x-auto font-mono whitespace-pre">
 									{`kubectl set env deployment/relay \\
   RELAY_MASTER_KEY="${generatedKey}"`}
 								</pre>
@@ -303,7 +303,7 @@ function MasterKeyStep({ search }: MasterKeyStepProps) {
 
 					{/* Waiting for detection */}
 					{waitingForDetection && (
-						<div className="flex items-center gap-2 text-sm text-gray-600 dark:text-zinc-400">
+						<div className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400">
 							<Loader2 className="w-4 h-4 animate-spin" />
 							<span>Waiting for master key to be detected…</span>
 						</div>
@@ -350,10 +350,10 @@ function ProviderStep({ search }: ProviderStepProps) {
 	return (
 		<div className="space-y-6 max-w-xl">
 			<div>
-				<h2 className="text-xl font-bold text-gray-900 dark:text-zinc-100 mb-1">
+				<h2 className="text-xl font-bold text-neutral-900 dark:text-neutral-100 mb-1">
 					Add your first Provider
 				</h2>
-				<p className="text-sm text-gray-600 dark:text-zinc-400">
+				<p className="text-sm text-neutral-600 dark:text-neutral-400">
 					A provider connects Relay to an upstream LLM API (e.g. OpenAI, a local
 					Ollama instance).
 				</p>
@@ -362,7 +362,7 @@ function ProviderStep({ search }: ProviderStepProps) {
 			<form onSubmit={handleSubmit} className="space-y-4">
 				<div>
 					<label
-						className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1"
+						className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1"
 						htmlFor="provider-name"
 					>
 						Name
@@ -373,13 +373,13 @@ function ProviderStep({ search }: ProviderStepProps) {
 						value={name}
 						onChange={(e) => setName(e.target.value)}
 						required
-						className="w-full rounded-lg border border-gray-300 dark:border-zinc-700 px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+						className="w-full rounded-lg border border-neutral-300 dark:border-neutral-700 px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
 					/>
 				</div>
 
 				<div>
 					<label
-						className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1"
+						className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1"
 						htmlFor="provider-kind"
 					>
 						Kind
@@ -388,7 +388,7 @@ function ProviderStep({ search }: ProviderStepProps) {
 						id="provider-kind"
 						value={kind}
 						onChange={(e) => setKind(e.target.value)}
-						className="w-full rounded-lg border border-gray-300 dark:border-zinc-700 px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+						className="w-full rounded-lg border border-neutral-300 dark:border-neutral-700 px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
 					>
 						<option value="openai">OpenAI</option>
 						<option value="ollama">Ollama</option>
@@ -397,7 +397,7 @@ function ProviderStep({ search }: ProviderStepProps) {
 
 				<div>
 					<label
-						className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1"
+						className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1"
 						htmlFor="provider-base-url"
 					>
 						Base URL
@@ -408,7 +408,7 @@ function ProviderStep({ search }: ProviderStepProps) {
 						value={baseURL}
 						onChange={(e) => setBaseURL(e.target.value)}
 						required
-						className="w-full rounded-lg border border-gray-300 dark:border-zinc-700 px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+						className="w-full rounded-lg border border-neutral-300 dark:border-neutral-700 px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
 					/>
 				</div>
 
@@ -423,7 +423,7 @@ function ProviderStep({ search }: ProviderStepProps) {
 				<button
 					type="submit"
 					disabled={createProvider.isPending || !name || !baseURL}
-					className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-60"
+					className="px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 transition-colors disabled:opacity-60"
 				>
 					{createProvider.isPending ? "Creating…" : "Next →"}
 				</button>
@@ -476,10 +476,10 @@ function SecretStep({ search }: SecretStepProps) {
 	return (
 		<div className="space-y-6 max-w-xl">
 			<div>
-				<h2 className="text-xl font-bold text-gray-900 dark:text-zinc-100 mb-1">
+				<h2 className="text-xl font-bold text-neutral-900 dark:text-neutral-100 mb-1">
 					Add your first Secret
 				</h2>
-				<p className="text-sm text-gray-600 dark:text-zinc-400">
+				<p className="text-sm text-neutral-600 dark:text-neutral-400">
 					Secrets hold API credentials used by pools to authenticate with
 					providers.
 				</p>
@@ -488,7 +488,7 @@ function SecretStep({ search }: SecretStepProps) {
 			<form onSubmit={handleSubmit} className="space-y-4">
 				<div>
 					<label
-						className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1"
+						className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1"
 						htmlFor="secret-name"
 					>
 						Name
@@ -499,12 +499,12 @@ function SecretStep({ search }: SecretStepProps) {
 						value={name}
 						onChange={(e) => setName(e.target.value)}
 						required
-						className="w-full rounded-lg border border-gray-300 dark:border-zinc-700 px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+						className="w-full rounded-lg border border-neutral-300 dark:border-neutral-700 px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
 					/>
 				</div>
 
 				<div>
-					<span className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-2">
+					<span className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
 						Mode
 					</span>
 					<div className="flex gap-3">
@@ -516,7 +516,7 @@ function SecretStep({ search }: SecretStepProps) {
 								checked={kind === "env"}
 								onChange={() => setKind("env")}
 							/>
-							<span className="text-sm text-gray-900 dark:text-zinc-100">
+							<span className="text-sm text-neutral-900 dark:text-neutral-100">
 								Environment variable
 							</span>
 						</label>
@@ -536,10 +536,10 @@ function SecretStep({ search }: SecretStepProps) {
 								onChange={() => setKind("stored")}
 								disabled={!masterKeyConfigured}
 							/>
-							<span className="text-sm text-gray-900 dark:text-zinc-100">
+							<span className="text-sm text-neutral-900 dark:text-neutral-100">
 								Stored (encrypted)
 								{!masterKeyConfigured && (
-									<span className="ml-1 text-xs text-gray-400 dark:text-zinc-500">
+									<span className="ml-1 text-xs text-neutral-400 dark:text-neutral-500">
 										— requires master key
 									</span>
 								)}
@@ -551,7 +551,7 @@ function SecretStep({ search }: SecretStepProps) {
 				{kind === "env" ? (
 					<div>
 						<label
-							className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1"
+							className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1"
 							htmlFor="secret-env-var"
 						>
 							Environment variable name
@@ -562,7 +562,7 @@ function SecretStep({ search }: SecretStepProps) {
 							value={envVar}
 							onChange={(e) => setEnvVar(e.target.value)}
 							required
-							className="w-full rounded-lg border border-gray-300 dark:border-zinc-700 px-3 py-2 text-sm font-mono bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+							className="w-full rounded-lg border border-neutral-300 dark:border-neutral-700 px-3 py-2 text-sm font-mono bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
 						/>
 						<p className="mt-1 text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-2">
 							Make sure to set this environment variable on your Relay
@@ -572,7 +572,7 @@ function SecretStep({ search }: SecretStepProps) {
 				) : (
 					<div>
 						<label
-							className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1"
+							className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1"
 							htmlFor="secret-value"
 						>
 							API Key
@@ -584,7 +584,7 @@ function SecretStep({ search }: SecretStepProps) {
 							onChange={(e) => setStoredValue(e.target.value)}
 							required
 							placeholder="sk-..."
-							className="w-full rounded-lg border border-gray-300 dark:border-zinc-700 px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+							className="w-full rounded-lg border border-neutral-300 dark:border-neutral-700 px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
 						/>
 					</div>
 				)}
@@ -604,7 +604,7 @@ function SecretStep({ search }: SecretStepProps) {
 						!name ||
 						(kind === "env" ? !envVar : !storedValue)
 					}
-					className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-60"
+					className="px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 transition-colors disabled:opacity-60"
 				>
 					{createSecret.isPending ? "Creating…" : "Next →"}
 				</button>
@@ -672,10 +672,10 @@ function PoolStep({ search }: PoolStepProps) {
 	return (
 		<div className="space-y-6 max-w-xl">
 			<div>
-				<h2 className="text-xl font-bold text-gray-900 dark:text-zinc-100 mb-1">
+				<h2 className="text-xl font-bold text-neutral-900 dark:text-neutral-100 mb-1">
 					Create your first Pool
 				</h2>
-				<p className="text-sm text-gray-600 dark:text-zinc-400">
+				<p className="text-sm text-neutral-600 dark:text-neutral-400">
 					A pool binds a provider with one or more secrets and is the unit Relay
 					uses to route requests.
 				</p>
@@ -684,7 +684,7 @@ function PoolStep({ search }: PoolStepProps) {
 			<form onSubmit={handleSubmit} className="space-y-4">
 				<div>
 					<label
-						className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1"
+						className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1"
 						htmlFor="pool-name"
 					>
 						Name
@@ -695,13 +695,13 @@ function PoolStep({ search }: PoolStepProps) {
 						value={name}
 						onChange={(e) => setName(e.target.value)}
 						required
-						className="w-full rounded-lg border border-gray-300 dark:border-zinc-700 px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+						className="w-full rounded-lg border border-neutral-300 dark:border-neutral-700 px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
 					/>
 				</div>
 
 				<div>
 					<label
-						className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1"
+						className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1"
 						htmlFor="pool-provider"
 					>
 						Provider
@@ -710,7 +710,7 @@ function PoolStep({ search }: PoolStepProps) {
 						id="pool-provider"
 						value={provider}
 						onChange={(e) => setProvider(e.target.value)}
-						className="w-full rounded-lg border border-gray-300 dark:border-zinc-700 px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+						className="w-full rounded-lg border border-neutral-300 dark:border-neutral-700 px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
 					>
 						{(providersQuery.data.items ?? []).map((p) => (
 							<option key={p.metadata.name} value={p.metadata.name}>
@@ -721,7 +721,7 @@ function PoolStep({ search }: PoolStepProps) {
 				</div>
 
 				<div>
-					<span className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-2">
+					<span className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
 						Secrets
 					</span>
 					<div className="space-y-2">
@@ -734,15 +734,15 @@ function PoolStep({ search }: PoolStepProps) {
 									type="checkbox"
 									checked={selectedSecrets.includes(s.name)}
 									onChange={() => toggleSecret(s.name)}
-									className="h-4 w-4 rounded border-gray-300 dark:border-zinc-600 text-blue-600"
+									className="h-4 w-4 rounded border-neutral-300 dark:border-neutral-600 text-brand-600"
 								/>
-								<span className="text-sm text-gray-900 dark:text-zinc-100">
+								<span className="text-sm text-neutral-900 dark:text-neutral-100">
 									{s.name}
 								</span>
 							</label>
 						))}
 						{(secretsQuery.data.items ?? []).length === 0 && (
-							<p className="text-sm text-gray-400 dark:text-zinc-500">
+							<p className="text-sm text-neutral-400 dark:text-neutral-500">
 								No secrets found.
 							</p>
 						)}
@@ -760,7 +760,7 @@ function PoolStep({ search }: PoolStepProps) {
 				<button
 					type="submit"
 					disabled={createPool.isPending || !name || !provider}
-					className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-60"
+					className="px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 transition-colors disabled:opacity-60"
 				>
 					{createPool.isPending ? "Creating…" : "Next →"}
 				</button>
@@ -820,10 +820,10 @@ function ModelStep({ search }: ModelStepProps) {
 	return (
 		<div className="space-y-6 max-w-xl">
 			<div>
-				<h2 className="text-xl font-bold text-gray-900 dark:text-zinc-100 mb-1">
+				<h2 className="text-xl font-bold text-neutral-900 dark:text-neutral-100 mb-1">
 					Add your first Model
 				</h2>
-				<p className="text-sm text-gray-600 dark:text-zinc-400">
+				<p className="text-sm text-neutral-600 dark:text-neutral-400">
 					Models map a friendly alias to an upstream model identifier served by
 					a provider.
 				</p>
@@ -832,7 +832,7 @@ function ModelStep({ search }: ModelStepProps) {
 			<form onSubmit={handleSubmit} className="space-y-4">
 				<div>
 					<label
-						className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1"
+						className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1"
 						htmlFor="model-name"
 					>
 						Alias (used in API calls)
@@ -843,13 +843,13 @@ function ModelStep({ search }: ModelStepProps) {
 						value={name}
 						onChange={(e) => handleNameChange(e.target.value)}
 						required
-						className="w-full rounded-lg border border-gray-300 dark:border-zinc-700 px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+						className="w-full rounded-lg border border-neutral-300 dark:border-neutral-700 px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
 					/>
 				</div>
 
 				<div>
 					<label
-						className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1"
+						className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1"
 						htmlFor="model-provider"
 					>
 						Provider
@@ -858,7 +858,7 @@ function ModelStep({ search }: ModelStepProps) {
 						id="model-provider"
 						value={provider}
 						onChange={(e) => setProvider(e.target.value)}
-						className="w-full rounded-lg border border-gray-300 dark:border-zinc-700 px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+						className="w-full rounded-lg border border-neutral-300 dark:border-neutral-700 px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
 					>
 						{(providersQuery.data.items ?? []).map((p) => (
 							<option key={p.metadata.name} value={p.metadata.name}>
@@ -870,7 +870,7 @@ function ModelStep({ search }: ModelStepProps) {
 
 				<div>
 					<label
-						className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1"
+						className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1"
 						htmlFor="model-upstream"
 					>
 						Upstream model name
@@ -884,9 +884,9 @@ function ModelStep({ search }: ModelStepProps) {
 							setUpstreamTouched(true);
 						}}
 						required
-						className="w-full rounded-lg border border-gray-300 dark:border-zinc-700 px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+						className="w-full rounded-lg border border-neutral-300 dark:border-neutral-700 px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
 					/>
-					<p className="mt-1 text-xs text-gray-400 dark:text-zinc-500">
+					<p className="mt-1 text-xs text-neutral-400 dark:text-neutral-500">
 						e.g. gpt-4o, llama3.2, mistral
 					</p>
 				</div>
@@ -904,7 +904,7 @@ function ModelStep({ search }: ModelStepProps) {
 					disabled={
 						createModel.isPending || !name || !provider || !upstreamName
 					}
-					className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-60"
+					className="px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 transition-colors disabled:opacity-60"
 				>
 					{createModel.isPending ? "Creating…" : "Finish →"}
 				</button>
@@ -996,10 +996,10 @@ function DoneStep({ search }: DoneStepProps) {
 			<div className="flex items-start gap-3">
 				<CheckCircle className="w-10 h-10 text-green-500 shrink-0 mt-0.5" />
 				<div>
-					<h2 className="text-2xl font-bold text-gray-900 dark:text-zinc-100 mb-1">
+					<h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-1">
 						You&apos;re all set!
 					</h2>
-					<p className="text-sm text-gray-600 dark:text-zinc-400">
+					<p className="text-sm text-neutral-600 dark:text-neutral-400">
 						Relay is configured with a provider, secret, pool, and model. Send a
 						test prompt to confirm everything is wired up.
 					</p>
@@ -1007,11 +1007,11 @@ function DoneStep({ search }: DoneStepProps) {
 			</div>
 
 			{/* Test card */}
-			<div className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 space-y-4">
-				<h3 className="font-semibold text-gray-900 dark:text-zinc-100">
+			<div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-6 space-y-4">
+				<h3 className="font-semibold text-neutral-900 dark:text-neutral-100">
 					Test it
 				</h3>
-				<p className="text-xs text-gray-500 dark:text-zinc-400">
+				<p className="text-xs text-neutral-500 dark:text-neutral-400">
 					Model: <code className="font-mono">{modelName}</code> — via{" "}
 					<code className="font-mono">/v1/chat/completions</code>
 				</p>
@@ -1022,12 +1022,12 @@ function DoneStep({ search }: DoneStepProps) {
 						onChange={(e) => setPrompt(e.target.value)}
 						required
 						placeholder="Enter a prompt…"
-						className="flex-1 rounded-lg border border-gray-300 dark:border-zinc-700 px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+						className="flex-1 rounded-lg border border-neutral-300 dark:border-neutral-700 px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 dark:placeholder-neutral-500 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
 					/>
 					<button
 						type="submit"
 						disabled={isSending || !prompt}
-						className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-60 flex items-center gap-2"
+						className="px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 transition-colors disabled:opacity-60 flex items-center gap-2"
 					>
 						{isSending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
 						Send
@@ -1054,7 +1054,7 @@ function DoneStep({ search }: DoneStepProps) {
 			<button
 				type="button"
 				onClick={() => void navigate({ to: "/" })}
-				className="px-5 py-2.5 bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-sm font-medium rounded-lg hover:bg-gray-800 dark:hover:bg-zinc-200 transition-colors"
+				className="px-5 py-2.5 bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 text-sm font-medium rounded-lg hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors"
 			>
 				Go to dashboard
 			</button>
@@ -1128,7 +1128,7 @@ function BootstrapInner() {
 				return (
 					<Suspense
 						fallback={
-							<div className="text-gray-500 dark:text-zinc-400 text-sm">
+							<div className="text-neutral-500 dark:text-neutral-400 text-sm">
 								Loading…
 							</div>
 						}
@@ -1140,7 +1140,7 @@ function BootstrapInner() {
 				return (
 					<Suspense
 						fallback={
-							<div className="text-gray-500 dark:text-zinc-400 text-sm">
+							<div className="text-neutral-500 dark:text-neutral-400 text-sm">
 								Loading…
 							</div>
 						}
@@ -1153,7 +1153,7 @@ function BootstrapInner() {
 			default:
 				// step === undefined means resume computer is still computing
 				return (
-					<div className="text-gray-500 dark:text-zinc-400 text-sm">
+					<div className="text-neutral-500 dark:text-neutral-400 text-sm">
 						Loading…
 					</div>
 				);
@@ -1178,7 +1178,7 @@ function BootstrapInner() {
 function BootstrapPage() {
 	return (
 		<div>
-			<h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100 mb-8">
+			<h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-8">
 				Setup Wizard
 			</h1>
 			<BootstrapInner />
