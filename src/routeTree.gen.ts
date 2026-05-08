@@ -43,6 +43,7 @@ import { Route as AuthenticatedPoolsNewRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedPoolsNameRouteImport } from './routes/_authenticated/pools.$name'
 import { Route as AuthenticatedModelsNewRouteImport } from './routes/_authenticated/models.new'
 import { Route as AuthenticatedModelsNameRouteImport } from './routes/_authenticated/models.$name'
+import { Route as AuthenticatedKeysIdRouteImport } from './routes/_authenticated/keys.$id'
 import { Route as AuthenticatedSecretsNameEditRouteImport } from './routes/_authenticated/secrets.$name.edit'
 import { Route as AuthenticatedRoutesNameEditRouteImport } from './routes/_authenticated/routes.$name.edit'
 import { Route as AuthenticatedRatelimitsNameEditRouteImport } from './routes/_authenticated/ratelimits.$name.edit'
@@ -230,6 +231,11 @@ const AuthenticatedModelsNameRoute = AuthenticatedModelsNameRouteImport.update({
   path: '/$name',
   getParentRoute: () => AuthenticatedModelsRoute,
 } as any)
+const AuthenticatedKeysIdRoute = AuthenticatedKeysIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AuthenticatedKeysRoute,
+} as any)
 const AuthenticatedSecretsNameEditRoute =
   AuthenticatedSecretsNameEditRouteImport.update({
     id: '/edit',
@@ -272,7 +278,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/attachments': typeof AuthenticatedAttachmentsRoute
   '/bootstrap': typeof AuthenticatedBootstrapRoute
-  '/keys': typeof AuthenticatedKeysRoute
+  '/keys': typeof AuthenticatedKeysRouteWithChildren
   '/logs': typeof AuthenticatedLogsRoute
   '/models': typeof AuthenticatedModelsRouteWithChildren
   '/pools': typeof AuthenticatedPoolsRouteWithChildren
@@ -283,6 +289,7 @@ export interface FileRoutesByFullPath {
   '/secrets': typeof AuthenticatedSecretsRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRoute
   '/usage': typeof AuthenticatedUsageRoute
+  '/keys/$id': typeof AuthenticatedKeysIdRoute
   '/models/$name': typeof AuthenticatedModelsNameRouteWithChildren
   '/models/new': typeof AuthenticatedModelsNewRoute
   '/pools/$name': typeof AuthenticatedPoolsNameRouteWithChildren
@@ -312,12 +319,13 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/attachments': typeof AuthenticatedAttachmentsRoute
   '/bootstrap': typeof AuthenticatedBootstrapRoute
-  '/keys': typeof AuthenticatedKeysRoute
+  '/keys': typeof AuthenticatedKeysRouteWithChildren
   '/logs': typeof AuthenticatedLogsRoute
   '/routers': typeof AuthenticatedRoutersRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/usage': typeof AuthenticatedUsageRoute
   '/': typeof AuthenticatedIndexRoute
+  '/keys/$id': typeof AuthenticatedKeysIdRoute
   '/models/$name': typeof AuthenticatedModelsNameRouteWithChildren
   '/models/new': typeof AuthenticatedModelsNewRoute
   '/pools/$name': typeof AuthenticatedPoolsNameRouteWithChildren
@@ -349,7 +357,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_authenticated/attachments': typeof AuthenticatedAttachmentsRoute
   '/_authenticated/bootstrap': typeof AuthenticatedBootstrapRoute
-  '/_authenticated/keys': typeof AuthenticatedKeysRoute
+  '/_authenticated/keys': typeof AuthenticatedKeysRouteWithChildren
   '/_authenticated/logs': typeof AuthenticatedLogsRoute
   '/_authenticated/models': typeof AuthenticatedModelsRouteWithChildren
   '/_authenticated/pools': typeof AuthenticatedPoolsRouteWithChildren
@@ -361,6 +369,7 @@ export interface FileRoutesById {
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/usage': typeof AuthenticatedUsageRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/keys/$id': typeof AuthenticatedKeysIdRoute
   '/_authenticated/models/$name': typeof AuthenticatedModelsNameRouteWithChildren
   '/_authenticated/models/new': typeof AuthenticatedModelsNewRoute
   '/_authenticated/pools/$name': typeof AuthenticatedPoolsNameRouteWithChildren
@@ -404,6 +413,7 @@ export interface FileRouteTypes {
     | '/secrets'
     | '/settings'
     | '/usage'
+    | '/keys/$id'
     | '/models/$name'
     | '/models/new'
     | '/pools/$name'
@@ -439,6 +449,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/usage'
     | '/'
+    | '/keys/$id'
     | '/models/$name'
     | '/models/new'
     | '/pools/$name'
@@ -481,6 +492,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings'
     | '/_authenticated/usage'
     | '/_authenticated/'
+    | '/_authenticated/keys/$id'
     | '/_authenticated/models/$name'
     | '/_authenticated/models/new'
     | '/_authenticated/pools/$name'
@@ -752,6 +764,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedModelsNameRouteImport
       parentRoute: typeof AuthenticatedModelsRoute
     }
+    '/_authenticated/keys/$id': {
+      id: '/_authenticated/keys/$id'
+      path: '/$id'
+      fullPath: '/keys/$id'
+      preLoaderRoute: typeof AuthenticatedKeysIdRouteImport
+      parentRoute: typeof AuthenticatedKeysRoute
+    }
     '/_authenticated/secrets/$name/edit': {
       id: '/_authenticated/secrets/$name/edit'
       path: '/edit'
@@ -796,6 +815,17 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface AuthenticatedKeysRouteChildren {
+  AuthenticatedKeysIdRoute: typeof AuthenticatedKeysIdRoute
+}
+
+const AuthenticatedKeysRouteChildren: AuthenticatedKeysRouteChildren = {
+  AuthenticatedKeysIdRoute: AuthenticatedKeysIdRoute,
+}
+
+const AuthenticatedKeysRouteWithChildren =
+  AuthenticatedKeysRoute._addFileChildren(AuthenticatedKeysRouteChildren)
 
 interface AuthenticatedModelsNameRouteChildren {
   AuthenticatedModelsNameEditRoute: typeof AuthenticatedModelsNameEditRoute
@@ -982,7 +1012,7 @@ const AuthenticatedSecretsRouteWithChildren =
 interface AuthenticatedRouteChildren {
   AuthenticatedAttachmentsRoute: typeof AuthenticatedAttachmentsRoute
   AuthenticatedBootstrapRoute: typeof AuthenticatedBootstrapRoute
-  AuthenticatedKeysRoute: typeof AuthenticatedKeysRoute
+  AuthenticatedKeysRoute: typeof AuthenticatedKeysRouteWithChildren
   AuthenticatedLogsRoute: typeof AuthenticatedLogsRoute
   AuthenticatedModelsRoute: typeof AuthenticatedModelsRouteWithChildren
   AuthenticatedPoolsRoute: typeof AuthenticatedPoolsRouteWithChildren
@@ -999,7 +1029,7 @@ interface AuthenticatedRouteChildren {
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAttachmentsRoute: AuthenticatedAttachmentsRoute,
   AuthenticatedBootstrapRoute: AuthenticatedBootstrapRoute,
-  AuthenticatedKeysRoute: AuthenticatedKeysRoute,
+  AuthenticatedKeysRoute: AuthenticatedKeysRouteWithChildren,
   AuthenticatedLogsRoute: AuthenticatedLogsRoute,
   AuthenticatedModelsRoute: AuthenticatedModelsRouteWithChildren,
   AuthenticatedPoolsRoute: AuthenticatedPoolsRouteWithChildren,

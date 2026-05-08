@@ -29,11 +29,8 @@ export function useAuth() {
 			body: { username, password },
 		});
 		if (error) {
-			const status = error.error.type === "authentication_error" ? 401 : 0;
-			if (status === 401) {
-				throw new AuthError("Invalid username or password.");
-			}
-			throw new Error(`Login failed: ${error.error.message}`);
+			// Backend returns a structured error with a human-readable message.
+			throw new AuthError(error.error.message || "Login failed.");
 		}
 		await queryClient.invalidateQueries({
 			queryKey: whoamiQueryOptions.queryKey,

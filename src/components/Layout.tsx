@@ -34,8 +34,10 @@ export function Layout() {
 			<Sidebar />
 			<div className="flex-1 min-w-0 flex flex-col">
 				<Header />
-				<main className="flex-1 overflow-auto p-6">
-					<Outlet />
+				<main className="flex-1 overflow-auto">
+					<div className="mx-auto max-w-7xl px-6 py-5">
+						<Outlet />
+					</div>
 				</main>
 			</div>
 			<ToastContainer />
