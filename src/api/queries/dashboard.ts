@@ -1,16 +1,13 @@
 import { queryOptions } from "@tanstack/react-query";
-import { apiClient } from "#/api/client";
+import { apiClient, CONTROL_API_URL } from "#/api/client";
 import type { HealthzResponse, VersionResponse } from "#/api/dashboard-types";
 
 export type { VersionResponse };
 
-const BASE_URL =
-	typeof window !== "undefined"
-		? window.location.origin
-		: "http://localhost:8080";
-
 async function fetchJson<T>(path: string): Promise<T> {
-	const res = await fetch(`${BASE_URL}${path}`, { credentials: "include" });
+	const res = await fetch(`${CONTROL_API_URL}${path}`, {
+		credentials: "include",
+	});
 	if (!res.ok) throw new Error(`${path} failed: ${res.status}`);
 	return res.json() as Promise<T>;
 }
@@ -18,7 +15,7 @@ async function fetchJson<T>(path: string): Promise<T> {
 export const versionQueryOptions = queryOptions({
 	queryKey: ["admin", "version"] as const,
 	queryFn: async (): Promise<VersionResponse> => {
-		const { data, error } = await apiClient.GET("/admin/version");
+		const { data, error } = await apiClient.GET("/control/version");
 		if (error) throw new Error(error.error.message);
 		return data;
 	},

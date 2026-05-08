@@ -18,7 +18,7 @@ import type {
 export const poolsListQueryOptions = queryOptions({
 	queryKey: ["pools"] as const,
 	queryFn: async (): Promise<PoolListResponse> => {
-		const { data, error } = await apiClient.GET("/admin/pools");
+		const { data, error } = await apiClient.GET("/control/pools");
 		if (error) throw new ApiError(0, error.error);
 		return data;
 	},
@@ -30,7 +30,7 @@ export function poolDetailQueryOptions(name: string) {
 	return queryOptions({
 		queryKey: ["pools", name] as const,
 		queryFn: async (): Promise<Pool> => {
-			const { data, error } = await apiClient.GET("/admin/pools/{name}", {
+			const { data, error } = await apiClient.GET("/control/pools/{name}", {
 				params: { path: { name } },
 			});
 			if (error) throw new ApiError(0, error.error);
@@ -55,7 +55,7 @@ export function useCreatePool() {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: async (body: PoolCreate): Promise<Pool> => {
-			const { data, error } = await apiClient.POST("/admin/pools", { body });
+			const { data, error } = await apiClient.POST("/control/pools", { body });
 			if (error) throw new ApiError(0, error.error);
 			return data;
 		},
@@ -69,7 +69,7 @@ export function useUpdatePool(name: string) {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: async (body: PoolUpdate): Promise<Pool> => {
-			const { data, error } = await apiClient.PUT("/admin/pools/{name}", {
+			const { data, error } = await apiClient.PUT("/control/pools/{name}", {
 				params: { path: { name } },
 				body,
 			});
@@ -86,7 +86,7 @@ export function useDeletePool() {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: async (name: string): Promise<void> => {
-			const { error } = await apiClient.DELETE("/admin/pools/{name}", {
+			const { error } = await apiClient.DELETE("/control/pools/{name}", {
 				params: { path: { name } },
 			});
 			if (error) throw new ApiError(0, error.error);

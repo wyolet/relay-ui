@@ -4,7 +4,7 @@
  */
 
 export interface paths {
-    "/admin/attachments": {
+    "/control/attachments": {
         parameters: {
             query?: never;
             header?: never;
@@ -24,7 +24,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/admin/login": {
+    "/control/login": {
         parameters: {
             query?: never;
             header?: never;
@@ -34,17 +34,17 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Admin login (cookie auth)
-         * @description Validates the admin token and sets a relay_admin session cookie (HttpOnly, Secure, SameSite=Strict, 24 h). Returns 401 on wrong token.
+         * Login (username + password)
+         * @description Validates credentials against the identity store and sets a relay_admin session cookie (HttpOnly, Secure, SameSite=Strict, 24 h). Returns 401 on bad credentials.
          */
-        post: operations["admin_login"];
+        post: operations["control-login"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/admin/logout": {
+    "/control/logout": {
         parameters: {
             query?: never;
             header?: never;
@@ -54,17 +54,17 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Admin logout
+         * Logout
          * @description Clears the relay_admin session cookie. Requires an active session.
          */
-        post: operations["admin_logout"];
+        post: operations["control-logout"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/admin/master-key/generate": {
+    "/control/master-key/generate": {
         parameters: {
             query?: never;
             header?: never;
@@ -84,7 +84,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/admin/models": {
+    "/control/models": {
         parameters: {
             query?: never;
             header?: never;
@@ -102,7 +102,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/admin/models/{name}": {
+    "/control/models/{name}": {
         parameters: {
             query?: never;
             header?: never;
@@ -121,7 +121,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/admin/pools": {
+    "/control/pools": {
         parameters: {
             query?: never;
             header?: never;
@@ -139,7 +139,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/admin/pools/{name}": {
+    "/control/pools/{name}": {
         parameters: {
             query?: never;
             header?: never;
@@ -158,7 +158,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/admin/providers": {
+    "/control/providers": {
         parameters: {
             query?: never;
             header?: never;
@@ -176,7 +176,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/admin/providers/{name}": {
+    "/control/providers/{name}": {
         parameters: {
             query?: never;
             header?: never;
@@ -195,7 +195,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/admin/ratelimits": {
+    "/control/ratelimits": {
         parameters: {
             query?: never;
             header?: never;
@@ -213,7 +213,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/admin/ratelimits/{name}": {
+    "/control/ratelimits/{name}": {
         parameters: {
             query?: never;
             header?: never;
@@ -232,7 +232,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/admin/reload": {
+    "/control/reload": {
         parameters: {
             query?: never;
             header?: never;
@@ -243,16 +243,16 @@ export interface paths {
         put?: never;
         /**
          * Reload catalog
-         * @description Triggers a live config reload from the Postgres catalog. Requires admin bearer token.
+         * @description Triggers a live config reload from the Postgres catalog.
          */
-        post: operations["admin-reload"];
+        post: operations["control-reload"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/admin/routes": {
+    "/control/routes": {
         parameters: {
             query?: never;
             header?: never;
@@ -270,7 +270,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/admin/routes/{name}": {
+    "/control/routes/{name}": {
         parameters: {
             query?: never;
             header?: never;
@@ -289,7 +289,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/admin/secrets": {
+    "/control/secrets": {
         parameters: {
             query?: never;
             header?: never;
@@ -310,7 +310,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/admin/secrets/{name}": {
+    "/control/secrets/{name}": {
         parameters: {
             query?: never;
             header?: never;
@@ -329,7 +329,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/admin/version": {
+    "/control/version": {
         parameters: {
             query?: never;
             header?: never;
@@ -346,7 +346,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/admin/whoami": {
+    "/control/whoami": {
         parameters: {
             query?: never;
             header?: never;
@@ -354,90 +354,10 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Admin whoami
-         * @description Returns {authenticated: true} if the admin session is valid.
+         * Whoami
+         * @description Returns {authenticated: true} if the session is valid.
          */
-        get: operations["admin_whoami"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/healthz": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Health check
-         * @description Returns overall status and per-backend health. HTTP 200 = ok, 503 = degraded.
-         */
-        get: operations["get-healthz"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/chat/completions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Create chat completion
-         * @description Proxies to the configured upstream provider following the OpenAI Chat Completions API shape (https://platform.openai.com/docs/api-reference/chat/create). Returns text/event-stream when stream=true, application/json otherwise.
-         */
-        post: operations["create-chat-completion"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/messages": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Create message (Anthropic)
-         * @description Proxies to the configured Anthropic upstream following the Anthropic Messages API shape (https://docs.anthropic.com/en/api/messages). Returns text/event-stream when stream=true, application/json otherwise. Accepts x-api-key header in addition to Authorization: Bearer for SDK compatibility.
-         */
-        post: operations["create-message"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/models": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List models
-         * @description Returns all models in Relay's catalog in OpenAI list shape.
-         */
-        get: operations["list-models"];
+        get: operations["control-whoami"];
         put?: never;
         post?: never;
         delete?: never;
@@ -549,23 +469,29 @@ export interface components {
             /** @description All resources of this kind. */
             items: components["schemas"]["Route"][] | null;
         };
-        LoginBody: {
+        LoginBodyOut: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
-             * @example https://example.com/schemas/LoginBody.json
+             * @example https://example.com/schemas/LoginBodyOut.json
              */
             readonly $schema?: string;
-            /** @description Admin token. */
-            token: string;
+            /** @description Roles attached to the user. */
+            roles?: string[] | null;
+            /** @description Authenticated user name. */
+            username: string;
         };
-        LoginOutputBody: {
+        LoginInputBody: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
-             * @example https://example.com/schemas/LoginOutputBody.json
+             * @example https://example.com/schemas/LoginInputBody.json
              */
             readonly $schema?: string;
+            /** @description User password (plain over TLS). */
+            password: string;
+            /** @description User name as declared in the User YAML. */
+            username: string;
         };
         MasterKeyResponse: {
             /**
@@ -882,7 +808,7 @@ export interface operations {
             };
         };
     };
-    admin_login: {
+    "control-login": {
         parameters: {
             query?: never;
             header?: never;
@@ -891,7 +817,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["LoginBody"];
+                "application/json": components["schemas"]["LoginInputBody"];
             };
         };
         responses: {
@@ -902,7 +828,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["LoginOutputBody"];
+                    "application/json": components["schemas"]["LoginBodyOut"];
                 };
             };
             /** @description Bad Request */
@@ -941,9 +867,18 @@ export interface operations {
                     "application/json": components["schemas"]["OpenAIError"];
                 };
             };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
         };
     };
-    admin_logout: {
+    "control-logout": {
         parameters: {
             query?: never;
             header?: never;
@@ -2017,7 +1952,7 @@ export interface operations {
             };
         };
     };
-    "admin-reload": {
+    "control-reload": {
         parameters: {
             query?: never;
             header?: never;
@@ -2600,7 +2535,7 @@ export interface operations {
             };
         };
     };
-    admin_whoami: {
+    "control-whoami": {
         parameters: {
             query?: never;
             header?: never;
@@ -2617,214 +2552,6 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["WhoamiOutputBody"];
                 };
-            };
-            /** @description Unauthorized */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OpenAIError"];
-                };
-            };
-            /** @description Internal Server Error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OpenAIError"];
-                };
-            };
-        };
-    };
-    "get-healthz": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OpenAIError"];
-                };
-            };
-        };
-    };
-    "create-chat-completion": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /** @description Up to 16 key/value pairs for caller attribution. */
-                    metadata?: {
-                        [key: string]: string;
-                    };
-                    /** @description ID of the model to use (required). */
-                    model: string;
-                    /** @description If true, partial message deltas are sent as SSE. */
-                    stream?: boolean;
-                    /** @description Caller identifier forwarded to the upstream provider. */
-                    user?: string;
-                };
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Bad Request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OpenAIError"];
-                };
-            };
-            /** @description Unauthorized */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OpenAIError"];
-                };
-            };
-            /** @description Not Found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OpenAIError"];
-                };
-            };
-            /** @description Too Many Requests */
-            429: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OpenAIError"];
-                };
-            };
-            /** @description Internal Server Error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OpenAIError"];
-                };
-            };
-        };
-    };
-    "create-message": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/octet-stream": string;
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Bad Request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OpenAIError"];
-                };
-            };
-            /** @description Unauthorized */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OpenAIError"];
-                };
-            };
-            /** @description Not Found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OpenAIError"];
-                };
-            };
-            /** @description Too Many Requests */
-            429: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OpenAIError"];
-                };
-            };
-            /** @description Internal Server Error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OpenAIError"];
-                };
-            };
-        };
-    };
-    "list-models": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
             };
             /** @description Unauthorized */
             401: {

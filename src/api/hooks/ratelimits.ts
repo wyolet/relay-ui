@@ -18,7 +18,7 @@ import type {
 export const rateLimitsListQueryOptions = queryOptions({
 	queryKey: ["ratelimits"] as const,
 	queryFn: async (): Promise<RateLimitListResponse> => {
-		const { data, error } = await apiClient.GET("/admin/ratelimits");
+		const { data, error } = await apiClient.GET("/control/ratelimits");
 		if (error) throw new ApiError(0, error.error);
 		return data;
 	},
@@ -30,7 +30,7 @@ export function rateLimitDetailQueryOptions(name: string) {
 	return queryOptions({
 		queryKey: ["ratelimits", name] as const,
 		queryFn: async (): Promise<RateLimit> => {
-			const { data, error } = await apiClient.GET("/admin/ratelimits/{name}", {
+			const { data, error } = await apiClient.GET("/control/ratelimits/{name}", {
 				params: { path: { name } },
 			});
 			if (error) throw new ApiError(0, error.error);
@@ -55,7 +55,7 @@ export function useCreateRateLimit() {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: async (body: RateLimitCreate): Promise<RateLimit> => {
-			const { data, error } = await apiClient.POST("/admin/ratelimits", {
+			const { data, error } = await apiClient.POST("/control/ratelimits", {
 				body,
 			});
 			if (error) throw new ApiError(0, error.error);
@@ -97,7 +97,7 @@ export function useUpdateRateLimit(name: string) {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: async (body: RateLimitUpdate): Promise<RateLimit> => {
-			const { data, error } = await apiClient.PUT("/admin/ratelimits/{name}", {
+			const { data, error } = await apiClient.PUT("/control/ratelimits/{name}", {
 				params: { path: { name } },
 				body,
 			});
@@ -114,7 +114,7 @@ export function useDeleteRateLimit() {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: async (name: string): Promise<void> => {
-			const { error } = await apiClient.DELETE("/admin/ratelimits/{name}", {
+			const { error } = await apiClient.DELETE("/control/ratelimits/{name}", {
 				params: { path: { name } },
 			});
 			if (error) throw new ApiError(0, error.error);

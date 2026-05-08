@@ -1,68 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Suspense } from "react";
-import type { HealthStatusLevel, HealthSubsystem } from "#/api/dashboard-types";
 import { modelsListQueryOptions } from "#/api/hooks/models";
 import { poolsListQueryOptions } from "#/api/hooks/pools";
 import { providersListQueryOptions } from "#/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "#/api/hooks/ratelimits";
 import { routesListQueryOptions } from "#/api/hooks/routes";
 import { secretsListQueryOptions } from "#/api/hooks/secrets";
-import { healthzQueryOptions } from "#/api/queries/dashboard";
 
 export const Route = createFileRoute("/_authenticated/")({
 	component: DashboardPage,
 });
-
-// --- health tile ---
-
-const STATUS_COLORS: Record<HealthStatusLevel, string> = {
-	ok: "bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800",
-	degraded:
-		"bg-yellow-50 dark:bg-yellow-950 border-yellow-200 dark:border-yellow-800",
-	error: "bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800",
-};
-
-const STATUS_DOT: Record<HealthStatusLevel, string> = {
-	ok: "bg-green-500",
-	degraded: "bg-yellow-500",
-	error: "bg-red-500",
-};
-
-interface HealthTileProps {
-	label: string;
-	subsystem: HealthSubsystem | undefined;
-}
-
-function HealthTile({ label, subsystem }: HealthTileProps) {
-	const level: HealthStatusLevel = subsystem?.status ?? "error";
-	return (
-		<div
-			className={`rounded-lg border p-4 flex flex-col gap-1 ${STATUS_COLORS[level]}`}
-			title={subsystem?.error ?? undefined}
-		>
-			<div className="flex items-center gap-2">
-				<span
-					className={`w-2 h-2 rounded-full shrink-0 ${STATUS_DOT[level]}`}
-				/>
-				<span className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 uppercase tracking-wide">
-					{label}
-				</span>
-			</div>
-			<span className="text-sm font-medium text-neutral-900 dark:text-neutral-100 capitalize">
-				{level}
-			</span>
-			{subsystem?.error && (
-				<span
-					className="text-xs text-neutral-500 dark:text-neutral-400 truncate"
-					title={subsystem.error}
-				>
-					{subsystem.error}
-				</span>
-			)}
-		</div>
-	);
-}
 
 // --- count card ---
 
@@ -126,7 +74,6 @@ function MetricsPending() {
 // --- dashboard inner (uses suspense queries) ---
 
 function DashboardInner() {
-	const { data: healthz } = useQuery(healthzQueryOptions);
 	const { data: providers } = useQuery(providersListQueryOptions);
 	const { data: secrets } = useQuery(secretsListQueryOptions);
 	const { data: pools } = useQuery(poolsListQueryOptions);
@@ -142,20 +89,9 @@ function DashboardInner() {
 		<div className="space-y-8">
 			{catalogEmpty && <WelcomePanel />}
 
-			{/* Health tiles */}
-			<section>
-				<h2 className="text-sm font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wide mb-3">
-					Health
-				</h2>
-				<div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-					<HealthTile label="Catalog" subsystem={healthz?.catalog} />
-					<HealthTile label="State" subsystem={healthz?.state} />
-					<HealthTile label="Event Log" subsystem={healthz?.eventlog} />
-					<HealthTile label="OTEL" subsystem={healthz?.otel} />
-				</div>
-			</section>
+			{/* Health tiles pending — /healthz is not yet on the control plane. */}
 
-			{/* Metrics placeholder — /admin/metrics does not exist yet */}
+			{/* Metrics placeholder — /control/metrics does not exist yet */}
 			<MetricsPending />
 
 			{/* Quick stats */}

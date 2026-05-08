@@ -14,7 +14,7 @@
  *   ?step=N&provider=<name>&secret=<name>&pool=<name>&model=<name>&skippedMasterKey=1
  */
 
-import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import {
 	createFileRoute,
 	useNavigate,
@@ -30,7 +30,6 @@ import {
 	useCreateProvider,
 } from "#/api/hooks/providers";
 import { secretsListQueryOptions, useCreateSecret } from "#/api/hooks/secrets";
-import { healthzQueryOptions } from "#/api/queries/dashboard";
 import type { SecretKind } from "#/api/types/secret";
 
 // ---------------------------------------------------------------------------
@@ -138,12 +137,9 @@ function MasterKeyStep({ search }: MasterKeyStepProps) {
 	const [generatedKey, setGeneratedKey] = useState<string | null>(null);
 	const [copied, setCopied] = useState(false);
 
-	// Poll healthz to detect when master key is configured
-	const healthzQuery = useQuery({
-		...healthzQueryOptions,
-		enabled: generatedKey !== null && confirmed,
-	});
-	const masterKeyDetected = healthzQuery.data?.master_key_configured === true;
+	// TODO: re-enable master-key auto-detection once /healthz is back on the
+	// control plane (or replaced by a dedicated /control/status endpoint).
+	const masterKeyDetected = false;
 
 	function advanceTo(step: number, extra?: Partial<BootstrapSearch>) {
 		void navigate({
@@ -445,8 +441,8 @@ interface SecretStepProps {
 function SecretStep({ search }: SecretStepProps) {
 	const navigate = useNavigate({ from: "/bootstrap" });
 	const createSecret = useCreateSecret();
-	const healthzQuery = useQuery(healthzQueryOptions);
-	const masterKeyConfigured = healthzQuery.data?.master_key_configured === true;
+	// TODO: derive from a control-plane status endpoint when available.
+	const masterKeyConfigured = false;
 
 	const [name, setName] = useState("openai-key");
 	const [kind, setKind] = useState<SecretKind>("env");

@@ -1,4 +1,4 @@
-RELAY_URL ?= https://relay.wyolet.dev
+RELAY_URL ?= https://relay-control-api.wyolet.dev
 
 .DEFAULT_GOAL := help
 

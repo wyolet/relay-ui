@@ -18,7 +18,7 @@ import type {
 export const providersListQueryOptions = queryOptions({
 	queryKey: ["providers"] as const,
 	queryFn: async (): Promise<ProviderListResponse> => {
-		const { data, error } = await apiClient.GET("/admin/providers");
+		const { data, error } = await apiClient.GET("/control/providers");
 		if (error) throw new ApiError(0, error.error);
 		return data;
 	},
@@ -30,7 +30,7 @@ export function providerDetailQueryOptions(name: string) {
 	return queryOptions({
 		queryKey: ["providers", name] as const,
 		queryFn: async (): Promise<Provider> => {
-			const { data, error } = await apiClient.GET("/admin/providers/{name}", {
+			const { data, error } = await apiClient.GET("/control/providers/{name}", {
 				params: { path: { name } },
 			});
 			if (error) throw new ApiError(0, error.error);
@@ -55,7 +55,7 @@ export function useCreateProvider() {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: async (body: ProviderCreate): Promise<Provider> => {
-			const { data, error } = await apiClient.POST("/admin/providers", {
+			const { data, error } = await apiClient.POST("/control/providers", {
 				body,
 			});
 			if (error) throw new ApiError(0, error.error);
@@ -97,7 +97,7 @@ export function useUpdateProvider(name: string) {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: async (body: ProviderUpdate): Promise<Provider> => {
-			const { data, error } = await apiClient.PUT("/admin/providers/{name}", {
+			const { data, error } = await apiClient.PUT("/control/providers/{name}", {
 				params: { path: { name } },
 				body,
 			});
@@ -114,7 +114,7 @@ export function useDeleteProvider() {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: async (name: string): Promise<void> => {
-			const { error } = await apiClient.DELETE("/admin/providers/{name}", {
+			const { error } = await apiClient.DELETE("/control/providers/{name}", {
 				params: { path: { name } },
 			});
 			if (error) throw new ApiError(0, error.error);

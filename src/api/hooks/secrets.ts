@@ -18,7 +18,7 @@ import type {
 export const secretsListQueryOptions = queryOptions({
 	queryKey: ["secrets"] as const,
 	queryFn: async (): Promise<SecretListResponse> => {
-		const { data, error } = await apiClient.GET("/admin/secrets");
+		const { data, error } = await apiClient.GET("/control/secrets");
 		if (error) throw new ApiError(0, error.error);
 		return data;
 	},
@@ -30,7 +30,7 @@ export function secretDetailQueryOptions(name: string) {
 	return queryOptions({
 		queryKey: ["secrets", name] as const,
 		queryFn: async (): Promise<SecretResponse> => {
-			const { data, error } = await apiClient.GET("/admin/secrets/{name}", {
+			const { data, error } = await apiClient.GET("/control/secrets/{name}", {
 				params: { path: { name } },
 			});
 			if (error) throw new ApiError(0, error.error);
@@ -55,7 +55,7 @@ export function useCreateSecret() {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: async (body: SecretCreate): Promise<SecretResponse> => {
-			const { data, error } = await apiClient.POST("/admin/secrets", { body });
+			const { data, error } = await apiClient.POST("/control/secrets", { body });
 			if (error) throw new ApiError(0, error.error);
 			return data;
 		},
@@ -69,7 +69,7 @@ export function useUpdateSecret(name: string) {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: async (body: SecretUpdate): Promise<SecretResponse> => {
-			const { data, error } = await apiClient.PUT("/admin/secrets/{name}", {
+			const { data, error } = await apiClient.PUT("/control/secrets/{name}", {
 				params: { path: { name } },
 				body,
 			});
@@ -86,7 +86,7 @@ export function useDeleteSecret() {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: async (name: string): Promise<void> => {
-			const { error } = await apiClient.DELETE("/admin/secrets/{name}", {
+			const { error } = await apiClient.DELETE("/control/secrets/{name}", {
 				params: { path: { name } },
 			});
 			if (error) throw new ApiError(0, error.error);

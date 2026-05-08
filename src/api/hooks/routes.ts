@@ -18,7 +18,7 @@ import type {
 export const routesListQueryOptions = queryOptions({
 	queryKey: ["routes"] as const,
 	queryFn: async (): Promise<RouteListResponse> => {
-		const { data, error } = await apiClient.GET("/admin/routes");
+		const { data, error } = await apiClient.GET("/control/routes");
 		if (error) throw new ApiError(0, error.error);
 		return data;
 	},
@@ -30,7 +30,7 @@ export function routeDetailQueryOptions(name: string) {
 	return queryOptions({
 		queryKey: ["routes", name] as const,
 		queryFn: async (): Promise<RelayRoute> => {
-			const { data, error } = await apiClient.GET("/admin/routes/{name}", {
+			const { data, error } = await apiClient.GET("/control/routes/{name}", {
 				params: { path: { name } },
 			});
 			if (error) throw new ApiError(0, error.error);
@@ -55,7 +55,7 @@ export function useCreateRoute() {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: async (body: RelayRouteCreate): Promise<RelayRoute> => {
-			const { data, error } = await apiClient.POST("/admin/routes", { body });
+			const { data, error } = await apiClient.POST("/control/routes", { body });
 			if (error) throw new ApiError(0, error.error);
 			return data;
 		},
@@ -95,7 +95,7 @@ export function useUpdateRoute(name: string) {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: async (body: RelayRouteUpdate): Promise<RelayRoute> => {
-			const { data, error } = await apiClient.PUT("/admin/routes/{name}", {
+			const { data, error } = await apiClient.PUT("/control/routes/{name}", {
 				params: { path: { name } },
 				body,
 			});
@@ -112,7 +112,7 @@ export function useDeleteRoute() {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: async (name: string): Promise<void> => {
-			const { error } = await apiClient.DELETE("/admin/routes/{name}", {
+			const { error } = await apiClient.DELETE("/control/routes/{name}", {
 				params: { path: { name } },
 			});
 			if (error) throw new ApiError(0, error.error);

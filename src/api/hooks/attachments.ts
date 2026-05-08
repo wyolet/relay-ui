@@ -9,7 +9,7 @@ import { ApiError } from "#/api/types/errors";
 export const allAttachmentsQueryOptions = queryOptions({
 	queryKey: ["attachments", "all"] as const,
 	queryFn: async (): Promise<AttachmentListResponse> => {
-		const { data, error } = await apiClient.GET("/admin/attachments");
+		const { data, error } = await apiClient.GET("/control/attachments");
 		if (error) throw new ApiError(0, error.error);
 		return data;
 	},
@@ -24,7 +24,7 @@ export function attachmentsQueryOptions(params: {
 	return queryOptions({
 		queryKey: ["attachments", params] as const,
 		queryFn: async (): Promise<AttachmentListResponse> => {
-			const { data, error } = await apiClient.GET("/admin/attachments", {
+			const { data, error } = await apiClient.GET("/control/attachments", {
 				params: {
 					query: {
 						parent_kind: params.parent_kind,

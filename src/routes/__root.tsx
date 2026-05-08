@@ -5,7 +5,6 @@ import {
 	Outlet,
 	redirect,
 } from "@tanstack/react-router";
-import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import { whoamiQueryOptions } from "#/api/auth";
 
 import "../styles.css";
@@ -35,7 +34,6 @@ function RootComponent() {
 	return (
 		<QueryClientProvider client={queryClient}>
 			<Outlet />
-			{import.meta.env.DEV && <TanStackRouterDevtools />}
 		</QueryClientProvider>
 	);
 }

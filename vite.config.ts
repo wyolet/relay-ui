@@ -6,10 +6,11 @@ import tailwindcss from '@tailwindcss/vite'
 
 const pkg = JSON.parse(readFileSync('./package.json', 'utf-8')) as { version: string }
 
-const RELAY_TARGET = process.env.RELAY_TARGET ?? 'https://relay.wyolet.dev'
+const CONTROL_TARGET =
+  process.env.RELAY_CONTROL_TARGET ?? 'https://relay-control-api.wyolet.dev'
 
 const proxy = {
-  target: RELAY_TARGET,
+  target: CONTROL_TARGET,
   changeOrigin: true,
   secure: false,
   cookieDomainRewrite: { '*': '' },
@@ -32,8 +33,7 @@ const config = defineConfig({
     allowedHosts: ['relay.wyolet.dev', '.wyolet.dev', 'localhost'],
     hmr: { host: 'relay.wyolet.dev', clientPort: 443, protocol: 'wss' },
     proxy: {
-      '/admin': proxy,
-      '/v1': proxy,
+      '/control': proxy,
       '/healthz': proxy,
       '/openapi.json': proxy,
     },

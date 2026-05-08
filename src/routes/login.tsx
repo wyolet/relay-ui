@@ -4,7 +4,6 @@ import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { z } from "zod";
 import { AuthError, useAuth, whoamiQueryOptions } from "#/api/auth";
-import { healthzQueryOptions } from "#/api/queries/dashboard";
 
 export const Route = createFileRoute("/login")({
 	async beforeLoad({ context }) {
@@ -52,30 +51,18 @@ function BrandMark({ className }: { className?: string }) {
 }
 
 function LiveStatus() {
-	const { data, isError } = useQuery({
-		...healthzQueryOptions,
+	const { data, isError, isLoading } = useQuery({
+		...whoamiQueryOptions,
 		retry: false,
+		refetchInterval: 5_000,
 	});
-	const overall =
-		data?.catalog?.status ??
-		data?.state?.status ??
-		(isError ? "error" : undefined);
-	const tone =
-		overall === "ok"
-			? "text-brand-600 dark:text-brand-400"
-			: overall === "degraded"
-				? "text-amber-600 dark:text-amber-400"
-				: overall === "error"
-					? "text-red-600 dark:text-red-400"
-					: "text-neutral-400 dark:text-neutral-600";
-	const label =
-		overall === "ok"
-			? "alive"
-			: overall === "degraded"
-				? "degraded"
-				: overall === "error"
-					? "unreachable"
-					: "checking…";
+	const reachable = !isLoading && !isError && data !== undefined;
+	const tone = reachable
+		? "text-brand-600 dark:text-brand-400"
+		: isError
+			? "text-red-600 dark:text-red-400"
+			: "text-neutral-400 dark:text-neutral-600";
+	const label = reachable ? "alive" : isError ? "unreachable" : "checking…";
 	return (
 		<div className="flex items-center justify-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-500 tabular-nums">
 			<span className={`w-1.5 h-1.5 rounded-full bg-current ${tone}`} />
@@ -177,9 +164,7 @@ function LoginPage() {
 		onSubmit: async ({ value }) => {
 			setServerError(null);
 			try {
-				// TODO: backend currently authenticates via a single token.
-				// We send `password` until the backend supports user accounts.
-				await login(value.password);
+				await login(value.username, value.password);
 				await navigate({ to: "/" });
 			} catch (err) {
 				if (err instanceof AuthError) {
