@@ -311,25 +311,19 @@ function PoolDetailInner() {
 										<th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wide">
 											Rate Limit
 										</th>
-										<th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wide">
-											Meter
-										</th>
 									</tr>
 								</thead>
 								<tbody className="divide-y divide-gray-100 dark:divide-zinc-800">
 									{rateLimits.map((rl) => (
-										<tr key={rl.ref} className="bg-white dark:bg-zinc-900">
+										<tr key={rl.Ref} className="bg-white dark:bg-zinc-900">
 											<td className="px-4 py-3 text-gray-900 dark:text-zinc-100">
 												<Link
 													to="/ratelimits/$name"
-													params={{ name: rl.ref }}
+													params={{ name: rl.Ref }}
 													className="text-blue-600 hover:underline"
 												>
-													{rl.ref}
+													{rl.Ref}
 												</Link>
-											</td>
-											<td className="px-4 py-3 text-gray-700 dark:text-zinc-300">
-												{rl.meter}
 											</td>
 										</tr>
 									))}

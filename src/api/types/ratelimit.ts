@@ -7,9 +7,11 @@ export type RateLimitListResponse =
 
 /**
  * Inline attachment reference embedded in Pool/Model spec rateLimits[].
- * Schema name: RateLimitAttachment — fields: { ref: string; meter: string }
+ * Schema name: RateLimitAttachment — fields: { Ref: string }.
+ * Meter selection moved into RateLimitSpec.rules[].
  */
 export type RateLimitAttachment = components["schemas"]["RateLimitAttachment"];
+export type RateLimitRule = components["schemas"]["RateLimitRule"];
 
 /** POST body: full envelope (same shape as the resource) */
 export type RateLimitCreate = components["schemas"]["RateLimit"];

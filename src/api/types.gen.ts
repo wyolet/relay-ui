@@ -406,6 +406,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create message (Anthropic)
+         * @description Proxies to the configured Anthropic upstream following the Anthropic Messages API shape (https://docs.anthropic.com/en/api/messages). Returns text/event-stream when stream=true, application/json otherwise. Accepts x-api-key header in addition to Authorization: Bearer for SDK compatibility.
+         */
+        post: operations["create-message"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/models": {
         parameters: {
             query?: never;
@@ -453,15 +473,31 @@ export interface components {
             ratelimitName: string;
         };
         Capabilities: {
+            assistantPrefill?: boolean;
             audio?: boolean;
+            audioInput?: boolean;
+            audioOutput?: boolean;
+            batch?: boolean;
             chat?: boolean;
+            computerUse?: boolean;
             embeddings?: boolean;
+            fileInput?: boolean;
             jsonMode?: boolean;
+            parallelTools?: boolean;
+            promptCache?: boolean;
             reasoning?: boolean;
             streaming?: boolean;
             structuredOutput?: boolean;
+            structuredOutputs?: boolean;
+            systemMessages?: boolean;
             tools?: boolean;
             vision?: boolean;
+            webSearch?: boolean;
+        };
+        Deprecation: {
+            replacement?: string;
+            status?: string;
+            sunsetDate?: string;
         };
         ListOutputModelBody: {
             /**
@@ -564,11 +600,20 @@ export interface components {
             spec: components["schemas"]["ModelSpec"];
         };
         ModelSpec: {
+            aliases?: string[] | null;
             capabilities?: components["schemas"]["Capabilities"];
             /** Format: int64 */
             contextWindow?: number;
+            /** Format: int64 */
+            contextWindowInput?: number;
+            /** Format: int64 */
+            contextWindowOutput?: number;
+            /** Format: int64 */
+            contextWindowTotal?: number;
+            deprecation?: components["schemas"]["Deprecation"];
             deprecationDate?: string;
             description?: string;
+            displayName?: string;
             documentation?: string;
             family?: string;
             knowledgeCutoff?: string;
@@ -578,8 +623,10 @@ export interface components {
             modalities?: components["schemas"]["Modalities"];
             pricing?: components["schemas"]["Pricing"];
             provider: string;
+            providerModelPageURL?: string;
             rateLimits?: components["schemas"]["RateLimitAttachment"][] | null;
             releaseDate?: string;
+            tags?: string[] | null;
             upstreamName: string;
             version?: string;
         };
@@ -610,6 +657,7 @@ export interface components {
             spec: components["schemas"]["PoolSpec"];
         };
         PoolSpec: {
+            passthrough?: boolean;
             provider: string;
             rateLimits?: components["schemas"]["RateLimitAttachment"][] | null;
             secretSelector?: {
@@ -619,12 +667,11 @@ export interface components {
             skipDefaultLimits?: boolean;
         };
         Pricing: {
-            /** Format: double */
-            cachedInput?: number;
-            /** Format: double */
-            input: number;
-            /** Format: double */
-            output: number;
+            currency: string;
+            rates?: {
+                [key: string]: number;
+            };
+            unit: string;
         };
         Provider: {
             /**
@@ -640,9 +687,17 @@ export interface components {
         };
         ProviderSpec: {
             baseURL: string;
+            consoleURL?: string;
             default?: boolean;
             defaultPool?: string;
+            defaultPricing?: components["schemas"]["Pricing"];
+            description?: string;
+            displayName?: string;
+            docsURL?: string;
+            homepageURL?: string;
             kind: string;
+            logoURL?: string;
+            statusPageURL?: string;
         };
         RateLimit: {
             /**
@@ -657,12 +712,19 @@ export interface components {
             spec: components["schemas"]["RateLimitSpec"];
         };
         RateLimitAttachment: {
+            Ref: string;
+        };
+        RateLimitRule: {
+            /** Format: int64 */
+            amount: number;
             meter: string;
-            ref: string;
+            source?: string;
         };
         RateLimitSpec: {
             /** Format: int64 */
-            amount: number;
+            amount?: number;
+            meter?: string;
+            rules?: components["schemas"]["RateLimitRule"][] | null;
             source?: string;
             strategy: string;
             /** Format: int64 */
@@ -2624,6 +2686,73 @@ export interface operations {
                     /** @description Caller identifier forwarded to the upstream provider. */
                     user?: string;
                 };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    "create-message": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/octet-stream": string;
             };
         };
         responses: {

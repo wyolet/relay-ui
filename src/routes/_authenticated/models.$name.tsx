@@ -16,6 +16,21 @@ export const Route = createFileRoute("/_authenticated/models/$name")({
 	component: ModelDetailPage,
 });
 
+function formatPricing(
+	pricing: ReturnType<typeof useModel>["data"]["spec"]["pricing"],
+): string {
+	if (!pricing) return "—";
+	const rates = pricing.rates ?? {};
+	const entries = Object.entries(rates);
+	if (entries.length === 0) return "—";
+	const unit = pricing.unit || "1M tokens";
+	const currency = pricing.currency || "USD";
+	const sym = currency === "USD" ? "$" : `${currency} `;
+	return entries
+		.map(([k, v]) => `${sym}${v}/${unit} ${k}`)
+		.join(" · ");
+}
+
 function capabilitiesSummary(
 	cap: ReturnType<typeof useModel>["data"]["spec"]["capabilities"],
 ): string {
@@ -55,9 +70,7 @@ function ModelDetailInner() {
 		},
 		{
 			label: "Pricing",
-			value: model.spec.pricing
-				? `$${model.spec.pricing.input}/1M in · $${model.spec.pricing.output}/1M out`
-				: "—",
+			value: formatPricing(model.spec.pricing),
 		},
 	];
 

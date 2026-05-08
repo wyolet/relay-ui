@@ -80,7 +80,11 @@ function NewModelInner() {
 				provider: String(values.provider ?? ""),
 				upstreamName: String(values.upstreamName ?? ""),
 				pricing: hasPricing
-					? { input: inputVal, output: outputVal }
+					? {
+							currency: "USD",
+							unit: "1M",
+							rates: { input: inputVal, output: outputVal },
+						}
 					: undefined,
 				rateLimits: rateLimits.length > 0 ? rateLimits : undefined,
 			},

@@ -83,7 +83,11 @@ function EditModelInner() {
 				provider: String(values.provider ?? ""),
 				upstreamName: String(values.upstreamName ?? ""),
 				pricing: hasPricing
-					? { input: inputVal, output: outputVal }
+					? {
+							currency: "USD",
+							unit: "1M",
+							rates: { input: inputVal, output: outputVal },
+						}
 					: undefined,
 				rateLimits: rateLimits.length > 0 ? rateLimits : undefined,
 			},
@@ -109,8 +113,14 @@ function EditModelInner() {
 				initialValues={{
 					provider: model.spec.provider,
 					upstreamName: model.spec.upstreamName,
-					input: model.spec.pricing ? String(model.spec.pricing.input) : "",
-					output: model.spec.pricing ? String(model.spec.pricing.output) : "",
+					input:
+						model.spec.pricing?.rates?.input != null
+							? String(model.spec.pricing.rates.input)
+							: "",
+					output:
+						model.spec.pricing?.rates?.output != null
+							? String(model.spec.pricing.rates.output)
+							: "",
 				}}
 				onSubmit={handleSubmit}
 				onCancel={() =>
