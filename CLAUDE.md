@@ -8,9 +8,20 @@ Operator admin UI for **Wyolet Relay** (high-throughput Go LLM router). Built as
 React 19 + Vite + TanStack Router + TanStack Query + Tailwind v4 + Biome.
 Path aliases: `#/*` and `@/*` → `src/*`. Package manager: bun.
 
+## State management (the only four)
+
+- **Server state** → TanStack Query (loaders + `useSuspenseQuery`/`useQuery`/`useMutation`).
+- **Forms** → `@tanstack/react-form` controls field state and submit; **zod** owns schema + validation. Submit-time validation, errors render inline with `aria-invalid`/`aria-describedby`.
+- **Cross-component / persisted client state** → zustand stores in `src/stores/`. Use `persist` middleware for anything that should survive reload (theme, etc.). See `stores/theme.ts` and `stores/toast.ts` as the patterns to copy.
+- **Component-local ephemeral state** → `useState` only for things scoped to a single component (input draft, hover, modal-open). Anything shared moves to a zustand store.
+
+Never `useEffect` for fetching, and never store query results in `useState`.
+
+Styling tokens come from `@wyolet/design/theme.css` — use `brand-*`, `accent-*`, `neutral-*`, `danger-*`. Never hard-code Tailwind palette names (`gray-*`, `blue-*`, etc.).
+
 ## Commands
 
-- `bun run dev` — vite dev server on :5173
+- `bun run dev` — vite dev server on :5140 (matches Caddy reverse_proxy)
 - `bun run typecheck` — `tsc --noEmit` (must pass; see TypeScript rules)
 - `bun run check` — biome check
 - `bun run ci` — typecheck + lint (run before declaring work done)

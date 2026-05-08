@@ -1,63 +1,17 @@
-import { useEffect, useState } from "react";
+import { type ToastKind, useToastStore } from "#/stores/toast";
 
-export type ToastKind = "success" | "error";
-
-export interface ToastMessage {
-	id: string;
-	kind: ToastKind;
-	message: string;
-}
-
-// Singleton subscriber list — no context needed for a simple toast queue.
-type ToastListener = (toasts: ToastMessage[]) => void;
-const listeners: Set<ToastListener> = new Set();
-let toastQueue: ToastMessage[] = [];
-
-function notify() {
-	for (const l of listeners) {
-		l([...toastQueue]);
-	}
-}
-
-let _nextId = 0;
-function nextId() {
-	_nextId += 1;
-	return String(_nextId);
-}
-
-export function toast(kind: ToastKind, message: string) {
-	const id = nextId();
-	toastQueue = [...toastQueue, { id, kind, message }];
-	notify();
-	// Auto-dismiss after 4 s
-	setTimeout(() => dismissToast(id), 4_000);
-}
-
-function dismissToast(id: string) {
-	toastQueue = toastQueue.filter((t) => t.id !== id);
-	notify();
-}
-
-export function useToasts(): ToastMessage[] {
-	const [toasts, setToasts] = useState<ToastMessage[]>([...toastQueue]);
-
-	useEffect(() => {
-		listeners.add(setToasts);
-		return () => {
-			listeners.delete(setToasts);
-		};
-	}, []);
-
-	return toasts;
-}
+// Re-export the imperative helper so existing call sites stay working.
+export { toast } from "#/stores/toast";
+export type { ToastKind, ToastMessage } from "#/stores/toast";
 
 const KIND_CLASSES: Record<ToastKind, string> = {
-	success: "bg-green-600 text-white",
+	success: "bg-brand-600 text-white",
 	error: "bg-red-600 text-white",
 };
 
 export function ToastContainer() {
-	const toasts = useToasts();
+	const toasts = useToastStore((s) => s.toasts);
+	const dismiss = useToastStore((s) => s.dismiss);
 
 	if (toasts.length === 0) return null;
 
@@ -75,7 +29,7 @@ export function ToastContainer() {
 					<button
 						type="button"
 						aria-label="Dismiss"
-						onClick={() => dismissToast(t.id)}
+						onClick={() => dismiss(t.id)}
 						className="shrink-0 opacity-75 hover:opacity-100"
 					>
 						✕
