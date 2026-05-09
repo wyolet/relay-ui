@@ -4,12 +4,12 @@ Operator admin UI for [Wyolet Relay](https://github.com/wyolet/relay) — a high
 
 Linear project: [Wyolet Relay](https://linear.app/aliboyev/project/wyolet-relay-66b6cdcde707) (team `PER`). All issues for this UI are tracked there.
 
-This repo produces a static SPA (`dist/`) that is embedded into the Relay Go binary via `//go:embed` (see [PER-273](https://linear.app/aliboyev/issue/PER-273)). It is served at the `/ui/` path prefix.
+This repo produces a static SPA (`dist/`) that is embedded into the Relay Go binary via `//go:embed` (see [PER-273](https://linear.app/aliboyev/issue/PER-273)). It is served at the root path.
 
 ## Tech stack
 
 - React 19 + TypeScript 5
-- Vite 8 (`base: '/ui/'`)
+- Vite 8
 - TanStack Router (file-based, type-safe) + TanStack Query v5
 - Tailwind CSS v4
 - openapi-typescript + openapi-fetch (typed API client from `/openapi.json`)
@@ -20,7 +20,7 @@ This repo produces a static SPA (`dist/`) that is embedded into the Relay Go bin
 
 ```bash
 bun install
-bun run dev          # Vite dev server on http://localhost:5173/ui/
+bun run dev          # Vite dev server on http://localhost:5140
 ```
 
 Point the dev server proxy at a running Relay instance for live API calls:

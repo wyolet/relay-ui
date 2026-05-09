@@ -17,7 +17,6 @@ const proxy = {
 }
 
 const config = defineConfig({
-  base: '/ui/',
   plugins: [
     tailwindcss(),
     tanstackRouter({ target: 'react', autoCodeSplitting: true }),

@@ -5,7 +5,6 @@ import { routeTree } from "./routeTree.gen";
 export function getRouter(queryClient: QueryClient) {
 	const router = createTanStackRouter({
 		routeTree,
-		basepath: "/ui",
 		scrollRestoration: true,
 		defaultPreload: "intent",
 		defaultPreloadStaleTime: 0,
