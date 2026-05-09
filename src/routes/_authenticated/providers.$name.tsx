@@ -23,6 +23,7 @@ import {
 	type ModelsSortKey,
 	ModelsTable,
 } from "@/components/ModelsTable";
+import { confirm } from "@/components/ConfirmDialog";
 import { ProviderKeys } from "@/components/ProviderKeys";
 import { toast } from "@/components/Toast";
 
@@ -224,8 +225,13 @@ function ProviderDetailInner() {
 	}
 
 	async function handleDelete() {
-		if (!window.confirm(`Delete provider "${name}"? This cannot be undone.`))
-			return;
+		const ok = await confirm({
+			title: `Delete provider ${name}?`,
+			description: "This cannot be undone.",
+			confirmLabel: "Delete",
+			danger: true,
+		});
+		if (!ok) return;
 		try {
 			await deleteProvider.mutateAsync(name);
 			toast("success", `Provider "${name}" deleted.`);

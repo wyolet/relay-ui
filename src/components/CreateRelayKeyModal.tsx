@@ -1,12 +1,9 @@
 import { Check, Copy } from "lucide-react";
 import { useState } from "react";
 import { Modal } from "@/components/Modal";
-import {
-	emptyRelayKeyDraft,
-	RelayKeyForm,
-} from "@/components/RelayKeyForm";
+import { RelayKeyForm } from "@/components/RelayKeyForm";
 import { toast } from "@/components/Toast";
-import { type RelayKeyDraft, useKeysStore } from "@/stores/keys";
+import { useCreateRelayKeyForm } from "@/components/useCreateRelayKeyForm";
 
 interface CreateRelayKeyModalProps {
 	open: boolean;
@@ -17,39 +14,12 @@ export function CreateRelayKeyModal({
 	open,
 	onClose,
 }: CreateRelayKeyModalProps) {
-	const createKey = useKeysStore((s) => s.createKey);
-	const clearSecret = useKeysStore((s) => s.clearSecret);
-	const freshSecrets = useKeysStore((s) => s.freshSecrets);
-
-	const [draft, setDraft] = useState<RelayKeyDraft>(emptyRelayKeyDraft());
-	const [createdId, setCreatedId] = useState<string | null>(null);
-	const [error, setError] = useState<string | null>(null);
-	const secret = createdId !== null ? freshSecrets[createdId] : undefined;
-
-	function handleClose() {
-		if (createdId !== null) {
-			clearSecret(createdId);
-			setCreatedId(null);
-		}
-		setDraft(emptyRelayKeyDraft());
-		setError(null);
-		onClose();
-	}
-
-	function handleCreate() {
-		const name = draft.name.trim();
-		if (name.length === 0) {
-			setError("Name is required");
-			return;
-		}
-		setError(null);
-		const { id } = createKey({ ...draft, name });
-		setCreatedId(id);
-	}
+	const { form, values, nameError, createdId, secret, setDraft } =
+		useCreateRelayKeyForm({ open });
 
 	if (createdId !== null && secret !== undefined) {
 		return (
-			<Modal open={open} onClose={handleClose} title="Key created" size="md">
+			<Modal open={open} onClose={onClose} title="Key created" size="md">
 				<p className="text-sm text-muted-foreground mb-3">
 					Copy this now — it won't be shown again.
 				</p>
@@ -62,8 +32,8 @@ export function CreateRelayKeyModal({
 				<div className="flex justify-end">
 					<button
 						type="button"
-						onClick={handleClose}
-						className="h-9 px-4 rounded-md bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-sm font-semibold text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+						onClick={onClose}
+						className="h-9 px-4 rounded-md bg-primary hover:bg-primary/90 text-sm font-semibold text-primary-foreground transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 					>
 						I've saved it
 					</button>
@@ -73,33 +43,39 @@ export function CreateRelayKeyModal({
 	}
 
 	return (
-		<Modal open={open} onClose={handleClose} title="Create relay key" size="lg">
+		<Modal open={open} onClose={onClose} title="Create relay key" size="lg">
 			<form
 				onSubmit={(e) => {
 					e.preventDefault();
 					e.stopPropagation();
-					handleCreate();
+					void form.handleSubmit();
 				}}
 				className="flex flex-col gap-5"
 			>
-				<RelayKeyForm value={draft} onChange={setDraft} />
-				{error && (
-					<p className="text-[11px] text-destructive">{error}</p>
-				)}
+				<RelayKeyForm
+					value={values}
+					onChange={setDraft}
+					nameError={nameError}
+				/>
 				<div className="flex items-center justify-end gap-2 pt-3 border-t border-border">
 					<button
 						type="button"
-						onClick={handleClose}
+						onClick={onClose}
 						className="h-8 px-3 rounded-md text-xs font-medium text-foreground hover:bg-muted"
 					>
 						Cancel
 					</button>
-					<button
-						type="submit"
-						className="h-8 px-3 rounded-md bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-xs font-semibold text-white"
-					>
-						Generate
-					</button>
+					<form.Subscribe selector={(s) => s.isSubmitting}>
+						{(isSubmitting) => (
+							<button
+								type="submit"
+								disabled={isSubmitting}
+								className="h-8 px-3 rounded-md bg-primary hover:bg-primary/90 text-xs font-semibold text-primary-foreground disabled:opacity-50"
+							>
+								Generate
+							</button>
+						)}
+					</form.Subscribe>
 				</div>
 			</form>
 		</Modal>
@@ -122,10 +98,10 @@ function CopyInline({ text }: { text: string }) {
 			type="button"
 			onClick={() => void handleCopy()}
 			aria-label="Copy"
-			className="inline-flex items-center justify-center h-8 w-8 rounded-md text-neutral-500 hover:text-foreground hover:bg-muted transition-colors"
+			className="inline-flex items-center justify-center h-8 w-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
 		>
 			{copied ? (
-				<Check className="w-4 h-4 text-brand-600 dark:text-brand-400" />
+				<Check className="w-4 h-4 text-primary" />
 			) : (
 				<Copy className="w-4 h-4" />
 			)}

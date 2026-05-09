@@ -4,6 +4,10 @@
  */
 import { create } from "zustand";
 
+export interface RateLimitNoneDraft {
+	kind: "none";
+}
+
 export interface RateLimitRefDraft {
 	kind: "ref";
 	name: string;
@@ -22,7 +26,10 @@ export interface RateLimitCustomDraft {
 	spend: RateLimitRule | null; // amount in dollars (UI); store as-is for mock
 }
 
-export type RateLimitDraft = RateLimitRefDraft | RateLimitCustomDraft | null;
+export type RateLimitDraft =
+	| RateLimitNoneDraft
+	| RateLimitRefDraft
+	| RateLimitCustomDraft;
 
 export interface RelayKeyDraft {
 	name: string;
@@ -105,7 +112,7 @@ const seed: ApiKey[] = [
 		lastUsedAt: null,
 		revokedAt: null,
 		expiresAt: null,
-		rateLimit: null,
+		rateLimit: { kind: "none" },
 	},
 ];
 

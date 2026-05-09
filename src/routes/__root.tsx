@@ -6,6 +6,7 @@ import {
 	redirect,
 } from "@tanstack/react-router";
 import { whoamiQueryOptions } from "@/api/auth";
+import { ConfirmDialogHost } from "@/components/ConfirmDialog";
 
 import "../styles.css";
 
@@ -34,6 +35,7 @@ function RootComponent() {
 	return (
 		<QueryClientProvider client={queryClient}>
 			<Outlet />
+			<ConfirmDialogHost />
 		</QueryClientProvider>
 	);
 }

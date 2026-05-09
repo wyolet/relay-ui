@@ -46,12 +46,14 @@ interface RelayKeyFormProps {
 	value: RelayKeyDraft;
 	onChange: (next: RelayKeyDraft) => void;
 	nameDisabled?: boolean;
+	nameError?: string;
 }
 
 export function RelayKeyForm({
 	value,
 	onChange,
 	nameDisabled,
+	nameError,
 }: RelayKeyFormProps) {
 	const expiryMode = useMemo<"none" | "preset" | "custom">(() => {
 		if (value.expiresAt === null) return "none";
@@ -88,14 +90,15 @@ export function RelayKeyForm({
 	}
 
 	const rl = value.rateLimit;
-	const rlMode: "none" | "ref" | "custom" =
-		rl === null ? "none" : rl.kind === "ref" ? "ref" : "custom";
+	const rlMode = rl.kind;
 
 	function setRlMode(mode: "none" | "ref" | "custom") {
-		if (mode === "none") onChange({ ...value, rateLimit: null });
+		if (mode === rl.kind) return;
+		if (mode === "none") onChange({ ...value, rateLimit: { kind: "none" } });
 		else if (mode === "ref")
 			onChange({ ...value, rateLimit: { kind: "ref", name: "" } });
-		else onChange({ ...value, rateLimit: emptyCustom() });
+		else if (mode === "custom")
+			onChange({ ...value, rateLimit: emptyCustom() });
 	}
 
 	function patchRateLimit(next: RateLimitDraft) {
@@ -116,7 +119,11 @@ export function RelayKeyForm({
 					disabled={nameDisabled}
 					onChange={(e) => onChange({ ...value, name: e.currentTarget.value })}
 					placeholder="prod-app"
+					aria-invalid={nameError ? true : undefined}
 				/>
+				{nameError && (
+					<p className="mt-1 text-[11px] text-destructive">{nameError}</p>
+				)}
 			</Field>
 
 			<Field label="Expires">
@@ -168,13 +175,13 @@ export function RelayKeyForm({
 					]}
 					onChange={(v) => setRlMode(v as "none" | "ref" | "custom")}
 				/>
-				{rlMode === "ref" && rl?.kind === "ref" && (
+				{rl.kind === "ref" && (
 					<RateLimitRefPicker
 						value={rl.name}
 						onChange={(name) => patchRateLimit({ kind: "ref", name })}
 					/>
 				)}
-				{rlMode === "custom" && rl?.kind === "custom" && (
+				{rl.kind === "custom" && (
 					<RateLimitCustomEditor draft={rl} onChange={patchRateLimit} />
 				)}
 				<p className="mt-1 text-[11px] text-muted-foreground">
@@ -459,7 +466,12 @@ function WindowSelect({
 			onValueChange={(v) => onChange(Number(v))}
 		>
 			<SelectTrigger className="min-w-[90px]">
-				<SelectValue />
+				<SelectValue>
+					{(v) =>
+						WINDOW_OPTIONS.find((o) => String(o.seconds) === v)?.label ??
+						`${v}s`
+					}
+				</SelectValue>
 			</SelectTrigger>
 			<SelectContent>
 				{!WINDOW_OPTIONS.some((o) => o.seconds === seconds) && (
@@ -476,5 +488,5 @@ function WindowSelect({
 }
 
 export function emptyRelayKeyDraft(): RelayKeyDraft {
-	return { name: "", expiresAt: null, rateLimit: null };
+	return { name: "", expiresAt: null, rateLimit: { kind: "none" } };
 }

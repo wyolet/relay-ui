@@ -17,6 +17,7 @@ import { useCreateSecret, useDeleteSecret, useSecrets } from "@/api/hooks/secret
 import { ApiError } from "@/api/types/errors";
 import type { Pool } from "@/api/types/pool";
 import type { SecretResponse } from "@/api/types/secret";
+import { confirm } from "@/components/ConfirmDialog";
 import { MultiSelect } from "@/components/MultiSelect";
 import { toast } from "@/components/Toast";
 import { useKeysStore } from "@/stores/keys";
@@ -121,14 +122,15 @@ function PoolCard({
 	}
 
 	async function unlink(name: string, alsoDelete: boolean) {
-		if (
-			!window.confirm(
-				alsoDelete
-					? `Delete key "${name}" entirely? This cannot be undone.`
-					: `Remove "${name}" from this pool?`,
-			)
-		)
-			return;
+		const ok = await confirm({
+			title: alsoDelete ? `Delete key ${name}?` : `Remove ${name} from this pool?`,
+			description: alsoDelete
+				? "Deletes the key entirely. This cannot be undone."
+				: "The key stays in other pools it belongs to.",
+			confirmLabel: alsoDelete ? "Delete" : "Remove",
+			danger: alsoDelete,
+		});
+		if (!ok) return;
 		try {
 			await updatePool.mutateAsync({
 				...pool,

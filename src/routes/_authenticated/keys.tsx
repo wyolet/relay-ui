@@ -26,6 +26,7 @@ import {
 	secretsListQueryOptions,
 } from "@/api/hooks/secrets";
 import { ByokModal } from "@/components/ByokModal";
+import { confirm } from "@/components/ConfirmDialog";
 import { CreateRelayKeyModal } from "@/components/CreateRelayKeyModal";
 import { EditProviderKeyModal } from "@/components/EditProviderKeyModal";
 import { EditRelayKeyModal } from "@/components/EditRelayKeyModal";
@@ -203,7 +204,7 @@ function LimitsCell({
 }: {
 	rateLimit: import("@/stores/keys").RateLimitDraft;
 }) {
-	if (rateLimit === null) {
+	if (rateLimit.kind === "none") {
 		return (
 			<span className="text-[11px] text-muted-foreground/70">
 				—
@@ -464,12 +465,15 @@ function RelayKeysPanel() {
 									: expired
 										? { tone: "warn", label: "Expired" }
 										: { tone: "active", label: "Active" };
-								function doRevoke() {
-									if (
-										window.confirm(
-											`Revoke "${k.name}"? Apps using this key will start returning 401.`,
-										)
-									) {
+								async function doRevoke() {
+									const ok = await confirm({
+										title: `Revoke ${k.name}?`,
+										description:
+											"Apps using this key will start returning 401.",
+										confirmLabel: "Revoke",
+										danger: true,
+									});
+									if (ok) {
 										revoke(k.id);
 										toast("success", `"${k.name}" revoked.`);
 									}
@@ -762,7 +766,13 @@ function ProviderKeysTable({
 	for (const s of secrets) secretByName[s.name] = s;
 
 	async function handleDelete(name: string) {
-		if (!window.confirm(`Delete key "${name}"? This cannot be undone.`)) return;
+		const ok = await confirm({
+			title: `Delete key ${name}?`,
+			description: "This cannot be undone.",
+			confirmLabel: "Delete",
+			danger: true,
+		});
+		if (!ok) return;
 		try {
 			await deleteSecret.mutateAsync(name);
 			toast("success", `Key "${name}" deleted.`);

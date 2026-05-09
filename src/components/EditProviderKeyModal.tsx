@@ -6,6 +6,7 @@ import { useModels } from "@/api/hooks/models";
 import { usePools } from "@/api/hooks/pools";
 import { useDeleteSecret } from "@/api/hooks/secrets";
 import { ApiError } from "@/api/types/errors";
+import { confirm } from "@/components/ConfirmDialog";
 import { Modal } from "@/components/Modal";
 import { MultiSelect } from "@/components/MultiSelect";
 import { toast } from "@/components/Toast";
@@ -116,8 +117,13 @@ export function EditProviderKeyModal({
 	}
 
 	async function handleDelete() {
-		if (!window.confirm(`Delete key "${secretName}"? This cannot be undone.`))
-			return;
+		const ok = await confirm({
+			title: `Delete key ${secretName}?`,
+			description: "This cannot be undone.",
+			confirmLabel: "Delete",
+			danger: true,
+		});
+		if (!ok) return;
 		try {
 			await deleteSecret.mutateAsync(secretName);
 			toast("success", `"${secretName}" deleted.`);

@@ -38,6 +38,7 @@ import { providerDetailQueryOptions } from "@/api/hooks/providers";
 import { ApiError } from "@/api/types/errors";
 import type { Capabilities, Model, Modalities } from "@/api/types/model";
 import type { Provider } from "@/api/types/provider";
+import { confirm } from "@/components/ConfirmDialog";
 import { toast } from "@/components/Toast";
 
 type Tab = "overview" | "pricing" | "limits";
@@ -307,7 +308,13 @@ function ModelDetailInner() {
 	}
 
 	async function handleDelete() {
-		if (!window.confirm(`Delete model "${name}"? This cannot be undone.`)) return;
+		const ok = await confirm({
+			title: `Delete model ${name}?`,
+			description: "This cannot be undone.",
+			confirmLabel: "Delete",
+			danger: true,
+		});
+		if (!ok) return;
 		try {
 			await deleteModel.mutateAsync(name);
 			toast("success", `Model "${name}" deleted.`);
