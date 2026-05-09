@@ -1,4 +1,4 @@
-import type { components } from "#/api/types.gen";
+import type { components } from "@/api/types.gen";
 
 /** Secret as returned by GET /admin/secrets and GET /admin/secrets/:name */
 export type SecretResponse = components["schemas"]["SecretResponse"];

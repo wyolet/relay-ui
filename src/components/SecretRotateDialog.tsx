@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { useUpdateSecret } from "#/api/hooks/secrets";
-import { ApiError } from "#/api/types/errors";
-import { toast } from "#/components/Toast";
+import { useUpdateSecret } from "@/api/hooks/secrets";
+import { ApiError } from "@/api/types/errors";
+import { toast } from "@/components/Toast";
 
 interface SecretRotateDialogProps {
 	name: string;
@@ -45,10 +45,10 @@ export function SecretRotateDialog({ name, onClose }: SecretRotateDialogProps) {
 			aria-labelledby="rotate-dialog-title"
 			className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 dark:bg-black/60"
 		>
-			<div className="bg-white dark:bg-neutral-900 rounded-xl shadow-xl dark:shadow-black/40 w-full max-w-md mx-4 p-6">
+			<div className="bg-card rounded-xl shadow-xl dark:shadow-black/40 w-full max-w-md mx-4 p-6">
 				<h2
 					id="rotate-dialog-title"
-					className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-4"
+					className="text-lg font-semibold text-foreground mb-4"
 				>
 					Rotate Secret: <span className="font-mono">{name}</span>
 				</h2>
@@ -62,7 +62,7 @@ export function SecretRotateDialog({ name, onClose }: SecretRotateDialogProps) {
 				<div className="mb-6">
 					<label
 						htmlFor="rotate-value"
-						className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1"
+						className="block text-sm font-medium text-foreground mb-1"
 					>
 						New value{" "}
 						<span className="ml-1 text-red-500" aria-hidden="true">
@@ -76,7 +76,7 @@ export function SecretRotateDialog({ name, onClose }: SecretRotateDialogProps) {
 						value={value}
 						onChange={(e) => setValue(e.target.value)}
 						placeholder="Enter new secret value"
-						className="w-full border border-neutral-300 dark:border-neutral-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-brand-400"
+						className="w-full border border-input rounded-lg px-3 py-2 text-sm bg-white dark:bg-neutral-800 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand-400"
 					/>
 				</div>
 
@@ -85,7 +85,7 @@ export function SecretRotateDialog({ name, onClose }: SecretRotateDialogProps) {
 						type="button"
 						onClick={onClose}
 						disabled={updateSecret.isPending}
-						className="px-4 py-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-50 transition-colors"
+						className="px-4 py-2 text-sm font-medium text-foreground bg-card border border-input rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-50 transition-colors"
 					>
 						Cancel
 					</button>

@@ -11,15 +11,15 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { z } from "zod";
-import { useModels } from "#/api/hooks/models";
-import { usePools, useUpdatePool } from "#/api/hooks/pools";
-import { useCreateSecret, useDeleteSecret, useSecrets } from "#/api/hooks/secrets";
-import { ApiError } from "#/api/types/errors";
-import type { Pool } from "#/api/types/pool";
-import type { SecretResponse } from "#/api/types/secret";
-import { MultiSelect } from "#/components/MultiSelect";
-import { toast } from "#/components/Toast";
-import { useKeysStore } from "#/stores/keys";
+import { useModels } from "@/api/hooks/models";
+import { usePools, useUpdatePool } from "@/api/hooks/pools";
+import { useCreateSecret, useDeleteSecret, useSecrets } from "@/api/hooks/secrets";
+import { ApiError } from "@/api/types/errors";
+import type { Pool } from "@/api/types/pool";
+import type { SecretResponse } from "@/api/types/secret";
+import { MultiSelect } from "@/components/MultiSelect";
+import { toast } from "@/components/Toast";
+import { useKeysStore } from "@/stores/keys";
 
 interface ProviderKeysProps {
 	providerName: string;
@@ -42,12 +42,12 @@ export function ProviderKeys({
 
 	if (pools.length === 0) {
 		return (
-			<div className="rounded-lg border border-dashed border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-6 py-14 text-center">
-				<KeyRound className="w-6 h-6 mx-auto mb-3 text-neutral-300 dark:text-neutral-700" />
-				<p className="text-sm text-neutral-500 dark:text-neutral-400">
+			<div className="rounded-lg border border-dashed border-input bg-card px-6 py-14 text-center">
+				<KeyRound className="w-6 h-6 mx-auto mb-3 text-muted-foreground/50" />
+				<p className="text-sm text-muted-foreground">
 					No pools defined for this provider yet.
 				</p>
-				<p className="text-xs text-neutral-400 dark:text-neutral-500 mt-1">
+				<p className="text-xs text-muted-foreground mt-1">
 					Keys live inside pools — create one to start.
 				</p>
 			</div>
@@ -56,7 +56,7 @@ export function ProviderKeys({
 
 	return (
 		<div className="flex flex-col gap-4">
-			<p className="text-xs text-neutral-500 dark:text-neutral-400">
+			<p className="text-xs text-muted-foreground">
 				A pool groups keys that Relay treats as interchangeable. Order = priority;
 				the first reachable key is tried first.
 			</p>
@@ -147,39 +147,39 @@ function PoolCard({
 	}
 
 	return (
-		<section className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
-			<header className="flex items-center justify-between px-4 h-10 border-b border-neutral-200 dark:border-neutral-800">
+		<section className="rounded-lg border border-border bg-card">
+			<header className="flex items-center justify-between px-4 h-10 border-b border-border">
 				<div className="flex items-center gap-2 min-w-0">
-					<h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100 truncate">
+					<h3 className="text-sm font-semibold text-foreground truncate">
 						{pool.metadata.name}
 					</h3>
 					{pool.spec.passthrough && (
-						<span className="text-[10px] uppercase tracking-wide text-neutral-500 dark:text-neutral-400 px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800">
+						<span className="text-[10px] uppercase tracking-wide text-muted-foreground px-1.5 py-0.5 rounded bg-muted">
 							passthrough
 						</span>
 					)}
-					<span className="text-[11px] text-neutral-500 dark:text-neutral-400">
+					<span className="text-[11px] text-muted-foreground">
 						{secrets.length} {secrets.length === 1 ? "key" : "keys"}
 					</span>
 				</div>
 				<button
 					type="button"
 					onClick={() => setAdding((v) => !v)}
-					className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md text-xs font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800/60 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+					className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md text-xs font-medium text-foreground hover:bg-muted transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 				>
 					<Plus className="w-3.5 h-3.5" />
 					Add key
 				</button>
 			</header>
 
-			<ul className="divide-y divide-neutral-100 dark:divide-neutral-800">
+			<ul className="divide-y divide-border">
 				{secrets.length === 0 && !adding && (
-					<li className="px-4 py-6 text-center text-xs text-neutral-500 dark:text-neutral-400">
+					<li className="px-4 py-6 text-center text-xs text-muted-foreground">
 						No keys in this pool yet.
 					</li>
 				)}
 				{secrets.length > 0 && filteredIdx.length === 0 && (
-					<li className="px-4 py-6 text-center text-xs text-neutral-500 dark:text-neutral-400">
+					<li className="px-4 py-6 text-center text-xs text-muted-foreground">
 						No keys match the search.
 					</li>
 				)}
@@ -248,7 +248,7 @@ function KeyRow({
 					onClick={onMoveUp}
 					disabled={!canMoveUp}
 					aria-label="Move up"
-					className="h-4 w-4 inline-flex items-center justify-center text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 disabled:opacity-30 disabled:hover:text-neutral-400"
+					className="h-4 w-4 inline-flex items-center justify-center text-neutral-400 hover:text-foreground disabled:opacity-30 disabled:hover:text-neutral-400"
 				>
 					<ArrowUp className="w-3 h-3" />
 				</button>
@@ -257,28 +257,28 @@ function KeyRow({
 					onClick={onMoveDown}
 					disabled={!canMoveDown}
 					aria-label="Move down"
-					className="h-4 w-4 inline-flex items-center justify-center text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 disabled:opacity-30 disabled:hover:text-neutral-400"
+					className="h-4 w-4 inline-flex items-center justify-center text-neutral-400 hover:text-foreground disabled:opacity-30 disabled:hover:text-neutral-400"
 				>
 					<ArrowDown className="w-3 h-3" />
 				</button>
 			</div>
-			<span className="inline-flex items-center justify-center h-6 w-6 rounded text-[11px] font-semibold tabular-nums bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400">
+			<span className="inline-flex items-center justify-center h-6 w-6 rounded text-[11px] font-semibold tabular-nums bg-muted text-muted-foreground">
 				{priority}
 			</span>
-			<span className="text-sm font-medium text-neutral-900 dark:text-neutral-100 truncate">
+			<span className="text-sm font-medium text-foreground truncate">
 				{name}
 			</span>
 			{kind === "stored" && masked && (
-				<code className="text-[11px] font-mono text-neutral-500 dark:text-neutral-400 px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800/60">
+				<code className="text-[11px] font-mono text-muted-foreground px-1.5 py-0.5 rounded bg-muted">
 					{masked}
 				</code>
 			)}
 			{kind === "env" && env && (
-				<code className="text-[11px] font-mono text-neutral-500 dark:text-neutral-400 px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800/60">
+				<code className="text-[11px] font-mono text-muted-foreground px-1.5 py-0.5 rounded bg-muted">
 					${env}
 				</code>
 			)}
-			<span className="ml-auto text-[10px] uppercase tracking-wide text-neutral-400 dark:text-neutral-500">
+			<span className="ml-auto text-[10px] uppercase tracking-wide text-muted-foreground">
 				{kind ?? "missing"}
 			</span>
 			<div className="relative">
@@ -287,12 +287,12 @@ function KeyRow({
 					onClick={() => setMenuOpen((v) => !v)}
 					onBlur={() => setTimeout(() => setMenuOpen(false), 150)}
 					aria-label="Key actions"
-					className="h-7 w-7 inline-flex items-center justify-center rounded-md text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-800/60 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+					className="h-7 w-7 inline-flex items-center justify-center rounded-md text-neutral-500 hover:text-foreground hover:bg-muted transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 				>
 					<ChevronDown className="w-3.5 h-3.5" />
 				</button>
 				{menuOpen && (
-					<div className="absolute right-0 top-8 z-10 min-w-[180px] rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-lg py-1">
+					<div className="absolute right-0 top-8 z-10 min-w-[180px] rounded-md border border-border bg-card shadow-lg py-1">
 						<MenuItem onClick={onUnlink}>Remove from pool</MenuItem>
 						<MenuItem onClick={onDelete} danger>
 							<Trash2 className="w-3.5 h-3.5" />
@@ -322,8 +322,8 @@ function MenuItem({
 			className={[
 				"w-full text-left px-3 py-1.5 text-xs inline-flex items-center gap-2 transition-colors",
 				danger
-					? "text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30"
-					: "text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800/60",
+					? "text-destructive hover:bg-destructive/10"
+					: "text-foreground hover:bg-muted",
 			].join(" ")}
 		>
 			{children}
@@ -437,7 +437,7 @@ function AddKeyForm({
 						<div>
 							<label
 								htmlFor={`pool-${pool.metadata.name}-name`}
-								className="block text-[11px] font-medium text-neutral-600 dark:text-neutral-400 mb-1"
+								className="block text-[11px] font-medium text-muted-foreground mb-1"
 							>
 								Name <span className="text-neutral-400">(optional label)</span>
 							</label>
@@ -449,10 +449,10 @@ function AddKeyForm({
 								onBlur={field.handleBlur}
 								placeholder={`${providerName}-prod`}
 								aria-invalid={err ? true : undefined}
-								className="w-full h-8 rounded-md px-2.5 text-sm text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+								className="w-full h-8 rounded-md px-2.5 text-sm text-foreground bg-card border border-input placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus-visible:ring-ring focus:border-transparent"
 							/>
 							{err && (
-								<p className="text-[11px] text-red-600 dark:text-red-400 mt-1">
+								<p className="text-[11px] text-destructive mt-1">
 									{err}
 								</p>
 							)}
@@ -468,7 +468,7 @@ function AddKeyForm({
 						<div>
 							<label
 								htmlFor={`pool-${pool.metadata.name}-value`}
-								className="block text-[11px] font-medium text-neutral-600 dark:text-neutral-400 mb-1"
+								className="block text-[11px] font-medium text-muted-foreground mb-1"
 							>
 								API key
 							</label>
@@ -481,13 +481,13 @@ function AddKeyForm({
 									onBlur={field.handleBlur}
 									placeholder="sk-…"
 									aria-invalid={err ? true : undefined}
-									className="w-full h-8 rounded-md pl-2.5 pr-9 text-sm font-mono text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+									className="w-full h-8 rounded-md pl-2.5 pr-9 text-sm font-mono text-foreground bg-card border border-input placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus-visible:ring-ring focus:border-transparent"
 								/>
 								<button
 									type="button"
 									onClick={() => setShowValue((v) => !v)}
 									aria-label={showValue ? "Hide value" : "Show value"}
-									className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 inline-flex items-center justify-center rounded text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-800/60"
+									className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 inline-flex items-center justify-center rounded text-neutral-500 hover:text-foreground hover:bg-muted"
 								>
 									{showValue ? (
 										<EyeOff className="w-3.5 h-3.5" />
@@ -497,7 +497,7 @@ function AddKeyForm({
 								</button>
 							</div>
 							{err && (
-								<p className="text-[11px] text-red-600 dark:text-red-400 mt-1">
+								<p className="text-[11px] text-destructive mt-1">
 									{err}
 								</p>
 							)}
@@ -506,8 +506,8 @@ function AddKeyForm({
 				}}
 			</form.Field>
 
-			<div className="mt-1 pt-3 border-t border-neutral-200 dark:border-neutral-800 flex flex-col gap-2">
-				<h4 className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+			<div className="mt-1 pt-3 border-t border-border flex flex-col gap-2">
+				<h4 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
 					Filters
 				</h4>
 				<PickerField
@@ -549,7 +549,7 @@ function AddKeyForm({
 				<button
 					type="button"
 					onClick={onCancel}
-					className="h-8 px-3 rounded-md text-xs font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800/60 transition-colors"
+					className="h-8 px-3 rounded-md text-xs font-medium text-foreground hover:bg-muted transition-colors"
 				>
 					Cancel
 				</button>
@@ -558,7 +558,7 @@ function AddKeyForm({
 						<button
 							type="submit"
 							disabled={isSubmitting}
-							className="h-8 px-3 rounded-md bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-xs font-semibold text-white disabled:opacity-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+							className="h-8 px-3 rounded-md bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-xs font-semibold text-white disabled:opacity-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 						>
 							Save
 						</button>
@@ -590,7 +590,7 @@ function PickerField({
 }: PickerFieldProps) {
 	return (
 		<div className="flex flex-col gap-1">
-			<span className="text-xs font-medium text-neutral-700 dark:text-neutral-300">
+			<span className="text-xs font-medium text-foreground">
 				{label}
 			</span>
 			<MultiSelect
@@ -601,7 +601,7 @@ function PickerField({
 				emptyHint={emptyHint}
 				aria-label={label}
 			/>
-			<p className="text-[11px] text-neutral-500 dark:text-neutral-400">
+			<p className="text-[11px] text-muted-foreground">
 				{description}
 			</p>
 		</div>

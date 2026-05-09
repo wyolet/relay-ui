@@ -8,23 +8,23 @@ import {
 } from "lucide-react";
 import { Suspense, useState } from "react";
 import { z } from "zod";
-import { modelsListQueryOptions, useModels } from "#/api/hooks/models";
-import { poolsListQueryOptions, usePools } from "#/api/hooks/pools";
+import { modelsListQueryOptions, useModels } from "@/api/hooks/models";
+import { poolsListQueryOptions, usePools } from "@/api/hooks/pools";
 import {
 	providerDetailQueryOptions,
 	useDeleteProvider,
 	useProvider,
-} from "#/api/hooks/providers";
-import { secretsListQueryOptions } from "#/api/hooks/secrets";
-import { ApiError } from "#/api/types/errors";
+} from "@/api/hooks/providers";
+import { secretsListQueryOptions } from "@/api/hooks/secrets";
+import { ApiError } from "@/api/types/errors";
 import {
 	applyModelSort,
 	type ModelsSortDir,
 	type ModelsSortKey,
 	ModelsTable,
-} from "#/components/ModelsTable";
-import { ProviderKeys } from "#/components/ProviderKeys";
-import { toast } from "#/components/Toast";
+} from "@/components/ModelsTable";
+import { ProviderKeys } from "@/components/ProviderKeys";
+import { toast } from "@/components/Toast";
 
 type Tab = "overview" | "models" | "keys";
 
@@ -49,7 +49,7 @@ export const Route = createFileRoute("/_authenticated/providers/$name")({
 
 function dash(v: string | number | null | undefined): React.ReactNode {
 	if (v === null || v === undefined || v === "") {
-		return <span className="text-neutral-400 dark:text-neutral-600">—</span>;
+		return <span className="text-muted-foreground/70">—</span>;
 	}
 	return v;
 }
@@ -62,9 +62,9 @@ interface SectionProps {
 
 function Section({ title, right, children }: SectionProps) {
 	return (
-		<section className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
-			<header className="flex items-center justify-between px-4 h-9 border-b border-neutral-200 dark:border-neutral-800">
-				<h2 className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+		<section className="rounded-lg border border-border bg-card">
+			<header className="flex items-center justify-between px-4 h-9 border-b border-border">
+				<h2 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
 					{title}
 				</h2>
 				{right}
@@ -82,8 +82,8 @@ interface FieldRowProps {
 function FieldRow({ label, children }: FieldRowProps) {
 	return (
 		<div className="grid grid-cols-[140px_1fr] gap-3 py-1.5 text-sm">
-			<dt className="text-neutral-500 dark:text-neutral-400">{label}</dt>
-			<dd className="text-neutral-900 dark:text-neutral-100 min-w-0">
+			<dt className="text-muted-foreground">{label}</dt>
+			<dd className="text-foreground min-w-0">
 				{children}
 			</dd>
 		</div>
@@ -99,7 +99,7 @@ function ExternalRow({ label, href }: ExternalRowProps) {
 	if (!href) {
 		return (
 			<FieldRow label={label}>
-				<span className="text-neutral-400 dark:text-neutral-600">—</span>
+				<span className="text-muted-foreground/70">—</span>
 			</FieldRow>
 		);
 	}
@@ -135,8 +135,8 @@ function TabLink({ value, current, onClick, count, children }: TabLinkProps) {
 			className={[
 				"relative h-9 px-3 text-xs font-medium transition-colors inline-flex items-center gap-1.5",
 				active
-					? "text-neutral-900 dark:text-neutral-100"
-					: "text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100",
+					? "text-foreground"
+					: "text-muted-foreground hover:text-foreground",
 			].join(" ")}
 		>
 			{children}
@@ -144,7 +144,7 @@ function TabLink({ value, current, onClick, count, children }: TabLinkProps) {
 				<span
 					className={[
 						"text-[10px] tabular-nums",
-						active ? "opacity-70" : "text-neutral-400 dark:text-neutral-500",
+						active ? "opacity-70" : "text-muted-foreground",
 					].join(" ")}
 				>
 					{count}
@@ -177,9 +177,9 @@ function ModelsTab({ providerName }: { providerName: string }) {
 
 	if (items.length === 0) {
 		return (
-			<div className="rounded-lg border border-dashed border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-6 py-14 text-center">
-				<Boxes className="w-6 h-6 mx-auto mb-3 text-neutral-300 dark:text-neutral-700" />
-				<p className="text-sm text-neutral-500 dark:text-neutral-400">
+			<div className="rounded-lg border border-dashed border-input bg-card px-6 py-14 text-center">
+				<Boxes className="w-6 h-6 mx-auto mb-3 text-muted-foreground/50" />
+				<p className="text-sm text-muted-foreground">
 					No models registered against this provider yet.
 				</p>
 				<Link
@@ -244,7 +244,7 @@ function ProviderDetailInner() {
 			<div>
 				<Link
 					to="/providers"
-					className="inline-flex items-center gap-1 text-xs text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 transition-colors"
+					className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
 				>
 					<ChevronLeft className="w-3.5 h-3.5" />
 					Providers
@@ -252,20 +252,20 @@ function ProviderDetailInner() {
 				<div className="mt-2 flex items-start justify-between gap-4">
 					<div className="min-w-0">
 						<div className="flex items-center gap-2 min-w-0">
-							<h1 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100 truncate capitalize">
+							<h1 className="text-xl font-semibold text-foreground truncate capitalize">
 								{provider.spec.displayName ?? provider.metadata.name}
 							</h1>
 							{provider.spec.default && (
-								<span className="text-[10px] uppercase tracking-wide text-neutral-500 dark:text-neutral-400 px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800">
+								<span className="text-[10px] uppercase tracking-wide text-muted-foreground px-1.5 py-0.5 rounded bg-muted">
 									default
 								</span>
 							)}
 						</div>
-						<div className="mt-1 flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">
+						<div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
 							<code className="font-mono">{provider.metadata.name}</code>
 							{provider.spec.kind && (
 								<>
-									<span className="text-neutral-300 dark:text-neutral-700">·</span>
+									<span className="text-muted-foreground/50">·</span>
 									<span>{provider.spec.kind}</span>
 								</>
 							)}
@@ -275,7 +275,7 @@ function ProviderDetailInner() {
 						<Link
 							to="/providers/$name/edit"
 							params={{ name }}
-							className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800/60 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+							className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium text-foreground border border-border hover:bg-muted transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 						>
 							<Pencil className="w-3.5 h-3.5" />
 							Edit
@@ -284,7 +284,7 @@ function ProviderDetailInner() {
 							type="button"
 							onClick={handleDelete}
 							disabled={deleteProvider.isPending}
-							className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium text-red-600 dark:text-red-400 border border-neutral-200 dark:border-neutral-800 hover:bg-red-50 dark:hover:bg-red-950/30 disabled:opacity-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+							className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium text-destructive border border-border hover:bg-destructive/10 disabled:opacity-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
 						>
 							<Trash2 className="w-3.5 h-3.5" />
 							Delete
@@ -293,7 +293,7 @@ function ProviderDetailInner() {
 				</div>
 			</div>
 
-			<div className="border-b border-neutral-200 dark:border-neutral-800 flex items-center gap-1">
+			<div className="border-b border-border flex items-center gap-1">
 				<TabLink value="overview" current={search.tab} onClick={setTab}>
 					Overview
 				</TabLink>
@@ -353,7 +353,7 @@ function ProviderDetailInner() {
 					{provider.spec.description && (
 						<div className="lg:col-span-2">
 							<Section title="Description">
-								<p className="text-sm text-neutral-700 dark:text-neutral-300 whitespace-pre-wrap">
+								<p className="text-sm text-foreground whitespace-pre-wrap">
 									{provider.spec.description}
 								</p>
 							</Section>
@@ -375,7 +375,7 @@ function ProviderDetailPage() {
 	return (
 		<Suspense
 			fallback={
-				<div className="text-neutral-500 dark:text-neutral-400 text-sm">Loading…</div>
+				<div className="text-muted-foreground text-sm">Loading…</div>
 			}
 		>
 			<ProviderDetailInner />

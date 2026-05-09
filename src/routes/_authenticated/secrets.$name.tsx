@@ -1,16 +1,16 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Suspense, useState } from "react";
-import { poolsListQueryOptions, usePools } from "#/api/hooks/pools";
+import { poolsListQueryOptions, usePools } from "@/api/hooks/pools";
 import {
 	secretDetailQueryOptions,
 	secretsListQueryOptions,
 	useDeleteSecret,
 	useSecret,
-} from "#/api/hooks/secrets";
-import { ApiError } from "#/api/types/errors";
-import { DeleteConfirm } from "#/components/DeleteConfirm";
-import { SecretRotateDialog } from "#/components/SecretRotateDialog";
-import { toast } from "#/components/Toast";
+} from "@/api/hooks/secrets";
+import { ApiError } from "@/api/types/errors";
+import { DeleteConfirm } from "@/components/DeleteConfirm";
+import { SecretRotateDialog } from "@/components/SecretRotateDialog";
+import { toast } from "@/components/Toast";
 
 export const Route = createFileRoute("/_authenticated/secrets/$name")({
 	loader: ({ context, params }) =>
@@ -66,7 +66,7 @@ function SecretDetailInner() {
 			{/* Header */}
 			<div className="flex items-start justify-between mb-6">
 				<div className="flex items-center gap-3">
-					<h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 font-mono">
+					<h1 className="text-2xl font-bold text-foreground font-mono">
 						{secret.name}
 					</h1>
 					<span
@@ -84,7 +84,7 @@ function SecretDetailInner() {
 					<Link
 						to="/secrets/$name/edit"
 						params={{ name }}
-						className="px-4 py-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+						className="px-4 py-2 text-sm font-medium text-foreground bg-card border border-input rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
 					>
 						Edit
 					</Link>
@@ -99,20 +99,20 @@ function SecretDetailInner() {
 			</div>
 
 			{/* Detail fields */}
-			<dl className="divide-y divide-neutral-100 dark:divide-neutral-800 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 mb-8">
+			<dl className="divide-y divide-border rounded-lg border border-border bg-card mb-8">
 				<div className="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4">
-					<dt className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
+					<dt className="text-sm font-medium text-muted-foreground">
 						Name
 					</dt>
-					<dd className="mt-1 text-sm text-neutral-900 dark:text-neutral-100 font-mono sm:col-span-2 sm:mt-0">
+					<dd className="mt-1 text-sm text-foreground font-mono sm:col-span-2 sm:mt-0">
 						{secret.name}
 					</dd>
 				</div>
 				<div className="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4">
-					<dt className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
+					<dt className="text-sm font-medium text-muted-foreground">
 						Kind
 					</dt>
-					<dd className="mt-1 text-sm text-neutral-900 dark:text-neutral-100 sm:col-span-2 sm:mt-0">
+					<dd className="mt-1 text-sm text-foreground sm:col-span-2 sm:mt-0">
 						{secret.valueFrom.kind}
 					</dd>
 				</div>
@@ -120,18 +120,18 @@ function SecretDetailInner() {
 				{!isStored && (
 					<>
 						<div className="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4">
-							<dt className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
+							<dt className="text-sm font-medium text-muted-foreground">
 								Environment variable
 							</dt>
-							<dd className="mt-1 text-sm text-neutral-900 dark:text-neutral-100 font-mono sm:col-span-2 sm:mt-0">
+							<dd className="mt-1 text-sm text-foreground font-mono sm:col-span-2 sm:mt-0">
 								{secret.valueFrom.env ?? (
-									<span className="text-neutral-400 dark:text-neutral-500">—</span>
+									<span className="text-muted-foreground">—</span>
 								)}
 							</dd>
 						</div>
 						<div className="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4">
-							<dt className="text-sm font-medium text-neutral-500 dark:text-neutral-400" />
-							<dd className="mt-1 text-xs text-neutral-500 dark:text-neutral-400 sm:col-span-2 sm:mt-0">
+							<dt className="text-sm font-medium text-muted-foreground" />
+							<dd className="mt-1 text-xs text-muted-foreground sm:col-span-2 sm:mt-0">
 								Set this env var on your relay deployment.
 							</dd>
 						</div>
@@ -140,13 +140,13 @@ function SecretDetailInner() {
 
 				{isStored && (
 					<div className="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4">
-						<dt className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
+						<dt className="text-sm font-medium text-muted-foreground">
 							Masked value
 						</dt>
-						<dd className="mt-1 text-sm text-neutral-900 dark:text-neutral-100 font-mono sm:col-span-2 sm:mt-0 flex items-center gap-3">
+						<dd className="mt-1 text-sm text-foreground font-mono sm:col-span-2 sm:mt-0 flex items-center gap-3">
 							<span>
 								{secret.valueFrom.value_masked ?? (
-									<span className="text-neutral-400 dark:text-neutral-500">—</span>
+									<span className="text-muted-foreground">—</span>
 								)}
 							</span>
 							<button
@@ -163,11 +163,11 @@ function SecretDetailInner() {
 
 			{/* References */}
 			<section>
-				<h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-3">
+				<h2 className="text-lg font-semibold text-foreground mb-3">
 					Referenced by pools
 				</h2>
 				{referencingPools.length === 0 ? (
-					<p className="text-sm text-neutral-500 dark:text-neutral-400">
+					<p className="text-sm text-muted-foreground">
 						No pools reference this secret.
 					</p>
 				) : (
@@ -209,7 +209,7 @@ function SecretDetailPage() {
 	return (
 		<Suspense
 			fallback={
-				<div className="text-neutral-500 dark:text-neutral-400 text-sm">Loading…</div>
+				<div className="text-muted-foreground text-sm">Loading…</div>
 			}
 		>
 			<SecretDetailInner />

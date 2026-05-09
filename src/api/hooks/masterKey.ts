@@ -7,9 +7,9 @@
  */
 
 import { useMutation } from "@tanstack/react-query";
-import { apiClient } from "#/api/client";
-import { ApiError } from "#/api/types/errors";
-import type { components } from "#/api/types.gen";
+import { apiClient } from "@/api/client";
+import { ApiError } from "@/api/types/errors";
+import type { components } from "@/api/types.gen";
 
 export type MasterKeyResponse = components["schemas"]["MasterKeyResponse"];
 

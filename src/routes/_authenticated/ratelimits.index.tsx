@@ -3,10 +3,10 @@ import { Suspense } from "react";
 import {
 	rateLimitsListQueryOptions,
 	useRateLimits,
-} from "#/api/hooks/ratelimits";
-import type { RateLimit } from "#/api/types/ratelimit";
-import type { ColumnDef } from "#/components/ResourceList";
-import { ResourceList } from "#/components/ResourceList";
+} from "@/api/hooks/ratelimits";
+import type { RateLimit } from "@/api/types/ratelimit";
+import type { ColumnDef } from "@/components/ResourceList";
+import { ResourceList } from "@/components/ResourceList";
 
 export const Route = createFileRoute("/_authenticated/ratelimits/")({
 	loader: ({ context }) =>
@@ -41,7 +41,7 @@ function RateLimitsPage() {
 	return (
 		<Suspense
 			fallback={
-				<div className="text-neutral-500 dark:text-neutral-400 text-sm">Loading…</div>
+				<div className="text-muted-foreground text-sm">Loading…</div>
 			}
 		>
 			<RateLimitsList />

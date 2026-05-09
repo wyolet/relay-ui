@@ -33,12 +33,12 @@ import {
 	modelDetailQueryOptions,
 	useDeleteModel,
 	useModel,
-} from "#/api/hooks/models";
-import { providerDetailQueryOptions } from "#/api/hooks/providers";
-import { ApiError } from "#/api/types/errors";
-import type { Capabilities, Model, Modalities } from "#/api/types/model";
-import type { Provider } from "#/api/types/provider";
-import { toast } from "#/components/Toast";
+} from "@/api/hooks/models";
+import { providerDetailQueryOptions } from "@/api/hooks/providers";
+import { ApiError } from "@/api/types/errors";
+import type { Capabilities, Model, Modalities } from "@/api/types/model";
+import type { Provider } from "@/api/types/provider";
+import { toast } from "@/components/Toast";
 
 type Tab = "overview" | "pricing" | "limits";
 
@@ -95,7 +95,7 @@ function modalityList(m: Modalities | undefined, side: "input" | "output"): stri
 
 function dash(v: string | number | null | undefined): React.ReactNode {
 	if (v === null || v === undefined || v === "") {
-		return <span className="text-neutral-400 dark:text-neutral-600">—</span>;
+		return <span className="text-muted-foreground/70">—</span>;
 	}
 	return v;
 }
@@ -108,9 +108,9 @@ interface SectionProps {
 
 function Section({ title, right, children }: SectionProps) {
 	return (
-		<section className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
-			<header className="flex items-center justify-between px-4 h-9 border-b border-neutral-200 dark:border-neutral-800">
-				<h2 className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+		<section className="rounded-lg border border-border bg-card">
+			<header className="flex items-center justify-between px-4 h-9 border-b border-border">
+				<h2 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
 					{title}
 				</h2>
 				{right}
@@ -128,8 +128,8 @@ interface FieldRowProps {
 function FieldRow({ label, children }: FieldRowProps) {
 	return (
 		<div className="grid grid-cols-[140px_1fr] gap-3 py-1.5 text-sm">
-			<dt className="text-neutral-500 dark:text-neutral-400">{label}</dt>
-			<dd className="text-neutral-900 dark:text-neutral-100 min-w-0">
+			<dt className="text-muted-foreground">{label}</dt>
+			<dd className="text-foreground min-w-0">
 				{children}
 			</dd>
 		</div>
@@ -172,7 +172,7 @@ function CapabilityIcon({ name }: { name: string }) {
 	const Icon = meta.icon;
 	return (
 		<span className="relative group inline-flex">
-			<span className="inline-flex items-center justify-center h-7 w-7 rounded-md bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300">
+			<span className="inline-flex items-center justify-center h-7 w-7 rounded-md bg-muted text-foreground">
 				<Icon className="w-3.5 h-3.5" aria-hidden="true" />
 				<span className="sr-only">{meta.label}</span>
 			</span>
@@ -189,7 +189,7 @@ function CapabilityIcon({ name }: { name: string }) {
 function CapabilityChips({ cap }: { cap: Capabilities | undefined }) {
 	const active = activeCapabilities(cap);
 	if (active.length === 0)
-		return <span className="text-neutral-400 dark:text-neutral-600">—</span>;
+		return <span className="text-muted-foreground/70">—</span>;
 	return (
 		<div className="flex flex-wrap gap-1.5">
 			{active.map((c) => (
@@ -204,24 +204,24 @@ function ProviderCard({ name, provider }: { name: string; provider: Provider | u
 		<Link
 			to="/providers/$name"
 			params={{ name }}
-			className="flex items-center justify-between gap-3 rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-3 py-2 hover:border-brand-300 dark:hover:border-brand-800 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+			className="flex items-center justify-between gap-3 rounded-md border border-border bg-card px-3 py-2 hover:border-brand-300 dark:hover:border-brand-800 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 		>
 			<div className="min-w-0 flex items-center gap-2">
-				<span className="text-sm font-medium text-neutral-900 dark:text-neutral-100 capitalize truncate">
+				<span className="text-sm font-medium text-foreground capitalize truncate">
 					{provider?.spec.displayName ?? name}
 				</span>
 				{provider?.spec.kind && (
-					<span className="inline-flex items-center h-5 px-1.5 rounded text-[10px] font-medium bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400">
+					<span className="inline-flex items-center h-5 px-1.5 rounded text-[10px] font-medium bg-muted text-muted-foreground">
 						{provider.spec.kind}
 					</span>
 				)}
 				{provider?.spec.default && (
-					<span className="text-[10px] uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+					<span className="text-[10px] uppercase tracking-wide text-muted-foreground">
 						default
 					</span>
 				)}
 			</div>
-			<ExternalLink className="w-3.5 h-3.5 text-neutral-400 dark:text-neutral-500 shrink-0" />
+			<ExternalLink className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
 		</Link>
 	);
 }
@@ -229,7 +229,7 @@ function ProviderCard({ name, provider }: { name: string; provider: Provider | u
 function PricingTable({ model }: { model: Model }) {
 	const p = model.spec.pricing;
 	if (!p?.rates || Object.keys(p.rates).length === 0) {
-		return <span className="text-neutral-400 dark:text-neutral-600">—</span>;
+		return <span className="text-muted-foreground/70">—</span>;
 	}
 	const unit = p.unit || "1M tokens";
 	const currency = p.currency || "USD";
@@ -238,7 +238,7 @@ function PricingTable({ model }: { model: Model }) {
 	return (
 		<table className="w-full text-sm">
 			<thead>
-				<tr className="text-[11px] uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+				<tr className="text-[11px] uppercase tracking-wide text-muted-foreground">
 					<th className="text-left font-medium pb-2">Kind</th>
 					<th className="text-right font-medium pb-2">
 						{sym}per {unit}
@@ -248,8 +248,8 @@ function PricingTable({ model }: { model: Model }) {
 			<tbody>
 				{entries.map(([k, v]) => (
 					<tr key={k} className="border-t border-neutral-100 dark:border-neutral-800">
-						<td className="py-1.5 text-neutral-700 dark:text-neutral-300">{k}</td>
-						<td className="py-1.5 text-right tabular-nums text-neutral-900 dark:text-neutral-100">
+						<td className="py-1.5 text-foreground">{k}</td>
+						<td className="py-1.5 text-right tabular-nums text-foreground">
 							{v.toFixed(v < 1 ? 4 : 2)}
 						</td>
 					</tr>
@@ -275,8 +275,8 @@ function TabLink({ value, current, onClick, children }: TabLinkProps) {
 			className={[
 				"relative h-9 px-3 text-xs font-medium transition-colors",
 				active
-					? "text-neutral-900 dark:text-neutral-100"
-					: "text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100",
+					? "text-foreground"
+					: "text-muted-foreground hover:text-foreground",
 			].join(" ")}
 		>
 			{children}
@@ -326,7 +326,7 @@ function ModelDetailInner() {
 			<div>
 				<Link
 					to="/models"
-					className="inline-flex items-center gap-1 text-xs text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 transition-colors"
+					className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
 				>
 					<ChevronLeft className="w-3.5 h-3.5" />
 					Models
@@ -334,7 +334,7 @@ function ModelDetailInner() {
 				<div className="mt-2 flex items-start justify-between gap-4">
 					<div className="min-w-0">
 						<div className="flex items-center gap-2 min-w-0">
-							<h1 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100 truncate">
+							<h1 className="text-xl font-semibold text-foreground truncate">
 								{model.spec.displayName ?? model.metadata.name}
 							</h1>
 							{dep && (
@@ -344,22 +344,22 @@ function ModelDetailInner() {
 								/>
 							)}
 						</div>
-						<div className="mt-1 flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">
+						<div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
 							<code className="font-mono">{model.metadata.name}</code>
-							<span className="text-neutral-300 dark:text-neutral-700">·</span>
+							<span className="text-muted-foreground/50">·</span>
 							<span>
 								via{" "}
 								<Link
 									to="/providers/$name"
 									params={{ name: model.spec.provider }}
-									className="text-neutral-700 dark:text-neutral-300 hover:underline capitalize"
+									className="text-foreground hover:underline capitalize"
 								>
 									{model.spec.provider}
 								</Link>
 							</span>
 							{aliases.length > 0 && (
 								<>
-									<span className="text-neutral-300 dark:text-neutral-700">·</span>
+									<span className="text-muted-foreground/50">·</span>
 									<span className="truncate">aka {aliases.join(", ")}</span>
 								</>
 							)}
@@ -369,7 +369,7 @@ function ModelDetailInner() {
 						<Link
 							to="/models/$name/edit"
 							params={{ name }}
-							className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800/60 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+							className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium text-foreground border border-border hover:bg-muted transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 						>
 							<Pencil className="w-3.5 h-3.5" />
 							Edit
@@ -378,7 +378,7 @@ function ModelDetailInner() {
 							type="button"
 							onClick={handleDelete}
 							disabled={deleteModel.isPending}
-							className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium text-red-600 dark:text-red-400 border border-neutral-200 dark:border-neutral-800 hover:bg-red-50 dark:hover:bg-red-950/30 disabled:opacity-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+							className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium text-destructive border border-border hover:bg-destructive/10 disabled:opacity-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
 						>
 							<Trash2 className="w-3.5 h-3.5" />
 							Delete
@@ -394,7 +394,7 @@ function ModelDetailInner() {
 				</div>
 			)}
 
-			<div className="border-b border-neutral-200 dark:border-neutral-800 flex items-center gap-1">
+			<div className="border-b border-border flex items-center gap-1">
 				<TabLink value="overview" current={search.tab} onClick={setTab}>
 					Overview
 				</TabLink>
@@ -440,7 +440,7 @@ function ModelDetailInner() {
 										{tags.map((t) => (
 											<span
 												key={t}
-												className="inline-flex items-center h-6 px-2 rounded-md text-[11px] font-medium bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300"
+												className="inline-flex items-center h-6 px-2 rounded-md text-[11px] font-medium bg-muted text-foreground"
 											>
 												#{t}
 											</span>
@@ -463,7 +463,7 @@ function ModelDetailInner() {
 					{model.spec.description && (
 						<div className="lg:col-span-2">
 							<Section title="Description">
-								<p className="text-sm text-neutral-700 dark:text-neutral-300 whitespace-pre-wrap">
+								<p className="text-sm text-foreground whitespace-pre-wrap">
 									{model.spec.description}
 								</p>
 							</Section>
@@ -522,7 +522,7 @@ function ModelDetailPage() {
 	return (
 		<Suspense
 			fallback={
-				<div className="text-neutral-500 dark:text-neutral-400 text-sm">Loading…</div>
+				<div className="text-muted-foreground text-sm">Loading…</div>
 			}
 		>
 			<ModelDetailInner />

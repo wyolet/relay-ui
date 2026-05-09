@@ -12,12 +12,12 @@ import {
 	useDeletePool,
 	usePool,
 	useUpdatePool,
-} from "#/api/hooks/pools";
-import { secretsListQueryOptions, useSecrets } from "#/api/hooks/secrets";
-import { ApiError } from "#/api/types/errors";
-import type { PoolUpdate } from "#/api/types/pool";
-import { DeleteConfirm } from "#/components/DeleteConfirm";
-import { toast } from "#/components/Toast";
+} from "@/api/hooks/pools";
+import { secretsListQueryOptions, useSecrets } from "@/api/hooks/secrets";
+import { ApiError } from "@/api/types/errors";
+import type { PoolUpdate } from "@/api/types/pool";
+import { DeleteConfirm } from "@/components/DeleteConfirm";
+import { toast } from "@/components/Toast";
 
 export const Route = createFileRoute("/_authenticated/pools/$name")({
 	loader: ({ context, params }) =>
@@ -133,7 +133,7 @@ function PoolDetailInner() {
 
 			<div className="flex items-start justify-between mb-6">
 				<div>
-					<h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 font-mono">
+					<h1 className="text-2xl font-bold text-foreground font-mono">
 						{pool.metadata.name}
 					</h1>
 					{/* TODO: replace with real health from /admin/keypool/:pool/health when endpoint is available */}
@@ -145,7 +145,7 @@ function PoolDetailInner() {
 					<Link
 						to="/pools/$name/edit"
 						params={{ name }}
-						className="px-4 py-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+						className="px-4 py-2 text-sm font-medium text-foreground bg-card border border-input rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
 					>
 						Edit
 					</Link>
@@ -160,7 +160,7 @@ function PoolDetailInner() {
 			</div>
 
 			{/* Tabs */}
-			<div className="border-b border-neutral-200 dark:border-neutral-800 mb-6">
+			<div className="border-b border-border mb-6">
 				<nav className="flex gap-4" aria-label="Pool detail tabs">
 					{tabs.map((tab) => (
 						<button
@@ -171,7 +171,7 @@ function PoolDetailInner() {
 								"pb-3 text-sm font-medium border-b-2 transition-colors",
 								activeTab === tab.id
 									? "border-brand-600 text-brand-600 dark:text-brand-400"
-									: "border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300",
+									: "border-transparent text-muted-foreground hover:text-neutral-700 dark:hover:text-neutral-300",
 							].join(" ")}
 						>
 							{tab.label}
@@ -182,7 +182,7 @@ function PoolDetailInner() {
 
 			{/* Spec tab */}
 			{activeTab === "spec" && (
-				<dl className="divide-y divide-neutral-100 dark:divide-neutral-800 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+				<dl className="divide-y divide-border rounded-lg border border-border bg-card">
 					{[
 						{ label: "Name", value: pool.metadata.name },
 						{ label: "Provider", value: pool.spec.provider },
@@ -191,10 +191,10 @@ function PoolDetailInner() {
 							key={f.label}
 							className="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4"
 						>
-							<dt className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
+							<dt className="text-sm font-medium text-muted-foreground">
 								{f.label}
 							</dt>
-							<dd className="mt-1 text-sm text-neutral-900 dark:text-neutral-100 sm:col-span-2 sm:mt-0">
+							<dd className="mt-1 text-sm text-foreground sm:col-span-2 sm:mt-0">
 								{f.value}
 							</dd>
 						</div>
@@ -211,14 +211,14 @@ function PoolDetailInner() {
 							placeholder="Search secrets…"
 							value={secretSearch}
 							onChange={(e) => setSecretSearch(e.target.value)}
-							className="w-full max-w-sm border border-neutral-300 dark:border-neutral-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-brand-400"
+							className="w-full max-w-sm border border-input rounded-lg px-3 py-2 text-sm bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand-400"
 						/>
 					</div>
 
 					{/* Attached secrets as removable chips */}
 					{poolSecrets.length > 0 && (
 						<div className="mb-6">
-							<p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wide mb-2">
+							<p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
 								Attached
 							</p>
 							<div className="flex flex-wrap gap-2">
@@ -253,7 +253,7 @@ function PoolDetailInner() {
 					{/* Available secrets */}
 					{availableSecrets.length > 0 && (
 						<div>
-							<p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wide mb-2">
+							<p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
 								Available
 							</p>
 							<div className="flex flex-wrap gap-2">
@@ -263,7 +263,7 @@ function PoolDetailInner() {
 										type="button"
 										disabled={updatePool.isPending}
 										onClick={() => void handleAddSecret(s.name)}
-										className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-300 border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors disabled:opacity-50"
+										className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-card text-foreground border border-input hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors disabled:opacity-50"
 									>
 										+ {s.name}
 									</button>
@@ -273,7 +273,7 @@ function PoolDetailInner() {
 					)}
 
 					{poolSecrets.length === 0 && availableSecrets.length === 0 && (
-						<p className="text-sm text-neutral-500 dark:text-neutral-400">
+						<p className="text-sm text-muted-foreground">
 							{secretSearch
 								? `No secrets matching "${secretSearch}".`
 								: "No secrets configured."}
@@ -286,7 +286,7 @@ function PoolDetailInner() {
 			{activeTab === "ratelimits" && (
 				<div>
 					<div className="flex items-center justify-between mb-4">
-						<p className="text-sm text-neutral-600 dark:text-neutral-400">
+						<p className="text-sm text-muted-foreground">
 							Rate limits defined on this pool's spec. To add or remove, use the{" "}
 							<Link
 								to="/pools/$name/edit"
@@ -300,23 +300,23 @@ function PoolDetailInner() {
 					</div>
 
 					{rateLimits.length === 0 ? (
-						<p className="text-sm text-neutral-500 dark:text-neutral-400">
+						<p className="text-sm text-muted-foreground">
 							No rate limits configured on this pool.
 						</p>
 					) : (
-						<div className="overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-800">
+						<div className="overflow-x-auto rounded-lg border border-border">
 							<table className="w-full text-sm">
 								<thead className="bg-neutral-50 dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700">
 									<tr>
-										<th className="px-4 py-3 text-left text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wide">
+										<th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">
 											Rate Limit
 										</th>
 									</tr>
 								</thead>
-								<tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+								<tbody className="divide-y divide-border">
 									{rateLimits.map((rl) => (
-										<tr key={rl.Ref} className="bg-white dark:bg-neutral-900">
-											<td className="px-4 py-3 text-neutral-900 dark:text-neutral-100">
+										<tr key={rl.Ref} className="bg-card">
+											<td className="px-4 py-3 text-foreground">
 												<Link
 													to="/ratelimits/$name"
 													params={{ name: rl.Ref }}
@@ -350,7 +350,7 @@ function PoolDetailPage() {
 	return (
 		<Suspense
 			fallback={
-				<div className="text-neutral-500 dark:text-neutral-400 text-sm">Loading…</div>
+				<div className="text-muted-foreground text-sm">Loading…</div>
 			}
 		>
 			<PoolDetailInner />

@@ -1,12 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { useCreateRateLimit } from "#/api/hooks/ratelimits";
-import type { ApiErrorBody } from "#/api/types/errors";
-import { ApiError } from "#/api/types/errors";
-import type { RateLimitCreate } from "#/api/types/ratelimit";
-import type { FieldDef, FormValues } from "#/components/ResourceForm";
-import { ResourceForm } from "#/components/ResourceForm";
-import { toast } from "#/components/Toast";
+import { useCreateRateLimit } from "@/api/hooks/ratelimits";
+import type { ApiErrorBody } from "@/api/types/errors";
+import { ApiError } from "@/api/types/errors";
+import type { RateLimitCreate } from "@/api/types/ratelimit";
+import type { FieldDef, FormValues } from "@/components/ResourceForm";
+import { ResourceForm } from "@/components/ResourceForm";
+import { toast } from "@/components/Toast";
 
 export const Route = createFileRoute("/_authenticated/ratelimits/new")({
 	component: NewRateLimitPage,

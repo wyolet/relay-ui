@@ -4,11 +4,11 @@ import {
 	rateLimitDetailQueryOptions,
 	useDeleteRateLimit,
 	useRateLimit,
-} from "#/api/hooks/ratelimits";
-import { ApiError } from "#/api/types/errors";
-import type { DetailField } from "#/components/ResourceDetail";
-import { ResourceDetail } from "#/components/ResourceDetail";
-import { toast } from "#/components/Toast";
+} from "@/api/hooks/ratelimits";
+import { ApiError } from "@/api/types/errors";
+import type { DetailField } from "@/components/ResourceDetail";
+import { ResourceDetail } from "@/components/ResourceDetail";
+import { toast } from "@/components/Toast";
 
 export const Route = createFileRoute("/_authenticated/ratelimits/$name")({
 	loader: ({ context, params }) =>
@@ -63,7 +63,7 @@ function RateLimitDetailPage() {
 	return (
 		<Suspense
 			fallback={
-				<div className="text-neutral-500 dark:text-neutral-400 text-sm">Loading…</div>
+				<div className="text-muted-foreground text-sm">Loading…</div>
 			}
 		>
 			<RateLimitDetailInner />

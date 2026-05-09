@@ -1,15 +1,15 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { Trash2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { apiClient } from "#/api/client";
-import { useModels } from "#/api/hooks/models";
-import { usePools } from "#/api/hooks/pools";
-import { useDeleteSecret } from "#/api/hooks/secrets";
-import { ApiError } from "#/api/types/errors";
-import { Modal } from "#/components/Modal";
-import { MultiSelect } from "#/components/MultiSelect";
-import { toast } from "#/components/Toast";
-import { useKeysStore } from "#/stores/keys";
+import { apiClient } from "@/api/client";
+import { useModels } from "@/api/hooks/models";
+import { usePools } from "@/api/hooks/pools";
+import { useDeleteSecret } from "@/api/hooks/secrets";
+import { ApiError } from "@/api/types/errors";
+import { Modal } from "@/components/Modal";
+import { MultiSelect } from "@/components/MultiSelect";
+import { toast } from "@/components/Toast";
+import { useKeysStore } from "@/stores/keys";
 
 interface EditProviderKeyModalProps {
 	open: boolean;
@@ -139,7 +139,7 @@ export function EditProviderKeyModal({
 						value={name}
 						onChange={(e) => setName(e.currentTarget.value)}
 						placeholder={secretName}
-						className="w-full h-8 rounded-md px-2.5 text-sm text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+						className="w-full h-8 rounded-md px-2.5 text-sm text-foreground bg-card border border-input placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus-visible:ring-ring focus:border-transparent"
 					/>
 				</Field>
 
@@ -179,11 +179,11 @@ export function EditProviderKeyModal({
 					emptyHint="No active Relay keys."
 				/>
 
-				<div className="flex items-center justify-between gap-2 pt-3 border-t border-neutral-200 dark:border-neutral-800">
+				<div className="flex items-center justify-between gap-2 pt-3 border-t border-border">
 					<button
 						type="button"
 						onClick={() => void handleDelete()}
-						className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+						className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium text-destructive hover:bg-destructive/10 transition-colors"
 					>
 						<Trash2 className="w-3.5 h-3.5" />
 						Delete key
@@ -192,7 +192,7 @@ export function EditProviderKeyModal({
 						<button
 							type="button"
 							onClick={onClose}
-							className="h-8 px-3 rounded-md text-xs font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800/60"
+							className="h-8 px-3 rounded-md text-xs font-medium text-foreground hover:bg-muted"
 						>
 							Cancel
 						</button>
@@ -220,7 +220,7 @@ function Field({
 }) {
 	return (
 		<div>
-			<div className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400 mb-1.5">
+			<div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
 				{label}
 			</div>
 			{children}
@@ -249,7 +249,7 @@ function PickerField({
 }: PickerFieldProps) {
 	return (
 		<div>
-			<div className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400 mb-1">
+			<div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-1">
 				{label}
 			</div>
 			<MultiSelect
@@ -260,7 +260,7 @@ function PickerField({
 				emptyHint={emptyHint}
 				aria-label={label}
 			/>
-			<p className="mt-1 text-[11px] text-neutral-500 dark:text-neutral-400">
+			<p className="mt-1 text-[11px] text-muted-foreground">
 				{description}
 			</p>
 		</div>

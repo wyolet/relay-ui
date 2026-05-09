@@ -5,7 +5,7 @@ import {
 	Outlet,
 	redirect,
 } from "@tanstack/react-router";
-import { whoamiQueryOptions } from "#/api/auth";
+import { whoamiQueryOptions } from "@/api/auth";
 
 import "../styles.css";
 

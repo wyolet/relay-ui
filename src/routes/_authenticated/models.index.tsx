@@ -2,14 +2,14 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Boxes, Plus, Search } from "lucide-react";
 import { Suspense } from "react";
 import { z } from "zod";
-import { modelsListQueryOptions, useModels } from "#/api/hooks/models";
+import { modelsListQueryOptions, useModels } from "@/api/hooks/models";
 import {
 	applyModelFilter,
 	applyModelSort,
 	type ModelsSortDir,
 	type ModelsSortKey,
 	ModelsTable,
-} from "#/components/ModelsTable";
+} from "@/components/ModelsTable";
 
 const searchSchema = z.object({
 	q: z.string().default(""),
@@ -44,10 +44,10 @@ function FilterChip({ value, current, count, onClick, children }: FilterChipProp
 			aria-pressed={active}
 			className={[
 				"inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md text-xs font-medium transition-colors",
-				"focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500",
+				"focus:outline-none focus-visible:ring-2 focus-visible:ring-ring",
 				active
 					? "bg-brand-50 dark:bg-brand-950/60 text-brand-700 dark:text-brand-300"
-					: "text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-800/60",
+					: "text-muted-foreground hover:text-foreground hover:bg-muted",
 			].join(" ")}
 		>
 			{children}
@@ -56,7 +56,7 @@ function FilterChip({ value, current, count, onClick, children }: FilterChipProp
 					"text-[10px] tabular-nums",
 					active
 						? "text-brand-600 dark:text-brand-400"
-						: "text-neutral-400 dark:text-neutral-500",
+						: "text-muted-foreground",
 				].join(" ")}
 			>
 				{count}
@@ -91,16 +91,16 @@ function ModelsList() {
 		<div>
 			<div className="flex items-baseline justify-between mb-4 gap-4">
 				<div className="min-w-0">
-					<h1 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
+					<h1 className="text-lg font-semibold text-foreground">
 						Models
 					</h1>
-					<p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+					<p className="text-xs text-muted-foreground mt-0.5">
 						Models you've registered and how Relay routes traffic to them.
 					</p>
 				</div>
 				<Link
 					to="/models/new"
-					className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-xs font-semibold text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+					className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-xs font-semibold text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 				>
 					<Plus className="w-3.5 h-3.5" />
 					New model
@@ -130,21 +130,21 @@ function ModelsList() {
 					))}
 				</div>
 				<div className="relative">
-					<Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-400 dark:text-neutral-500 pointer-events-none" />
+					<Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
 					<input
 						type="search"
 						value={search.q}
 						onChange={(e) => setQ(e.currentTarget.value)}
 						placeholder="Search models"
-						className="h-8 pl-8 pr-3 rounded-md text-xs text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-shadow w-48"
+						className="h-8 pl-8 pr-3 rounded-md text-xs text-foreground bg-card border border-border placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus-visible:ring-ring focus:border-transparent transition-shadow w-48"
 					/>
 				</div>
 			</div>
 
 			{visible.length === 0 ? (
-				<div className="rounded-lg border border-dashed border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-6 py-14 text-center">
-					<Boxes className="w-6 h-6 mx-auto mb-3 text-neutral-300 dark:text-neutral-700" />
-					<p className="text-sm text-neutral-500 dark:text-neutral-400">
+				<div className="rounded-lg border border-dashed border-input bg-card px-6 py-14 text-center">
+					<Boxes className="w-6 h-6 mx-auto mb-3 text-muted-foreground/50" />
+					<p className="text-sm text-muted-foreground">
 						{items.length === 0
 							? "No models configured."
 							: "No models match the current filter."}
@@ -166,7 +166,7 @@ function ModelsPage() {
 	return (
 		<Suspense
 			fallback={
-				<div className="text-neutral-500 dark:text-neutral-400 text-sm">Loading…</div>
+				<div className="text-muted-foreground text-sm">Loading…</div>
 			}
 		>
 			<ModelsList />

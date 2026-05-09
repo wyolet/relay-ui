@@ -6,7 +6,7 @@ Operator admin UI for **Wyolet Relay** (high-throughput Go LLM router). Built as
 - Upstream API: `wyolet/relay` Go service; types come from its `/openapi.json`.
 
 React 19 + Vite + TanStack Router + TanStack Query + Tailwind v4 + Biome.
-Path aliases: `#/*` and `@/*` → `src/*`. Package manager: bun.
+Path alias: `@/*` → `src/*` (configured in `tsconfig.json` paths and `vite.config.ts` resolve.alias). Package manager: bun.
 
 ## State management (the only four)
 
@@ -70,5 +70,5 @@ Styling tokens come from `@wyolet/design/theme.css` — use `brand-*`, `accent-*
 ## Style
 
 - Tailwind v4 utilities; no inline `style` unless dynamic values require it.
-- Imports use `#/...` (preferred) or `@/...` for src.
+- Imports use `@/...` for src.
 - Biome owns formatting and lint — run `bun run check` before finishing.

@@ -11,11 +11,11 @@ import { Suspense, useState } from "react";
 import {
 	allAttachmentsQueryOptions,
 	useAllAttachments,
-} from "#/api/hooks/attachments";
+} from "@/api/hooks/attachments";
 import {
 	rateLimitsListQueryOptions,
 	useRateLimits,
-} from "#/api/hooks/ratelimits";
+} from "@/api/hooks/ratelimits";
 
 export const Route = createFileRoute("/_authenticated/attachments")({
 	loader: ({ context }) =>
@@ -129,10 +129,10 @@ function AttachmentsInner() {
 			{/* Header */}
 			<div className="flex items-center justify-between mb-4">
 				<div>
-					<h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
+					<h1 className="text-2xl font-bold text-foreground">
 						Attachments
 					</h1>
-					<p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
+					<p className="text-sm text-muted-foreground mt-1">
 						Rate limit attachments across all resources.
 					</p>
 				</div>
@@ -151,7 +151,7 @@ function AttachmentsInner() {
 				<select
 					value={kindFilter}
 					onChange={(e) => setKindFilter(e.target.value as KindFilter)}
-					className="border border-neutral-300 dark:border-neutral-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-brand-400"
+					className="border border-input rounded-lg px-3 py-2 text-sm bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-brand-400"
 					aria-label="Filter by parent kind"
 				>
 					<option value="all">All kinds</option>
@@ -166,7 +166,7 @@ function AttachmentsInner() {
 					placeholder="Filter parent name…"
 					value={parentNameFilter}
 					onChange={(e) => setParentNameFilter(e.target.value)}
-					className="border border-neutral-300 dark:border-neutral-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-brand-400 min-w-40"
+					className="border border-input rounded-lg px-3 py-2 text-sm bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand-400 min-w-40"
 					aria-label="Filter by parent name"
 				/>
 
@@ -176,7 +176,7 @@ function AttachmentsInner() {
 					placeholder="Filter rate limit…"
 					value={rateLimitFilter}
 					onChange={(e) => setRateLimitFilter(e.target.value)}
-					className="border border-neutral-300 dark:border-neutral-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-brand-400 min-w-40"
+					className="border border-input rounded-lg px-3 py-2 text-sm bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand-400 min-w-40"
 					aria-label="Filter by rate limit name"
 				/>
 
@@ -184,7 +184,7 @@ function AttachmentsInner() {
 				<select
 					value={meterFilter}
 					onChange={(e) => setMeterFilter(e.target.value as MeterFilter)}
-					className="border border-neutral-300 dark:border-neutral-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-brand-400"
+					className="border border-input rounded-lg px-3 py-2 text-sm bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-brand-400"
 					aria-label="Filter by meter"
 				>
 					<option value="all">All meters</option>
@@ -196,46 +196,46 @@ function AttachmentsInner() {
 
 			{/* Main table */}
 			{filteredItems.length === 0 ? (
-				<div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-10 text-center">
-					<p className="text-sm text-neutral-500 dark:text-neutral-400">
+				<div className="rounded-lg border border-border bg-card p-10 text-center">
+					<p className="text-sm text-muted-foreground">
 						{allItems.length === 0
 							? "No attachments found. Add rate limits on Pool or Model resources."
 							: "No attachments match the current filters."}
 					</p>
 				</div>
 			) : (
-				<div className="overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-800 mb-8">
+				<div className="overflow-x-auto rounded-lg border border-border mb-8">
 					<table className="w-full text-sm">
 						<thead className="bg-neutral-50 dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700">
 							<tr>
-								<th className="px-4 py-3 text-left text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wide">
+								<th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">
 									Parent Kind
 								</th>
-								<th className="px-4 py-3 text-left text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wide">
+								<th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">
 									Parent Name
 								</th>
-								<th className="px-4 py-3 text-left text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wide">
+								<th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">
 									Rate Limit
 								</th>
-								<th className="px-4 py-3 text-left text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wide">
+								<th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">
 									Meter
 								</th>
 							</tr>
 						</thead>
-						<tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+						<tbody className="divide-y divide-border">
 							{filteredItems.map((att) => {
 								const dupKey = `${att.parentKind}|${att.parentName}|${att.meter}`;
 								const isDuplicate = duplicateMeterKeys.has(dupKey);
 								const rowClass = isDuplicate
 									? "bg-amber-50 dark:bg-amber-950/30"
-									: "bg-white dark:bg-neutral-900";
+									: "bg-card";
 								const dupTooltip = isDuplicate
 									? "Duplicate meter: this parent has multiple RateLimits on the same meter"
 									: undefined;
 
 								return (
 									<tr key={att.id} className={rowClass} title={dupTooltip}>
-										<td className="px-4 py-3 text-neutral-700 dark:text-neutral-300 capitalize">
+										<td className="px-4 py-3 text-foreground capitalize">
 											{att.parentKind}
 										</td>
 										<td className="px-4 py-3">
@@ -250,7 +250,7 @@ function AttachmentsInner() {
 												{att.ratelimitName}
 											</Link>
 										</td>
-										<td className="px-4 py-3 text-neutral-700 dark:text-neutral-300">
+										<td className="px-4 py-3 text-foreground">
 											{att.meter}
 										</td>
 									</tr>
@@ -264,10 +264,10 @@ function AttachmentsInner() {
 			{/* Orphaned Rate Limits section */}
 			{orphanedRateLimits.length > 0 && (
 				<div>
-					<h2 className="text-base font-semibold text-neutral-700 dark:text-neutral-300 mb-2 flex items-center gap-2">
+					<h2 className="text-base font-semibold text-foreground mb-2 flex items-center gap-2">
 						<span className="inline-block w-2.5 h-2.5 rounded-full bg-amber-400" />
 						Orphaned Rate Limits
-						<span className="text-xs font-normal text-neutral-500 dark:text-neutral-400">
+						<span className="text-xs font-normal text-muted-foreground">
 							— defined but not attached to any resource
 						</span>
 					</h2>
@@ -329,7 +329,7 @@ function AttachmentsPage() {
 	return (
 		<Suspense
 			fallback={
-				<div className="text-neutral-500 dark:text-neutral-400 text-sm">Loading…</div>
+				<div className="text-muted-foreground text-sm">Loading…</div>
 			}
 		>
 			<AttachmentsInner />

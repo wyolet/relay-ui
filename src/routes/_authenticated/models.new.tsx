@@ -1,18 +1,18 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Suspense, useState } from "react";
-import { useCreateModel } from "#/api/hooks/models";
+import { useCreateModel } from "@/api/hooks/models";
 import {
 	rateLimitsListQueryOptions,
 	useRateLimits,
-} from "#/api/hooks/ratelimits";
-import type { ApiErrorBody } from "#/api/types/errors";
-import { ApiError } from "#/api/types/errors";
-import type { ModelCreate } from "#/api/types/model";
-import type { RateLimitAttachment } from "#/api/types/ratelimit";
-import { RateLimitsEditor } from "#/components/RateLimitsEditor";
-import type { FieldDef, FormValues } from "#/components/ResourceForm";
-import { ResourceForm } from "#/components/ResourceForm";
-import { toast } from "#/components/Toast";
+} from "@/api/hooks/ratelimits";
+import type { ApiErrorBody } from "@/api/types/errors";
+import { ApiError } from "@/api/types/errors";
+import type { ModelCreate } from "@/api/types/model";
+import type { RateLimitAttachment } from "@/api/types/ratelimit";
+import { RateLimitsEditor } from "@/components/RateLimitsEditor";
+import type { FieldDef, FormValues } from "@/components/ResourceForm";
+import { ResourceForm } from "@/components/ResourceForm";
+import { toast } from "@/components/Toast";
 
 export const Route = createFileRoute("/_authenticated/models/new")({
 	loader: ({ context }) =>
@@ -127,7 +127,7 @@ function NewModelPage() {
 	return (
 		<Suspense
 			fallback={
-				<div className="text-neutral-500 dark:text-neutral-400 text-sm">Loading…</div>
+				<div className="text-muted-foreground text-sm">Loading…</div>
 			}
 		>
 			<NewModelInner />

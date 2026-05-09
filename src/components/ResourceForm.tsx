@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { useState } from "react";
-import type { ApiErrorBody } from "#/api/types/errors";
+import type { ApiErrorBody } from "@/api/types/errors";
 
 // ---------------------------------------------------------------------------
 // Field descriptors
@@ -127,7 +127,7 @@ export function ResourceForm({
 
 	return (
 		<div>
-			<h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-6">
+			<h1 className="text-2xl font-bold text-foreground mb-6">
 				{title}
 			</h1>
 
@@ -152,7 +152,7 @@ export function ResourceForm({
 						<div key={field.name}>
 							<label
 								htmlFor={field.name}
-								className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1"
+								className="block text-sm font-medium text-foreground mb-1"
 							>
 								{field.label}
 								{field.required && (
@@ -171,7 +171,7 @@ export function ResourceForm({
 							{error && (
 								<p
 									role="alert"
-									className="mt-1 text-xs text-red-600 dark:text-red-400"
+									className="mt-1 text-xs text-destructive"
 								>
 									{error}
 								</p>
@@ -194,7 +194,7 @@ export function ResourceForm({
 						type="button"
 						onClick={onCancel}
 						disabled={isPending}
-						className="px-4 py-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-50 transition-colors"
+						className="px-4 py-2 text-sm font-medium text-foreground bg-card border border-input rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-50 transition-colors"
 					>
 						Cancel
 					</button>
@@ -216,7 +216,7 @@ interface FieldInputProps {
 
 function FieldInput({ field, value, onChange }: FieldInputProps) {
 	const inputClass =
-		"w-full border border-neutral-300 dark:border-neutral-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-brand-400";
+		"w-full border border-input rounded-lg px-3 py-2 text-sm bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand-400";
 
 	if (field.type === "textarea") {
 		return (
@@ -264,7 +264,7 @@ function FieldInput({ field, value, onChange }: FieldInputProps) {
 								"flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border cursor-pointer select-none transition-colors",
 								checked
 									? "bg-brand-600 text-white border-brand-600"
-									: "bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-300 border-neutral-300 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800",
+									: "bg-card text-foreground border-input hover:bg-neutral-50 dark:hover:bg-neutral-800",
 							].join(" ")}
 						>
 							<input

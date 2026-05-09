@@ -4,13 +4,13 @@ import {
 	routeDetailQueryOptions,
 	useRoute,
 	useUpdateRoute,
-} from "#/api/hooks/routes";
-import type { ApiErrorBody } from "#/api/types/errors";
-import { ApiError } from "#/api/types/errors";
-import type { RelayRouteUpdate } from "#/api/types/route";
-import type { FieldDef, FormValues } from "#/components/ResourceForm";
-import { ResourceForm } from "#/components/ResourceForm";
-import { toast } from "#/components/Toast";
+} from "@/api/hooks/routes";
+import type { ApiErrorBody } from "@/api/types/errors";
+import { ApiError } from "@/api/types/errors";
+import type { RelayRouteUpdate } from "@/api/types/route";
+import type { FieldDef, FormValues } from "@/components/ResourceForm";
+import { ResourceForm } from "@/components/ResourceForm";
+import { toast } from "@/components/Toast";
 
 export const Route = createFileRoute("/_authenticated/routes/$name/edit")({
 	loader: ({ context, params }) =>
@@ -81,7 +81,7 @@ function EditRoutePage() {
 	return (
 		<Suspense
 			fallback={
-				<div className="text-neutral-500 dark:text-neutral-400 text-sm">Loading…</div>
+				<div className="text-muted-foreground text-sm">Loading…</div>
 			}
 		>
 			<EditRouteInner />

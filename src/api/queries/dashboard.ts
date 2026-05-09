@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
-import { apiClient, CONTROL_API_URL } from "#/api/client";
-import type { HealthzResponse, VersionResponse } from "#/api/dashboard-types";
+import { apiClient, CONTROL_API_URL } from "@/api/client";
+import type { HealthzResponse, VersionResponse } from "@/api/dashboard-types";
 
 export type { VersionResponse };
 

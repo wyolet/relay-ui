@@ -22,15 +22,15 @@ import {
 } from "@tanstack/react-router";
 import { CheckCircle, Circle, Loader2 } from "lucide-react";
 import { Suspense, useState } from "react";
-import { useGenerateMasterKey } from "#/api/hooks/masterKey";
-import { useCreateModel } from "#/api/hooks/models";
-import { poolsListQueryOptions, useCreatePool } from "#/api/hooks/pools";
+import { useGenerateMasterKey } from "@/api/hooks/masterKey";
+import { useCreateModel } from "@/api/hooks/models";
+import { poolsListQueryOptions, useCreatePool } from "@/api/hooks/pools";
 import {
 	providersListQueryOptions,
 	useCreateProvider,
-} from "#/api/hooks/providers";
-import { secretsListQueryOptions, useCreateSecret } from "#/api/hooks/secrets";
-import type { SecretKind } from "#/api/types/secret";
+} from "@/api/hooks/providers";
+import { secretsListQueryOptions, useCreateSecret } from "@/api/hooks/secrets";
+import type { SecretKind } from "@/api/types/secret";
 
 // ---------------------------------------------------------------------------
 // Search schema & validator
@@ -106,7 +106,7 @@ function Stepper({ currentStep }: StepperProps) {
 								? "bg-brand-50 dark:bg-brand-950 text-brand-700 dark:text-brand-300 font-semibold"
 								: done
 									? "text-green-700 dark:text-green-400"
-									: "text-neutral-400 dark:text-neutral-500",
+									: "text-muted-foreground",
 						].join(" ")}
 					>
 						{done ? (
@@ -179,10 +179,10 @@ function MasterKeyStep({ search }: MasterKeyStepProps) {
 	return (
 		<div className="space-y-6 max-w-xl">
 			<div>
-				<h2 className="text-xl font-bold text-neutral-900 dark:text-neutral-100 mb-1">
+				<h2 className="text-xl font-bold text-foreground mb-1">
 					Master Key Setup
 				</h2>
-				<p className="text-sm text-neutral-600 dark:text-neutral-400">
+				<p className="text-sm text-muted-foreground">
 					Relay can encrypt stored secrets at rest using a master key. Choose
 					how you want to manage API credentials.
 				</p>
@@ -193,12 +193,12 @@ function MasterKeyStep({ search }: MasterKeyStepProps) {
 					<button
 						type="button"
 						onClick={handleSkip}
-						className="flex-1 border border-neutral-300 dark:border-neutral-700 rounded-lg px-4 py-3 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors text-left"
+						className="flex-1 border border-input rounded-lg px-4 py-3 text-sm text-foreground hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors text-left"
 					>
 						<span className="font-semibold block mb-1">
 							Use env-ref secrets only
 						</span>
-						<span className="text-neutral-500 dark:text-neutral-400">
+						<span className="text-muted-foreground">
 							API keys stay in environment variables. No master key needed.
 						</span>
 					</button>
@@ -219,7 +219,7 @@ function MasterKeyStep({ search }: MasterKeyStepProps) {
 			)}
 
 			{generateMutation.isError && (
-				<p className="text-red-600 dark:text-red-400 text-sm">
+				<p className="text-destructive text-sm">
 					Failed to generate key:{" "}
 					{generateMutation.error instanceof Error
 						? generateMutation.error.message
@@ -234,7 +234,7 @@ function MasterKeyStep({ search }: MasterKeyStepProps) {
 						<p className="text-sm font-bold text-red-700 dark:text-red-300 mb-1">
 							Store this key now — it will never be shown again.
 						</p>
-						<p className="text-sm text-red-600 dark:text-red-400">
+						<p className="text-sm text-destructive">
 							If you lose this key, all stored secrets become unrecoverable and
 							you will need to rotate every API credential manually. Treat it
 							like a root password.
@@ -249,7 +249,7 @@ function MasterKeyStep({ search }: MasterKeyStepProps) {
 						<button
 							type="button"
 							onClick={handleCopy}
-							className="shrink-0 px-3 py-2 border border-neutral-300 dark:border-neutral-700 rounded-lg text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+							className="shrink-0 px-3 py-2 border border-input rounded-lg text-sm text-foreground hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
 						>
 							{copied ? "Copied!" : "Copy"}
 						</button>
@@ -263,7 +263,7 @@ function MasterKeyStep({ search }: MasterKeyStepProps) {
 							onChange={(e) => setConfirmed(e.target.checked)}
 							className="mt-0.5 h-4 w-4 rounded border-neutral-300 dark:border-neutral-600 text-brand-600"
 						/>
-						<span className="text-sm text-neutral-700 dark:text-neutral-300">
+						<span className="text-sm text-foreground">
 							I have stored the master key securely.
 						</span>
 					</label>
@@ -271,12 +271,12 @@ function MasterKeyStep({ search }: MasterKeyStepProps) {
 					{/* Deployment instructions */}
 					{confirmed && (
 						<div className="space-y-3">
-							<p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
+							<p className="text-sm font-semibold text-foreground">
 								Restart your Relay deployment with the master key:
 							</p>
 
 							<div>
-								<p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">
+								<p className="text-xs text-muted-foreground mb-1">
 									docker-compose
 								</p>
 								<pre className="bg-neutral-900 text-green-400 text-xs rounded-lg px-4 py-3 overflow-x-auto font-mono whitespace-pre">
@@ -286,7 +286,7 @@ function MasterKeyStep({ search }: MasterKeyStepProps) {
 							</div>
 
 							<div>
-								<p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">
+								<p className="text-xs text-muted-foreground mb-1">
 									kubectl
 								</p>
 								<pre className="bg-neutral-900 text-green-400 text-xs rounded-lg px-4 py-3 overflow-x-auto font-mono whitespace-pre">
@@ -299,7 +299,7 @@ function MasterKeyStep({ search }: MasterKeyStepProps) {
 
 					{/* Waiting for detection */}
 					{waitingForDetection && (
-						<div className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400">
+						<div className="flex items-center gap-2 text-sm text-muted-foreground">
 							<Loader2 className="w-4 h-4 animate-spin" />
 							<span>Waiting for master key to be detected…</span>
 						</div>
@@ -346,10 +346,10 @@ function ProviderStep({ search }: ProviderStepProps) {
 	return (
 		<div className="space-y-6 max-w-xl">
 			<div>
-				<h2 className="text-xl font-bold text-neutral-900 dark:text-neutral-100 mb-1">
+				<h2 className="text-xl font-bold text-foreground mb-1">
 					Add your first Provider
 				</h2>
-				<p className="text-sm text-neutral-600 dark:text-neutral-400">
+				<p className="text-sm text-muted-foreground">
 					A provider connects Relay to an upstream LLM API (e.g. OpenAI, a local
 					Ollama instance).
 				</p>
@@ -358,7 +358,7 @@ function ProviderStep({ search }: ProviderStepProps) {
 			<form onSubmit={handleSubmit} className="space-y-4">
 				<div>
 					<label
-						className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1"
+						className="block text-sm font-medium text-foreground mb-1"
 						htmlFor="provider-name"
 					>
 						Name
@@ -369,13 +369,13 @@ function ProviderStep({ search }: ProviderStepProps) {
 						value={name}
 						onChange={(e) => setName(e.target.value)}
 						required
-						className="w-full rounded-lg border border-neutral-300 dark:border-neutral-700 px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+						className="w-full rounded-lg border border-input px-3 py-2 text-sm bg-card text-foreground focus:border-brand-500 focus:outline-none focus:ring-1 focus-visible:ring-ring"
 					/>
 				</div>
 
 				<div>
 					<label
-						className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1"
+						className="block text-sm font-medium text-foreground mb-1"
 						htmlFor="provider-kind"
 					>
 						Kind
@@ -384,7 +384,7 @@ function ProviderStep({ search }: ProviderStepProps) {
 						id="provider-kind"
 						value={kind}
 						onChange={(e) => setKind(e.target.value)}
-						className="w-full rounded-lg border border-neutral-300 dark:border-neutral-700 px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+						className="w-full rounded-lg border border-input px-3 py-2 text-sm bg-card text-foreground focus:border-brand-500 focus:outline-none focus:ring-1 focus-visible:ring-ring"
 					>
 						<option value="openai">OpenAI</option>
 						<option value="ollama">Ollama</option>
@@ -393,7 +393,7 @@ function ProviderStep({ search }: ProviderStepProps) {
 
 				<div>
 					<label
-						className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1"
+						className="block text-sm font-medium text-foreground mb-1"
 						htmlFor="provider-base-url"
 					>
 						Base URL
@@ -404,12 +404,12 @@ function ProviderStep({ search }: ProviderStepProps) {
 						value={baseURL}
 						onChange={(e) => setBaseURL(e.target.value)}
 						required
-						className="w-full rounded-lg border border-neutral-300 dark:border-neutral-700 px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+						className="w-full rounded-lg border border-input px-3 py-2 text-sm bg-card text-foreground focus:border-brand-500 focus:outline-none focus:ring-1 focus-visible:ring-ring"
 					/>
 				</div>
 
 				{createProvider.isError && (
-					<p className="text-red-600 dark:text-red-400 text-sm">
+					<p className="text-destructive text-sm">
 						{createProvider.error instanceof Error
 							? createProvider.error.message
 							: "Failed to create provider"}
@@ -472,10 +472,10 @@ function SecretStep({ search }: SecretStepProps) {
 	return (
 		<div className="space-y-6 max-w-xl">
 			<div>
-				<h2 className="text-xl font-bold text-neutral-900 dark:text-neutral-100 mb-1">
+				<h2 className="text-xl font-bold text-foreground mb-1">
 					Add your first Secret
 				</h2>
-				<p className="text-sm text-neutral-600 dark:text-neutral-400">
+				<p className="text-sm text-muted-foreground">
 					Secrets hold API credentials used by pools to authenticate with
 					providers.
 				</p>
@@ -484,7 +484,7 @@ function SecretStep({ search }: SecretStepProps) {
 			<form onSubmit={handleSubmit} className="space-y-4">
 				<div>
 					<label
-						className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1"
+						className="block text-sm font-medium text-foreground mb-1"
 						htmlFor="secret-name"
 					>
 						Name
@@ -495,12 +495,12 @@ function SecretStep({ search }: SecretStepProps) {
 						value={name}
 						onChange={(e) => setName(e.target.value)}
 						required
-						className="w-full rounded-lg border border-neutral-300 dark:border-neutral-700 px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+						className="w-full rounded-lg border border-input px-3 py-2 text-sm bg-card text-foreground focus:border-brand-500 focus:outline-none focus:ring-1 focus-visible:ring-ring"
 					/>
 				</div>
 
 				<div>
-					<span className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+					<span className="block text-sm font-medium text-foreground mb-2">
 						Mode
 					</span>
 					<div className="flex gap-3">
@@ -512,7 +512,7 @@ function SecretStep({ search }: SecretStepProps) {
 								checked={kind === "env"}
 								onChange={() => setKind("env")}
 							/>
-							<span className="text-sm text-neutral-900 dark:text-neutral-100">
+							<span className="text-sm text-foreground">
 								Environment variable
 							</span>
 						</label>
@@ -532,10 +532,10 @@ function SecretStep({ search }: SecretStepProps) {
 								onChange={() => setKind("stored")}
 								disabled={!masterKeyConfigured}
 							/>
-							<span className="text-sm text-neutral-900 dark:text-neutral-100">
+							<span className="text-sm text-foreground">
 								Stored (encrypted)
 								{!masterKeyConfigured && (
-									<span className="ml-1 text-xs text-neutral-400 dark:text-neutral-500">
+									<span className="ml-1 text-xs text-muted-foreground">
 										— requires master key
 									</span>
 								)}
@@ -547,7 +547,7 @@ function SecretStep({ search }: SecretStepProps) {
 				{kind === "env" ? (
 					<div>
 						<label
-							className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1"
+							className="block text-sm font-medium text-foreground mb-1"
 							htmlFor="secret-env-var"
 						>
 							Environment variable name
@@ -558,7 +558,7 @@ function SecretStep({ search }: SecretStepProps) {
 							value={envVar}
 							onChange={(e) => setEnvVar(e.target.value)}
 							required
-							className="w-full rounded-lg border border-neutral-300 dark:border-neutral-700 px-3 py-2 text-sm font-mono bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+							className="w-full rounded-lg border border-input px-3 py-2 text-sm font-mono bg-card text-foreground focus:border-brand-500 focus:outline-none focus:ring-1 focus-visible:ring-ring"
 						/>
 						<p className="mt-1 text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-2">
 							Make sure to set this environment variable on your Relay
@@ -568,7 +568,7 @@ function SecretStep({ search }: SecretStepProps) {
 				) : (
 					<div>
 						<label
-							className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1"
+							className="block text-sm font-medium text-foreground mb-1"
 							htmlFor="secret-value"
 						>
 							API Key
@@ -580,13 +580,13 @@ function SecretStep({ search }: SecretStepProps) {
 							onChange={(e) => setStoredValue(e.target.value)}
 							required
 							placeholder="sk-..."
-							className="w-full rounded-lg border border-neutral-300 dark:border-neutral-700 px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+							className="w-full rounded-lg border border-input px-3 py-2 text-sm bg-card text-foreground focus:border-brand-500 focus:outline-none focus:ring-1 focus-visible:ring-ring"
 						/>
 					</div>
 				)}
 
 				{createSecret.isError && (
-					<p className="text-red-600 dark:text-red-400 text-sm">
+					<p className="text-destructive text-sm">
 						{createSecret.error instanceof Error
 							? createSecret.error.message
 							: "Failed to create secret"}
@@ -668,10 +668,10 @@ function PoolStep({ search }: PoolStepProps) {
 	return (
 		<div className="space-y-6 max-w-xl">
 			<div>
-				<h2 className="text-xl font-bold text-neutral-900 dark:text-neutral-100 mb-1">
+				<h2 className="text-xl font-bold text-foreground mb-1">
 					Create your first Pool
 				</h2>
-				<p className="text-sm text-neutral-600 dark:text-neutral-400">
+				<p className="text-sm text-muted-foreground">
 					A pool binds a provider with one or more secrets and is the unit Relay
 					uses to route requests.
 				</p>
@@ -680,7 +680,7 @@ function PoolStep({ search }: PoolStepProps) {
 			<form onSubmit={handleSubmit} className="space-y-4">
 				<div>
 					<label
-						className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1"
+						className="block text-sm font-medium text-foreground mb-1"
 						htmlFor="pool-name"
 					>
 						Name
@@ -691,13 +691,13 @@ function PoolStep({ search }: PoolStepProps) {
 						value={name}
 						onChange={(e) => setName(e.target.value)}
 						required
-						className="w-full rounded-lg border border-neutral-300 dark:border-neutral-700 px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+						className="w-full rounded-lg border border-input px-3 py-2 text-sm bg-card text-foreground focus:border-brand-500 focus:outline-none focus:ring-1 focus-visible:ring-ring"
 					/>
 				</div>
 
 				<div>
 					<label
-						className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1"
+						className="block text-sm font-medium text-foreground mb-1"
 						htmlFor="pool-provider"
 					>
 						Provider
@@ -706,7 +706,7 @@ function PoolStep({ search }: PoolStepProps) {
 						id="pool-provider"
 						value={provider}
 						onChange={(e) => setProvider(e.target.value)}
-						className="w-full rounded-lg border border-neutral-300 dark:border-neutral-700 px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+						className="w-full rounded-lg border border-input px-3 py-2 text-sm bg-card text-foreground focus:border-brand-500 focus:outline-none focus:ring-1 focus-visible:ring-ring"
 					>
 						{(providersQuery.data.items ?? []).map((p) => (
 							<option key={p.metadata.name} value={p.metadata.name}>
@@ -717,7 +717,7 @@ function PoolStep({ search }: PoolStepProps) {
 				</div>
 
 				<div>
-					<span className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+					<span className="block text-sm font-medium text-foreground mb-2">
 						Secrets
 					</span>
 					<div className="space-y-2">
@@ -732,13 +732,13 @@ function PoolStep({ search }: PoolStepProps) {
 									onChange={() => toggleSecret(s.name)}
 									className="h-4 w-4 rounded border-neutral-300 dark:border-neutral-600 text-brand-600"
 								/>
-								<span className="text-sm text-neutral-900 dark:text-neutral-100">
+								<span className="text-sm text-foreground">
 									{s.name}
 								</span>
 							</label>
 						))}
 						{(secretsQuery.data.items ?? []).length === 0 && (
-							<p className="text-sm text-neutral-400 dark:text-neutral-500">
+							<p className="text-sm text-muted-foreground">
 								No secrets found.
 							</p>
 						)}
@@ -746,7 +746,7 @@ function PoolStep({ search }: PoolStepProps) {
 				</div>
 
 				{createPool.isError && (
-					<p className="text-red-600 dark:text-red-400 text-sm">
+					<p className="text-destructive text-sm">
 						{createPool.error instanceof Error
 							? createPool.error.message
 							: "Failed to create pool"}
@@ -816,10 +816,10 @@ function ModelStep({ search }: ModelStepProps) {
 	return (
 		<div className="space-y-6 max-w-xl">
 			<div>
-				<h2 className="text-xl font-bold text-neutral-900 dark:text-neutral-100 mb-1">
+				<h2 className="text-xl font-bold text-foreground mb-1">
 					Add your first Model
 				</h2>
-				<p className="text-sm text-neutral-600 dark:text-neutral-400">
+				<p className="text-sm text-muted-foreground">
 					Models map a friendly alias to an upstream model identifier served by
 					a provider.
 				</p>
@@ -828,7 +828,7 @@ function ModelStep({ search }: ModelStepProps) {
 			<form onSubmit={handleSubmit} className="space-y-4">
 				<div>
 					<label
-						className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1"
+						className="block text-sm font-medium text-foreground mb-1"
 						htmlFor="model-name"
 					>
 						Alias (used in API calls)
@@ -839,13 +839,13 @@ function ModelStep({ search }: ModelStepProps) {
 						value={name}
 						onChange={(e) => handleNameChange(e.target.value)}
 						required
-						className="w-full rounded-lg border border-neutral-300 dark:border-neutral-700 px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+						className="w-full rounded-lg border border-input px-3 py-2 text-sm bg-card text-foreground focus:border-brand-500 focus:outline-none focus:ring-1 focus-visible:ring-ring"
 					/>
 				</div>
 
 				<div>
 					<label
-						className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1"
+						className="block text-sm font-medium text-foreground mb-1"
 						htmlFor="model-provider"
 					>
 						Provider
@@ -854,7 +854,7 @@ function ModelStep({ search }: ModelStepProps) {
 						id="model-provider"
 						value={provider}
 						onChange={(e) => setProvider(e.target.value)}
-						className="w-full rounded-lg border border-neutral-300 dark:border-neutral-700 px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+						className="w-full rounded-lg border border-input px-3 py-2 text-sm bg-card text-foreground focus:border-brand-500 focus:outline-none focus:ring-1 focus-visible:ring-ring"
 					>
 						{(providersQuery.data.items ?? []).map((p) => (
 							<option key={p.metadata.name} value={p.metadata.name}>
@@ -866,7 +866,7 @@ function ModelStep({ search }: ModelStepProps) {
 
 				<div>
 					<label
-						className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1"
+						className="block text-sm font-medium text-foreground mb-1"
 						htmlFor="model-upstream"
 					>
 						Upstream model name
@@ -880,15 +880,15 @@ function ModelStep({ search }: ModelStepProps) {
 							setUpstreamTouched(true);
 						}}
 						required
-						className="w-full rounded-lg border border-neutral-300 dark:border-neutral-700 px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+						className="w-full rounded-lg border border-input px-3 py-2 text-sm bg-card text-foreground focus:border-brand-500 focus:outline-none focus:ring-1 focus-visible:ring-ring"
 					/>
-					<p className="mt-1 text-xs text-neutral-400 dark:text-neutral-500">
+					<p className="mt-1 text-xs text-muted-foreground">
 						e.g. gpt-4o, llama3.2, mistral
 					</p>
 				</div>
 
 				{createModel.isError && (
-					<p className="text-red-600 dark:text-red-400 text-sm">
+					<p className="text-destructive text-sm">
 						{createModel.error instanceof Error
 							? createModel.error.message
 							: "Failed to create model"}
@@ -992,10 +992,10 @@ function DoneStep({ search }: DoneStepProps) {
 			<div className="flex items-start gap-3">
 				<CheckCircle className="w-10 h-10 text-green-500 shrink-0 mt-0.5" />
 				<div>
-					<h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-1">
+					<h2 className="text-2xl font-bold text-foreground mb-1">
 						You&apos;re all set!
 					</h2>
-					<p className="text-sm text-neutral-600 dark:text-neutral-400">
+					<p className="text-sm text-muted-foreground">
 						Relay is configured with a provider, secret, pool, and model. Send a
 						test prompt to confirm everything is wired up.
 					</p>
@@ -1003,11 +1003,11 @@ function DoneStep({ search }: DoneStepProps) {
 			</div>
 
 			{/* Test card */}
-			<div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-6 space-y-4">
-				<h3 className="font-semibold text-neutral-900 dark:text-neutral-100">
+			<div className="rounded-xl border border-border bg-card p-6 space-y-4">
+				<h3 className="font-semibold text-foreground">
 					Test it
 				</h3>
-				<p className="text-xs text-neutral-500 dark:text-neutral-400">
+				<p className="text-xs text-muted-foreground">
 					Model: <code className="font-mono">{modelName}</code> — via{" "}
 					<code className="font-mono">/v1/chat/completions</code>
 				</p>
@@ -1018,7 +1018,7 @@ function DoneStep({ search }: DoneStepProps) {
 						onChange={(e) => setPrompt(e.target.value)}
 						required
 						placeholder="Enter a prompt…"
-						className="flex-1 rounded-lg border border-neutral-300 dark:border-neutral-700 px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 dark:placeholder-neutral-500 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+						className="flex-1 rounded-lg border border-input px-3 py-2 text-sm bg-card text-foreground placeholder:text-muted-foreground focus:border-brand-500 focus:outline-none focus:ring-1 focus-visible:ring-ring"
 					/>
 					<button
 						type="submit"
@@ -1124,7 +1124,7 @@ function BootstrapInner() {
 				return (
 					<Suspense
 						fallback={
-							<div className="text-neutral-500 dark:text-neutral-400 text-sm">
+							<div className="text-muted-foreground text-sm">
 								Loading…
 							</div>
 						}
@@ -1136,7 +1136,7 @@ function BootstrapInner() {
 				return (
 					<Suspense
 						fallback={
-							<div className="text-neutral-500 dark:text-neutral-400 text-sm">
+							<div className="text-muted-foreground text-sm">
 								Loading…
 							</div>
 						}
@@ -1149,7 +1149,7 @@ function BootstrapInner() {
 			default:
 				// step === undefined means resume computer is still computing
 				return (
-					<div className="text-neutral-500 dark:text-neutral-400 text-sm">
+					<div className="text-muted-foreground text-sm">
 						Loading…
 					</div>
 				);
@@ -1174,7 +1174,7 @@ function BootstrapInner() {
 function BootstrapPage() {
 	return (
 		<div>
-			<h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-8">
+			<h1 className="text-2xl font-bold text-foreground mb-8">
 				Setup Wizard
 			</h1>
 			<BootstrapInner />

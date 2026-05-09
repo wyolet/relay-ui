@@ -1,7 +1,7 @@
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
-import { apiClient } from "#/api/client";
-import type { AttachmentListResponse } from "#/api/types/attachment";
-import { ApiError } from "#/api/types/errors";
+import { apiClient } from "@/api/client";
+import type { AttachmentListResponse } from "@/api/types/attachment";
+import { ApiError } from "@/api/types/errors";
 
 // --- Query options ---
 

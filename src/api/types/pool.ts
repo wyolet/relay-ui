@@ -1,4 +1,4 @@
-import type { components } from "#/api/types.gen";
+import type { components } from "@/api/types.gen";
 
 export type Pool = components["schemas"]["Pool"];
 export type PoolSpec = components["schemas"]["PoolSpec"];

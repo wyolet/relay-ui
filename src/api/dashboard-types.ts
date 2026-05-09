@@ -8,7 +8,7 @@
  *       from here for backwards compat with dashboard.ts which imports VersionResponse.
  */
 
-import type { components } from "#/api/types.gen";
+import type { components } from "@/api/types.gen";
 
 /** Re-export from the generated schema so importers don't break. */
 export type VersionResponse = components["schemas"]["VersionResponse"];

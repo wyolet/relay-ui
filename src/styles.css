@@ -1,5 +1,8 @@
+@import "tailwindcss";
 /* Wyolet brand tokens (also imports tailwindcss). */
 @import "@wyolet/design/theme.css";
+/* shadcn additions (sidebar/chart tokens + base resets). */
+@import "./styles/globals.css";
 @custom-variant dark (&:where(.dark, .dark *));
 
 * {

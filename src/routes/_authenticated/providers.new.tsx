@@ -1,12 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { useCreateProvider } from "#/api/hooks/providers";
-import type { ApiErrorBody } from "#/api/types/errors";
-import { ApiError } from "#/api/types/errors";
-import type { ProviderCreate } from "#/api/types/provider";
-import type { FieldDef, FormValues } from "#/components/ResourceForm";
-import { ResourceForm } from "#/components/ResourceForm";
-import { toast } from "#/components/Toast";
+import { useCreateProvider } from "@/api/hooks/providers";
+import type { ApiErrorBody } from "@/api/types/errors";
+import { ApiError } from "@/api/types/errors";
+import type { ProviderCreate } from "@/api/types/provider";
+import type { FieldDef, FormValues } from "@/components/ResourceForm";
+import { ResourceForm } from "@/components/ResourceForm";
+import { toast } from "@/components/Toast";
 
 export const Route = createFileRoute("/_authenticated/providers/new")({
 	component: NewProviderPage,

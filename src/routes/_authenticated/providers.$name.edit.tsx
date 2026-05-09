@@ -4,13 +4,13 @@ import {
 	providerDetailQueryOptions,
 	useProvider,
 	useUpdateProvider,
-} from "#/api/hooks/providers";
-import type { ApiErrorBody } from "#/api/types/errors";
-import { ApiError } from "#/api/types/errors";
-import type { ProviderUpdate } from "#/api/types/provider";
-import type { FieldDef, FormValues } from "#/components/ResourceForm";
-import { ResourceForm } from "#/components/ResourceForm";
-import { toast } from "#/components/Toast";
+} from "@/api/hooks/providers";
+import type { ApiErrorBody } from "@/api/types/errors";
+import { ApiError } from "@/api/types/errors";
+import type { ProviderUpdate } from "@/api/types/provider";
+import type { FieldDef, FormValues } from "@/components/ResourceForm";
+import { ResourceForm } from "@/components/ResourceForm";
+import { toast } from "@/components/Toast";
 
 export const Route = createFileRoute("/_authenticated/providers/$name/edit")({
 	loader: ({ context, params }) =>
@@ -91,7 +91,7 @@ function EditProviderPage() {
 	return (
 		<Suspense
 			fallback={
-				<div className="text-neutral-500 dark:text-neutral-400 text-sm">Loading…</div>
+				<div className="text-muted-foreground text-sm">Loading…</div>
 			}
 		>
 			<EditProviderInner />

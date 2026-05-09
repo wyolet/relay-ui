@@ -4,14 +4,14 @@ import {
 	useQueryClient,
 	useSuspenseQuery,
 } from "@tanstack/react-query";
-import { apiClient } from "#/api/client";
-import { ApiError } from "#/api/types/errors";
+import { apiClient } from "@/api/client";
+import { ApiError } from "@/api/types/errors";
 import type {
 	RelayRoute,
 	RelayRouteCreate,
 	RelayRouteUpdate,
 	RouteListResponse,
-} from "#/api/types/route";
+} from "@/api/types/route";
 
 // --- Query options ---
 

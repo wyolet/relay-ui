@@ -4,14 +4,14 @@ import {
 	useQueryClient,
 	useSuspenseQuery,
 } from "@tanstack/react-query";
-import { apiClient } from "#/api/client";
-import { ApiError } from "#/api/types/errors";
+import { apiClient } from "@/api/client";
+import { ApiError } from "@/api/types/errors";
 import type {
 	Pool,
 	PoolCreate,
 	PoolListResponse,
 	PoolUpdate,
-} from "#/api/types/pool";
+} from "@/api/types/pool";
 
 // --- Query options ---
 

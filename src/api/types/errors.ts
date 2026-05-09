@@ -1,4 +1,4 @@
-import type { components } from "#/api/types.gen";
+import type { components } from "@/api/types.gen";
 
 /**
  * Standard error inner shape returned by the Relay backend.

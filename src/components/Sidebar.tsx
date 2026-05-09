@@ -14,10 +14,10 @@ import {
 	Sun,
 } from "lucide-react";
 import type { ComponentType } from "react";
-import { useAuth } from "#/api/auth";
-import { versionQueryOptions } from "#/api/queries/dashboard";
-import { useSidebarStore } from "#/stores/sidebar";
-import { type Theme, useTheme } from "#/stores/theme";
+import { useAuth } from "@/api/auth";
+import { versionQueryOptions } from "@/api/queries/dashboard";
+import { useSidebarStore } from "@/stores/sidebar";
+import { type Theme, useTheme } from "@/stores/theme";
 
 interface NavItem {
 	to: "/" | "/usage" | "/logs" | "/models" | "/routers" | "/keys" | "/settings";
@@ -91,11 +91,11 @@ function NavLink({ item, collapsed, active }: NavLinkProps) {
 				title={collapsed ? item.label : undefined}
 				className={[
 					"group relative flex items-center gap-3 rounded-md text-sm transition-colors",
-					"focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500",
+					"focus:outline-none focus-visible:ring-2 focus-visible:ring-ring",
 					collapsed ? "h-9 w-9 justify-center mx-auto" : "h-9 px-2.5",
 					active
 						? "text-brand-700 dark:text-brand-300 bg-brand-50 dark:bg-brand-950/50 font-medium"
-						: "text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-800/60",
+						: "text-muted-foreground hover:text-foreground hover:bg-muted",
 				].join(" ")}
 			>
 				<span
@@ -138,9 +138,9 @@ function FooterButton({
 			aria-label={label}
 			className={[
 				"group flex items-center gap-3 rounded-md text-sm transition-colors",
-				"text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100",
-				"hover:bg-neutral-100 dark:hover:bg-neutral-800/60",
-				"focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500",
+				"text-muted-foreground hover:text-foreground",
+				"hover:bg-muted",
+				"focus:outline-none focus-visible:ring-2 focus-visible:ring-ring",
 				collapsed ? "h-9 w-9 justify-center mx-auto" : "h-9 px-2.5 w-full",
 			].join(" ")}
 		>
@@ -162,25 +162,25 @@ export function Sidebar() {
 			aria-label="Main"
 			data-collapsed={collapsed || undefined}
 			className={[
-				"shrink-0 flex flex-col bg-white dark:bg-neutral-900",
-				"border-r border-neutral-200 dark:border-neutral-800",
+				"shrink-0 flex flex-col bg-card",
+				"border-r border-border",
 				"transition-[width] duration-200 ease-out",
 				collapsed ? "w-14" : "w-56",
 			].join(" ")}
 		>
 			<div
 				className={[
-					"h-14 flex items-center border-b border-neutral-200 dark:border-neutral-800 shrink-0",
+					"h-14 flex items-center border-b border-border shrink-0",
 					collapsed ? "justify-center px-0" : "px-3 gap-2",
 				].join(" ")}
 			>
 				<BrandMark className="w-5 h-5 text-brand-600 dark:text-brand-400 shrink-0" />
 				{!collapsed && (
 					<div className="flex items-baseline gap-1.5 overflow-hidden">
-						<span className="text-[11px] font-medium tracking-[0.18em] text-neutral-400 dark:text-neutral-500 uppercase truncate">
+						<span className="text-[11px] font-medium tracking-[0.18em] text-muted-foreground uppercase truncate">
 							Wyolet
 						</span>
-						<span className="text-[11px] font-semibold tracking-[0.18em] text-neutral-900 dark:text-neutral-100 uppercase truncate">
+						<span className="text-[11px] font-semibold tracking-[0.18em] text-foreground uppercase truncate">
 							Relay
 						</span>
 					</div>
@@ -205,7 +205,7 @@ export function Sidebar() {
 
 			<div
 				className={[
-					"border-t border-neutral-200 dark:border-neutral-800 py-2 space-y-0.5",
+					"border-t border-border py-2 space-y-0.5",
 					collapsed ? "px-2" : "px-2",
 				].join(" ")}
 			>
@@ -226,7 +226,7 @@ export function Sidebar() {
 			</div>
 
 			{!collapsed && versionData && (
-				<div className="px-3 py-2 border-t border-neutral-200 dark:border-neutral-800 text-[10px] text-neutral-400 dark:text-neutral-500 tabular-nums flex items-center justify-between">
+				<div className="px-3 py-2 border-t border-border text-[10px] text-muted-foreground tabular-nums flex items-center justify-between">
 					<span>backend</span>
 					<span className="font-mono">{versionData.version}</span>
 				</div>

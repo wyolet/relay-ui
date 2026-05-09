@@ -1,9 +1,9 @@
 import { Link } from "@tanstack/react-router";
 import { AlertTriangle, ArrowDown, ArrowUp, MoreHorizontal } from "lucide-react";
 import { useState } from "react";
-import type { Model } from "#/api/types/model";
-import { Switch } from "#/components/Switch";
-import { toast } from "#/components/Toast";
+import type { Model } from "@/api/types/model";
+import { Switch } from "@/components/Switch";
+import { toast } from "@/components/Toast";
 
 export type ModelsSortKey =
 	| "name"
@@ -127,7 +127,7 @@ function SortHeader({
 		<th
 			scope="col"
 			className={[
-				"px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400",
+				"px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground",
 				align === "right" ? "text-right" : "text-left",
 			].join(" ")}
 		>
@@ -138,8 +138,8 @@ function SortHeader({
 					"inline-flex items-center gap-1 transition-colors",
 					align === "right" ? "flex-row-reverse" : "",
 					active
-						? "text-neutral-900 dark:text-neutral-100"
-						: "hover:text-neutral-700 dark:hover:text-neutral-200",
+						? "text-foreground"
+						: "hover:text-foreground",
 				].join(" ")}
 			>
 				{label}
@@ -163,21 +163,21 @@ function RowMenu({ name }: { name: string }) {
 				aria-label="Model actions"
 				aria-haspopup="menu"
 				aria-expanded={open}
-				className="h-7 w-7 inline-flex items-center justify-center rounded-md text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-800/60 transition-colors"
+				className="h-7 w-7 inline-flex items-center justify-center rounded-md text-neutral-500 hover:text-foreground hover:bg-muted transition-colors"
 			>
 				<MoreHorizontal className="w-3.5 h-3.5" />
 			</button>
 			{open && (
 				<div
 					role="menu"
-					className="absolute right-0 top-8 z-10 min-w-[140px] rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-lg py-1"
+					className="absolute right-0 top-8 z-10 min-w-[140px] rounded-md border border-border bg-card shadow-lg py-1"
 				>
 					<Link
 						to="/models/$name/edit"
 						params={{ name }}
 						role="menuitem"
 						onMouseDown={(e) => e.preventDefault()}
-						className="block px-3 py-1.5 text-xs text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800/60"
+						className="block px-3 py-1.5 text-xs text-foreground hover:bg-muted"
 					>
 						Edit
 					</Link>
@@ -189,7 +189,7 @@ function RowMenu({ name }: { name: string }) {
 							setOpen(false);
 							toast("success", "Delete model — coming soon.");
 						}}
-						className="w-full text-left px-3 py-1.5 text-xs text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30"
+						className="w-full text-left px-3 py-1.5 text-xs text-destructive hover:bg-destructive/10"
 					>
 						Delete
 					</button>
@@ -210,15 +210,15 @@ function ModelRow({ m, hideProvider }: { m: Model; hideProvider?: boolean }) {
 	const version = m.spec.version;
 
 	return (
-		<tr className="border-t border-neutral-200 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-800/40 transition-colors">
+		<tr className="border-t border-border hover:bg-muted/40 transition-colors">
 			<td className="px-3 py-2">
 				<Link
 					to="/models/$name"
 					params={{ name: m.metadata.name }}
-					className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
+					className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
 				>
 					<div className="flex items-center gap-2 min-w-0">
-						<span className="text-sm font-medium text-neutral-900 dark:text-neutral-100 truncate">
+						<span className="text-sm font-medium text-foreground truncate">
 							{m.spec.displayName ?? m.metadata.name}
 						</span>
 						{dep && (
@@ -229,7 +229,7 @@ function ModelRow({ m, hideProvider }: { m: Model; hideProvider?: boolean }) {
 						)}
 					</div>
 					{(m.spec.displayName || dep) && (
-						<div className="text-[11px] text-neutral-500 dark:text-neutral-400 truncate">
+						<div className="text-[11px] text-muted-foreground truncate">
 							{dep ? (
 								<span className="text-amber-700 dark:text-amber-400">{dep}</span>
 							) : (
@@ -240,27 +240,27 @@ function ModelRow({ m, hideProvider }: { m: Model; hideProvider?: boolean }) {
 				</Link>
 			</td>
 			{!hideProvider && (
-				<td className="px-3 py-2 text-sm text-neutral-700 dark:text-neutral-300 capitalize">
+				<td className="px-3 py-2 text-sm text-foreground capitalize">
 					{m.spec.provider}
 				</td>
 			)}
-			<td className="px-3 py-2 text-sm text-neutral-700 dark:text-neutral-300">
+			<td className="px-3 py-2 text-sm text-foreground">
 				{family ? (
 					<>
 						{family}
 						{version && (
-							<span className="text-neutral-400 dark:text-neutral-500">
+							<span className="text-muted-foreground">
 								{" · "}
 								{version}
 							</span>
 						)}
 					</>
 				) : (
-					<span className="text-neutral-400 dark:text-neutral-600">—</span>
+					<span className="text-muted-foreground/70">—</span>
 				)}
 			</td>
 			<td
-				className="px-3 py-2 text-sm text-neutral-700 dark:text-neutral-300 text-right tabular-nums"
+				className="px-3 py-2 text-sm text-foreground text-right tabular-nums"
 				title={
 					ctxIn || ctxOut
 						? `in ${fmtTokens(ctxIn)} / out ${fmtTokens(ctxOut)}`
@@ -269,10 +269,10 @@ function ModelRow({ m, hideProvider }: { m: Model; hideProvider?: boolean }) {
 			>
 				{fmtTokens(ctx)}
 			</td>
-			<td className="px-3 py-2 text-sm text-neutral-700 dark:text-neutral-300 text-right tabular-nums">
+			<td className="px-3 py-2 text-sm text-foreground text-right tabular-nums">
 				{fmtPrice(input)}
 			</td>
-			<td className="px-3 py-2 text-sm text-neutral-700 dark:text-neutral-300 text-right tabular-nums">
+			<td className="px-3 py-2 text-sm text-foreground text-right tabular-nums">
 				{fmtPrice(output)}
 			</td>
 			<td className="px-3 py-2">
@@ -307,9 +307,9 @@ export function ModelsTable({
 	hideProvider,
 }: ModelsTableProps) {
 	return (
-		<div className="overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+		<div className="overflow-x-auto rounded-lg border border-border bg-card">
 			<table className="w-full border-collapse">
-				<thead className="bg-neutral-50 dark:bg-neutral-900/60">
+				<thead className="bg-muted/40">
 					<tr>
 						<SortHeader
 							label="Name"
@@ -360,7 +360,7 @@ export function ModelsTable({
 						/>
 						<th
 							scope="col"
-							className="w-12 px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400"
+							className="w-12 px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground"
 						>
 							On
 						</th>

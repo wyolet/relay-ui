@@ -4,14 +4,14 @@ import {
 	useQueryClient,
 	useSuspenseQuery,
 } from "@tanstack/react-query";
-import { apiClient } from "#/api/client";
-import { ApiError } from "#/api/types/errors";
+import { apiClient } from "@/api/client";
+import { ApiError } from "@/api/types/errors";
 import type {
 	RateLimit,
 	RateLimitCreate,
 	RateLimitListResponse,
 	RateLimitUpdate,
-} from "#/api/types/ratelimit";
+} from "@/api/types/ratelimit";
 
 // --- Query options ---
 

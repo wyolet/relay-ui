@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Suspense } from "react";
-import { poolsListQueryOptions, usePools } from "#/api/hooks/pools";
-import { secretsListQueryOptions, useSecrets } from "#/api/hooks/secrets";
-import type { SecretResponse } from "#/api/types/secret";
-import type { ColumnDef } from "#/components/ResourceList";
-import { ResourceList } from "#/components/ResourceList";
+import { poolsListQueryOptions, usePools } from "@/api/hooks/pools";
+import { secretsListQueryOptions, useSecrets } from "@/api/hooks/secrets";
+import type { SecretResponse } from "@/api/types/secret";
+import type { ColumnDef } from "@/components/ResourceList";
+import { ResourceList } from "@/components/ResourceList";
 
 export const Route = createFileRoute("/_authenticated/secrets/")({
 	loader: ({ context }) =>
@@ -70,7 +70,7 @@ function SecretsPage() {
 	return (
 		<Suspense
 			fallback={
-				<div className="text-neutral-500 dark:text-neutral-400 text-sm">Loading…</div>
+				<div className="text-muted-foreground text-sm">Loading…</div>
 			}
 		>
 			<SecretsList />

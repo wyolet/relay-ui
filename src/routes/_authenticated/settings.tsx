@@ -63,10 +63,10 @@ const ITEMS: SettingItem[] = [
 function SettingsPage() {
 	return (
 		<div>
-			<h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-2">
+			<h1 className="text-2xl font-bold text-foreground mb-2">
 				Settings
 			</h1>
-			<p className="text-sm text-neutral-500 dark:text-neutral-400 mb-8">
+			<p className="text-sm text-muted-foreground mb-8">
 				Change the wiring. Power-user configuration for providers, pools,
 				secrets, routes, and rate limits.
 			</p>
@@ -77,15 +77,15 @@ function SettingsPage() {
 						<Link
 							key={item.to}
 							to={item.to}
-							className="group rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 hover:border-brand-400 dark:hover:border-brand-600 transition-colors"
+							className="group rounded-lg border border-border bg-card p-4 hover:border-brand-400 dark:hover:border-brand-600 transition-colors"
 						>
 							<div className="flex items-center gap-2 mb-2">
-								<Icon className="w-4 h-4 text-neutral-500 dark:text-neutral-400 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors" />
-								<span className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
+								<Icon className="w-4 h-4 text-muted-foreground group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors" />
+								<span className="text-sm font-semibold text-foreground">
 									{item.label}
 								</span>
 							</div>
-							<p className="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed">
+							<p className="text-xs text-muted-foreground leading-relaxed">
 								{item.description}
 							</p>
 						</Link>

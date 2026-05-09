@@ -4,14 +4,14 @@ import {
 	useQueryClient,
 	useSuspenseQuery,
 } from "@tanstack/react-query";
-import { apiClient } from "#/api/client";
-import { ApiError } from "#/api/types/errors";
+import { apiClient } from "@/api/client";
+import { ApiError } from "@/api/types/errors";
 import type {
 	SecretCreate,
 	SecretListResponse,
 	SecretResponse,
 	SecretUpdate,
-} from "#/api/types/secret";
+} from "@/api/types/secret";
 
 // --- Query options ---
 

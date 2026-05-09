@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { z } from "zod";
-import { AuthError, useAuth, whoamiQueryOptions } from "#/api/auth";
+import { AuthError, useAuth, whoamiQueryOptions } from "@/api/auth";
 
 export const Route = createFileRoute("/login")({
 	async beforeLoad({ context }) {
@@ -60,8 +60,8 @@ function LiveStatus() {
 	const tone = reachable
 		? "text-brand-600 dark:text-brand-400"
 		: isError
-			? "text-red-600 dark:text-red-400"
-			: "text-neutral-400 dark:text-neutral-600";
+			? "text-destructive"
+			: "text-muted-foreground/70";
 	const label = reachable ? "alive" : isError ? "unreachable" : "checking…";
 	return (
 		<div className="flex items-center justify-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-500 tabular-nums">
@@ -101,7 +101,7 @@ function FieldRow({
 		<div>
 			<label
 				htmlFor={id}
-				className="block text-xs font-medium text-neutral-600 dark:text-neutral-400 mb-1.5"
+				className="block text-xs font-medium text-muted-foreground mb-1.5"
 			>
 				{label}
 			</label>
@@ -118,12 +118,12 @@ function FieldRow({
 				aria-describedby={hasError ? `${id}-error` : undefined}
 				className={[
 					"w-full rounded-md px-3 py-2.5 text-sm transition-shadow",
-					"text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-900",
-					"placeholder-neutral-400 dark:placeholder-neutral-500",
+					"text-foreground bg-card",
+					"placeholder:text-muted-foreground",
 					"border focus:outline-none focus:ring-2 focus:border-transparent",
 					hasError
-						? "border-red-400 dark:border-red-700 focus:ring-red-500"
-						: "border-neutral-300 dark:border-neutral-700 focus:ring-brand-500",
+						? "border-destructive focus:ring-red-500"
+						: "border-input focus-visible:ring-ring",
 					disabled ? "opacity-60 cursor-not-allowed" : "",
 				].join(" ")}
 			/>
@@ -131,7 +131,7 @@ function FieldRow({
 				<p
 					id={`${id}-error`}
 					role="alert"
-					className="text-xs text-red-600 dark:text-red-400 mt-1.5"
+					className="text-xs text-destructive mt-1.5"
 				>
 					{errors[0]}
 				</p>
@@ -177,15 +177,15 @@ function LoginPage() {
 	});
 
 	return (
-		<div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 flex flex-col items-center justify-center px-4">
+		<div className="min-h-screen bg-muted/30 flex flex-col items-center justify-center px-4">
 			<div className="w-full max-w-sm">
 				<div className="flex flex-col items-center mb-10">
 					<BrandMark className="w-9 h-9 text-brand-600 dark:text-brand-400 mb-4" />
 					<div className="flex items-baseline gap-2">
-						<span className="text-sm font-medium tracking-[0.2em] text-neutral-400 dark:text-neutral-500 uppercase">
+						<span className="text-sm font-medium tracking-[0.2em] text-muted-foreground uppercase">
 							Wyolet
 						</span>
-						<span className="text-sm font-semibold tracking-[0.2em] text-neutral-900 dark:text-neutral-100 uppercase">
+						<span className="text-sm font-semibold tracking-[0.2em] text-foreground uppercase">
 							Relay
 						</span>
 					</div>
@@ -200,7 +200,7 @@ function LoginPage() {
 					className="space-y-4"
 					aria-label="Sign in"
 				>
-					<h1 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">
+					<h1 className="text-base font-semibold text-foreground">
 						Sign in
 					</h1>
 
@@ -243,7 +243,7 @@ function LoginPage() {
 					{serverError !== null && (
 						<p
 							role="alert"
-							className="text-xs text-red-600 dark:text-red-400"
+							className="text-xs text-destructive"
 						>
 							{serverError}
 						</p>
@@ -256,7 +256,7 @@ function LoginPage() {
 							<button
 								type="submit"
 								disabled={isSubmitting || !canSubmit}
-								className="w-full rounded-md bg-brand-600 hover:bg-brand-700 active:bg-brand-800 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 focus:ring-offset-neutral-50 dark:focus:ring-offset-neutral-950"
+								className="w-full rounded-md bg-brand-600 hover:bg-brand-700 active:bg-brand-800 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus:outline-none focus:ring-2 focus-visible:ring-ring focus:ring-offset-2 focus:ring-offset-neutral-50 dark:focus:ring-offset-neutral-950"
 							>
 								{isSubmitting ? "Signing in…" : "Sign in"}
 							</button>

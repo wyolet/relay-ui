@@ -1,9 +1,9 @@
 import { useNavigate } from "@tanstack/react-router";
 import { ChevronRight, Search } from "lucide-react";
 import { useMemo, useState } from "react";
-import { useModels } from "#/api/hooks/models";
-import { useProviders } from "#/api/hooks/providers";
-import { Modal } from "#/components/Modal";
+import { useModels } from "@/api/hooks/models";
+import { useProviders } from "@/api/hooks/providers";
+import { Modal } from "@/components/Modal";
 
 interface ByokModalProps {
 	open: boolean;
@@ -55,22 +55,22 @@ export function ByokModal({ open, onClose, onPick }: ByokModalProps) {
 
 	return (
 		<Modal open={open} onClose={onClose} title="Connect a provider key">
-			<p className="text-xs text-neutral-500 dark:text-neutral-400 mb-3">
+			<p className="text-xs text-muted-foreground mb-3">
 				Pick a provider — you'll add the API key on the next screen.
 			</p>
 			<div className="relative mb-3">
-				<Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-400 dark:text-neutral-500 pointer-events-none" />
+				<Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
 				<input
 					type="search"
 					value={q}
 					onChange={(e) => setQ(e.currentTarget.value)}
 					placeholder="Search providers"
-					className="w-full h-8 pl-8 pr-3 rounded-md text-xs text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+					className="w-full h-8 pl-8 pr-3 rounded-md text-xs text-foreground bg-card border border-border placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus-visible:ring-ring focus:border-transparent"
 				/>
 			</div>
 			<ul className="max-h-72 overflow-y-auto -mx-1 px-1 flex flex-col gap-1">
 				{items.length === 0 ? (
-					<li className="px-3 py-6 text-center text-xs text-neutral-500 dark:text-neutral-400">
+					<li className="px-3 py-6 text-center text-xs text-muted-foreground">
 						No providers match.
 					</li>
 				) : (
@@ -79,19 +79,19 @@ export function ByokModal({ open, onClose, onPick }: ByokModalProps) {
 							<button
 								type="button"
 								onClick={() => pick(p.name)}
-								className="w-full flex items-center justify-between gap-3 px-3 h-10 rounded-md hover:bg-neutral-100 dark:hover:bg-neutral-800/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 transition-colors"
+								className="w-full flex items-center justify-between gap-3 px-3 h-10 rounded-md hover:bg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
 							>
 								<div className="flex items-center gap-2 min-w-0">
-									<span className="text-sm font-medium text-neutral-900 dark:text-neutral-100 truncate capitalize">
+									<span className="text-sm font-medium text-foreground truncate capitalize">
 										{p.displayName}
 									</span>
 									{p.isDefault && (
-										<span className="text-[10px] uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+										<span className="text-[10px] uppercase tracking-wide text-muted-foreground">
 											default
 										</span>
 									)}
 								</div>
-								<div className="flex items-center gap-2 text-[11px] text-neutral-500 dark:text-neutral-400 shrink-0">
+								<div className="flex items-center gap-2 text-[11px] text-muted-foreground shrink-0">
 									<span>
 										{p.modelCount} {p.modelCount === 1 ? "model" : "models"}
 									</span>

@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Suspense } from "react";
-import { providersListQueryOptions, useProviders } from "#/api/hooks/providers";
-import type { Provider } from "#/api/types/provider";
-import type { ColumnDef } from "#/components/ResourceList";
-import { ResourceList } from "#/components/ResourceList";
+import { providersListQueryOptions, useProviders } from "@/api/hooks/providers";
+import type { Provider } from "@/api/types/provider";
+import type { ColumnDef } from "@/components/ResourceList";
+import { ResourceList } from "@/components/ResourceList";
 
 export const Route = createFileRoute("/_authenticated/providers/")({
 	loader: ({ context }) =>
@@ -41,7 +41,7 @@ function ProvidersPage() {
 	return (
 		<Suspense
 			fallback={
-				<div className="text-neutral-500 dark:text-neutral-400 text-sm">Loading…</div>
+				<div className="text-muted-foreground text-sm">Loading…</div>
 			}
 		>
 			<ProvidersList />

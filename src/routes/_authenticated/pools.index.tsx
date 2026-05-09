@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Suspense } from "react";
-import { poolsListQueryOptions, usePools } from "#/api/hooks/pools";
-import type { Pool } from "#/api/types/pool";
-import type { ColumnDef } from "#/components/ResourceList";
-import { ResourceList } from "#/components/ResourceList";
+import { poolsListQueryOptions, usePools } from "@/api/hooks/pools";
+import type { Pool } from "@/api/types/pool";
+import type { ColumnDef } from "@/components/ResourceList";
+import { ResourceList } from "@/components/ResourceList";
 
 export const Route = createFileRoute("/_authenticated/pools/")({
 	loader: ({ context }) =>
@@ -47,7 +47,7 @@ function PoolsPage() {
 	return (
 		<Suspense
 			fallback={
-				<div className="text-neutral-500 dark:text-neutral-400 text-sm">Loading…</div>
+				<div className="text-muted-foreground text-sm">Loading…</div>
 			}
 		>
 			<PoolsList />

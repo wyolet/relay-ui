@@ -4,7 +4,7 @@
  * meter/amount/source live on the RateLimit itself (rules[]).
  */
 import { useRef, useState } from "react";
-import type { RateLimitAttachment } from "#/api/types/ratelimit";
+import type { RateLimitAttachment } from "@/api/types/ratelimit";
 
 interface RateLimitsEditorProps {
 	value: RateLimitAttachment[];
@@ -55,7 +55,7 @@ export function RateLimitsEditor({
 	return (
 		<div>
 			<div className="flex items-center justify-between mb-2">
-				<span className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+				<span className="block text-sm font-medium text-foreground">
 					Rate Limits
 				</span>
 				<button
@@ -69,7 +69,7 @@ export function RateLimitsEditor({
 			</div>
 
 			{rows.length === 0 ? (
-				<p className="text-sm text-neutral-500 dark:text-neutral-400">
+				<p className="text-sm text-muted-foreground">
 					No rate limits attached.
 				</p>
 			) : (
@@ -80,7 +80,7 @@ export function RateLimitsEditor({
 								aria-label={`Rate limit name for row ${idx + 1}`}
 								value={row.attachment.Ref}
 								onChange={(e) => updateRow(row.id, { Ref: e.target.value })}
-								className="flex-1 border border-neutral-300 dark:border-neutral-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-brand-400"
+								className="flex-1 border border-input rounded-lg px-3 py-2 text-sm bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-brand-400"
 							>
 								{availableRateLimits.map((name) => (
 									<option key={name} value={name}>

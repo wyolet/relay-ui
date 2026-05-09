@@ -4,14 +4,14 @@ import {
 	useQueryClient,
 	useSuspenseQuery,
 } from "@tanstack/react-query";
-import { apiClient } from "#/api/client";
-import { ApiError } from "#/api/types/errors";
+import { apiClient } from "@/api/client";
+import { ApiError } from "@/api/types/errors";
 import type {
 	Model,
 	ModelCreate,
 	ModelListResponse,
 	ModelUpdate,
-} from "#/api/types/model";
+} from "@/api/types/model";
 
 // --- Query options ---
 

@@ -1,4 +1,4 @@
-import type { components } from "#/api/types.gen";
+import type { components } from "@/api/types.gen";
 
 export type RateLimit = components["schemas"]["RateLimit"];
 export type RateLimitSpec = components["schemas"]["RateLimitSpec"];

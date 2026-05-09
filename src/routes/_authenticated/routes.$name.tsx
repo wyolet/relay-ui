@@ -4,11 +4,11 @@ import {
 	routeDetailQueryOptions,
 	useDeleteRoute,
 	useRoute,
-} from "#/api/hooks/routes";
-import { ApiError } from "#/api/types/errors";
-import type { DetailField } from "#/components/ResourceDetail";
-import { ResourceDetail } from "#/components/ResourceDetail";
-import { toast } from "#/components/Toast";
+} from "@/api/hooks/routes";
+import { ApiError } from "@/api/types/errors";
+import type { DetailField } from "@/components/ResourceDetail";
+import { ResourceDetail } from "@/components/ResourceDetail";
+import { toast } from "@/components/Toast";
 
 export const Route = createFileRoute("/_authenticated/routes/$name")({
 	loader: ({ context, params }) =>
@@ -62,7 +62,7 @@ function RouteDetailPage() {
 	return (
 		<Suspense
 			fallback={
-				<div className="text-neutral-500 dark:text-neutral-400 text-sm">Loading…</div>
+				<div className="text-muted-foreground text-sm">Loading…</div>
 			}
 		>
 			<RouteDetailInner />

@@ -1,4 +1,4 @@
-import type { components } from "#/api/types.gen";
+import type { components } from "@/api/types.gen";
 
 export type RelayRoute = components["schemas"]["Route"];
 export type RelayRouteSpec = components["schemas"]["RouteSpec"];

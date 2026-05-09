@@ -67,7 +67,7 @@ export function ResourceList<T>({
 	return (
 		<div>
 			<div className="flex items-center justify-between mb-6">
-				<h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
+				<h1 className="text-2xl font-bold text-foreground">
 					{title}
 				</h1>
 				<Link
@@ -84,12 +84,12 @@ export function ResourceList<T>({
 					placeholder="Search by name…"
 					value={search}
 					onChange={(e) => setSearch(e.target.value)}
-					className="w-full max-w-sm border border-neutral-300 dark:border-neutral-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-brand-400"
+					className="w-full max-w-sm border border-input rounded-lg px-3 py-2 text-sm bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand-400"
 				/>
 			</div>
 
 			{sorted.length === 0 ? (
-				<div className="text-center py-16 text-neutral-500 dark:text-neutral-400 text-sm">
+				<div className="text-center py-16 text-muted-foreground text-sm">
 					{search ? (
 						<p>No results for "{search}"</p>
 					) : (
@@ -105,7 +105,7 @@ export function ResourceList<T>({
 					)}
 				</div>
 			) : (
-				<div className="overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-800">
+				<div className="overflow-x-auto rounded-lg border border-border">
 					<table className="w-full text-sm">
 						<thead className="bg-neutral-50 dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700">
 							<tr>
@@ -114,7 +114,7 @@ export function ResourceList<T>({
 										key={col.key}
 										scope="col"
 										className={[
-											"px-4 py-3 text-left text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wide select-none",
+											"px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide select-none",
 											col.sortable !== false
 												? "cursor-pointer hover:text-neutral-800 dark:hover:text-neutral-200"
 												: "",
@@ -135,22 +135,22 @@ export function ResourceList<T>({
 								))}
 							</tr>
 						</thead>
-						<tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+						<tbody className="divide-y divide-border">
 							{sorted.map((row) => {
 								const rowName = getName(row);
 								return (
 									<tr
 										key={rowName}
 										onClick={() => void navigate({ to: detailTo(rowName) })}
-										className="hover:bg-neutral-50 dark:hover:bg-neutral-800 cursor-pointer transition-colors bg-white dark:bg-neutral-900"
+										className="hover:bg-neutral-50 dark:hover:bg-neutral-800 cursor-pointer transition-colors bg-card"
 									>
 										{columns.map((col) => (
 											<td
 												key={col.key}
-												className="px-4 py-3 text-neutral-900 dark:text-neutral-100"
+												className="px-4 py-3 text-foreground"
 											>
 												{col.render(row) ?? (
-													<span className="text-neutral-400 dark:text-neutral-500">
+													<span className="text-muted-foreground">
 														—
 													</span>
 												)}

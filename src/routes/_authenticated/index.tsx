@@ -1,12 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Suspense } from "react";
-import { modelsListQueryOptions } from "#/api/hooks/models";
-import { poolsListQueryOptions } from "#/api/hooks/pools";
-import { providersListQueryOptions } from "#/api/hooks/providers";
-import { rateLimitsListQueryOptions } from "#/api/hooks/ratelimits";
-import { routesListQueryOptions } from "#/api/hooks/routes";
-import { secretsListQueryOptions } from "#/api/hooks/secrets";
+import { modelsListQueryOptions } from "@/api/hooks/models";
+import { poolsListQueryOptions } from "@/api/hooks/pools";
+import { providersListQueryOptions } from "@/api/hooks/providers";
+import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
+import { routesListQueryOptions } from "@/api/hooks/routes";
+import { secretsListQueryOptions } from "@/api/hooks/secrets";
 
 export const Route = createFileRoute("/_authenticated/")({
 	component: DashboardPage,
@@ -21,11 +21,11 @@ interface CountCardProps {
 
 function CountCard({ label, count }: CountCardProps) {
 	return (
-		<div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 flex flex-col gap-1">
-			<span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wide">
+		<div className="rounded-lg border border-border bg-card p-4 flex flex-col gap-1">
+			<span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
 				{label}
 			</span>
-			<span className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 tabular-nums">
+			<span className="text-2xl font-bold text-foreground tabular-nums">
 				{count ?? "—"}
 			</span>
 		</div>
@@ -37,10 +37,10 @@ function CountCard({ label, count }: CountCardProps) {
 function WelcomePanel() {
 	return (
 		<div className="rounded-xl border border-brand-200 dark:border-brand-800 bg-brand-50 dark:bg-brand-950 p-8 text-center max-w-lg mx-auto mt-8">
-			<h2 className="text-xl font-bold text-neutral-900 dark:text-neutral-100 mb-2">
+			<h2 className="text-xl font-bold text-foreground mb-2">
 				Welcome to Relay
 			</h2>
-			<p className="text-neutral-600 dark:text-neutral-400 mb-6 text-sm">
+			<p className="text-muted-foreground mb-6 text-sm">
 				Your catalog is empty. Run the bootstrap wizard to add your first
 				provider and secret.
 			</p>
@@ -59,11 +59,11 @@ function WelcomePanel() {
 function MetricsPending() {
 	return (
 		<section>
-			<h2 className="text-sm font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wide mb-3">
+			<h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
 				Drop Counters
 			</h2>
 			{/* TODO: implement when backend exposes GET /admin/metrics */}
-			<div className="rounded-lg border border-dashed border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 px-6 py-4 text-sm text-neutral-500 dark:text-neutral-400">
+			<div className="rounded-lg border border-dashed border-input bg-neutral-50 dark:bg-neutral-800 px-6 py-4 text-sm text-muted-foreground">
 				Metrics endpoint pending — drop counters will appear here once the relay
 				backend exposes <code className="font-mono">/admin/metrics</code>.
 			</div>
@@ -96,7 +96,7 @@ function DashboardInner() {
 
 			{/* Quick stats */}
 			<section>
-				<h2 className="text-sm font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wide mb-3">
+				<h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
 					Catalog
 				</h2>
 				<div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
@@ -115,12 +115,12 @@ function DashboardInner() {
 function DashboardPage() {
 	return (
 		<div>
-			<h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-6">
+			<h1 className="text-2xl font-bold text-foreground mb-6">
 				Dashboard
 			</h1>
 			<Suspense
 				fallback={
-					<div className="text-neutral-500 dark:text-neutral-400 text-sm">
+					<div className="text-muted-foreground text-sm">
 						Loading…
 					</div>
 				}

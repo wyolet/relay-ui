@@ -4,6 +4,32 @@
  */
 import { create } from "zustand";
 
+export interface RateLimitRefDraft {
+	kind: "ref";
+	name: string;
+}
+
+export interface RateLimitRule {
+	amount: number;
+	window: number; // seconds; ignored for concurrency
+}
+
+export interface RateLimitCustomDraft {
+	kind: "custom";
+	requests: RateLimitRule | null;
+	tokens: RateLimitRule | null;
+	concurrency: { amount: number } | null;
+	spend: RateLimitRule | null; // amount in dollars (UI); store as-is for mock
+}
+
+export type RateLimitDraft = RateLimitRefDraft | RateLimitCustomDraft | null;
+
+export interface RelayKeyDraft {
+	name: string;
+	expiresAt: string | null;
+	rateLimit: RateLimitDraft;
+}
+
 export interface ApiKey {
 	id: string;
 	name: string;
@@ -11,12 +37,15 @@ export interface ApiKey {
 	createdAt: string;
 	lastUsedAt: string | null;
 	revokedAt: string | null;
+	expiresAt: string | null;
+	rateLimit: RateLimitDraft;
 }
 
 interface KeysState {
 	items: ApiKey[];
 	freshSecrets: Record<string, string>;
-	createKey: (name: string) => { id: string; secret: string };
+	createKey: (draft: RelayKeyDraft) => { id: string; secret: string };
+	updateKey: (id: string, draft: RelayKeyDraft) => void;
 	revoke: (id: string) => void;
 	clearSecret: (id: string) => void;
 }
@@ -49,6 +78,14 @@ const seed: ApiKey[] = [
 		createdAt: new Date(Date.now() - 3 * 86_400_000).toISOString(),
 		lastUsedAt: new Date(Date.now() - 2 * 60_000).toISOString(),
 		revokedAt: null,
+		expiresAt: null,
+		rateLimit: {
+			kind: "custom",
+			requests: { amount: 60, window: 60 },
+			tokens: { amount: 120_000, window: 60 },
+			concurrency: { amount: 5 },
+			spend: { amount: 10, window: 86_400 },
+		},
 	},
 	{
 		id: "def456",
@@ -57,6 +94,8 @@ const seed: ApiKey[] = [
 		createdAt: new Date(Date.now() - 6 * 86_400_000).toISOString(),
 		lastUsedAt: new Date(Date.now() - 60 * 60_000).toISOString(),
 		revokedAt: null,
+		expiresAt: new Date(Date.now() + 30 * 86_400_000).toISOString(),
+		rateLimit: { kind: "ref", name: "free-tier" },
 	},
 	{
 		id: "ghi789",
@@ -65,22 +104,26 @@ const seed: ApiKey[] = [
 		createdAt: new Date().toISOString(),
 		lastUsedAt: null,
 		revokedAt: null,
+		expiresAt: null,
+		rateLimit: null,
 	},
 ];
 
 export const useKeysStore = create<KeysState>((set) => ({
 	items: seed,
 	freshSecrets: {},
-	createKey: (name) => {
+	createKey: (draft) => {
 		const id = newId();
 		const { secret, prefix } = newSecret();
 		const next: ApiKey = {
 			id,
-			name,
+			name: draft.name,
 			prefix,
 			createdAt: new Date().toISOString(),
 			lastUsedAt: null,
 			revokedAt: null,
+			expiresAt: draft.expiresAt,
+			rateLimit: draft.rateLimit,
 		};
 		set((s) => ({
 			items: [next, ...s.items],
@@ -88,6 +131,19 @@ export const useKeysStore = create<KeysState>((set) => ({
 		}));
 		return { id, secret };
 	},
+	updateKey: (id, draft) =>
+		set((s) => ({
+			items: s.items.map((k) =>
+				k.id === id
+					? {
+							...k,
+							name: draft.name,
+							expiresAt: draft.expiresAt,
+							rateLimit: draft.rateLimit,
+						}
+					: k,
+			),
+		})),
 	revoke: (id) =>
 		set((s) => ({
 			items: s.items.map((k) =>

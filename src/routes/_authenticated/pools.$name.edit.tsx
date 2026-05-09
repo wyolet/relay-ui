@@ -4,19 +4,19 @@ import {
 	poolDetailQueryOptions,
 	usePool,
 	useUpdatePool,
-} from "#/api/hooks/pools";
-import { providersListQueryOptions, useProviders } from "#/api/hooks/providers";
+} from "@/api/hooks/pools";
+import { providersListQueryOptions, useProviders } from "@/api/hooks/providers";
 import {
 	rateLimitsListQueryOptions,
 	useRateLimits,
-} from "#/api/hooks/ratelimits";
-import { secretsListQueryOptions, useSecrets } from "#/api/hooks/secrets";
-import type { ApiErrorBody } from "#/api/types/errors";
-import { ApiError } from "#/api/types/errors";
-import type { PoolUpdate } from "#/api/types/pool";
-import type { RateLimitAttachment } from "#/api/types/ratelimit";
-import { RateLimitsEditor } from "#/components/RateLimitsEditor";
-import { toast } from "#/components/Toast";
+} from "@/api/hooks/ratelimits";
+import { secretsListQueryOptions, useSecrets } from "@/api/hooks/secrets";
+import type { ApiErrorBody } from "@/api/types/errors";
+import { ApiError } from "@/api/types/errors";
+import type { PoolUpdate } from "@/api/types/pool";
+import type { RateLimitAttachment } from "@/api/types/ratelimit";
+import { RateLimitsEditor } from "@/components/RateLimitsEditor";
+import { toast } from "@/components/Toast";
 
 export const Route = createFileRoute("/_authenticated/pools/$name/edit")({
 	loader: ({ context, params }) =>
@@ -94,7 +94,7 @@ function EditPoolFormInner() {
 
 	return (
 		<div>
-			<h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-6">
+			<h1 className="text-2xl font-bold text-foreground mb-6">
 				Edit Pool: {name}
 			</h1>
 
@@ -112,7 +112,7 @@ function EditPoolFormInner() {
 				<div>
 					<label
 						htmlFor="provider"
-						className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1"
+						className="block text-sm font-medium text-foreground mb-1"
 					>
 						Provider <span className="text-red-500">*</span>
 					</label>
@@ -120,7 +120,7 @@ function EditPoolFormInner() {
 						id="provider"
 						value={provider}
 						onChange={(e) => setProvider(e.target.value)}
-						className="w-full border border-neutral-300 dark:border-neutral-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-brand-400"
+						className="w-full border border-input rounded-lg px-3 py-2 text-sm bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-brand-400"
 					>
 						<option value="">— select —</option>
 						{(providersData.items ?? []).map((p) => (
@@ -132,7 +132,7 @@ function EditPoolFormInner() {
 					{providerError && (
 						<p
 							role="alert"
-							className="mt-1 text-xs text-red-600 dark:text-red-400"
+							className="mt-1 text-xs text-destructive"
 						>
 							{providerError}
 						</p>
@@ -142,7 +142,7 @@ function EditPoolFormInner() {
 				<div>
 					<label
 						htmlFor="secret-search"
-						className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1"
+						className="block text-sm font-medium text-foreground mb-1"
 					>
 						Secrets
 					</label>
@@ -152,10 +152,10 @@ function EditPoolFormInner() {
 						placeholder="Search secrets…"
 						value={secretSearch}
 						onChange={(e) => setSecretSearch(e.target.value)}
-						className="w-full border border-neutral-300 dark:border-neutral-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-brand-400 mb-2"
+						className="w-full border border-input rounded-lg px-3 py-2 text-sm bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand-400 mb-2"
 					/>
 					{filteredSecrets.length === 0 ? (
-						<p className="text-sm text-neutral-500 dark:text-neutral-400">
+						<p className="text-sm text-muted-foreground">
 							No secrets found.
 						</p>
 					) : (
@@ -169,7 +169,7 @@ function EditPoolFormInner() {
 											"flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border cursor-pointer select-none transition-colors",
 											checked
 												? "bg-brand-600 text-white border-brand-600"
-												: "bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-300 border-neutral-300 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800",
+												: "bg-card text-foreground border-input hover:bg-neutral-50 dark:hover:bg-neutral-800",
 										].join(" ")}
 									>
 										<input
@@ -208,7 +208,7 @@ function EditPoolFormInner() {
 							void navigate({ to: "/pools/$name", params: { name } })
 						}
 						disabled={updatePool.isPending}
-						className="px-4 py-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-50 transition-colors"
+						className="px-4 py-2 text-sm font-medium text-foreground bg-card border border-input rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-50 transition-colors"
 					>
 						Cancel
 					</button>
@@ -222,7 +222,7 @@ function EditPoolPage() {
 	return (
 		<Suspense
 			fallback={
-				<div className="text-neutral-500 dark:text-neutral-400 text-sm">Loading…</div>
+				<div className="text-muted-foreground text-sm">Loading…</div>
 			}
 		>
 			<EditPoolFormInner />
