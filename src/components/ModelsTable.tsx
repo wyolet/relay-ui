@@ -1,6 +1,9 @@
 import { Link } from "@tanstack/react-router";
-import { AlertTriangle, ArrowDown, ArrowUp } from "lucide-react";
+import { AlertTriangle, ArrowDown, ArrowUp, MoreHorizontal } from "lucide-react";
+import { useState } from "react";
 import type { Model } from "#/api/types/model";
+import { Switch } from "#/components/Switch";
+import { toast } from "#/components/Toast";
 
 export type ModelsSortKey =
 	| "name"
@@ -146,6 +149,56 @@ function SortHeader({
 	);
 }
 
+function RowMenu({ name }: { name: string }) {
+	const [open, setOpen] = useState(false);
+	return (
+		<div className="relative inline-block">
+			<button
+				type="button"
+				onClick={(e) => {
+					e.preventDefault();
+					setOpen((v) => !v);
+				}}
+				onBlur={() => setTimeout(() => setOpen(false), 150)}
+				aria-label="Model actions"
+				aria-haspopup="menu"
+				aria-expanded={open}
+				className="h-7 w-7 inline-flex items-center justify-center rounded-md text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-800/60 transition-colors"
+			>
+				<MoreHorizontal className="w-3.5 h-3.5" />
+			</button>
+			{open && (
+				<div
+					role="menu"
+					className="absolute right-0 top-8 z-10 min-w-[140px] rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-lg py-1"
+				>
+					<Link
+						to="/models/$name/edit"
+						params={{ name }}
+						role="menuitem"
+						onMouseDown={(e) => e.preventDefault()}
+						className="block px-3 py-1.5 text-xs text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800/60"
+					>
+						Edit
+					</Link>
+					<button
+						type="button"
+						role="menuitem"
+						onMouseDown={(e) => e.preventDefault()}
+						onClick={() => {
+							setOpen(false);
+							toast("success", "Delete model — coming soon.");
+						}}
+						className="w-full text-left px-3 py-1.5 text-xs text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30"
+					>
+						Delete
+					</button>
+				</div>
+			)}
+		</div>
+	);
+}
+
 function ModelRow({ m, hideProvider }: { m: Model; hideProvider?: boolean }) {
 	const dep = deprecationNote(m);
 	const ctx = m.spec.contextWindowTotal ?? m.spec.contextWindow;
@@ -222,6 +275,18 @@ function ModelRow({ m, hideProvider }: { m: Model; hideProvider?: boolean }) {
 			<td className="px-3 py-2 text-sm text-neutral-700 dark:text-neutral-300 text-right tabular-nums">
 				{fmtPrice(output)}
 			</td>
+			<td className="px-3 py-2">
+				<Switch
+					checked
+					onChange={() =>
+						toast("success", "Model enable/disable — backend support coming soon.")
+					}
+					label={`Toggle ${m.metadata.name}`}
+				/>
+			</td>
+			<td className="px-3 py-2 text-right">
+				<RowMenu name={m.metadata.name} />
+			</td>
 		</tr>
 	);
 }
@@ -293,6 +358,13 @@ export function ModelsTable({
 							onClick={onSort}
 							align="right"
 						/>
+						<th
+							scope="col"
+							className="w-12 px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400"
+						>
+							On
+						</th>
+						<th scope="col" className="w-10 px-3 py-2" aria-label="Actions" />
 					</tr>
 				</thead>
 				<tbody>

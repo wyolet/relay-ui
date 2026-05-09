@@ -27,7 +27,9 @@ import {
 	secretsListQueryOptions,
 } from "#/api/hooks/secrets";
 import { ByokModal } from "#/components/ByokModal";
+import { EditProviderKeyModal } from "#/components/EditProviderKeyModal";
 import { Modal } from "#/components/Modal";
+import { Switch } from "#/components/Switch";
 import { toast } from "#/components/Toast";
 import type { Pool } from "#/api/types/pool";
 import type { Provider } from "#/api/types/provider";
@@ -573,6 +575,9 @@ function RelayKeysPanel() {
 								<Th>Prefix</Th>
 								<Th align="right">Last used</Th>
 								<Th align="right">Created</Th>
+								<th scope="col" className="w-12 px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+									On
+								</th>
 								<th scope="col" className="w-10 px-3 py-2" aria-label="Actions" />
 							</tr>
 						</thead>
@@ -610,13 +615,29 @@ function RelayKeysPanel() {
 										<td className="px-3 py-2 text-right text-xs text-neutral-500 dark:text-neutral-400 tabular-nums">
 											{timeAgo(k.createdAt)}
 										</td>
+										<td className="px-3 py-2">
+											<Switch
+												checked={!revoked}
+												disabled={revoked}
+												onChange={(next) => {
+													if (next) return;
+													if (
+														window.confirm(`Revoke "${k.name}"? Apps using this key will start returning 401.`)
+													) {
+														revoke(k.id);
+														toast("success", `"${k.name}" revoked.`);
+													}
+												}}
+												label={`Toggle ${k.name}`}
+											/>
+										</td>
 										<td className="px-3 py-2 text-right">
 											<RowMenu
 												actions={[
 													{
-														label: "Edit name",
+														label: "Edit",
 														onClick: () =>
-															toast("success", "Edit name — coming soon."),
+															toast("success", "Edit — coming soon."),
 													},
 													{
 														label: revoked ? "Revoked" : "Revoke",
@@ -849,6 +870,9 @@ function ProviderKeysTable({
 	query,
 }: ProviderKeysTableProps) {
 	const deleteSecret = useDeleteSecret();
+	const [editing, setEditing] = useState<{ name: string; provider: string } | null>(
+		null,
+	);
 	const secretByName: Record<string, SecretResponse> = {};
 	for (const s of secrets) secretByName[s.name] = s;
 
@@ -865,8 +889,8 @@ function ProviderKeysTable({
 		}
 	}
 
-	function notImplemented(label: string) {
-		toast("success", `${label} — coming soon.`);
+	function toggleEnabled(_name: string) {
+		toast("success", "Enable/disable — backend support coming soon.");
 	}
 
 	// Build a row per (secret name, provider) — secrets live inside pools.
@@ -940,6 +964,9 @@ function ProviderKeysTable({
 						<Th>Name</Th>
 						<Th>Provider</Th>
 						<Th>Pools</Th>
+						<th scope="col" className="w-12 px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+							On
+						</th>
 						<th scope="col" className="w-10 px-3 py-2" aria-label="Actions" />
 					</tr>
 				</thead>
@@ -985,20 +1012,21 @@ function ProviderKeysTable({
 										))}
 									</div>
 								</td>
+								<td className="px-3 py-2">
+									<Switch
+										checked={!!r.secret}
+										onChange={() => toggleEnabled(r.name)}
+										label={`Toggle ${r.name}`}
+										disabled={!r.secret}
+									/>
+								</td>
 								<td className="px-3 py-2 text-right">
 									<RowMenu
 										actions={[
 											{
-												label: "Edit name",
-												onClick: () => notImplemented("Edit name"),
-											},
-											{
-												label: "Edit pools",
-												onClick: () => notImplemented("Edit pools"),
-											},
-											{
-												label: "Edit models",
-												onClick: () => notImplemented("Edit models"),
+												label: "Edit",
+												onClick: () =>
+													setEditing({ name: r.name, provider: r.provider }),
 											},
 											{
 												label: "Delete",
@@ -1013,6 +1041,14 @@ function ProviderKeysTable({
 					})}
 				</tbody>
 			</table>
+			{editing && (
+				<EditProviderKeyModal
+					open={true}
+					onClose={() => setEditing(null)}
+					secretName={editing.name}
+					providerName={editing.provider}
+				/>
+			)}
 		</div>
 	);
 }
@@ -1049,21 +1085,16 @@ function PoolsPanel() {
 					<table className="w-full border-collapse">
 						<thead className="bg-neutral-50 dark:bg-neutral-900/60">
 							<tr>
-								<th className="text-left px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
-									Name
+								<th scope="col" className="w-6 px-3 py-2" aria-label="Status" />
+								<Th>Name</Th>
+								<Th>Provider</Th>
+								<Th align="right">Keys</Th>
+								<Th align="right">Models</Th>
+								<Th align="right">Mode</Th>
+								<th scope="col" className="w-12 px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+									On
 								</th>
-								<th className="text-left px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
-									Provider
-								</th>
-								<th className="text-right px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
-									Keys
-								</th>
-								<th className="text-right px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
-									Models
-								</th>
-								<th className="text-right px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
-									Mode
-								</th>
+								<th scope="col" className="w-10 px-3 py-2" aria-label="Actions" />
 							</tr>
 						</thead>
 						<tbody>
@@ -1072,6 +1103,9 @@ function PoolsPanel() {
 									key={p.metadata.name}
 									className="border-t border-neutral-200 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-800/40 transition-colors"
 								>
+									<td className="px-3 py-2 align-middle">
+										<StatusDot tone="active" label="Active" />
+									</td>
 									<td className="px-3 py-2">
 										<Link
 											to="/pools/$name"
@@ -1106,6 +1140,35 @@ function PoolsPanel() {
 												—
 											</span>
 										)}
+									</td>
+									<td className="px-3 py-2">
+										<Switch
+											checked
+											onChange={() =>
+												toast(
+													"success",
+													"Pool enable/disable — backend support coming soon.",
+												)
+											}
+											label={`Toggle ${p.metadata.name}`}
+										/>
+									</td>
+									<td className="px-3 py-2 text-right">
+										<RowMenu
+											actions={[
+												{
+													label: "Edit",
+													onClick: () =>
+														toast("success", "Edit pool — coming soon."),
+												},
+												{
+													label: "Delete",
+													danger: true,
+													onClick: () =>
+														toast("success", "Delete pool — coming soon."),
+												},
+											]}
+										/>
 									</td>
 								</tr>
 							))}

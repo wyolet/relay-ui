@@ -6,9 +6,16 @@ interface ModalProps {
 	onClose: () => void;
 	title: string;
 	children: ReactNode;
+	size?: "sm" | "md" | "lg";
 }
 
-export function Modal({ open, onClose, title, children }: ModalProps) {
+const SIZE_CLS: Record<NonNullable<ModalProps["size"]>, string> = {
+	sm: "w-[420px]",
+	md: "w-[560px]",
+	lg: "w-[720px]",
+};
+
+export function Modal({ open, onClose, title, children, size = "sm" }: ModalProps) {
 	const ref = useRef<HTMLDialogElement | null>(null);
 
 	useEffect(() => {
@@ -38,7 +45,7 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
 			}}
 			className="bg-transparent p-0 m-auto backdrop:bg-black/40 backdrop:backdrop-blur-sm"
 		>
-			<div className="w-[420px] max-w-[calc(100vw-2rem)] rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-2xl shadow-black/10 dark:shadow-black/40 overflow-hidden">
+			<div className={`${SIZE_CLS[size]} max-w-[calc(100vw-2rem)] rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-2xl shadow-black/10 dark:shadow-black/40 overflow-hidden`}>
 				<div className="h-12 px-4 flex items-center justify-between border-b border-neutral-200 dark:border-neutral-800">
 					<h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
 						{title}

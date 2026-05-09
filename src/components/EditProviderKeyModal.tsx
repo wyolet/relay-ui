@@ -1,0 +1,337 @@
+import { useQueryClient } from "@tanstack/react-query";
+import { Trash2 } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { apiClient } from "#/api/client";
+import { useModels } from "#/api/hooks/models";
+import { usePools } from "#/api/hooks/pools";
+import { useDeleteSecret } from "#/api/hooks/secrets";
+import { ApiError } from "#/api/types/errors";
+import { Modal } from "#/components/Modal";
+import { toast } from "#/components/Toast";
+import { useKeysStore } from "#/stores/keys";
+
+interface EditProviderKeyModalProps {
+	open: boolean;
+	onClose: () => void;
+	secretName: string;
+	providerName: string;
+}
+
+type Scope = "all" | "specific";
+
+export function EditProviderKeyModal({
+	open,
+	onClose,
+	secretName,
+	providerName,
+}: EditProviderKeyModalProps) {
+	const { data: poolsData } = usePools();
+	const { data: modelsData } = useModels();
+	const relayKeyItems = useKeysStore((s) => s.items);
+	const relayKeys = useMemo(
+		() => relayKeyItems.filter((k) => k.revokedAt === null),
+		[relayKeyItems],
+	);
+	const deleteSecret = useDeleteSecret();
+	const queryClient = useQueryClient();
+
+	const providerPools = useMemo(
+		() =>
+			(poolsData.items ?? []).filter((p) => p.spec.provider === providerName),
+		[poolsData.items, providerName],
+	);
+	const providerModels = useMemo(
+		() =>
+			(modelsData.items ?? []).filter((m) => m.spec.provider === providerName),
+		[modelsData.items, providerName],
+	);
+
+	const [name, setName] = useState(secretName);
+	const [poolsScope, setPoolsScope] = useState<Scope>("specific");
+	const [selectedPools, setSelectedPools] = useState<string[]>([]);
+	const [modelsScope, setModelsScope] = useState<Scope>("all");
+	const [selectedModels, setSelectedModels] = useState<string[]>([]);
+	const [keysScope, setKeysScope] = useState<Scope>("all");
+	const [selectedRelayKeys, setSelectedRelayKeys] = useState<string[]>([]);
+	const [saving, setSaving] = useState(false);
+
+	const initRef = useRef<{ open: boolean; secret: string }>({
+		open: false,
+		secret: "",
+	});
+	useEffect(() => {
+		const last = initRef.current;
+		if (open && (!last.open || last.secret !== secretName)) {
+			const inPools = providerPools
+				.filter((p) => (p.spec.secrets ?? []).includes(secretName))
+				.map((p) => p.metadata.name);
+			setName(secretName);
+			setPoolsScope(inPools.length === providerPools.length ? "all" : "specific");
+			setSelectedPools(inPools);
+			setModelsScope("all");
+			setSelectedModels([]);
+			setKeysScope("all");
+			setSelectedRelayKeys([]);
+		}
+		initRef.current = { open, secret: secretName };
+	}, [open, secretName, providerPools]);
+
+	function toggleIn(list: string[], v: string): string[] {
+		return list.includes(v) ? list.filter((x) => x !== v) : [...list, v];
+	}
+
+	async function handleSave() {
+		setSaving(true);
+		try {
+			if (name.trim() !== secretName) {
+				toast(
+					"error",
+					"Rename requires backend support — keep the name unchanged for now.",
+				);
+				setSaving(false);
+				return;
+			}
+			const targetPoolNames =
+				poolsScope === "all"
+					? providerPools.map((p) => p.metadata.name)
+					: selectedPools;
+			const updates = providerPools.flatMap((pool) => {
+				const has = (pool.spec.secrets ?? []).includes(secretName);
+				const should = targetPoolNames.includes(pool.metadata.name);
+				if (has === should) return [];
+				const nextSecrets = should
+					? [...(pool.spec.secrets ?? []), secretName]
+					: (pool.spec.secrets ?? []).filter((s) => s !== secretName);
+				return [
+					{
+						name: pool.metadata.name,
+						body: { ...pool, spec: { ...pool.spec, secrets: nextSecrets } },
+					},
+				];
+			});
+			for (const u of updates) {
+				const { error } = await apiClient.PUT("/control/pools/{name}", {
+					params: { path: { name: u.name } },
+					body: u.body,
+				});
+				if (error) throw new ApiError(0, error.error);
+			}
+			void queryClient.invalidateQueries({ queryKey: ["pools"] });
+			toast("success", `"${secretName}" updated.`);
+			onClose();
+		} catch (err) {
+			toast(
+				"error",
+				err instanceof ApiError ? err.body.message : "Failed to save changes.",
+			);
+		} finally {
+			setSaving(false);
+		}
+	}
+
+	async function handleDelete() {
+		if (!window.confirm(`Delete key "${secretName}"? This cannot be undone.`))
+			return;
+		try {
+			await deleteSecret.mutateAsync(secretName);
+			toast("success", `"${secretName}" deleted.`);
+			onClose();
+		} catch (err) {
+			toast(
+				"error",
+				err instanceof ApiError ? err.body.message : "Failed to delete key.",
+			);
+		}
+	}
+
+	return (
+		<Modal open={open} onClose={onClose} title={`Edit ${secretName}`} size="lg">
+			<div className="flex flex-col gap-5">
+				<Field label="Name">
+					<input
+						type="text"
+						value={name}
+						onChange={(e) => setName(e.currentTarget.value)}
+						placeholder={secretName}
+						className="w-full h-8 rounded-md px-2.5 text-sm bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+					/>
+				</Field>
+
+				<ScopeRow
+					label="Pools"
+					scope={poolsScope}
+					onScopeChange={setPoolsScope}
+					options={providerPools.map((p) => ({
+						value: p.metadata.name,
+						label: p.metadata.name,
+					}))}
+					selected={selectedPools}
+					onToggle={(v) => setSelectedPools((prev) => toggleIn(prev, v))}
+					emptyHint="No pools for this provider."
+				/>
+
+				<ScopeRow
+					label="Models"
+					scope={modelsScope}
+					onScopeChange={setModelsScope}
+					options={providerModels.map((m) => ({
+						value: m.metadata.name,
+						label: m.spec.displayName ?? m.metadata.name,
+					}))}
+					selected={selectedModels}
+					onToggle={(v) => setSelectedModels((prev) => toggleIn(prev, v))}
+					emptyHint="No models registered for this provider."
+				/>
+
+				<ScopeRow
+					label="Relay keys"
+					scope={keysScope}
+					onScopeChange={setKeysScope}
+					options={relayKeys.map((k) => ({ value: k.id, label: k.name }))}
+					selected={selectedRelayKeys}
+					onToggle={(v) => setSelectedRelayKeys((prev) => toggleIn(prev, v))}
+					emptyHint="No active Relay keys."
+				/>
+
+				<div className="flex items-center justify-between gap-2 pt-3 border-t border-neutral-200 dark:border-neutral-800">
+					<button
+						type="button"
+						onClick={() => void handleDelete()}
+						className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+					>
+						<Trash2 className="w-3.5 h-3.5" />
+						Delete key
+					</button>
+					<div className="flex items-center gap-2">
+						<button
+							type="button"
+							onClick={onClose}
+							className="h-8 px-3 rounded-md text-xs font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800/60"
+						>
+							Cancel
+						</button>
+						<button
+							type="button"
+							onClick={() => void handleSave()}
+							disabled={saving}
+							className="h-8 px-3 rounded-md bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-xs font-semibold text-white disabled:opacity-50"
+						>
+							Save
+						</button>
+					</div>
+				</div>
+			</div>
+		</Modal>
+	);
+}
+
+function Field({
+	label,
+	children,
+}: {
+	label: string;
+	children: React.ReactNode;
+}) {
+	return (
+		<div>
+			<div className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400 mb-1.5">
+				{label}
+			</div>
+			{children}
+		</div>
+	);
+}
+
+interface ScopeRowProps {
+	label: string;
+	scope: Scope;
+	onScopeChange: (s: Scope) => void;
+	options: { value: string; label: string }[];
+	selected: string[];
+	onToggle: (v: string) => void;
+	emptyHint?: string;
+}
+
+function ScopeRow({
+	label,
+	scope,
+	onScopeChange,
+	options,
+	selected,
+	onToggle,
+	emptyHint,
+}: ScopeRowProps) {
+	return (
+		<div>
+			<div className="flex items-center justify-between mb-1.5">
+				<div className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+					{label}
+				</div>
+				<div className="inline-flex items-center rounded-md bg-neutral-100 dark:bg-neutral-800 p-0.5">
+					<ScopeTab active={scope === "all"} onClick={() => onScopeChange("all")}>
+						All
+					</ScopeTab>
+					<ScopeTab
+						active={scope === "specific"}
+						onClick={() => onScopeChange("specific")}
+					>
+						Specific
+					</ScopeTab>
+				</div>
+			</div>
+			{scope === "specific" && (
+				<div className="rounded-md border border-neutral-200 dark:border-neutral-800 p-2 flex flex-wrap gap-1.5 min-h-[44px]">
+					{options.length === 0 ? (
+						<span className="text-[11px] text-neutral-500 dark:text-neutral-400 px-1 py-0.5">
+							{emptyHint ?? "Nothing to pick."}
+						</span>
+					) : (
+						options.map((opt) => {
+							const on = selected.includes(opt.value);
+							return (
+								<button
+									key={opt.value}
+									type="button"
+									onClick={() => onToggle(opt.value)}
+									className={[
+										"inline-flex items-center h-6 px-2 rounded text-[11px] font-medium transition-colors",
+										on
+											? "bg-brand-600 text-white"
+											: "bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700",
+									].join(" ")}
+								>
+									{opt.label}
+								</button>
+							);
+						})
+					)}
+				</div>
+			)}
+		</div>
+	);
+}
+
+function ScopeTab({
+	active,
+	onClick,
+	children,
+}: {
+	active: boolean;
+	onClick: () => void;
+	children: React.ReactNode;
+}) {
+	return (
+		<button
+			type="button"
+			onClick={onClick}
+			className={[
+				"h-6 px-2 rounded text-[11px] font-medium transition-colors",
+				active
+					? "bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 shadow-sm"
+					: "text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100",
+			].join(" ")}
+		>
+			{children}
+		</button>
+	);
+}
