@@ -7,6 +7,7 @@ import { usePools } from "#/api/hooks/pools";
 import { useDeleteSecret } from "#/api/hooks/secrets";
 import { ApiError } from "#/api/types/errors";
 import { Modal } from "#/components/Modal";
+import { MultiSelect } from "#/components/MultiSelect";
 import { toast } from "#/components/Toast";
 import { useKeysStore } from "#/stores/keys";
 
@@ -16,8 +17,6 @@ interface EditProviderKeyModalProps {
 	secretName: string;
 	providerName: string;
 }
-
-type Scope = "all" | "specific";
 
 export function EditProviderKeyModal({
 	open,
@@ -47,11 +46,8 @@ export function EditProviderKeyModal({
 	);
 
 	const [name, setName] = useState(secretName);
-	const [poolsScope, setPoolsScope] = useState<Scope>("specific");
 	const [selectedPools, setSelectedPools] = useState<string[]>([]);
-	const [modelsScope, setModelsScope] = useState<Scope>("all");
 	const [selectedModels, setSelectedModels] = useState<string[]>([]);
-	const [keysScope, setKeysScope] = useState<Scope>("all");
 	const [selectedRelayKeys, setSelectedRelayKeys] = useState<string[]>([]);
 	const [saving, setSaving] = useState(false);
 
@@ -66,19 +62,12 @@ export function EditProviderKeyModal({
 				.filter((p) => (p.spec.secrets ?? []).includes(secretName))
 				.map((p) => p.metadata.name);
 			setName(secretName);
-			setPoolsScope(inPools.length === providerPools.length ? "all" : "specific");
 			setSelectedPools(inPools);
-			setModelsScope("all");
 			setSelectedModels([]);
-			setKeysScope("all");
 			setSelectedRelayKeys([]);
 		}
 		initRef.current = { open, secret: secretName };
 	}, [open, secretName, providerPools]);
-
-	function toggleIn(list: string[], v: string): string[] {
-		return list.includes(v) ? list.filter((x) => x !== v) : [...list, v];
-	}
 
 	async function handleSave() {
 		setSaving(true);
@@ -91,10 +80,7 @@ export function EditProviderKeyModal({
 				setSaving(false);
 				return;
 			}
-			const targetPoolNames =
-				poolsScope === "all"
-					? providerPools.map((p) => p.metadata.name)
-					: selectedPools;
+			const targetPoolNames = selectedPools;
 			const updates = providerPools.flatMap((pool) => {
 				const has = (pool.spec.secrets ?? []).includes(secretName);
 				const should = targetPoolNames.includes(pool.metadata.name);
@@ -153,43 +139,43 @@ export function EditProviderKeyModal({
 						value={name}
 						onChange={(e) => setName(e.currentTarget.value)}
 						placeholder={secretName}
-						className="w-full h-8 rounded-md px-2.5 text-sm bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+						className="w-full h-8 rounded-md px-2.5 text-sm text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
 					/>
 				</Field>
 
-				<ScopeRow
+				<PickerField
 					label="Pools"
-					scope={poolsScope}
-					onScopeChange={setPoolsScope}
+					description="Pools this key belongs to. Relay tries keys in pool order; leave empty to detach the key from every pool."
 					options={providerPools.map((p) => ({
 						value: p.metadata.name,
 						label: p.metadata.name,
 					}))}
 					selected={selectedPools}
-					onToggle={(v) => setSelectedPools((prev) => toggleIn(prev, v))}
+					onChange={setSelectedPools}
+					placeholder="Select pools…"
 					emptyHint="No pools for this provider."
 				/>
 
-				<ScopeRow
+				<PickerField
 					label="Models"
-					scope={modelsScope}
-					onScopeChange={setModelsScope}
+					description="Restrict this key to specific models. Leave empty to allow every model the provider exposes."
 					options={providerModels.map((m) => ({
 						value: m.metadata.name,
 						label: m.spec.displayName ?? m.metadata.name,
 					}))}
 					selected={selectedModels}
-					onToggle={(v) => setSelectedModels((prev) => toggleIn(prev, v))}
+					onChange={setSelectedModels}
+					placeholder="Select models…"
 					emptyHint="No models registered for this provider."
 				/>
 
-				<ScopeRow
+				<PickerField
 					label="Relay keys"
-					scope={keysScope}
-					onScopeChange={setKeysScope}
+					description="Limit which Relay API keys can use this provider key. Leave empty to allow all of them."
 					options={relayKeys.map((k) => ({ value: k.id, label: k.name }))}
 					selected={selectedRelayKeys}
-					onToggle={(v) => setSelectedRelayKeys((prev) => toggleIn(prev, v))}
+					onChange={setSelectedRelayKeys}
+					placeholder="Select relay keys…"
 					emptyHint="No active Relay keys."
 				/>
 
@@ -242,96 +228,41 @@ function Field({
 	);
 }
 
-interface ScopeRowProps {
+interface PickerFieldProps {
 	label: string;
-	scope: Scope;
-	onScopeChange: (s: Scope) => void;
+	description: string;
 	options: { value: string; label: string }[];
 	selected: string[];
-	onToggle: (v: string) => void;
+	onChange: (next: string[]) => void;
+	placeholder?: string;
 	emptyHint?: string;
 }
 
-function ScopeRow({
+function PickerField({
 	label,
-	scope,
-	onScopeChange,
+	description,
 	options,
 	selected,
-	onToggle,
+	onChange,
+	placeholder,
 	emptyHint,
-}: ScopeRowProps) {
+}: PickerFieldProps) {
 	return (
 		<div>
-			<div className="flex items-center justify-between mb-1.5">
-				<div className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
-					{label}
-				</div>
-				<div className="inline-flex items-center rounded-md bg-neutral-100 dark:bg-neutral-800 p-0.5">
-					<ScopeTab active={scope === "all"} onClick={() => onScopeChange("all")}>
-						All
-					</ScopeTab>
-					<ScopeTab
-						active={scope === "specific"}
-						onClick={() => onScopeChange("specific")}
-					>
-						Specific
-					</ScopeTab>
-				</div>
+			<div className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400 mb-1">
+				{label}
 			</div>
-			{scope === "specific" && (
-				<div className="rounded-md border border-neutral-200 dark:border-neutral-800 p-2 flex flex-wrap gap-1.5 min-h-[44px]">
-					{options.length === 0 ? (
-						<span className="text-[11px] text-neutral-500 dark:text-neutral-400 px-1 py-0.5">
-							{emptyHint ?? "Nothing to pick."}
-						</span>
-					) : (
-						options.map((opt) => {
-							const on = selected.includes(opt.value);
-							return (
-								<button
-									key={opt.value}
-									type="button"
-									onClick={() => onToggle(opt.value)}
-									className={[
-										"inline-flex items-center h-6 px-2 rounded text-[11px] font-medium transition-colors",
-										on
-											? "bg-brand-600 text-white"
-											: "bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700",
-									].join(" ")}
-								>
-									{opt.label}
-								</button>
-							);
-						})
-					)}
-				</div>
-			)}
+			<MultiSelect
+				options={options}
+				selected={selected}
+				onChange={onChange}
+				placeholder={placeholder}
+				emptyHint={emptyHint}
+				aria-label={label}
+			/>
+			<p className="mt-1 text-[11px] text-neutral-500 dark:text-neutral-400">
+				{description}
+			</p>
 		</div>
-	);
-}
-
-function ScopeTab({
-	active,
-	onClick,
-	children,
-}: {
-	active: boolean;
-	onClick: () => void;
-	children: React.ReactNode;
-}) {
-	return (
-		<button
-			type="button"
-			onClick={onClick}
-			className={[
-				"h-6 px-2 rounded text-[11px] font-medium transition-colors",
-				active
-					? "bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 shadow-sm"
-					: "text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100",
-			].join(" ")}
-		>
-			{children}
-		</button>
 	);
 }

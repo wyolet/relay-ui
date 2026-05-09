@@ -13,7 +13,8 @@ import {
 	Plus,
 	Search,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { z } from "zod";
 import { useModels, modelsListQueryOptions } from "#/api/hooks/models";
 import { usePools, poolsListQueryOptions } from "#/api/hooks/pools";
@@ -275,12 +276,55 @@ interface MenuAction {
 
 function RowMenu({ actions }: { actions: MenuAction[] }) {
 	const [open, setOpen] = useState(false);
+	const triggerRef = useRef<HTMLButtonElement | null>(null);
+	const menuRef = useRef<HTMLDivElement | null>(null);
+	const [pos, setPos] = useState<{ top: number; right: number } | null>(null);
+
+	useEffect(() => {
+		if (!open) return;
+		function onDown(e: MouseEvent) {
+			const t = e.target as Node;
+			if (triggerRef.current?.contains(t)) return;
+			if (menuRef.current?.contains(t)) return;
+			setOpen(false);
+		}
+		function onKey(e: KeyboardEvent) {
+			if (e.key === "Escape") setOpen(false);
+		}
+		document.addEventListener("mousedown", onDown);
+		document.addEventListener("keydown", onKey);
+		return () => {
+			document.removeEventListener("mousedown", onDown);
+			document.removeEventListener("keydown", onKey);
+		};
+	}, [open]);
+
+	useLayoutEffect(() => {
+		if (!open) {
+			setPos(null);
+			return;
+		}
+		function update() {
+			const t = triggerRef.current;
+			if (!t) return;
+			const r = t.getBoundingClientRect();
+			setPos({ top: r.bottom + 4, right: window.innerWidth - r.right });
+		}
+		update();
+		window.addEventListener("scroll", update, true);
+		window.addEventListener("resize", update);
+		return () => {
+			window.removeEventListener("scroll", update, true);
+			window.removeEventListener("resize", update);
+		};
+	}, [open]);
+
 	return (
-		<div className="relative inline-block">
+		<div className="inline-block">
 			<button
+				ref={triggerRef}
 				type="button"
 				onClick={() => setOpen((v) => !v)}
-				onBlur={() => setTimeout(() => setOpen(false), 150)}
 				aria-label="Row actions"
 				aria-haspopup="menu"
 				aria-expanded={open}
@@ -288,10 +332,12 @@ function RowMenu({ actions }: { actions: MenuAction[] }) {
 			>
 				<MoreHorizontal className="w-3.5 h-3.5" />
 			</button>
-			{open && (
+			{open && pos && createPortal(
 				<div
+					ref={menuRef}
 					role="menu"
-					className="absolute right-0 top-8 z-10 min-w-[180px] rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-lg py-1"
+					style={{ position: "fixed", top: pos.top, right: pos.right }}
+					className="z-[60] min-w-[180px] rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-lg py-1"
 				>
 					{actions.map((a) => (
 						<button
@@ -299,7 +345,6 @@ function RowMenu({ actions }: { actions: MenuAction[] }) {
 							type="button"
 							role="menuitem"
 							disabled={a.disabled}
-							onMouseDown={(e) => e.preventDefault()}
 							onClick={() => {
 								setOpen(false);
 								a.onClick();
@@ -315,7 +360,8 @@ function RowMenu({ actions }: { actions: MenuAction[] }) {
 							{a.label}
 						</button>
 					))}
-				</div>
+				</div>,
+				document.body,
 			)}
 		</div>
 	);

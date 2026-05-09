@@ -45,7 +45,7 @@ export function Modal({ open, onClose, title, children, size = "sm" }: ModalProp
 			}}
 			className="bg-transparent p-0 m-auto backdrop:bg-black/40 backdrop:backdrop-blur-sm"
 		>
-			<div className={`${SIZE_CLS[size]} max-w-[calc(100vw-2rem)] rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-2xl shadow-black/10 dark:shadow-black/40 overflow-hidden`}>
+			<div className={`${SIZE_CLS[size]} max-w-[calc(100vw-2rem)] rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-2xl shadow-black/10 dark:shadow-black/40`}>
 				<div className="h-12 px-4 flex items-center justify-between border-b border-neutral-200 dark:border-neutral-800">
 					<h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
 						{title}

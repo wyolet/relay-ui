@@ -17,6 +17,7 @@ import { useCreateSecret, useDeleteSecret, useSecrets } from "#/api/hooks/secret
 import { ApiError } from "#/api/types/errors";
 import type { Pool } from "#/api/types/pool";
 import type { SecretResponse } from "#/api/types/secret";
+import { MultiSelect } from "#/components/MultiSelect";
 import { toast } from "#/components/Toast";
 import { useKeysStore } from "#/stores/keys";
 
@@ -378,12 +379,9 @@ function AddKeyForm({
 	);
 	const activeApiKeys = apiKeys.filter((k) => k.revokedAt === null);
 
-	// Filter scopes (UI only — captured for future backend support)
-	const [modelsScope, setModelsScope] = useState<"all" | "specific">("all");
+	// Filters (UI only — captured for future backend support)
 	const [modelsSelected, setModelsSelected] = useState<string[]>([]);
-	const [keysScope, setKeysScope] = useState<"all" | "specific">("all");
 	const [keysSelected, setKeysSelected] = useState<string[]>([]);
-	const [poolsScope, setPoolsScope] = useState<"all" | "specific">("specific");
 	const [poolsSelected, setPoolsSelected] = useState<string[]>([pool.metadata.name]);
 
 	const form = useForm({
@@ -401,7 +399,7 @@ function AddKeyForm({
 					valueFrom: { kind: "stored", value: value.value },
 				});
 				const targetPools =
-					poolsScope === "specific" && poolsSelected.length > 0
+					poolsSelected.length > 0
 						? providerPools.filter((p) => poolsSelected.includes(p.metadata.name))
 						: [pool];
 				await Promise.all(
@@ -451,7 +449,7 @@ function AddKeyForm({
 								onBlur={field.handleBlur}
 								placeholder={`${providerName}-prod`}
 								aria-invalid={err ? true : undefined}
-								className="w-full h-8 rounded-md px-2.5 text-sm bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+								className="w-full h-8 rounded-md px-2.5 text-sm text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
 							/>
 							{err && (
 								<p className="text-[11px] text-red-600 dark:text-red-400 mt-1">
@@ -483,7 +481,7 @@ function AddKeyForm({
 									onBlur={field.handleBlur}
 									placeholder="sk-…"
 									aria-invalid={err ? true : undefined}
-									className="w-full h-8 rounded-md pl-2.5 pr-9 text-sm font-mono bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+									className="w-full h-8 rounded-md pl-2.5 pr-9 text-sm font-mono text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
 								/>
 								<button
 									type="button"
@@ -512,37 +510,37 @@ function AddKeyForm({
 				<h4 className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
 					Filters
 				</h4>
-				<ScopePicker
+				<PickerField
 					label="Models"
-					scope={modelsScope}
-					onScopeChange={setModelsScope}
+					description="Restrict this key to specific models. Leave empty to allow every model the provider exposes."
 					options={providerModels.map((m) => ({
 						value: m.metadata.name,
 						label: m.spec.displayName ?? m.metadata.name,
 					}))}
 					selected={modelsSelected}
-					onSelectedChange={setModelsSelected}
+					onChange={setModelsSelected}
+					placeholder="Select models…"
 					emptyHint="No models registered for this provider yet."
 				/>
-				<ScopePicker
-					label="API keys"
-					scope={keysScope}
-					onScopeChange={setKeysScope}
+				<PickerField
+					label="Relay keys"
+					description="Limit which Relay API keys can use this provider key. Leave empty to allow all of them."
 					options={activeApiKeys.map((k) => ({ value: k.id, label: k.name }))}
 					selected={keysSelected}
-					onSelectedChange={setKeysSelected}
+					onChange={setKeysSelected}
+					placeholder="Select relay keys…"
 					emptyHint="No active Relay keys yet."
 				/>
-				<ScopePicker
+				<PickerField
 					label="Pools"
-					scope={poolsScope}
-					onScopeChange={setPoolsScope}
+					description="Pools this key joins on save. Defaults to the current pool; pick more to add the key to several at once."
 					options={providerPools.map((p) => ({
 						value: p.metadata.name,
 						label: p.metadata.name,
 					}))}
 					selected={poolsSelected}
-					onSelectedChange={setPoolsSelected}
+					onChange={setPoolsSelected}
+					placeholder="Select pools…"
 					emptyHint="No other pools."
 				/>
 			</div>
@@ -571,105 +569,41 @@ function AddKeyForm({
 	);
 }
 
-interface ScopePickerProps {
+interface PickerFieldProps {
 	label: string;
-	scope: "all" | "specific";
-	onScopeChange: (s: "all" | "specific") => void;
+	description: string;
 	options: { value: string; label: string }[];
 	selected: string[];
-	onSelectedChange: (next: string[]) => void;
+	onChange: (next: string[]) => void;
+	placeholder?: string;
 	emptyHint?: string;
 }
 
-function ScopePicker({
+function PickerField({
 	label,
-	scope,
-	onScopeChange,
+	description,
 	options,
 	selected,
-	onSelectedChange,
+	onChange,
+	placeholder,
 	emptyHint,
-}: ScopePickerProps) {
-	function toggle(v: string) {
-		onSelectedChange(
-			selected.includes(v) ? selected.filter((x) => x !== v) : [...selected, v],
-		);
-	}
-
+}: PickerFieldProps) {
 	return (
-		<div className="flex flex-col gap-1.5">
-			<div className="flex items-center justify-between">
-				<span className="text-xs font-medium text-neutral-700 dark:text-neutral-300">
-					{label}
-				</span>
-				<div className="inline-flex items-center rounded-md bg-neutral-100 dark:bg-neutral-800 p-0.5">
-					<ScopeTab
-						active={scope === "all"}
-						onClick={() => onScopeChange("all")}
-					>
-						All
-					</ScopeTab>
-					<ScopeTab
-						active={scope === "specific"}
-						onClick={() => onScopeChange("specific")}
-					>
-						Specific
-					</ScopeTab>
-				</div>
-			</div>
-			{scope === "specific" && (
-				<div className="rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-2 flex flex-wrap gap-1.5">
-					{options.length === 0 ? (
-						<span className="text-[11px] text-neutral-500 dark:text-neutral-400 px-1 py-0.5">
-							{emptyHint ?? "Nothing to pick."}
-						</span>
-					) : (
-						options.map((opt) => {
-							const on = selected.includes(opt.value);
-							return (
-								<button
-									key={opt.value}
-									type="button"
-									onClick={() => toggle(opt.value)}
-									className={[
-										"inline-flex items-center h-6 px-2 rounded text-[11px] font-medium transition-colors",
-										on
-											? "bg-brand-600 text-white"
-											: "bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700",
-									].join(" ")}
-								>
-									{opt.label}
-								</button>
-							);
-						})
-					)}
-				</div>
-			)}
+		<div className="flex flex-col gap-1">
+			<span className="text-xs font-medium text-neutral-700 dark:text-neutral-300">
+				{label}
+			</span>
+			<MultiSelect
+				options={options}
+				selected={selected}
+				onChange={onChange}
+				placeholder={placeholder}
+				emptyHint={emptyHint}
+				aria-label={label}
+			/>
+			<p className="text-[11px] text-neutral-500 dark:text-neutral-400">
+				{description}
+			</p>
 		</div>
-	);
-}
-
-function ScopeTab({
-	active,
-	onClick,
-	children,
-}: {
-	active: boolean;
-	onClick: () => void;
-	children: React.ReactNode;
-}) {
-	return (
-		<button
-			type="button"
-			onClick={onClick}
-			className={[
-				"h-6 px-2 rounded text-[11px] font-medium transition-colors",
-				active
-					? "bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 shadow-sm"
-					: "text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100",
-			].join(" ")}
-		>
-			{children}
-		</button>
 	);
 }
