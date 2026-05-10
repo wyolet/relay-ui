@@ -127,9 +127,7 @@ export function ResourceForm({
 
 	return (
 		<div>
-			<h1 className="text-2xl font-bold text-foreground mb-6">
-				{title}
-			</h1>
+			<h1 className="text-2xl font-bold text-foreground mb-6">{title}</h1>
 
 			{/* Server error banner */}
 			{serverError && (
@@ -169,10 +167,7 @@ export function ResourceForm({
 								onChange={(v) => setValue(field.name, v)}
 							/>
 							{error && (
-								<p
-									role="alert"
-									className="mt-1 text-xs text-destructive"
-								>
+								<p role="alert" className="mt-1 text-xs text-destructive">
 									{error}
 								</p>
 							)}

@@ -38,7 +38,7 @@ function parentEditLink(kind: string, name: string) {
 	if (lowerKind === "pool") {
 		return (
 			<Link
-				to="/pools/$name/edit"
+				to="/pools/$name"
 				params={{ name }}
 				className="text-brand-600 hover:underline font-mono text-xs"
 			>
@@ -129,9 +129,7 @@ function AttachmentsInner() {
 			{/* Header */}
 			<div className="flex items-center justify-between mb-4">
 				<div>
-					<h1 className="text-2xl font-bold text-foreground">
-						Attachments
-					</h1>
+					<h1 className="text-2xl font-bold text-foreground">Attachments</h1>
 					<p className="text-sm text-muted-foreground mt-1">
 						Rate limit attachments across all resources.
 					</p>
@@ -250,9 +248,7 @@ function AttachmentsInner() {
 												{att.ratelimitName}
 											</Link>
 										</td>
-										<td className="px-4 py-3 text-foreground">
-											{att.meter}
-										</td>
+										<td className="px-4 py-3 text-foreground">{att.meter}</td>
 									</tr>
 								);
 							})}
@@ -328,9 +324,7 @@ function AttachmentsInner() {
 function AttachmentsPage() {
 	return (
 		<Suspense
-			fallback={
-				<div className="text-muted-foreground text-sm">Loading…</div>
-			}
+			fallback={<div className="text-muted-foreground text-sm">Loading…</div>}
 		>
 			<AttachmentsInner />
 		</Suspense>

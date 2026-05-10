@@ -30,9 +30,12 @@ export function rateLimitDetailQueryOptions(name: string) {
 	return queryOptions({
 		queryKey: ["ratelimits", name] as const,
 		queryFn: async (): Promise<RateLimit> => {
-			const { data, error } = await apiClient.GET("/control/ratelimits/{name}", {
-				params: { path: { name } },
-			});
+			const { data, error } = await apiClient.GET(
+				"/control/ratelimits/{name}",
+				{
+					params: { path: { name } },
+				},
+			);
 			if (error) throw new ApiError(0, error.error);
 			return data;
 		},
@@ -97,10 +100,13 @@ export function useUpdateRateLimit(name: string) {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: async (body: RateLimitUpdate): Promise<RateLimit> => {
-			const { data, error } = await apiClient.PUT("/control/ratelimits/{name}", {
-				params: { path: { name } },
-				body,
-			});
+			const { data, error } = await apiClient.PUT(
+				"/control/ratelimits/{name}",
+				{
+					params: { path: { name } },
+					body,
+				},
+			);
 			if (error) throw new ApiError(0, error.error);
 			return data;
 		},

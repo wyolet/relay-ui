@@ -55,7 +55,9 @@ export function useCreateSecret() {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: async (body: SecretCreate): Promise<SecretResponse> => {
-			const { data, error } = await apiClient.POST("/control/secrets", { body });
+			const { data, error } = await apiClient.POST("/control/secrets", {
+				body,
+			});
 			if (error) throw new ApiError(0, error.error);
 			return data;
 		},

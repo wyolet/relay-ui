@@ -12,10 +12,14 @@ import {
 import { useEffect, useState } from "react";
 import { z } from "zod";
 import { useModels } from "@/api/hooks/models";
-import { usePools, useUpdatePool } from "@/api/hooks/pools";
-import { useCreateSecret, useDeleteSecret, useSecrets } from "@/api/hooks/secrets";
+import { usePolicies, useUpdatePolicy } from "@/api/hooks/policies";
+import {
+	useCreateSecret,
+	useDeleteSecret,
+	useSecrets,
+} from "@/api/hooks/secrets";
 import { ApiError } from "@/api/types/errors";
-import type { Pool } from "@/api/types/pool";
+import type { Policy } from "@/api/types/policy";
 import type { SecretResponse } from "@/api/types/secret";
 import { confirm } from "@/components/ConfirmDialog";
 import { MultiSelect } from "@/components/MultiSelect";
@@ -33,9 +37,9 @@ export function ProviderKeys({
 	autoOpenAdd,
 	keyQuery,
 }: ProviderKeysProps) {
-	const { data: poolsData } = usePools();
+	const { data: policiesData } = usePolicies();
 	const { data: secretsData } = useSecrets();
-	const pools = (poolsData.items ?? []).filter(
+	const pools = (policiesData.items ?? []).filter(
 		(p) => p.spec.provider === providerName,
 	);
 	const secretsByName: Record<string, SecretResponse> = {};
@@ -46,10 +50,10 @@ export function ProviderKeys({
 			<div className="rounded-lg border border-dashed border-input bg-card px-6 py-14 text-center">
 				<KeyRound className="w-6 h-6 mx-auto mb-3 text-muted-foreground/50" />
 				<p className="text-sm text-muted-foreground">
-					No pools defined for this provider yet.
+					No policies defined for this provider yet.
 				</p>
 				<p className="text-xs text-muted-foreground mt-1">
-					Keys live inside pools — create one to start.
+					Keys live inside policies — create one to start.
 				</p>
 			</div>
 		);
@@ -58,8 +62,8 @@ export function ProviderKeys({
 	return (
 		<div className="flex flex-col gap-4">
 			<p className="text-xs text-muted-foreground">
-				A pool groups keys that Relay treats as interchangeable. Order = priority;
-				the first reachable key is tried first.
+				A policy bundles keys that Relay treats as interchangeable. Order =
+				priority; the first reachable key is tried first.
 			</p>
 			{pools.map((pool, idx) => (
 				<PoolCard
@@ -76,7 +80,7 @@ export function ProviderKeys({
 }
 
 interface PoolCardProps {
-	pool: Pool;
+	pool: Policy;
 	secretsByName: Record<string, SecretResponse>;
 	providerName: string;
 	autoOpenAdd?: boolean;
@@ -90,7 +94,7 @@ function PoolCard({
 	autoOpenAdd,
 	keyQuery,
 }: PoolCardProps) {
-	const updatePool = useUpdatePool(pool.metadata.name);
+	const updatePool = useUpdatePolicy(pool.metadata.name);
 	const deleteSecret = useDeleteSecret();
 	const [adding, setAdding] = useState(false);
 	const secrets = pool.spec.secrets ?? [];
@@ -123,10 +127,12 @@ function PoolCard({
 
 	async function unlink(name: string, alsoDelete: boolean) {
 		const ok = await confirm({
-			title: alsoDelete ? `Delete key ${name}?` : `Remove ${name} from this pool?`,
+			title: alsoDelete
+				? `Delete key ${name}?`
+				: `Remove ${name} from this policy?`,
 			description: alsoDelete
 				? "Deletes the key entirely. This cannot be undone."
-				: "The key stays in other pools it belongs to.",
+				: "The key stays in other policies it belongs to.",
 			confirmLabel: alsoDelete ? "Delete" : "Remove",
 			danger: alsoDelete,
 		});
@@ -139,7 +145,10 @@ function PoolCard({
 			if (alsoDelete) {
 				await deleteSecret.mutateAsync(name);
 			}
-			toast("success", alsoDelete ? "Key deleted." : "Key removed from pool.");
+			toast(
+				"success",
+				alsoDelete ? "Key deleted." : "Key removed from policy.",
+			);
 		} catch (err) {
 			toast(
 				"error",
@@ -177,7 +186,7 @@ function PoolCard({
 			<ul className="divide-y divide-border">
 				{secrets.length === 0 && !adding && (
 					<li className="px-4 py-6 text-center text-xs text-muted-foreground">
-						No keys in this pool yet.
+						No keys in this policy yet.
 					</li>
 				)}
 				{secrets.length > 0 && filteredIdx.length === 0 && (
@@ -295,7 +304,7 @@ function KeyRow({
 				</button>
 				{menuOpen && (
 					<div className="absolute right-0 top-8 z-10 min-w-[180px] rounded-md border border-border bg-card shadow-lg py-1">
-						<MenuItem onClick={onUnlink}>Remove from pool</MenuItem>
+						<MenuItem onClick={onUnlink}>Remove from policy</MenuItem>
 						<MenuItem onClick={onDelete} danger>
 							<Trash2 className="w-3.5 h-3.5" />
 							Delete key entirely
@@ -344,7 +353,12 @@ const addKeySchema = z.object({
 function firstError(errors: ReadonlyArray<unknown>): string | undefined {
 	for (const e of errors) {
 		if (typeof e === "string") return e;
-		if (e && typeof e === "object" && "message" in e && typeof e.message === "string") {
+		if (
+			e &&
+			typeof e === "object" &&
+			"message" in e &&
+			typeof e.message === "string"
+		) {
 			return e.message;
 		}
 	}
@@ -352,7 +366,7 @@ function firstError(errors: ReadonlyArray<unknown>): string | undefined {
 }
 
 interface AddKeyFormProps {
-	pool: Pool;
+	pool: Policy;
 	providerName: string;
 	existingNames: Set<string>;
 	onCancel: () => void;
@@ -367,16 +381,16 @@ function AddKeyForm({
 	onSaved,
 }: AddKeyFormProps) {
 	const createSecret = useCreateSecret();
-	const updatePool = useUpdatePool(pool.metadata.name);
+	const updatePool = useUpdatePolicy(pool.metadata.name);
 	const { data: modelsData } = useModels();
-	const { data: poolsData } = usePools();
+	const { data: policiesData } = usePolicies();
 	const apiKeys = useKeysStore((s) => s.items);
 	const [showValue, setShowValue] = useState(false);
 
 	const providerModels = (modelsData.items ?? []).filter(
 		(m) => m.spec.provider === providerName,
 	);
-	const providerPools = (poolsData.items ?? []).filter(
+	const providerPools = (policiesData.items ?? []).filter(
 		(p) => p.spec.provider === providerName,
 	);
 	const activeApiKeys = apiKeys.filter((k) => k.revokedAt === null);
@@ -384,7 +398,9 @@ function AddKeyForm({
 	// Filters (UI only — captured for future backend support)
 	const [modelsSelected, setModelsSelected] = useState<string[]>([]);
 	const [keysSelected, setKeysSelected] = useState<string[]>([]);
-	const [poolsSelected, setPoolsSelected] = useState<string[]>([pool.metadata.name]);
+	const [poolsSelected, setPoolsSelected] = useState<string[]>([
+		pool.metadata.name,
+	]);
 
 	const form = useForm({
 		defaultValues: { name: "", value: "" },
@@ -402,13 +418,18 @@ function AddKeyForm({
 				});
 				const targetPools =
 					poolsSelected.length > 0
-						? providerPools.filter((p) => poolsSelected.includes(p.metadata.name))
+						? providerPools.filter((p) =>
+								poolsSelected.includes(p.metadata.name),
+							)
 						: [pool];
 				await Promise.all(
 					targetPools.map((p) =>
 						updatePool.mutateAsync({
 							...p,
-							spec: { ...p.spec, secrets: [...(p.spec.secrets ?? []), value.name] },
+							spec: {
+								...p.spec,
+								secrets: [...(p.spec.secrets ?? []), value.name],
+							},
 						}),
 					),
 				);
@@ -454,9 +475,7 @@ function AddKeyForm({
 								className="w-full h-8 rounded-md px-2.5 text-sm text-foreground bg-card border border-input placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus-visible:ring-ring focus:border-transparent"
 							/>
 							{err && (
-								<p className="text-[11px] text-destructive mt-1">
-									{err}
-								</p>
+								<p className="text-[11px] text-destructive mt-1">{err}</p>
 							)}
 						</div>
 					);
@@ -499,9 +518,7 @@ function AddKeyForm({
 								</button>
 							</div>
 							{err && (
-								<p className="text-[11px] text-destructive mt-1">
-									{err}
-								</p>
+								<p className="text-[11px] text-destructive mt-1">{err}</p>
 							)}
 						</div>
 					);
@@ -592,9 +609,7 @@ function PickerField({
 }: PickerFieldProps) {
 	return (
 		<div className="flex flex-col gap-1">
-			<span className="text-xs font-medium text-foreground">
-				{label}
-			</span>
+			<span className="text-xs font-medium text-foreground">{label}</span>
 			<MultiSelect
 				options={options}
 				selected={selected}
@@ -603,9 +618,7 @@ function PickerField({
 				emptyHint={emptyHint}
 				aria-label={label}
 			/>
-			<p className="text-[11px] text-muted-foreground">
-				{description}
-			</p>
+			<p className="text-[11px] text-muted-foreground">{description}</p>
 		</div>
 	);
 }

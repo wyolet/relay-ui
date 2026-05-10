@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Suspense } from "react";
-import { poolsListQueryOptions, usePools } from "@/api/hooks/pools";
+import { policiesListQueryOptions, usePolicies } from "@/api/hooks/policies";
 import { secretsListQueryOptions, useSecrets } from "@/api/hooks/secrets";
 import type { SecretResponse } from "@/api/types/secret";
 import type { ColumnDef } from "@/components/ResourceList";
@@ -10,7 +10,7 @@ export const Route = createFileRoute("/_authenticated/secrets/")({
 	loader: ({ context }) =>
 		Promise.all([
 			context.queryClient.ensureQueryData(secretsListQueryOptions),
-			context.queryClient.ensureQueryData(poolsListQueryOptions),
+			context.queryClient.ensureQueryData(policiesListQueryOptions),
 		]),
 	component: SecretsPage,
 });
@@ -22,11 +22,11 @@ interface SecretRow extends SecretResponse {
 
 function SecretsList() {
 	const { data: secretsData } = useSecrets();
-	const { data: poolsData } = usePools();
+	const { data: policiesData } = usePolicies();
 
 	const rows: SecretRow[] = (secretsData.items ?? []).map((secret) => ({
 		...secret,
-		refCount: (poolsData.items ?? []).filter((pool) =>
+		refCount: (policiesData.items ?? []).filter((pool) =>
 			(pool.spec.secrets ?? []).includes(secret.name),
 		).length,
 	}));
@@ -69,9 +69,7 @@ function SecretsList() {
 function SecretsPage() {
 	return (
 		<Suspense
-			fallback={
-				<div className="text-muted-foreground text-sm">Loading…</div>
-			}
+			fallback={<div className="text-muted-foreground text-sm">Loading…</div>}
 		>
 			<SecretsList />
 		</Suspense>

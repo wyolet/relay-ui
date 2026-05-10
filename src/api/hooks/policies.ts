@@ -1,3 +1,7 @@
+/**
+ * Policy CRUD hooks. Wraps the /control/pools API (backend is still "Pool").
+ * Query keys use ["policies"] so UI invalidations are consistent with the new name.
+ */
 import {
 	queryOptions,
 	useMutation,
@@ -7,17 +11,15 @@ import {
 import { apiClient } from "@/api/client";
 import { ApiError } from "@/api/types/errors";
 import type {
-	Pool,
-	PoolCreate,
-	PoolListResponse,
-	PoolUpdate,
-} from "@/api/types/pool";
+	Policy,
+	PolicyCreate,
+	PolicyListResponse,
+	PolicyUpdate,
+} from "@/api/types/policy";
 
-// --- Query options ---
-
-export const poolsListQueryOptions = queryOptions({
-	queryKey: ["pools"] as const,
-	queryFn: async (): Promise<PoolListResponse> => {
+export const policiesListQueryOptions = queryOptions({
+	queryKey: ["policies"] as const,
+	queryFn: async (): Promise<PolicyListResponse> => {
 		const { data, error } = await apiClient.GET("/control/pools");
 		if (error) throw new ApiError(0, error.error);
 		return data;
@@ -26,10 +28,10 @@ export const poolsListQueryOptions = queryOptions({
 	gcTime: 5 * 60_000,
 });
 
-export function poolDetailQueryOptions(name: string) {
+export function policyDetailQueryOptions(name: string) {
 	return queryOptions({
-		queryKey: ["pools", name] as const,
-		queryFn: async (): Promise<Pool> => {
+		queryKey: ["policies", name] as const,
+		queryFn: async (): Promise<Policy> => {
 			const { data, error } = await apiClient.GET("/control/pools/{name}", {
 				params: { path: { name } },
 			});
@@ -41,34 +43,32 @@ export function poolDetailQueryOptions(name: string) {
 	});
 }
 
-// --- Hooks ---
-
-export function usePools() {
-	return useSuspenseQuery(poolsListQueryOptions);
+export function usePolicies() {
+	return useSuspenseQuery(policiesListQueryOptions);
 }
 
-export function usePool(name: string) {
-	return useSuspenseQuery(poolDetailQueryOptions(name));
+export function usePolicy(name: string) {
+	return useSuspenseQuery(policyDetailQueryOptions(name));
 }
 
-export function useCreatePool() {
+export function useCreatePolicy() {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: async (body: PoolCreate): Promise<Pool> => {
+		mutationFn: async (body: PolicyCreate): Promise<Policy> => {
 			const { data, error } = await apiClient.POST("/control/pools", { body });
 			if (error) throw new ApiError(0, error.error);
 			return data;
 		},
 		onSuccess: () => {
-			void queryClient.invalidateQueries({ queryKey: ["pools"] });
+			void queryClient.invalidateQueries({ queryKey: ["policies"] });
 		},
 	});
 }
 
-export function useUpdatePool(name: string) {
+export function useUpdatePolicy(name: string) {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: async (body: PoolUpdate): Promise<Pool> => {
+		mutationFn: async (body: PolicyUpdate): Promise<Policy> => {
 			const { data, error } = await apiClient.PUT("/control/pools/{name}", {
 				params: { path: { name } },
 				body,
@@ -77,12 +77,12 @@ export function useUpdatePool(name: string) {
 			return data;
 		},
 		onSuccess: () => {
-			void queryClient.invalidateQueries({ queryKey: ["pools"] });
+			void queryClient.invalidateQueries({ queryKey: ["policies"] });
 		},
 	});
 }
 
-export function useDeletePool() {
+export function useDeletePolicy() {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: async (name: string): Promise<void> => {
@@ -92,11 +92,13 @@ export function useDeletePool() {
 			if (error) throw new ApiError(0, error.error);
 		},
 		onMutate: async (name) => {
-			await queryClient.cancelQueries({ queryKey: ["pools"] });
-			const previous = queryClient.getQueryData(poolsListQueryOptions.queryKey);
+			await queryClient.cancelQueries({ queryKey: ["policies"] });
+			const previous = queryClient.getQueryData(
+				policiesListQueryOptions.queryKey,
+			);
 			queryClient.setQueryData(
-				poolsListQueryOptions.queryKey,
-				(old: PoolListResponse | undefined) => {
+				policiesListQueryOptions.queryKey,
+				(old: PolicyListResponse | undefined) => {
 					if (!old) return old;
 					return {
 						items: (old.items ?? []).filter((p) => p.metadata.name !== name),
@@ -108,13 +110,13 @@ export function useDeletePool() {
 		onError: (_err, _vars, context) => {
 			if (context?.previous !== undefined) {
 				queryClient.setQueryData(
-					poolsListQueryOptions.queryKey,
+					policiesListQueryOptions.queryKey,
 					context.previous,
 				);
 			}
 		},
 		onSuccess: () => {
-			void queryClient.invalidateQueries({ queryKey: ["pools"] });
+			void queryClient.invalidateQueries({ queryKey: ["policies"] });
 		},
 	});
 }

@@ -35,7 +35,13 @@ interface FilterChipProps {
 	children: React.ReactNode;
 }
 
-function FilterChip({ value, current, count, onClick, children }: FilterChipProps) {
+function FilterChip({
+	value,
+	current,
+	count,
+	onClick,
+	children,
+}: FilterChipProps) {
 	const active = current === value;
 	return (
 		<button
@@ -71,7 +77,9 @@ function ModelsList() {
 	const search = Route.useSearch();
 	const items = data.items ?? [];
 
-	const providers = Array.from(new Set(items.map((m) => m.spec.provider))).sort();
+	const providers = Array.from(
+		new Set(items.map((m) => m.spec.provider)),
+	).sort();
 	const filtered = applyModelFilter(items, search.q, search.provider);
 	const visible = applyModelSort(filtered, search.sort, search.dir);
 
@@ -91,9 +99,7 @@ function ModelsList() {
 		<div>
 			<div className="flex items-baseline justify-between mb-4 gap-4">
 				<div className="min-w-0">
-					<h1 className="text-lg font-semibold text-foreground">
-						Models
-					</h1>
+					<h1 className="text-lg font-semibold text-foreground">Models</h1>
 					<p className="text-xs text-muted-foreground mt-0.5">
 						Models you've registered and how Relay routes traffic to them.
 					</p>
@@ -165,9 +171,7 @@ function ModelsList() {
 function ModelsPage() {
 	return (
 		<Suspense
-			fallback={
-				<div className="text-muted-foreground text-sm">Loading…</div>
-			}
+			fallback={<div className="text-muted-foreground text-sm">Loading…</div>}
 		>
 			<ModelsList />
 		</Suspense>

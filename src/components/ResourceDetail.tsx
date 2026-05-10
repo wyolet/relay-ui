@@ -74,9 +74,7 @@ export function ResourceDetail({
 							{f.label}
 						</dt>
 						<dd className="mt-1 text-sm text-foreground sm:col-span-2 sm:mt-0">
-							{f.value ?? (
-								<span className="text-muted-foreground">—</span>
-							)}
+							{f.value ?? <span className="text-muted-foreground">—</span>}
 						</dd>
 					</div>
 				))}

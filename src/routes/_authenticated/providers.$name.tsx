@@ -1,15 +1,9 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import {
-	Boxes,
-	ChevronLeft,
-	ExternalLink,
-	Pencil,
-	Trash2,
-} from "lucide-react";
+import { Boxes, ChevronLeft, ExternalLink, Pencil, Trash2 } from "lucide-react";
 import { Suspense, useState } from "react";
 import { z } from "zod";
 import { modelsListQueryOptions, useModels } from "@/api/hooks/models";
-import { poolsListQueryOptions, usePools } from "@/api/hooks/pools";
+import { policiesListQueryOptions, usePolicies } from "@/api/hooks/policies";
 import {
 	providerDetailQueryOptions,
 	useDeleteProvider,
@@ -17,13 +11,13 @@ import {
 } from "@/api/hooks/providers";
 import { secretsListQueryOptions } from "@/api/hooks/secrets";
 import { ApiError } from "@/api/types/errors";
+import { confirm } from "@/components/ConfirmDialog";
 import {
 	applyModelSort,
 	type ModelsSortDir,
 	type ModelsSortKey,
 	ModelsTable,
 } from "@/components/ModelsTable";
-import { confirm } from "@/components/ConfirmDialog";
 import { ProviderKeys } from "@/components/ProviderKeys";
 import { toast } from "@/components/Toast";
 
@@ -41,7 +35,7 @@ export const Route = createFileRoute("/_authenticated/providers/$name")({
 			providerDetailQueryOptions(params.name),
 		);
 		void context.queryClient.prefetchQuery(modelsListQueryOptions);
-		void context.queryClient.prefetchQuery(poolsListQueryOptions);
+		void context.queryClient.prefetchQuery(policiesListQueryOptions);
 		void context.queryClient.prefetchQuery(secretsListQueryOptions);
 		return null;
 	},
@@ -84,9 +78,7 @@ function FieldRow({ label, children }: FieldRowProps) {
 	return (
 		<div className="grid grid-cols-[140px_1fr] gap-3 py-1.5 text-sm">
 			<dt className="text-muted-foreground">{label}</dt>
-			<dd className="text-foreground min-w-0">
-				{children}
-			</dd>
+			<dd className="text-foreground min-w-0">{children}</dd>
 		</div>
 	);
 }
@@ -210,13 +202,13 @@ function ProviderDetailInner() {
 	const navigate = useNavigate({ from: "/providers/$name" });
 	const { data: provider } = useProvider(name);
 	const { data: modelsData } = useModels();
-	const { data: poolsData } = usePools();
+	const { data: policiesData } = usePolicies();
 	const deleteProvider = useDeleteProvider();
 
 	const modelsCount = (modelsData.items ?? []).filter(
 		(m) => m.spec.provider === name,
 	).length;
-	const keysCount = (poolsData.items ?? [])
+	const keysCount = (policiesData.items ?? [])
 		.filter((p) => p.spec.provider === name)
 		.reduce((acc, p) => acc + (p.spec.secrets?.length ?? 0), 0);
 
@@ -331,10 +323,10 @@ function ProviderDetailInner() {
 									{dash(provider.spec.baseURL)}
 								</code>
 							</FieldRow>
-							<FieldRow label="Default pool">
+							<FieldRow label="Default policy">
 								{provider.spec.defaultPool ? (
 									<Link
-										to="/pools/$name"
+										to="/policies/$name"
 										params={{ name: provider.spec.defaultPool }}
 										className="text-brand-600 dark:text-brand-400 hover:underline"
 									>
@@ -380,9 +372,7 @@ function ProviderDetailInner() {
 function ProviderDetailPage() {
 	return (
 		<Suspense
-			fallback={
-				<div className="text-muted-foreground text-sm">Loading…</div>
-			}
+			fallback={<div className="text-muted-foreground text-sm">Loading…</div>}
 		>
 			<ProviderDetailInner />
 		</Suspense>

@@ -1,5 +1,10 @@
 import { Link } from "@tanstack/react-router";
-import { AlertTriangle, ArrowDown, ArrowUp, MoreHorizontal } from "lucide-react";
+import {
+	AlertTriangle,
+	ArrowDown,
+	ArrowUp,
+	MoreHorizontal,
+} from "lucide-react";
 import { useState } from "react";
 import type { Model } from "@/api/types/model";
 import { Switch } from "@/components/Switch";
@@ -137,9 +142,7 @@ function SortHeader({
 				className={[
 					"inline-flex items-center gap-1 transition-colors",
 					align === "right" ? "flex-row-reverse" : "",
-					active
-						? "text-foreground"
-						: "hover:text-foreground",
+					active ? "text-foreground" : "hover:text-foreground",
 				].join(" ")}
 			>
 				{label}
@@ -231,7 +234,9 @@ function ModelRow({ m, hideProvider }: { m: Model; hideProvider?: boolean }) {
 					{(m.spec.displayName || dep) && (
 						<div className="text-[11px] text-muted-foreground truncate">
 							{dep ? (
-								<span className="text-amber-700 dark:text-amber-400">{dep}</span>
+								<span className="text-amber-700 dark:text-amber-400">
+									{dep}
+								</span>
 							) : (
 								<code className="font-mono">{m.metadata.name}</code>
 							)}
@@ -279,7 +284,10 @@ function ModelRow({ m, hideProvider }: { m: Model; hideProvider?: boolean }) {
 				<Switch
 					checked
 					onChange={() =>
-						toast("success", "Model enable/disable — backend support coming soon.")
+						toast(
+							"success",
+							"Model enable/disable — backend support coming soon.",
+						)
 					}
 					label={`Toggle ${m.metadata.name}`}
 				/>

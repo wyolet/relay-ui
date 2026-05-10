@@ -13,7 +13,7 @@ import type { ApiErrorBody } from "@/api/types/errors";
 import { ApiError } from "@/api/types/errors";
 import type { ModelUpdate } from "@/api/types/model";
 import type { RateLimitAttachment } from "@/api/types/ratelimit";
-import { RateLimitsEditor } from "@/components/RateLimitsEditor";
+import { MultiSelect } from "@/components/MultiSelect";
 import type { FieldDef, FormValues } from "@/components/ResourceForm";
 import { ResourceForm } from "@/components/ResourceForm";
 import { toast } from "@/components/Toast";
@@ -129,13 +129,22 @@ function EditModelInner() {
 				isPending={updateModel.isPending}
 				serverError={serverError}
 				extraContent={
-					<RateLimitsEditor
-						value={rateLimits}
-						onChange={setRateLimits}
-						availableRateLimits={(rateLimitsData.items ?? []).map(
-							(rl) => rl.metadata.name,
-						)}
-					/>
+					<div>
+						<div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
+							Rate limits
+						</div>
+						<MultiSelect
+							options={(rateLimitsData.items ?? []).map((rl) => ({
+								value: rl.metadata.name,
+								label: rl.metadata.name,
+							}))}
+							selected={rateLimits.map((rl) => rl.Ref)}
+							onChange={(next) => setRateLimits(next.map((Ref) => ({ Ref })))}
+							placeholder="Attach rate limits…"
+							emptyHint="No rate limits defined."
+							aria-label="Rate limits"
+						/>
+					</div>
 				}
 			/>
 		</div>
@@ -145,9 +154,7 @@ function EditModelInner() {
 function EditModelPage() {
 	return (
 		<Suspense
-			fallback={
-				<div className="text-muted-foreground text-sm">Loading…</div>
-			}
+			fallback={<div className="text-muted-foreground text-sm">Loading…</div>}
 		>
 			<EditModelInner />
 		</Suspense>

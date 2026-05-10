@@ -37,12 +37,8 @@ interface FieldRowProps {
 function FieldRow({ label, children }: FieldRowProps) {
 	return (
 		<div className="grid grid-cols-[10rem_1fr] gap-4 px-4 py-3">
-			<dt className="text-sm text-muted-foreground">
-				{label}
-			</dt>
-			<dd className="text-sm text-foreground min-w-0">
-				{children}
-			</dd>
+			<dt className="text-sm text-muted-foreground">{label}</dt>
+			<dd className="text-sm text-foreground min-w-0">{children}</dd>
 		</div>
 	);
 }
@@ -65,9 +61,7 @@ function KeyDetailPage() {
 					<ArrowLeft className="w-4 h-4" />
 					Back to keys
 				</Link>
-				<p className="text-sm text-muted-foreground">
-					Key not found.
-				</p>
+				<p className="text-sm text-muted-foreground">Key not found.</p>
 			</div>
 		);
 	}
@@ -190,8 +184,8 @@ function KeyDetailPage() {
 						Usage charts coming soon
 					</p>
 					<p className="text-sm text-muted-foreground mt-1 max-w-md">
-						Per-key request volume, latency, and spend will appear here once
-						the control plane exposes a metrics endpoint.
+						Per-key request volume, latency, and spend will appear here once the
+						control plane exposes a metrics endpoint.
 					</p>
 				</div>
 			</section>

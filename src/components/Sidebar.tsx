@@ -10,6 +10,7 @@ import {
 	LogOut,
 	Monitor,
 	Moon,
+	ShieldCheck,
 	Shuffle,
 	Sun,
 } from "lucide-react";
@@ -20,7 +21,15 @@ import { useSidebarStore } from "@/stores/sidebar";
 import { type Theme, useTheme } from "@/stores/theme";
 
 interface NavItem {
-	to: "/" | "/usage" | "/logs" | "/models" | "/routers" | "/keys" | "/settings";
+	to:
+		| "/"
+		| "/usage"
+		| "/logs"
+		| "/models"
+		| "/routers"
+		| "/keys"
+		| "/policies"
+		| "/settings";
 	label: string;
 	icon: ComponentType<{ className?: string }>;
 	prefix: string;
@@ -33,18 +42,17 @@ const NAV_ITEMS: NavItem[] = [
 	{ to: "/models", label: "Models", icon: Boxes, prefix: "/models" },
 	{ to: "/routers", label: "Routers", icon: Shuffle, prefix: "/routers" },
 	{ to: "/keys", label: "Keys", icon: KeyRound, prefix: "/keys" },
+	{
+		to: "/policies",
+		label: "Policies",
+		icon: ShieldCheck,
+		prefix: "/policies",
+	},
 	{ to: "/settings", label: "Settings", icon: Cog, prefix: "/settings" },
 ];
 
 // Settings hub owns these legacy resource paths — keep Settings highlighted.
-const SETTINGS_PATHS = [
-	"/providers",
-	"/pools",
-	"/secrets",
-	"/routes",
-	"/ratelimits",
-	"/attachments",
-];
+const SETTINGS_PATHS = ["/providers", "/secrets", "/routes", "/attachments"];
 
 function BrandMark({ className }: { className?: string }) {
 	return (
@@ -115,7 +123,9 @@ function NavLink({ item, collapsed, active }: NavLinkProps) {
 
 const THEME_CYCLE: Theme[] = ["light", "dark", "system"];
 function nextTheme(t: Theme): Theme {
-	return THEME_CYCLE[(THEME_CYCLE.indexOf(t) + 1) % THEME_CYCLE.length] ?? "system";
+	return (
+		THEME_CYCLE[(THEME_CYCLE.indexOf(t) + 1) % THEME_CYCLE.length] ?? "system"
+	);
 }
 interface FooterButtonProps {
 	onClick: () => void;
@@ -211,9 +221,7 @@ export function Sidebar() {
 			>
 				<FooterButton
 					onClick={() => setTheme(nextTheme(theme))}
-					icon={
-						theme === "light" ? Sun : theme === "dark" ? Moon : Monitor
-					}
+					icon={theme === "light" ? Sun : theme === "dark" ? Moon : Monitor}
 					label={`Theme: ${theme}`}
 					collapsed={collapsed}
 				/>
@@ -234,4 +242,3 @@ export function Sidebar() {
 		</nav>
 	);
 }
-

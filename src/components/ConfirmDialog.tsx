@@ -72,9 +72,7 @@ export function ConfirmDialogHost() {
 					<AlertDialogHeader>
 						<AlertDialogTitle>{req.title}</AlertDialogTitle>
 						{req.description && (
-							<AlertDialogDescription>
-								{req.description}
-							</AlertDialogDescription>
+							<AlertDialogDescription>{req.description}</AlertDialogDescription>
 						)}
 					</AlertDialogHeader>
 					<AlertDialogFooter>
