@@ -6,7 +6,7 @@ import {
 	Plus,
 	ShieldCheck,
 } from "lucide-react";
-import { Suspense, useState } from "react";
+import { Suspense } from "react";
 import { z } from "zod";
 import { useModels } from "@/api/hooks/models";
 import {
@@ -21,7 +21,6 @@ import {
 } from "@/api/hooks/ratelimits";
 import type { RateLimit } from "@/api/types/ratelimit";
 import { confirm } from "@/components/ConfirmDialog";
-import { RateLimitModal } from "@/components/RateLimitModal";
 import { Switch } from "@/components/Switch";
 import { toast } from "@/components/Toast";
 import {
@@ -281,7 +280,8 @@ function PoliciesPanel() {
 	);
 }
 
-function fmtWindow(seconds: number): string {
+function fmtWindow(ns: number): string {
+	const seconds = Math.round(ns / 1_000_000_000);
 	if (seconds < 60) return `${seconds}s`;
 	if (seconds < 3600) return `${Math.round(seconds / 60)}m`;
 	if (seconds < 86_400) return `${Math.round(seconds / 3600)}h`;
@@ -298,12 +298,8 @@ function fmtAmount(n: number): string {
 function RateLimitsPanel() {
 	const { data } = useRateLimits();
 	const deleteRL = useDeleteRateLimit();
+	const navigate = useNavigate({ from: "/policies" });
 	const items = data.items ?? [];
-	const [createOpen, setCreateOpen] = useState(false);
-	const [editName, setEditName] = useState<string | null>(null);
-	const editingRL = editName
-		? (items.find((rl) => rl.metadata.name === editName) ?? null)
-		: null;
 
 	async function handleDelete(rl: RateLimit) {
 		const ok = await confirm({
@@ -327,14 +323,13 @@ function RateLimitsPanel() {
 	return (
 		<div>
 			<div className="flex items-center justify-end mb-3">
-				<button
-					type="button"
-					onClick={() => setCreateOpen(true)}
+				<Link
+					to="/policies/rate-limits/new"
 					className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-xs font-semibold text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 				>
 					<Plus className="w-3.5 h-3.5" />
 					New rate limit
-				</button>
+				</Link>
 			</div>
 
 			{items.length === 0 ? (
@@ -346,14 +341,13 @@ function RateLimitsPanel() {
 					<p className="text-sm text-muted-foreground mb-5">
 						Define a limit and attach it to policies or models.
 					</p>
-					<button
-						type="button"
-						onClick={() => setCreateOpen(true)}
+					<Link
+						to="/policies/rate-limits/new"
 						className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-sm font-semibold text-white transition-colors"
 					>
 						<Plus className="w-4 h-4" />
 						Create your first rate limit
-					</button>
+					</Link>
 				</div>
 			) : (
 				<div className="overflow-x-auto rounded-lg border border-border bg-card">
@@ -362,9 +356,8 @@ function RateLimitsPanel() {
 							<tr>
 								<Th>Name</Th>
 								<Th>Strategy</Th>
-								<Th align="right">Amount</Th>
 								<Th align="right">Window</Th>
-								<Th>Source</Th>
+								<Th>Rules</Th>
 								<th
 									scope="col"
 									className="w-10 px-3 py-2"
@@ -379,13 +372,13 @@ function RateLimitsPanel() {
 									className="border-t border-border hover:bg-muted/40 transition-colors"
 								>
 									<td className="px-3 py-2">
-										<button
-											type="button"
-											onClick={() => setEditName(rl.metadata.name)}
+										<Link
+											to="/policies/rate-limits/$name"
+											params={{ name: rl.metadata.name }}
 											className="text-sm font-medium text-foreground hover:underline"
 										>
 											{rl.metadata.name}
-										</button>
+										</Link>
 									</td>
 									<td className="px-3 py-2 text-sm">
 										<span className="text-[11px] text-muted-foreground">
@@ -393,20 +386,21 @@ function RateLimitsPanel() {
 										</span>
 									</td>
 									<td className="px-3 py-2 text-right text-sm text-foreground tabular-nums">
-										{fmtAmount(rl.spec.amount ?? 0)}
-									</td>
-									<td className="px-3 py-2 text-right text-sm text-foreground tabular-nums">
 										{fmtWindow(rl.spec.window)}
 									</td>
 									<td className="px-3 py-2 text-sm text-muted-foreground">
-										{rl.spec.source ?? "—"}
+										{summarizeRules(rl)}
 									</td>
 									<td className="px-3 py-2 text-right">
 										<RowMenu
 											actions={[
 												{
 													label: "Edit",
-													onClick: () => setEditName(rl.metadata.name),
+													onClick: () =>
+														void navigate({
+															to: "/policies/rate-limits/$name",
+															params: { name: rl.metadata.name },
+														}),
 												},
 												{
 													label: "Delete",
@@ -422,15 +416,25 @@ function RateLimitsPanel() {
 					</table>
 				</div>
 			)}
-
-			<RateLimitModal open={createOpen} onClose={() => setCreateOpen(false)} />
-			<RateLimitModal
-				open={editName !== null}
-				onClose={() => setEditName(null)}
-				rateLimit={editingRL ?? undefined}
-			/>
 		</div>
 	);
+}
+
+function summarizeRules(rl: RateLimit): string {
+	const rules = rl.spec.rules ?? null;
+	if (!rules || rules.length === 0) {
+		if (rl.spec.amount !== undefined && rl.spec.meter) {
+			return `${fmtAmount(rl.spec.amount)} ${rl.spec.meter}`;
+		}
+		return "—";
+	}
+	if (rules.length === 1) {
+		return `${fmtAmount(rules[0].amount)} ${rules[0].meter}`;
+	}
+	return `${rules.length} rules · ${rules
+		.slice(0, 2)
+		.map((r) => r.meter)
+		.join(", ")}${rules.length > 2 ? "…" : ""}`;
 }
 
 function PoliciesPage() {

@@ -2,7 +2,6 @@
 
 Operator admin UI for **Wyolet Relay** (high-throughput Go LLM router). Built as a static SPA, embedded into the Relay binary via `//go:embed`, served at `/ui/`.
 
-- Linear project: [Wyolet Relay](https://linear.app/aliboyev/project/wyolet-relay-66b6cdcde707) — team `PER`. Tickets for this repo live there; ignore unrelated `PER-*` issues from other projects.
 - Upstream API: `wyolet/relay` Go service; types come from its `/openapi.json`.
 
 React 19 + Vite + TanStack Router + TanStack Query + Tailwind v4 + Biome + shadcn (luma) on `@base-ui/react`.
@@ -14,8 +13,8 @@ Mirrors the wyolet workspace project. The point: redesigning a page should be **
 
 - **Components render strings.** No fetching, no mutation calls, no derived business state inside a component file. If a component imports `@tanstack/react-query` or `zustand` directly, that's a smell — the logic belongs in a hook.
 - **Custom hooks own business logic.** Hooks compose TanStack Query + Zustand. Components call `useFooThing()`, never `useSuspenseQuery(fooQueryOptions)` or `useFooStore` directly.
-- **TanStack Form via `useXForm()` hooks.** Each form gets its own hook (`useCreateRelayKeyForm`, `useEditPoolForm`, …) that owns the `useForm` instance, the zod schema, and `onSubmit` (which calls a service / TQ mutation). The component receives the form instance and renders fields. The schema, validators, and any modal-reset effects live in the hook.
-- **Modal lifecycle.** Pass `open` into the form hook; the hook calls `form.reset()` + clears any transient state when `open` flips to `false`. Don't rely on the modal's Cancel-button handler — Escape and backdrop click bypass it.
+- **TanStack Form via `useXForm()` hooks.** Each form gets its own hook (`usePolicyForm`, `useRateLimitForm`, `useCreateRelayKeyForm`, …) that owns the `useForm` instance, the zod schema, and `onSubmit` (which calls a service / TQ mutation). The component receives the form instance and renders fields. The schema, validators, and any reset effects live in the hook.
+- **Pages over modals for resource CRUD.** Resource create/edit lives at `/x/new` and `/x/$name` (or `/parent/x/$name` for nested) — not in modals. Modal pattern is reserved for short, transient flows (e.g. relay-key create/edit, provider-key edit). When using a modal, pass `open` into the form hook; the hook calls `form.reset()` on close.
 
 ## State management (the only four)
 
@@ -91,6 +90,6 @@ Never `useEffect` for fetching, and never store query results in `useState`.
 
 ## Layout (current → target)
 
-We currently have a flat layout (`src/components/`, `src/stores/`, `src/api/hooks/`). The target shape — **domain folders** (`src/keys/`, `src/pools/`, `src/models/`, …) each owning `components/ hooks/ types.ts` — is in flight. Until that migration happens, place new domain-specific hooks (`useCreateRelayKeyForm`, etc.) next to the components that use them and migrate together when you split a domain out.
+We currently have a flat layout (`src/components/`, `src/stores/`, `src/api/hooks/`). The target shape — **domain folders** (`src/keys/`, `src/policies/`, `src/models/`, …) each owning `components/ hooks/ types.ts` — is in flight. Until that migration happens, place new domain-specific hooks (`usePolicyForm`, `useCreateRelayKeyForm`, etc.) next to the components that use them and migrate together when you split a domain out.
 
 A small `src/components/_legacy/` exists for hand-rolled components we kept around as fallbacks (e.g. the pre-shadcn MultiSelect). Don't import from there in new code.

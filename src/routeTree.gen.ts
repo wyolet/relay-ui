@@ -51,6 +51,8 @@ import { Route as AuthenticatedKeysIdRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedSecretsNameEditRouteImport } from './routes/_authenticated/secrets.$name.edit'
 import { Route as AuthenticatedRoutesNameEditRouteImport } from './routes/_authenticated/routes.$name.edit'
 import { Route as AuthenticatedProvidersNameEditRouteImport } from './routes/_authenticated/providers.$name.edit'
+import { Route as AuthenticatedPoliciesRateLimitsNewRouteImport } from './routes/_authenticated/policies.rate-limits.new'
+import { Route as AuthenticatedPoliciesRateLimitsNameRouteImport } from './routes/_authenticated/policies.rate-limits.$name'
 import { Route as AuthenticatedModelsNameEditRouteImport } from './routes/_authenticated/models.$name.edit'
 
 const LoginRoute = LoginRouteImport.update({
@@ -280,6 +282,18 @@ const AuthenticatedProvidersNameEditRoute =
     path: '/edit',
     getParentRoute: () => AuthenticatedProvidersNameRoute,
   } as any)
+const AuthenticatedPoliciesRateLimitsNewRoute =
+  AuthenticatedPoliciesRateLimitsNewRouteImport.update({
+    id: '/rate-limits/new',
+    path: '/rate-limits/new',
+    getParentRoute: () => AuthenticatedPoliciesRoute,
+  } as any)
+const AuthenticatedPoliciesRateLimitsNameRoute =
+  AuthenticatedPoliciesRateLimitsNameRouteImport.update({
+    id: '/rate-limits/$name',
+    path: '/rate-limits/$name',
+    getParentRoute: () => AuthenticatedPoliciesRoute,
+  } as any)
 const AuthenticatedModelsNameEditRoute =
   AuthenticatedModelsNameEditRouteImport.update({
     id: '/edit',
@@ -327,6 +341,8 @@ export interface FileRoutesByFullPath {
   '/secrets/': typeof AuthenticatedSecretsIndexRoute
   '/settings/': typeof AuthenticatedSettingsIndexRoute
   '/models/$name/edit': typeof AuthenticatedModelsNameEditRoute
+  '/policies/rate-limits/$name': typeof AuthenticatedPoliciesRateLimitsNameRoute
+  '/policies/rate-limits/new': typeof AuthenticatedPoliciesRateLimitsNewRoute
   '/providers/$name/edit': typeof AuthenticatedProvidersNameEditRoute
   '/routes/$name/edit': typeof AuthenticatedRoutesNameEditRoute
   '/secrets/$name/edit': typeof AuthenticatedSecretsNameEditRoute
@@ -363,6 +379,8 @@ export interface FileRoutesByTo {
   '/secrets': typeof AuthenticatedSecretsIndexRoute
   '/settings': typeof AuthenticatedSettingsIndexRoute
   '/models/$name/edit': typeof AuthenticatedModelsNameEditRoute
+  '/policies/rate-limits/$name': typeof AuthenticatedPoliciesRateLimitsNameRoute
+  '/policies/rate-limits/new': typeof AuthenticatedPoliciesRateLimitsNewRoute
   '/providers/$name/edit': typeof AuthenticatedProvidersNameEditRoute
   '/routes/$name/edit': typeof AuthenticatedRoutesNameEditRoute
   '/secrets/$name/edit': typeof AuthenticatedSecretsNameEditRoute
@@ -409,6 +427,8 @@ export interface FileRoutesById {
   '/_authenticated/secrets/': typeof AuthenticatedSecretsIndexRoute
   '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
   '/_authenticated/models/$name/edit': typeof AuthenticatedModelsNameEditRoute
+  '/_authenticated/policies/rate-limits/$name': typeof AuthenticatedPoliciesRateLimitsNameRoute
+  '/_authenticated/policies/rate-limits/new': typeof AuthenticatedPoliciesRateLimitsNewRoute
   '/_authenticated/providers/$name/edit': typeof AuthenticatedProvidersNameEditRoute
   '/_authenticated/routes/$name/edit': typeof AuthenticatedRoutesNameEditRoute
   '/_authenticated/secrets/$name/edit': typeof AuthenticatedSecretsNameEditRoute
@@ -455,6 +475,8 @@ export interface FileRouteTypes {
     | '/secrets/'
     | '/settings/'
     | '/models/$name/edit'
+    | '/policies/rate-limits/$name'
+    | '/policies/rate-limits/new'
     | '/providers/$name/edit'
     | '/routes/$name/edit'
     | '/secrets/$name/edit'
@@ -491,6 +513,8 @@ export interface FileRouteTypes {
     | '/secrets'
     | '/settings'
     | '/models/$name/edit'
+    | '/policies/rate-limits/$name'
+    | '/policies/rate-limits/new'
     | '/providers/$name/edit'
     | '/routes/$name/edit'
     | '/secrets/$name/edit'
@@ -536,6 +560,8 @@ export interface FileRouteTypes {
     | '/_authenticated/secrets/'
     | '/_authenticated/settings/'
     | '/_authenticated/models/$name/edit'
+    | '/_authenticated/policies/rate-limits/$name'
+    | '/_authenticated/policies/rate-limits/new'
     | '/_authenticated/providers/$name/edit'
     | '/_authenticated/routes/$name/edit'
     | '/_authenticated/secrets/$name/edit'
@@ -842,6 +868,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProvidersNameEditRouteImport
       parentRoute: typeof AuthenticatedProvidersNameRoute
     }
+    '/_authenticated/policies/rate-limits/new': {
+      id: '/_authenticated/policies/rate-limits/new'
+      path: '/rate-limits/new'
+      fullPath: '/policies/rate-limits/new'
+      preLoaderRoute: typeof AuthenticatedPoliciesRateLimitsNewRouteImport
+      parentRoute: typeof AuthenticatedPoliciesRoute
+    }
+    '/_authenticated/policies/rate-limits/$name': {
+      id: '/_authenticated/policies/rate-limits/$name'
+      path: '/rate-limits/$name'
+      fullPath: '/policies/rate-limits/$name'
+      preLoaderRoute: typeof AuthenticatedPoliciesRateLimitsNameRouteImport
+      parentRoute: typeof AuthenticatedPoliciesRoute
+    }
     '/_authenticated/models/$name/edit': {
       id: '/_authenticated/models/$name/edit'
       path: '/edit'
@@ -896,12 +936,18 @@ interface AuthenticatedPoliciesRouteChildren {
   AuthenticatedPoliciesNameRoute: typeof AuthenticatedPoliciesNameRoute
   AuthenticatedPoliciesNewRoute: typeof AuthenticatedPoliciesNewRoute
   AuthenticatedPoliciesIndexRoute: typeof AuthenticatedPoliciesIndexRoute
+  AuthenticatedPoliciesRateLimitsNameRoute: typeof AuthenticatedPoliciesRateLimitsNameRoute
+  AuthenticatedPoliciesRateLimitsNewRoute: typeof AuthenticatedPoliciesRateLimitsNewRoute
 }
 
 const AuthenticatedPoliciesRouteChildren: AuthenticatedPoliciesRouteChildren = {
   AuthenticatedPoliciesNameRoute: AuthenticatedPoliciesNameRoute,
   AuthenticatedPoliciesNewRoute: AuthenticatedPoliciesNewRoute,
   AuthenticatedPoliciesIndexRoute: AuthenticatedPoliciesIndexRoute,
+  AuthenticatedPoliciesRateLimitsNameRoute:
+    AuthenticatedPoliciesRateLimitsNameRoute,
+  AuthenticatedPoliciesRateLimitsNewRoute:
+    AuthenticatedPoliciesRateLimitsNewRoute,
 }
 
 const AuthenticatedPoliciesRouteWithChildren =

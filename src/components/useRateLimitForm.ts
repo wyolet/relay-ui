@@ -1,12 +1,13 @@
 import { useForm } from "@tanstack/react-form";
 import { useStore } from "@tanstack/react-store";
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { z } from "zod";
 import { useCreateRateLimit, useUpdateRateLimit } from "@/api/hooks/ratelimits";
 import { ApiError } from "@/api/types/errors";
 import type {
 	RateLimit,
 	RateLimitCreate,
+	RateLimitRule,
 	RateLimitUpdate,
 } from "@/api/types/ratelimit";
 import { toast } from "@/components/Toast";
@@ -16,14 +17,17 @@ export type RateLimitStrategy =
 	| "sliding_window"
 	| "token_bucket";
 
-export type RateLimitSource = "ip" | "api_key" | "user" | "global";
+export interface RuleDraft {
+	amount: number;
+	meter: string;
+	source: string;
+}
 
 export interface RateLimitFormValues {
 	name: string;
 	strategy: RateLimitStrategy;
 	window: number;
-	amount: number;
-	source: RateLimitSource;
+	rules: RuleDraft[];
 }
 
 const STRATEGY_VALUES = [
@@ -31,7 +35,15 @@ const STRATEGY_VALUES = [
 	"sliding_window",
 	"token_bucket",
 ] as const;
-const SOURCE_VALUES = ["ip", "api_key", "user", "global"] as const;
+
+const ruleSchema = z.object({
+	amount: z.coerce
+		.number()
+		.int("Whole numbers only")
+		.positive("Amount must be > 0"),
+	meter: z.string().trim().min(1, "Meter is required"),
+	source: z.string().trim(),
+});
 
 const baseSchema = z.object({
 	strategy: z.enum(STRATEGY_VALUES),
@@ -39,11 +51,7 @@ const baseSchema = z.object({
 		.number()
 		.int("Whole seconds only")
 		.positive("Window must be > 0"),
-	amount: z.coerce
-		.number()
-		.int("Whole numbers only")
-		.positive("Amount must be > 0"),
-	source: z.enum(SOURCE_VALUES),
+	rules: z.array(ruleSchema).min(1, "At least one rule is required"),
 });
 
 const createSchema = baseSchema.extend({
@@ -57,43 +65,60 @@ const createSchema = baseSchema.extend({
 
 const editSchema = baseSchema.extend({ name: z.string() });
 
+export function emptyRule(): RuleDraft {
+	return { amount: 100, meter: "requests", source: "global" };
+}
+
 function emptyValues(): RateLimitFormValues {
 	return {
 		name: "",
 		strategy: "fixed_window",
 		window: 60,
-		amount: 100,
-		source: "global",
+		rules: [emptyRule()],
 	};
 }
 
+const NS_PER_SEC = 1_000_000_000;
+export const nsToSeconds = (ns: number): number => Math.round(ns / NS_PER_SEC);
+export const secondsToNs = (s: number): number => Math.round(s * NS_PER_SEC);
+
 function rlToValues(rl: RateLimit): RateLimitFormValues {
-	const strategy = STRATEGY_VALUES.includes(
-		rl.spec.strategy as RateLimitStrategy,
+	const strategy = (STRATEGY_VALUES as readonly string[]).includes(
+		rl.spec.strategy,
 	)
 		? (rl.spec.strategy as RateLimitStrategy)
 		: "fixed_window";
-	const source =
-		rl.spec.source && SOURCE_VALUES.includes(rl.spec.source as RateLimitSource)
-			? (rl.spec.source as RateLimitSource)
-			: "global";
+	const specRules = rl.spec.rules ?? null;
+	const rules: RuleDraft[] =
+		specRules && specRules.length > 0
+			? specRules.map((r) => ({
+					amount: r.amount,
+					meter: r.meter,
+					source: r.source ?? "",
+				}))
+			: rl.spec.amount !== undefined && rl.spec.meter
+				? [
+						{
+							amount: rl.spec.amount,
+							meter: rl.spec.meter,
+							source: rl.spec.source ?? "",
+						},
+					]
+				: [emptyRule()];
 	return {
 		name: rl.metadata.name,
 		strategy,
-		window: rl.spec.window,
-		amount: rl.spec.amount ?? 0,
-		source,
+		window: nsToSeconds(rl.spec.window),
+		rules,
 	};
 }
 
 interface UseRateLimitFormOptions {
-	open: boolean;
 	rateLimit?: RateLimit;
 	onSaved: () => void;
 }
 
 export function useRateLimitForm({
-	open,
 	rateLimit,
 	onSaved,
 }: UseRateLimitFormOptions) {
@@ -115,24 +140,28 @@ export function useRateLimitForm({
 				if (r.success) return undefined;
 				const fields: Record<string, string> = {};
 				for (const issue of r.error.issues) {
-					const p = issue.path[0];
-					if (typeof p === "string" && !fields[p]) fields[p] = issue.message;
+					const key = issue.path.join(".");
+					if (key && !fields[key]) fields[key] = issue.message;
 				}
 				return { fields };
 			},
 		},
 		onSubmit: async ({ value }) => {
+			const rules: RateLimitRule[] = value.rules.map((r) => ({
+				amount: Number(r.amount),
+				meter: r.meter.trim(),
+				...(r.source.trim() ? { source: r.source.trim() } : {}),
+			}));
 			const spec = {
 				strategy: value.strategy,
-				window: Number(value.window),
-				amount: Number(value.amount),
-				source: value.source,
+				window: secondsToNs(Number(value.window)),
+				rules,
 			};
 			try {
 				if (isEdit && rateLimit) {
 					const payload: RateLimitUpdate = {
 						metadata: rateLimit.metadata,
-						spec: { ...rateLimit.spec, ...spec },
+						spec,
 					};
 					await updateRL.mutateAsync(payload);
 					toast("success", `Rate limit "${rateLimit.metadata.name}" updated.`);
@@ -158,11 +187,6 @@ export function useRateLimitForm({
 		},
 	});
 
-	useEffect(() => {
-		if (open) form.reset(initial);
-		else form.reset(emptyValues());
-	}, [open, initial, form]);
-
 	const values = useStore(form.store, (s) => s.values);
 	const nameError = useStore(form.store, (s) => {
 		const errs = s.fieldMeta?.name?.errors ?? [];
@@ -174,11 +198,35 @@ export function useRateLimitForm({
 		for (const e of errs) if (typeof e === "string") return e;
 		return undefined;
 	});
-	const amountError = useStore(form.store, (s) => {
-		const errs = s.fieldMeta?.amount?.errors ?? [];
+	const rulesError = useStore(form.store, (s) => {
+		const errs = s.fieldMeta?.rules?.errors ?? [];
 		for (const e of errs) if (typeof e === "string") return e;
 		return undefined;
 	});
 
-	return { form, values, isEdit, nameError, windowError, amountError };
+	function addRule() {
+		form.setFieldValue("rules", [...values.rules, emptyRule()]);
+	}
+	function removeRule(idx: number) {
+		const next = values.rules.filter((_, i) => i !== idx);
+		form.setFieldValue("rules", next.length > 0 ? next : [emptyRule()]);
+	}
+	function updateRule(idx: number, patch: Partial<RuleDraft>) {
+		const next = values.rules.map((r, i) =>
+			i === idx ? { ...r, ...patch } : r,
+		);
+		form.setFieldValue("rules", next);
+	}
+
+	return {
+		form,
+		values,
+		isEdit,
+		nameError,
+		windowError,
+		rulesError,
+		addRule,
+		removeRule,
+		updateRule,
+	};
 }

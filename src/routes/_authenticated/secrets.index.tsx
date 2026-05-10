@@ -26,8 +26,8 @@ function SecretsList() {
 
 	const rows: SecretRow[] = (secretsData.items ?? []).map((secret) => ({
 		...secret,
-		refCount: (policiesData.items ?? []).filter((pool) =>
-			(pool.spec.secrets ?? []).includes(secret.name),
+		refCount: (policiesData.items ?? []).filter((policy) =>
+			(policy.spec.secrets ?? []).includes(secret.name),
 		).length,
 	}));
 

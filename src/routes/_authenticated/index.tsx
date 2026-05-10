@@ -76,7 +76,7 @@ function MetricsPending() {
 function DashboardInner() {
 	const { data: providers } = useQuery(providersListQueryOptions);
 	const { data: secrets } = useQuery(secretsListQueryOptions);
-	const { data: pools } = useQuery(policiesListQueryOptions);
+	const { data: policies } = useQuery(policiesListQueryOptions);
 	const { data: models } = useQuery(modelsListQueryOptions);
 	const { data: routes } = useQuery(routesListQueryOptions);
 	const { data: ratelimits } = useQuery(rateLimitsListQueryOptions);
@@ -101,7 +101,7 @@ function DashboardInner() {
 				</h2>
 				<div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
 					<CountCard label="Providers" count={providers?.items?.length} />
-					<CountCard label="Policies" count={pools?.items?.length} />
+					<CountCard label="Policies" count={policies?.items?.length} />
 					<CountCard label="Secrets" count={secrets?.items?.length} />
 					<CountCard label="Models" count={models?.items?.length} />
 					<CountCard label="Routes" count={routes?.items?.length} />

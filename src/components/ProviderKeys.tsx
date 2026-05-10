@@ -39,13 +39,13 @@ export function ProviderKeys({
 }: ProviderKeysProps) {
 	const { data: policiesData } = usePolicies();
 	const { data: secretsData } = useSecrets();
-	const pools = (policiesData.items ?? []).filter(
+	const policies = (policiesData.items ?? []).filter(
 		(p) => p.spec.provider === providerName,
 	);
 	const secretsByName: Record<string, SecretResponse> = {};
 	for (const s of secretsData.items ?? []) secretsByName[s.name] = s;
 
-	if (pools.length === 0) {
+	if (policies.length === 0) {
 		return (
 			<div className="rounded-lg border border-dashed border-input bg-card px-6 py-14 text-center">
 				<KeyRound className="w-6 h-6 mx-auto mb-3 text-muted-foreground/50" />
@@ -65,10 +65,10 @@ export function ProviderKeys({
 				A policy bundles keys that Relay treats as interchangeable. Order =
 				priority; the first reachable key is tried first.
 			</p>
-			{pools.map((pool, idx) => (
-				<PoolCard
-					key={pool.metadata.name}
-					pool={pool}
+			{policies.map((policy, idx) => (
+				<PolicyCard
+					key={policy.metadata.name}
+					policy={policy}
 					secretsByName={secretsByName}
 					providerName={providerName}
 					autoOpenAdd={autoOpenAdd && idx === 0}
@@ -79,25 +79,25 @@ export function ProviderKeys({
 	);
 }
 
-interface PoolCardProps {
-	pool: Policy;
+interface PolicyCardProps {
+	policy: Policy;
 	secretsByName: Record<string, SecretResponse>;
 	providerName: string;
 	autoOpenAdd?: boolean;
 	keyQuery?: string;
 }
 
-function PoolCard({
-	pool,
+function PolicyCard({
+	policy,
 	secretsByName,
 	providerName,
 	autoOpenAdd,
 	keyQuery,
-}: PoolCardProps) {
-	const updatePool = useUpdatePolicy(pool.metadata.name);
+}: PolicyCardProps) {
+	const updatePolicy = useUpdatePolicy(policy.metadata.name);
 	const deleteSecret = useDeleteSecret();
 	const [adding, setAdding] = useState(false);
-	const secrets = pool.spec.secrets ?? [];
+	const secrets = policy.spec.secrets ?? [];
 	const ql = keyQuery?.trim().toLowerCase() ?? "";
 	const filteredIdx = secrets
 		.map((name, idx) => ({ name, idx }))
@@ -113,9 +113,9 @@ function PoolCard({
 		const next = [...secrets];
 		[next[idx], next[target]] = [next[target], next[idx]];
 		try {
-			await updatePool.mutateAsync({
-				...pool,
-				spec: { ...pool.spec, secrets: next },
+			await updatePolicy.mutateAsync({
+				...policy,
+				spec: { ...policy.spec, secrets: next },
 			});
 		} catch (err) {
 			toast(
@@ -138,9 +138,9 @@ function PoolCard({
 		});
 		if (!ok) return;
 		try {
-			await updatePool.mutateAsync({
-				...pool,
-				spec: { ...pool.spec, secrets: secrets.filter((s) => s !== name) },
+			await updatePolicy.mutateAsync({
+				...policy,
+				spec: { ...policy.spec, secrets: secrets.filter((s) => s !== name) },
 			});
 			if (alsoDelete) {
 				await deleteSecret.mutateAsync(name);
@@ -162,9 +162,9 @@ function PoolCard({
 			<header className="flex items-center justify-between px-4 h-10 border-b border-border">
 				<div className="flex items-center gap-2 min-w-0">
 					<h3 className="text-sm font-semibold text-foreground truncate">
-						{pool.metadata.name}
+						{policy.metadata.name}
 					</h3>
-					{pool.spec.passthrough && (
+					{policy.spec.passthrough && (
 						<span className="text-[10px] uppercase tracking-wide text-muted-foreground px-1.5 py-0.5 rounded bg-muted">
 							passthrough
 						</span>
@@ -211,7 +211,7 @@ function PoolCard({
 				{adding && (
 					<li className="px-4 py-3">
 						<AddKeyForm
-							pool={pool}
+							policy={policy}
 							providerName={providerName}
 							existingNames={new Set(Object.keys(secretsByName))}
 							onCancel={() => setAdding(false)}
@@ -366,7 +366,7 @@ function firstError(errors: ReadonlyArray<unknown>): string | undefined {
 }
 
 interface AddKeyFormProps {
-	pool: Policy;
+	policy: Policy;
 	providerName: string;
 	existingNames: Set<string>;
 	onCancel: () => void;
@@ -374,14 +374,14 @@ interface AddKeyFormProps {
 }
 
 function AddKeyForm({
-	pool,
+	policy,
 	providerName,
 	existingNames,
 	onCancel,
 	onSaved,
 }: AddKeyFormProps) {
 	const createSecret = useCreateSecret();
-	const updatePool = useUpdatePolicy(pool.metadata.name);
+	const updatePolicy = useUpdatePolicy(policy.metadata.name);
 	const { data: modelsData } = useModels();
 	const { data: policiesData } = usePolicies();
 	const apiKeys = useKeysStore((s) => s.items);
@@ -390,7 +390,7 @@ function AddKeyForm({
 	const providerModels = (modelsData.items ?? []).filter(
 		(m) => m.spec.provider === providerName,
 	);
-	const providerPools = (policiesData.items ?? []).filter(
+	const providerPolicies = (policiesData.items ?? []).filter(
 		(p) => p.spec.provider === providerName,
 	);
 	const activeApiKeys = apiKeys.filter((k) => k.revokedAt === null);
@@ -398,8 +398,8 @@ function AddKeyForm({
 	// Filters (UI only — captured for future backend support)
 	const [modelsSelected, setModelsSelected] = useState<string[]>([]);
 	const [keysSelected, setKeysSelected] = useState<string[]>([]);
-	const [poolsSelected, setPoolsSelected] = useState<string[]>([
-		pool.metadata.name,
+	const [policiesSelected, setPoliciesSelected] = useState<string[]>([
+		policy.metadata.name,
 	]);
 
 	const form = useForm({
@@ -416,15 +416,15 @@ function AddKeyForm({
 					provider: providerName,
 					valueFrom: { kind: "stored", value: value.value },
 				});
-				const targetPools =
-					poolsSelected.length > 0
-						? providerPools.filter((p) =>
-								poolsSelected.includes(p.metadata.name),
+				const targetPolicies =
+					policiesSelected.length > 0
+						? providerPolicies.filter((p) =>
+								policiesSelected.includes(p.metadata.name),
 							)
-						: [pool];
+						: [policy];
 				await Promise.all(
-					targetPools.map((p) =>
-						updatePool.mutateAsync({
+					targetPolicies.map((p) =>
+						updatePolicy.mutateAsync({
 							...p,
 							spec: {
 								...p.spec,
@@ -459,13 +459,13 @@ function AddKeyForm({
 					return (
 						<div>
 							<label
-								htmlFor={`pool-${pool.metadata.name}-name`}
+								htmlFor={`policy-${policy.metadata.name}-name`}
 								className="block text-[11px] font-medium text-muted-foreground mb-1"
 							>
 								Name <span className="text-neutral-400">(optional label)</span>
 							</label>
 							<input
-								id={`pool-${pool.metadata.name}-name`}
+								id={`policy-${policy.metadata.name}-name`}
 								type="text"
 								value={field.state.value}
 								onChange={(e) => field.handleChange(e.currentTarget.value)}
@@ -488,14 +488,14 @@ function AddKeyForm({
 					return (
 						<div>
 							<label
-								htmlFor={`pool-${pool.metadata.name}-value`}
+								htmlFor={`policy-${policy.metadata.name}-value`}
 								className="block text-[11px] font-medium text-muted-foreground mb-1"
 							>
 								API key
 							</label>
 							<div className="relative">
 								<input
-									id={`pool-${pool.metadata.name}-value`}
+									id={`policy-${policy.metadata.name}-value`}
 									type={showValue ? "text" : "password"}
 									value={field.state.value}
 									onChange={(e) => field.handleChange(e.currentTarget.value)}
@@ -551,16 +551,16 @@ function AddKeyForm({
 					emptyHint="No active Relay keys yet."
 				/>
 				<PickerField
-					label="Pools"
-					description="Pools this key joins on save. Defaults to the current pool; pick more to add the key to several at once."
-					options={providerPools.map((p) => ({
+					label="Policies"
+					description="Policies this key joins on save. Defaults to the current policy; pick more to add the key to several at once."
+					options={providerPolicies.map((p) => ({
 						value: p.metadata.name,
 						label: p.metadata.name,
 					}))}
-					selected={poolsSelected}
-					onChange={setPoolsSelected}
-					placeholder="Select pools…"
-					emptyHint="No other pools."
+					selected={policiesSelected}
+					onChange={setPoliciesSelected}
+					placeholder="Select policies…"
+					emptyHint="No other policies."
 				/>
 			</div>
 

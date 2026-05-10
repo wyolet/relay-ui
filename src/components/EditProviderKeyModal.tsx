@@ -35,7 +35,7 @@ export function EditProviderKeyModal({
 	const deleteSecret = useDeleteSecret();
 	const queryClient = useQueryClient();
 
-	const providerPools = useMemo(
+	const providerPolicies = useMemo(
 		() =>
 			(policiesData.items ?? []).filter(
 				(p) => p.spec.provider === providerName,
@@ -49,7 +49,7 @@ export function EditProviderKeyModal({
 	);
 
 	const [name, setName] = useState(secretName);
-	const [selectedPools, setSelectedPools] = useState<string[]>([]);
+	const [selectedPolicies, setSelectedPolicies] = useState<string[]>([]);
 	const [selectedModels, setSelectedModels] = useState<string[]>([]);
 	const [selectedRelayKeys, setSelectedRelayKeys] = useState<string[]>([]);
 	const [saving, setSaving] = useState(false);
@@ -61,16 +61,16 @@ export function EditProviderKeyModal({
 	useEffect(() => {
 		const last = initRef.current;
 		if (open && (!last.open || last.secret !== secretName)) {
-			const inPools = providerPools
+			const inPolicies = providerPolicies
 				.filter((p) => (p.spec.secrets ?? []).includes(secretName))
 				.map((p) => p.metadata.name);
 			setName(secretName);
-			setSelectedPools(inPools);
+			setSelectedPolicies(inPolicies);
 			setSelectedModels([]);
 			setSelectedRelayKeys([]);
 		}
 		initRef.current = { open, secret: secretName };
-	}, [open, secretName, providerPools]);
+	}, [open, secretName, providerPolicies]);
 
 	async function handleSave() {
 		setSaving(true);
@@ -83,18 +83,18 @@ export function EditProviderKeyModal({
 				setSaving(false);
 				return;
 			}
-			const targetPoolNames = selectedPools;
-			const updates = providerPools.flatMap((pool) => {
-				const has = (pool.spec.secrets ?? []).includes(secretName);
-				const should = targetPoolNames.includes(pool.metadata.name);
+			const targetPolicyNames = selectedPolicies;
+			const updates = providerPolicies.flatMap((policy) => {
+				const has = (policy.spec.secrets ?? []).includes(secretName);
+				const should = targetPolicyNames.includes(policy.metadata.name);
 				if (has === should) return [];
 				const nextSecrets = should
-					? [...(pool.spec.secrets ?? []), secretName]
-					: (pool.spec.secrets ?? []).filter((s) => s !== secretName);
+					? [...(policy.spec.secrets ?? []), secretName]
+					: (policy.spec.secrets ?? []).filter((s) => s !== secretName);
 				return [
 					{
-						name: pool.metadata.name,
-						body: { ...pool, spec: { ...pool.spec, secrets: nextSecrets } },
+						name: policy.metadata.name,
+						body: { ...policy, spec: { ...policy.spec, secrets: nextSecrets } },
 					},
 				];
 			});
@@ -154,12 +154,12 @@ export function EditProviderKeyModal({
 				<PickerField
 					label="Policies"
 					description="Policies this key belongs to. Relay tries keys in policy order; leave empty to detach the key from every policy."
-					options={providerPools.map((p) => ({
+					options={providerPolicies.map((p) => ({
 						value: p.metadata.name,
 						label: p.metadata.name,
 					}))}
-					selected={selectedPools}
-					onChange={setSelectedPools}
+					selected={selectedPolicies}
+					onChange={setSelectedPolicies}
 					placeholder="Select policies…"
 					emptyHint="No policies for this provider."
 				/>

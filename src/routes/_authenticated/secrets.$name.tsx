@@ -34,8 +34,8 @@ function SecretDetailInner() {
 	const [confirming, setConfirming] = useState(false);
 	const [rotating, setRotating] = useState(false);
 
-	const referencingPools = (policiesData.items ?? []).filter((pool) =>
-		(pool.spec.secrets ?? []).includes(name),
+	const referencingPolicies = (policiesData.items ?? []).filter((policy) =>
+		(policy.spec.secrets ?? []).includes(name),
 	);
 
 	async function handleDelete() {
@@ -162,20 +162,20 @@ function SecretDetailInner() {
 				<h2 className="text-lg font-semibold text-foreground mb-3">
 					Referenced by policies
 				</h2>
-				{referencingPools.length === 0 ? (
+				{referencingPolicies.length === 0 ? (
 					<p className="text-sm text-muted-foreground">
 						No policies reference this secret.
 					</p>
 				) : (
 					<ul className="space-y-1">
-						{referencingPools.map((pool) => (
-							<li key={pool.metadata.name}>
+						{referencingPolicies.map((policy) => (
+							<li key={policy.metadata.name}>
 								<Link
 									to="/policies/$name"
-									params={{ name: pool.metadata.name }}
+									params={{ name: policy.metadata.name }}
 									className="text-sm text-brand-600 hover:underline font-mono"
 								>
-									{pool.metadata.name}
+									{policy.metadata.name}
 								</Link>
 							</li>
 						))}

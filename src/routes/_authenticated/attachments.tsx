@@ -38,7 +38,7 @@ function parentEditLink(kind: string, name: string) {
 	if (lowerKind === "pool") {
 		return (
 			<Link
-				to="/pools/$name"
+				to="/policies/$name"
 				params={{ name }}
 				className="text-brand-600 hover:underline font-mono text-xs"
 			>
@@ -153,7 +153,7 @@ function AttachmentsInner() {
 					aria-label="Filter by parent kind"
 				>
 					<option value="all">All kinds</option>
-					<option value="Pool">Pool</option>
+					<option value="Pool">Policy</option>
 					<option value="Secret">Secret</option>
 					<option value="Model">Model</option>
 				</select>
@@ -197,7 +197,7 @@ function AttachmentsInner() {
 				<div className="rounded-lg border border-border bg-card p-10 text-center">
 					<p className="text-sm text-muted-foreground">
 						{allItems.length === 0
-							? "No attachments found. Add rate limits on Pool or Model resources."
+							? "No attachments found. Add rate limits on Policy or Model resources."
 							: "No attachments match the current filters."}
 					</p>
 				</div>
