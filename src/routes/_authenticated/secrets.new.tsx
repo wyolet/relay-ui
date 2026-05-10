@@ -69,9 +69,7 @@ function NewSecretInner() {
 
 	return (
 		<div>
-			<h1 className="text-2xl font-bold text-foreground mb-6">
-				New Secret
-			</h1>
+			<h1 className="text-2xl font-bold text-foreground mb-6">New Secret</h1>
 
 			{serverError && (
 				<div className="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 px-4 py-3 text-sm text-red-700 dark:text-red-300">
@@ -104,10 +102,7 @@ function NewSecretInner() {
 						className="w-full border border-input rounded-lg px-3 py-2 text-sm bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand-400"
 					/>
 					{errs.name && (
-						<p
-							role="alert"
-							className="mt-1 text-xs text-destructive"
-						>
+						<p role="alert" className="mt-1 text-xs text-destructive">
 							{errs.name}
 						</p>
 					)}
@@ -161,10 +156,7 @@ function NewSecretInner() {
 							Set this env var on your relay deployment.
 						</p>
 						{errs.envVar && (
-							<p
-								role="alert"
-								className="mt-1 text-xs text-destructive"
-							>
+							<p role="alert" className="mt-1 text-xs text-destructive">
 								{errs.envVar}
 							</p>
 						)}
@@ -193,10 +185,7 @@ function NewSecretInner() {
 							className="w-full border border-input rounded-lg px-3 py-2 text-sm bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand-400"
 						/>
 						{errs.storedValue && (
-							<p
-								role="alert"
-								className="mt-1 text-xs text-destructive"
-							>
+							<p role="alert" className="mt-1 text-xs text-destructive">
 								{errs.storedValue}
 							</p>
 						)}
@@ -228,9 +217,7 @@ function NewSecretInner() {
 function NewSecretPage() {
 	return (
 		<Suspense
-			fallback={
-				<div className="text-muted-foreground text-sm">Loading…</div>
-			}
+			fallback={<div className="text-muted-foreground text-sm">Loading…</div>}
 		>
 			<NewSecretInner />
 		</Suspense>

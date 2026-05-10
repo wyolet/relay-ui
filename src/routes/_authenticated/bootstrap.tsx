@@ -5,7 +5,7 @@
  *  1. Master Key (or skip to step 3 if env-ref only)
  *  2. First Provider
  *  3. First Secret
- *  4. First Pool
+ *  4. First Policy
  *  5. First Model
  *  6. Done + Test It
  *
@@ -24,7 +24,10 @@ import { CheckCircle, Circle, Loader2 } from "lucide-react";
 import { Suspense, useState } from "react";
 import { useGenerateMasterKey } from "@/api/hooks/masterKey";
 import { useCreateModel } from "@/api/hooks/models";
-import { poolsListQueryOptions, useCreatePool } from "@/api/hooks/pools";
+import {
+	policiesListQueryOptions,
+	useCreatePolicy,
+} from "@/api/hooks/policies";
 import {
 	providersListQueryOptions,
 	useCreateProvider,
@@ -75,7 +78,7 @@ const STEPS = [
 	{ number: 1, label: "Master Key" },
 	{ number: 2, label: "Provider" },
 	{ number: 3, label: "Secret" },
-	{ number: 4, label: "Pool" },
+	{ number: 4, label: "Policy" },
 	{ number: 5, label: "Model" },
 	{ number: 6, label: "Done" },
 ] as const;
@@ -286,9 +289,7 @@ function MasterKeyStep({ search }: MasterKeyStepProps) {
 							</div>
 
 							<div>
-								<p className="text-xs text-muted-foreground mb-1">
-									kubectl
-								</p>
+								<p className="text-xs text-muted-foreground mb-1">kubectl</p>
 								<pre className="bg-neutral-900 text-green-400 text-xs rounded-lg px-4 py-3 overflow-x-auto font-mono whitespace-pre">
 									{`kubectl set env deployment/relay \\
   RELAY_MASTER_KEY="${generatedKey}"`}
@@ -476,7 +477,7 @@ function SecretStep({ search }: SecretStepProps) {
 					Add your first Secret
 				</h2>
 				<p className="text-sm text-muted-foreground">
-					Secrets hold API credentials used by pools to authenticate with
+					Secrets hold API credentials used by policies to authenticate with
 					providers.
 				</p>
 			</div>
@@ -612,7 +613,7 @@ function SecretStep({ search }: SecretStepProps) {
 }
 
 // ---------------------------------------------------------------------------
-// Step 4 — First Pool
+// Step 4 — First Policy
 // ---------------------------------------------------------------------------
 
 interface PoolStepProps {
@@ -621,7 +622,7 @@ interface PoolStepProps {
 
 function PoolStep({ search }: PoolStepProps) {
 	const navigate = useNavigate({ from: "/bootstrap" });
-	const createPool = useCreatePool();
+	const createPool = useCreatePolicy();
 
 	const providersQuery = useSuspenseQuery(providersListQueryOptions);
 	const secretsQuery = useSuspenseQuery(secretsListQueryOptions);
@@ -669,11 +670,11 @@ function PoolStep({ search }: PoolStepProps) {
 		<div className="space-y-6 max-w-xl">
 			<div>
 				<h2 className="text-xl font-bold text-foreground mb-1">
-					Create your first Pool
+					Create your first Policy
 				</h2>
 				<p className="text-sm text-muted-foreground">
-					A pool binds a provider with one or more secrets and is the unit Relay
-					uses to route requests.
+					A policy binds a provider with one or more secrets and is the unit
+					Relay uses to route requests.
 				</p>
 			</div>
 
@@ -732,15 +733,11 @@ function PoolStep({ search }: PoolStepProps) {
 									onChange={() => toggleSecret(s.name)}
 									className="h-4 w-4 rounded border-neutral-300 dark:border-neutral-600 text-brand-600"
 								/>
-								<span className="text-sm text-foreground">
-									{s.name}
-								</span>
+								<span className="text-sm text-foreground">{s.name}</span>
 							</label>
 						))}
 						{(secretsQuery.data.items ?? []).length === 0 && (
-							<p className="text-sm text-muted-foreground">
-								No secrets found.
-							</p>
+							<p className="text-sm text-muted-foreground">No secrets found.</p>
 						)}
 					</div>
 				</div>
@@ -749,7 +746,7 @@ function PoolStep({ search }: PoolStepProps) {
 					<p className="text-destructive text-sm">
 						{createPool.error instanceof Error
 							? createPool.error.message
-							: "Failed to create pool"}
+							: "Failed to create policy"}
 					</p>
 				)}
 
@@ -996,17 +993,15 @@ function DoneStep({ search }: DoneStepProps) {
 						You&apos;re all set!
 					</h2>
 					<p className="text-sm text-muted-foreground">
-						Relay is configured with a provider, secret, pool, and model. Send a
-						test prompt to confirm everything is wired up.
+						Relay is configured with a provider, secret, policy, and model. Send
+						a test prompt to confirm everything is wired up.
 					</p>
 				</div>
 			</div>
 
 			{/* Test card */}
 			<div className="rounded-xl border border-border bg-card p-6 space-y-4">
-				<h3 className="font-semibold text-foreground">
-					Test it
-				</h3>
+				<h3 className="font-semibold text-foreground">Test it</h3>
 				<p className="text-xs text-muted-foreground">
 					Model: <code className="font-mono">{modelName}</code> — via{" "}
 					<code className="font-mono">/v1/chat/completions</code>
@@ -1069,7 +1064,7 @@ interface ResumeComputerProps {
 function ResumeComputer({ initialSearch }: ResumeComputerProps) {
 	const navigate = useNavigate({ from: "/bootstrap" });
 	const providersQuery = useSuspenseQuery(providersListQueryOptions);
-	const poolsQuery = useSuspenseQuery(poolsListQueryOptions);
+	const poolsQuery = useSuspenseQuery(policiesListQueryOptions);
 	const secretsQuery = useSuspenseQuery(secretsListQueryOptions);
 
 	const hasProviders = (providersQuery.data.items ?? []).length > 0;
@@ -1124,9 +1119,7 @@ function BootstrapInner() {
 				return (
 					<Suspense
 						fallback={
-							<div className="text-muted-foreground text-sm">
-								Loading…
-							</div>
+							<div className="text-muted-foreground text-sm">Loading…</div>
 						}
 					>
 						<PoolStep search={search} />
@@ -1136,9 +1129,7 @@ function BootstrapInner() {
 				return (
 					<Suspense
 						fallback={
-							<div className="text-muted-foreground text-sm">
-								Loading…
-							</div>
+							<div className="text-muted-foreground text-sm">Loading…</div>
 						}
 					>
 						<ModelStep search={search} />
@@ -1148,11 +1139,7 @@ function BootstrapInner() {
 				return <DoneStep search={search} />;
 			default:
 				// step === undefined means resume computer is still computing
-				return (
-					<div className="text-muted-foreground text-sm">
-						Loading…
-					</div>
-				);
+				return <div className="text-muted-foreground text-sm">Loading…</div>;
 		}
 	}
 
@@ -1174,9 +1161,7 @@ function BootstrapInner() {
 function BootstrapPage() {
 	return (
 		<div>
-			<h1 className="text-2xl font-bold text-foreground mb-8">
-				Setup Wizard
-			</h1>
+			<h1 className="text-2xl font-bold text-foreground mb-8">Setup Wizard</h1>
 			<BootstrapInner />
 		</div>
 	);

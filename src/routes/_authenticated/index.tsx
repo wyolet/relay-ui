@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { modelsListQueryOptions } from "@/api/hooks/models";
-import { poolsListQueryOptions } from "@/api/hooks/pools";
+import { policiesListQueryOptions } from "@/api/hooks/policies";
 import { providersListQueryOptions } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
 import { routesListQueryOptions } from "@/api/hooks/routes";
@@ -76,7 +76,7 @@ function MetricsPending() {
 function DashboardInner() {
 	const { data: providers } = useQuery(providersListQueryOptions);
 	const { data: secrets } = useQuery(secretsListQueryOptions);
-	const { data: pools } = useQuery(poolsListQueryOptions);
+	const { data: pools } = useQuery(policiesListQueryOptions);
 	const { data: models } = useQuery(modelsListQueryOptions);
 	const { data: routes } = useQuery(routesListQueryOptions);
 	const { data: ratelimits } = useQuery(rateLimitsListQueryOptions);
@@ -101,7 +101,7 @@ function DashboardInner() {
 				</h2>
 				<div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
 					<CountCard label="Providers" count={providers?.items?.length} />
-					<CountCard label="Pools" count={pools?.items?.length} />
+					<CountCard label="Policies" count={pools?.items?.length} />
 					<CountCard label="Secrets" count={secrets?.items?.length} />
 					<CountCard label="Models" count={models?.items?.length} />
 					<CountCard label="Routes" count={routes?.items?.length} />
@@ -115,15 +115,9 @@ function DashboardInner() {
 function DashboardPage() {
 	return (
 		<div>
-			<h1 className="text-2xl font-bold text-foreground mb-6">
-				Dashboard
-			</h1>
+			<h1 className="text-2xl font-bold text-foreground mb-6">Dashboard</h1>
 			<Suspense
-				fallback={
-					<div className="text-muted-foreground text-sm">
-						Loading…
-					</div>
-				}
+				fallback={<div className="text-muted-foreground text-sm">Loading…</div>}
 			>
 				<DashboardInner />
 			</Suspense>

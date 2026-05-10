@@ -67,9 +67,7 @@ export function ResourceList<T>({
 	return (
 		<div>
 			<div className="flex items-center justify-between mb-6">
-				<h1 className="text-2xl font-bold text-foreground">
-					{title}
-				</h1>
+				<h1 className="text-2xl font-bold text-foreground">{title}</h1>
 				<Link
 					to={createTo}
 					className="inline-flex items-center gap-1.5 px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 transition-colors"
@@ -145,14 +143,9 @@ export function ResourceList<T>({
 										className="hover:bg-neutral-50 dark:hover:bg-neutral-800 cursor-pointer transition-colors bg-card"
 									>
 										{columns.map((col) => (
-											<td
-												key={col.key}
-												className="px-4 py-3 text-foreground"
-											>
+											<td key={col.key} className="px-4 py-3 text-foreground">
 												{col.render(row) ?? (
-													<span className="text-muted-foreground">
-														—
-													</span>
+													<span className="text-muted-foreground">—</span>
 												)}
 											</td>
 										))}

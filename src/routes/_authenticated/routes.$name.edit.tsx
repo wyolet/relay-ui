@@ -80,9 +80,7 @@ function EditRouteInner() {
 function EditRoutePage() {
 	return (
 		<Suspense
-			fallback={
-				<div className="text-muted-foreground text-sm">Loading…</div>
-			}
+			fallback={<div className="text-muted-foreground text-sm">Loading…</div>}
 		>
 			<EditRouteInner />
 		</Suspense>

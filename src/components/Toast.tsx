@@ -1,8 +1,8 @@
 import { type ToastKind, useToastStore } from "@/stores/toast";
 
+export type { ToastKind, ToastMessage } from "@/stores/toast";
 // Re-export the imperative helper so existing call sites stay working.
 export { toast } from "@/stores/toast";
-export type { ToastKind, ToastMessage } from "@/stores/toast";
 
 const KIND_CLASSES: Record<ToastKind, string> = {
 	success: "bg-brand-600 text-white",

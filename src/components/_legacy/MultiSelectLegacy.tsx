@@ -1,5 +1,12 @@
 import { Check, ChevronDown, Search, X } from "lucide-react";
-import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
+import {
+	useEffect,
+	useId,
+	useLayoutEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
 import { createPortal } from "react-dom";
 
 export interface MultiSelectOption {
@@ -37,7 +44,11 @@ export function MultiSelectLegacy({
 	const popoverRef = useRef<HTMLDivElement | null>(null);
 	const inputRef = useRef<HTMLInputElement | null>(null);
 	const listboxId = useId();
-	const [pos, setPos] = useState<{ top: number; left: number; width: number } | null>(null);
+	const [pos, setPos] = useState<{
+		top: number;
+		left: number;
+		width: number;
+	} | null>(null);
 	const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
 
 	useEffect(() => {
@@ -180,86 +191,91 @@ export function MultiSelectLegacy({
 				/>
 			</button>
 
-			{open && pos && portalTarget && createPortal(
-				<div
-					ref={popoverRef}
-					id={listboxId}
-					role="listbox"
-					aria-multiselectable
-					style={{
-						position: "fixed",
-						top: pos.top,
-						left: pos.left,
-						width: Math.max(pos.width, 240),
-					}}
-					className="z-[60] rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-lg shadow-black/10 dark:shadow-black/40 overflow-hidden"
-				>
-					<div className="relative border-b border-neutral-200 dark:border-neutral-800">
-						<Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-400 dark:text-neutral-500 pointer-events-none" />
-						<input
-							ref={inputRef}
-							type="search"
-							value={q}
-							onChange={(e) => setQ(e.currentTarget.value)}
-							placeholder="Search…"
-							className="w-full h-8 pl-8 pr-2 text-xs bg-transparent text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none"
-						/>
-					</div>
-					<div className="max-h-56 overflow-y-auto py-1">
-						{filtered.length === 0 ? (
-							<div className="px-3 py-4 text-center text-[11px] text-neutral-500 dark:text-neutral-400">
-								{options.length === 0 ? emptyHint : "No matches."}
-							</div>
-						) : (
-							filtered.map((opt) => {
-								const on = selected.includes(opt.value);
-								return (
-									<button
-										key={opt.value}
-										type="button"
-										role="option"
-										aria-selected={on}
-										onClick={() => toggle(opt.value)}
-										className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-neutral-800 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800/60 focus:outline-none focus:bg-neutral-100 dark:focus:bg-neutral-800/60"
-									>
-										<span
-											className={`flex h-4 w-4 items-center justify-center rounded border ${
-												on
-													? "bg-brand-600 border-brand-600 text-white"
-													: "border-neutral-300 dark:border-neutral-600"
-											}`}
-										>
-											{on && <Check className="w-3 h-3" strokeWidth={3} />}
-										</span>
-										<span className="flex-1 truncate text-left">{opt.label}</span>
-									</button>
-								);
-							})
-						)}
-					</div>
-					{options.length > 0 && (
-						<div className="flex items-center justify-between border-t border-neutral-200 dark:border-neutral-800 px-2 py-1.5">
-							<button
-								type="button"
-								onClick={selectAll}
-								disabled={allSelected}
-								className="h-6 px-1.5 rounded text-[11px] font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-800/60 disabled:opacity-40 disabled:cursor-not-allowed"
-							>
-								Select all
-							</button>
-							<button
-								type="button"
-								onClick={clear}
-								disabled={!someSelected && !allSelected}
-								className="h-6 px-1.5 rounded text-[11px] font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-800/60 disabled:opacity-40 disabled:cursor-not-allowed"
-							>
-								Clear
-							</button>
+			{open &&
+				pos &&
+				portalTarget &&
+				createPortal(
+					<div
+						ref={popoverRef}
+						id={listboxId}
+						role="listbox"
+						aria-multiselectable
+						style={{
+							position: "fixed",
+							top: pos.top,
+							left: pos.left,
+							width: Math.max(pos.width, 240),
+						}}
+						className="z-[60] rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-lg shadow-black/10 dark:shadow-black/40 overflow-hidden"
+					>
+						<div className="relative border-b border-neutral-200 dark:border-neutral-800">
+							<Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-400 dark:text-neutral-500 pointer-events-none" />
+							<input
+								ref={inputRef}
+								type="search"
+								value={q}
+								onChange={(e) => setQ(e.currentTarget.value)}
+								placeholder="Search…"
+								className="w-full h-8 pl-8 pr-2 text-xs bg-transparent text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none"
+							/>
 						</div>
-					)}
-				</div>,
-				portalTarget,
-			)}
+						<div className="max-h-56 overflow-y-auto py-1">
+							{filtered.length === 0 ? (
+								<div className="px-3 py-4 text-center text-[11px] text-neutral-500 dark:text-neutral-400">
+									{options.length === 0 ? emptyHint : "No matches."}
+								</div>
+							) : (
+								filtered.map((opt) => {
+									const on = selected.includes(opt.value);
+									return (
+										<button
+											key={opt.value}
+											type="button"
+											role="option"
+											aria-selected={on}
+											onClick={() => toggle(opt.value)}
+											className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-neutral-800 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800/60 focus:outline-none focus:bg-neutral-100 dark:focus:bg-neutral-800/60"
+										>
+											<span
+												className={`flex h-4 w-4 items-center justify-center rounded border ${
+													on
+														? "bg-brand-600 border-brand-600 text-white"
+														: "border-neutral-300 dark:border-neutral-600"
+												}`}
+											>
+												{on && <Check className="w-3 h-3" strokeWidth={3} />}
+											</span>
+											<span className="flex-1 truncate text-left">
+												{opt.label}
+											</span>
+										</button>
+									);
+								})
+							)}
+						</div>
+						{options.length > 0 && (
+							<div className="flex items-center justify-between border-t border-neutral-200 dark:border-neutral-800 px-2 py-1.5">
+								<button
+									type="button"
+									onClick={selectAll}
+									disabled={allSelected}
+									className="h-6 px-1.5 rounded text-[11px] font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-800/60 disabled:opacity-40 disabled:cursor-not-allowed"
+								>
+									Select all
+								</button>
+								<button
+									type="button"
+									onClick={clear}
+									disabled={!someSelected && !allSelected}
+									className="h-6 px-1.5 rounded text-[11px] font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-800/60 disabled:opacity-40 disabled:cursor-not-allowed"
+								>
+									Clear
+								</button>
+							</div>
+						)}
+					</div>,
+					portalTarget,
+				)}
 		</div>
 	);
 }

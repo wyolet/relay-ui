@@ -86,7 +86,10 @@ export function RelayKeyForm({
 			return;
 		}
 		// midnight UTC of that date
-		onChange({ ...value, expiresAt: new Date(`${yyyyMmDd}T00:00:00Z`).toISOString() });
+		onChange({
+			...value,
+			expiresAt: new Date(`${yyyyMmDd}T00:00:00Z`).toISOString(),
+		});
 	}
 
 	const rl = value.rateLimit;
@@ -129,7 +132,13 @@ export function RelayKeyForm({
 			<Field label="Expires">
 				<div className="flex flex-wrap items-center gap-1.5">
 					<Segmented
-						value={expiryMode === "preset" ? `p${expiryPresetDays}` : expiryMode === "none" ? "p-null" : "custom"}
+						value={
+							expiryMode === "preset"
+								? `p${expiryPresetDays}`
+								: expiryMode === "none"
+									? "p-null"
+									: "custom"
+						}
 						options={[
 							...EXPIRY_PRESETS.map((p) => ({
 								value: `p${p.days}`,
@@ -186,7 +195,7 @@ export function RelayKeyForm({
 				)}
 				<p className="mt-1 text-[11px] text-muted-foreground">
 					{rlMode === "none"
-						? "No throttling. Requests are bound only by the key's pools and provider limits."
+						? "No throttling. Requests are bound only by the key's policies and provider limits."
 						: rlMode === "ref"
 							? "Reuses a saved rate limit. Edit on the Rate Limits page."
 							: "Saved as a rate limit attached to this key only."}
@@ -196,7 +205,13 @@ export function RelayKeyForm({
 	);
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+	label,
+	children,
+}: {
+	label: string;
+	children: React.ReactNode;
+}) {
 	return (
 		<div>
 			<div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
@@ -275,7 +290,10 @@ interface RateLimitCustomEditorProps {
 	onChange: (next: RateLimitCustomDraft) => void;
 }
 
-function RateLimitCustomEditor({ draft, onChange }: RateLimitCustomEditorProps) {
+function RateLimitCustomEditor({
+	draft,
+	onChange,
+}: RateLimitCustomEditorProps) {
 	function patch(partial: Partial<RateLimitCustomDraft>) {
 		onChange({ ...draft, ...partial });
 	}
@@ -413,13 +431,13 @@ function MeterRowConcurrency({
 					type="checkbox"
 					checked={enabled}
 					onChange={(e) =>
-						onChange(e.currentTarget.checked ? { amount: rule?.amount ?? 1 } : null)
+						onChange(
+							e.currentTarget.checked ? { amount: rule?.amount ?? 1 } : null,
+						)
 					}
 					className="h-3.5 w-3.5 accent-primary"
 				/>
-				<span className="text-xs font-medium text-foreground">
-					Concurrency
-				</span>
+				<span className="text-xs font-medium text-foreground">Concurrency</span>
 			</label>
 			<div className="relative">
 				<Input
@@ -444,8 +462,7 @@ function MeterRowConcurrency({
 					in flight
 				</span>
 			</div>
-			<span className="text-xs text-muted-foreground">no window
-			</span>
+			<span className="text-xs text-muted-foreground">no window</span>
 		</div>
 	);
 }

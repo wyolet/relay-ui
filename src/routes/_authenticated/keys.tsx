@@ -1,8 +1,4 @@
-import {
-	createFileRoute,
-	Link,
-	useNavigate,
-} from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
 	Check,
 	Copy,
@@ -14,17 +10,16 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { z } from "zod";
-import { useModels, modelsListQueryOptions } from "@/api/hooks/models";
-import { usePools, poolsListQueryOptions } from "@/api/hooks/pools";
+import { policiesListQueryOptions, usePolicies } from "@/api/hooks/policies";
+import { providersListQueryOptions, useProviders } from "@/api/hooks/providers";
 import {
-	useProviders,
-	providersListQueryOptions,
-} from "@/api/hooks/providers";
-import {
+	secretsListQueryOptions,
 	useDeleteSecret,
 	useSecrets,
-	secretsListQueryOptions,
 } from "@/api/hooks/secrets";
+import type { Policy } from "@/api/types/policy";
+import type { Provider } from "@/api/types/provider";
+import type { SecretResponse } from "@/api/types/secret";
 import { ByokModal } from "@/components/ByokModal";
 import { confirm } from "@/components/ConfirmDialog";
 import { CreateRelayKeyModal } from "@/components/CreateRelayKeyModal";
@@ -39,16 +34,13 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { Pool } from "@/api/types/pool";
-import type { Provider } from "@/api/types/provider";
-import type { SecretResponse } from "@/api/types/secret";
 import { type ApiKey, useKeysStore } from "@/stores/keys";
 
 type Filter = "active" | "revoked" | "all";
-type Tab = "relay" | "provider" | "pools";
+type Tab = "relay" | "provider";
 
 const searchSchema = z.object({
-	tab: z.enum(["relay", "provider", "pools"]).default("relay"),
+	tab: z.enum(["relay", "provider"]).default("relay"),
 	filter: z.enum(["active", "revoked", "all"]).default("active"),
 	q: z.string().default(""),
 	provider: z.string().optional(),
@@ -59,8 +51,7 @@ export const Route = createFileRoute("/_authenticated/keys")({
 	validateSearch: searchSchema,
 	loader: ({ context }) => {
 		void context.queryClient.prefetchQuery(providersListQueryOptions);
-		void context.queryClient.prefetchQuery(modelsListQueryOptions);
-		void context.queryClient.prefetchQuery(poolsListQueryOptions);
+		void context.queryClient.prefetchQuery(policiesListQueryOptions);
 		void context.queryClient.prefetchQuery(secretsListQueryOptions);
 		return null;
 	},
@@ -187,7 +178,8 @@ function PrefixCell({ text, copyText }: { text: string; copyText: string }) {
 }
 
 function formatAmount(n: number): string {
-	if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(n % 1_000_000 ? 1 : 0)}M`;
+	if (n >= 1_000_000)
+		return `${(n / 1_000_000).toFixed(n % 1_000_000 ? 1 : 0)}M`;
 	if (n >= 1_000) return `${(n / 1_000).toFixed(n % 1_000 ? 1 : 0)}k`;
 	return `${n}`;
 }
@@ -205,11 +197,7 @@ function LimitsCell({
 	rateLimit: import("@/stores/keys").RateLimitDraft;
 }) {
 	if (rateLimit.kind === "none") {
-		return (
-			<span className="text-[11px] text-muted-foreground/70">
-				—
-			</span>
-		);
+		return <span className="text-[11px] text-muted-foreground/70">—</span>;
 	}
 	if (rateLimit.kind === "ref") {
 		return (
@@ -220,13 +208,18 @@ function LimitsCell({
 	}
 	const parts: string[] = [];
 	if (rateLimit.requests)
-		parts.push(`${formatAmount(rateLimit.requests.amount)}/${formatWindow(rateLimit.requests.window)} req`);
+		parts.push(
+			`${formatAmount(rateLimit.requests.amount)}/${formatWindow(rateLimit.requests.window)} req`,
+		);
 	if (rateLimit.tokens)
-		parts.push(`${formatAmount(rateLimit.tokens.amount)}/${formatWindow(rateLimit.tokens.window)} tok`);
-	if (rateLimit.concurrency)
-		parts.push(`${rateLimit.concurrency.amount} conc`);
+		parts.push(
+			`${formatAmount(rateLimit.tokens.amount)}/${formatWindow(rateLimit.tokens.window)} tok`,
+		);
+	if (rateLimit.concurrency) parts.push(`${rateLimit.concurrency.amount} conc`);
 	if (rateLimit.spend)
-		parts.push(`$${rateLimit.spend.amount}/${formatWindow(rateLimit.spend.window)}`);
+		parts.push(
+			`$${rateLimit.spend.amount}/${formatWindow(rateLimit.spend.window)}`,
+		);
 	if (parts.length === 0) {
 		return (
 			<span className="text-[11px] text-muted-foreground/70">
@@ -281,8 +274,7 @@ function StatusDot({ tone, label }: { tone: StatusTone; label: string }) {
 		muted: "bg-neutral-400 dark:bg-neutral-600",
 		danger:
 			"bg-red-500 shadow-[0_0_6px_rgb(239_68_68_/_0.7)] dark:shadow-[0_0_8px_rgb(239_68_68_/_0.5)]",
-		warn:
-			"bg-amber-500 shadow-[0_0_6px_rgb(245_158_11_/_0.7)] dark:shadow-[0_0_8px_rgb(245_158_11_/_0.5)]",
+		warn: "bg-amber-500 shadow-[0_0_6px_rgb(245_158_11_/_0.7)] dark:shadow-[0_0_8px_rgb(245_158_11_/_0.5)]",
 	}[tone];
 	return (
 		<span
@@ -305,11 +297,9 @@ function KeysPage() {
 	return (
 		<div>
 			<div className="mb-4">
-				<h1 className="text-lg font-semibold text-foreground">
-					Keys
-				</h1>
+				<h1 className="text-lg font-semibold text-foreground">Keys</h1>
 				<p className="text-xs text-muted-foreground mt-0.5">
-					Relay API keys, provider credentials, and the pools that group them.
+					Relay API keys and the upstream provider credentials they draw from.
 				</p>
 			</div>
 
@@ -320,14 +310,10 @@ function KeysPage() {
 				<TabLink value="provider" current={search.tab} onClick={setTab}>
 					Provider keys
 				</TabLink>
-				<TabLink value="pools" current={search.tab} onClick={setTab}>
-					Pools
-				</TabLink>
 			</div>
 
 			{search.tab === "relay" && <RelayKeysPanel />}
 			{search.tab === "provider" && <ProviderKeysPanel />}
-			{search.tab === "pools" && <PoolsPanel />}
 		</div>
 	);
 }
@@ -374,7 +360,7 @@ function RelayKeysPanel() {
 		all: items.length,
 	};
 	const visible = applyFilter(items, search.filter, search.q);
-	const editKey = editId ? items.find((k) => k.id === editId) ?? null : null;
+	const editKey = editId ? (items.find((k) => k.id === editId) ?? null) : null;
 
 	function setFilter(filter: Filter) {
 		void navigate({ search: (prev) => ({ ...prev, filter }) });
@@ -451,7 +437,11 @@ function RelayKeysPanel() {
 								<Th align="right">Last used</Th>
 								<Th align="right">Created</Th>
 								<Th align="right">Expires</Th>
-								<th scope="col" className="w-10 px-3 py-2" aria-label="Actions" />
+								<th
+									scope="col"
+									className="w-10 px-3 py-2"
+									aria-label="Actions"
+								/>
 							</tr>
 						</thead>
 						<tbody>
@@ -561,7 +551,7 @@ function ProviderKeysPanel() {
 	const navigate = useNavigate({ from: "/keys" });
 	const search = Route.useSearch();
 	const { data: providers } = useProviders();
-	const { data: pools } = usePools();
+	const { data: policies } = usePolicies();
 	const { data: secrets } = useSecrets();
 	const [byokOpen, setByokOpen] = useState(false);
 	const [filterOpen, setFilterOpen] = useState(false);
@@ -571,7 +561,7 @@ function ProviderKeysPanel() {
 
 	function keyCount(providerName: string): number {
 		const known = new Set(secrets.items?.map((s) => s.name) ?? []);
-		return (pools.items ?? [])
+		return (policies.items ?? [])
 			.filter((p) => p.spec.provider === providerName)
 			.flatMap((p) => p.spec.secrets ?? [])
 			.filter((n) => known.has(n)).length;
@@ -580,7 +570,9 @@ function ProviderKeysPanel() {
 	// "" = all providers
 	const selected = search.provider ?? "";
 	const selectedProvider =
-		selected === "" ? undefined : list.find((p) => p.metadata.name === selected);
+		selected === ""
+			? undefined
+			: list.find((p) => p.metadata.name === selected);
 	const totalKeys = list.reduce((acc, p) => acc + keyCount(p.metadata.name), 0);
 
 	function pick(provider: string) {
@@ -634,7 +626,8 @@ function ProviderKeysPanel() {
 							<ListFilter className="w-3.5 h-3.5" />
 							<span>
 								{selectedProvider
-									? (selectedProvider.spec.displayName ?? selectedProvider.metadata.name)
+									? (selectedProvider.spec.displayName ??
+										selectedProvider.metadata.name)
 									: "All providers"}
 							</span>
 						</button>
@@ -728,7 +721,7 @@ function ProviderKeysPanel() {
 
 			<ProviderKeysTable
 				providers={list}
-				pools={pools.items ?? []}
+				policies={policies.items ?? []}
 				secrets={secrets.items ?? []}
 				selectedProvider={selected}
 				query={keyQ}
@@ -745,7 +738,7 @@ function ProviderKeysPanel() {
 
 interface ProviderKeysTableProps {
 	providers: Provider[];
-	pools: Pool[];
+	policies: Policy[];
 	secrets: SecretResponse[];
 	selectedProvider: string;
 	query: string;
@@ -753,15 +746,16 @@ interface ProviderKeysTableProps {
 
 function ProviderKeysTable({
 	providers,
-	pools,
+	policies,
 	secrets,
 	selectedProvider,
 	query,
 }: ProviderKeysTableProps) {
 	const deleteSecret = useDeleteSecret();
-	const [editing, setEditing] = useState<{ name: string; provider: string } | null>(
-		null,
-	);
+	const [editing, setEditing] = useState<{
+		name: string;
+		provider: string;
+	} | null>(null);
 	const secretByName: Record<string, SecretResponse> = {};
 	for (const s of secrets) secretByName[s.name] = s;
 
@@ -788,29 +782,29 @@ function ProviderKeysTable({
 		toast("success", "Enable/disable — backend support coming soon.");
 	}
 
-	// Build a row per (secret name, provider) — secrets live inside pools.
+	// Build a row per (secret name, provider) — secrets live inside policies.
 	type Entry = {
 		name: string;
 		provider: string;
-		pools: string[];
+		policies: string[];
 		secret: SecretResponse | undefined;
 	};
 	const byKey = new Map<string, Entry>();
 
-	const relevantPools = pools.filter(
+	const relevantPolicies = policies.filter(
 		(p) => !selectedProvider || p.spec.provider === selectedProvider,
 	);
-	for (const p of relevantPools) {
+	for (const p of relevantPolicies) {
 		for (const name of p.spec.secrets ?? []) {
 			const k = `${p.spec.provider}::${name}`;
 			const existing = byKey.get(k);
 			if (existing) {
-				existing.pools.push(p.metadata.name);
+				existing.policies.push(p.metadata.name);
 			} else {
 				byKey.set(k, {
 					name,
 					provider: p.spec.provider,
-					pools: [p.metadata.name],
+					policies: [p.metadata.name],
 					secret: secretByName[name],
 				});
 			}
@@ -825,7 +819,7 @@ function ProviderKeysTable({
 		return (
 			r.name.toLowerCase().includes(ql) ||
 			r.provider.toLowerCase().includes(ql) ||
-			r.pools.some((p) => p.toLowerCase().includes(ql))
+			r.policies.some((p) => p.toLowerCase().includes(ql))
 		);
 	});
 
@@ -858,8 +852,11 @@ function ProviderKeysTable({
 						<th scope="col" className="w-6 px-3 py-2" aria-label="Status" />
 						<Th>Name</Th>
 						<Th>Provider</Th>
-						<Th>Pools</Th>
-						<th scope="col" className="w-12 px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+						<Th>Policies</Th>
+						<th
+							scope="col"
+							className="w-12 px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground"
+						>
 							On
 						</th>
 						<th scope="col" className="w-10 px-3 py-2" aria-label="Actions" />
@@ -895,10 +892,10 @@ function ProviderKeysTable({
 								</td>
 								<td className="px-3 py-2">
 									<div className="flex flex-wrap gap-1">
-										{r.pools.map((pn) => (
+										{r.policies.map((pn) => (
 											<Link
 												key={pn}
-												to="/pools/$name"
+												to="/policies/$name"
 												params={{ name: pn }}
 												className="inline-flex items-center h-5 px-1.5 rounded text-[10px] font-medium bg-muted text-muted-foreground hover:text-foreground"
 											>
@@ -943,133 +940,6 @@ function ProviderKeysTable({
 					secretName={editing.name}
 					providerName={editing.provider}
 				/>
-			)}
-		</div>
-	);
-}
-
-function PoolsPanel() {
-	const { data: pools } = usePools();
-	const { data: models } = useModels();
-	const items = pools.items ?? [];
-
-	function modelCountFor(provider: string): number {
-		return (models.items ?? []).filter((m) => m.spec.provider === provider).length;
-	}
-
-	return (
-		<div>
-			<div className="flex items-center justify-end mb-3">
-				<Link
-					to="/pools/new"
-					className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-xs font-semibold text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-				>
-					<Plus className="w-3.5 h-3.5" />
-					New pool
-				</Link>
-			</div>
-			{items.length === 0 ? (
-				<div className="rounded-lg border border-dashed border-input bg-card px-6 py-14 text-center">
-					<KeyRound className="w-6 h-6 mx-auto mb-3 text-muted-foreground/50" />
-					<p className="text-sm text-muted-foreground">
-						No pools configured yet.
-					</p>
-				</div>
-			) : (
-				<div className="overflow-x-auto rounded-lg border border-border bg-card">
-					<table className="w-full border-collapse">
-						<thead className="bg-muted/40">
-							<tr>
-								<th scope="col" className="w-6 px-3 py-2" aria-label="Status" />
-								<Th>Name</Th>
-								<Th>Provider</Th>
-								<Th align="right">Keys</Th>
-								<Th align="right">Models</Th>
-								<Th align="right">Mode</Th>
-								<th scope="col" className="w-12 px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-									On
-								</th>
-								<th scope="col" className="w-10 px-3 py-2" aria-label="Actions" />
-							</tr>
-						</thead>
-						<tbody>
-							{items.map((p) => (
-								<tr
-									key={p.metadata.name}
-									className="border-t border-border hover:bg-muted/40 transition-colors"
-								>
-									<td className="px-3 py-2 align-middle">
-										<StatusDot tone="active" label="Active" />
-									</td>
-									<td className="px-3 py-2">
-										<Link
-											to="/pools/$name"
-											params={{ name: p.metadata.name }}
-											className="text-sm font-medium text-foreground hover:underline"
-										>
-											{p.metadata.name}
-										</Link>
-									</td>
-									<td className="px-3 py-2 text-sm text-foreground capitalize">
-										<Link
-											to="/providers/$name"
-											params={{ name: p.spec.provider }}
-											className="hover:underline"
-										>
-											{p.spec.provider}
-										</Link>
-									</td>
-									<td className="px-3 py-2 text-sm text-foreground text-right tabular-nums">
-										{(p.spec.secrets ?? []).length}
-									</td>
-									<td className="px-3 py-2 text-sm text-foreground text-right tabular-nums">
-										{modelCountFor(p.spec.provider)}
-									</td>
-									<td className="px-3 py-2 text-right">
-										{p.spec.passthrough ? (
-											<span className="text-[10px] uppercase tracking-wide text-muted-foreground px-1.5 py-0.5 rounded bg-muted">
-												passthrough
-											</span>
-										) : (
-											<span className="text-[11px] text-muted-foreground">
-												—
-											</span>
-										)}
-									</td>
-									<td className="px-3 py-2">
-										<Switch
-											checked
-											onChange={() =>
-												toast(
-													"success",
-													"Pool enable/disable — backend support coming soon.",
-												)
-											}
-											label={`Toggle ${p.metadata.name}`}
-										/>
-									</td>
-									<td className="px-3 py-2 text-right">
-										<RowMenu
-											actions={[
-												{
-													label: "Edit",
-													onClick: () =>
-														toast("success", "Edit pool — coming soon."),
-												},
-												{
-													label: "Delete",
-													danger: true,
-													onClick: () =>
-														toast("success", "Delete pool — coming soon."),
-												},
-											]}
-										/>
-									</td>
-								</tr>
-							))}
-						</tbody>
-					</table>
-				</div>
 			)}
 		</div>
 	);

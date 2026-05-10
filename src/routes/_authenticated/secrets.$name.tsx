@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Suspense, useState } from "react";
-import { poolsListQueryOptions, usePools } from "@/api/hooks/pools";
+import { policiesListQueryOptions, usePolicies } from "@/api/hooks/policies";
 import {
 	secretDetailQueryOptions,
 	secretsListQueryOptions,
@@ -19,7 +19,7 @@ export const Route = createFileRoute("/_authenticated/secrets/$name")({
 				secretDetailQueryOptions(params.name),
 			),
 			context.queryClient.ensureQueryData(secretsListQueryOptions),
-			context.queryClient.ensureQueryData(poolsListQueryOptions),
+			context.queryClient.ensureQueryData(policiesListQueryOptions),
 		]),
 	component: SecretDetailPage,
 });
@@ -27,14 +27,14 @@ export const Route = createFileRoute("/_authenticated/secrets/$name")({
 function SecretDetailInner() {
 	const { name } = Route.useParams();
 	const { data: secret } = useSecret(name);
-	const { data: poolsData } = usePools();
+	const { data: policiesData } = usePolicies();
 	const deleteSecret = useDeleteSecret();
 	const navigate = useNavigate();
 
 	const [confirming, setConfirming] = useState(false);
 	const [rotating, setRotating] = useState(false);
 
-	const referencingPools = (poolsData.items ?? []).filter((pool) =>
+	const referencingPools = (policiesData.items ?? []).filter((pool) =>
 		(pool.spec.secrets ?? []).includes(name),
 	);
 
@@ -101,17 +101,13 @@ function SecretDetailInner() {
 			{/* Detail fields */}
 			<dl className="divide-y divide-border rounded-lg border border-border bg-card mb-8">
 				<div className="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4">
-					<dt className="text-sm font-medium text-muted-foreground">
-						Name
-					</dt>
+					<dt className="text-sm font-medium text-muted-foreground">Name</dt>
 					<dd className="mt-1 text-sm text-foreground font-mono sm:col-span-2 sm:mt-0">
 						{secret.name}
 					</dd>
 				</div>
 				<div className="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4">
-					<dt className="text-sm font-medium text-muted-foreground">
-						Kind
-					</dt>
+					<dt className="text-sm font-medium text-muted-foreground">Kind</dt>
 					<dd className="mt-1 text-sm text-foreground sm:col-span-2 sm:mt-0">
 						{secret.valueFrom.kind}
 					</dd>
@@ -164,18 +160,18 @@ function SecretDetailInner() {
 			{/* References */}
 			<section>
 				<h2 className="text-lg font-semibold text-foreground mb-3">
-					Referenced by pools
+					Referenced by policies
 				</h2>
 				{referencingPools.length === 0 ? (
 					<p className="text-sm text-muted-foreground">
-						No pools reference this secret.
+						No policies reference this secret.
 					</p>
 				) : (
 					<ul className="space-y-1">
 						{referencingPools.map((pool) => (
 							<li key={pool.metadata.name}>
 								<Link
-									to="/pools/$name"
+									to="/policies/$name"
 									params={{ name: pool.metadata.name }}
 									className="text-sm text-brand-600 hover:underline font-mono"
 								>
@@ -208,9 +204,7 @@ function SecretDetailInner() {
 function SecretDetailPage() {
 	return (
 		<Suspense
-			fallback={
-				<div className="text-muted-foreground text-sm">Loading…</div>
-			}
+			fallback={<div className="text-muted-foreground text-sm">Loading…</div>}
 		>
 			<SecretDetailInner />
 		</Suspense>

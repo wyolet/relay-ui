@@ -200,9 +200,7 @@ function LoginPage() {
 					className="space-y-4"
 					aria-label="Sign in"
 				>
-					<h1 className="text-base font-semibold text-foreground">
-						Sign in
-					</h1>
+					<h1 className="text-base font-semibold text-foreground">Sign in</h1>
 
 					<form.Field name="username">
 						{(field) => (
@@ -241,10 +239,7 @@ function LoginPage() {
 					</form.Field>
 
 					{serverError !== null && (
-						<p
-							role="alert"
-							className="text-xs text-destructive"
-						>
+						<p role="alert" className="text-xs text-destructive">
 							{serverError}
 						</p>
 					)}

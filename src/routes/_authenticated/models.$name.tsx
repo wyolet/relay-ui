@@ -36,7 +36,7 @@ import {
 } from "@/api/hooks/models";
 import { providerDetailQueryOptions } from "@/api/hooks/providers";
 import { ApiError } from "@/api/types/errors";
-import type { Capabilities, Model, Modalities } from "@/api/types/model";
+import type { Capabilities, Modalities, Model } from "@/api/types/model";
 import type { Provider } from "@/api/types/provider";
 import { confirm } from "@/components/ConfirmDialog";
 import { toast } from "@/components/Toast";
@@ -88,7 +88,10 @@ function activeCapabilities(cap: Capabilities | undefined): string[] {
 		.map(([k]) => k);
 }
 
-function modalityList(m: Modalities | undefined, side: "input" | "output"): string {
+function modalityList(
+	m: Modalities | undefined,
+	side: "input" | "output",
+): string {
 	const arr = m?.[side];
 	if (!arr || arr.length === 0) return "—";
 	return arr.join(", ");
@@ -130,9 +133,7 @@ function FieldRow({ label, children }: FieldRowProps) {
 	return (
 		<div className="grid grid-cols-[140px_1fr] gap-3 py-1.5 text-sm">
 			<dt className="text-muted-foreground">{label}</dt>
-			<dd className="text-foreground min-w-0">
-				{children}
-			</dd>
+			<dd className="text-foreground min-w-0">{children}</dd>
 		</div>
 	);
 }
@@ -200,7 +201,13 @@ function CapabilityChips({ cap }: { cap: Capabilities | undefined }) {
 	);
 }
 
-function ProviderCard({ name, provider }: { name: string; provider: Provider | undefined }) {
+function ProviderCard({
+	name,
+	provider,
+}: {
+	name: string;
+	provider: Provider | undefined;
+}) {
 	return (
 		<Link
 			to="/providers/$name"
@@ -248,7 +255,10 @@ function PricingTable({ model }: { model: Model }) {
 			</thead>
 			<tbody>
 				{entries.map(([k, v]) => (
-					<tr key={k} className="border-t border-neutral-100 dark:border-neutral-800">
+					<tr
+						key={k}
+						className="border-t border-neutral-100 dark:border-neutral-800"
+					>
 						<td className="py-1.5 text-foreground">{k}</td>
 						<td className="py-1.5 text-right tabular-nums text-foreground">
 							{v.toFixed(v < 1 ? 4 : 2)}
@@ -435,7 +445,9 @@ function ModelDetailInner() {
 									dash(undefined)
 								)}
 							</FieldRow>
-							<FieldRow label="Release">{dash(model.spec.releaseDate)}</FieldRow>
+							<FieldRow label="Release">
+								{dash(model.spec.releaseDate)}
+							</FieldRow>
 							<FieldRow label="Knowledge cutoff">
 								{dash(model.spec.knowledgeCutoff)}
 							</FieldRow>
@@ -528,9 +540,7 @@ function ModelDetailInner() {
 function ModelDetailPage() {
 	return (
 		<Suspense
-			fallback={
-				<div className="text-muted-foreground text-sm">Loading…</div>
-			}
+			fallback={<div className="text-muted-foreground text-sm">Loading…</div>}
 		>
 			<ModelDetailInner />
 		</Suspense>

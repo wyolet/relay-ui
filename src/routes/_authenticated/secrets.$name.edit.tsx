@@ -136,10 +136,7 @@ function EditSecretInner() {
 							Set this env var on your relay deployment.
 						</p>
 						{errs.envVar && (
-							<p
-								role="alert"
-								className="mt-1 text-xs text-destructive"
-							>
+							<p role="alert" className="mt-1 text-xs text-destructive">
 								{errs.envVar}
 							</p>
 						)}
@@ -174,10 +171,7 @@ function EditSecretInner() {
 							</span>
 						</p>
 						{errs.storedValue && (
-							<p
-								role="alert"
-								className="mt-1 text-xs text-destructive"
-							>
+							<p role="alert" className="mt-1 text-xs text-destructive">
 								{errs.storedValue}
 							</p>
 						)}
@@ -211,9 +205,7 @@ function EditSecretInner() {
 function EditSecretPage() {
 	return (
 		<Suspense
-			fallback={
-				<div className="text-muted-foreground text-sm">Loading…</div>
-			}
+			fallback={<div className="text-muted-foreground text-sm">Loading…</div>}
 		>
 			<EditSecretInner />
 		</Suspense>

@@ -3,7 +3,7 @@ import { Trash2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { apiClient } from "@/api/client";
 import { useModels } from "@/api/hooks/models";
-import { usePools } from "@/api/hooks/pools";
+import { usePolicies } from "@/api/hooks/policies";
 import { useDeleteSecret } from "@/api/hooks/secrets";
 import { ApiError } from "@/api/types/errors";
 import { confirm } from "@/components/ConfirmDialog";
@@ -25,7 +25,7 @@ export function EditProviderKeyModal({
 	secretName,
 	providerName,
 }: EditProviderKeyModalProps) {
-	const { data: poolsData } = usePools();
+	const { data: policiesData } = usePolicies();
 	const { data: modelsData } = useModels();
 	const relayKeyItems = useKeysStore((s) => s.items);
 	const relayKeys = useMemo(
@@ -37,8 +37,10 @@ export function EditProviderKeyModal({
 
 	const providerPools = useMemo(
 		() =>
-			(poolsData.items ?? []).filter((p) => p.spec.provider === providerName),
-		[poolsData.items, providerName],
+			(policiesData.items ?? []).filter(
+				(p) => p.spec.provider === providerName,
+			),
+		[policiesData.items, providerName],
 	);
 	const providerModels = useMemo(
 		() =>
@@ -103,7 +105,7 @@ export function EditProviderKeyModal({
 				});
 				if (error) throw new ApiError(0, error.error);
 			}
-			void queryClient.invalidateQueries({ queryKey: ["pools"] });
+			void queryClient.invalidateQueries({ queryKey: ["policies"] });
 			toast("success", `"${secretName}" updated.`);
 			onClose();
 		} catch (err) {
@@ -150,16 +152,16 @@ export function EditProviderKeyModal({
 				</Field>
 
 				<PickerField
-					label="Pools"
-					description="Pools this key belongs to. Relay tries keys in pool order; leave empty to detach the key from every pool."
+					label="Policies"
+					description="Policies this key belongs to. Relay tries keys in policy order; leave empty to detach the key from every policy."
 					options={providerPools.map((p) => ({
 						value: p.metadata.name,
 						label: p.metadata.name,
 					}))}
 					selected={selectedPools}
 					onChange={setSelectedPools}
-					placeholder="Select pools…"
-					emptyHint="No pools for this provider."
+					placeholder="Select policies…"
+					emptyHint="No policies for this provider."
 				/>
 
 				<PickerField
@@ -266,9 +268,7 @@ function PickerField({
 				emptyHint={emptyHint}
 				aria-label={label}
 			/>
-			<p className="mt-1 text-[11px] text-muted-foreground">
-				{description}
-			</p>
+			<p className="mt-1 text-[11px] text-muted-foreground">{description}</p>
 		</div>
 	);
 }

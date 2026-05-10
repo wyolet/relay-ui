@@ -49,9 +49,7 @@ export function EditRelayKeyModal({
 	if (!keyItem || !draft) {
 		return (
 			<Modal open={open} onClose={onClose} title="Edit relay key" size="lg">
-				<div className="text-xs text-muted-foreground">
-					No key selected.
-				</div>
+				<div className="text-xs text-muted-foreground">No key selected.</div>
 			</Modal>
 		);
 	}
@@ -72,9 +70,7 @@ export function EditRelayKeyModal({
 				className="flex flex-col gap-5"
 			>
 				<RelayKeyForm value={draft} onChange={setDraft} />
-				{error && (
-					<p className="text-[11px] text-destructive">{error}</p>
-				)}
+				{error && <p className="text-[11px] text-destructive">{error}</p>}
 				<div className="flex items-center justify-end gap-2 pt-3 border-t border-border">
 					<button
 						type="button"
