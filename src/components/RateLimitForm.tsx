@@ -26,17 +26,17 @@ interface RateLimitFormProps {
 }
 
 const STRATEGIES: {
-	value: "fixed_window" | "sliding_window" | "token_bucket";
+	value: "fixed-window" | "sliding-window" | "token-bucket";
 	label: string;
 	hint: string;
 }[] = [
-	{ value: "fixed_window", label: "Fixed", hint: "Reset every window" },
+	{ value: "fixed-window", label: "Fixed", hint: "Reset every window" },
 	{
-		value: "sliding_window",
+		value: "sliding-window",
 		label: "Sliding",
 		hint: "Smoother, more accurate",
 	},
-	{ value: "token_bucket", label: "Token bucket", hint: "Allows short bursts" },
+	{ value: "token-bucket", label: "Token bucket", hint: "Allows short bursts" },
 ];
 
 const WINDOW_PRESETS: { label: string; seconds: number }[] = [

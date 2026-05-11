@@ -13,9 +13,9 @@ import type {
 import { toast } from "@/components/Toast";
 
 export type RateLimitStrategy =
-	| "fixed_window"
-	| "sliding_window"
-	| "token_bucket";
+	| "fixed-window"
+	| "sliding-window"
+	| "token-bucket";
 
 export interface RuleDraft {
 	amount: number;
@@ -31,9 +31,9 @@ export interface RateLimitFormValues {
 }
 
 const STRATEGY_VALUES = [
-	"fixed_window",
-	"sliding_window",
-	"token_bucket",
+	"fixed-window",
+	"sliding-window",
+	"token-bucket",
 ] as const;
 
 const ruleSchema = z.object({
@@ -72,7 +72,7 @@ export function emptyRule(): RuleDraft {
 function emptyValues(): RateLimitFormValues {
 	return {
 		name: "",
-		strategy: "fixed_window",
+		strategy: "fixed-window",
 		window: 60,
 		rules: [emptyRule()],
 	};
@@ -87,14 +87,14 @@ function rlToValues(rl: RateLimit): RateLimitFormValues {
 		rl.spec.strategy,
 	)
 		? (rl.spec.strategy as RateLimitStrategy)
-		: "fixed_window";
+		: "fixed-window";
 	const specRules = rl.spec.rules ?? null;
 	const rules: RuleDraft[] =
 		specRules && specRules.length > 0
 			? specRules.map((r) => ({
 					amount: r.amount,
 					meter: r.meter,
-					source: r.source ?? "",
+					source: "",
 				}))
 			: [emptyRule()];
 	return {

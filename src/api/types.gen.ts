@@ -915,11 +915,13 @@ export interface components {
             /** Format: int64 */
             amount: number;
             meter: string;
-            source?: string;
+            strategy?: string;
         };
         RateLimitSpec: {
+            description?: string;
             enabled?: boolean;
             rules: components["schemas"]["RateLimitRule"][] | null;
+            source?: string;
             strategy: string;
             /** Format: int64 */
             window: number;
