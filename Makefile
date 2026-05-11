@@ -17,7 +17,7 @@ gen: ## Regenerate src/api/types.gen.ts from RELAY_URL (default: https://relay.w
 	rm -f "$$tmp"; \
 	echo "Done. src/api/types.gen.ts updated."
 
-dev: ## Start Vite dev server on :5173
+dev: ## Start Vite dev server on :5140
 	bun run dev
 
 build: ## Build production bundle to dist/
