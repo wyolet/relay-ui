@@ -7,6 +7,17 @@ Operator admin UI for **Wyolet Relay** (high-throughput Go LLM router). Built as
 React 19 + Vite + TanStack Router + TanStack Query + Tailwind v4 + Biome + shadcn (luma) on `@base-ui/react`.
 Path alias: `@/*` → `src/*` (configured in `tsconfig.json` paths and `vite.config.ts` resolve.alias). Package manager: bun.
 
+## Dev workflow
+
+This project follows the **wyolet dev workflow**. Read these before non-trivial changes — file layout, ports, infra split, build/deploy pipeline live there, not duplicated here:
+
+- `~/Documents/Obsidian Vault/Dev Workflow/Development.md` — Mac + dev-stack split, ports rule, Caddy, centralized Postgres
+- `~/Documents/Obsidian Vault/Dev Workflow/ProjectSetup.md` — required files (Makefile, compose, Dockerfile, bake, .env), stack rules
+- `~/Documents/Obsidian Vault/Dev Workflow/BuildDeploy.md` — Harbor + ghcr.io, `kube` buildx context, ArgoCD reconcile
+- `~/Documents/Obsidian Vault/Dev Workflow/PORTS.md` — LAN port allocations
+
+Note: relay-ui ships as a tarball release embedded into the relay Go binary via `//go:embed` — no per-project compose/Dockerfile needed, but the dev-stack rules still apply.
+
 ## Frontend layering (non-negotiable)
 
 Mirrors the wyolet workspace project. The point: redesigning a page should be **swapping components, not rebuilding logic**. That only works if logic lives outside.
