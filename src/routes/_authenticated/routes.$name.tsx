@@ -33,7 +33,7 @@ function RouteDetailInner() {
 
 	async function handleDelete() {
 		try {
-			await deleteRoute.mutateAsync(name);
+			await deleteRoute.mutateAsync(route.metadata.id ?? "");
 			toast("success", `Route "${name}" deleted.`);
 			void navigate({ to: "/routes" });
 		} catch (err) {

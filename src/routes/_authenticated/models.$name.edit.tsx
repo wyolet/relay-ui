@@ -60,7 +60,7 @@ function EditModelInner() {
 	const { name } = Route.useParams();
 	const { data: model } = useModel(name);
 	const { data: rateLimitsData } = useRateLimits();
-	const updateModel = useUpdateModel(name);
+	const updateModel = useUpdateModel(model.metadata.id ?? "");
 	const navigate = useNavigate();
 	const [serverError, setServerError] = useState<ApiErrorBody | undefined>();
 	const [rateLimits, setRateLimits] = useState<RateLimitAttachment[]>(

@@ -91,16 +91,18 @@ export function EditProviderKeyModal({
 				const nextSecrets = should
 					? [...(policy.spec.secrets ?? []), secretName]
 					: (policy.spec.secrets ?? []).filter((s) => s !== secretName);
+				const id = policy.metadata.id;
+				if (!id) return [];
 				return [
 					{
-						name: policy.metadata.name,
+						id,
 						body: { ...policy, spec: { ...policy.spec, secrets: nextSecrets } },
 					},
 				];
 			});
 			for (const u of updates) {
-				const { error } = await apiClient.PUT("/control/pools/{name}", {
-					params: { path: { name: u.name } },
+				const { error } = await apiClient.PUT("/control/policies/by-id/{id}", {
+					params: { path: { id: u.id } },
 					body: u.body,
 				});
 				if (error) throw new ApiError(0, error.error);
@@ -169,7 +171,7 @@ export function EditProviderKeyModal({
 					description="Restrict this key to specific models. Leave empty to allow every model the provider exposes."
 					options={providerModels.map((m) => ({
 						value: m.metadata.name,
-						label: m.spec.displayName ?? m.metadata.name,
+						label: m.metadata.displayName ?? m.metadata.name,
 					}))}
 					selected={selectedModels}
 					onChange={setSelectedModels}

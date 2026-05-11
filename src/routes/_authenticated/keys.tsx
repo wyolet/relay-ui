@@ -626,7 +626,7 @@ function ProviderKeysPanel() {
 							<ListFilter className="w-3.5 h-3.5" />
 							<span>
 								{selectedProvider
-									? (selectedProvider.spec.displayName ??
+									? (selectedProvider.metadata.displayName ??
 										selectedProvider.metadata.name)
 									: "All providers"}
 							</span>
@@ -689,7 +689,7 @@ function ProviderKeysPanel() {
 											<span className="inline-flex items-center gap-1.5 min-w-0">
 												{active && <Check className="w-3 h-3 shrink-0" />}
 												<span className="capitalize truncate">
-													{p.spec.displayName ?? p.metadata.name}
+													{p.metadata.displayName ?? p.metadata.name}
 												</span>
 											</span>
 											<span
@@ -867,7 +867,7 @@ function ProviderKeysTable({
 						const tone: StatusTone = !r.secret ? "danger" : "active";
 						const label = !r.secret ? "Missing" : "Active";
 						const provDisplay =
-							providerByName[r.provider]?.spec.displayName ?? r.provider;
+							providerByName[r.provider]?.metadata.displayName ?? r.provider;
 						return (
 							<tr
 								key={`${r.provider}::${r.name}`}

@@ -39,7 +39,7 @@ function RateLimitEditInner() {
 		});
 		if (!ok) return;
 		try {
-			await deleteRL.mutateAsync(name);
+			await deleteRL.mutateAsync(rateLimit.metadata.id ?? "");
 			toast("success", `Rate limit "${name}" deleted.`);
 			back();
 		} catch (err) {

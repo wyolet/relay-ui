@@ -30,8 +30,8 @@ export function routeDetailQueryOptions(name: string) {
 	return queryOptions({
 		queryKey: ["routes", name] as const,
 		queryFn: async (): Promise<RelayRoute> => {
-			const { data, error } = await apiClient.GET("/control/routes/{name}", {
-				params: { path: { name } },
+			const { data, error } = await apiClient.GET("/control/routes/{ref}", {
+				params: { path: { ref: name } },
 			});
 			if (error) throw new ApiError(0, error.error);
 			return data;
@@ -91,14 +91,17 @@ export function useCreateRoute() {
 	});
 }
 
-export function useUpdateRoute(name: string) {
+export function useUpdateRoute(id: string) {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: async (body: RelayRouteUpdate): Promise<RelayRoute> => {
-			const { data, error } = await apiClient.PUT("/control/routes/{name}", {
-				params: { path: { name } },
-				body,
-			});
+			const { data, error } = await apiClient.PUT(
+				"/control/routes/by-id/{id}",
+				{
+					params: { path: { id } },
+					body,
+				},
+			);
 			if (error) throw new ApiError(0, error.error);
 			return data;
 		},
@@ -111,13 +114,13 @@ export function useUpdateRoute(name: string) {
 export function useDeleteRoute() {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: async (name: string): Promise<void> => {
-			const { error } = await apiClient.DELETE("/control/routes/{name}", {
-				params: { path: { name } },
+		mutationFn: async (id: string): Promise<void> => {
+			const { error } = await apiClient.DELETE("/control/routes/by-id/{id}", {
+				params: { path: { id } },
 			});
 			if (error) throw new ApiError(0, error.error);
 		},
-		onMutate: async (name) => {
+		onMutate: async (id) => {
 			await queryClient.cancelQueries({ queryKey: ["routes"] });
 			const previous = queryClient.getQueryData(
 				routesListQueryOptions.queryKey,
@@ -127,7 +130,7 @@ export function useDeleteRoute() {
 				(old: RouteListResponse | undefined) => {
 					if (!old) return old;
 					return {
-						items: (old.items ?? []).filter((r) => r.metadata.name !== name),
+						items: (old.items ?? []).filter((r) => r.metadata.id !== id),
 					};
 				},
 			);

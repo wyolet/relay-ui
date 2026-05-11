@@ -31,7 +31,7 @@ const FIELDS: FieldDef[] = [
 function EditRouteInner() {
 	const { name } = Route.useParams();
 	const { data: route } = useRoute(name);
-	const updateRoute = useUpdateRoute(name);
+	const updateRoute = useUpdateRoute(route.metadata.id ?? "");
 	const navigate = useNavigate();
 	const [serverError, setServerError] = useState<ApiErrorBody | undefined>();
 

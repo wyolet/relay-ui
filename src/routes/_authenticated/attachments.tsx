@@ -28,14 +28,14 @@ export const Route = createFileRoute("/_authenticated/attachments")({
 
 // ---- Filter state ----
 
-type KindFilter = "all" | "Pool" | "Secret" | "Model";
+type KindFilter = "all" | "Policy" | "Secret" | "Model";
 type MeterFilter = "all" | "requests" | "tokens" | "concurrency";
 
 // ---- Parent-name link helper — links to parent's edit page ----
 
 function parentEditLink(kind: string, name: string) {
 	const lowerKind = kind.toLowerCase();
-	if (lowerKind === "pool") {
+	if (lowerKind === "policy") {
 		return (
 			<Link
 				to="/policies/$name"
@@ -153,7 +153,7 @@ function AttachmentsInner() {
 					aria-label="Filter by parent kind"
 				>
 					<option value="all">All kinds</option>
-					<option value="Pool">Policy</option>
+					<option value="Policy">Policy</option>
 					<option value="Secret">Secret</option>
 					<option value="Model">Model</option>
 				</select>
@@ -281,7 +281,7 @@ function AttachmentsInner() {
 										Window
 									</th>
 									<th className="px-4 py-3 text-left text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wide">
-										Amount
+										Rules
 									</th>
 								</tr>
 							</thead>
@@ -308,7 +308,7 @@ function AttachmentsInner() {
 											{rl.spec.window}
 										</td>
 										<td className="px-4 py-3 text-amber-800 dark:text-amber-300">
-											{rl.spec.amount}
+											{(rl.spec.rules ?? []).length}
 										</td>
 									</tr>
 								))}

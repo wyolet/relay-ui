@@ -45,7 +45,7 @@ function PassthroughSettingsInner() {
 	const { data } = useModels();
 	const modelOptions = (data.items ?? []).map((m) => ({
 		value: m.metadata.name,
-		label: m.spec.displayName ?? m.metadata.name,
+		label: m.metadata.displayName ?? m.metadata.name,
 	}));
 
 	function toggleTransport(t: PassthroughTransport) {

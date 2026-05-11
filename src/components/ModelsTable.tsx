@@ -56,7 +56,7 @@ function deprecationNote(m: Model): string | null {
 function sortValue(m: Model, key: ModelsSortKey): string | number {
 	switch (key) {
 		case "name":
-			return (m.spec.displayName ?? m.metadata.name).toLowerCase();
+			return (m.metadata.displayName ?? m.metadata.name).toLowerCase();
 		case "provider":
 			return m.spec.provider.toLowerCase();
 		case "family":
@@ -81,7 +81,7 @@ export function applyModelFilter(
 		if (!ql) return true;
 		const hay = [
 			m.metadata.name,
-			m.spec.displayName,
+			m.metadata.displayName,
 			m.spec.upstreamName,
 			m.spec.family,
 			m.spec.provider,
@@ -222,7 +222,7 @@ function ModelRow({ m, hideProvider }: { m: Model; hideProvider?: boolean }) {
 				>
 					<div className="flex items-center gap-2 min-w-0">
 						<span className="text-sm font-medium text-foreground truncate">
-							{m.spec.displayName ?? m.metadata.name}
+							{m.metadata.displayName ?? m.metadata.name}
 						</span>
 						{dep && (
 							<AlertTriangle
@@ -231,7 +231,7 @@ function ModelRow({ m, hideProvider }: { m: Model; hideProvider?: boolean }) {
 							/>
 						)}
 					</div>
-					{(m.spec.displayName || dep) && (
+					{(m.metadata.displayName || dep) && (
 						<div className="text-[11px] text-muted-foreground truncate">
 							{dep ? (
 								<span className="text-amber-700 dark:text-amber-400">

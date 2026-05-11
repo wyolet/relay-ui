@@ -50,7 +50,7 @@ function PolicyDetailInner() {
 		});
 		if (!ok) return;
 		try {
-			await deletePolicy.mutateAsync(name);
+			await deletePolicy.mutateAsync(policy.metadata.id ?? "");
 			toast("success", `Policy "${name}" deleted.`);
 			void navigate({ to: "/policies", search: { tab: "policies" } });
 		} catch (err) {
@@ -85,7 +85,7 @@ function PolicyDetailInner() {
 									params={{ name: policy.spec.provider }}
 									className="text-foreground hover:underline capitalize"
 								>
-									{provider?.spec.displayName ?? policy.spec.provider}
+									{provider?.metadata.displayName ?? policy.spec.provider}
 								</Link>
 							</span>
 						</div>

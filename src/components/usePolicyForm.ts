@@ -68,7 +68,7 @@ interface UsePolicyFormOptions {
 export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 	const isEdit = policy !== undefined;
 	const createPolicy = useCreatePolicy();
-	const updatePolicy = useUpdatePolicy(policy?.metadata.name ?? "");
+	const updatePolicy = useUpdatePolicy(policy?.metadata.id ?? "");
 
 	const initial = useMemo<PolicyFormValues>(
 		() => (policy ? policyToValues(policy) : emptyValues()),

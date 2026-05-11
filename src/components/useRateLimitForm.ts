@@ -96,15 +96,7 @@ function rlToValues(rl: RateLimit): RateLimitFormValues {
 					meter: r.meter,
 					source: r.source ?? "",
 				}))
-			: rl.spec.amount !== undefined && rl.spec.meter
-				? [
-						{
-							amount: rl.spec.amount,
-							meter: rl.spec.meter,
-							source: rl.spec.source ?? "",
-						},
-					]
-				: [emptyRule()];
+			: [emptyRule()];
 	return {
 		name: rl.metadata.name,
 		strategy,
@@ -124,7 +116,7 @@ export function useRateLimitForm({
 }: UseRateLimitFormOptions) {
 	const isEdit = rateLimit !== undefined;
 	const createRL = useCreateRateLimit();
-	const updateRL = useUpdateRateLimit(rateLimit?.metadata.name ?? "");
+	const updateRL = useUpdateRateLimit(rateLimit?.metadata.id ?? "");
 
 	const initial = useMemo<RateLimitFormValues>(
 		() => (rateLimit ? rlToValues(rateLimit) : emptyValues()),

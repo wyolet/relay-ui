@@ -216,7 +216,7 @@ function ProviderCard({
 		>
 			<div className="min-w-0 flex items-center gap-2">
 				<span className="text-sm font-medium text-foreground capitalize truncate">
-					{provider?.spec.displayName ?? name}
+					{provider?.metadata.displayName ?? name}
 				</span>
 				{provider?.spec.kind && (
 					<span className="inline-flex items-center h-5 px-1.5 rounded text-[10px] font-medium bg-muted text-muted-foreground">
@@ -326,7 +326,7 @@ function ModelDetailInner() {
 		});
 		if (!ok) return;
 		try {
-			await deleteModel.mutateAsync(name);
+			await deleteModel.mutateAsync(model.metadata.id ?? "");
 			toast("success", `Model "${name}" deleted.`);
 			void navigate({ to: "/models" });
 		} catch (err) {
@@ -352,7 +352,7 @@ function ModelDetailInner() {
 					<div className="min-w-0">
 						<div className="flex items-center gap-2 min-w-0">
 							<h1 className="text-xl font-semibold text-foreground truncate">
-								{model.spec.displayName ?? model.metadata.name}
+								{model.metadata.displayName ?? model.metadata.name}
 							</h1>
 							{dep && (
 								<AlertTriangle
@@ -428,7 +428,7 @@ function ModelDetailInner() {
 					<Section title="Identity">
 						<dl>
 							<FieldRow label="Display name">
-								{dash(model.spec.displayName)}
+								{dash(model.metadata.displayName)}
 							</FieldRow>
 							<FieldRow label="Upstream name">
 								<code className="text-xs font-mono">

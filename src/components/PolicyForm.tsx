@@ -62,7 +62,7 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 	}));
 	const modelOptions = providerModels.map((m) => ({
 		value: m.metadata.name,
-		label: m.spec.displayName ?? m.metadata.name,
+		label: m.metadata.displayName ?? m.metadata.name,
 	}));
 	const rateLimitOptions = allRateLimits.map((rl) => ({
 		value: rl.metadata.name,
@@ -140,7 +140,7 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 							) : (
 								providers.map((p) => (
 									<SelectItem key={p.metadata.name} value={p.metadata.name}>
-										{p.spec.displayName ?? p.metadata.name}
+										{p.metadata.displayName ?? p.metadata.name}
 									</SelectItem>
 								))
 							)}

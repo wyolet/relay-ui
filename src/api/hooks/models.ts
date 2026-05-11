@@ -30,8 +30,8 @@ export function modelDetailQueryOptions(name: string) {
 	return queryOptions({
 		queryKey: ["models", name] as const,
 		queryFn: async (): Promise<Model> => {
-			const { data, error } = await apiClient.GET("/control/models/{name}", {
-				params: { path: { name } },
+			const { data, error } = await apiClient.GET("/control/models/{ref}", {
+				params: { path: { ref: name } },
 			});
 			if (error) throw new ApiError(0, error.error);
 			return data;
@@ -91,14 +91,17 @@ export function useCreateModel() {
 	});
 }
 
-export function useUpdateModel(name: string) {
+export function useUpdateModel(id: string) {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: async (body: ModelUpdate): Promise<Model> => {
-			const { data, error } = await apiClient.PUT("/control/models/{name}", {
-				params: { path: { name } },
-				body,
-			});
+			const { data, error } = await apiClient.PUT(
+				"/control/models/by-id/{id}",
+				{
+					params: { path: { id } },
+					body,
+				},
+			);
 			if (error) throw new ApiError(0, error.error);
 			return data;
 		},
@@ -111,13 +114,13 @@ export function useUpdateModel(name: string) {
 export function useDeleteModel() {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: async (name: string): Promise<void> => {
-			const { error } = await apiClient.DELETE("/control/models/{name}", {
-				params: { path: { name } },
+		mutationFn: async (id: string): Promise<void> => {
+			const { error } = await apiClient.DELETE("/control/models/by-id/{id}", {
+				params: { path: { id } },
 			});
 			if (error) throw new ApiError(0, error.error);
 		},
-		onMutate: async (name) => {
+		onMutate: async (id) => {
 			await queryClient.cancelQueries({ queryKey: ["models"] });
 			const previous = queryClient.getQueryData(
 				modelsListQueryOptions.queryKey,
@@ -127,7 +130,7 @@ export function useDeleteModel() {
 				(old: ModelListResponse | undefined) => {
 					if (!old) return old;
 					return {
-						items: (old.items ?? []).filter((m) => m.metadata.name !== name),
+						items: (old.items ?? []).filter((m) => m.metadata.id !== id),
 					};
 				},
 			);

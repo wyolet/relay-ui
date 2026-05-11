@@ -94,7 +94,7 @@ function PolicyCard({
 	autoOpenAdd,
 	keyQuery,
 }: PolicyCardProps) {
-	const updatePolicy = useUpdatePolicy(policy.metadata.name);
+	const updatePolicy = useUpdatePolicy(policy.metadata.id ?? "");
 	const deleteSecret = useDeleteSecret();
 	const [adding, setAdding] = useState(false);
 	const secrets = policy.spec.secrets ?? [];
@@ -164,11 +164,6 @@ function PolicyCard({
 					<h3 className="text-sm font-semibold text-foreground truncate">
 						{policy.metadata.name}
 					</h3>
-					{policy.spec.passthrough && (
-						<span className="text-[10px] uppercase tracking-wide text-muted-foreground px-1.5 py-0.5 rounded bg-muted">
-							passthrough
-						</span>
-					)}
 					<span className="text-[11px] text-muted-foreground">
 						{secrets.length} {secrets.length === 1 ? "key" : "keys"}
 					</span>
@@ -381,7 +376,7 @@ function AddKeyForm({
 	onSaved,
 }: AddKeyFormProps) {
 	const createSecret = useCreateSecret();
-	const updatePolicy = useUpdatePolicy(policy.metadata.name);
+	const updatePolicy = useUpdatePolicy(policy.metadata.id ?? "");
 	const { data: modelsData } = useModels();
 	const { data: policiesData } = usePolicies();
 	const apiKeys = useKeysStore((s) => s.items);
@@ -534,7 +529,7 @@ function AddKeyForm({
 					description="Restrict this key to specific models. Leave empty to allow every model the provider exposes."
 					options={providerModels.map((m) => ({
 						value: m.metadata.name,
-						label: m.spec.displayName ?? m.metadata.name,
+						label: m.metadata.displayName ?? m.metadata.name,
 					}))}
 					selected={modelsSelected}
 					onChange={setModelsSelected}

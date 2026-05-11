@@ -30,8 +30,8 @@ export function providerDetailQueryOptions(name: string) {
 	return queryOptions({
 		queryKey: ["providers", name] as const,
 		queryFn: async (): Promise<Provider> => {
-			const { data, error } = await apiClient.GET("/control/providers/{name}", {
-				params: { path: { name } },
+			const { data, error } = await apiClient.GET("/control/providers/{ref}", {
+				params: { path: { ref: name } },
 			});
 			if (error) throw new ApiError(0, error.error);
 			return data;
@@ -93,14 +93,17 @@ export function useCreateProvider() {
 	});
 }
 
-export function useUpdateProvider(name: string) {
+export function useUpdateProvider(id: string) {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: async (body: ProviderUpdate): Promise<Provider> => {
-			const { data, error } = await apiClient.PUT("/control/providers/{name}", {
-				params: { path: { name } },
-				body,
-			});
+			const { data, error } = await apiClient.PUT(
+				"/control/providers/by-id/{id}",
+				{
+					params: { path: { id } },
+					body,
+				},
+			);
 			if (error) throw new ApiError(0, error.error);
 			return data;
 		},
@@ -113,13 +116,16 @@ export function useUpdateProvider(name: string) {
 export function useDeleteProvider() {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: async (name: string): Promise<void> => {
-			const { error } = await apiClient.DELETE("/control/providers/{name}", {
-				params: { path: { name } },
-			});
+		mutationFn: async (id: string): Promise<void> => {
+			const { error } = await apiClient.DELETE(
+				"/control/providers/by-id/{id}",
+				{
+					params: { path: { id } },
+				},
+			);
 			if (error) throw new ApiError(0, error.error);
 		},
-		onMutate: async (name) => {
+		onMutate: async (id) => {
 			await queryClient.cancelQueries({ queryKey: ["providers"] });
 			const previous = queryClient.getQueryData(
 				providersListQueryOptions.queryKey,
@@ -129,7 +135,7 @@ export function useDeleteProvider() {
 				(old: ProviderListResponse | undefined) => {
 					if (!old) return old;
 					return {
-						items: (old.items ?? []).filter((p) => p.metadata.name !== name),
+						items: (old.items ?? []).filter((p) => p.metadata.id !== id),
 					};
 				},
 			);

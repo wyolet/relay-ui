@@ -43,7 +43,7 @@ const FIELDS: FieldDef[] = [
 function EditProviderInner() {
 	const { name } = Route.useParams();
 	const { data: provider } = useProvider(name);
-	const updateProvider = useUpdateProvider(name);
+	const updateProvider = useUpdateProvider(provider.metadata.id ?? "");
 	const navigate = useNavigate();
 	const [serverError, setServerError] = useState<ApiErrorBody | undefined>();
 

@@ -225,7 +225,7 @@ function ProviderDetailInner() {
 		});
 		if (!ok) return;
 		try {
-			await deleteProvider.mutateAsync(name);
+			await deleteProvider.mutateAsync(provider.metadata.id ?? "");
 			toast("success", `Provider "${name}" deleted.`);
 			void navigate({ to: "/providers" });
 		} catch (err) {
@@ -251,7 +251,7 @@ function ProviderDetailInner() {
 					<div className="min-w-0">
 						<div className="flex items-center gap-2 min-w-0">
 							<h1 className="text-xl font-semibold text-foreground truncate capitalize">
-								{provider.spec.displayName ?? provider.metadata.name}
+								{provider.metadata.displayName ?? provider.metadata.name}
 							</h1>
 							{provider.spec.default && (
 								<span className="text-[10px] uppercase tracking-wide text-muted-foreground px-1.5 py-0.5 rounded bg-muted">
@@ -324,13 +324,13 @@ function ProviderDetailInner() {
 								</code>
 							</FieldRow>
 							<FieldRow label="Default policy">
-								{provider.spec.defaultPool ? (
+								{provider.spec.defaultPolicy ? (
 									<Link
 										to="/policies/$name"
-										params={{ name: provider.spec.defaultPool }}
+										params={{ name: provider.spec.defaultPolicy }}
 										className="text-brand-600 dark:text-brand-400 hover:underline"
 									>
-										{provider.spec.defaultPool}
+										{provider.spec.defaultPolicy}
 									</Link>
 								) : (
 									dash(undefined)

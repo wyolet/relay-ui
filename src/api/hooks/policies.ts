@@ -1,5 +1,5 @@
 /**
- * Policy CRUD hooks. Wraps the /control/pools API (backend is still "Pool").
+ * Policy CRUD hooks. Wraps the /control/policies API (backend is still "Pool").
  * Query keys use ["policies"] so UI invalidations are consistent with the new name.
  */
 import {
@@ -20,7 +20,7 @@ import type {
 export const policiesListQueryOptions = queryOptions({
 	queryKey: ["policies"] as const,
 	queryFn: async (): Promise<PolicyListResponse> => {
-		const { data, error } = await apiClient.GET("/control/pools");
+		const { data, error } = await apiClient.GET("/control/policies");
 		if (error) throw new ApiError(0, error.error);
 		return data;
 	},
@@ -32,8 +32,8 @@ export function policyDetailQueryOptions(name: string) {
 	return queryOptions({
 		queryKey: ["policies", name] as const,
 		queryFn: async (): Promise<Policy> => {
-			const { data, error } = await apiClient.GET("/control/pools/{name}", {
-				params: { path: { name } },
+			const { data, error } = await apiClient.GET("/control/policies/{ref}", {
+				params: { path: { ref: name } },
 			});
 			if (error) throw new ApiError(0, error.error);
 			return data;
@@ -55,7 +55,9 @@ export function useCreatePolicy() {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: async (body: PolicyCreate): Promise<Policy> => {
-			const { data, error } = await apiClient.POST("/control/pools", { body });
+			const { data, error } = await apiClient.POST("/control/policies", {
+				body,
+			});
 			if (error) throw new ApiError(0, error.error);
 			return data;
 		},
@@ -65,14 +67,17 @@ export function useCreatePolicy() {
 	});
 }
 
-export function useUpdatePolicy(name: string) {
+export function useUpdatePolicy(id: string) {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: async (body: PolicyUpdate): Promise<Policy> => {
-			const { data, error } = await apiClient.PUT("/control/pools/{name}", {
-				params: { path: { name } },
-				body,
-			});
+			const { data, error } = await apiClient.PUT(
+				"/control/policies/by-id/{id}",
+				{
+					params: { path: { id } },
+					body,
+				},
+			);
 			if (error) throw new ApiError(0, error.error);
 			return data;
 		},
@@ -85,13 +90,13 @@ export function useUpdatePolicy(name: string) {
 export function useDeletePolicy() {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: async (name: string): Promise<void> => {
-			const { error } = await apiClient.DELETE("/control/pools/{name}", {
-				params: { path: { name } },
+		mutationFn: async (id: string): Promise<void> => {
+			const { error } = await apiClient.DELETE("/control/policies/by-id/{id}", {
+				params: { path: { id } },
 			});
 			if (error) throw new ApiError(0, error.error);
 		},
-		onMutate: async (name) => {
+		onMutate: async (id) => {
 			await queryClient.cancelQueries({ queryKey: ["policies"] });
 			const previous = queryClient.getQueryData(
 				policiesListQueryOptions.queryKey,
@@ -101,7 +106,7 @@ export function useDeletePolicy() {
 				(old: PolicyListResponse | undefined) => {
 					if (!old) return old;
 					return {
-						items: (old.items ?? []).filter((p) => p.metadata.name !== name),
+						items: (old.items ?? []).filter((p) => p.metadata.id !== id),
 					};
 				},
 			);

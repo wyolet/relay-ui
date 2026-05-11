@@ -25,7 +25,7 @@ export function ByokModal({ open, onClose, onPick }: ByokModalProps) {
 		}
 		const list = (providers.items ?? []).map((p) => ({
 			name: p.metadata.name,
-			displayName: p.spec.displayName ?? p.metadata.name,
+			displayName: p.metadata.displayName ?? p.metadata.name,
 			isDefault: !!p.spec.default,
 			modelCount: counts[p.metadata.name] ?? 0,
 		}));

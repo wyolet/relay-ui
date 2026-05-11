@@ -19,6 +19,7 @@ import {
 	useDeleteRateLimit,
 	useRateLimits,
 } from "@/api/hooks/ratelimits";
+import type { Policy } from "@/api/types/policy";
 import type { RateLimit } from "@/api/types/ratelimit";
 import { confirm } from "@/components/ConfirmDialog";
 import { Switch } from "@/components/Switch";
@@ -135,9 +136,9 @@ function PoliciesPanel() {
 			.length;
 	}
 
-	async function handleDelete(name: string) {
+	async function handleDelete(p: Policy) {
 		const ok = await confirm({
-			title: `Delete policy ${name}?`,
+			title: `Delete policy ${p.metadata.name}?`,
 			description:
 				"Relay keys using this policy will lose access until reattached.",
 			confirmLabel: "Delete",
@@ -145,8 +146,8 @@ function PoliciesPanel() {
 		});
 		if (!ok) return;
 		try {
-			await deletePolicy.mutateAsync(name);
-			toast("success", `Policy "${name}" deleted.`);
+			await deletePolicy.mutateAsync(p.metadata.id ?? "");
+			toast("success", `Policy "${p.metadata.name}" deleted.`);
 		} catch (err) {
 			toast(
 				"error",
@@ -265,7 +266,7 @@ function PoliciesPanel() {
 												{
 													label: "Delete",
 													danger: true,
-													onClick: () => void handleDelete(p.metadata.name),
+													onClick: () => void handleDelete(p),
 												},
 											]}
 										/>
@@ -310,7 +311,7 @@ function RateLimitsPanel() {
 		});
 		if (!ok) return;
 		try {
-			await deleteRL.mutateAsync(rl.metadata.name);
+			await deleteRL.mutateAsync(rl.metadata.id ?? "");
 			toast("success", `Rate limit "${rl.metadata.name}" deleted.`);
 		} catch (err) {
 			toast(
@@ -423,9 +424,6 @@ function RateLimitsPanel() {
 function summarizeRules(rl: RateLimit): string {
 	const rules = rl.spec.rules ?? null;
 	if (!rules || rules.length === 0) {
-		if (rl.spec.amount !== undefined && rl.spec.meter) {
-			return `${fmtAmount(rl.spec.amount)} ${rl.spec.meter}`;
-		}
 		return "—";
 	}
 	if (rules.length === 1) {

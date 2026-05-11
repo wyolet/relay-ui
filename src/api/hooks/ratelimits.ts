@@ -30,12 +30,9 @@ export function rateLimitDetailQueryOptions(name: string) {
 	return queryOptions({
 		queryKey: ["ratelimits", name] as const,
 		queryFn: async (): Promise<RateLimit> => {
-			const { data, error } = await apiClient.GET(
-				"/control/ratelimits/{name}",
-				{
-					params: { path: { name } },
-				},
-			);
+			const { data, error } = await apiClient.GET("/control/ratelimits/{ref}", {
+				params: { path: { ref: name } },
+			});
 			if (error) throw new ApiError(0, error.error);
 			return data;
 		},
@@ -96,14 +93,14 @@ export function useCreateRateLimit() {
 	});
 }
 
-export function useUpdateRateLimit(name: string) {
+export function useUpdateRateLimit(id: string) {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: async (body: RateLimitUpdate): Promise<RateLimit> => {
 			const { data, error } = await apiClient.PUT(
-				"/control/ratelimits/{name}",
+				"/control/ratelimits/by-id/{id}",
 				{
-					params: { path: { name } },
+					params: { path: { id } },
 					body,
 				},
 			);
@@ -119,13 +116,16 @@ export function useUpdateRateLimit(name: string) {
 export function useDeleteRateLimit() {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: async (name: string): Promise<void> => {
-			const { error } = await apiClient.DELETE("/control/ratelimits/{name}", {
-				params: { path: { name } },
-			});
+		mutationFn: async (id: string): Promise<void> => {
+			const { error } = await apiClient.DELETE(
+				"/control/ratelimits/by-id/{id}",
+				{
+					params: { path: { id } },
+				},
+			);
 			if (error) throw new ApiError(0, error.error);
 		},
-		onMutate: async (name) => {
+		onMutate: async (id) => {
 			await queryClient.cancelQueries({ queryKey: ["ratelimits"] });
 			const previous = queryClient.getQueryData(
 				rateLimitsListQueryOptions.queryKey,
@@ -135,7 +135,7 @@ export function useDeleteRateLimit() {
 				(old: RateLimitListResponse | undefined) => {
 					if (!old) return old;
 					return {
-						items: (old.items ?? []).filter((rl) => rl.metadata.name !== name),
+						items: (old.items ?? []).filter((rl) => rl.metadata.id !== id),
 					};
 				},
 			);
