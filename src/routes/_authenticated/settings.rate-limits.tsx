@@ -41,11 +41,17 @@ import {
 	SYSTEM_RL_INFERENCE_PROXY_ANON,
 	type SystemRateLimitName,
 } from "@/lib/systemRateLimits";
-import { usePassthroughStore } from "@/stores/passthrough";
+import {
+	passthroughQueryOptions,
+	usePassthrough,
+} from "@/api/hooks/passthrough";
 
 export const Route = createFileRoute("/_authenticated/settings/rate-limits")({
 	loader: ({ context }) =>
-		context.queryClient.ensureQueryData(rateLimitsListQueryOptions),
+		Promise.all([
+			context.queryClient.ensureQueryData(rateLimitsListQueryOptions),
+			context.queryClient.ensureQueryData(passthroughQueryOptions),
+		]),
 	component: SystemRateLimitsPage,
 });
 
@@ -151,10 +157,9 @@ function rulesEqual(a: RateLimitRule[], b: RateLimitRule[]): boolean {
 
 function SystemRateLimitsInner() {
 	const { data } = useRateLimits();
-	const allowProxy = usePassthroughStore((s) => s.allowProxy);
-	const allowUnauthenticated = usePassthroughStore(
-		(s) => s.allowUnauthenticated,
-	);
+	const { data: passthrough } = usePassthrough();
+	const allowProxy = passthrough.spec.enabled;
+	const allowUnauthenticated = passthrough.spec.unauthenticated.enabled;
 
 	const rlByName = useMemo(() => {
 		const map = new Map<string, RateLimit>();

@@ -7,56 +7,114 @@ import {
 	Network,
 	UserX,
 } from "lucide-react";
-import { Suspense } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { modelsListQueryOptions, useModels } from "@/api/hooks/models";
-import { MultiSelect } from "@/components/MultiSelect";
-import { Switch } from "@/components/ui/switch";
 import {
-	type PassthroughTransport,
-	usePassthroughStore,
-} from "@/stores/passthrough";
+	type Passthrough,
+	type PassthroughSpec,
+	passthroughQueryOptions,
+	usePassthrough,
+	useUpdatePassthrough,
+} from "@/api/hooks/passthrough";
+import { ApiError } from "@/api/types/errors";
+import { MultiSelect } from "@/components/MultiSelect";
+import { toast } from "@/components/Toast";
+import { Switch } from "@/components/ui/switch";
 
 export const Route = createFileRoute("/_authenticated/settings/proxy-mode")({
 	loader: ({ context }) =>
-		context.queryClient.ensureQueryData(modelsListQueryOptions),
+		Promise.all([
+			context.queryClient.ensureQueryData(modelsListQueryOptions),
+			context.queryClient.ensureQueryData(passthroughQueryOptions),
+		]),
 	component: PassthroughSettingsPage,
 });
 
-const TRANSPORTS: {
-	value: PassthroughTransport;
-	label: string;
-	hint: string;
-}[] = [
+const TRANSPORTS: { value: string; label: string; hint: string }[] = [
 	{ value: "http", label: "HTTP", hint: "Standard request/response" },
 	{ value: "ws", label: "WebSocket", hint: "Streaming bidirectional" },
 	{ value: "amqp", label: "AMQP", hint: "Queued batch jobs" },
 	{ value: "pubsub", label: "Pub/Sub", hint: "Fan-out events" },
 ];
 
-function PassthroughSettingsInner() {
-	const allowProxy = usePassthroughStore((s) => s.allowProxy);
-	const allowUnauthenticated = usePassthroughStore(
-		(s) => s.allowUnauthenticated,
-	);
-	const allowedModels = usePassthroughStore((s) => s.allowedModels);
-	const allowedTransports = usePassthroughStore((s) => s.allowedTransports);
-	const patch = usePassthroughStore((s) => s.patch);
+interface FormState {
+	enabled: boolean;
+	unauthenticatedEnabled: boolean;
+	bucketBy: string;
+	modelsAllow: string[];
+	transports: string[];
+}
 
-	const { data } = useModels();
-	const modelOptions = (data.items ?? []).map((m) => ({
+function passthroughToState(p: Passthrough): FormState {
+	return {
+		enabled: p.spec.enabled,
+		unauthenticatedEnabled: p.spec.unauthenticated.enabled,
+		bucketBy: p.spec.unauthenticated.bucketBy ?? "",
+		modelsAllow: p.spec.models.allow ?? [],
+		transports: p.spec.transports ?? ["http"],
+	};
+}
+
+function stateToSpec(state: FormState): PassthroughSpec {
+	return {
+		enabled: state.enabled,
+		unauthenticated: {
+			enabled: state.unauthenticatedEnabled,
+			...(state.bucketBy ? { bucketBy: state.bucketBy } : {}),
+		},
+		models: {
+			mode: state.modelsAllow.length > 0 ? "allowlist" : "all",
+			...(state.modelsAllow.length > 0 ? { allow: state.modelsAllow } : {}),
+		},
+		transports: state.transports.length > 0 ? state.transports : null,
+	};
+}
+
+function PassthroughSettingsInner() {
+	const { data: passthrough } = usePassthrough();
+	const { data: modelsData } = useModels();
+	const updatePassthrough = useUpdatePassthrough();
+
+	const initial = useMemo(() => passthroughToState(passthrough), [passthrough]);
+	const [state, setState] = useState<FormState>(initial);
+
+	const modelOptions = (modelsData.items ?? []).map((m) => ({
 		value: m.metadata.name,
 		label: m.metadata.displayName ?? m.metadata.name,
 	}));
 
-	function toggleTransport(t: PassthroughTransport) {
-		const next = allowedTransports.includes(t)
-			? allowedTransports.filter((x) => x !== t)
-			: [...allowedTransports, t];
-		patch({ allowedTransports: next });
+	function patch(next: Partial<FormState>) {
+		setState((s) => ({ ...s, ...next }));
+	}
+
+	function toggleTransport(t: string) {
+		const next = state.transports.includes(t)
+			? state.transports.filter((x) => x !== t)
+			: [...state.transports, t];
+		patch({ transports: next });
+	}
+
+	async function handleSave() {
+		try {
+			await updatePassthrough.mutateAsync({
+				...passthrough,
+				spec: stateToSpec(state),
+			});
+			toast("success", "Proxy mode updated.");
+		} catch (err) {
+			toast(
+				"error",
+				err instanceof ApiError ? err.body.message : "Failed to save.",
+			);
+		}
+	}
+
+	function handleReset() {
+		setState(initial);
 	}
 
 	return (
-		<div className="flex flex-col gap-4">
+		<div className="flex flex-col">
 			<div>
 				<Link
 					to="/settings"
@@ -75,12 +133,9 @@ function PassthroughSettingsInner() {
 					like Claude Code where you can't extract the OAuth token but want
 					telemetry.
 				</p>
-				<div className="mt-2 inline-flex items-center gap-1 rounded-md border border-amber-200 dark:border-amber-900/60 bg-amber-50 dark:bg-amber-950/30 px-2 py-1 text-[11px] text-amber-800 dark:text-amber-300">
-					Frontend-only stash — backend persistence pending.
-				</div>
 			</div>
 
-			<div className="divide-y divide-border">
+			<div className="mt-6 divide-y divide-border">
 				<Section
 					icon={Forward}
 					title="Enable proxy mode"
@@ -92,12 +147,12 @@ function PassthroughSettingsInner() {
 					</p>
 					<div className="inline-flex items-center gap-2.5">
 						<Switch
-							checked={allowProxy}
-							onCheckedChange={(c) => patch({ allowProxy: c })}
-							aria-label="Allow proxy mode"
+							checked={state.enabled}
+							onCheckedChange={(c) => patch({ enabled: c })}
+							aria-label="Enable proxy mode"
 						/>
 						<span className="text-sm text-foreground">
-							{allowProxy ? "Enabled" : "Disabled"}
+							{state.enabled ? "Enabled" : "Disabled"}
 						</span>
 					</div>
 				</Section>
@@ -113,18 +168,18 @@ function PassthroughSettingsInner() {
 					</p>
 					<div className="inline-flex items-center gap-2.5">
 						<Switch
-							checked={allowUnauthenticated}
-							onCheckedChange={(c) => patch({ allowUnauthenticated: c })}
-							disabled={!allowProxy}
+							checked={state.unauthenticatedEnabled}
+							onCheckedChange={(c) => patch({ unauthenticatedEnabled: c })}
+							disabled={!state.enabled}
 							aria-label="Allow unauthenticated"
 						/>
 						<span className="text-sm text-foreground">
-							{allowUnauthenticated ? "Enabled" : "Disabled"}
+							{state.unauthenticatedEnabled ? "Enabled" : "Disabled"}
 						</span>
 					</div>
-					{!allowProxy && (
+					{!state.enabled && (
 						<p className="mt-2 text-[11px] text-muted-foreground">
-							Requires Allow proxy mode to be on.
+							Requires proxy mode to be on.
 						</p>
 					)}
 				</Section>
@@ -136,12 +191,12 @@ function PassthroughSettingsInner() {
 				>
 					<MultiSelect
 						options={modelOptions}
-						selected={allowedModels}
-						onChange={(next) => patch({ allowedModels: next })}
+						selected={state.modelsAllow}
+						onChange={(next) => patch({ modelsAllow: next })}
 						placeholder="Allow all"
 						emptyHint="No models registered."
 						aria-label="Allowed models"
-						disabled={!allowProxy}
+						disabled={!state.enabled}
 					/>
 					<p className="mt-1.5 text-[11px] text-muted-foreground">
 						Empty = any registered model. Useful for capping cost on shared
@@ -156,13 +211,13 @@ function PassthroughSettingsInner() {
 				>
 					<div className="flex flex-wrap gap-1.5">
 						{TRANSPORTS.map((t) => {
-							const active = allowedTransports.includes(t.value);
+							const active = state.transports.includes(t.value);
 							return (
 								<button
 									key={t.value}
 									type="button"
 									onClick={() => toggleTransport(t.value)}
-									disabled={!allowProxy}
+									disabled={!state.enabled}
 									className={[
 										"inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md text-xs font-medium border transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
 										active
@@ -181,6 +236,24 @@ function PassthroughSettingsInner() {
 						upstream gets HTTP, results return on the chosen transport.
 					</p>
 				</Section>
+			</div>
+
+			<div className="sticky bottom-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-t border-border mt-6 -mx-6 px-6 py-3 flex items-center justify-end gap-2">
+				<button
+					type="button"
+					onClick={handleReset}
+					className="h-8 px-3 rounded-md text-xs font-medium text-foreground hover:bg-muted"
+				>
+					Reset
+				</button>
+				<button
+					type="button"
+					onClick={handleSave}
+					disabled={updatePassthrough.isPending}
+					className="h-8 px-3 rounded-md bg-primary hover:bg-primary/90 text-xs font-semibold text-primary-foreground disabled:opacity-50"
+				>
+					{updatePassthrough.isPending ? "Saving…" : "Save changes"}
+				</button>
 			</div>
 		</div>
 	);
