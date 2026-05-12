@@ -7,7 +7,7 @@ import {
 } from "@/api/hooks/models";
 import {
 	rateLimitsListQueryOptions,
-	useRateLimits,
+	useAttachableRateLimits,
 } from "@/api/hooks/ratelimits";
 import type { ApiErrorBody } from "@/api/types/errors";
 import { ApiError } from "@/api/types/errors";
@@ -59,7 +59,7 @@ const FIELDS: FieldDef[] = [
 function EditModelInner() {
 	const { name } = Route.useParams();
 	const { data: model } = useModel(name);
-	const { data: rateLimitsData } = useRateLimits();
+	const rateLimitsItems = useAttachableRateLimits();
 	const updateModel = useUpdateModel(model.metadata.id ?? "");
 	const navigate = useNavigate();
 	const [serverError, setServerError] = useState<ApiErrorBody | undefined>();
@@ -134,7 +134,7 @@ function EditModelInner() {
 							Rate limits
 						</div>
 						<MultiSelect
-							options={(rateLimitsData.items ?? []).map((rl) => ({
+							options={rateLimitsItems.map((rl) => ({
 								value: rl.metadata.name,
 								label: rl.metadata.name,
 							}))}

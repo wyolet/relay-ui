@@ -21,10 +21,32 @@ export const SYSTEM_RL_NAMES: readonly SystemRateLimitName[] = [
 
 const SYSTEM_RL_SET: ReadonlySet<string> = new Set(SYSTEM_RL_NAMES);
 
-export function isSystemRateLimit(rl: RateLimit): boolean {
+/**
+ * Owner kind constants. Prefer `metadata.owner.kind` once backend populates it
+ * everywhere; the name fallback covers legacy rows.
+ */
+export const OWNER_KIND_SYSTEM = "system";
+export const OWNER_KIND_PROVIDER = "provider";
+export const OWNER_KIND_USER = "user";
+
+export function isSystemOwned(rl: RateLimit): boolean {
+	const ownerKind = rl.metadata.owner?.kind;
+	if (ownerKind) return ownerKind === OWNER_KIND_SYSTEM;
 	return SYSTEM_RL_SET.has(rl.metadata.name);
 }
 
+export function isProviderOwned(rl: RateLimit): boolean {
+	return rl.metadata.owner?.kind === OWNER_KIND_PROVIDER;
+}
+
+export function isUserOwned(rl: RateLimit): boolean {
+	return !isSystemOwned(rl) && !isProviderOwned(rl);
+}
+
+/** Kept for callers that match on raw name. */
 export function isSystemRateLimitName(name: string): boolean {
 	return SYSTEM_RL_SET.has(name);
 }
+
+/** @deprecated Use `isSystemOwned`. */
+export const isSystemRateLimit = isSystemOwned;

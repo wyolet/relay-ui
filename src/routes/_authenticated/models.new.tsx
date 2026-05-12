@@ -3,7 +3,7 @@ import { Suspense, useState } from "react";
 import { useCreateModel } from "@/api/hooks/models";
 import {
 	rateLimitsListQueryOptions,
-	useRateLimits,
+	useAttachableRateLimits,
 } from "@/api/hooks/ratelimits";
 import type { ApiErrorBody } from "@/api/types/errors";
 import { ApiError } from "@/api/types/errors";
@@ -59,7 +59,7 @@ const FIELDS: FieldDef[] = [
 function NewModelInner() {
 	const navigate = useNavigate();
 	const createModel = useCreateModel();
-	const { data: rateLimitsData } = useRateLimits();
+	const rateLimitsItems = useAttachableRateLimits();
 	const [serverError, setServerError] = useState<ApiErrorBody | undefined>();
 	const [rateLimits, setRateLimits] = useState<RateLimitAttachment[]>([]);
 
@@ -116,7 +116,7 @@ function NewModelInner() {
 						Rate limits
 					</div>
 					<MultiSelect
-						options={(rateLimitsData.items ?? []).map((rl) => ({
+						options={rateLimitsItems.map((rl) => ({
 							value: rl.metadata.name,
 							label: rl.metadata.name,
 						}))}

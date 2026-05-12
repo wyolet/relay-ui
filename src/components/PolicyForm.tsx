@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { useModels } from "@/api/hooks/models";
 import { useProviders } from "@/api/hooks/providers";
-import { useRateLimits } from "@/api/hooks/ratelimits";
+import { useAttachableRateLimits } from "@/api/hooks/ratelimits";
 import { useSecrets } from "@/api/hooks/secrets";
 import type { Policy } from "@/api/types/policy";
 import { MultiSelect } from "@/components/MultiSelect";
@@ -27,7 +27,6 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { displayLabel } from "@/lib/displayLabel";
-import { isSystemRateLimit } from "@/lib/systemRateLimits";
 import {
 	KEY_SELECTION_VALUES,
 	type KeySelection,
@@ -63,7 +62,7 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 	const { data: providersData } = useProviders();
 	const { data: secretsData } = useSecrets();
 	const { data: modelsData } = useModels();
-	const { data: rateLimitsData } = useRateLimits();
+	const allRateLimits = useAttachableRateLimits();
 
 	const { form, values, isEdit, nameError, providerError } = usePolicyForm({
 		open: true,
@@ -74,9 +73,6 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 	const providers = providersData.items ?? [];
 	const allSecrets = secretsData.items ?? [];
 	const allModels = modelsData.items ?? [];
-	const allRateLimits = (rateLimitsData.items ?? []).filter(
-		(rl) => !isSystemRateLimit(rl),
-	);
 
 	const providerModels = values.provider
 		? allModels.filter((m) => m.spec.provider === values.provider)

@@ -12,6 +12,7 @@ import type {
 	RateLimitListResponse,
 	RateLimitUpdate,
 } from "@/api/types/ratelimit";
+import { isSystemOwned } from "@/lib/systemRateLimits";
 
 // --- Query options ---
 
@@ -45,6 +46,26 @@ export function rateLimitDetailQueryOptions(name: string) {
 
 export function useRateLimits() {
 	return useSuspenseQuery(rateLimitsListQueryOptions);
+}
+
+/** System-owned RLs only — for /settings/rate-limits. */
+export function useSystemRateLimits(): RateLimit[] {
+	const { data } = useSuspenseQuery(rateLimitsListQueryOptions);
+	return (data.items ?? []).filter(isSystemOwned);
+}
+
+/** Strictly user-owned RLs — for the user-managed list table and create flows. */
+export function useUserRateLimits(): RateLimit[] {
+	const { data } = useSuspenseQuery(rateLimitsListQueryOptions);
+	return (data.items ?? []).filter(
+		(rl) => !isSystemOwned(rl) && rl.metadata.owner?.kind !== "provider",
+	);
+}
+
+/** Everything attachable to a Policy/Key/Model — user + provider, excludes system. */
+export function useAttachableRateLimits(): RateLimit[] {
+	const { data } = useSuspenseQuery(rateLimitsListQueryOptions);
+	return (data.items ?? []).filter((rl) => !isSystemOwned(rl));
 }
 
 export function useRateLimit(name: string) {

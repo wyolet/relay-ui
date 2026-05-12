@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useId, useMemo } from "react";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
+import { isSystemOwned } from "@/lib/systemRateLimits";
 import { displayLabel } from "@/lib/displayLabel";
 import { Input } from "@/components/ui/input";
 import {
@@ -254,7 +255,7 @@ function RateLimitRefPicker({
 		...rateLimitsListQueryOptions,
 		retry: false,
 	});
-	const items = data?.items ?? [];
+	const items = (data?.items ?? []).filter((rl) => !isSystemOwned(rl));
 
 	return (
 		<div className="mt-2">

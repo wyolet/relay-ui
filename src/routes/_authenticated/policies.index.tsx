@@ -7,7 +7,6 @@ import {
 	ShieldCheck,
 } from "lucide-react";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
-import { isSystemRateLimit } from "@/lib/systemRateLimits";
 import { Suspense, useState } from "react";
 import { z } from "zod";
 import { useModels } from "@/api/hooks/models";
@@ -19,7 +18,7 @@ import {
 import {
 	rateLimitsListQueryOptions,
 	useDeleteRateLimit,
-	useRateLimits,
+	useUserRateLimits,
 } from "@/api/hooks/ratelimits";
 import type { Policy } from "@/api/types/policy";
 import type { RateLimit } from "@/api/types/ratelimit";
@@ -324,11 +323,10 @@ function fmtAmount(n: number): string {
 }
 
 function RateLimitsPanel() {
-	const { data } = useRateLimits();
+	const allItems = useUserRateLimits();
 	const deleteRL = useDeleteRateLimit();
 	const navigate = useNavigate({ from: "/policies" });
 	const [q, setQ] = useState("");
-	const allItems = (data.items ?? []).filter((rl) => !isSystemRateLimit(rl));
 	const needle = q.trim().toLowerCase();
 	const items = needle
 		? allItems.filter((rl) =>
