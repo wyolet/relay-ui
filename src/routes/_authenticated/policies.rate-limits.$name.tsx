@@ -75,8 +75,10 @@ function RateLimitEditInner() {
 							)}
 						</h1>
 						<div className="mt-1 text-xs text-muted-foreground">
-							{rateLimit.spec.strategy} ·{" "}
-							{Math.round(rateLimit.spec.window / 1_000_000_000)}s window ·{" "}
+							{rateLimit.spec.rules?.[0]?.strategy ?? "no strategy"} ·{" "}
+							{rateLimit.spec.rules?.[0]
+								? `${Math.round(rateLimit.spec.rules[0].window / 1_000_000_000)}s window · `
+								: ""}
 							{rateLimit.spec.rules?.length ?? 0} rule
 							{rateLimit.spec.rules?.length === 1 ? "" : "s"}
 						</div>

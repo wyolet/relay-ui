@@ -735,12 +735,14 @@ export interface components {
             key: string;
         };
         Metadata: {
+            description?: string;
             displayName?: string;
             id?: string;
             labels?: {
                 [key: string]: string;
             };
             name: string;
+            owner?: components["schemas"]["Owner"];
         };
         Modalities: {
             input?: string[] | null;
@@ -813,6 +815,10 @@ export interface components {
             name: string;
             /** Format: date-time */
             revokedAt?: string;
+        };
+        Owner: {
+            id?: string;
+            kind: string;
         };
         Passthrough: {
             /**
@@ -930,29 +936,19 @@ export interface components {
              */
             meter: "requests" | "concurrency" | "tokens" | "tokens.input" | "tokens.output" | "tokens.cache_read" | "tokens.cache_creation" | "tokens.reasoning" | "tokens.server_tool_use_input" | "tokens.server_tool_use_output";
             /**
-             * @description Rate-limit strategy. Defaults to token-bucket if empty.
-             * @enum {string}
-             */
-            strategy?: "token-bucket" | "sliding-window" | "fixed-window" | "leaky-bucket" | "session-window";
-            /**
-             * Format: int64
-             * @description Per-rule window override (nanoseconds, or human-readable string on input — '30s', '1m'). When zero, spec.window is used.
-             */
-            window?: number;
-        };
-        RateLimitSpec: {
-            /** @description Free-text description of this RateLimit (e.g. why it exists, what it protects). */
-            description?: string;
-            enabled?: boolean;
-            rules: components["schemas"]["RateLimitRule"][] | null;
-            source?: string;
-            /**
-             * @description Default strategy for rules that don't set one.
+             * @description Rate-limit strategy. Required.
              * @enum {string}
              */
             strategy: "token-bucket" | "sliding-window" | "fixed-window" | "leaky-bucket" | "session-window";
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Rule window (nanoseconds, or human-readable string on input — '30s', '1m'). Required.
+             */
             window: number;
+        };
+        RateLimitSpec: {
+            enabled?: boolean;
+            rules: components["schemas"]["RateLimitRule"][] | null;
         };
         RelayKey: {
             /**

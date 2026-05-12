@@ -1,64 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { Suspense } from "react";
-import { providersListQueryOptions, useProviders } from "@/api/hooks/providers";
-import type { Provider } from "@/api/types/provider";
-import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
-import type { ColumnDef } from "@/components/ResourceList";
-import { ResourceList } from "@/components/ResourceList";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authenticated/providers/")({
-	loader: ({ context }) =>
-		context.queryClient.ensureQueryData(providersListQueryOptions),
-	component: ProvidersPage,
+	beforeLoad: () => {
+		throw redirect({ to: "/models", search: { tab: "providers" } });
+	},
 });
-
-const COLUMNS: ColumnDef<Provider>[] = [
-	{
-		key: "name",
-		label: "Name",
-		render: (r) => displayLabel(r.metadata),
-		renderCell: (r) =>
-			hasDisplayName(r.metadata) ? (
-				displayLabel(r.metadata)
-			) : (
-				<>
-					{displayLabel(r.metadata)}
-					<span className="ml-1.5 text-[11px] text-muted-foreground">
-						(no display name)
-					</span>
-				</>
-			),
-	},
-	{ key: "kind", label: "Kind", render: (r) => r.spec.kind },
-	{ key: "baseURL", label: "Base URL", render: (r) => r.spec.baseURL },
-	{
-		key: "default",
-		label: "Default",
-		render: (r) => (r.spec.default ? "Yes" : "No"),
-	},
-];
-
-function ProvidersList() {
-	const { data } = useProviders();
-	return (
-		<ResourceList
-			title="Providers"
-			items={data.items ?? []}
-			columns={COLUMNS}
-			createTo="/providers/new"
-			detailTo={(name) => `/providers/${name}`}
-			getName={(r) => r.metadata.name}
-			emptyMessage="No providers configured."
-		/>
-	);
-}
-
-function ProvidersPage() {
-	return (
-		<Suspense
-			fallback={<div className="text-muted-foreground text-sm">Loading…</div>}
-		>
-			<ProvidersList />
-		</Suspense>
-	);
-}

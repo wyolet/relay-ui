@@ -34,6 +34,7 @@ import { Route as AuthenticatedProvidersIndexRouteImport } from './routes/_authe
 import { Route as AuthenticatedPoolsIndexRouteImport } from './routes/_authenticated/pools.index'
 import { Route as AuthenticatedPoliciesIndexRouteImport } from './routes/_authenticated/policies.index'
 import { Route as AuthenticatedModelsIndexRouteImport } from './routes/_authenticated/models.index'
+import { Route as AuthenticatedSettingsRateLimitsRouteImport } from './routes/_authenticated/settings.rate-limits'
 import { Route as AuthenticatedSettingsProxyModeRouteImport } from './routes/_authenticated/settings.proxy-mode'
 import { Route as AuthenticatedSecretsNewRouteImport } from './routes/_authenticated/secrets.new'
 import { Route as AuthenticatedSecretsNameRouteImport } from './routes/_authenticated/secrets.$name'
@@ -187,6 +188,12 @@ const AuthenticatedModelsIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedModelsRoute,
   } as any)
+const AuthenticatedSettingsRateLimitsRoute =
+  AuthenticatedSettingsRateLimitsRouteImport.update({
+    id: '/rate-limits',
+    path: '/rate-limits',
+    getParentRoute: () => AuthenticatedSettingsRoute,
+  } as any)
 const AuthenticatedSettingsProxyModeRoute =
   AuthenticatedSettingsProxyModeRouteImport.update({
     id: '/proxy-mode',
@@ -332,6 +339,7 @@ export interface FileRoutesByFullPath {
   '/secrets/$name': typeof AuthenticatedSecretsNameRouteWithChildren
   '/secrets/new': typeof AuthenticatedSecretsNewRoute
   '/settings/proxy-mode': typeof AuthenticatedSettingsProxyModeRoute
+  '/settings/rate-limits': typeof AuthenticatedSettingsRateLimitsRoute
   '/models/': typeof AuthenticatedModelsIndexRoute
   '/policies/': typeof AuthenticatedPoliciesIndexRoute
   '/pools/': typeof AuthenticatedPoolsIndexRoute
@@ -370,6 +378,7 @@ export interface FileRoutesByTo {
   '/secrets/$name': typeof AuthenticatedSecretsNameRouteWithChildren
   '/secrets/new': typeof AuthenticatedSecretsNewRoute
   '/settings/proxy-mode': typeof AuthenticatedSettingsProxyModeRoute
+  '/settings/rate-limits': typeof AuthenticatedSettingsRateLimitsRoute
   '/models': typeof AuthenticatedModelsIndexRoute
   '/policies': typeof AuthenticatedPoliciesIndexRoute
   '/pools': typeof AuthenticatedPoolsIndexRoute
@@ -418,6 +427,7 @@ export interface FileRoutesById {
   '/_authenticated/secrets/$name': typeof AuthenticatedSecretsNameRouteWithChildren
   '/_authenticated/secrets/new': typeof AuthenticatedSecretsNewRoute
   '/_authenticated/settings/proxy-mode': typeof AuthenticatedSettingsProxyModeRoute
+  '/_authenticated/settings/rate-limits': typeof AuthenticatedSettingsRateLimitsRoute
   '/_authenticated/models/': typeof AuthenticatedModelsIndexRoute
   '/_authenticated/policies/': typeof AuthenticatedPoliciesIndexRoute
   '/_authenticated/pools/': typeof AuthenticatedPoolsIndexRoute
@@ -466,6 +476,7 @@ export interface FileRouteTypes {
     | '/secrets/$name'
     | '/secrets/new'
     | '/settings/proxy-mode'
+    | '/settings/rate-limits'
     | '/models/'
     | '/policies/'
     | '/pools/'
@@ -504,6 +515,7 @@ export interface FileRouteTypes {
     | '/secrets/$name'
     | '/secrets/new'
     | '/settings/proxy-mode'
+    | '/settings/rate-limits'
     | '/models'
     | '/policies'
     | '/pools'
@@ -551,6 +563,7 @@ export interface FileRouteTypes {
     | '/_authenticated/secrets/$name'
     | '/_authenticated/secrets/new'
     | '/_authenticated/settings/proxy-mode'
+    | '/_authenticated/settings/rate-limits'
     | '/_authenticated/models/'
     | '/_authenticated/policies/'
     | '/_authenticated/pools/'
@@ -748,6 +761,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/models/'
       preLoaderRoute: typeof AuthenticatedModelsIndexRouteImport
       parentRoute: typeof AuthenticatedModelsRoute
+    }
+    '/_authenticated/settings/rate-limits': {
+      id: '/_authenticated/settings/rate-limits'
+      path: '/rate-limits'
+      fullPath: '/settings/rate-limits'
+      preLoaderRoute: typeof AuthenticatedSettingsRateLimitsRouteImport
+      parentRoute: typeof AuthenticatedSettingsRoute
     }
     '/_authenticated/settings/proxy-mode': {
       id: '/_authenticated/settings/proxy-mode'
@@ -1077,11 +1097,13 @@ const AuthenticatedSecretsRouteWithChildren =
 
 interface AuthenticatedSettingsRouteChildren {
   AuthenticatedSettingsProxyModeRoute: typeof AuthenticatedSettingsProxyModeRoute
+  AuthenticatedSettingsRateLimitsRoute: typeof AuthenticatedSettingsRateLimitsRoute
   AuthenticatedSettingsIndexRoute: typeof AuthenticatedSettingsIndexRoute
 }
 
 const AuthenticatedSettingsRouteChildren: AuthenticatedSettingsRouteChildren = {
   AuthenticatedSettingsProxyModeRoute: AuthenticatedSettingsProxyModeRoute,
+  AuthenticatedSettingsRateLimitsRoute: AuthenticatedSettingsRateLimitsRoute,
   AuthenticatedSettingsIndexRoute: AuthenticatedSettingsIndexRoute,
 }
 

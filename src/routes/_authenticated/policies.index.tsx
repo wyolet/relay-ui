@@ -7,6 +7,7 @@ import {
 	ShieldCheck,
 } from "lucide-react";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
+import { isSystemRateLimit } from "@/lib/systemRateLimits";
 import { Suspense, useState } from "react";
 import { z } from "zod";
 import { useModels } from "@/api/hooks/models";
@@ -327,7 +328,7 @@ function RateLimitsPanel() {
 	const deleteRL = useDeleteRateLimit();
 	const navigate = useNavigate({ from: "/policies" });
 	const [q, setQ] = useState("");
-	const allItems = data.items ?? [];
+	const allItems = (data.items ?? []).filter((rl) => !isSystemRateLimit(rl));
 	const needle = q.trim().toLowerCase();
 	const items = needle
 		? allItems.filter((rl) =>
@@ -438,11 +439,13 @@ function RateLimitsPanel() {
 									</td>
 									<td className="px-3 py-2 text-sm">
 										<span className="text-[11px] text-muted-foreground">
-											{rl.spec.strategy}
+											{rl.spec.rules?.[0]?.strategy ?? "—"}
 										</span>
 									</td>
 									<td className="px-3 py-2 text-right text-sm text-foreground tabular-nums">
-										{fmtWindow(rl.spec.window)}
+										{rl.spec.rules?.[0]
+											? fmtWindow(rl.spec.rules[0].window)
+											: "—"}
 									</td>
 									<td className="px-3 py-2 text-sm text-muted-foreground">
 										{summarizeRules(rl)}

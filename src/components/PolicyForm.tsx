@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { displayLabel } from "@/lib/displayLabel";
+import { isSystemRateLimit } from "@/lib/systemRateLimits";
 import {
 	KEY_SELECTION_VALUES,
 	type KeySelection,
@@ -73,7 +74,9 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 	const providers = providersData.items ?? [];
 	const allSecrets = secretsData.items ?? [];
 	const allModels = modelsData.items ?? [];
-	const allRateLimits = rateLimitsData.items ?? [];
+	const allRateLimits = (rateLimitsData.items ?? []).filter(
+		(rl) => !isSystemRateLimit(rl),
+	);
 
 	const providerModels = values.provider
 		? allModels.filter((m) => m.spec.provider === values.provider)

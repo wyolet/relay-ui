@@ -302,10 +302,10 @@ function AttachmentsInner() {
 											</Link>
 										</td>
 										<td className="px-4 py-3 text-amber-800 dark:text-amber-300">
-											{rl.spec.strategy}
+											{rl.spec.rules?.[0]?.strategy ?? "—"}
 										</td>
 										<td className="px-4 py-3 text-amber-800 dark:text-amber-300">
-											{rl.spec.window}
+											{rl.spec.rules?.[0]?.window ?? "—"}
 										</td>
 										<td className="px-4 py-3 text-amber-800 dark:text-amber-300">
 											{(rl.spec.rules ?? []).length}

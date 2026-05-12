@@ -104,20 +104,18 @@ export const secondsToNs = (s: number): number => Math.round(s * NS_PER_SEC);
 
 function rlToValues(rl: RateLimit): RateLimitFormValues {
 	const specRules = rl.spec.rules ?? null;
-	const specWindowSec = nsToSeconds(rl.spec.window);
 	const rules: RuleDraft[] =
 		specRules && specRules.length > 0
 			? specRules.map((r) => ({
 					amount: r.amount,
 					meter: r.meter,
-					strategy: r.strategy ?? rl.spec.strategy ?? DEFAULT_STRATEGY,
-					window:
-						r.window && r.window > 0 ? nsToSeconds(r.window) : specWindowSec,
+					strategy: r.strategy,
+					window: nsToSeconds(r.window),
 				}))
 			: [emptyRule()];
 	return {
 		name: rl.metadata.name,
-		description: rl.spec.description ?? "",
+		description: rl.metadata.description ?? "",
 		rules,
 	};
 }
@@ -162,25 +160,30 @@ export function useRateLimitForm({
 				strategy: r.strategy,
 				window: secondsToNs(Number(r.window)),
 			}));
-			const specWindowNs = rules[0]?.window ?? secondsToNs(60);
 			const description = value.description.trim();
-			const spec = {
-				strategy: DEFAULT_STRATEGY,
-				window: specWindowNs,
-				rules,
-				...(description ? { description } : {}),
-			};
+			const spec = { rules };
 			try {
 				if (isEdit && rateLimit) {
 					const payload: RateLimitUpdate = {
-						metadata: { ...rateLimit.metadata, name: value.name.trim() },
+						metadata: {
+							...rateLimit.metadata,
+							name: value.name.trim(),
+							...(description
+								? { description }
+								: rateLimit.metadata.description !== undefined
+									? { description: "" }
+									: {}),
+						},
 						spec,
 					};
 					await updateRL.mutateAsync(payload);
 					toast("success", `Rate limit "${value.name.trim()}" updated.`);
 				} else {
 					const payload: RateLimitCreate = {
-						metadata: { name: value.name.trim() },
+						metadata: {
+							name: value.name.trim(),
+							...(description ? { description } : {}),
+						},
 						spec,
 					};
 					await createRL.mutateAsync(payload);

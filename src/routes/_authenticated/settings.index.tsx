@@ -6,7 +6,7 @@ export const Route = createFileRoute("/_authenticated/settings/")({
 });
 
 interface SettingItem {
-	to: "/ratelimits" | "/settings/proxy-mode";
+	to: "/settings/rate-limits" | "/settings/proxy-mode";
 	label: string;
 	description: string;
 	icon: LucideIcon;
@@ -21,10 +21,10 @@ const ITEMS: SettingItem[] = [
 		icon: Forward,
 	},
 	{
-		to: "/ratelimits",
+		to: "/settings/rate-limits",
 		label: "Rate limits",
 		description:
-			"System-wide throttling rules. Attach them to policies or let providers auto-mirror upstream tiers.",
+			"Throttling for Relay's control and inference APIs. Configure RPS / RPM / RPH / RPD caps.",
 		icon: Gauge,
 	},
 ];
