@@ -34,7 +34,7 @@ import { Route as AuthenticatedProvidersIndexRouteImport } from './routes/_authe
 import { Route as AuthenticatedPoolsIndexRouteImport } from './routes/_authenticated/pools.index'
 import { Route as AuthenticatedPoliciesIndexRouteImport } from './routes/_authenticated/policies.index'
 import { Route as AuthenticatedModelsIndexRouteImport } from './routes/_authenticated/models.index'
-import { Route as AuthenticatedSettingsPassthroughRouteImport } from './routes/_authenticated/settings.passthrough'
+import { Route as AuthenticatedSettingsProxyModeRouteImport } from './routes/_authenticated/settings.proxy-mode'
 import { Route as AuthenticatedSecretsNewRouteImport } from './routes/_authenticated/secrets.new'
 import { Route as AuthenticatedSecretsNameRouteImport } from './routes/_authenticated/secrets.$name'
 import { Route as AuthenticatedRoutesNewRouteImport } from './routes/_authenticated/routes.new'
@@ -187,10 +187,10 @@ const AuthenticatedModelsIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedModelsRoute,
   } as any)
-const AuthenticatedSettingsPassthroughRoute =
-  AuthenticatedSettingsPassthroughRouteImport.update({
-    id: '/passthrough',
-    path: '/passthrough',
+const AuthenticatedSettingsProxyModeRoute =
+  AuthenticatedSettingsProxyModeRouteImport.update({
+    id: '/proxy-mode',
+    path: '/proxy-mode',
     getParentRoute: () => AuthenticatedSettingsRoute,
   } as any)
 const AuthenticatedSecretsNewRoute = AuthenticatedSecretsNewRouteImport.update({
@@ -331,7 +331,7 @@ export interface FileRoutesByFullPath {
   '/routes/new': typeof AuthenticatedRoutesNewRoute
   '/secrets/$name': typeof AuthenticatedSecretsNameRouteWithChildren
   '/secrets/new': typeof AuthenticatedSecretsNewRoute
-  '/settings/passthrough': typeof AuthenticatedSettingsPassthroughRoute
+  '/settings/proxy-mode': typeof AuthenticatedSettingsProxyModeRoute
   '/models/': typeof AuthenticatedModelsIndexRoute
   '/policies/': typeof AuthenticatedPoliciesIndexRoute
   '/pools/': typeof AuthenticatedPoolsIndexRoute
@@ -369,7 +369,7 @@ export interface FileRoutesByTo {
   '/routes/new': typeof AuthenticatedRoutesNewRoute
   '/secrets/$name': typeof AuthenticatedSecretsNameRouteWithChildren
   '/secrets/new': typeof AuthenticatedSecretsNewRoute
-  '/settings/passthrough': typeof AuthenticatedSettingsPassthroughRoute
+  '/settings/proxy-mode': typeof AuthenticatedSettingsProxyModeRoute
   '/models': typeof AuthenticatedModelsIndexRoute
   '/policies': typeof AuthenticatedPoliciesIndexRoute
   '/pools': typeof AuthenticatedPoolsIndexRoute
@@ -417,7 +417,7 @@ export interface FileRoutesById {
   '/_authenticated/routes/new': typeof AuthenticatedRoutesNewRoute
   '/_authenticated/secrets/$name': typeof AuthenticatedSecretsNameRouteWithChildren
   '/_authenticated/secrets/new': typeof AuthenticatedSecretsNewRoute
-  '/_authenticated/settings/passthrough': typeof AuthenticatedSettingsPassthroughRoute
+  '/_authenticated/settings/proxy-mode': typeof AuthenticatedSettingsProxyModeRoute
   '/_authenticated/models/': typeof AuthenticatedModelsIndexRoute
   '/_authenticated/policies/': typeof AuthenticatedPoliciesIndexRoute
   '/_authenticated/pools/': typeof AuthenticatedPoolsIndexRoute
@@ -465,7 +465,7 @@ export interface FileRouteTypes {
     | '/routes/new'
     | '/secrets/$name'
     | '/secrets/new'
-    | '/settings/passthrough'
+    | '/settings/proxy-mode'
     | '/models/'
     | '/policies/'
     | '/pools/'
@@ -503,7 +503,7 @@ export interface FileRouteTypes {
     | '/routes/new'
     | '/secrets/$name'
     | '/secrets/new'
-    | '/settings/passthrough'
+    | '/settings/proxy-mode'
     | '/models'
     | '/policies'
     | '/pools'
@@ -550,7 +550,7 @@ export interface FileRouteTypes {
     | '/_authenticated/routes/new'
     | '/_authenticated/secrets/$name'
     | '/_authenticated/secrets/new'
-    | '/_authenticated/settings/passthrough'
+    | '/_authenticated/settings/proxy-mode'
     | '/_authenticated/models/'
     | '/_authenticated/policies/'
     | '/_authenticated/pools/'
@@ -749,11 +749,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedModelsIndexRouteImport
       parentRoute: typeof AuthenticatedModelsRoute
     }
-    '/_authenticated/settings/passthrough': {
-      id: '/_authenticated/settings/passthrough'
-      path: '/passthrough'
-      fullPath: '/settings/passthrough'
-      preLoaderRoute: typeof AuthenticatedSettingsPassthroughRouteImport
+    '/_authenticated/settings/proxy-mode': {
+      id: '/_authenticated/settings/proxy-mode'
+      path: '/proxy-mode'
+      fullPath: '/settings/proxy-mode'
+      preLoaderRoute: typeof AuthenticatedSettingsProxyModeRouteImport
       parentRoute: typeof AuthenticatedSettingsRoute
     }
     '/_authenticated/secrets/new': {
@@ -1076,12 +1076,12 @@ const AuthenticatedSecretsRouteWithChildren =
   AuthenticatedSecretsRoute._addFileChildren(AuthenticatedSecretsRouteChildren)
 
 interface AuthenticatedSettingsRouteChildren {
-  AuthenticatedSettingsPassthroughRoute: typeof AuthenticatedSettingsPassthroughRoute
+  AuthenticatedSettingsProxyModeRoute: typeof AuthenticatedSettingsProxyModeRoute
   AuthenticatedSettingsIndexRoute: typeof AuthenticatedSettingsIndexRoute
 }
 
 const AuthenticatedSettingsRouteChildren: AuthenticatedSettingsRouteChildren = {
-  AuthenticatedSettingsPassthroughRoute: AuthenticatedSettingsPassthroughRoute,
+  AuthenticatedSettingsProxyModeRoute: AuthenticatedSettingsProxyModeRoute,
   AuthenticatedSettingsIndexRoute: AuthenticatedSettingsIndexRoute,
 }
 

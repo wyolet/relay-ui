@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useId, useMemo } from "react";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
+import { displayLabel } from "@/lib/displayLabel";
 import { Input } from "@/components/ui/input";
 import {
 	Select,
@@ -275,7 +276,7 @@ function RateLimitRefPicker({
 					) : (
 						items.map((rl) => (
 							<SelectItem key={rl.metadata.name} value={rl.metadata.name}>
-								{rl.metadata.name}
+								{displayLabel(rl.metadata)}
 							</SelectItem>
 						))
 					)}

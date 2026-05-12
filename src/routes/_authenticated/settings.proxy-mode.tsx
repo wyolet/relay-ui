@@ -16,7 +16,7 @@ import {
 	usePassthroughStore,
 } from "@/stores/passthrough";
 
-export const Route = createFileRoute("/_authenticated/settings/passthrough")({
+export const Route = createFileRoute("/_authenticated/settings/proxy-mode")({
 	loader: ({ context }) =>
 		context.queryClient.ensureQueryData(modelsListQueryOptions),
 	component: PassthroughSettingsPage,
@@ -66,7 +66,7 @@ function PassthroughSettingsInner() {
 					Settings
 				</Link>
 				<h1 className="mt-2 text-xl font-semibold text-foreground">
-					Passthrough
+					Proxy mode
 				</h1>
 				<p className="mt-1 text-xs text-muted-foreground max-w-2xl">
 					Accept requests where the caller brings their own upstream
@@ -83,7 +83,7 @@ function PassthroughSettingsInner() {
 			<div className="divide-y divide-border">
 				<Section
 					icon={Forward}
-					title="Allow proxy mode"
+					title="Enable proxy mode"
 					description="Permit requests that already carry valid upstream auth headers."
 				>
 					<p className="mb-2 text-sm text-muted-foreground">
@@ -132,7 +132,7 @@ function PassthroughSettingsInner() {
 				<Section
 					icon={Boxes}
 					title="Allowed models"
-					description="Restrict which models passthrough callers can target."
+					description="Restrict which models proxy-mode callers can target."
 				>
 					<MultiSelect
 						options={modelOptions}
@@ -152,7 +152,7 @@ function PassthroughSettingsInner() {
 				<Section
 					icon={Network}
 					title="Allowed transports"
-					description="Which protocols Relay will accept passthrough requests over."
+					description="Which protocols Relay will accept proxy-mode requests over."
 				>
 					<div className="flex flex-wrap gap-1.5">
 						{TRANSPORTS.map((t) => {

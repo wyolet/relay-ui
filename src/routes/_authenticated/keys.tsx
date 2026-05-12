@@ -1,13 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import {
-	Check,
-	Copy,
-	KeyRound,
-	ListFilter,
-	MoreHorizontal,
-	Plus,
-	Search,
-} from "lucide-react";
+import { Check, Copy, KeyRound, MoreHorizontal, Plus } from "lucide-react";
 import { useState } from "react";
 import { z } from "zod";
 import { policiesListQueryOptions, usePolicies } from "@/api/hooks/policies";
@@ -25,7 +17,9 @@ import { confirm } from "@/components/ConfirmDialog";
 import { CreateRelayKeyModal } from "@/components/CreateRelayKeyModal";
 import { EditProviderKeyModal } from "@/components/EditProviderKeyModal";
 import { EditRelayKeyModal } from "@/components/EditRelayKeyModal";
+import { SearchBox } from "@/components/SearchBox";
 import { Switch } from "@/components/Switch";
+import { TableToolbar } from "@/components/TableToolbar";
 import { toast } from "@/components/Toast";
 import {
 	DropdownMenu,
@@ -33,7 +27,13 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import { type ApiKey, useKeysStore } from "@/stores/keys";
 
 type Filter = "active" | "revoked" | "all";
@@ -116,36 +116,6 @@ function RowMenu({ actions }: { actions: MenuAction[] }) {
 				))}
 			</DropdownMenuContent>
 		</DropdownMenu>
-	);
-}
-
-function StatusFilterPills({
-	value,
-	counts,
-	onChange,
-}: {
-	value: Filter;
-	counts: Record<Filter, number>;
-	onChange: (f: Filter) => void;
-}) {
-	const filters: { value: Filter; label: string }[] = [
-		{ value: "active", label: "Active" },
-		{ value: "revoked", label: "Revoked" },
-		{ value: "all", label: "All" },
-	];
-	return (
-		<Tabs value={value} onValueChange={(v) => onChange(v as Filter)}>
-			<TabsList aria-label="Status filter">
-				{filters.map((f) => (
-					<TabsTrigger key={f.value} value={f.value}>
-						<span>{f.label}</span>
-						<span className="ml-1 text-[10px] tabular-nums text-muted-foreground">
-							{counts[f.value]}
-						</span>
-					</TabsTrigger>
-				))}
-			</TabsList>
-		</Tabs>
 	);
 }
 
@@ -354,11 +324,6 @@ function RelayKeysPanel() {
 	const [createOpen, setCreateOpen] = useState(false);
 	const [editId, setEditId] = useState<string | null>(null);
 
-	const counts = {
-		active: items.filter((k) => k.revokedAt === null).length,
-		revoked: items.filter((k) => k.revokedAt !== null).length,
-		all: items.length,
-	};
 	const visible = applyFilter(items, search.filter, search.q);
 	const editKey = editId ? (items.find((k) => k.id === editId) ?? null) : null;
 
@@ -371,23 +336,32 @@ function RelayKeysPanel() {
 
 	return (
 		<div>
-			<div className="flex items-center justify-between mb-3 gap-3">
-				<div className="relative flex-1 max-w-sm">
-					<Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
-					<input
-						type="search"
+			<TableToolbar
+				search={
+					<SearchBox
 						value={search.q}
-						onChange={(e) => setQ(e.currentTarget.value)}
+						onChange={setQ}
 						placeholder="Search keys"
-						className="w-full h-8 pl-8 pr-3 rounded-md text-xs text-foreground bg-card border border-border placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus-visible:ring-ring focus:border-transparent transition-shadow"
 					/>
-				</div>
-				<div className="flex items-center gap-2">
-					<StatusFilterPills
+				}
+				filters={
+					<Select
 						value={search.filter}
-						counts={counts}
-						onChange={setFilter}
-					/>
+						onValueChange={(v) => {
+							if (v !== null) setFilter(v as Filter);
+						}}
+					>
+						<SelectTrigger className="w-32">
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value="active">Active</SelectItem>
+							<SelectItem value="revoked">Revoked</SelectItem>
+							<SelectItem value="all">All</SelectItem>
+						</SelectContent>
+					</Select>
+				}
+				actions={
 					<button
 						type="button"
 						onClick={() => setCreateOpen(true)}
@@ -396,8 +370,8 @@ function RelayKeysPanel() {
 						<Plus className="w-3.5 h-3.5" />
 						New key
 					</button>
-				</div>
-			</div>
+				}
+			/>
 
 			{visible.length === 0 ? (
 				<div className="rounded-lg border border-dashed border-input bg-card px-6 py-14 text-center">
@@ -554,18 +528,9 @@ function ProviderKeysPanel() {
 	const { data: policies } = usePolicies();
 	const { data: secrets } = useSecrets();
 	const [byokOpen, setByokOpen] = useState(false);
-	const [filterOpen, setFilterOpen] = useState(false);
 	const [keyQ, setKeyQ] = useState("");
 
 	const list = providers.items ?? [];
-
-	function keyCount(providerName: string): number {
-		const known = new Set(secrets.items?.map((s) => s.name) ?? []);
-		return (policies.items ?? [])
-			.filter((p) => p.spec.provider === providerName)
-			.flatMap((p) => p.spec.secrets ?? [])
-			.filter((n) => known.has(n)).length;
-	}
 
 	// "" = all providers
 	const selected = search.provider ?? "";
@@ -573,13 +538,10 @@ function ProviderKeysPanel() {
 		selected === ""
 			? undefined
 			: list.find((p) => p.metadata.name === selected);
-	const totalKeys = list.reduce((acc, p) => acc + keyCount(p.metadata.name), 0);
-
 	function pick(provider: string) {
 		void navigate({
 			search: (prev) => ({ ...prev, provider, add: undefined }),
 		});
-		setFilterOpen(false);
 	}
 
 	function onByokPick(provider: string) {
@@ -601,113 +563,42 @@ function ProviderKeysPanel() {
 
 	return (
 		<div>
-			<div className="flex items-center justify-between mb-3 gap-3">
-				<div className="relative flex-1 max-w-sm">
-					<Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
-					<input
-						type="search"
+			<TableToolbar
+				search={
+					<SearchBox
 						value={keyQ}
-						onChange={(e) => setKeyQ(e.currentTarget.value)}
+						onChange={setKeyQ}
 						placeholder="Search keys"
-						className="w-full h-8 pl-8 pr-3 rounded-md text-xs text-foreground bg-card border border-border placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus-visible:ring-ring focus:border-transparent transition-shadow"
 					/>
-				</div>
-
-				<div className="flex items-center gap-2">
-					<div className="relative">
-						<button
-							type="button"
-							onClick={() => setFilterOpen((v) => !v)}
-							onBlur={() => setTimeout(() => setFilterOpen(false), 150)}
-							aria-haspopup="listbox"
-							aria-expanded={filterOpen}
-							className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium text-foreground border border-border hover:bg-muted transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-						>
-							<ListFilter className="w-3.5 h-3.5" />
-							<span>
+				}
+				filters={
+					<Select
+						value={selected || "all"}
+						onValueChange={(v) => {
+							if (v !== null) pick(v === "all" ? "" : v);
+						}}
+					>
+						<SelectTrigger className="w-40">
+							<SelectValue>
 								{selectedProvider
 									? (selectedProvider.metadata.displayName ??
 										selectedProvider.metadata.name)
 									: "All providers"}
-							</span>
-						</button>
-						{filterOpen && (
-							<div
-								role="listbox"
-								className="absolute right-0 top-9 z-10 min-w-[200px] rounded-md border border-border bg-card shadow-lg py-1"
-							>
-								<div className="px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-									Provider
-								</div>
-								<button
-									type="button"
-									role="option"
-									aria-selected={selected === ""}
-									onMouseDown={(e) => e.preventDefault()}
-									onClick={() => pick("")}
-									className={[
-										"w-full flex items-center justify-between gap-2 px-2.5 h-8 text-xs transition-colors",
-										selected === ""
-											? "bg-brand-50 dark:bg-brand-950/60 text-brand-700 dark:text-brand-300"
-											: "text-foreground hover:bg-muted",
-									].join(" ")}
-								>
-									<span className="inline-flex items-center gap-1.5 min-w-0">
-										{selected === "" && <Check className="w-3 h-3 shrink-0" />}
-										<span>All providers</span>
+							</SelectValue>
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value="all">All providers</SelectItem>
+							{list.map((p) => (
+								<SelectItem key={p.metadata.name} value={p.metadata.name}>
+									<span className="capitalize">
+										{p.metadata.displayName ?? p.metadata.name}
 									</span>
-									<span
-										className={[
-											"text-[10px] tabular-nums shrink-0",
-											selected === ""
-												? "text-brand-600 dark:text-brand-400"
-												: "text-muted-foreground",
-										].join(" ")}
-									>
-										{totalKeys}
-									</span>
-								</button>
-								<div className="my-1 border-t border-border" />
-								{list.map((p) => {
-									const active = p.metadata.name === selected;
-									const count = keyCount(p.metadata.name);
-									return (
-										<button
-											key={p.metadata.name}
-											type="button"
-											role="option"
-											aria-selected={active}
-											onMouseDown={(e) => e.preventDefault()}
-											onClick={() => pick(p.metadata.name)}
-											className={[
-												"w-full flex items-center justify-between gap-2 px-2.5 h-8 text-xs transition-colors",
-												active
-													? "bg-brand-50 dark:bg-brand-950/60 text-brand-700 dark:text-brand-300"
-													: "text-foreground hover:bg-muted",
-											].join(" ")}
-										>
-											<span className="inline-flex items-center gap-1.5 min-w-0">
-												{active && <Check className="w-3 h-3 shrink-0" />}
-												<span className="capitalize truncate">
-													{p.metadata.displayName ?? p.metadata.name}
-												</span>
-											</span>
-											<span
-												className={[
-													"text-[10px] tabular-nums shrink-0",
-													active
-														? "text-brand-600 dark:text-brand-400"
-														: "text-muted-foreground",
-												].join(" ")}
-											>
-												{count}
-											</span>
-										</button>
-									);
-								})}
-							</div>
-						)}
-					</div>
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+				}
+				actions={
 					<button
 						type="button"
 						onClick={() => setByokOpen(true)}
@@ -716,8 +607,8 @@ function ProviderKeysPanel() {
 						<Plus className="w-3.5 h-3.5" />
 						Bring your own key
 					</button>
-				</div>
-			</div>
+				}
+			/>
 
 			<ProviderKeysTable
 				providers={list}

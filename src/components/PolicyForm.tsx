@@ -26,7 +26,30 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { usePolicyForm } from "@/components/usePolicyForm";
+import { displayLabel } from "@/lib/displayLabel";
+import {
+	KEY_SELECTION_VALUES,
+	type KeySelection,
+	usePolicyForm,
+} from "@/components/usePolicyForm";
+
+const KEY_SELECTION_OPTIONS: Record<
+	KeySelection,
+	{ label: string; hint: string }
+> = {
+	prioritized: {
+		label: "Prioritized",
+		hint: "Drain the first healthy key in declaration order. Reorder secrets above to change priority.",
+	},
+	"round-robin": {
+		label: "Round-robin",
+		hint: "Rotate evenly across healthy keys, one request per key.",
+	},
+	"least-recently-used": {
+		label: "Least recently used",
+		hint: "Pick whichever healthy key has been idle longest — best for spreading load across many keys.",
+	},
+};
 
 interface PolicyFormProps {
 	/** Provided in edit mode; omit for create. */
@@ -66,7 +89,7 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 	}));
 	const rateLimitOptions = allRateLimits.map((rl) => ({
 		value: rl.metadata.name,
-		label: rl.metadata.name,
+		label: displayLabel(rl.metadata),
 	}));
 
 	const modelsMode = values.models.length === 0 ? "all" : "specific";
@@ -220,6 +243,41 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 						No secrets means relay keys using this policy will fail until you
 						attach at least one.
 					</p>
+
+					<div className="mt-4">
+						<div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-1">
+							Selection strategy
+						</div>
+						<Select
+							value={values.keySelection}
+							onValueChange={(v) =>
+								form.setFieldValue("keySelection", v as KeySelection)
+							}
+						>
+							<SelectTrigger className="w-full max-w-md">
+								<SelectValue>
+									{KEY_SELECTION_OPTIONS[values.keySelection].label}
+								</SelectValue>
+							</SelectTrigger>
+							<SelectContent>
+								{KEY_SELECTION_VALUES.map((k) => (
+									<SelectItem key={k} value={k}>
+										<span className="flex flex-col items-start gap-0.5 whitespace-normal">
+											<span className="text-sm text-foreground">
+												{KEY_SELECTION_OPTIONS[k].label}
+											</span>
+											<span className="text-[11px] leading-snug text-muted-foreground">
+												{KEY_SELECTION_OPTIONS[k].hint}
+											</span>
+										</span>
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+						<p className="mt-1.5 text-[11px] text-muted-foreground">
+							{KEY_SELECTION_OPTIONS[values.keySelection].hint}
+						</p>
+					</div>
 				</Section>
 
 				<Section
@@ -253,7 +311,7 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 				</Section>
 			</div>
 
-			<div className="sticky bottom-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-t border-border mt-0 -mx-6 px-6 py-3 flex items-center justify-end gap-2">
+			<div className="sticky bottom-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-t border-border mt-6 -mx-6 px-6 py-3 flex items-center justify-end gap-2">
 				<button
 					type="button"
 					onClick={onCancel}

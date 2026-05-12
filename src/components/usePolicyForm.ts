@@ -4,13 +4,28 @@ import { useEffect, useMemo } from "react";
 import { z } from "zod";
 import { useCreatePolicy, useUpdatePolicy } from "@/api/hooks/policies";
 import { ApiError } from "@/api/types/errors";
+import type { components } from "@/api/types.gen";
 import type { Policy, PolicyCreate, PolicyUpdate } from "@/api/types/policy";
 import { toast } from "@/components/Toast";
+import { displayLabel } from "@/lib/displayLabel";
+
+export type KeySelection = NonNullable<
+	components["schemas"]["PolicySpec"]["keySelection"]
+>;
+
+export const KEY_SELECTION_VALUES: readonly KeySelection[] = [
+	"prioritized",
+	"round-robin",
+	"least-recently-used",
+] as const;
+
+export const DEFAULT_KEY_SELECTION: KeySelection = "prioritized";
 
 export interface PolicyFormValues {
 	name: string;
 	provider: string;
 	secrets: string[];
+	keySelection: KeySelection;
 	models: string[];
 	rateLimits: string[];
 }
@@ -20,6 +35,9 @@ const nameRegex = /^[a-zA-Z0-9_.-]+$/;
 const baseSchema = z.object({
 	provider: z.string().trim().min(1, "Provider is required"),
 	secrets: z.array(z.string()),
+	keySelection: z.enum(
+		KEY_SELECTION_VALUES as readonly [KeySelection, ...KeySelection[]],
+	),
 	models: z.array(z.string()),
 	rateLimits: z.array(z.string()),
 });
@@ -40,6 +58,7 @@ function emptyValues(): PolicyFormValues {
 		name: "",
 		provider: "",
 		secrets: [],
+		keySelection: DEFAULT_KEY_SELECTION,
 		models: [],
 		rateLimits: [],
 	};
@@ -54,6 +73,7 @@ function policyToValues(policy: Policy): PolicyFormValues {
 		name: policy.metadata.name,
 		provider: policy.spec.provider,
 		secrets: policy.spec.secrets ?? [],
+		keySelection: policy.spec.keySelection ?? DEFAULT_KEY_SELECTION,
 		models,
 		rateLimits: (policy.spec.rateLimits ?? []).map((rl) => rl.Ref),
 	};
@@ -104,6 +124,7 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 			const spec = {
 				provider: value.provider.trim(),
 				secrets: value.secrets.length > 0 ? value.secrets : null,
+				keySelection: value.keySelection,
 				rateLimits:
 					value.rateLimits.length > 0
 						? value.rateLimits.map((Ref) => ({ Ref }))
@@ -117,7 +138,7 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 						spec: { ...policy.spec, ...spec },
 					};
 					await updatePolicy.mutateAsync(payload);
-					toast("success", `Policy "${policy.metadata.name}" updated.`);
+					toast("success", `Policy "${displayLabel(policy.metadata)}" updated.`);
 				} else {
 					const payload: PolicyCreate = {
 						metadata: { name: value.name.trim() },

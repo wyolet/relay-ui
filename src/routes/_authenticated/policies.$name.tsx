@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ChevronLeft, Trash2 } from "lucide-react";
+import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { Suspense } from "react";
 import { modelsListQueryOptions } from "@/api/hooks/models";
 import {
@@ -51,7 +52,7 @@ function PolicyDetailInner() {
 		if (!ok) return;
 		try {
 			await deletePolicy.mutateAsync(policy.metadata.id ?? "");
-			toast("success", `Policy "${name}" deleted.`);
+			toast("success", `Policy "${displayLabel(policy.metadata)}" deleted.`);
 			void navigate({ to: "/policies", search: { tab: "policies" } });
 		} catch (err) {
 			toast(
@@ -75,7 +76,12 @@ function PolicyDetailInner() {
 				<div className="mt-2 flex items-start justify-between gap-4">
 					<div className="min-w-0">
 						<h1 className="text-xl font-semibold text-foreground truncate">
-							{policy.metadata.name}
+							{displayLabel(policy.metadata)}
+							{!hasDisplayName(policy.metadata) && (
+								<span className="ml-1.5 text-[11px] text-muted-foreground font-normal">
+									(no display name)
+								</span>
+							)}
 						</h1>
 						<div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
 							<span>

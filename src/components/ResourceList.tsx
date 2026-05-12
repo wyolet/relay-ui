@@ -1,15 +1,20 @@
 import { Link, useNavigate } from "@tanstack/react-router";
+import { Plus } from "lucide-react";
 import { useState } from "react";
+import { SearchBox } from "@/components/SearchBox";
+import { TableToolbar } from "@/components/TableToolbar";
 
 export interface ColumnDef<T> {
 	key: string;
 	label: string;
 	render: (row: T) => string | number | null | undefined;
+	/** Optional: render JSX for the table cell. Falls back to `render` if omitted. Does not affect sorting. */
+	renderCell?: (row: T) => React.ReactNode;
 	sortable?: boolean;
 }
 
 interface ResourceListProps<T> {
-	title: string;
+	title?: string;
 	items: T[];
 	columns: ColumnDef<T>[];
 	/** Route path prefix — detail is `${basePath}/$name`, create is `${basePath}/new` */
@@ -66,25 +71,27 @@ export function ResourceList<T>({
 
 	return (
 		<div>
-			<div className="flex items-center justify-between mb-6">
-				<h1 className="text-2xl font-bold text-foreground">{title}</h1>
-				<Link
-					to={createTo}
-					className="inline-flex items-center gap-1.5 px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 transition-colors"
-				>
-					+ Create new
-				</Link>
-			</div>
-
-			<div className="mb-4">
-				<input
-					type="search"
-					placeholder="Search by name…"
-					value={search}
-					onChange={(e) => setSearch(e.target.value)}
-					className="w-full max-w-sm border border-input rounded-lg px-3 py-2 text-sm bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand-400"
-				/>
-			</div>
+			{title && (
+				<h2 className="text-sm font-semibold text-foreground mb-2">{title}</h2>
+			)}
+			<TableToolbar
+				search={
+					<SearchBox
+						value={search}
+						onChange={setSearch}
+						placeholder="Search by name…"
+					/>
+				}
+				actions={
+					<Link
+						to={createTo}
+						className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-xs font-semibold text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+					>
+						<Plus className="w-3.5 h-3.5" />
+						Create new
+					</Link>
+				}
+			/>
 
 			{sorted.length === 0 ? (
 				<div className="text-center py-16 text-muted-foreground text-sm">
@@ -95,7 +102,7 @@ export function ResourceList<T>({
 							<p className="mb-4">{emptyMessage}</p>
 							<Link
 								to={createTo}
-								className="inline-flex items-center px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 transition-colors"
+								className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-sm font-semibold text-white transition-colors"
 							>
 								Create your first
 							</Link>
@@ -105,7 +112,7 @@ export function ResourceList<T>({
 			) : (
 				<div className="overflow-x-auto rounded-lg border border-border">
 					<table className="w-full text-sm">
-						<thead className="bg-neutral-50 dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700">
+						<thead className="bg-muted/40 border-b border-border">
 							<tr>
 								{columns.map((col) => (
 									<th
@@ -144,7 +151,7 @@ export function ResourceList<T>({
 									>
 										{columns.map((col) => (
 											<td key={col.key} className="px-4 py-3 text-foreground">
-												{col.render(row) ?? (
+												{(col.renderCell ? col.renderCell(row) : col.render(row)) ?? (
 													<span className="text-muted-foreground">—</span>
 												)}
 											</td>

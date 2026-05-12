@@ -1,26 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import {
-	Forward,
-	KeyRound,
-	type LucideIcon,
-	Network,
-	Paperclip,
-	Plug,
-	ShieldCheck,
-} from "lucide-react";
+import { Forward, Gauge, type LucideIcon } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/settings/")({
 	component: SettingsPage,
 });
 
 interface SettingItem {
-	to:
-		| "/providers"
-		| "/secrets"
-		| "/routes"
-		| "/policies"
-		| "/attachments"
-		| "/settings/passthrough";
+	to: "/ratelimits" | "/settings/proxy-mode";
 	label: string;
 	description: string;
 	icon: LucideIcon;
@@ -28,44 +14,18 @@ interface SettingItem {
 
 const ITEMS: SettingItem[] = [
 	{
-		to: "/providers",
-		label: "Providers",
-		description:
-			"Upstream LLM vendors (OpenAI, Anthropic, …) and their base URLs.",
-		icon: Plug,
-	},
-	{
-		to: "/policies",
-		label: "Policies",
-		description:
-			"Bundles of upstream credentials, allowed models, and rate limits attached to relay keys.",
-		icon: ShieldCheck,
-	},
-	{
-		to: "/secrets",
-		label: "Secrets",
-		description: "Provider credentials referenced by policies.",
-		icon: KeyRound,
-	},
-	{
-		to: "/routes",
-		label: "Routes",
-		description: "Match incoming requests to a model or routing strategy.",
-		icon: Network,
-	},
-	{
-		to: "/settings/passthrough",
-		label: "Passthrough",
+		to: "/settings/proxy-mode",
+		label: "Proxy mode",
 		description:
 			"Accept BYO-credential requests for tracking and schema bridging.",
 		icon: Forward,
 	},
 	{
-		to: "/attachments",
-		label: "Attachments",
+		to: "/ratelimits",
+		label: "Rate limits",
 		description:
-			"Audit view of every rate-limit attachment across the catalog.",
-		icon: Paperclip,
+			"System-wide throttling rules. Attach them to policies or let providers auto-mirror upstream tiers.",
+		icon: Gauge,
 	},
 ];
 
@@ -74,8 +34,8 @@ function SettingsPage() {
 		<div>
 			<h1 className="text-2xl font-bold text-foreground mb-2">Settings</h1>
 			<p className="text-sm text-muted-foreground mb-8">
-				Wiring and behavior. Power-user configuration for providers, policies,
-				secrets, routes, and passthrough.
+				Relay-wide behavior — passthrough, rate limits, and other operator
+				knobs.
 			</p>
 			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
 				{ITEMS.map((item) => {

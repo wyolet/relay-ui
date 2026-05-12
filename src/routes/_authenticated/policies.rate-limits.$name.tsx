@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ChevronLeft, Trash2 } from "lucide-react";
+import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { Suspense } from "react";
 import {
 	rateLimitDetailQueryOptions,
@@ -40,7 +41,7 @@ function RateLimitEditInner() {
 		if (!ok) return;
 		try {
 			await deleteRL.mutateAsync(rateLimit.metadata.id ?? "");
-			toast("success", `Rate limit "${name}" deleted.`);
+			toast("success", `Rate limit "${displayLabel(rateLimit.metadata)}" deleted.`);
 			back();
 		} catch (err) {
 			toast(
@@ -66,7 +67,12 @@ function RateLimitEditInner() {
 				<div className="mt-2 flex items-start justify-between gap-4">
 					<div className="min-w-0">
 						<h1 className="text-xl font-semibold text-foreground truncate">
-							{rateLimit.metadata.name}
+							{displayLabel(rateLimit.metadata)}
+							{!hasDisplayName(rateLimit.metadata) && (
+								<span className="ml-1.5 text-[11px] text-muted-foreground font-normal">
+									(no display name)
+								</span>
+							)}
 						</h1>
 						<div className="mt-1 text-xs text-muted-foreground">
 							{rateLimit.spec.strategy} ·{" "}

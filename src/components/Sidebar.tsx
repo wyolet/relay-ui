@@ -11,7 +11,6 @@ import {
 	Monitor,
 	Moon,
 	ShieldCheck,
-	Shuffle,
 	Sun,
 } from "lucide-react";
 import type { ComponentType } from "react";
@@ -26,7 +25,6 @@ interface NavItem {
 		| "/usage"
 		| "/logs"
 		| "/models"
-		| "/routers"
 		| "/keys"
 		| "/policies"
 		| "/settings";
@@ -40,7 +38,6 @@ const NAV_ITEMS: NavItem[] = [
 	{ to: "/usage", label: "Usage", icon: BarChart3, prefix: "/usage" },
 	{ to: "/logs", label: "Logs", icon: Activity, prefix: "/logs" },
 	{ to: "/models", label: "Models", icon: Boxes, prefix: "/models" },
-	{ to: "/routers", label: "Routers", icon: Shuffle, prefix: "/routers" },
 	{ to: "/keys", label: "Keys", icon: KeyRound, prefix: "/keys" },
 	{
 		to: "/policies",
@@ -52,7 +49,7 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 // Settings hub owns these legacy resource paths — keep Settings highlighted.
-const SETTINGS_PATHS = ["/providers", "/secrets", "/routes", "/attachments"];
+const SETTINGS_PATHS = ["/secrets", "/attachments"];
 
 function BrandMark({ className }: { className?: string }) {
 	return (

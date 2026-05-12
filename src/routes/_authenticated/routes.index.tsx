@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { routesListQueryOptions, useRoutes } from "@/api/hooks/routes";
 import type { RelayRoute } from "@/api/types/route";
+import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import type { ColumnDef } from "@/components/ResourceList";
 import { ResourceList } from "@/components/ResourceList";
 
@@ -12,7 +13,22 @@ export const Route = createFileRoute("/_authenticated/routes/")({
 });
 
 const COLUMNS: ColumnDef<RelayRoute>[] = [
-	{ key: "name", label: "Name", render: (r) => r.metadata.name },
+	{
+		key: "name",
+		label: "Name",
+		render: (r) => displayLabel(r.metadata),
+		renderCell: (r) =>
+			hasDisplayName(r.metadata) ? (
+				displayLabel(r.metadata)
+			) : (
+				<>
+					{displayLabel(r.metadata)}
+					<span className="ml-1.5 text-[11px] text-muted-foreground">
+						(no display name)
+					</span>
+				</>
+			),
+	},
 	{
 		key: "models",
 		label: "Models",

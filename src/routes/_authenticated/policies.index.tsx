@@ -6,7 +6,8 @@ import {
 	Plus,
 	ShieldCheck,
 } from "lucide-react";
-import { Suspense } from "react";
+import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
+import { Suspense, useState } from "react";
 import { z } from "zod";
 import { useModels } from "@/api/hooks/models";
 import {
@@ -22,7 +23,9 @@ import {
 import type { Policy } from "@/api/types/policy";
 import type { RateLimit } from "@/api/types/ratelimit";
 import { confirm } from "@/components/ConfirmDialog";
+import { SearchBox } from "@/components/SearchBox";
 import { Switch } from "@/components/Switch";
+import { TableToolbar } from "@/components/TableToolbar";
 import { toast } from "@/components/Toast";
 import {
 	DropdownMenu,
@@ -129,7 +132,14 @@ function PoliciesPanel() {
 	const { data: modelsData } = useModels();
 	const deletePolicy = useDeletePolicy();
 	const navigate = useNavigate({ from: "/policies" });
-	const items = policiesData.items ?? [];
+	const [q, setQ] = useState("");
+	const allItems = policiesData.items ?? [];
+	const needle = q.trim().toLowerCase();
+	const items = needle
+		? allItems.filter((p) =>
+				displayLabel(p.metadata).toLowerCase().includes(needle),
+			)
+		: allItems;
 
 	function modelCountFor(provider: string): number {
 		return (modelsData.items ?? []).filter((m) => m.spec.provider === provider)
@@ -147,7 +157,7 @@ function PoliciesPanel() {
 		if (!ok) return;
 		try {
 			await deletePolicy.mutateAsync(p.metadata.id ?? "");
-			toast("success", `Policy "${p.metadata.name}" deleted.`);
+			toast("success", `Policy "${displayLabel(p.metadata)}" deleted.`);
 		} catch (err) {
 			toast(
 				"error",
@@ -158,35 +168,46 @@ function PoliciesPanel() {
 
 	return (
 		<div>
-			<div className="flex items-center justify-end mb-3">
-				<button
-					type="button"
-					onClick={() => void navigate({ to: "/policies/new" })}
-					className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-xs font-semibold text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-				>
-					<Plus className="w-3.5 h-3.5" />
-					New policy
-				</button>
-			</div>
+			<TableToolbar
+				search={
+					<SearchBox value={q} onChange={setQ} placeholder="Search policies" />
+				}
+				actions={
+					<Link
+						to="/policies/new"
+						className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-xs font-semibold text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+					>
+						<Plus className="w-3.5 h-3.5" />
+						New policy
+					</Link>
+				}
+			/>
 
 			{items.length === 0 ? (
 				<div className="rounded-lg border border-dashed border-input bg-card px-6 py-14 text-center">
 					<ShieldCheck className="w-6 h-6 mx-auto mb-3 text-muted-foreground/50" />
-					<p className="text-sm font-medium text-foreground mb-1">
-						No policies yet
-					</p>
-					<p className="text-sm text-muted-foreground mb-5">
-						Bundle upstream secrets, allowed models, and rate limits — then
-						attach to relay keys.
-					</p>
-					<button
-						type="button"
-						onClick={() => void navigate({ to: "/policies/new" })}
-						className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-sm font-semibold text-white transition-colors"
-					>
-						<Plus className="w-4 h-4" />
-						Create your first policy
-					</button>
+					{allItems.length === 0 ? (
+						<>
+							<p className="text-sm font-medium text-foreground mb-1">
+								No policies yet
+							</p>
+							<p className="text-sm text-muted-foreground mb-5">
+								Bundle upstream secrets, allowed models, and rate limits — then
+								attach to relay keys.
+							</p>
+							<Link
+								to="/policies/new"
+								className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-sm font-semibold text-white transition-colors"
+							>
+								<Plus className="w-4 h-4" />
+								Create your first policy
+							</Link>
+						</>
+					) : (
+						<p className="text-sm text-muted-foreground">
+							No policies match the current filter.
+						</p>
+					)}
 				</div>
 			) : (
 				<div className="overflow-x-auto rounded-lg border border-border bg-card">
@@ -222,7 +243,12 @@ function PoliciesPanel() {
 											params={{ name: p.metadata.name }}
 											className="text-sm font-medium text-foreground hover:underline"
 										>
-											{p.metadata.name}
+											{displayLabel(p.metadata)}
+											{!hasDisplayName(p.metadata) && (
+												<span className="ml-1.5 text-[11px] text-muted-foreground">
+													(no display name)
+												</span>
+											)}
 										</Link>
 									</td>
 									<td className="px-3 py-2 text-sm text-foreground capitalize">
@@ -300,7 +326,14 @@ function RateLimitsPanel() {
 	const { data } = useRateLimits();
 	const deleteRL = useDeleteRateLimit();
 	const navigate = useNavigate({ from: "/policies" });
-	const items = data.items ?? [];
+	const [q, setQ] = useState("");
+	const allItems = data.items ?? [];
+	const needle = q.trim().toLowerCase();
+	const items = needle
+		? allItems.filter((rl) =>
+				displayLabel(rl.metadata).toLowerCase().includes(needle),
+			)
+		: allItems;
 
 	async function handleDelete(rl: RateLimit) {
 		const ok = await confirm({
@@ -312,7 +345,7 @@ function RateLimitsPanel() {
 		if (!ok) return;
 		try {
 			await deleteRL.mutateAsync(rl.metadata.id ?? "");
-			toast("success", `Rate limit "${rl.metadata.name}" deleted.`);
+			toast("success", `Rate limit "${displayLabel(rl.metadata)}" deleted.`);
 		} catch (err) {
 			toast(
 				"error",
@@ -323,32 +356,49 @@ function RateLimitsPanel() {
 
 	return (
 		<div>
-			<div className="flex items-center justify-end mb-3">
-				<Link
-					to="/policies/rate-limits/new"
-					className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-xs font-semibold text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-				>
-					<Plus className="w-3.5 h-3.5" />
-					New rate limit
-				</Link>
-			</div>
+			<TableToolbar
+				search={
+					<SearchBox
+						value={q}
+						onChange={setQ}
+						placeholder="Search rate limits"
+					/>
+				}
+				actions={
+					<Link
+						to="/policies/rate-limits/new"
+						className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-xs font-semibold text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+					>
+						<Plus className="w-3.5 h-3.5" />
+						New rate limit
+					</Link>
+				}
+			/>
 
 			{items.length === 0 ? (
 				<div className="rounded-lg border border-dashed border-input bg-card px-6 py-14 text-center">
 					<Gauge className="w-6 h-6 mx-auto mb-3 text-muted-foreground/50" />
-					<p className="text-sm font-medium text-foreground mb-1">
-						No rate limits yet
-					</p>
-					<p className="text-sm text-muted-foreground mb-5">
-						Define a limit and attach it to policies or models.
-					</p>
-					<Link
-						to="/policies/rate-limits/new"
-						className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-sm font-semibold text-white transition-colors"
-					>
-						<Plus className="w-4 h-4" />
-						Create your first rate limit
-					</Link>
+					{allItems.length === 0 ? (
+						<>
+							<p className="text-sm font-medium text-foreground mb-1">
+								No rate limits yet
+							</p>
+							<p className="text-sm text-muted-foreground mb-5">
+								Define a limit and attach it to policies or models.
+							</p>
+							<Link
+								to="/policies/rate-limits/new"
+								className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-sm font-semibold text-white transition-colors"
+							>
+								<Plus className="w-4 h-4" />
+								Create your first rate limit
+							</Link>
+						</>
+					) : (
+						<p className="text-sm text-muted-foreground">
+							No rate limits match the current filter.
+						</p>
+					)}
 				</div>
 			) : (
 				<div className="overflow-x-auto rounded-lg border border-border bg-card">
@@ -378,7 +428,12 @@ function RateLimitsPanel() {
 											params={{ name: rl.metadata.name }}
 											className="text-sm font-medium text-foreground hover:underline"
 										>
-											{rl.metadata.name}
+											{displayLabel(rl.metadata)}
+											{!hasDisplayName(rl.metadata) && (
+												<span className="ml-1.5 text-[11px] text-muted-foreground">
+													(no display name)
+												</span>
+											)}
 										</Link>
 									</td>
 									<td className="px-3 py-2 text-sm">

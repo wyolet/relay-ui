@@ -9,6 +9,7 @@ import {
 	Plus,
 	Trash2,
 } from "lucide-react";
+import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { useEffect, useState } from "react";
 import { z } from "zod";
 import { useModels } from "@/api/hooks/models";
@@ -162,7 +163,12 @@ function PolicyCard({
 			<header className="flex items-center justify-between px-4 h-10 border-b border-border">
 				<div className="flex items-center gap-2 min-w-0">
 					<h3 className="text-sm font-semibold text-foreground truncate">
-						{policy.metadata.name}
+						{displayLabel(policy.metadata)}
+						{!hasDisplayName(policy.metadata) && (
+							<span className="ml-1.5 text-[11px] text-muted-foreground font-normal">
+								(no display name)
+							</span>
+						)}
 					</h3>
 					<span className="text-[11px] text-muted-foreground">
 						{secrets.length} {secrets.length === 1 ? "key" : "keys"}
@@ -550,7 +556,7 @@ function AddKeyForm({
 					description="Policies this key joins on save. Defaults to the current policy; pick more to add the key to several at once."
 					options={providerPolicies.map((p) => ({
 						value: p.metadata.name,
-						label: p.metadata.name,
+						label: displayLabel(p.metadata),
 					}))}
 					selected={policiesSelected}
 					onChange={setPoliciesSelected}

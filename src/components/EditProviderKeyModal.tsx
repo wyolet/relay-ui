@@ -1,4 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
+import { displayLabel } from "@/lib/displayLabel";
 import { Trash2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { apiClient } from "@/api/client";
@@ -158,7 +159,7 @@ export function EditProviderKeyModal({
 					description="Policies this key belongs to. Relay tries keys in policy order; leave empty to detach the key from every policy."
 					options={providerPolicies.map((p) => ({
 						value: p.metadata.name,
-						label: p.metadata.name,
+						label: displayLabel(p.metadata),
 					}))}
 					selected={selectedPolicies}
 					onChange={setSelectedPolicies}

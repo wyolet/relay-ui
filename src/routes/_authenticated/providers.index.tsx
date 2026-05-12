@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { providersListQueryOptions, useProviders } from "@/api/hooks/providers";
 import type { Provider } from "@/api/types/provider";
+import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import type { ColumnDef } from "@/components/ResourceList";
 import { ResourceList } from "@/components/ResourceList";
 
@@ -12,7 +13,22 @@ export const Route = createFileRoute("/_authenticated/providers/")({
 });
 
 const COLUMNS: ColumnDef<Provider>[] = [
-	{ key: "name", label: "Name", render: (r) => r.metadata.name },
+	{
+		key: "name",
+		label: "Name",
+		render: (r) => displayLabel(r.metadata),
+		renderCell: (r) =>
+			hasDisplayName(r.metadata) ? (
+				displayLabel(r.metadata)
+			) : (
+				<>
+					{displayLabel(r.metadata)}
+					<span className="ml-1.5 text-[11px] text-muted-foreground">
+						(no display name)
+					</span>
+				</>
+			),
+	},
 	{ key: "kind", label: "Kind", render: (r) => r.spec.kind },
 	{ key: "baseURL", label: "Base URL", render: (r) => r.spec.baseURL },
 	{

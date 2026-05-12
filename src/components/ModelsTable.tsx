@@ -1,14 +1,19 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import {
 	AlertTriangle,
 	ArrowDown,
 	ArrowUp,
 	MoreHorizontal,
 } from "lucide-react";
-import { useState } from "react";
 import type { Model } from "@/api/types/model";
 import { Switch } from "@/components/Switch";
 import { toast } from "@/components/Toast";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export type ModelsSortKey =
 	| "name"
@@ -153,52 +158,31 @@ function SortHeader({
 }
 
 function RowMenu({ name }: { name: string }) {
-	const [open, setOpen] = useState(false);
+	const navigate = useNavigate();
 	return (
-		<div className="relative inline-block">
-			<button
-				type="button"
-				onClick={(e) => {
-					e.preventDefault();
-					setOpen((v) => !v);
-				}}
-				onBlur={() => setTimeout(() => setOpen(false), 150)}
+		<DropdownMenu>
+			<DropdownMenuTrigger
 				aria-label="Model actions"
-				aria-haspopup="menu"
-				aria-expanded={open}
-				className="h-7 w-7 inline-flex items-center justify-center rounded-md text-neutral-500 hover:text-foreground hover:bg-muted transition-colors"
+				className="h-7 w-7 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 			>
 				<MoreHorizontal className="w-3.5 h-3.5" />
-			</button>
-			{open && (
-				<div
-					role="menu"
-					className="absolute right-0 top-8 z-10 min-w-[140px] rounded-md border border-border bg-card shadow-lg py-1"
+			</DropdownMenuTrigger>
+			<DropdownMenuContent align="end" className="min-w-[160px]">
+				<DropdownMenuItem
+					onClick={() =>
+						navigate({ to: "/models/$name/edit", params: { name } })
+					}
 				>
-					<Link
-						to="/models/$name/edit"
-						params={{ name }}
-						role="menuitem"
-						onMouseDown={(e) => e.preventDefault()}
-						className="block px-3 py-1.5 text-xs text-foreground hover:bg-muted"
-					>
-						Edit
-					</Link>
-					<button
-						type="button"
-						role="menuitem"
-						onMouseDown={(e) => e.preventDefault()}
-						onClick={() => {
-							setOpen(false);
-							toast("success", "Delete model — coming soon.");
-						}}
-						className="w-full text-left px-3 py-1.5 text-xs text-destructive hover:bg-destructive/10"
-					>
-						Delete
-					</button>
-				</div>
-			)}
-		</div>
+					Edit
+				</DropdownMenuItem>
+				<DropdownMenuItem
+					variant="destructive"
+					onClick={() => toast("success", "Delete model — coming soon.")}
+				>
+					Delete
+				</DropdownMenuItem>
+			</DropdownMenuContent>
+		</DropdownMenu>
 	);
 }
 

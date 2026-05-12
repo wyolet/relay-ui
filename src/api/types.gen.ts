@@ -854,6 +854,11 @@ export interface components {
         };
         PolicySpec: {
             enabled?: boolean;
+            /**
+             * @description Key selection strategy for this policy's key pool. Defaults to 'prioritized' — drain first healthy key in declaration order.
+             * @enum {string}
+             */
+            keySelection?: "prioritized" | "round-robin" | "least-recently-used";
             models?: string[] | null;
             provider: string;
             rateLimits?: components["schemas"]["RateLimitAttachment"][] | null;
@@ -888,6 +893,11 @@ export interface components {
             default?: boolean;
             defaultPolicy?: string;
             defaultPricing?: components["schemas"]["Pricing"];
+            /**
+             * @description Default upstream billing tier for secrets on this provider. Auto-injects a system_mirrored RateLimit when set.
+             * @enum {string}
+             */
+            defaultTier?: "openai-tier-1" | "openai-tier-2" | "openai-tier-3" | "openai-tier-4" | "openai-tier-5" | "anthropic-tier-1" | "anthropic-tier-2" | "anthropic-tier-3" | "anthropic-tier-4";
             description?: string;
             docsURL?: string;
             enabled?: boolean;
@@ -914,8 +924,6 @@ export interface components {
         RateLimitRule: {
             /** Format: int64 */
             amount: number;
-            /** @description Free-text description of this rule (e.g. why this meter/amount was chosen). */
-            description?: string;
             /**
              * @description Meter to count against. Bare 'tokens' sums every sub-meter; tokens.<key> targets one.
              * @enum {string}
@@ -933,6 +941,7 @@ export interface components {
             window?: number;
         };
         RateLimitSpec: {
+            /** @description Free-text description of this RateLimit (e.g. why it exists, what it protects). */
             description?: string;
             enabled?: boolean;
             rules: components["schemas"]["RateLimitRule"][] | null;
