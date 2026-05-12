@@ -12,68 +12,88 @@ import type {
 } from "@/api/types/ratelimit";
 import { toast } from "@/components/Toast";
 
-export type RateLimitStrategy =
-	| "fixed-window"
-	| "sliding-window"
-	| "token-bucket";
+export type RateLimitStrategy = NonNullable<RateLimitRule["strategy"]>;
+export type RateLimitMeter = RateLimitRule["meter"];
+
+export const STRATEGY_VALUES: readonly RateLimitStrategy[] = [
+	"token-bucket",
+	"sliding-window",
+	"fixed-window",
+	"leaky-bucket",
+	"session-window",
+] as const;
+
+export const METER_VALUES: readonly RateLimitMeter[] = [
+	"requests",
+	"concurrency",
+	"tokens",
+	"tokens.input",
+	"tokens.output",
+	"tokens.cache_read",
+	"tokens.cache_creation",
+	"tokens.reasoning",
+	"tokens.server_tool_use_input",
+	"tokens.server_tool_use_output",
+] as const;
+
+const DEFAULT_STRATEGY: RateLimitStrategy = "token-bucket";
 
 export interface RuleDraft {
 	amount: number;
-	meter: string;
-	source: string;
+	meter: RateLimitMeter;
+	strategy: RateLimitStrategy;
+	window: number;
 }
 
 export interface RateLimitFormValues {
 	name: string;
-	strategy: RateLimitStrategy;
-	window: number;
+	description: string;
 	rules: RuleDraft[];
 }
-
-const STRATEGY_VALUES = [
-	"fixed-window",
-	"sliding-window",
-	"token-bucket",
-] as const;
 
 const ruleSchema = z.object({
 	amount: z.coerce
 		.number()
 		.int("Whole numbers only")
-		.positive("Amount must be > 0"),
-	meter: z.string().trim().min(1, "Meter is required"),
-	source: z.string().trim(),
-});
-
-const baseSchema = z.object({
-	strategy: z.enum(STRATEGY_VALUES),
+		.min(1, "Amount must be at least 1"),
+	meter: z.enum(METER_VALUES as readonly [RateLimitMeter, ...RateLimitMeter[]]),
+	strategy: z.enum(
+		STRATEGY_VALUES as readonly [RateLimitStrategy, ...RateLimitStrategy[]],
+	),
 	window: z.coerce
 		.number()
 		.int("Whole seconds only")
-		.positive("Window must be > 0"),
+		.min(1, "Window must be at least 1"),
+});
+
+const baseSchema = z.object({
+	description: z.string().trim().max(500, "Description is too long"),
 	rules: z.array(ruleSchema).min(1, "At least one rule is required"),
 });
 
-const createSchema = baseSchema.extend({
-	name: z
-		.string()
-		.trim()
-		.min(1, "Name is required")
-		.max(64, "Name is too long")
-		.regex(/^[a-zA-Z0-9_.-]+$/, "Use letters, digits, _ . -"),
-});
+const nameSchema = z
+	.string()
+	.trim()
+	.min(1, "Name is required")
+	.max(64, "Name is too long")
+	.regex(/^[a-zA-Z0-9_.-]+$/, "Use letters, digits, _ . -");
 
-const editSchema = baseSchema.extend({ name: z.string() });
+const createSchema = baseSchema.extend({ name: nameSchema });
+const editSchema = baseSchema.extend({ name: nameSchema });
 
 export function emptyRule(): RuleDraft {
-	return { amount: 100, meter: "requests", source: "global" };
+	return {
+		amount: 100,
+		meter: "requests",
+		strategy: DEFAULT_STRATEGY,
+		window: 60,
+	};
 }
 
 function emptyValues(): RateLimitFormValues {
 	return {
 		name: "",
-		strategy: "fixed-window",
-		window: 60,
+		description: "",
 		rules: [emptyRule()],
 	};
 }
@@ -83,24 +103,21 @@ export const nsToSeconds = (ns: number): number => Math.round(ns / NS_PER_SEC);
 export const secondsToNs = (s: number): number => Math.round(s * NS_PER_SEC);
 
 function rlToValues(rl: RateLimit): RateLimitFormValues {
-	const strategy = (STRATEGY_VALUES as readonly string[]).includes(
-		rl.spec.strategy,
-	)
-		? (rl.spec.strategy as RateLimitStrategy)
-		: "fixed-window";
 	const specRules = rl.spec.rules ?? null;
+	const specWindowSec = nsToSeconds(rl.spec.window);
 	const rules: RuleDraft[] =
 		specRules && specRules.length > 0
 			? specRules.map((r) => ({
 					amount: r.amount,
 					meter: r.meter,
-					source: "",
+					strategy: r.strategy ?? rl.spec.strategy ?? DEFAULT_STRATEGY,
+					window:
+						r.window && r.window > 0 ? nsToSeconds(r.window) : specWindowSec,
 				}))
 			: [emptyRule()];
 	return {
 		name: rl.metadata.name,
-		strategy,
-		window: nsToSeconds(rl.spec.window),
+		description: rl.spec.description ?? "",
 		rules,
 	};
 }
@@ -141,22 +158,26 @@ export function useRateLimitForm({
 		onSubmit: async ({ value }) => {
 			const rules: RateLimitRule[] = value.rules.map((r) => ({
 				amount: Number(r.amount),
-				meter: r.meter.trim(),
-				...(r.source.trim() ? { source: r.source.trim() } : {}),
+				meter: r.meter,
+				strategy: r.strategy,
+				window: secondsToNs(Number(r.window)),
 			}));
+			const specWindowNs = rules[0]?.window ?? secondsToNs(60);
+			const description = value.description.trim();
 			const spec = {
-				strategy: value.strategy,
-				window: secondsToNs(Number(value.window)),
+				strategy: DEFAULT_STRATEGY,
+				window: specWindowNs,
 				rules,
+				...(description ? { description } : {}),
 			};
 			try {
 				if (isEdit && rateLimit) {
 					const payload: RateLimitUpdate = {
-						metadata: rateLimit.metadata,
+						metadata: { ...rateLimit.metadata, name: value.name.trim() },
 						spec,
 					};
 					await updateRL.mutateAsync(payload);
-					toast("success", `Rate limit "${rateLimit.metadata.name}" updated.`);
+					toast("success", `Rate limit "${value.name.trim()}" updated.`);
 				} else {
 					const payload: RateLimitCreate = {
 						metadata: { name: value.name.trim() },
@@ -185,11 +206,6 @@ export function useRateLimitForm({
 		for (const e of errs) if (typeof e === "string") return e;
 		return undefined;
 	});
-	const windowError = useStore(form.store, (s) => {
-		const errs = s.fieldMeta?.window?.errors ?? [];
-		for (const e of errs) if (typeof e === "string") return e;
-		return undefined;
-	});
 	const rulesError = useStore(form.store, (s) => {
 		const errs = s.fieldMeta?.rules?.errors ?? [];
 		for (const e of errs) if (typeof e === "string") return e;
@@ -215,7 +231,6 @@ export function useRateLimitForm({
 		values,
 		isEdit,
 		nameError,
-		windowError,
 		rulesError,
 		addRule,
 		removeRule,

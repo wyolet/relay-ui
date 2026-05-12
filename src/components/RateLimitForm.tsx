@@ -1,12 +1,4 @@
-import {
-	Clock,
-	Gauge,
-	type LucideIcon,
-	Plus,
-	Tag,
-	Timer,
-	X,
-} from "lucide-react";
+import { Gauge, type LucideIcon, Plus, Tag, X } from "lucide-react";
 import type { RateLimit } from "@/api/types/ratelimit";
 import { Input } from "@/components/ui/input";
 import {
@@ -16,8 +8,13 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useRateLimitForm } from "@/components/useRateLimitForm";
+import {
+	METER_VALUES,
+	type RateLimitMeter,
+	type RateLimitStrategy,
+	STRATEGY_VALUES,
+	useRateLimitForm,
+} from "@/components/useRateLimitForm";
 
 interface RateLimitFormProps {
 	rateLimit?: RateLimit;
@@ -25,27 +22,68 @@ interface RateLimitFormProps {
 	onCancel: () => void;
 }
 
-const STRATEGIES: {
-	value: "fixed-window" | "sliding-window" | "token-bucket";
-	label: string;
-	hint: string;
-}[] = [
-	{ value: "fixed-window", label: "Fixed", hint: "Reset every window" },
-	{
-		value: "sliding-window",
-		label: "Sliding",
-		hint: "Smoother, more accurate",
+const STRATEGY_OPTIONS: Record<RateLimitStrategy, { label: string; hint: string }> = {
+	"token-bucket": {
+		label: "Token bucket",
+		hint: "Refills steadily; allows short bursts up to the bucket size.",
 	},
-	{ value: "token-bucket", label: "Token bucket", hint: "Allows short bursts" },
-];
+	"sliding-window": {
+		label: "Sliding window",
+		hint: "Smooth, accurate count over a moving window — no boundary bursts.",
+	},
+	"fixed-window": {
+		label: "Fixed window",
+		hint: "Counter resets at fixed intervals. Cheapest, but allows edge bursts.",
+	},
+	"leaky-bucket": {
+		label: "Leaky bucket",
+		hint: "Constant outflow; excess requests queue or get dropped.",
+	},
+	"session-window": {
+		label: "Session window",
+		hint: "Per-session counter — resets after a quiet period.",
+	},
+};
 
-const WINDOW_PRESETS: { label: string; seconds: number }[] = [
-	{ label: "1 minute", seconds: 60 },
-	{ label: "5 minutes", seconds: 300 },
-	{ label: "15 minutes", seconds: 900 },
-	{ label: "1 hour", seconds: 3600 },
-	{ label: "1 day", seconds: 86_400 },
-];
+const METER_OPTIONS: Record<RateLimitMeter, { label: string; hint: string }> = {
+	requests: { label: "Requests", hint: "One unit per API call." },
+	concurrency: {
+		label: "Concurrency",
+		hint: "Caps in-flight requests at any moment.",
+	},
+	tokens: {
+		label: "Tokens (all)",
+		hint: "Sum of every token sub-meter.",
+	},
+	"tokens.input": {
+		label: "Tokens · input",
+		hint: "Prompt tokens sent to the provider.",
+	},
+	"tokens.output": {
+		label: "Tokens · output",
+		hint: "Generated completion tokens.",
+	},
+	"tokens.cache_read": {
+		label: "Tokens · cache read",
+		hint: "Tokens served from prompt cache.",
+	},
+	"tokens.cache_creation": {
+		label: "Tokens · cache creation",
+		hint: "Tokens written into prompt cache.",
+	},
+	"tokens.reasoning": {
+		label: "Tokens · reasoning",
+		hint: "Hidden reasoning / thinking tokens.",
+	},
+	"tokens.server_tool_use_input": {
+		label: "Tokens · server tool input",
+		hint: "Input tokens spent on server-side tool calls.",
+	},
+	"tokens.server_tool_use_output": {
+		label: "Tokens · server tool output",
+		hint: "Output tokens from server-side tool calls.",
+	},
+};
 
 export function RateLimitForm({
 	rateLimit,
@@ -57,15 +95,11 @@ export function RateLimitForm({
 		values,
 		isEdit,
 		nameError,
-		windowError,
 		rulesError,
 		addRule,
 		removeRule,
 		updateRule,
 	} = useRateLimitForm({ rateLimit, onSaved });
-
-	const presetMatch = WINDOW_PRESETS.find((p) => p.seconds === values.window);
-	const windowSelectValue = presetMatch ? String(presetMatch.seconds) : "custom";
 
 	return (
 		<form
@@ -77,112 +111,45 @@ export function RateLimitForm({
 			className="flex flex-col"
 		>
 			<div className="divide-y divide-border">
-				{!isEdit && (
-					<Section
-						icon={Tag}
-						title="Name"
-						description="A slug used in URLs and references. Letters, digits, _ . - allowed."
-					>
-						<Input
-							type="text"
-							value={values.name}
+				<Section
+					icon={Tag}
+					title="Identity"
+					description="A slug used in URLs and references (letters, digits, _ . -), and an optional description for humans."
+				>
+					<div className="flex flex-col gap-3">
+						<div>
+							<Input
+								type="text"
+								value={values.name}
+								onChange={(e) =>
+									form.setFieldValue("name", e.currentTarget.value)
+								}
+								placeholder="default-rl"
+								aria-invalid={nameError ? true : undefined}
+								autoFocus
+							/>
+							{nameError && (
+								<p className="mt-1.5 text-[11px] text-destructive">
+									{nameError}
+								</p>
+							)}
+						</div>
+						<textarea
+							value={values.description}
 							onChange={(e) =>
-								form.setFieldValue("name", e.currentTarget.value)
+								form.setFieldValue("description", e.currentTarget.value)
 							}
-							placeholder="default-rl"
-							aria-invalid={nameError ? true : undefined}
-							autoFocus
+							placeholder="Description (optional) — what this rate limit is for…"
+							rows={3}
+							className="w-full min-w-0 rounded-md border border-input bg-input/20 px-3 py-2 text-sm outline-none transition-[color,box-shadow,background-color] placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 dark:bg-input/30"
 						/>
-						{nameError && (
-							<p className="mt-1.5 text-[11px] text-destructive">{nameError}</p>
-						)}
-					</Section>
-				)}
-
-				<Section
-					icon={Timer}
-					title="Strategy"
-					description="How counters reset across the window."
-				>
-					<Tabs
-						value={values.strategy}
-						onValueChange={(v) =>
-							form.setFieldValue("strategy", v as typeof values.strategy)
-						}
-					>
-						<TabsList>
-							{STRATEGIES.map((s) => (
-								<TabsTrigger key={s.value} value={s.value}>
-									{s.label}
-								</TabsTrigger>
-							))}
-						</TabsList>
-					</Tabs>
-					<p className="mt-1.5 text-[11px] text-muted-foreground">
-						{STRATEGIES.find((s) => s.value === values.strategy)?.hint}
-					</p>
-				</Section>
-
-				<Section
-					icon={Clock}
-					title="Window"
-					description="How long the counter stays open before it resets."
-				>
-					<div className="flex items-center gap-2">
-						<Select
-							value={windowSelectValue}
-							onValueChange={(v) => {
-								if (v === "custom") return;
-								form.setFieldValue("window", Number(v));
-							}}
-						>
-							<SelectTrigger className="w-44">
-								<SelectValue placeholder="Window">
-									{presetMatch
-										? presetMatch.label
-										: `${values.window}s (custom)`}
-								</SelectValue>
-							</SelectTrigger>
-							<SelectContent>
-								{WINDOW_PRESETS.map((p) => (
-									<SelectItem key={p.seconds} value={String(p.seconds)}>
-										{p.label}
-									</SelectItem>
-								))}
-								<SelectItem value="custom">Custom…</SelectItem>
-							</SelectContent>
-						</Select>
-						{!presetMatch && (
-							<div className="flex items-center gap-1.5">
-								<Input
-									type="number"
-									min={1}
-									inputMode="numeric"
-									value={values.window}
-									onChange={(e) =>
-										form.setFieldValue(
-											"window",
-											Number(e.currentTarget.value),
-										)
-									}
-									className="w-28"
-									aria-invalid={windowError ? true : undefined}
-								/>
-								<span className="text-[11px] text-muted-foreground">
-									seconds
-								</span>
-							</div>
-						)}
 					</div>
-					{windowError && (
-						<p className="mt-1.5 text-[11px] text-destructive">{windowError}</p>
-					)}
 				</Section>
 
 				<Section
 					icon={Gauge}
 					title="Rules"
-					description="Each rule is enforced independently within the window. The first to exhaust blocks the request."
+					description="Each rule picks a meter, strategy, and window. They're enforced independently — the first to exhaust blocks the request."
 				>
 					<div className="flex flex-col gap-2">
 						{values.rules.map((rule, idx) => (
@@ -210,7 +177,7 @@ export function RateLimitForm({
 				</Section>
 			</div>
 
-			<div className="sticky bottom-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-t border-border mt-0 -mx-6 px-6 py-3 flex items-center justify-end gap-2">
+			<div className="sticky bottom-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-t border-border mt-6 -mx-6 px-6 py-3 flex items-center justify-end gap-2">
 				<button
 					type="button"
 					onClick={onCancel}
@@ -235,17 +202,27 @@ export function RateLimitForm({
 }
 
 interface RuleRowProps {
-	rule: { amount: number; meter: string; source: string };
+	rule: {
+		amount: number;
+		meter: RateLimitMeter;
+		strategy: RateLimitStrategy;
+		window: number;
+	};
 	canRemove: boolean;
 	onChange: (
-		patch: Partial<{ amount: number; meter: string; source: string }>,
+		patch: Partial<{
+			amount: number;
+			meter: RateLimitMeter;
+			strategy: RateLimitStrategy;
+			window: number;
+		}>,
 	) => void;
 	onRemove: () => void;
 }
 
 function RuleRow({ rule, canRemove, onChange, onRemove }: RuleRowProps) {
 	return (
-		<div className="grid grid-cols-[1fr_2fr_2fr_auto] gap-2 items-end rounded-md border border-border bg-card p-3">
+		<div className="grid grid-cols-[1fr_1fr_2fr_2fr_auto] gap-2 items-end rounded-md border border-border bg-card p-3">
 			<LabeledInput label="Amount">
 				<Input
 					type="number"
@@ -256,21 +233,55 @@ function RuleRow({ rule, canRemove, onChange, onRemove }: RuleRowProps) {
 					placeholder="100"
 				/>
 			</LabeledInput>
-			<LabeledInput label="Meter">
+			<LabeledInput label="Window (s)">
 				<Input
-					type="text"
-					value={rule.meter}
-					onChange={(e) => onChange({ meter: e.currentTarget.value })}
-					placeholder="requests, tokens.input, …"
+					type="number"
+					min={1}
+					inputMode="numeric"
+					value={rule.window}
+					onChange={(e) => onChange({ window: Number(e.currentTarget.value) })}
+					placeholder="60"
 				/>
 			</LabeledInput>
-			<LabeledInput label="Source">
-				<Input
-					type="text"
-					value={rule.source}
-					onChange={(e) => onChange({ source: e.currentTarget.value })}
-					placeholder="global, api_key, …"
-				/>
+			<LabeledInput label="Meter">
+				<Select
+					value={rule.meter}
+					onValueChange={(v) => onChange({ meter: v as RateLimitMeter })}
+				>
+					<SelectTrigger className="w-full">
+						<SelectValue>{METER_OPTIONS[rule.meter].label}</SelectValue>
+					</SelectTrigger>
+					<SelectContent>
+						{METER_VALUES.map((m) => (
+							<SelectItem key={m} value={m}>
+								<OptionWithHint
+									label={METER_OPTIONS[m].label}
+									hint={METER_OPTIONS[m].hint}
+								/>
+							</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
+			</LabeledInput>
+			<LabeledInput label="Strategy">
+				<Select
+					value={rule.strategy}
+					onValueChange={(v) => onChange({ strategy: v as RateLimitStrategy })}
+				>
+					<SelectTrigger className="w-full">
+						<SelectValue>{STRATEGY_OPTIONS[rule.strategy].label}</SelectValue>
+					</SelectTrigger>
+					<SelectContent>
+						{STRATEGY_VALUES.map((s) => (
+							<SelectItem key={s} value={s}>
+								<OptionWithHint
+									label={STRATEGY_OPTIONS[s].label}
+									hint={STRATEGY_OPTIONS[s].hint}
+								/>
+							</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
 			</LabeledInput>
 			<button
 				type="button"
@@ -282,6 +293,17 @@ function RuleRow({ rule, canRemove, onChange, onRemove }: RuleRowProps) {
 				<X className="w-3.5 h-3.5" />
 			</button>
 		</div>
+	);
+}
+
+function OptionWithHint({ label, hint }: { label: string; hint: string }) {
+	return (
+		<span className="flex flex-col items-start gap-0.5 whitespace-normal">
+			<span className="text-sm text-foreground">{label}</span>
+			<span className="text-[11px] leading-snug text-muted-foreground">
+				{hint}
+			</span>
+		</span>
 	);
 }
 

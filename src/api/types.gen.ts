@@ -914,15 +914,34 @@ export interface components {
         RateLimitRule: {
             /** Format: int64 */
             amount: number;
-            meter: string;
-            strategy?: string;
+            /** @description Free-text description of this rule (e.g. why this meter/amount was chosen). */
+            description?: string;
+            /**
+             * @description Meter to count against. Bare 'tokens' sums every sub-meter; tokens.<key> targets one.
+             * @enum {string}
+             */
+            meter: "requests" | "concurrency" | "tokens" | "tokens.input" | "tokens.output" | "tokens.cache_read" | "tokens.cache_creation" | "tokens.reasoning" | "tokens.server_tool_use_input" | "tokens.server_tool_use_output";
+            /**
+             * @description Rate-limit strategy. Defaults to token-bucket if empty.
+             * @enum {string}
+             */
+            strategy?: "token-bucket" | "sliding-window" | "fixed-window" | "leaky-bucket" | "session-window";
+            /**
+             * Format: int64
+             * @description Per-rule window override (nanoseconds, or human-readable string on input — '30s', '1m'). When zero, spec.window is used.
+             */
+            window?: number;
         };
         RateLimitSpec: {
             description?: string;
             enabled?: boolean;
             rules: components["schemas"]["RateLimitRule"][] | null;
             source?: string;
-            strategy: string;
+            /**
+             * @description Default strategy for rules that don't set one.
+             * @enum {string}
+             */
+            strategy: "token-bucket" | "sliding-window" | "fixed-window" | "leaky-bucket" | "session-window";
             /** Format: int64 */
             window: number;
         };
