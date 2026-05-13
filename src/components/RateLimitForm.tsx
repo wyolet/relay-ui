@@ -1,5 +1,7 @@
-import { Gauge, type LucideIcon, Plus, Tag, X } from "lucide-react";
+import { Gauge, Plus, X } from "lucide-react";
 import type { RateLimit } from "@/api/types/ratelimit";
+import { FormSection } from "@/components/FormSection";
+import { IdentitySection } from "@/components/IdentitySection";
 import { Input } from "@/components/ui/input";
 import {
 	Select,
@@ -22,7 +24,10 @@ interface RateLimitFormProps {
 	onCancel: () => void;
 }
 
-const STRATEGY_OPTIONS: Record<RateLimitStrategy, { label: string; hint: string }> = {
+const STRATEGY_OPTIONS: Record<
+	RateLimitStrategy,
+	{ label: string; hint: string }
+> = {
 	"token-bucket": {
 		label: "Token bucket",
 		hint: "Refills steadily; allows short bursts up to the bucket size.",
@@ -94,7 +99,8 @@ export function RateLimitForm({
 		form,
 		values,
 		isEdit,
-		nameError,
+		slugPreview,
+		displayNameError,
 		rulesError,
 		addRule,
 		removeRule,
@@ -111,42 +117,18 @@ export function RateLimitForm({
 			className="flex flex-col"
 		>
 			<div className="divide-y divide-border">
-				<Section
-					icon={Tag}
-					title="Identity"
-					description="A slug used in URLs and references (letters, digits, _ . -), and an optional description for humans."
-				>
-					<div className="flex flex-col gap-3">
-						<div>
-							<Input
-								type="text"
-								value={values.name}
-								onChange={(e) =>
-									form.setFieldValue("name", e.currentTarget.value)
-								}
-								placeholder="default-rl"
-								aria-invalid={nameError ? true : undefined}
-								autoFocus
-							/>
-							{nameError && (
-								<p className="mt-1.5 text-[11px] text-destructive">
-									{nameError}
-								</p>
-							)}
-						</div>
-						<textarea
-							value={values.description}
-							onChange={(e) =>
-								form.setFieldValue("description", e.currentTarget.value)
-							}
-							placeholder="Description (optional) — what this rate limit is for…"
-							rows={3}
-							className="w-full min-w-0 rounded-md border border-input bg-input/20 px-3 py-2 text-sm outline-none transition-[color,box-shadow,background-color] placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 dark:bg-input/30"
-						/>
-					</div>
-				</Section>
+				<IdentitySection
+					displayName={values.displayName}
+					description={values.description}
+					onDisplayNameChange={(v) => form.setFieldValue("displayName", v)}
+					onDescriptionChange={(v) => form.setFieldValue("description", v)}
+					slugPreview={slugPreview}
+					displayNameError={displayNameError}
+					autoFocus
+					placeholder="Default rate limit"
+				/>
 
-				<Section
+				<FormSection
 					icon={Gauge}
 					title="Rules"
 					description="Each rule picks a meter, strategy, and window. They're enforced independently — the first to exhaust blocks the request."
@@ -174,7 +156,7 @@ export function RateLimitForm({
 					{rulesError && (
 						<p className="mt-1.5 text-[11px] text-destructive">{rulesError}</p>
 					)}
-				</Section>
+				</FormSection>
 			</div>
 
 			<div className="sticky bottom-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-t border-border mt-6 -mx-6 px-6 py-3 flex items-center justify-end gap-2">
@@ -320,33 +302,6 @@ function LabeledInput({
 				{label}
 			</div>
 			{children}
-		</div>
-	);
-}
-
-interface SectionProps {
-	icon: LucideIcon;
-	title: string;
-	description: string;
-	children: React.ReactNode;
-}
-
-function Section({ icon: Icon, title, description, children }: SectionProps) {
-	return (
-		<div className="grid grid-cols-1 md:grid-cols-[260px_1fr] gap-4 md:gap-8 py-8 first:pt-0 last:pb-0">
-			<div className="md:pt-0.5">
-				<div className="flex items-center gap-2">
-					<Icon
-						className="w-3.5 h-3.5 text-muted-foreground shrink-0"
-						aria-hidden="true"
-					/>
-					<h2 className="text-sm font-semibold text-foreground">{title}</h2>
-				</div>
-				<p className="mt-1 text-[11px] text-muted-foreground leading-relaxed">
-					{description}
-				</p>
-			</div>
-			<div className="min-w-0">{children}</div>
 		</div>
 	);
 }

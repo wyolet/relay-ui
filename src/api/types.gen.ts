@@ -1128,7 +1128,12 @@ export interface operations {
     };
     admin_key_list: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Filter by owner.kind. */
+                ownerKind?: "system" | "provider" | "user";
+                /** @description Filter by owner.id (use with ownerKind=provider|user). */
+                ownerId?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -1142,6 +1147,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ListOutputRelayKeyBody"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
                 };
             };
             /** @description Internal Server Error */
@@ -1586,7 +1600,12 @@ export interface operations {
     };
     admin_model_list: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Filter by owner.kind. */
+                ownerKind?: "system" | "provider" | "user";
+                /** @description Filter by owner.id (use with ownerKind=provider|user). */
+                ownerId?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -1600,6 +1619,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ListOutputModelBody"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
                 };
             };
             /** @description Internal Server Error */
@@ -1925,7 +1953,12 @@ export interface operations {
     };
     admin_policy_list: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Filter by owner.kind. */
+                ownerKind?: "system" | "provider" | "user";
+                /** @description Filter by owner.id (use with ownerKind=provider|user). */
+                ownerId?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -1939,6 +1972,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ListOutputPolicyBody"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
                 };
             };
             /** @description Internal Server Error */
@@ -2175,7 +2217,12 @@ export interface operations {
     };
     admin_provider_list: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Filter by owner.kind. */
+                ownerKind?: "system" | "provider" | "user";
+                /** @description Filter by owner.id (use with ownerKind=provider|user). */
+                ownerId?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -2189,6 +2236,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ListOutputProviderBody"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
                 };
             };
             /** @description Internal Server Error */
@@ -2425,7 +2481,12 @@ export interface operations {
     };
     admin_ratelimit_list: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Filter by owner.kind. */
+                ownerKind?: "system" | "provider" | "user";
+                /** @description Filter by owner.id (use with ownerKind=provider|user). */
+                ownerId?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -2439,6 +2500,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ListOutputRateLimitBody"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
                 };
             };
             /** @description Internal Server Error */
@@ -2720,7 +2790,12 @@ export interface operations {
     };
     admin_route_list: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Filter by owner.kind. */
+                ownerKind?: "system" | "provider" | "user";
+                /** @description Filter by owner.id (use with ownerKind=provider|user). */
+                ownerId?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -2734,6 +2809,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ListOutputRouteBody"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
                 };
             };
             /** @description Internal Server Error */

@@ -1,6 +1,6 @@
 import { useForm } from "@tanstack/react-form";
 import { useStore } from "@tanstack/react-store";
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import { z } from "zod";
 import { useCreateRateLimit, useUpdateRateLimit } from "@/api/hooks/ratelimits";
 import { ApiError } from "@/api/types/errors";
@@ -11,6 +11,8 @@ import type {
 	RateLimitUpdate,
 } from "@/api/types/ratelimit";
 import { toast } from "@/components/Toast";
+import { displayLabel } from "@/lib/displayLabel";
+import { randomSuffix, slugify } from "@/lib/slug";
 
 export type RateLimitStrategy = NonNullable<RateLimitRule["strategy"]>;
 export type RateLimitMeter = RateLimitRule["meter"];
@@ -46,7 +48,7 @@ export interface RuleDraft {
 }
 
 export interface RateLimitFormValues {
-	name: string;
+	displayName: string;
 	description: string;
 	rules: RuleDraft[];
 }
@@ -66,20 +68,15 @@ const ruleSchema = z.object({
 		.min(1, "Window must be at least 1"),
 });
 
-const baseSchema = z.object({
+const schema = z.object({
+	displayName: z
+		.string()
+		.trim()
+		.min(1, "Name is required")
+		.max(120, "Name is too long"),
 	description: z.string().trim().max(500, "Description is too long"),
 	rules: z.array(ruleSchema).min(1, "At least one rule is required"),
 });
-
-const nameSchema = z
-	.string()
-	.trim()
-	.min(1, "Name is required")
-	.max(64, "Name is too long")
-	.regex(/^[a-zA-Z0-9_.-]+$/, "Use letters, digits, _ . -");
-
-const createSchema = baseSchema.extend({ name: nameSchema });
-const editSchema = baseSchema.extend({ name: nameSchema });
 
 export function emptyRule(): RuleDraft {
 	return {
@@ -92,7 +89,7 @@ export function emptyRule(): RuleDraft {
 
 function emptyValues(): RateLimitFormValues {
 	return {
-		name: "",
+		displayName: "",
 		description: "",
 		rules: [emptyRule()],
 	};
@@ -114,7 +111,7 @@ function rlToValues(rl: RateLimit): RateLimitFormValues {
 				}))
 			: [emptyRule()];
 	return {
-		name: rl.metadata.name,
+		displayName: displayLabel(rl.metadata),
 		description: rl.metadata.description ?? "",
 		rules,
 	};
@@ -137,7 +134,15 @@ export function useRateLimitForm({
 		() => (rateLimit ? rlToValues(rateLimit) : emptyValues()),
 		[rateLimit],
 	);
-	const schema = isEdit ? editSchema : createSchema;
+	const suffixRef = useRef<string>(
+		rateLimit?.metadata.name.match(/-(\d{4,8})$/)?.[1] ?? randomSuffix(),
+	);
+	const computeSlug = (displayName: string): string => {
+		const trimmed = displayName.trim();
+		if (!trimmed) return "";
+		const base = slugify(trimmed) || "ratelimit";
+		return `${base}-${suffixRef.current}`;
+	};
 
 	const form = useForm({
 		defaultValues: initial,
@@ -160,14 +165,17 @@ export function useRateLimitForm({
 				strategy: r.strategy,
 				window: secondsToNs(Number(r.window)),
 			}));
+			const displayName = value.displayName.trim();
 			const description = value.description.trim();
 			const spec = { rules };
 			try {
+				const name = computeSlug(displayName);
 				if (isEdit && rateLimit) {
 					const payload: RateLimitUpdate = {
 						metadata: {
 							...rateLimit.metadata,
-							name: value.name.trim(),
+							name,
+							displayName,
 							...(description
 								? { description }
 								: rateLimit.metadata.description !== undefined
@@ -177,17 +185,18 @@ export function useRateLimitForm({
 						spec,
 					};
 					await updateRL.mutateAsync(payload);
-					toast("success", `Rate limit "${value.name.trim()}" updated.`);
+					toast("success", `Rate limit "${displayName}" updated.`);
 				} else {
 					const payload: RateLimitCreate = {
 						metadata: {
-							name: value.name.trim(),
+							name,
+							displayName,
 							...(description ? { description } : {}),
 						},
 						spec,
 					};
 					await createRL.mutateAsync(payload);
-					toast("success", `Rate limit "${payload.metadata.name}" created.`);
+					toast("success", `Rate limit "${displayName}" created.`);
 				}
 				onSaved();
 			} catch (err) {
@@ -204,8 +213,9 @@ export function useRateLimitForm({
 	});
 
 	const values = useStore(form.store, (s) => s.values);
-	const nameError = useStore(form.store, (s) => {
-		const errs = s.fieldMeta?.name?.errors ?? [];
+	const slugPreview = computeSlug(values.displayName);
+	const displayNameError = useStore(form.store, (s) => {
+		const errs = s.fieldMeta?.displayName?.errors ?? [];
 		for (const e of errs) if (typeof e === "string") return e;
 		return undefined;
 	});
@@ -233,7 +243,8 @@ export function useRateLimitForm({
 		form,
 		values,
 		isEdit,
-		nameError,
+		slugPreview,
+		displayNameError,
 		rulesError,
 		addRule,
 		removeRule,
