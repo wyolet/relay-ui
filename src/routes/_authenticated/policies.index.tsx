@@ -9,14 +9,16 @@ import {
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { Suspense, useState } from "react";
 import { z } from "zod";
-import { useModels } from "@/api/hooks/models";
+import { ApiError } from "@/api/types/errors";
 import {
 	policiesListQueryOptions,
 	useDeletePolicy,
 	usePolicies,
+	useUpdatePolicy,
 } from "@/api/hooks/policies";
 import {
 	rateLimitsListQueryOptions,
+	useAttachableRateLimits,
 	useDeleteRateLimit,
 	useUserRateLimits,
 } from "@/api/hooks/ratelimits";
@@ -127,9 +129,23 @@ function Th({
 	);
 }
 
+function describeCatalog(p: Policy): {
+	label: string;
+	tone: "all" | "restricted" | "none";
+} {
+	const refs = p.spec.models ?? null;
+	if (refs === null || refs.length === 0) {
+		return { label: "All catalog", tone: "all" };
+	}
+	return {
+		label: `${refs.length} grant${refs.length === 1 ? "" : "s"}`,
+		tone: "restricted",
+	};
+}
+
 function PoliciesPanel() {
 	const { data: policiesData } = usePolicies();
-	const { data: modelsData } = useModels();
+	const rateLimits = useAttachableRateLimits();
 	const deletePolicy = useDeletePolicy();
 	const navigate = useNavigate({ from: "/policies" });
 	const [q, setQ] = useState("");
@@ -141,9 +157,9 @@ function PoliciesPanel() {
 			)
 		: allItems;
 
-	function modelCountFor(provider: string): number {
-		return (modelsData.items ?? []).filter((m) => (m.metadata.owner?.kind === "provider" ? (m.metadata.owner.id ?? "") : "") === provider)
-			.length;
+	const rateLimitById = new Map<string, RateLimit>();
+	for (const rl of rateLimits) {
+		if (rl.metadata.id) rateLimitById.set(rl.metadata.id, rl);
 	}
 
 	async function handleDelete(p: Policy) {
@@ -215,9 +231,9 @@ function PoliciesPanel() {
 						<thead className="bg-muted/40">
 							<tr>
 								<Th>Name</Th>
-								<Th>Provider</Th>
-								<Th align="right">Secrets</Th>
-								<Th align="right">Models</Th>
+								<Th>Catalog</Th>
+								<Th align="right">Host keys</Th>
+								<Th>Rate limit</Th>
 								<th
 									scope="col"
 									className="w-12 px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground"
@@ -233,76 +249,130 @@ function PoliciesPanel() {
 						</thead>
 						<tbody>
 							{items.map((p) => (
-								<tr
+								<PolicyRow
 									key={p.metadata.name}
-									className="border-t border-border hover:bg-muted/40 transition-colors"
-								>
-									<td className="px-3 py-2">
-										<Link
-											to="/policies/$name"
-											params={{ name: p.metadata.name }}
-											className="text-sm font-medium text-foreground hover:underline"
-										>
-											{displayLabel(p.metadata)}
-											{!hasDisplayName(p.metadata) && (
-												<span className="ml-1.5 text-[11px] text-muted-foreground">
-													(no display name)
-												</span>
-											)}
-										</Link>
-									</td>
-									<td className="px-3 py-2 text-sm text-foreground capitalize">
-										<Link
-											to="/models"
-								className="hover:underline"
-										>
-											{(p.metadata.owner?.kind === "provider" ? (p.metadata.owner.id ?? "") : "")}
-										</Link>
-									</td>
-									<td className="px-3 py-2 text-sm text-foreground text-right tabular-nums">
-										{(p.spec.hostKeyIds ?? []).length}
-									</td>
-									<td className="px-3 py-2 text-sm text-foreground text-right tabular-nums">
-										{modelCountFor((p.metadata.owner?.kind === "provider" ? (p.metadata.owner.id ?? "") : ""))}
-									</td>
-									<td className="px-3 py-2">
-										<Switch
-											checked
-											onChange={() =>
-												toast(
-													"success",
-													"Policy enable/disable — backend support coming soon.",
-												)
-											}
-											label={`Toggle ${p.metadata.name}`}
-										/>
-									</td>
-									<td className="px-3 py-2 text-right">
-										<RowMenu
-											actions={[
-												{
-													label: "Edit",
-													onClick: () =>
-														void navigate({
-															to: "/policies/$name",
-															params: { name: p.metadata.name },
-														}),
-												},
-												{
-													label: "Delete",
-													danger: true,
-													onClick: () => void handleDelete(p),
-												},
-											]}
-										/>
-									</td>
-								</tr>
+									policy={p}
+									rateLimit={
+										p.spec.rateLimitId
+											? rateLimitById.get(p.spec.rateLimitId)
+											: undefined
+									}
+									onEdit={() =>
+										void navigate({
+											to: "/policies/$name",
+											params: { name: p.metadata.name },
+										})
+									}
+									onDelete={() => void handleDelete(p)}
+								/>
 							))}
 						</tbody>
 					</table>
 				</div>
 			)}
 		</div>
+	);
+}
+
+function PolicyRow({
+	policy,
+	rateLimit,
+	onEdit,
+	onDelete,
+}: {
+	policy: Policy;
+	rateLimit: RateLimit | undefined;
+	onEdit: () => void;
+	onDelete: () => void;
+}) {
+	const updatePolicy = useUpdatePolicy(policy.metadata.id ?? "");
+	const catalog = describeCatalog(policy);
+	const enabled = policy.spec.enabled !== false;
+
+	async function toggleEnabled(next: boolean) {
+		try {
+			await updatePolicy.mutateAsync({
+				metadata: policy.metadata,
+				spec: { ...policy.spec, enabled: next },
+			});
+		} catch (err) {
+			toast(
+				"error",
+				err instanceof ApiError
+					? err.body.message
+					: "Failed to update policy.",
+			);
+		}
+	}
+
+	return (
+		<tr className="border-t border-border hover:bg-muted/40 transition-colors">
+			<td className="px-3 py-2">
+				<Link
+					to="/policies/$name"
+					params={{ name: policy.metadata.name }}
+					className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
+				>
+					<div className="text-sm font-medium text-foreground">
+						{displayLabel(policy.metadata)}
+						{!hasDisplayName(policy.metadata) && (
+							<span className="ml-1.5 text-[11px] text-muted-foreground">
+								(no display name)
+							</span>
+						)}
+					</div>
+					{hasDisplayName(policy.metadata) && (
+						<code className="font-mono text-[11px] text-muted-foreground">
+							{policy.metadata.name}
+						</code>
+					)}
+				</Link>
+			</td>
+			<td className="px-3 py-2">
+				<span
+					className={[
+						"inline-flex items-center h-5 px-1.5 rounded text-[11px] font-medium",
+						catalog.tone === "all"
+							? "bg-muted text-muted-foreground"
+							: "bg-primary/10 text-primary",
+					].join(" ")}
+				>
+					{catalog.label}
+				</span>
+			</td>
+			<td className="px-3 py-2 text-sm text-foreground text-right tabular-nums">
+				{(policy.spec.hostKeyIds ?? []).length}
+			</td>
+			<td className="px-3 py-2 text-sm">
+				{rateLimit ? (
+					<Link
+						to="/policies/rate-limits/$name"
+						params={{ name: rateLimit.metadata.name }}
+						className="text-foreground hover:underline"
+					>
+						{displayLabel(rateLimit.metadata)}
+					</Link>
+				) : (
+					<span className="text-muted-foreground/70">—</span>
+				)}
+			</td>
+			<td className="px-3 py-2">
+				<Switch
+					checked={enabled}
+					onChange={(next) => void toggleEnabled(next)}
+					disabled={updatePolicy.isPending}
+					label={`Toggle ${policy.metadata.name}`}
+				/>
+			</td>
+			<td className="px-3 py-2 text-right">
+				<RowMenu
+					actions={[
+						{ label: "Edit", onClick: onEdit },
+						{ label: "Delete", danger: true, onClick: onDelete },
+					]}
+				/>
+			</td>
+		</tr>
 	);
 }
 

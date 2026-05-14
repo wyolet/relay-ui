@@ -1,0 +1,952 @@
+import {
+	AlertCircle,
+	Boxes,
+	Building2,
+	Globe,
+	Search,
+	TextCursorInput,
+	X,
+} from "lucide-react";
+import { useMemo, useState } from "react";
+import { useHosts } from "@/api/hooks/hosts";
+import { useModels } from "@/api/hooks/models";
+import { useProviders } from "@/api/hooks/providers";
+import type { Host } from "@/api/types/host";
+import type { Model } from "@/api/types/model";
+import type { Provider } from "@/api/types/provider";
+import { HostLogo } from "@/components/HostLogo";
+import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+	type CatalogRef,
+	type CatalogRefKind,
+	formatCatalogRef,
+	parseCatalogRef,
+	refCovers,
+	validateCatalogRef,
+} from "@/lib/catalogRef";
+import { displayLabel } from "@/lib/displayLabel";
+
+type Tab = "summary" | "providers" | "models" | "hosts" | "raw";
+
+interface ModelPickerProps {
+	value: string[];
+	onChange: (next: string[]) => void;
+	includeDeprecated: boolean;
+}
+
+/**
+ * Picker that emits catalog-ref strings. Three tabs (Providers / Models /
+ * Hosts) all back the same underlying selection — toggling something in any
+ * tab adds or removes the corresponding ref(s).
+ *
+ * "Selected" vs "covered": a row is *covered* when a coarser ref already
+ * grants it (e.g. provider ref covers all of its models). Covered rows render
+ * as grey-checked and are read-only — to deselect, the operator removes the
+ * coarser ref.
+ */
+export function ModelPicker({
+	value,
+	onChange,
+	includeDeprecated,
+}: ModelPickerProps) {
+	const [tab, setTab] = useState<Tab>("providers");
+	const [q, setQ] = useState("");
+	const [forceRestrict, setForceRestrict] = useState(false);
+
+	// Empty `value` is the "allow all" sentinel per backend semantics. The
+	// "Restrict access" switch flips between empty (all) and editing mode.
+	// `forceRestrict` keeps the picker open when the operator wants to narrow
+	// access but hasn't picked anything yet.
+	const restricted = value.length > 0 || forceRestrict;
+	function setRestricted(next: boolean) {
+		setForceRestrict(next);
+		if (!next) onChange([]);
+	}
+
+	const { data: providersData } = useProviders();
+	const { data: modelsData } = useModels();
+	const { data: hostsData } = useHosts();
+
+	const providers = providersData.items ?? [];
+	const models = modelsData.items ?? [];
+	const hosts = hostsData.items ?? [];
+
+	const index = useMemo(
+		() => buildIndex({ providers, models, hosts }),
+		[providers, models, hosts],
+	);
+
+	const refs = useMemo(
+		() =>
+			value
+				.map((r) => {
+					try {
+						return parseCatalogRef(r);
+					} catch {
+						return null;
+					}
+				})
+				.filter((r): r is CatalogRef => r !== null),
+		[value],
+	);
+
+	function setRefs(next: CatalogRef[]) {
+		// Round-trip refs verbatim — newly created refs already have `raw` set to
+		// the canonical form, existing ones keep whatever the operator typed.
+		onChange(next.map((r) => r.raw));
+	}
+
+	function removeRaw(raw: string): void {
+		onChange(value.filter((r) => r !== raw));
+	}
+
+	function toggleProvider(p: Provider): void {
+		const name = p.metadata.name;
+		const ref = formatCatalogRef({ provider: name });
+		const existing = refs.find((r) => r.kind === "provider" && r.provider === name);
+		if (existing) {
+			setRefs(refs.filter((r) => r.raw !== existing.raw));
+			return;
+		}
+		// Drop any finer-grained refs subsumed by this provider grant.
+		setRefs([
+			...refs.filter((r) => r.provider !== name),
+			parseCatalogRef(ref),
+		]);
+	}
+
+	function toggleModel(m: ModelRow): void {
+		const ref = formatCatalogRef({ provider: m.provider, model: m.name });
+		// If covered by a provider ref, do nothing — operator must clear that first.
+		if (refs.some((r) => r.kind === "provider" && r.provider === m.provider)) {
+			return;
+		}
+		const existing = refs.find(
+			(r) =>
+				r.kind === "model" && r.provider === m.provider && r.model === m.name,
+		);
+		if (existing) {
+			setRefs(refs.filter((r) => r.raw !== existing.raw));
+			return;
+		}
+		// Drop binding-level refs subsumed by this model-level grant.
+		setRefs([
+			...refs.filter(
+				(r) =>
+					!(
+						r.kind === "binding" &&
+						r.provider === m.provider &&
+						r.model === m.name
+					),
+			),
+			parseCatalogRef(ref),
+		]);
+	}
+
+	function toggleHost(h: Host): void {
+		// Selecting a host emits a single `@{host}` ref (host-only grant) — all
+		// current and future bindings on this host, regardless of provider.
+		const hostName = h.metadata.name;
+		const existing = refs.find(
+			(r) => r.kind === "host" && r.host === hostName,
+		);
+		if (existing) {
+			setRefs(refs.filter((r) => r.raw !== existing.raw));
+			return;
+		}
+		// Drop any finer-grained host-scoped refs subsumed by this host grant.
+		const next = refs.filter(
+			(r) => !(r.kind === "binding" && r.host === hostName),
+		);
+		next.push(parseCatalogRef(formatCatalogRef({ host: hostName })));
+		setRefs(next);
+	}
+
+	const filteredProviders = filter(providers, q, (p) => [
+		p.metadata.name,
+		displayLabel(p.metadata),
+	]);
+	const visibleModels = includeDeprecated
+		? index.modelRows
+		: index.modelRows.filter((m) => !m.deprecated);
+	const filteredModels = filter(visibleModels, q, (m) => [
+		m.name,
+		m.displayName,
+		m.provider,
+	]);
+	const filteredHosts = filter(hosts, q, (h) => [
+		h.metadata.name,
+		displayLabel(h.metadata),
+	]);
+
+	return (
+		<div className="flex flex-col rounded-md border border-border bg-card overflow-hidden">
+			<div className="flex items-center justify-between gap-3 border-b border-border px-3 py-2">
+				<div className="flex items-center gap-2.5">
+					<Switch
+						checked={restricted}
+						onCheckedChange={setRestricted}
+						aria-label="Restrict catalog access"
+					/>
+					<div className="leading-tight">
+						<div className="text-[12px] font-medium text-foreground">
+							{restricted ? "Restricted" : "All catalog allowed"}
+						</div>
+						<div className="text-[10px] text-muted-foreground">
+							{restricted
+								? "Pick what relay keys may call."
+								: "Every provider, model, and host."}
+						</div>
+					</div>
+				</div>
+			</div>
+
+			{!restricted ? null : (
+			<>
+			<div className="flex items-center justify-between gap-3 border-b border-border px-3 py-2">
+				<Tabs value={tab} onValueChange={(v) => setTab(v as Tab)}>
+					<TabsList>
+						<TabsTrigger value="providers">
+							<Building2 className="w-3 h-3" />
+							Providers
+						</TabsTrigger>
+						<TabsTrigger value="models">
+							<Boxes className="w-3 h-3" />
+							Models
+						</TabsTrigger>
+						<TabsTrigger value="hosts">
+							<Globe className="w-3 h-3" />
+							Hosts
+						</TabsTrigger>
+						<TabsTrigger value="raw">
+							<TextCursorInput className="w-3 h-3" />
+							Raw
+						</TabsTrigger>
+					</TabsList>
+				</Tabs>
+				{tab !== "raw" && (
+					<div className="relative flex-1 max-w-xs">
+						<Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
+						<input
+							type="text"
+							value={q}
+							onChange={(e) => setQ(e.currentTarget.value)}
+							placeholder={`Search ${tab}…`}
+							className="w-full h-7 pl-7 pr-2 rounded-md border border-input bg-input/30 text-xs outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
+						/>
+					</div>
+				)}
+			</div>
+
+			<div className="max-h-72 overflow-y-auto">
+				{tab === "providers" && (
+					<ProviderList
+						providers={filteredProviders}
+						index={index}
+						refs={refs}
+						onToggle={toggleProvider}
+					/>
+				)}
+				{tab === "models" && (
+					<ModelList
+						models={filteredModels}
+						index={index}
+						refs={refs}
+						onToggleModel={toggleModel}
+					/>
+				)}
+				{tab === "hosts" && (
+					<HostList
+						hosts={filteredHosts}
+						index={index}
+						refs={refs}
+						onToggle={toggleHost}
+					/>
+				)}
+				{tab === "raw" && (
+					<RawEditor value={value} onChange={onChange} index={index} />
+				)}
+			</div>
+
+			{tab !== "raw" && (
+				<>
+					<SelectionFooter refs={value} onRemove={removeRaw} />
+					{refs.length > 0 && (
+						<SelectionSummary
+							refs={refs}
+							index={index}
+							includeDeprecated={includeDeprecated}
+						/>
+					)}
+				</>
+			)}
+			</>
+			)}
+		</div>
+	);
+}
+
+interface ModelRow {
+	id: string;
+	name: string;
+	displayName: string;
+	provider: string;
+	hostNames: string[];
+	deprecated: boolean;
+}
+
+interface PickerIndex {
+	hostsById: Map<string, Host>;
+	hostsByName: Map<string, Host>;
+	providersByName: Map<string, Provider>;
+	modelRows: ModelRow[];
+	modelsByProvider: Map<string, ModelRow[]>;
+	bindingsByHostName: Map<string, { provider: string; model: string }[]>;
+}
+
+function buildIndex(input: {
+	providers: Provider[];
+	models: Model[];
+	hosts: Host[];
+}): PickerIndex {
+	const hostsById = new Map<string, Host>();
+	const hostsByName = new Map<string, Host>();
+	for (const h of input.hosts) {
+		if (h.metadata.id) hostsById.set(h.metadata.id, h);
+		hostsByName.set(h.metadata.name, h);
+	}
+	const providersByName = new Map<string, Provider>();
+	const providerSlugById = new Map<string, string>();
+	for (const p of input.providers) {
+		providersByName.set(p.metadata.name, p);
+		if (p.metadata.id) providerSlugById.set(p.metadata.id, p.metadata.name);
+	}
+
+	const modelRows: ModelRow[] = [];
+	const modelsByProvider = new Map<string, ModelRow[]>();
+	const bindingsByHostName = new Map<
+		string,
+		{ provider: string; model: string }[]
+	>();
+	for (const m of input.models) {
+		const ownerId =
+			m.metadata.owner?.kind === "provider" ? m.metadata.owner.id : undefined;
+		const provider = ownerId ? providerSlugById.get(ownerId) : undefined;
+		if (!provider) continue;
+		const hostNames: string[] = [];
+		for (const b of m.spec.hosts ?? []) {
+			const h = hostsById.get(b.hostId);
+			if (!h) continue;
+			const hostName = h.metadata.name;
+			if (!hostNames.includes(hostName)) hostNames.push(hostName);
+			const list = bindingsByHostName.get(hostName) ?? [];
+			list.push({ provider, model: m.metadata.name });
+			bindingsByHostName.set(hostName, list);
+		}
+		const row: ModelRow = {
+			id: m.metadata.id ?? m.metadata.name,
+			name: m.metadata.name,
+			displayName: displayLabel(m.metadata),
+			provider,
+			hostNames,
+			deprecated: Boolean(m.spec.deprecation || m.spec.deprecationDate),
+		};
+		modelRows.push(row);
+		const byProv = modelsByProvider.get(provider) ?? [];
+		byProv.push(row);
+		modelsByProvider.set(provider, byProv);
+	}
+	return {
+		hostsById,
+		hostsByName,
+		providersByName,
+		modelRows,
+		modelsByProvider,
+		bindingsByHostName,
+	};
+}
+
+function filter<T>(items: T[], q: string, fields: (item: T) => string[]): T[] {
+	const ql = q.trim().toLowerCase();
+	if (!ql) return items;
+	return items.filter((it) =>
+		fields(it).some((f) => f.toLowerCase().includes(ql)),
+	);
+}
+
+// --- Sub-views ---
+
+function ProviderList({
+	providers,
+	index,
+	refs,
+	onToggle,
+}: {
+	providers: Provider[];
+	index: PickerIndex;
+	refs: CatalogRef[];
+	onToggle: (p: Provider) => void;
+}) {
+	if (providers.length === 0) return <Empty label="No providers" />;
+	return (
+		<ul className="divide-y divide-border">
+			{providers.map((p) => {
+				const name = p.metadata.name;
+				const selected = refs.some(
+					(r) => r.kind === "provider" && r.provider === name,
+				);
+				const modelCount = (index.modelsByProvider.get(name) ?? []).length;
+				return (
+					<li key={p.metadata.id ?? name}>
+						<button
+							type="button"
+							onClick={() => onToggle(p)}
+							className="w-full flex items-center justify-between gap-3 px-3 py-2 text-left hover:bg-muted/40 transition-colors"
+						>
+							<span className="flex items-center gap-2.5 min-w-0">
+								<RowCheckbox state={selected ? "on" : "off"} />
+								<span className="text-sm text-foreground truncate">
+									{displayLabel(p.metadata)}
+								</span>
+								<code className="text-[10px] font-mono text-muted-foreground">
+									{name}
+								</code>
+							</span>
+							<span className="text-[11px] text-muted-foreground tabular-nums">
+								{modelCount} model{modelCount === 1 ? "" : "s"}
+							</span>
+						</button>
+					</li>
+				);
+			})}
+		</ul>
+	);
+}
+
+function ModelList({
+	models,
+	index,
+	refs,
+	onToggleModel,
+}: {
+	models: ModelRow[];
+	index: PickerIndex;
+	refs: CatalogRef[];
+	onToggleModel: (m: ModelRow) => void;
+}) {
+	if (models.length === 0) return <Empty label="No models" />;
+	return (
+		<ul className="divide-y divide-border">
+			{models.map((m) => {
+				const coveredByProvider = refs.some(
+					(r) => r.kind === "provider" && r.provider === m.provider,
+				);
+				const ownRef = refs.find(
+					(r) =>
+						r.kind === "model" &&
+						r.provider === m.provider &&
+						r.model === m.name,
+				);
+				const state: CheckState = coveredByProvider
+					? "covered"
+					: ownRef
+						? "on"
+						: "off";
+				return (
+					<li key={m.id}>
+						<button
+							type="button"
+							onClick={() => onToggleModel(m)}
+							disabled={coveredByProvider}
+							className="w-full flex items-center justify-between gap-3 px-3 py-2 text-left hover:bg-muted/40 transition-colors disabled:cursor-not-allowed"
+						>
+							<span className="flex items-center gap-2.5 min-w-0">
+								<RowCheckbox state={state} />
+								<span className="min-w-0">
+									<span className="text-sm text-foreground truncate block">
+										{m.displayName}
+									</span>
+									<code className="text-[10px] font-mono text-muted-foreground">
+										{m.provider}/{m.name}
+									</code>
+								</span>
+							</span>
+							<span className="flex items-center gap-1">
+								{m.hostNames.map((hostName) => {
+									const h = index.hostsByName.get(hostName);
+									if (!h) return null;
+									const bindingCovered = refs.some((r) =>
+										refCovers(r, {
+											provider: m.provider,
+											model: m.name,
+											host: hostName,
+										}),
+									);
+									return (
+										<span
+											key={hostName}
+											title={`Served via ${displayLabel(h.metadata)}`}
+											className={[
+												"inline-flex items-center justify-center rounded-sm p-0.5 transition-opacity",
+												bindingCovered ? "opacity-100" : "opacity-40",
+											].join(" ")}
+										>
+											<HostLogo host={h} size={16} />
+										</span>
+									);
+								})}
+							</span>
+						</button>
+					</li>
+				);
+			})}
+		</ul>
+	);
+}
+
+function HostList({
+	hosts,
+	index,
+	refs,
+	onToggle,
+}: {
+	hosts: Host[];
+	index: PickerIndex;
+	refs: CatalogRef[];
+	onToggle: (h: Host) => void;
+}) {
+	if (hosts.length === 0) return <Empty label="No hosts" />;
+	return (
+		<ul className="divide-y divide-border">
+			{hosts.map((h) => {
+				const name = h.metadata.name;
+				const bindings = index.bindingsByHostName.get(name) ?? [];
+				const total = bindings.length;
+				const covered = bindings.filter((b) =>
+					refs.some((r) =>
+						refCovers(r, { provider: b.provider, model: b.model, host: name }),
+					),
+				).length;
+				const state: CheckState =
+					total === 0
+						? "off"
+						: covered === total
+							? "on"
+							: covered > 0
+								? "indeterminate"
+								: "off";
+				const hostGranted = refs.some(
+					(r) => r.kind === "host" && r.host === name,
+				);
+				const finalState: CheckState = hostGranted ? "on" : state;
+				return (
+					<li key={h.metadata.id ?? name}>
+						<button
+							type="button"
+							onClick={() => onToggle(h)}
+							className="w-full flex items-center justify-between gap-3 px-3 py-2 text-left hover:bg-muted/40 transition-colors"
+						>
+							<span className="flex items-center gap-2.5 min-w-0">
+								<RowCheckbox state={finalState} />
+								<HostLogo host={h} size={20} />
+								<span className="min-w-0">
+									<span className="text-sm text-foreground truncate block">
+										{displayLabel(h.metadata)}
+									</span>
+									<code className="text-[10px] font-mono text-muted-foreground">
+										{name}
+									</code>
+								</span>
+							</span>
+							<span className="text-[11px] text-muted-foreground tabular-nums">
+								{total === 0 ? "0 models" : `${covered}/${total}`}
+							</span>
+						</button>
+					</li>
+				);
+			})}
+		</ul>
+	);
+}
+
+function SelectionFooter({
+	refs,
+	onRemove,
+}: {
+	refs: string[];
+	onRemove: (raw: string) => void;
+}) {
+	if (refs.length === 0) {
+		return (
+			<div className="border-t border-border px-3 py-2 text-[11px] text-muted-foreground">
+				Nothing selected — this policy grants no catalog access.
+			</div>
+		);
+	}
+	return (
+		<div className="border-t border-border px-3 py-2 flex flex-wrap items-center gap-1">
+			{refs.map((r) => (
+				<span
+					key={r}
+					className="inline-flex items-center gap-1 h-6 pl-2 pr-0.5 rounded bg-primary/10 text-primary text-[11px] font-mono"
+				>
+					{r}
+					<button
+						type="button"
+						aria-label={`Remove ${r}`}
+						onClick={() => onRemove(r)}
+						className="h-5 w-5 inline-flex items-center justify-center rounded hover:bg-primary/20"
+					>
+						<X className="w-3 h-3" />
+					</button>
+				</span>
+			))}
+		</div>
+	);
+}
+
+function checkRefAgainstCatalog(
+	ref: string,
+	index: PickerIndex,
+): string | undefined {
+	const synErr = validateCatalogRef(ref);
+	if (synErr) return synErr;
+	const parsed = parseCatalogRef(ref);
+
+	if (parsed.kind === "host") {
+		if (!parsed.host || !index.hostsByName.has(parsed.host)) {
+			return `Host "${parsed.host}" doesn't exist`;
+		}
+		return undefined;
+	}
+
+	if (!parsed.provider || !index.providersByName.has(parsed.provider)) {
+		return `Provider "${parsed.provider}" doesn't exist`;
+	}
+
+	const providerModels = index.modelsByProvider.get(parsed.provider) ?? [];
+
+	if (parsed.model !== undefined) {
+		const model = providerModels.find((m) => m.name === parsed.model);
+		if (!model) {
+			return `Model "${parsed.provider}/${parsed.model}" doesn't exist`;
+		}
+		if (parsed.host !== undefined) {
+			if (!index.hostsByName.has(parsed.host)) {
+				return `Host "${parsed.host}" doesn't exist`;
+			}
+			if (!model.hostNames.includes(parsed.host)) {
+				return `Model "${parsed.provider}/${parsed.model}" isn't served on host "${parsed.host}"`;
+			}
+		}
+		return undefined;
+	}
+
+	if (parsed.host !== undefined) {
+		if (!index.hostsByName.has(parsed.host)) {
+			return `Host "${parsed.host}" doesn't exist`;
+		}
+		const hasBinding = providerModels.some((m) =>
+			m.hostNames.includes(parsed.host as string),
+		);
+		if (!hasBinding) {
+			return `No "${parsed.provider}" models on host "${parsed.host}"`;
+		}
+	}
+	return undefined;
+}
+
+function RawEditor({
+	value,
+	onChange,
+	index,
+}: {
+	value: string[];
+	onChange: (next: string[]) => void;
+	index: PickerIndex;
+}) {
+	const [draft, setDraft] = useState(() => value.join("\n"));
+
+	const lines = draft.split("\n");
+	const lineInfo = lines.map((raw, idx) => {
+		const trimmed = raw.trim();
+		if (!trimmed) return { idx, raw, trimmed, error: undefined };
+		return {
+			idx,
+			raw,
+			trimmed,
+			error: checkRefAgainstCatalog(trimmed, index),
+		};
+	});
+
+	const errors = lineInfo.filter((l) => l.trimmed && l.error);
+
+	function emit(nextDraft: string) {
+		setDraft(nextDraft);
+		const validRefs: string[] = [];
+		for (const line of nextDraft.split("\n")) {
+			const t = line.trim();
+			if (!t) continue;
+			if (checkRefAgainstCatalog(t, index)) continue;
+			if (validRefs.includes(t)) continue;
+			validRefs.push(t);
+		}
+		onChange(validRefs);
+	}
+
+	return (
+		<div className="flex flex-col gap-2 p-3">
+			<div className="text-[11px] text-muted-foreground leading-relaxed">
+				One ref per line. Examples:{" "}
+				<code className="font-mono text-foreground/80">anthropic</code>,{" "}
+				<code className="font-mono text-foreground/80">
+					anthropic/claude-opus-4-7
+				</code>
+				, <code className="font-mono text-foreground/80">@bedrock</code>.
+			</div>
+			<textarea
+				value={draft}
+				onChange={(e) => emit(e.currentTarget.value)}
+				spellCheck={false}
+				rows={8}
+				placeholder="anthropic&#10;openai/gpt-4o&#10;@bedrock"
+				className="w-full min-h-32 rounded-md border border-input bg-input/20 px-3 py-2 text-xs font-mono leading-relaxed outline-none transition-[border-color,box-shadow] placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
+			/>
+			{errors.length > 0 && (
+				<ul className="space-y-0.5 text-[11px]">
+					{errors.map((e) => (
+						<li
+							key={`${e.idx}-${e.raw}`}
+							className="flex items-start gap-1.5 text-destructive"
+						>
+							<AlertCircle className="w-3 h-3 mt-0.5 shrink-0" />
+							<span>
+								<span className="font-medium">Line {e.idx + 1}:</span>{" "}
+								<code className="font-mono">{e.trimmed}</code> — {e.error}
+							</span>
+						</li>
+					))}
+				</ul>
+			)}
+		</div>
+	);
+}
+
+interface RefCounts {
+	providers?: number;
+	models?: number;
+	hosts?: number;
+}
+
+function countsForRef(
+	ref: CatalogRef,
+	index: PickerIndex,
+	includeDeprecated: boolean,
+): RefCounts {
+	const filter = (rows: ModelRow[]) =>
+		includeDeprecated ? rows : rows.filter((r) => !r.deprecated);
+
+	if (ref.kind === "host" && ref.host) {
+		const rows = filter(
+			index.modelRows.filter((m) => m.hostNames.includes(ref.host as string)),
+		);
+		const providers = new Set(rows.map((m) => m.provider));
+		return { providers: providers.size, models: rows.length };
+	}
+	if (!ref.provider) return {};
+	const providerRows = filter(index.modelsByProvider.get(ref.provider) ?? []);
+
+	if (ref.kind === "provider") {
+		const hosts = new Set<string>();
+		for (const m of providerRows) for (const h of m.hostNames) hosts.add(h);
+		return { models: providerRows.length, hosts: hosts.size };
+	}
+	if (ref.kind === "provider-on-host" && ref.host) {
+		const rows = providerRows.filter((m) =>
+			m.hostNames.includes(ref.host as string),
+		);
+		return { models: rows.length };
+	}
+	if (ref.kind === "model" && ref.model) {
+		const row = providerRows.find((m) => m.name === ref.model);
+		if (!row) return {};
+		return { hosts: row.hostNames.length };
+	}
+	return {};
+}
+
+function formatCounts(c: RefCounts): string | undefined {
+	const parts: string[] = [];
+	if (c.providers !== undefined) {
+		parts.push(`${c.providers} provider${c.providers === 1 ? "" : "s"}`);
+	}
+	if (c.models !== undefined) {
+		parts.push(`${c.models} model${c.models === 1 ? "" : "s"}`);
+	}
+	if (c.hosts !== undefined) {
+		parts.push(`${c.hosts} host${c.hosts === 1 ? "" : "s"}`);
+	}
+	return parts.length > 0 ? parts.join(" · ") : undefined;
+}
+
+function describeRef(ref: CatalogRef, index: PickerIndex): string {
+	const providerLabel = ref.provider
+		? displayLabel(
+				index.providersByName.get(ref.provider)?.metadata ?? {
+					name: ref.provider,
+				},
+			)
+		: undefined;
+	const hostLabel = ref.host
+		? displayLabel(
+				index.hostsByName.get(ref.host)?.metadata ?? { name: ref.host },
+			)
+		: undefined;
+	const modelLabel = (() => {
+		if (!ref.model || !ref.provider) return undefined;
+		const row = (index.modelsByProvider.get(ref.provider) ?? []).find(
+			(m) => m.name === ref.model,
+		);
+		return row?.displayName ?? ref.model;
+	})();
+
+	switch (ref.kind) {
+		case "provider":
+			return `All ${providerLabel} models on every host`;
+		case "provider-on-host":
+			return `All ${providerLabel} models on ${hostLabel}`;
+		case "model":
+			return `${modelLabel} on any host`;
+		case "binding":
+			return `${modelLabel} on ${hostLabel}`;
+		case "host":
+			return `Every model served by ${hostLabel}`;
+	}
+}
+
+const KIND_META: Record<
+	CatalogRefKind,
+	{ icon: typeof Building2; label: string }
+> = {
+	provider: { icon: Building2, label: "Provider" },
+	"provider-on-host": { icon: Building2, label: "Provider · host" },
+	model: { icon: Boxes, label: "Model" },
+	binding: { icon: Boxes, label: "Binding" },
+	host: { icon: Globe, label: "Host" },
+};
+
+function SelectionSummary({
+	refs,
+	index,
+	includeDeprecated,
+}: {
+	refs: CatalogRef[];
+	index: PickerIndex;
+	includeDeprecated: boolean;
+}) {
+	return (
+		<div className="border-t border-border bg-muted/30">
+			<div className="flex items-center justify-between px-3 py-1.5 border-b border-border/50">
+				<div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+					This policy grants
+				</div>
+				<div className="text-[10px] text-muted-foreground tabular-nums">
+					{refs.length} {refs.length === 1 ? "grant" : "grants"}
+				</div>
+			</div>
+			<ul className="divide-y divide-border/40">
+				{refs.map((r) => {
+					const meta = KIND_META[r.kind];
+					const Icon = meta.icon;
+					const counts = formatCounts(
+						countsForRef(r, index, includeDeprecated),
+					);
+					return (
+						<li key={r.raw} className="flex items-center gap-3 px-3 py-2">
+							<span className="inline-flex h-6 w-6 items-center justify-center rounded bg-primary/10 text-primary shrink-0">
+								<Icon className="w-3 h-3" />
+							</span>
+							<div className="min-w-0 flex-1">
+								<div className="text-[12px] text-foreground leading-tight">
+									{describeRef(r, index)}
+								</div>
+								<div className="flex items-center gap-2 mt-0.5">
+									<code className="text-[10px] font-mono text-muted-foreground">
+										{r.raw}
+									</code>
+									{counts && (
+										<span className="text-[10px] text-muted-foreground tabular-nums">
+											· {counts}
+										</span>
+									)}
+								</div>
+							</div>
+							<span className="text-[10px] uppercase tracking-wide text-muted-foreground/70 shrink-0">
+								{meta.label}
+							</span>
+						</li>
+					);
+				})}
+			</ul>
+		</div>
+	);
+}
+
+function Empty({ label }: { label: string }) {
+	return (
+		<div className="px-3 py-8 text-center text-[12px] text-muted-foreground">
+			{label}
+		</div>
+	);
+}
+
+type CheckState = "off" | "on" | "indeterminate" | "covered";
+
+function RowCheckbox({ state }: { state: CheckState }) {
+	const base = "flex h-4 w-4 items-center justify-center rounded border shrink-0";
+	if (state === "off")
+		return <span className={`${base} border-input`} aria-hidden="true" />;
+	if (state === "covered")
+		return (
+			<span
+				className={`${base} bg-muted-foreground/30 border-muted-foreground/30 text-background`}
+				aria-hidden="true"
+			>
+				<svg viewBox="0 0 12 12" className="w-2.5 h-2.5">
+					<title>covered</title>
+					<path
+						d="M2 6.5l2.5 2.5L10 3.5"
+						fill="none"
+						stroke="currentColor"
+						strokeWidth="2"
+					/>
+				</svg>
+			</span>
+		);
+	if (state === "indeterminate")
+		return (
+			<span
+				className={`${base} bg-primary border-primary text-primary-foreground`}
+				aria-hidden="true"
+			>
+				<span className="block h-0.5 w-2 bg-current rounded" />
+			</span>
+		);
+	return (
+		<span
+			className={`${base} bg-primary border-primary text-primary-foreground`}
+			aria-hidden="true"
+		>
+			<svg viewBox="0 0 12 12" className="w-2.5 h-2.5">
+				<title>checked</title>
+				<path
+					d="M2 6.5l2.5 2.5L10 3.5"
+					fill="none"
+					stroke="currentColor"
+					strokeWidth="2"
+				/>
+			</svg>
+		</span>
+	);
+}

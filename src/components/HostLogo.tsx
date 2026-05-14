@@ -9,11 +9,11 @@ interface HostLogoProps {
 }
 
 /**
- * Square logo for a host. Uses `host.spec.logoURL` when set; falls back to a
+ * Square logo for a host. Uses `host.spec.icon.path` when set; falls back to a
  * neutral initial badge so the slot stays consistent.
  */
 export function HostLogo({ host, size = 16, className }: HostLogoProps) {
-	const url = host.spec.logoURL;
+	const url = host.spec.icon?.path;
 	const [errored, setErrored] = useState(false);
 	const label = displayLabel(host.metadata);
 	const initial = label.trim().charAt(0).toUpperCase() || "?";
@@ -34,17 +34,21 @@ export function HostLogo({ host, size = 16, className }: HostLogoProps) {
 		);
 	}
 	return (
-		<img
-			src={url}
-			alt=""
-			aria-hidden="true"
-			loading="lazy"
-			onError={() => setErrored(true)}
+		<span
 			className={[
-				"inline-block shrink-0 rounded-sm object-contain",
+				"inline-flex shrink-0 items-center justify-center rounded-sm bg-primary p-0.5",
 				className ?? "",
 			].join(" ")}
 			style={style}
-		/>
+		>
+			<img
+				src={url}
+				alt=""
+				aria-hidden="true"
+				loading="lazy"
+				onError={() => setErrored(true)}
+				className="max-w-full max-h-full object-contain"
+			/>
+		</span>
 	);
 }

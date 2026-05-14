@@ -112,22 +112,26 @@ function HostRow({ h }: { h: Host }) {
 					to="/models"
 					className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
 				>
-					<div className="flex items-center gap-2 min-w-0">
-						<HostLogo host={h} size={18} />
-						<span className="text-sm font-medium text-foreground truncate">
-							{displayLabel(h.metadata)}
-						</span>
-						{!hasDisplayName(h.metadata) && (
-							<span className="text-[11px] text-muted-foreground">
-								(no display name)
-							</span>
-						)}
-					</div>
-					{hasDisplayName(h.metadata) && (
-						<div className="text-[11px] text-muted-foreground truncate">
-							<code className="font-mono">{h.metadata.name}</code>
+					<div className="flex items-center gap-3 min-w-0">
+						<HostLogo host={h} size={32} />
+						<div className="min-w-0">
+							<div className="flex items-center gap-2 min-w-0">
+								<span className="text-sm font-medium text-foreground truncate">
+									{displayLabel(h.metadata)}
+								</span>
+								{!hasDisplayName(h.metadata) && (
+									<span className="text-[11px] text-muted-foreground">
+										(no display name)
+									</span>
+								)}
+							</div>
+							{hasDisplayName(h.metadata) && (
+								<div className="text-[11px] text-muted-foreground truncate">
+									<code className="font-mono">{h.metadata.name}</code>
+								</div>
+							)}
 						</div>
-					)}
+					</div>
 				</Link>
 			</td>
 			<td className="px-3 py-2 text-sm text-foreground">
