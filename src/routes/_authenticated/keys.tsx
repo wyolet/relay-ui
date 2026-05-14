@@ -6,12 +6,12 @@ import { policiesListQueryOptions, usePolicies } from "@/api/hooks/policies";
 import { providersListQueryOptions, useProviders } from "@/api/hooks/providers";
 import {
 	hostKeysListQueryOptions,
-	useDeleteSecret,
-	useSecrets,
+	useDeleteHostKey,
+	useHostKeys,
 } from "@/api/hooks/hostkeys";
 import type { Policy } from "@/api/types/policy";
 import type { Provider } from "@/api/types/provider";
-import type { SecretResponse } from "@/api/types/hostkey";
+import type { HostKey } from "@/api/types/hostkey";
 import { ByokModal } from "@/components/ByokModal";
 import { confirm } from "@/components/ConfirmDialog";
 import { CreateRelayKeyModal } from "@/components/CreateRelayKeyModal";
@@ -526,7 +526,7 @@ function ProviderKeysPanel() {
 	const search = Route.useSearch();
 	const { data: providers } = useProviders();
 	const { data: policies } = usePolicies();
-	const { data: secrets } = useSecrets();
+	const { data: secrets } = useHostKeys();
 	const [byokOpen, setByokOpen] = useState(false);
 	const [keyQ, setKeyQ] = useState("");
 
@@ -630,7 +630,7 @@ function ProviderKeysPanel() {
 interface ProviderKeysTableProps {
 	providers: Provider[];
 	policies: Policy[];
-	secrets: SecretResponse[];
+	secrets: HostKey[];
 	selectedProvider: string;
 	query: string;
 }
@@ -642,13 +642,13 @@ function ProviderKeysTable({
 	selectedProvider,
 	query,
 }: ProviderKeysTableProps) {
-	const deleteSecret = useDeleteSecret();
+	const deleteSecret = useDeleteHostKey();
 	const [editing, setEditing] = useState<{
 		name: string;
 		provider: string;
 	} | null>(null);
-	const secretByName: Record<string, SecretResponse> = {};
-	for (const s of secrets) secretByName[s.name] = s;
+	const secretByName: Record<string, HostKey> = {};
+	for (const s of secrets) secretByName[s.metadata.id ?? ""] = s;
 
 	async function handleDelete(name: string) {
 		const ok = await confirm({
@@ -678,23 +678,26 @@ function ProviderKeysTable({
 		name: string;
 		provider: string;
 		policies: string[];
-		secret: SecretResponse | undefined;
+		secret: HostKey | undefined;
 	};
 	const byKey = new Map<string, Entry>();
 
+	const providerOfPolicy = (p: (typeof policies)[number]): string =>
+		p.metadata.owner?.kind === "provider" ? (p.metadata.owner.id ?? "") : "";
 	const relevantPolicies = policies.filter(
-		(p) => !selectedProvider || p.spec.provider === selectedProvider,
+		(p) => !selectedProvider || providerOfPolicy(p) === selectedProvider,
 	);
 	for (const p of relevantPolicies) {
+		const provider = providerOfPolicy(p);
 		for (const name of p.spec.hostKeyIds ?? []) {
-			const k = `${p.spec.provider}::${name}`;
+			const k = `${provider}::${name}`;
 			const existing = byKey.get(k);
 			if (existing) {
 				existing.policies.push(p.metadata.name);
 			} else {
 				byKey.set(k, {
 					name,
-					provider: p.spec.provider,
+					provider,
 					policies: [p.metadata.name],
 					secret: secretByName[name],
 				});
@@ -774,9 +777,8 @@ function ProviderKeysTable({
 								</td>
 								<td className="px-3 py-2">
 									<Link
-										to="/providers/$name"
-										params={{ name: r.provider }}
-										className="text-sm text-foreground hover:underline capitalize"
+										to="/models"
+								className="text-sm text-foreground hover:underline capitalize"
 									>
 										{provDisplay}
 									</Link>

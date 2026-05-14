@@ -21,13 +21,13 @@ export function ByokModal({ open, onClose, onPick }: ByokModalProps) {
 	const items = useMemo(() => {
 		const counts: Record<string, number> = {};
 		for (const m of models.items ?? []) {
-			counts[m.spec.provider] = (counts[m.spec.provider] ?? 0) + 1;
+			counts[(m.metadata.owner?.kind === "provider" ? (m.metadata.owner.id ?? "") : "")] = (counts[(m.metadata.owner?.kind === "provider" ? (m.metadata.owner.id ?? "") : "")] ?? 0) + 1;
 		}
 		const list = (providers.items ?? []).map((p) => ({
 			name: p.metadata.name,
 			displayName: p.metadata.displayName ?? p.metadata.name,
-			isDefault: !!p.spec.default,
-			modelCount: counts[p.metadata.name] ?? 0,
+			isDefault: false,
+			modelCount: counts[p.metadata.id ?? ""] ?? 0,
 		}));
 		const ql = q.trim().toLowerCase();
 		const filtered = ql
@@ -46,11 +46,7 @@ export function ByokModal({ open, onClose, onPick }: ByokModalProps) {
 			onPick(providerName);
 			return;
 		}
-		void navigate({
-			to: "/providers/$name",
-			params: { name: providerName },
-			search: { tab: "keys", add: "1" },
-		});
+		void navigate({ to: "/host-keys/new" });
 	}
 
 	return (

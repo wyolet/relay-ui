@@ -31,7 +31,7 @@ export function useUpdateProxyMode() {
 	return useMutation({
 		mutationFn: async (value: ProxyMode): Promise<ProxyModeEnvelope> => {
 			const { data, error } = await apiClient.PUT("/settings/proxy-mode", {
-				body: { section: "proxy-mode", value },
+				body: value,
 			});
 			if (error) throw new ApiError(0, error.error);
 			return data;

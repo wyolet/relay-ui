@@ -7,7 +7,7 @@ import { apiClient } from "./client";
  */
 async function fetchWhoami(): Promise<{ authenticated: boolean }> {
 	const { data } = await apiClient.GET("/auth/whoami");
-	return { authenticated: data?.authenticated ?? false };
+	return { authenticated: Boolean(data?.user_id) };
 }
 
 export const whoamiQueryOptions = queryOptions({

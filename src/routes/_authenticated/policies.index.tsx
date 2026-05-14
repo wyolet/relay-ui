@@ -142,7 +142,7 @@ function PoliciesPanel() {
 		: allItems;
 
 	function modelCountFor(provider: string): number {
-		return (modelsData.items ?? []).filter((m) => m.spec.provider === provider)
+		return (modelsData.items ?? []).filter((m) => (m.metadata.owner?.kind === "provider" ? (m.metadata.owner.id ?? "") : "") === provider)
 			.length;
 	}
 
@@ -253,18 +253,17 @@ function PoliciesPanel() {
 									</td>
 									<td className="px-3 py-2 text-sm text-foreground capitalize">
 										<Link
-											to="/providers/$name"
-											params={{ name: p.spec.provider }}
-											className="hover:underline"
+											to="/models"
+								className="hover:underline"
 										>
-											{p.spec.provider}
+											{(p.metadata.owner?.kind === "provider" ? (p.metadata.owner.id ?? "") : "")}
 										</Link>
 									</td>
 									<td className="px-3 py-2 text-sm text-foreground text-right tabular-nums">
 										{(p.spec.hostKeyIds ?? []).length}
 									</td>
 									<td className="px-3 py-2 text-sm text-foreground text-right tabular-nums">
-										{modelCountFor(p.spec.provider)}
+										{modelCountFor((p.metadata.owner?.kind === "provider" ? (p.metadata.owner.id ?? "") : ""))}
 									</td>
 									<td className="px-3 py-2">
 										<Switch

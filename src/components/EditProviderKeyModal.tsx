@@ -39,13 +39,13 @@ export function EditProviderKeyModal({
 	const providerPolicies = useMemo(
 		() =>
 			(policiesData.items ?? []).filter(
-				(p) => p.spec.provider === providerName,
+				(p) => (p.metadata.owner?.kind === "provider" ? (p.metadata.owner.id ?? "") : "") === providerName,
 			),
 		[policiesData.items, providerName],
 	);
 	const providerModels = useMemo(
 		() =>
-			(modelsData.items ?? []).filter((m) => m.spec.provider === providerName),
+			(modelsData.items ?? []).filter((m) => (m.metadata.owner?.kind === "provider" ? (m.metadata.owner.id ?? "") : "") === providerName),
 		[modelsData.items, providerName],
 	);
 
@@ -97,7 +97,7 @@ export function EditProviderKeyModal({
 				return [
 					{
 						id,
-						body: { ...policy, spec: { ...policy.spec, secrets: nextSecrets } },
+						body: { ...policy, spec: { ...policy.spec, hostKeyIds: nextSecrets } },
 					},
 				];
 			});

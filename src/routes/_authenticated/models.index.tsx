@@ -97,7 +97,7 @@ function ModelsList() {
 				filters={
 					<Select
 						value={search.provider || "all"}
-						onValueChange={(v) => setProvider(v === "all" ? "" : v)}
+						onValueChange={(v) => setProvider(v === "all" || v == null ? "" : v)}
 					>
 						<SelectTrigger className="w-40">
 							<SelectValue>

@@ -41,10 +41,12 @@ export function ProviderKeys({
 	const { data: policiesData } = usePolicies();
 	const { data: secretsData } = useHostKeys();
 	const policies = (policiesData.items ?? []).filter(
-		(p) => p.spec.provider === providerName,
+		(p) =>
+			p.metadata.owner?.kind === "provider" &&
+			p.metadata.owner.id === providerName,
 	);
 	const secretsByName: Record<string, HostKey> = {};
-	for (const s of secretsData.items ?? []) secretsByName[s.name] = s;
+	for (const s of secretsData.items ?? []) secretsByName[s.metadata.id ?? ""] = s;
 
 	if (policies.length === 0) {
 		return (
@@ -116,7 +118,7 @@ function PolicyCard({
 		try {
 			await updatePolicy.mutateAsync({
 				...policy,
-				spec: { ...policy.spec, secrets: next },
+				spec: { ...policy.spec, hostKeyIds: next },
 			});
 		} catch (err) {
 			toast(
@@ -141,7 +143,7 @@ function PolicyCard({
 		try {
 			await updatePolicy.mutateAsync({
 				...policy,
-				spec: { ...policy.spec, secrets: secrets.filter((s) => s !== name) },
+				spec: { ...policy.spec, hostKeyIds: secrets.filter((s) => s !== name) },
 			});
 			if (alsoDelete) {
 				await deleteSecret.mutateAsync(name);
@@ -249,9 +251,9 @@ function KeyRow({
 	onDelete,
 }: KeyRowProps) {
 	const [menuOpen, setMenuOpen] = useState(false);
-	const kind = secret?.valueFrom.kind;
-	const masked = secret?.valueFrom.value_masked;
-	const env = secret?.valueFrom.env;
+	const kind = secret?.spec.valueFrom.kind;
+	const masked: string | undefined = undefined;
+	const env = secret?.spec.valueFrom.env;
 	return (
 		<li className="px-4 py-2.5 flex items-center gap-3">
 			<div className="flex flex-col">
@@ -389,10 +391,14 @@ function AddKeyForm({
 	const [showValue, setShowValue] = useState(false);
 
 	const providerModels = (modelsData.items ?? []).filter(
-		(m) => m.spec.provider === providerName,
+		(m) =>
+			m.metadata.owner?.kind === "provider" &&
+			m.metadata.owner.id === providerName,
 	);
 	const providerPolicies = (policiesData.items ?? []).filter(
-		(p) => p.spec.provider === providerName,
+		(p) =>
+			p.metadata.owner?.kind === "provider" &&
+			p.metadata.owner.id === providerName,
 	);
 	const activeApiKeys = apiKeys.filter((k) => k.revokedAt === null);
 
@@ -412,10 +418,15 @@ function AddKeyForm({
 				return;
 			}
 			try {
-				await createSecret.mutateAsync({
-					name: value.name,
-					provider: providerName,
-					valueFrom: { kind: "stored", value: value.value },
+				const created = await createSecret.mutateAsync({
+					metadata: {
+						name: value.name,
+						owner: { kind: "provider", id: providerName },
+					},
+					spec: {
+						valueFrom: { kind: "stored" },
+						value: value.value,
+					},
 				});
 				const targetPolicies =
 					policiesSelected.length > 0
@@ -429,7 +440,10 @@ function AddKeyForm({
 							...p,
 							spec: {
 								...p.spec,
-								secrets: [...(p.spec.hostKeyIds ?? []), value.name],
+								hostKeyIds: [
+									...(p.spec.hostKeyIds ?? []),
+									created.metadata.id ?? "",
+								],
 							},
 						}),
 					),

@@ -38,7 +38,7 @@ function PolicyDetailInner() {
 	const deletePolicy = useDeletePolicy();
 
 	const provider = (providersData.items ?? []).find(
-		(p) => p.metadata.name === policy.spec.provider,
+		(p) => p.metadata.name === (policy.metadata.owner?.kind === "provider" ? (policy.metadata.owner.id ?? "") : ""),
 	);
 
 	async function handleDelete() {
@@ -87,11 +87,10 @@ function PolicyDetailInner() {
 							<span>
 								via{" "}
 								<Link
-									to="/providers/$name"
-									params={{ name: policy.spec.provider }}
-									className="text-foreground hover:underline capitalize"
+									to="/models"
+								className="text-foreground hover:underline capitalize"
 								>
-									{provider?.metadata.displayName ?? policy.spec.provider}
+									{provider?.metadata.displayName ?? (policy.metadata.owner?.kind === "provider" ? (policy.metadata.owner.id ?? "") : "")}
 								</Link>
 							</span>
 						</div>

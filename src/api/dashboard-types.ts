@@ -11,7 +11,7 @@
 import type { components } from "@/api/types.gen";
 
 /** Re-export from the generated schema so importers don't break. */
-export type VersionResponse = components["schemas"]["VersionResponse"];
+export type VersionResponse = components["schemas"]["versionOutputBody"];
 
 export type HealthStatusLevel = "ok" | "degraded" | "error";
 

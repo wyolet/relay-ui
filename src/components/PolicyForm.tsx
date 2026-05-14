@@ -220,7 +220,7 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 					<Select
 						value={values.rateLimitId || "none"}
 						onValueChange={(v) =>
-							form.setFieldValue("rateLimitId", v === "none" ? "" : v)
+							form.setFieldValue("rateLimitId", v === "none" || v == null ? "" : v)
 						}
 					>
 						<SelectTrigger className="w-full max-w-md">

@@ -101,7 +101,7 @@ function NewModelInner() {
 						</div>
 						<Select
 							value={hostId || undefined}
-							onValueChange={(v) => setHostId(v)}
+							onValueChange={(v) => setHostId(v ?? "")}
 						>
 							<SelectTrigger className="w-full">
 								<SelectValue placeholder="Pick a host" />
@@ -125,7 +125,7 @@ function NewModelInner() {
 						<div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
 							Adapter
 						</div>
-						<Select value={adapter} onValueChange={(v) => setAdapter(v)}>
+						<Select value={adapter} onValueChange={(v) => setAdapter(v ?? "openai")}>
 							<SelectTrigger className="w-full">
 								<SelectValue />
 							</SelectTrigger>
