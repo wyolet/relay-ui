@@ -686,7 +686,7 @@ function ProviderKeysTable({
 		(p) => !selectedProvider || p.spec.provider === selectedProvider,
 	);
 	for (const p of relevantPolicies) {
-		for (const name of p.spec.secrets ?? []) {
+		for (const name of p.spec.hostKeyIds ?? []) {
 			const k = `${p.spec.provider}::${name}`;
 			const existing = byKey.get(k);
 			if (existing) {

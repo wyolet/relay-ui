@@ -261,7 +261,7 @@ function PoliciesPanel() {
 										</Link>
 									</td>
 									<td className="px-3 py-2 text-sm text-foreground text-right tabular-nums">
-										{(p.spec.secrets ?? []).length}
+										{(p.spec.hostKeyIds ?? []).length}
 									</td>
 									<td className="px-3 py-2 text-sm text-foreground text-right tabular-nums">
 										{modelCountFor(p.spec.provider)}

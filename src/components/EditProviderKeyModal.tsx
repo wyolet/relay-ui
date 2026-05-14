@@ -63,7 +63,7 @@ export function EditProviderKeyModal({
 		const last = initRef.current;
 		if (open && (!last.open || last.secret !== secretName)) {
 			const inPolicies = providerPolicies
-				.filter((p) => (p.spec.secrets ?? []).includes(secretName))
+				.filter((p) => (p.spec.hostKeyIds ?? []).includes(secretName))
 				.map((p) => p.metadata.name);
 			setName(secretName);
 			setSelectedPolicies(inPolicies);
@@ -86,12 +86,12 @@ export function EditProviderKeyModal({
 			}
 			const targetPolicyNames = selectedPolicies;
 			const updates = providerPolicies.flatMap((policy) => {
-				const has = (policy.spec.secrets ?? []).includes(secretName);
+				const has = (policy.spec.hostKeyIds ?? []).includes(secretName);
 				const should = targetPolicyNames.includes(policy.metadata.name);
 				if (has === should) return [];
 				const nextSecrets = should
-					? [...(policy.spec.secrets ?? []), secretName]
-					: (policy.spec.secrets ?? []).filter((s) => s !== secretName);
+					? [...(policy.spec.hostKeyIds ?? []), secretName]
+					: (policy.spec.hostKeyIds ?? []).filter((s) => s !== secretName);
 				const id = policy.metadata.id;
 				if (!id) return [];
 				return [
@@ -102,7 +102,7 @@ export function EditProviderKeyModal({
 				];
 			});
 			for (const u of updates) {
-				const { error } = await apiClient.PUT("/control/policies/by-id/{id}", {
+				const { error } = await apiClient.PUT("/policies/by-id/{id}", {
 					params: { path: { id: u.id } },
 					body: u.body,
 				});

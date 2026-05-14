@@ -1,20 +1,14 @@
-/**
- * Two-column policy edit/create form, OpenRouter-styled.
- * Used by /policies/new and /policies/$name. Logic lives in usePolicyForm.
- */
 import {
 	Boxes,
 	Gauge,
 	KeyRound,
 	type LucideIcon,
-	Server,
 	ShieldCheck,
 	Tag,
 } from "lucide-react";
+import { useHostKeys } from "@/api/hooks/hostkeys";
 import { useModels } from "@/api/hooks/models";
-import { useProviders } from "@/api/hooks/providers";
 import { useAttachableRateLimits } from "@/api/hooks/ratelimits";
-import { useSecrets } from "@/api/hooks/hostkeys";
 import type { Policy } from "@/api/types/policy";
 import { MultiSelect } from "@/components/MultiSelect";
 import { Input } from "@/components/ui/input";
@@ -39,7 +33,7 @@ const KEY_SELECTION_OPTIONS: Record<
 > = {
 	prioritized: {
 		label: "Prioritized",
-		hint: "Drain the first healthy key in declaration order. Reorder secrets above to change priority.",
+		hint: "Drain the first healthy key in declaration order.",
 	},
 	"round-robin": {
 		label: "Round-robin",
@@ -47,59 +41,48 @@ const KEY_SELECTION_OPTIONS: Record<
 	},
 	"least-recently-used": {
 		label: "Least recently used",
-		hint: "Pick whichever healthy key has been idle longest — best for spreading load across many keys.",
+		hint: "Pick whichever healthy key has been idle longest.",
 	},
 };
 
 interface PolicyFormProps {
-	/** Provided in edit mode; omit for create. */
 	policy?: Policy;
 	onSaved: () => void;
 	onCancel: () => void;
 }
 
 export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
-	const { data: providersData } = useProviders();
-	const { data: secretsData } = useSecrets();
+	const { data: hostKeysData } = useHostKeys();
 	const { data: modelsData } = useModels();
 	const allRateLimits = useAttachableRateLimits();
 
-	const { form, values, isEdit, nameError, providerError } = usePolicyForm({
+	const { form, values, isEdit, nameError } = usePolicyForm({
 		open: true,
 		policy,
 		onSaved,
 	});
 
-	const providers = providersData.items ?? [];
-	const allSecrets = secretsData.items ?? [];
+	const allHostKeys = hostKeysData.items ?? [];
 	const allModels = modelsData.items ?? [];
 
-	const providerModels = values.provider
-		? allModels.filter((m) => m.spec.provider === values.provider)
-		: allModels;
-
-	const secretOptions = allSecrets.map((s) => ({
-		value: s.name,
-		label: s.name,
+	const hostKeyOptions = allHostKeys.map((hk) => ({
+		value: hk.metadata.id ?? "",
+		label: displayLabel(hk.metadata),
 	}));
-	const modelOptions = providerModels.map((m) => ({
-		value: m.metadata.name,
-		label: m.metadata.displayName ?? m.metadata.name,
+	const modelOptions = allModels.map((m) => ({
+		value: m.metadata.id ?? "",
+		label: displayLabel(m.metadata),
 	}));
 	const rateLimitOptions = allRateLimits.map((rl) => ({
-		value: rl.metadata.name,
+		value: rl.metadata.id ?? "",
 		label: displayLabel(rl.metadata),
 	}));
 
-	const modelsMode = values.models.length === 0 ? "all" : "specific";
+	const modelsMode = values.modelIds.length === 0 ? "all" : "specific";
 
 	function setModelsMode(mode: "all" | "specific") {
 		if (mode === "all") {
-			form.setFieldValue("models", []);
-		} else if (values.models.length === 0 && providerModels.length > 0) {
-			// Pre-fill with first model so the picker shows a non-empty state
-			// — user can immediately edit the selection.
-			form.setFieldValue("models", []);
+			form.setFieldValue("modelIds", []);
 		}
 	}
 
@@ -136,53 +119,13 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 				)}
 
 				<Section
-					icon={Server}
-					title="Provider"
-					description="The upstream this policy talks to. Locked after creation."
-				>
-					<p className="mb-2 text-sm text-muted-foreground">
-						All credentials and models picked below are scoped to this provider.
-					</p>
-					<Select
-						value={values.provider || undefined}
-						onValueChange={(v) => form.setFieldValue("provider", v ?? "")}
-						disabled={isEdit}
-					>
-						<SelectTrigger
-							className="w-full max-w-md"
-							aria-invalid={providerError ? true : undefined}
-						>
-							<SelectValue placeholder="Select a provider" />
-						</SelectTrigger>
-						<SelectContent>
-							{providers.length === 0 ? (
-								<div className="px-3 py-4 text-center text-[11px] text-muted-foreground">
-									No providers configured.
-								</div>
-							) : (
-								providers.map((p) => (
-									<SelectItem key={p.metadata.name} value={p.metadata.name}>
-										{p.metadata.displayName ?? p.metadata.name}
-									</SelectItem>
-								))
-							)}
-						</SelectContent>
-					</Select>
-					{providerError && (
-						<p className="mt-1.5 text-[11px] text-destructive">
-							{providerError}
-						</p>
-					)}
-				</Section>
-
-				<Section
 					icon={Boxes}
 					title="Allowed models"
 					description="Restrict which models relay keys using this policy can call."
 				>
 					<p className="mb-2 text-sm text-muted-foreground">
 						Leave on <strong className="text-foreground">All</strong> to permit
-						every model the provider exposes, or switch to{" "}
+						every model, or switch to{" "}
 						<strong className="text-foreground">Specific</strong> to whitelist.
 					</p>
 					<div className="flex items-center gap-3 mb-2">
@@ -196,50 +139,40 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 							</TabsList>
 						</Tabs>
 						<span className="text-[11px] text-muted-foreground tabular-nums">
-							{providerModels.length} model
-							{providerModels.length === 1 ? "" : "s"} on this provider
+							{allModels.length} model{allModels.length === 1 ? "" : "s"}
 						</span>
 					</div>
 					{modelsMode === "specific" && (
 						<MultiSelect
 							options={modelOptions}
-							selected={values.models}
-							onChange={(next) => form.setFieldValue("models", next)}
+							selected={values.modelIds}
+							onChange={(next) => form.setFieldValue("modelIds", next)}
 							placeholder="Pick models…"
-							emptyHint={
-								values.provider
-									? "No models registered for this provider."
-									: "Pick a provider first."
-							}
+							emptyHint="No models registered."
 							aria-label="Allowed models"
-							disabled={!values.provider}
 						/>
 					)}
-					<p className="mt-1.5 text-[11px] text-muted-foreground">
-						UI-only stash for now — backend persistence lands with{" "}
-						<code>spec.models[]</code>.
-					</p>
 				</Section>
 
 				<Section
 					icon={KeyRound}
-					title="Upstream secrets"
-					description="Provider credentials Relay rotates through when calls hit this policy."
+					title="Host keys"
+					description="Credentials Relay rotates through when calls hit this policy."
 				>
 					<p className="mb-2 text-sm text-muted-foreground">
 						Order is preserved — Relay tries them top-to-bottom on rate-limit
 						errors.
 					</p>
 					<MultiSelect
-						options={secretOptions}
-						selected={values.secrets}
-						onChange={(next) => form.setFieldValue("secrets", next)}
-						placeholder="Attach provider keys…"
-						emptyHint="No secrets defined."
-						aria-label="Upstream secrets"
+						options={hostKeyOptions}
+						selected={values.hostKeyIds}
+						onChange={(next) => form.setFieldValue("hostKeyIds", next)}
+						placeholder="Attach host keys…"
+						emptyHint="No host keys defined."
+						aria-label="Host keys"
 					/>
 					<p className="mt-1.5 text-[11px] text-muted-foreground">
-						No secrets means relay keys using this policy will fail until you
+						No keys means relay keys using this policy will fail until you
 						attach at least one.
 					</p>
 
@@ -281,20 +214,27 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 
 				<Section
 					icon={Gauge}
-					title="Rate limits"
-					description="Throttling rules applied to every request hitting this policy."
+					title="Rate limit"
+					description="Throttling rule applied to every request hitting this policy."
 				>
-					<MultiSelect
-						options={rateLimitOptions}
-						selected={values.rateLimits}
-						onChange={(next) => form.setFieldValue("rateLimits", next)}
-						placeholder="Attach rate limits…"
-						emptyHint="No rate limits defined."
-						aria-label="Rate limits"
-					/>
-					<p className="mt-1.5 text-[11px] text-muted-foreground">
-						Each attached limit is enforced independently.
-					</p>
+					<Select
+						value={values.rateLimitId || "none"}
+						onValueChange={(v) =>
+							form.setFieldValue("rateLimitId", v === "none" ? "" : v)
+						}
+					>
+						<SelectTrigger className="w-full max-w-md">
+							<SelectValue placeholder="None" />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value="none">None</SelectItem>
+							{rateLimitOptions.map((rl) => (
+								<SelectItem key={rl.value} value={rl.value}>
+									{rl.label}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
 				</Section>
 
 				<Section
@@ -303,9 +243,7 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 					description="Which relay keys inherit this policy's settings."
 				>
 					<div className="rounded-md border border-dashed border-border bg-muted/30 px-3 py-3 text-sm text-muted-foreground">
-						Backend doesn't expose policy attachments on relay keys yet — this
-						picker will land once it does. For now, attach policies from the
-						relay-key form.
+						Attach policies from the relay-key form.
 					</div>
 				</Section>
 			</div>

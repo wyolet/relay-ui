@@ -23,23 +23,25 @@ export const DEFAULT_KEY_SELECTION: KeySelection = "prioritized";
 
 export interface PolicyFormValues {
 	name: string;
-	provider: string;
-	secrets: string[];
+	hostKeyIds: string[];
 	keySelection: KeySelection;
-	models: string[];
-	rateLimits: string[];
+	modelIds: string[];
+	rateLimitId: string;
+	skipDefaultLimits: boolean;
+	enabled: boolean;
 }
 
 const nameRegex = /^[a-zA-Z0-9_.-]+$/;
 
 const baseSchema = z.object({
-	provider: z.string().trim().min(1, "Provider is required"),
-	secrets: z.array(z.string()),
+	hostKeyIds: z.array(z.string()),
 	keySelection: z.enum(
 		KEY_SELECTION_VALUES as readonly [KeySelection, ...KeySelection[]],
 	),
-	models: z.array(z.string()),
-	rateLimits: z.array(z.string()),
+	modelIds: z.array(z.string()),
+	rateLimitId: z.string(),
+	skipDefaultLimits: z.boolean(),
+	enabled: z.boolean(),
 });
 
 const createSchema = baseSchema.extend({
@@ -56,26 +58,24 @@ const editSchema = baseSchema.extend({ name: z.string() });
 function emptyValues(): PolicyFormValues {
 	return {
 		name: "",
-		provider: "",
-		secrets: [],
+		hostKeyIds: [],
 		keySelection: DEFAULT_KEY_SELECTION,
-		models: [],
-		rateLimits: [],
+		modelIds: [],
+		rateLimitId: "",
+		skipDefaultLimits: false,
+		enabled: true,
 	};
 }
 
 function policyToValues(policy: Policy): PolicyFormValues {
-	// Allowed-models is not yet in PolicySpec; persist via secretSelector for now
-	// so the field round-trips until the backend adds spec.models[].
-	const stashed = policy.spec.secretSelector?.["ui.models"];
-	const models = stashed ? stashed.split(",").filter(Boolean) : [];
 	return {
 		name: policy.metadata.name,
-		provider: policy.spec.provider,
-		secrets: policy.spec.secrets ?? [],
+		hostKeyIds: policy.spec.hostKeyIds ?? [],
 		keySelection: policy.spec.keySelection ?? DEFAULT_KEY_SELECTION,
-		models,
-		rateLimits: (policy.spec.rateLimits ?? []).map((rl) => rl.Ref),
+		modelIds: policy.spec.modelIds ?? [],
+		rateLimitId: policy.spec.rateLimitId ?? "",
+		skipDefaultLimits: policy.spec.skipDefaultLimits ?? false,
+		enabled: policy.spec.enabled ?? true,
 	};
 }
 
@@ -111,25 +111,13 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 			},
 		},
 		onSubmit: async ({ value }) => {
-			// Stash allowed-models in secretSelector until backend adds spec.models[].
-			// TODO(backend): drop this stash once PolicySpec.models lands.
-			const selector: Record<string, string> = {
-				...(policy?.spec.secretSelector ?? {}),
-			};
-			if (value.models.length > 0) {
-				selector["ui.models"] = value.models.join(",");
-			} else {
-				delete selector["ui.models"];
-			}
 			const spec = {
-				provider: value.provider.trim(),
-				secrets: value.secrets.length > 0 ? value.secrets : null,
+				enabled: value.enabled,
+				hostKeyIds: value.hostKeyIds.length > 0 ? value.hostKeyIds : null,
 				keySelection: value.keySelection,
-				rateLimits:
-					value.rateLimits.length > 0
-						? value.rateLimits.map((Ref) => ({ Ref }))
-						: undefined,
-				secretSelector: Object.keys(selector).length > 0 ? selector : undefined,
+				modelIds: value.modelIds.length > 0 ? value.modelIds : null,
+				rateLimitId: value.rateLimitId || undefined,
+				skipDefaultLimits: value.skipDefaultLimits,
 			};
 			try {
 				if (isEdit && policy) {
@@ -172,11 +160,6 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 		for (const e of errs) if (typeof e === "string") return e;
 		return undefined;
 	});
-	const providerError = useStore(form.store, (s) => {
-		const errs = s.fieldMeta?.provider?.errors ?? [];
-		for (const e of errs) if (typeof e === "string") return e;
-		return undefined;
-	});
 
-	return { form, values, isEdit, nameError, providerError };
+	return { form, values, isEdit, nameError };
 }

@@ -98,7 +98,7 @@ function PolicyCard({
 	const updatePolicy = useUpdatePolicy(policy.metadata.id ?? "");
 	const deleteSecret = useDeleteHostKey();
 	const [adding, setAdding] = useState(false);
-	const secrets = policy.spec.secrets ?? [];
+	const secrets = policy.spec.hostKeyIds ?? [];
 	const ql = keyQuery?.trim().toLowerCase() ?? "";
 	const filteredIdx = secrets
 		.map((name, idx) => ({ name, idx }))
@@ -429,7 +429,7 @@ function AddKeyForm({
 							...p,
 							spec: {
 								...p.spec,
-								secrets: [...(p.spec.secrets ?? []), value.name],
+								secrets: [...(p.spec.hostKeyIds ?? []), value.name],
 							},
 						}),
 					),
