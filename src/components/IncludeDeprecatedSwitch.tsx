@@ -6,8 +6,9 @@ interface IncludeDeprecatedSwitchProps {
 }
 
 /**
- * Controlled box that toggles whether deprecated models are surfaced in
- * pickers / counts. Purely a UI filter — the policy itself is unaware.
+ * Controlled box for `PolicySpec.includeDeprecated`. Persisted policy field —
+ * also drives picker filtering / counts on the client so the UI matches what
+ * the backend will permit at request time.
  */
 export function IncludeDeprecatedSwitch({
 	value,

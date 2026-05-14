@@ -5,7 +5,6 @@ import {
 	type LucideIcon,
 	ShieldCheck,
 } from "lucide-react";
-import { useState } from "react";
 import { useHostKeys } from "@/api/hooks/hostkeys";
 import { useAttachableRateLimits } from "@/api/hooks/ratelimits";
 import type { Policy } from "@/api/types/policy";
@@ -69,7 +68,6 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 	});
 
 	const allHostKeys = hostKeysData.items ?? [];
-	const [includeDeprecated, setIncludeDeprecated] = useState(false);
 
 	const hostKeyOptions = allHostKeys.map((hk) => ({
 		value: hk.metadata.id ?? "",
@@ -111,11 +109,13 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 						<ModelPicker
 							value={values.models}
 							onChange={(next) => form.setFieldValue("models", next)}
-							includeDeprecated={includeDeprecated}
+							includeDeprecated={values.includeDeprecated}
 						/>
 						<IncludeDeprecatedSwitch
-							value={includeDeprecated}
-							onChange={setIncludeDeprecated}
+							value={values.includeDeprecated}
+							onChange={(next) =>
+								form.setFieldValue("includeDeprecated", next)
+							}
 						/>
 					</div>
 				</Section>

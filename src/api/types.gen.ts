@@ -814,6 +814,7 @@ export interface components {
         PolicySpec: {
             enabled?: boolean;
             hostKeyIds?: string[] | null;
+            includeDeprecated?: boolean;
             keySelection?: string;
             modelIds?: string[] | null;
             models?: string[] | null;
@@ -1008,6 +1009,7 @@ export interface components {
             modelId: string;
         };
         resolveEntity: {
+            deprecated?: string;
             displayName?: string;
             id: string;
             name: string;
