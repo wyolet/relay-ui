@@ -3,22 +3,17 @@ import { Check, Copy, KeyRound, MoreHorizontal, Plus } from "lucide-react";
 import { useState } from "react";
 import { z } from "zod";
 import { policiesListQueryOptions, usePolicies } from "@/api/hooks/policies";
-import { providersListQueryOptions, useProviders } from "@/api/hooks/providers";
 import {
 	hostKeysListQueryOptions,
 	useDeleteHostKey,
 	useHostKeys,
 } from "@/api/hooks/hostkeys";
-import type { Policy } from "@/api/types/policy";
-import type { Provider } from "@/api/types/provider";
+import { ApiError } from "@/api/types/errors";
 import type { HostKey } from "@/api/types/hostkey";
-import { ByokModal } from "@/components/ByokModal";
 import { confirm } from "@/components/ConfirmDialog";
 import { CreateRelayKeyModal } from "@/components/CreateRelayKeyModal";
-import { EditProviderKeyModal } from "@/components/EditProviderKeyModal";
 import { EditRelayKeyModal } from "@/components/EditRelayKeyModal";
 import { SearchBox } from "@/components/SearchBox";
-import { Switch } from "@/components/Switch";
 import { TableToolbar } from "@/components/TableToolbar";
 import { toast } from "@/components/Toast";
 import {
@@ -34,6 +29,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { type ApiKey, useKeysStore } from "@/stores/keys";
 
 type Filter = "active" | "revoked" | "all";
@@ -43,14 +39,11 @@ const searchSchema = z.object({
 	tab: z.enum(["relay", "provider"]).default("relay"),
 	filter: z.enum(["active", "revoked", "all"]).default("active"),
 	q: z.string().default(""),
-	provider: z.string().optional(),
-	add: z.string().optional(),
 });
 
 export const Route = createFileRoute("/_authenticated/keys")({
 	validateSearch: searchSchema,
 	loader: ({ context }) => {
-		void context.queryClient.prefetchQuery(providersListQueryOptions);
 		void context.queryClient.prefetchQuery(policiesListQueryOptions);
 		void context.queryClient.prefetchQuery(hostKeysListQueryOptions);
 		return null;
@@ -278,12 +271,12 @@ function KeysPage() {
 					Relay keys
 				</TabLink>
 				<TabLink value="provider" current={search.tab} onClick={setTab}>
-					Provider keys
+					Host keys
 				</TabLink>
 			</div>
 
 			{search.tab === "relay" && <RelayKeysPanel />}
-			{search.tab === "provider" && <ProviderKeysPanel />}
+			{search.tab === "provider" && <HostKeysPanel />}
 		</div>
 	);
 }
@@ -521,318 +514,175 @@ function RelayKeysPanel() {
 	);
 }
 
-function ProviderKeysPanel() {
+function HostKeysPanel() {
 	const navigate = useNavigate({ from: "/keys" });
-	const search = Route.useSearch();
-	const { data: providers } = useProviders();
-	const { data: policies } = usePolicies();
-	const { data: secrets } = useHostKeys();
-	const [byokOpen, setByokOpen] = useState(false);
-	const [keyQ, setKeyQ] = useState("");
+	const { data: hostKeysData } = useHostKeys();
+	const { data: policiesData } = usePolicies();
+	const deleteHostKey = useDeleteHostKey();
+	const [q, setQ] = useState("");
 
-	const list = providers.items ?? [];
+	const allItems = hostKeysData.items ?? [];
+	const needle = q.trim().toLowerCase();
+	const items = needle
+		? allItems.filter(
+				(hk) =>
+					displayLabel(hk.metadata).toLowerCase().includes(needle) ||
+					hk.metadata.name.toLowerCase().includes(needle) ||
+					(hk.spec.valueFrom.env?.toLowerCase().includes(needle) ?? false),
+			)
+		: allItems;
 
-	// "" = all providers
-	const selected = search.provider ?? "";
-	const selectedProvider =
-		selected === ""
-			? undefined
-			: list.find((p) => p.metadata.name === selected);
-	function pick(provider: string) {
-		void navigate({
-			search: (prev) => ({ ...prev, provider, add: undefined }),
-		});
+	const refCounts = new Map<string, number>();
+	for (const policy of policiesData.items ?? []) {
+		for (const id of policy.spec.hostKeyIds ?? []) {
+			refCounts.set(id, (refCounts.get(id) ?? 0) + 1);
+		}
 	}
 
-	function onByokPick(provider: string) {
-		void navigate({
-			search: (prev) => ({ ...prev, provider, add: "1" }),
+	async function handleDelete(hk: HostKey) {
+		const ok = await confirm({
+			title: `Delete host key ${displayLabel(hk.metadata)}?`,
+			description:
+				"Policies referencing this key will lose access until you reattach another.",
+			confirmLabel: "Delete",
+			danger: true,
 		});
-	}
-
-	if (list.length === 0) {
-		return (
-			<div className="rounded-lg border border-dashed border-input bg-card px-6 py-14 text-center">
-				<KeyRound className="w-6 h-6 mx-auto mb-3 text-muted-foreground/50" />
-				<p className="text-sm text-muted-foreground">
-					No providers configured yet.
-				</p>
-			</div>
-		);
+		if (!ok) return;
+		try {
+			await deleteHostKey.mutateAsync(hk.metadata.id ?? "");
+			toast("success", `Host key "${displayLabel(hk.metadata)}" deleted.`);
+		} catch (err) {
+			toast(
+				"error",
+				err instanceof ApiError ? err.body.message : "Failed to delete host key.",
+			);
+		}
 	}
 
 	return (
 		<div>
 			<TableToolbar
 				search={
-					<SearchBox
-						value={keyQ}
-						onChange={setKeyQ}
-						placeholder="Search keys"
-					/>
-				}
-				filters={
-					<Select
-						value={selected || "all"}
-						onValueChange={(v) => {
-							if (v !== null) pick(v === "all" ? "" : v);
-						}}
-					>
-						<SelectTrigger className="w-40">
-							<SelectValue>
-								{selectedProvider
-									? (selectedProvider.metadata.displayName ??
-										selectedProvider.metadata.name)
-									: "All providers"}
-							</SelectValue>
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value="all">All providers</SelectItem>
-							{list.map((p) => (
-								<SelectItem key={p.metadata.name} value={p.metadata.name}>
-									<span className="capitalize">
-										{p.metadata.displayName ?? p.metadata.name}
-									</span>
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
+					<SearchBox value={q} onChange={setQ} placeholder="Search host keys" />
 				}
 				actions={
-					<button
-						type="button"
-						onClick={() => setByokOpen(true)}
+					<Link
+						to="/host-keys/new"
 						className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-xs font-semibold text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 					>
 						<Plus className="w-3.5 h-3.5" />
-						Bring your own key
-					</button>
+						New host key
+					</Link>
 				}
 			/>
 
-			<ProviderKeysTable
-				providers={list}
-				policies={policies.items ?? []}
-				secrets={secrets.items ?? []}
-				selectedProvider={selected}
-				query={keyQ}
-			/>
-
-			<ByokModal
-				open={byokOpen}
-				onClose={() => setByokOpen(false)}
-				onPick={onByokPick}
-			/>
-		</div>
-	);
-}
-
-interface ProviderKeysTableProps {
-	providers: Provider[];
-	policies: Policy[];
-	secrets: HostKey[];
-	selectedProvider: string;
-	query: string;
-}
-
-function ProviderKeysTable({
-	providers,
-	policies,
-	secrets,
-	selectedProvider,
-	query,
-}: ProviderKeysTableProps) {
-	const deleteSecret = useDeleteHostKey();
-	const [editing, setEditing] = useState<{
-		name: string;
-		provider: string;
-	} | null>(null);
-	const secretByName: Record<string, HostKey> = {};
-	for (const s of secrets) secretByName[s.metadata.id ?? ""] = s;
-
-	async function handleDelete(name: string) {
-		const ok = await confirm({
-			title: `Delete key ${name}?`,
-			description: "This cannot be undone.",
-			confirmLabel: "Delete",
-			danger: true,
-		});
-		if (!ok) return;
-		try {
-			await deleteSecret.mutateAsync(name);
-			toast("success", `Key "${name}" deleted.`);
-		} catch (err) {
-			toast(
-				"error",
-				err instanceof Error ? err.message : "Failed to delete key.",
-			);
-		}
-	}
-
-	function toggleEnabled(_name: string) {
-		toast("success", "Enable/disable — backend support coming soon.");
-	}
-
-	// Build a row per (secret name, provider) — secrets live inside policies.
-	type Entry = {
-		name: string;
-		provider: string;
-		policies: string[];
-		secret: HostKey | undefined;
-	};
-	const byKey = new Map<string, Entry>();
-
-	const providerOfPolicy = (p: (typeof policies)[number]): string =>
-		p.metadata.owner?.kind === "provider" ? (p.metadata.owner.id ?? "") : "";
-	const relevantPolicies = policies.filter(
-		(p) => !selectedProvider || providerOfPolicy(p) === selectedProvider,
-	);
-	for (const p of relevantPolicies) {
-		const provider = providerOfPolicy(p);
-		for (const name of p.spec.hostKeyIds ?? []) {
-			const k = `${provider}::${name}`;
-			const existing = byKey.get(k);
-			if (existing) {
-				existing.policies.push(p.metadata.name);
-			} else {
-				byKey.set(k, {
-					name,
-					provider,
-					policies: [p.metadata.name],
-					secret: secretByName[name],
-				});
-			}
-		}
-	}
-
-	// Surface orphan secrets (matching provider scope) too — only when filter
-	// implies them. Without provider→secret linkage on read we skip orphans.
-	const ql = query.trim().toLowerCase();
-	const rows = [...byKey.values()].filter((r) => {
-		if (!ql) return true;
-		return (
-			r.name.toLowerCase().includes(ql) ||
-			r.provider.toLowerCase().includes(ql) ||
-			r.policies.some((p) => p.toLowerCase().includes(ql))
-		);
-	});
-
-	rows.sort(
-		(a, b) =>
-			a.provider.localeCompare(b.provider) || a.name.localeCompare(b.name),
-	);
-
-	const providerByName: Record<string, Provider> = {};
-	for (const p of providers) providerByName[p.metadata.name] = p;
-
-	if (rows.length === 0) {
-		return (
-			<div className="rounded-lg border border-dashed border-input bg-card px-6 py-14 text-center">
-				<KeyRound className="w-6 h-6 mx-auto mb-3 text-muted-foreground/50" />
-				<p className="text-sm text-muted-foreground">
-					{selectedProvider
-						? `No keys for ${selectedProvider} yet.`
-						: "No upstream keys yet — connect one with Bring your own key."}
-				</p>
-			</div>
-		);
-	}
-
-	return (
-		<div className="overflow-x-auto rounded-lg border border-border bg-card">
-			<table className="w-full border-collapse">
-				<thead className="bg-muted/40">
-					<tr>
-						<th scope="col" className="w-6 px-3 py-2" aria-label="Status" />
-						<Th>Name</Th>
-						<Th>Provider</Th>
-						<Th>Policies</Th>
-						<th
-							scope="col"
-							className="w-12 px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground"
-						>
-							On
-						</th>
-						<th scope="col" className="w-10 px-3 py-2" aria-label="Actions" />
-					</tr>
-				</thead>
-				<tbody>
-					{rows.map((r) => {
-						const tone: StatusTone = !r.secret ? "danger" : "active";
-						const label = !r.secret ? "Missing" : "Active";
-						const provDisplay =
-							providerByName[r.provider]?.metadata.displayName ?? r.provider;
-						return (
-							<tr
-								key={`${r.provider}::${r.name}`}
-								className="border-t border-border hover:bg-muted/40 transition-colors"
+			{items.length === 0 ? (
+				<div className="rounded-lg border border-dashed border-input bg-card px-6 py-14 text-center">
+					<KeyRound className="w-6 h-6 mx-auto mb-3 text-muted-foreground/50" />
+					{allItems.length === 0 ? (
+						<>
+							<p className="text-sm font-medium text-foreground mb-1">
+								No host keys yet
+							</p>
+							<p className="text-sm text-muted-foreground mb-5">
+								Register upstream credentials — stored encrypted by Relay or
+								sourced from an env var.
+							</p>
+							<Link
+								to="/host-keys/new"
+								className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-sm font-semibold text-white transition-colors"
 							>
-								<td className="px-3 py-2 align-middle">
-									<StatusDot tone={tone} label={label} />
-								</td>
-								<td className="px-3 py-2">
-									<span className="text-sm font-medium text-foreground">
-										{r.name}
-									</span>
-								</td>
-								<td className="px-3 py-2">
-									<Link
-										to="/models"
-								className="text-sm text-foreground hover:underline capitalize"
-									>
-										{provDisplay}
-									</Link>
-								</td>
-								<td className="px-3 py-2">
-									<div className="flex flex-wrap gap-1">
-										{r.policies.map((pn) => (
-											<Link
-												key={pn}
-												to="/policies/$name"
-												params={{ name: pn }}
-												className="inline-flex items-center h-5 px-1.5 rounded text-[10px] font-medium bg-muted text-muted-foreground hover:text-foreground"
-											>
-												{pn}
-											</Link>
-										))}
-									</div>
-								</td>
-								<td className="px-3 py-2">
-									<Switch
-										checked={!!r.secret}
-										onChange={() => toggleEnabled(r.name)}
-										label={`Toggle ${r.name}`}
-										disabled={!r.secret}
-									/>
-								</td>
-								<td className="px-3 py-2 text-right">
-									<RowMenu
-										actions={[
-											{
-												label: "Edit",
-												onClick: () =>
-													setEditing({ name: r.name, provider: r.provider }),
-											},
-											{
-												label: "Delete",
-												danger: true,
-												onClick: () => void handleDelete(r.name),
-											},
-										]}
-									/>
-								</td>
+								<Plus className="w-4 h-4" />
+								Create your first host key
+							</Link>
+						</>
+					) : (
+						<p className="text-sm text-muted-foreground">
+							No host keys match the current filter.
+						</p>
+					)}
+				</div>
+			) : (
+				<div className="overflow-x-auto rounded-lg border border-border bg-card">
+					<table className="w-full border-collapse">
+						<thead className="bg-muted/40">
+							<tr>
+								<Th>Name</Th>
+								<Th>Source</Th>
+								<Th>Env var</Th>
+								<Th align="right">References</Th>
+								<th
+									scope="col"
+									className="w-10 px-3 py-2"
+									aria-label="Actions"
+								/>
 							</tr>
-						);
-					})}
-				</tbody>
-			</table>
-			{editing && (
-				<EditProviderKeyModal
-					open={true}
-					onClose={() => setEditing(null)}
-					secretName={editing.name}
-					providerName={editing.provider}
-				/>
+						</thead>
+						<tbody>
+							{items.map((hk) => {
+								const isStored = hk.spec.valueFrom.kind === "stored";
+								const refCount = refCounts.get(hk.metadata.id ?? "") ?? 0;
+								return (
+									<tr
+										key={hk.metadata.name}
+										className="border-t border-border hover:bg-muted/40 transition-colors"
+									>
+										<td className="px-3 py-2">
+											<Link
+												to="/host-keys/$name"
+												params={{ name: hk.metadata.name }}
+												className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
+											>
+												<div className="text-sm font-medium text-foreground">
+													{displayLabel(hk.metadata)}
+												</div>
+												{hasDisplayName(hk.metadata) && (
+													<div className="font-mono text-[11px] text-muted-foreground">
+														{hk.metadata.name}
+													</div>
+												)}
+											</Link>
+										</td>
+										<td className="px-3 py-2 text-sm text-foreground">
+											{isStored ? "Stored" : "Env"}
+										</td>
+										<td className="px-3 py-2 text-sm">
+											{hk.spec.valueFrom.env ? (
+												<span className="font-mono text-foreground">
+													{hk.spec.valueFrom.env}
+												</span>
+											) : (
+												<span className="text-muted-foreground">—</span>
+											)}
+										</td>
+										<td className="px-3 py-2 text-right text-sm text-muted-foreground tabular-nums">
+											{refCount}
+										</td>
+										<td className="px-3 py-2 text-right">
+											<RowMenu
+												actions={[
+													{
+														label: "Edit",
+														onClick: () =>
+															void navigate({
+																to: "/host-keys/$name/edit",
+																params: { name: hk.metadata.name },
+															}),
+													},
+													{
+														label: "Delete",
+														danger: true,
+														onClick: () => void handleDelete(hk),
+													},
+												]}
+											/>
+										</td>
+									</tr>
+								);
+							})}
+						</tbody>
+					</table>
+				</div>
 			)}
 		</div>
 	);
