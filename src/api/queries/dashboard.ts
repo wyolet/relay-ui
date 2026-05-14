@@ -15,7 +15,7 @@ async function fetchJson<T>(path: string): Promise<T> {
 export const versionQueryOptions = queryOptions({
 	queryKey: ["admin", "version"] as const,
 	queryFn: async (): Promise<VersionResponse> => {
-		const { data, error } = await apiClient.GET("/control/version");
+		const { data, error } = await apiClient.GET("/version");
 		if (error) throw new Error(error.error.message);
 		return data;
 	},

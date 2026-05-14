@@ -18,7 +18,7 @@ import type {
 export const modelsListQueryOptions = queryOptions({
 	queryKey: ["models"] as const,
 	queryFn: async (): Promise<ModelListResponse> => {
-		const { data, error } = await apiClient.GET("/control/models");
+		const { data, error } = await apiClient.GET("/models");
 		if (error) throw new ApiError(0, error.error);
 		return data;
 	},
@@ -30,7 +30,7 @@ export function modelDetailQueryOptions(name: string) {
 	return queryOptions({
 		queryKey: ["models", name] as const,
 		queryFn: async (): Promise<Model> => {
-			const { data, error } = await apiClient.GET("/control/models/{ref}", {
+			const { data, error } = await apiClient.GET("/models/{ref}", {
 				params: { path: { ref: name } },
 			});
 			if (error) throw new ApiError(0, error.error);
@@ -55,7 +55,7 @@ export function useCreateModel() {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: async (body: ModelCreate): Promise<Model> => {
-			const { data, error } = await apiClient.POST("/control/models", { body });
+			const { data, error } = await apiClient.POST("/models", { body });
 			if (error) throw new ApiError(0, error.error);
 			return data;
 		},
@@ -96,7 +96,7 @@ export function useUpdateModel(id: string) {
 	return useMutation({
 		mutationFn: async (body: ModelUpdate): Promise<Model> => {
 			const { data, error } = await apiClient.PUT(
-				"/control/models/by-id/{id}",
+				"/models/by-id/{id}",
 				{
 					params: { path: { id } },
 					body,
@@ -115,7 +115,7 @@ export function useDeleteModel() {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: async (id: string): Promise<void> => {
-			const { error } = await apiClient.DELETE("/control/models/by-id/{id}", {
+			const { error } = await apiClient.DELETE("/models/by-id/{id}", {
 				params: { path: { id } },
 			});
 			if (error) throw new ApiError(0, error.error);

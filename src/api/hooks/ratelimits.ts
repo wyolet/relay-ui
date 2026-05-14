@@ -19,7 +19,7 @@ import { isSystemOwned } from "@/lib/systemRateLimits";
 export const rateLimitsListQueryOptions = queryOptions({
 	queryKey: ["ratelimits"] as const,
 	queryFn: async (): Promise<RateLimitListResponse> => {
-		const { data, error } = await apiClient.GET("/control/ratelimits");
+		const { data, error } = await apiClient.GET("/rate-limits");
 		if (error) throw new ApiError(0, error.error);
 		return data;
 	},
@@ -31,7 +31,7 @@ export function rateLimitDetailQueryOptions(name: string) {
 	return queryOptions({
 		queryKey: ["ratelimits", name] as const,
 		queryFn: async (): Promise<RateLimit> => {
-			const { data, error } = await apiClient.GET("/control/ratelimits/{ref}", {
+			const { data, error } = await apiClient.GET("/rate-limits/{ref}", {
 				params: { path: { ref: name } },
 			});
 			if (error) throw new ApiError(0, error.error);
@@ -76,7 +76,7 @@ export function useCreateRateLimit() {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: async (body: RateLimitCreate): Promise<RateLimit> => {
-			const { data, error } = await apiClient.POST("/control/ratelimits", {
+			const { data, error } = await apiClient.POST("/rate-limits", {
 				body,
 			});
 			if (error) throw new ApiError(0, error.error);
@@ -119,7 +119,7 @@ export function useUpdateRateLimit(id: string) {
 	return useMutation({
 		mutationFn: async (body: RateLimitUpdate): Promise<RateLimit> => {
 			const { data, error } = await apiClient.PUT(
-				"/control/ratelimits/by-id/{id}",
+				"/rate-limits/by-id/{id}",
 				{
 					params: { path: { id } },
 					body,
@@ -139,7 +139,7 @@ export function useDeleteRateLimit() {
 	return useMutation({
 		mutationFn: async (id: string): Promise<void> => {
 			const { error } = await apiClient.DELETE(
-				"/control/ratelimits/by-id/{id}",
+				"/rate-limits/by-id/{id}",
 				{
 					params: { path: { id } },
 				},

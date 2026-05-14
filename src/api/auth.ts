@@ -2,11 +2,11 @@ import { queryOptions, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "./client";
 
 /**
- * GET /control/whoami — returns { authenticated: boolean } on 200.
+ * GET /auth/whoami — returns { authenticated: boolean } on 200.
  * Any non-OK response means unauthenticated.
  */
 async function fetchWhoami(): Promise<{ authenticated: boolean }> {
-	const { data } = await apiClient.GET("/control/whoami");
+	const { data } = await apiClient.GET("/auth/whoami");
 	return { authenticated: data?.authenticated ?? false };
 }
 
@@ -25,7 +25,7 @@ export function useAuth() {
 	const authenticated = data?.authenticated ?? false;
 
 	async function login(username: string, password: string): Promise<void> {
-		const { error } = await apiClient.POST("/control/login", {
+		const { error } = await apiClient.POST("/auth/login", {
 			body: { username, password },
 		});
 		if (error) {
@@ -38,7 +38,7 @@ export function useAuth() {
 	}
 
 	async function logout(): Promise<void> {
-		await apiClient.POST("/control/logout");
+		await apiClient.POST("/auth/logout");
 		await queryClient.invalidateQueries({
 			queryKey: whoamiQueryOptions.queryKey,
 		});

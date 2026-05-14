@@ -17,7 +17,7 @@ export function useGenerateMasterKey() {
 	return useMutation({
 		mutationFn: async (): Promise<MasterKeyResponse> => {
 			const { data, error } = await apiClient.GET(
-				"/control/master-key/generate",
+				"/master-key/generate",
 			);
 			if (error) throw new ApiError(0, error.error);
 			return data;
