@@ -4,18 +4,15 @@ import {
 	ChevronLeft,
 	Forward,
 	type LucideIcon,
-	Network,
-	UserX,
 } from "lucide-react";
 import { Suspense, useMemo, useState } from "react";
-import { modelsListQueryOptions, useModels } from "@/api/hooks/models";
+import { hostsListQueryOptions, useHosts } from "@/api/hooks/hosts";
 import {
-	type Passthrough,
-	type PassthroughSpec,
-	passthroughQueryOptions,
-	usePassthrough,
-	useUpdatePassthrough,
-} from "@/api/hooks/passthrough";
+	type ProxyMode,
+	proxyModeQueryOptions,
+	useProxyMode,
+	useUpdateProxyMode,
+} from "@/api/hooks/settings";
 import { ApiError } from "@/api/types/errors";
 import { MultiSelect } from "@/components/MultiSelect";
 import { toast } from "@/components/Toast";
@@ -24,82 +21,52 @@ import { Switch } from "@/components/ui/switch";
 export const Route = createFileRoute("/_authenticated/settings/proxy-mode")({
 	loader: ({ context }) =>
 		Promise.all([
-			context.queryClient.ensureQueryData(modelsListQueryOptions),
-			context.queryClient.ensureQueryData(passthroughQueryOptions),
+			context.queryClient.ensureQueryData(hostsListQueryOptions),
+			context.queryClient.ensureQueryData(proxyModeQueryOptions),
 		]),
-	component: PassthroughSettingsPage,
+	component: ProxyModeSettingsPage,
 });
-
-const TRANSPORTS: { value: string; label: string; hint: string }[] = [
-	{ value: "http", label: "HTTP", hint: "Standard request/response" },
-	{ value: "ws", label: "WebSocket", hint: "Streaming bidirectional" },
-	{ value: "amqp", label: "AMQP", hint: "Queued batch jobs" },
-	{ value: "pubsub", label: "Pub/Sub", hint: "Fan-out events" },
-];
 
 interface FormState {
 	enabled: boolean;
-	unauthenticatedEnabled: boolean;
-	bucketBy: string;
-	modelsAllow: string[];
-	transports: string[];
+	allowedHostSlugs: string[];
 }
 
-function passthroughToState(p: Passthrough): FormState {
+function envelopeToState(value: ProxyMode): FormState {
 	return {
-		enabled: p.spec.enabled,
-		unauthenticatedEnabled: p.spec.unauthenticated.enabled,
-		bucketBy: p.spec.unauthenticated.bucketBy ?? "",
-		modelsAllow: p.spec.models.allow ?? [],
-		transports: p.spec.transports ?? ["http"],
+		enabled: value.enabled,
+		allowedHostSlugs: value.allowedHostSlugs ?? [],
 	};
 }
 
-function stateToSpec(state: FormState): PassthroughSpec {
+function stateToValue(state: FormState): ProxyMode {
 	return {
 		enabled: state.enabled,
-		unauthenticated: {
-			enabled: state.unauthenticatedEnabled,
-			...(state.bucketBy ? { bucketBy: state.bucketBy } : {}),
-		},
-		models: {
-			mode: state.modelsAllow.length > 0 ? "allowlist" : "all",
-			...(state.modelsAllow.length > 0 ? { allow: state.modelsAllow } : {}),
-		},
-		transports: state.transports.length > 0 ? state.transports : null,
+		allowedHostSlugs:
+			state.allowedHostSlugs.length > 0 ? state.allowedHostSlugs : null,
 	};
 }
 
-function PassthroughSettingsInner() {
-	const { data: passthrough } = usePassthrough();
-	const { data: modelsData } = useModels();
-	const updatePassthrough = useUpdatePassthrough();
+function ProxyModeSettingsInner() {
+	const { data: envelope } = useProxyMode();
+	const { data: hostsData } = useHosts();
+	const updateProxyMode = useUpdateProxyMode();
 
-	const initial = useMemo(() => passthroughToState(passthrough), [passthrough]);
+	const initial = useMemo(() => envelopeToState(envelope.value), [envelope]);
 	const [state, setState] = useState<FormState>(initial);
 
-	const modelOptions = (modelsData.items ?? []).map((m) => ({
-		value: m.metadata.name,
-		label: m.metadata.displayName ?? m.metadata.name,
+	const hostOptions = (hostsData.items ?? []).map((h) => ({
+		value: h.metadata.name,
+		label: h.metadata.displayName ?? h.metadata.name,
 	}));
 
 	function patch(next: Partial<FormState>) {
 		setState((s) => ({ ...s, ...next }));
 	}
 
-	function toggleTransport(t: string) {
-		const next = state.transports.includes(t)
-			? state.transports.filter((x) => x !== t)
-			: [...state.transports, t];
-		patch({ transports: next });
-	}
-
 	async function handleSave() {
 		try {
-			await updatePassthrough.mutateAsync({
-				...passthrough,
-				spec: stateToSpec(state),
-			});
+			await updateProxyMode.mutateAsync(stateToValue(state));
 			toast("success", "Proxy mode updated.");
 		} catch (err) {
 			toast(
@@ -128,10 +95,8 @@ function PassthroughSettingsInner() {
 				</h1>
 				<p className="mt-1 text-xs text-muted-foreground max-w-2xl">
 					Accept requests where the caller brings their own upstream
-					credentials. Relay still tracks usage, applies rate limits, and can
-					translate schemas — but doesn't manage the secret. Useful for tools
-					like Claude Code where you can't extract the OAuth token but want
-					telemetry.
+					credentials. Relay still tracks usage and applies rate limits, but
+					doesn't manage the secret.
 				</p>
 			</div>
 
@@ -141,10 +106,6 @@ function PassthroughSettingsInner() {
 					title="Enable proxy mode"
 					description="Permit requests that already carry valid upstream auth headers."
 				>
-					<p className="mb-2 text-sm text-muted-foreground">
-						Relay forwards the request as-is to the configured upstream.
-						Tracking and rate limits still apply; auth is not swapped.
-					</p>
 					<div className="inline-flex items-center gap-2.5">
 						<Switch
 							checked={state.enabled}
@@ -158,83 +119,19 @@ function PassthroughSettingsInner() {
 				</Section>
 
 				<Section
-					icon={UserX}
-					title="Allow unauthenticated"
-					description="Accept requests with no Relay key. Bucket usage by hash of the caller's upstream credential."
-				>
-					<p className="mb-2 text-sm text-muted-foreground">
-						Off by default. Single-tenant deployments only — multi-tenant
-						hierarchy isn't designed yet.
-					</p>
-					<div className="inline-flex items-center gap-2.5">
-						<Switch
-							checked={state.unauthenticatedEnabled}
-							onCheckedChange={(c) => patch({ unauthenticatedEnabled: c })}
-							disabled={!state.enabled}
-							aria-label="Allow unauthenticated"
-						/>
-						<span className="text-sm text-foreground">
-							{state.unauthenticatedEnabled ? "Enabled" : "Disabled"}
-						</span>
-					</div>
-					{!state.enabled && (
-						<p className="mt-2 text-[11px] text-muted-foreground">
-							Requires proxy mode to be on.
-						</p>
-					)}
-				</Section>
-
-				<Section
 					icon={Boxes}
-					title="Allowed models"
-					description="Restrict which models proxy-mode callers can target."
+					title="Allowed hosts"
+					description="Restrict which hosts proxy-mode callers can target. Empty allows all."
 				>
 					<MultiSelect
-						options={modelOptions}
-						selected={state.modelsAllow}
-						onChange={(next) => patch({ modelsAllow: next })}
+						options={hostOptions}
+						selected={state.allowedHostSlugs}
+						onChange={(next) => patch({ allowedHostSlugs: next })}
 						placeholder="Allow all"
-						emptyHint="No models registered."
-						aria-label="Allowed models"
+						emptyHint="No hosts registered."
+						aria-label="Allowed hosts"
 						disabled={!state.enabled}
 					/>
-					<p className="mt-1.5 text-[11px] text-muted-foreground">
-						Empty = any registered model. Useful for capping cost on shared
-						proxies.
-					</p>
-				</Section>
-
-				<Section
-					icon={Network}
-					title="Allowed transports"
-					description="Which protocols Relay will accept proxy-mode requests over."
-				>
-					<div className="flex flex-wrap gap-1.5">
-						{TRANSPORTS.map((t) => {
-							const active = state.transports.includes(t.value);
-							return (
-								<button
-									key={t.value}
-									type="button"
-									onClick={() => toggleTransport(t.value)}
-									disabled={!state.enabled}
-									className={[
-										"inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md text-xs font-medium border transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-										active
-											? "bg-primary/10 text-primary border-primary/30"
-											: "bg-card text-muted-foreground border-border hover:bg-muted",
-									].join(" ")}
-									title={t.hint}
-								>
-									{t.label}
-								</button>
-							);
-						})}
-					</div>
-					<p className="mt-1.5 text-[11px] text-muted-foreground">
-						AMQP and Pub/Sub map to async batch jobs — Relay queues, the
-						upstream gets HTTP, results return on the chosen transport.
-					</p>
 				</Section>
 			</div>
 
@@ -249,10 +146,10 @@ function PassthroughSettingsInner() {
 				<button
 					type="button"
 					onClick={handleSave}
-					disabled={updatePassthrough.isPending}
+					disabled={updateProxyMode.isPending}
 					className="h-8 px-3 rounded-md bg-primary hover:bg-primary/90 text-xs font-semibold text-primary-foreground disabled:opacity-50"
 				>
-					{updatePassthrough.isPending ? "Saving…" : "Save changes"}
+					{updateProxyMode.isPending ? "Saving…" : "Save changes"}
 				</button>
 			</div>
 		</div>
@@ -286,12 +183,12 @@ function Section({ icon: Icon, title, description, children }: SectionProps) {
 	);
 }
 
-function PassthroughSettingsPage() {
+function ProxyModeSettingsPage() {
 	return (
 		<Suspense
 			fallback={<div className="text-muted-foreground text-sm">Loading…</div>}
 		>
-			<PassthroughSettingsInner />
+			<ProxyModeSettingsInner />
 		</Suspense>
 	);
 }

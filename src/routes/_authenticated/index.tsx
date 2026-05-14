@@ -5,8 +5,8 @@ import { modelsListQueryOptions } from "@/api/hooks/models";
 import { policiesListQueryOptions } from "@/api/hooks/policies";
 import { providersListQueryOptions } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
-import { routesListQueryOptions } from "@/api/hooks/routes";
 import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
+import { hostsListQueryOptions } from "@/api/hooks/hosts";
 
 export const Route = createFileRoute("/_authenticated/")({
 	component: DashboardPage,
@@ -78,7 +78,7 @@ function DashboardInner() {
 	const { data: secrets } = useQuery(hostKeysListQueryOptions);
 	const { data: policies } = useQuery(policiesListQueryOptions);
 	const { data: models } = useQuery(modelsListQueryOptions);
-	const { data: routes } = useQuery(routesListQueryOptions);
+	const { data: hosts } = useQuery(hostsListQueryOptions);
 	const { data: ratelimits } = useQuery(rateLimitsListQueryOptions);
 
 	const catalogEmpty =
@@ -102,9 +102,9 @@ function DashboardInner() {
 				<div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
 					<CountCard label="Providers" count={providers?.items?.length} />
 					<CountCard label="Policies" count={policies?.items?.length} />
-					<CountCard label="Secrets" count={secrets?.items?.length} />
+					<CountCard label="Host Keys" count={secrets?.items?.length} />
 					<CountCard label="Models" count={models?.items?.length} />
-					<CountCard label="Routes" count={routes?.items?.length} />
+					<CountCard label="Hosts" count={hosts?.items?.length} />
 					<CountCard label="Rate Limits" count={ratelimits?.items?.length} />
 				</div>
 			</section>

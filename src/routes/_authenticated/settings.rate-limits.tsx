@@ -41,16 +41,13 @@ import {
 	SYSTEM_RL_INFERENCE_PROXY_ANON,
 	type SystemRateLimitName,
 } from "@/lib/systemRateLimits";
-import {
-	passthroughQueryOptions,
-	usePassthrough,
-} from "@/api/hooks/passthrough";
+import { proxyModeQueryOptions, useProxyMode } from "@/api/hooks/settings";
 
 export const Route = createFileRoute("/_authenticated/settings/rate-limits")({
 	loader: ({ context }) =>
 		Promise.all([
 			context.queryClient.ensureQueryData(rateLimitsListQueryOptions),
-			context.queryClient.ensureQueryData(passthroughQueryOptions),
+			context.queryClient.ensureQueryData(proxyModeQueryOptions),
 		]),
 	component: SystemRateLimitsPage,
 });
@@ -157,9 +154,9 @@ function rulesEqual(a: RateLimitRule[], b: RateLimitRule[]): boolean {
 
 function SystemRateLimitsInner() {
 	const { data } = useRateLimits();
-	const { data: passthrough } = usePassthrough();
-	const allowProxy = passthrough.spec.enabled;
-	const allowUnauthenticated = passthrough.spec.unauthenticated.enabled;
+	const { data: proxyEnvelope } = useProxyMode();
+	const allowProxy = proxyEnvelope.value.enabled;
+	const allowUnauthenticated = false;
 
 	const rlByName = useMemo(() => {
 		const map = new Map<string, RateLimit>();
@@ -184,7 +181,7 @@ function SystemRateLimitsInner() {
 			body: RateLimit;
 		}): Promise<RateLimit> => {
 			const { data, error } = await apiClient.PUT(
-				"/control/ratelimits/by-id/{id}",
+				"/rate-limits/by-id/{id}",
 				{ params: { path: { id } }, body },
 			);
 			if (error) throw new ApiError(0, error.error);
