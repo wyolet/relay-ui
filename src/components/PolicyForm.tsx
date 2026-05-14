@@ -14,7 +14,7 @@ import {
 import { useModels } from "@/api/hooks/models";
 import { useProviders } from "@/api/hooks/providers";
 import { useAttachableRateLimits } from "@/api/hooks/ratelimits";
-import { useSecrets } from "@/api/hooks/secrets";
+import { useSecrets } from "@/api/hooks/hostkeys";
 import type { Policy } from "@/api/types/policy";
 import { MultiSelect } from "@/components/MultiSelect";
 import { Input } from "@/components/ui/input";

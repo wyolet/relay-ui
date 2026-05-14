@@ -10,7 +10,7 @@ import {
 } from "@/api/hooks/policies";
 import { providersListQueryOptions, useProviders } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
-import { secretsListQueryOptions } from "@/api/hooks/secrets";
+import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
 import { ApiError } from "@/api/types/errors";
 import { confirm } from "@/components/ConfirmDialog";
 import { PolicyForm } from "@/components/PolicyForm";
@@ -22,7 +22,7 @@ export const Route = createFileRoute("/_authenticated/policies/$name")({
 			context.queryClient.ensureQueryData(
 				policyDetailQueryOptions(params.name),
 			),
-			context.queryClient.ensureQueryData(secretsListQueryOptions),
+			context.queryClient.ensureQueryData(hostKeysListQueryOptions),
 			context.queryClient.ensureQueryData(providersListQueryOptions),
 			context.queryClient.ensureQueryData(modelsListQueryOptions),
 			context.queryClient.ensureQueryData(rateLimitsListQueryOptions),

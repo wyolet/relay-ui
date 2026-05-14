@@ -32,8 +32,8 @@ import {
 	providersListQueryOptions,
 	useCreateProvider,
 } from "@/api/hooks/providers";
-import { secretsListQueryOptions, useCreateSecret } from "@/api/hooks/secrets";
-import type { SecretKind } from "@/api/types/secret";
+import { hostKeysListQueryOptions, useCreateSecret } from "@/api/hooks/hostkeys";
+import type { SecretKind } from "@/api/types/hostkey";
 
 // ---------------------------------------------------------------------------
 // Search schema & validator
@@ -625,7 +625,7 @@ function PoolStep({ search }: PoolStepProps) {
 	const createPool = useCreatePolicy();
 
 	const providersQuery = useSuspenseQuery(providersListQueryOptions);
-	const secretsQuery = useSuspenseQuery(secretsListQueryOptions);
+	const secretsQuery = useSuspenseQuery(hostKeysListQueryOptions);
 
 	const [name, setName] = useState("default");
 	const [provider, setProvider] = useState(
@@ -1065,7 +1065,7 @@ function ResumeComputer({ initialSearch }: ResumeComputerProps) {
 	const navigate = useNavigate({ from: "/bootstrap" });
 	const providersQuery = useSuspenseQuery(providersListQueryOptions);
 	const poolsQuery = useSuspenseQuery(policiesListQueryOptions);
-	const secretsQuery = useSuspenseQuery(secretsListQueryOptions);
+	const secretsQuery = useSuspenseQuery(hostKeysListQueryOptions);
 
 	const hasProviders = (providersQuery.data.items ?? []).length > 0;
 	const hasPools = (poolsQuery.data.items ?? []).length > 0;

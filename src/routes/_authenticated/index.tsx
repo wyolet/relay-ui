@@ -6,7 +6,7 @@ import { policiesListQueryOptions } from "@/api/hooks/policies";
 import { providersListQueryOptions } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
 import { routesListQueryOptions } from "@/api/hooks/routes";
-import { secretsListQueryOptions } from "@/api/hooks/secrets";
+import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
 
 export const Route = createFileRoute("/_authenticated/")({
 	component: DashboardPage,
@@ -75,7 +75,7 @@ function MetricsPending() {
 
 function DashboardInner() {
 	const { data: providers } = useQuery(providersListQueryOptions);
-	const { data: secrets } = useQuery(secretsListQueryOptions);
+	const { data: secrets } = useQuery(hostKeysListQueryOptions);
 	const { data: policies } = useQuery(policiesListQueryOptions);
 	const { data: models } = useQuery(modelsListQueryOptions);
 	const { data: routes } = useQuery(routesListQueryOptions);

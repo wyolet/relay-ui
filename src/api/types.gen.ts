@@ -519,6 +519,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List all settings sections
+         * @description Returns every registered settings section with its current value as raw JSON. Use the per-section GET to retrieve a typed shape.
+         */
+        get: operations["list_settings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/settings/proxy-mode": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get settings section: proxy-mode
+         * @description Proxy-mode flow gate. Controls whether the relay accepts inference requests where the caller supplies their own upstream provider key.
+         */
+        get: operations["get_settings_proxy-mode"];
+        /**
+         * Update settings section: proxy-mode
+         * @description Proxy-mode flow gate. Controls whether the relay accepts inference requests where the caller supplies their own upstream provider key.
+         */
+        put: operations["update_settings_proxy-mode"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/settings/sections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List registered settings sections and their schemas
+         * @description Enumerates every settings section known to this relay build, with the OpenAPI component name of its typed value. Use alongside the SectionName enum to discover what /settings/{section} endpoints exist.
+         */
+        get: operations["list_settings_sections"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/version": {
         parameters: {
             query?: never;
@@ -572,6 +636,7 @@ export interface components {
         HostKeySpec: {
             defaultTier?: string;
             enabled?: boolean;
+            value?: string;
             valueFrom: components["schemas"]["HostKeyValueFrom"];
         };
         HostKeyValueFrom: {
@@ -793,6 +858,30 @@ export interface components {
             logoURL?: string;
             statusPageURL?: string;
         };
+        ProxyMode: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/ProxyMode.json
+             */
+            readonly $schema?: string;
+            allowedHostSlugs?: string[] | null;
+            enabled: boolean;
+        };
+        ProxyModeEnvelope: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/ProxyModeEnvelope.json
+             */
+            readonly $schema?: string;
+            /**
+             * @description One of the relay's registered settings section keys.
+             * @enum {string}
+             */
+            section: "proxy-mode";
+            value: components["schemas"]["ProxyMode"];
+        };
         RateLimit: {
             /**
              * Format: uri
@@ -892,6 +981,42 @@ export interface components {
              */
             readonly $schema?: string;
             status: string;
+        };
+        settingsCatalogItem: {
+            description?: string;
+            /**
+             * @description One of the relay's registered settings section keys.
+             * @enum {string}
+             */
+            name: "proxy-mode";
+            /** @description OpenAPI component name for this section's typed value. */
+            schemaRef?: string;
+        };
+        settingsCatalogOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/settingsCatalogOutputBody.json
+             */
+            readonly $schema?: string;
+            items: components["schemas"]["settingsCatalogItem"][] | null;
+        };
+        settingsListItem: {
+            /**
+             * @description One of the relay's registered settings section keys.
+             * @enum {string}
+             */
+            section: "proxy-mode";
+            value: unknown;
+        };
+        settingsListOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/settingsListOutputBody.json
+             */
+            readonly $schema?: string;
+            items: components["schemas"]["settingsListItem"][] | null;
         };
         versionOutputBody: {
             /**
@@ -3379,6 +3504,180 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["reloadOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    list_settings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["settingsListOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    "get_settings_proxy-mode": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProxyModeEnvelope"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    "update_settings_proxy-mode": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProxyMode"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProxyModeEnvelope"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    list_settings_sections: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["settingsCatalogOutputBody"];
                 };
             };
             /** @description Unauthorized */

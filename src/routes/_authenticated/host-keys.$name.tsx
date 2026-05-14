@@ -1,12 +1,12 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Suspense, useState } from "react";
-import { policiesListQueryOptions, usePolicies } from "@/api/hooks/policies";
 import {
-	secretDetailQueryOptions,
-	secretsListQueryOptions,
-	useDeleteSecret,
-	useSecret,
-} from "@/api/hooks/secrets";
+	hostKeyDetailQueryOptions,
+	hostKeysListQueryOptions,
+	useDeleteHostKey,
+	useHostKey,
+} from "@/api/hooks/hostkeys";
+import { policiesListQueryOptions, usePolicies } from "@/api/hooks/policies";
 import { ApiError } from "@/api/types/errors";
 import { DeleteConfirm } from "@/components/DeleteConfirm";
 import { SecretRotateDialog } from "@/components/SecretRotateDialog";
@@ -16,58 +16,60 @@ export const Route = createFileRoute("/_authenticated/host-keys/$name")({
 	loader: ({ context, params }) =>
 		Promise.all([
 			context.queryClient.ensureQueryData(
-				secretDetailQueryOptions(params.name),
+				hostKeyDetailQueryOptions(params.name),
 			),
-			context.queryClient.ensureQueryData(secretsListQueryOptions),
+			context.queryClient.ensureQueryData(hostKeysListQueryOptions),
 			context.queryClient.ensureQueryData(policiesListQueryOptions),
 		]),
-	component: SecretDetailPage,
+	component: HostKeyDetailPage,
 });
 
-function SecretDetailInner() {
+function HostKeyDetailInner() {
 	const { name } = Route.useParams();
-	const { data: secret } = useSecret(name);
+	const { data: hk } = useHostKey(name);
 	const { data: policiesData } = usePolicies();
-	const deleteSecret = useDeleteSecret();
+	const deleteHostKey = useDeleteHostKey();
 	const navigate = useNavigate();
 
 	const [confirming, setConfirming] = useState(false);
 	const [rotating, setRotating] = useState(false);
 
+	const hkId = hk.metadata.id ?? "";
 	const referencingPolicies = (policiesData.items ?? []).filter((policy) =>
-		(policy.spec.secrets ?? []).includes(name),
+		(policy.spec.hostKeyIds ?? []).includes(hkId),
 	);
 
 	async function handleDelete() {
 		try {
-			await deleteSecret.mutateAsync(name);
-			toast("success", `Secret "${name}" deleted.`);
-			void navigate({ to: "/secrets" });
+			await deleteHostKey.mutateAsync(hkId);
+			toast("success", `Host key "${name}" deleted.`);
+			void navigate({ to: "/host-keys" });
 		} catch (err) {
 			if (err instanceof ApiError) {
 				toast("error", err.body.message);
 			} else {
-				toast("error", "Failed to delete secret.");
+				toast("error", "Failed to delete host key.");
 			}
 		}
 	}
 
-	const isStored = secret.valueFrom.kind === "stored";
+	const isStored = hk.spec.valueFrom.kind === "stored";
 
 	return (
 		<div>
-			{/* Back nav */}
 			<div className="mb-6">
-				<Link to="/secrets" className="text-sm text-brand-600 hover:underline">
-					← Secrets
+				<Link
+					to="/host-keys"
+					className="text-sm text-brand-600 hover:underline"
+				>
+					← Host Keys
 				</Link>
 			</div>
 
-			{/* Header */}
 			<div className="flex items-start justify-between mb-6">
 				<div className="flex items-center gap-3">
 					<h1 className="text-2xl font-bold text-foreground font-mono">
-						{secret.name}
+						{hk.metadata.name}
 					</h1>
 					<span
 						className={[
@@ -77,12 +79,12 @@ function SecretDetailInner() {
 								: "bg-green-100 dark:bg-green-950 text-green-800 dark:text-green-300",
 						].join(" ")}
 					>
-						{secret.valueFrom.kind}
+						{hk.spec.valueFrom.kind}
 					</span>
 				</div>
 				<div className="flex gap-2">
 					<Link
-						to="/secrets/$name/edit"
+						to="/host-keys/$name/edit"
 						params={{ name }}
 						className="px-4 py-2 text-sm font-medium text-foreground bg-card border border-input rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
 					>
@@ -98,18 +100,17 @@ function SecretDetailInner() {
 				</div>
 			</div>
 
-			{/* Detail fields */}
 			<dl className="divide-y divide-border rounded-lg border border-border bg-card mb-8">
 				<div className="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4">
 					<dt className="text-sm font-medium text-muted-foreground">Name</dt>
 					<dd className="mt-1 text-sm text-foreground font-mono sm:col-span-2 sm:mt-0">
-						{secret.name}
+						{hk.metadata.name}
 					</dd>
 				</div>
 				<div className="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4">
 					<dt className="text-sm font-medium text-muted-foreground">Kind</dt>
 					<dd className="mt-1 text-sm text-foreground sm:col-span-2 sm:mt-0">
-						{secret.valueFrom.kind}
+						{hk.spec.valueFrom.kind}
 					</dd>
 				</div>
 
@@ -120,7 +121,7 @@ function SecretDetailInner() {
 								Environment variable
 							</dt>
 							<dd className="mt-1 text-sm text-foreground font-mono sm:col-span-2 sm:mt-0">
-								{secret.valueFrom.env ?? (
+								{hk.spec.valueFrom.env ?? (
 									<span className="text-muted-foreground">—</span>
 								)}
 							</dd>
@@ -136,15 +137,9 @@ function SecretDetailInner() {
 
 				{isStored && (
 					<div className="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4">
-						<dt className="text-sm font-medium text-muted-foreground">
-							Masked value
-						</dt>
+						<dt className="text-sm font-medium text-muted-foreground">Value</dt>
 						<dd className="mt-1 text-sm text-foreground font-mono sm:col-span-2 sm:mt-0 flex items-center gap-3">
-							<span>
-								{secret.valueFrom.value_masked ?? (
-									<span className="text-muted-foreground">—</span>
-								)}
-							</span>
+							<span className="text-muted-foreground">••••••••</span>
 							<button
 								type="button"
 								onClick={() => setRotating(true)}
@@ -157,14 +152,13 @@ function SecretDetailInner() {
 				)}
 			</dl>
 
-			{/* References */}
 			<section>
 				<h2 className="text-lg font-semibold text-foreground mb-3">
 					Referenced by policies
 				</h2>
 				{referencingPolicies.length === 0 ? (
 					<p className="text-sm text-muted-foreground">
-						No policies reference this secret.
+						No policies reference this host key.
 					</p>
 				) : (
 					<ul className="space-y-1">
@@ -183,30 +177,28 @@ function SecretDetailInner() {
 				)}
 			</section>
 
-			{/* Rotate dialog */}
 			{rotating && (
-				<SecretRotateDialog name={name} onClose={() => setRotating(false)} />
+				<SecretRotateDialog hk={hk} onClose={() => setRotating(false)} />
 			)}
 
-			{/* Delete confirm */}
 			{confirming && (
 				<DeleteConfirm
 					resourceName={name}
 					onConfirm={() => void handleDelete()}
 					onCancel={() => setConfirming(false)}
-					isPending={deleteSecret.isPending}
+					isPending={deleteHostKey.isPending}
 				/>
 			)}
 		</div>
 	);
 }
 
-function SecretDetailPage() {
+function HostKeyDetailPage() {
 	return (
 		<Suspense
 			fallback={<div className="text-muted-foreground text-sm">Loading…</div>}
 		>
-			<SecretDetailInner />
+			<HostKeyDetailInner />
 		</Suspense>
 	);
 }

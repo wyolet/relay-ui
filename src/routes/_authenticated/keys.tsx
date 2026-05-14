@@ -5,13 +5,13 @@ import { z } from "zod";
 import { policiesListQueryOptions, usePolicies } from "@/api/hooks/policies";
 import { providersListQueryOptions, useProviders } from "@/api/hooks/providers";
 import {
-	secretsListQueryOptions,
+	hostKeysListQueryOptions,
 	useDeleteSecret,
 	useSecrets,
-} from "@/api/hooks/secrets";
+} from "@/api/hooks/hostkeys";
 import type { Policy } from "@/api/types/policy";
 import type { Provider } from "@/api/types/provider";
-import type { SecretResponse } from "@/api/types/secret";
+import type { SecretResponse } from "@/api/types/hostkey";
 import { ByokModal } from "@/components/ByokModal";
 import { confirm } from "@/components/ConfirmDialog";
 import { CreateRelayKeyModal } from "@/components/CreateRelayKeyModal";
@@ -52,7 +52,7 @@ export const Route = createFileRoute("/_authenticated/keys")({
 	loader: ({ context }) => {
 		void context.queryClient.prefetchQuery(providersListQueryOptions);
 		void context.queryClient.prefetchQuery(policiesListQueryOptions);
-		void context.queryClient.prefetchQuery(secretsListQueryOptions);
+		void context.queryClient.prefetchQuery(hostKeysListQueryOptions);
 		return null;
 	},
 	component: KeysPage,

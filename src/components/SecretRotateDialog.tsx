@@ -1,17 +1,18 @@
 import { useState } from "react";
-import { useUpdateSecret } from "@/api/hooks/secrets";
+import { useUpdateHostKey } from "@/api/hooks/hostkeys";
 import { ApiError } from "@/api/types/errors";
+import type { HostKey } from "@/api/types/hostkey";
 import { toast } from "@/components/Toast";
 
 interface SecretRotateDialogProps {
-	name: string;
+	hk: HostKey;
 	onClose: () => void;
 }
 
-export function SecretRotateDialog({ name, onClose }: SecretRotateDialogProps) {
+export function SecretRotateDialog({ hk, onClose }: SecretRotateDialogProps) {
 	const [value, setValue] = useState("");
 	const [inlineError, setInlineError] = useState<string | undefined>();
-	const updateSecret = useUpdateSecret(name);
+	const updateHostKey = useUpdateHostKey(hk.metadata.id ?? "");
 
 	async function handleConfirm() {
 		if (!value.trim()) {
@@ -20,20 +21,22 @@ export function SecretRotateDialog({ name, onClose }: SecretRotateDialogProps) {
 		}
 		setInlineError(undefined);
 		try {
-			await updateSecret.mutateAsync({
-				name,
-				valueFrom: { kind: "stored", value },
+			await updateHostKey.mutateAsync({
+				metadata: hk.metadata,
+				spec: {
+					...hk.spec,
+					valueFrom: { kind: "stored" },
+					value,
+				},
 			});
-			// SECURITY: Clear the value from state immediately after successful
-			// submission so the cleartext never lingers in the DOM after success.
 			setValue("");
-			toast("success", "Secret rotated.");
+			toast("success", "Host key rotated.");
 			onClose();
 		} catch (err) {
 			if (err instanceof ApiError) {
 				setInlineError(err.body.message);
 			} else {
-				setInlineError("Failed to rotate secret. Please try again.");
+				setInlineError("Failed to rotate. Please try again.");
 			}
 		}
 	}
@@ -50,7 +53,8 @@ export function SecretRotateDialog({ name, onClose }: SecretRotateDialogProps) {
 					id="rotate-dialog-title"
 					className="text-lg font-semibold text-foreground mb-4"
 				>
-					Rotate Secret: <span className="font-mono">{name}</span>
+					Rotate Host Key:{" "}
+					<span className="font-mono">{hk.metadata.name}</span>
 				</h2>
 
 				{inlineError && (
@@ -75,7 +79,7 @@ export function SecretRotateDialog({ name, onClose }: SecretRotateDialogProps) {
 						autoComplete="new-password"
 						value={value}
 						onChange={(e) => setValue(e.target.value)}
-						placeholder="Enter new secret value"
+						placeholder="Enter new value"
 						className="w-full border border-input rounded-lg px-3 py-2 text-sm bg-white dark:bg-neutral-800 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand-400"
 					/>
 				</div>
@@ -84,7 +88,7 @@ export function SecretRotateDialog({ name, onClose }: SecretRotateDialogProps) {
 					<button
 						type="button"
 						onClick={onClose}
-						disabled={updateSecret.isPending}
+						disabled={updateHostKey.isPending}
 						className="px-4 py-2 text-sm font-medium text-foreground bg-card border border-input rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-50 transition-colors"
 					>
 						Cancel
@@ -92,10 +96,10 @@ export function SecretRotateDialog({ name, onClose }: SecretRotateDialogProps) {
 					<button
 						type="button"
 						onClick={() => void handleConfirm()}
-						disabled={updateSecret.isPending}
+						disabled={updateHostKey.isPending}
 						className="px-4 py-2 text-sm font-medium text-white bg-brand-600 rounded-lg hover:bg-brand-700 disabled:opacity-50 transition-colors"
 					>
-						{updateSecret.isPending ? "Rotating…" : "Confirm"}
+						{updateHostKey.isPending ? "Rotating…" : "Confirm"}
 					</button>
 				</div>
 			</div>

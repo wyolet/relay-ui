@@ -9,7 +9,7 @@ import {
 	useDeleteProvider,
 	useProvider,
 } from "@/api/hooks/providers";
-import { secretsListQueryOptions } from "@/api/hooks/secrets";
+import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
 import { ApiError } from "@/api/types/errors";
 import { confirm } from "@/components/ConfirmDialog";
 import {
@@ -36,7 +36,7 @@ export const Route = createFileRoute("/_authenticated/providers/$name")({
 		);
 		void context.queryClient.prefetchQuery(modelsListQueryOptions);
 		void context.queryClient.prefetchQuery(policiesListQueryOptions);
-		void context.queryClient.prefetchQuery(secretsListQueryOptions);
+		void context.queryClient.prefetchQuery(hostKeysListQueryOptions);
 		return null;
 	},
 	component: ProviderDetailPage,

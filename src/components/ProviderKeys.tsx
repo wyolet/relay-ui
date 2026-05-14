@@ -18,10 +18,10 @@ import {
 	useCreateSecret,
 	useDeleteSecret,
 	useSecrets,
-} from "@/api/hooks/secrets";
+} from "@/api/hooks/hostkeys";
 import { ApiError } from "@/api/types/errors";
 import type { Policy } from "@/api/types/policy";
-import type { SecretResponse } from "@/api/types/secret";
+import type { SecretResponse } from "@/api/types/hostkey";
 import { confirm } from "@/components/ConfirmDialog";
 import { MultiSelect } from "@/components/MultiSelect";
 import { toast } from "@/components/Toast";

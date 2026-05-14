@@ -4,14 +4,14 @@ import { Suspense } from "react";
 import { modelsListQueryOptions } from "@/api/hooks/models";
 import { providersListQueryOptions } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
-import { secretsListQueryOptions } from "@/api/hooks/secrets";
+import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
 import { PolicyForm } from "@/components/PolicyForm";
 
 export const Route = createFileRoute("/_authenticated/policies/new")({
 	loader: ({ context }) =>
 		Promise.all([
 			context.queryClient.ensureQueryData(providersListQueryOptions),
-			context.queryClient.ensureQueryData(secretsListQueryOptions),
+			context.queryClient.ensureQueryData(hostKeysListQueryOptions),
 			context.queryClient.ensureQueryData(modelsListQueryOptions),
 			context.queryClient.ensureQueryData(rateLimitsListQueryOptions),
 		]),
