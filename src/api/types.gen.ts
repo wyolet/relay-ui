@@ -198,6 +198,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/master-key/rotate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rotate the master key, re-encrypting every stored HostKey
+         * @description Generates a new 32-byte master key, re-encrypts every stored-mode HostKey row in a single transaction, and swaps the in-process key on success. The new key is returned once — the operator MUST persist it to RELAY_MASTER_KEY in the deployment env before the next restart, or the process will fail to decrypt stored rows on boot.
+         */
+        post: operations["master_key_rotate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/models": {
         parameters: {
             query?: never;
@@ -653,6 +673,8 @@ export interface components {
         HostKeySpec: {
             defaultTier?: string;
             enabled?: boolean;
+            hostId: string;
+            policyId: string;
             value?: string;
             valueFrom: components["schemas"]["HostKeyValueFrom"];
         };
@@ -675,10 +697,12 @@ export interface components {
             };
             baseURL: string;
             consoleURL?: string;
+            defaultPolicy?: string;
             docsURL?: string;
             enabled?: boolean;
             homepageURL?: string;
             icon?: components["schemas"]["Icon"];
+            policies?: string[] | null;
             statusPageURL?: string;
         };
         Icon: {
@@ -994,6 +1018,26 @@ export interface components {
             readonly $schema?: string;
             /** @description 32 random bytes, base64-encoded. Set as RELAY_MASTER_KEY in the deployment env. */
             key: string;
+        };
+        masterKeyRotateOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/masterKeyRotateOutputBody.json
+             */
+            readonly $schema?: string;
+            /** @description New 32-byte master key, base64-encoded. Returned once — operator MUST update RELAY_MASTER_KEY in the deployment env before the next process restart. */
+            key: string;
+            /**
+             * Format: int32
+             * @description value_key_version assigned to every rotated row.
+             */
+            newVersion: number;
+            /**
+             * Format: int64
+             * @description Number of stored-mode HostKey rows re-encrypted.
+             */
+            rotated: number;
         };
         reloadOutputBody: {
             /**
@@ -1855,6 +1899,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["masterKeyGenerateOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    master_key_rotate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["masterKeyRotateOutputBody"];
                 };
             };
             /** @description Unauthorized */
