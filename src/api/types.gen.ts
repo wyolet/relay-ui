@@ -55,6 +55,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/catalog/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Resolve a modelref into matched catalog rows */
+        get: operations["catalog_resolve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/host-keys": {
         parameters: {
             query?: never;
@@ -661,8 +678,11 @@ export interface components {
             docsURL?: string;
             enabled?: boolean;
             homepageURL?: string;
-            logoURL?: string;
+            icon?: components["schemas"]["Icon"];
             statusPageURL?: string;
+        };
+        Icon: {
+            path?: string;
         };
         Metadata: {
             description?: string;
@@ -796,6 +816,7 @@ export interface components {
             hostKeyIds?: string[] | null;
             keySelection?: string;
             modelIds?: string[] | null;
+            models?: string[] | null;
             rateLimitId?: string;
             skipDefaultLimits?: boolean;
         };
@@ -855,7 +876,7 @@ export interface components {
             docsURL?: string;
             enabled?: boolean;
             homepageURL?: string;
-            logoURL?: string;
+            icon?: components["schemas"]["Icon"];
             statusPageURL?: string;
         };
         ProxyMode: {
@@ -981,6 +1002,29 @@ export interface components {
              */
             readonly $schema?: string;
             status: string;
+        };
+        resolveBindingRef: {
+            hostId: string;
+            modelId: string;
+        };
+        resolveEntity: {
+            displayName?: string;
+            id: string;
+            name: string;
+        };
+        resolveOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/resolveOutputBody.json
+             */
+            readonly $schema?: string;
+            bindings: components["schemas"]["resolveBindingRef"][] | null;
+            hosts: components["schemas"]["resolveEntity"][] | null;
+            kind: string;
+            models: components["schemas"]["resolveEntity"][] | null;
+            provider?: components["schemas"]["resolveEntity"];
+            ref: string;
         };
         settingsCatalogItem: {
             description?: string;
@@ -1144,6 +1188,65 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    catalog_resolve: {
+        parameters: {
+            query: {
+                /** @description Catalog ref string in the modelref DSL: provider[/model[@host]]; * allowed in model and host positions. */
+                ref: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["resolveOutputBody"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

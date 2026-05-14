@@ -27,7 +27,7 @@ export interface PolicyFormValues {
 	description: string;
 	hostKeyIds: string[];
 	keySelection: KeySelection;
-	modelIds: string[];
+	models: string[];
 	rateLimitId: string;
 	skipDefaultLimits: boolean;
 	enabled: boolean;
@@ -44,7 +44,7 @@ const schema = z.object({
 	keySelection: z.enum(
 		KEY_SELECTION_VALUES as readonly [KeySelection, ...KeySelection[]],
 	),
-	modelIds: z.array(z.string()),
+	models: z.array(z.string()),
 	rateLimitId: z.string(),
 	skipDefaultLimits: z.boolean(),
 	enabled: z.boolean(),
@@ -56,7 +56,7 @@ function emptyValues(): PolicyFormValues {
 		description: "",
 		hostKeyIds: [],
 		keySelection: DEFAULT_KEY_SELECTION,
-		modelIds: [],
+		models: [],
 		rateLimitId: "",
 		skipDefaultLimits: false,
 		enabled: true,
@@ -69,7 +69,7 @@ function policyToValues(policy: Policy): PolicyFormValues {
 		description: policy.metadata.description ?? "",
 		hostKeyIds: policy.spec.hostKeyIds ?? [],
 		keySelection: policy.spec.keySelection ?? DEFAULT_KEY_SELECTION,
-		modelIds: policy.spec.modelIds ?? [],
+		models: policy.spec.models ?? [],
 		rateLimitId: policy.spec.rateLimitId ?? "",
 		skipDefaultLimits: policy.spec.skipDefaultLimits ?? false,
 		enabled: policy.spec.enabled ?? true,
@@ -125,7 +125,7 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 				enabled: value.enabled,
 				hostKeyIds: value.hostKeyIds.length > 0 ? value.hostKeyIds : null,
 				keySelection: value.keySelection,
-				modelIds: value.modelIds.length > 0 ? value.modelIds : null,
+				models: value.models.length > 0 ? value.models : null,
 				rateLimitId: value.rateLimitId || undefined,
 				skipDefaultLimits: value.skipDefaultLimits,
 			};

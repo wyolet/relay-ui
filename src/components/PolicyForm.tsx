@@ -5,11 +5,13 @@ import {
 	type LucideIcon,
 	ShieldCheck,
 } from "lucide-react";
+import { useState } from "react";
 import { useHostKeys } from "@/api/hooks/hostkeys";
-import { useModels } from "@/api/hooks/models";
 import { useAttachableRateLimits } from "@/api/hooks/ratelimits";
 import type { Policy } from "@/api/types/policy";
 import { IdentitySection } from "@/components/IdentitySection";
+import { IncludeDeprecatedSwitch } from "@/components/IncludeDeprecatedSwitch";
+import { ModelPicker } from "@/components/ModelPicker";
 import { MultiSelect } from "@/components/MultiSelect";
 import {
 	Select,
@@ -51,7 +53,6 @@ interface PolicyFormProps {
 
 export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 	const { data: hostKeysData } = useHostKeys();
-	const { data: modelsData } = useModels();
 	const allRateLimits = useAttachableRateLimits();
 
 	const {
@@ -68,15 +69,11 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 	});
 
 	const allHostKeys = hostKeysData.items ?? [];
-	const allModels = modelsData.items ?? [];
+	const [includeDeprecated, setIncludeDeprecated] = useState(false);
 
 	const hostKeyOptions = allHostKeys.map((hk) => ({
 		value: hk.metadata.id ?? "",
 		label: displayLabel(hk.metadata),
-	}));
-	const modelOptions = allModels.map((m) => ({
-		value: m.metadata.id ?? "",
-		label: displayLabel(m.metadata),
 	}));
 	const rateLimitOptions = allRateLimits.map((rl) => ({
 		value: rl.metadata.id ?? "",
@@ -107,24 +104,20 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 
 				<Section
 					icon={Boxes}
-					title="Allowed models"
-					description="Restrict which models relay keys using this policy can call."
+					title="Allowed catalog"
+					description="Grant providers, models, or specific (model, host) bindings. Wildcard grants auto-include catalog rows added later."
 				>
-					<MultiSelect
-						options={modelOptions}
-						selected={values.modelIds}
-						onChange={(next) => form.setFieldValue("modelIds", next)}
-						placeholder="All models"
-						emptyHint="No models registered."
-						aria-label="Allowed models"
-					/>
-					<p className="mt-1.5 text-[11px] text-muted-foreground">
-						Leave empty to allow every model
-						{allModels.length > 0
-							? ` (${allModels.length} available)`
-							: ""}
-						.
-					</p>
+					<div className="flex flex-col gap-2">
+						<ModelPicker
+							value={values.models}
+							onChange={(next) => form.setFieldValue("models", next)}
+							includeDeprecated={includeDeprecated}
+						/>
+						<IncludeDeprecatedSwitch
+							value={includeDeprecated}
+							onChange={setIncludeDeprecated}
+						/>
+					</div>
 				</Section>
 
 				<Section
