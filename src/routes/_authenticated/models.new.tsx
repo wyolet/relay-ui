@@ -5,6 +5,7 @@ import { useCreateModel } from "@/api/hooks/models";
 import type { ApiErrorBody } from "@/api/types/errors";
 import { ApiError } from "@/api/types/errors";
 import type { ModelCreate } from "@/api/types/model";
+import { HostLogo } from "@/components/HostLogo";
 import type { FieldDef, FormValues } from "@/components/ResourceForm";
 import { ResourceForm } from "@/components/ResourceForm";
 import { toast } from "@/components/Toast";
@@ -114,7 +115,10 @@ function NewModelInner() {
 								) : (
 									hosts.map((h) => (
 										<SelectItem key={h.metadata.id} value={h.metadata.id ?? ""}>
-											{h.metadata.displayName ?? h.metadata.name}
+											<span className="inline-flex items-center gap-2">
+												<HostLogo host={h} size={14} />
+												{h.metadata.displayName ?? h.metadata.name}
+											</span>
 										</SelectItem>
 									))
 								)}

@@ -54,9 +54,15 @@ export const Route = createFileRoute("/_authenticated/models/")({
 
 function ModelsList() {
 	const { data } = useModels();
+	const { data: hostsData } = useHosts();
 	const navigate = useNavigate({ from: "/models" });
 	const search = Route.useSearch();
 	const items = data.items ?? [];
+	const hostsById = new Map(
+		(hostsData.items ?? [])
+			.filter((h) => h.metadata.id)
+			.map((h) => [h.metadata.id as string, h] as const),
+	);
 
 	const providers = Array.from(
 		new Set(
@@ -144,6 +150,7 @@ function ModelsList() {
 					sort={search.sort}
 					dir={search.dir}
 					onSort={toggleSort}
+					hostsById={hostsById}
 				/>
 			)}
 		</div>

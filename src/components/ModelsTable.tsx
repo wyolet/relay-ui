@@ -5,7 +5,9 @@ import {
 	ArrowUp,
 	MoreHorizontal,
 } from "lucide-react";
+import type { Host } from "@/api/types/host";
 import type { Model } from "@/api/types/model";
+import { HostLogo } from "@/components/HostLogo";
 import { Switch } from "@/components/Switch";
 import { toast } from "@/components/Toast";
 import {
@@ -193,7 +195,48 @@ function RowMenu({ name }: { name: string }) {
 	);
 }
 
-function ModelRow({ m, hideProvider }: { m: Model; hideProvider?: boolean }) {
+function HostBadges({
+	m,
+	hostsById,
+}: {
+	m: Model;
+	hostsById?: Map<string, Host>;
+}) {
+	const bindings = m.spec.hosts ?? [];
+	if (bindings.length === 0 || !hostsById) return null;
+	const seen = new Set<string>();
+	const hosts: Host[] = [];
+	for (const b of bindings) {
+		if (seen.has(b.hostId)) continue;
+		const h = hostsById.get(b.hostId);
+		if (!h) continue;
+		seen.add(b.hostId);
+		hosts.push(h);
+	}
+	if (hosts.length === 0) return null;
+	return (
+		<span className="inline-flex items-center gap-1">
+			{hosts.map((h) => (
+				<HostLogo
+					key={h.metadata.id ?? h.metadata.name}
+					host={h}
+					size={14}
+					className="opacity-90"
+				/>
+			))}
+		</span>
+	);
+}
+
+function ModelRow({
+	m,
+	hideProvider,
+	hostsById,
+}: {
+	m: Model;
+	hideProvider?: boolean;
+	hostsById?: Map<string, Host>;
+}) {
 	const dep = deprecationNote(m);
 	const ctx = m.spec.contextWindowTotal;
 	const ctxIn = m.spec.contextWindowInput;
@@ -237,8 +280,15 @@ function ModelRow({ m, hideProvider }: { m: Model; hideProvider?: boolean }) {
 				</Link>
 			</td>
 			{!hideProvider && (
-				<td className="px-3 py-2 text-sm text-foreground capitalize">
-					{provider || <span className="text-muted-foreground/70">—</span>}
+				<td className="px-3 py-2 text-sm text-foreground">
+					<div className="inline-flex items-center gap-2">
+						<HostBadges m={m} hostsById={hostsById} />
+						<span className="capitalize">
+							{provider || (
+								<span className="text-muted-foreground/70">—</span>
+							)}
+						</span>
+					</div>
 				</td>
 			)}
 			<td className="px-3 py-2 text-sm text-foreground">
@@ -297,6 +347,7 @@ interface ModelsTableProps {
 	dir: ModelsSortDir;
 	onSort: (field: ModelsSortKey) => void;
 	hideProvider?: boolean;
+	hostsById?: Map<string, Host>;
 }
 
 export function ModelsTable({
@@ -305,6 +356,7 @@ export function ModelsTable({
 	dir,
 	onSort,
 	hideProvider,
+	hostsById,
 }: ModelsTableProps) {
 	return (
 		<div className="overflow-x-auto rounded-lg border border-border bg-card">
@@ -369,7 +421,12 @@ export function ModelsTable({
 				</thead>
 				<tbody>
 					{items.map((m) => (
-						<ModelRow key={m.metadata.name} m={m} hideProvider={hideProvider} />
+						<ModelRow
+						key={m.metadata.name}
+						m={m}
+						hideProvider={hideProvider}
+						hostsById={hostsById}
+					/>
 					))}
 				</tbody>
 			</table>

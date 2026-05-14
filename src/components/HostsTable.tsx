@@ -3,6 +3,7 @@ import { ArrowDown, ArrowUp } from "lucide-react";
 import { useUpdateHost } from "@/api/hooks/hosts";
 import type { Host } from "@/api/types/host";
 import { ApiError } from "@/api/types/errors";
+import { HostLogo } from "@/components/HostLogo";
 import { Switch } from "@/components/Switch";
 import { toast } from "@/components/Toast";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
@@ -112,6 +113,7 @@ function HostRow({ h }: { h: Host }) {
 					className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
 				>
 					<div className="flex items-center gap-2 min-w-0">
+						<HostLogo host={h} size={18} />
 						<span className="text-sm font-medium text-foreground truncate">
 							{displayLabel(h.metadata)}
 						</span>
