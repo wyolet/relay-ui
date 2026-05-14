@@ -2,8 +2,15 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Boxes, Plus } from "lucide-react";
 import { Suspense } from "react";
 import { z } from "zod";
+import { hostsListQueryOptions, useHosts } from "@/api/hooks/hosts";
 import { modelsListQueryOptions, useModels } from "@/api/hooks/models";
-import { providersListQueryOptions, useProviders } from "@/api/hooks/providers";
+import {
+	applyHostFilter,
+	applyHostSort,
+	type HostsSortDir,
+	type HostsSortKey,
+	HostsTable,
+} from "@/components/HostsTable";
 import {
 	applyModelFilter,
 	applyModelSort,
@@ -11,13 +18,6 @@ import {
 	type ModelsSortKey,
 	ModelsTable,
 } from "@/components/ModelsTable";
-import {
-	applyProviderFilter,
-	applyProviderSort,
-	type ProvidersSortDir,
-	type ProvidersSortKey,
-	ProvidersTable,
-} from "@/components/ProvidersTable";
 import { SearchBox } from "@/components/SearchBox";
 import { TableToolbar } from "@/components/TableToolbar";
 import {
@@ -28,18 +28,18 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 
-type Tab = "models" | "providers";
+type Tab = "models" | "hosts";
 
 const searchSchema = z.object({
-	tab: z.enum(["models", "providers"]).default("models"),
+	tab: z.enum(["models", "hosts"]).default("models"),
 	q: z.string().default(""),
 	provider: z.string().default(""),
 	sort: z
 		.enum(["name", "provider", "family", "ctx", "input", "output"])
 		.default("name"),
 	dir: z.enum(["asc", "desc"]).default("asc"),
-	psort: z.enum(["name", "kind", "baseURL", "default"]).default("name"),
-	pdir: z.enum(["asc", "desc"]).default("asc"),
+	hsort: z.enum(["name", "baseURL"]).default("name"),
+	hdir: z.enum(["asc", "desc"]).default("asc"),
 });
 
 export const Route = createFileRoute("/_authenticated/models/")({
@@ -47,11 +47,10 @@ export const Route = createFileRoute("/_authenticated/models/")({
 	loader: ({ context }) =>
 		Promise.all([
 			context.queryClient.ensureQueryData(modelsListQueryOptions),
-			context.queryClient.ensureQueryData(providersListQueryOptions),
+			context.queryClient.ensureQueryData(hostsListQueryOptions),
 		]),
 	component: ModelsPage,
 });
-
 
 function ModelsList() {
 	const { data } = useModels();
@@ -60,7 +59,15 @@ function ModelsList() {
 	const items = data.items ?? [];
 
 	const providers = Array.from(
-		new Set(items.map((m) => m.spec.provider)),
+		new Set(
+			items
+				.map((m) =>
+					m.metadata.owner?.kind === "provider"
+						? (m.metadata.owner.id ?? "")
+						: "",
+				)
+				.filter(Boolean),
+		),
 	).sort();
 	const filtered = applyModelFilter(items, search.q, search.provider);
 	const visible = applyModelSort(filtered, search.sort, search.dir);
@@ -90,7 +97,7 @@ function ModelsList() {
 				filters={
 					<Select
 						value={search.provider || "all"}
-						onValueChange={(v) => setProvider(v === "all" || v === null ? "" : v)}
+						onValueChange={(v) => setProvider(v === "all" ? "" : v)}
 					>
 						<SelectTrigger className="w-40">
 							<SelectValue>
@@ -143,26 +150,26 @@ function ModelsList() {
 	);
 }
 
-function ProvidersList() {
-	const { data } = useProviders();
+function HostsList() {
+	const { data } = useHosts();
 	const navigate = useNavigate({ from: "/models" });
 	const search = Route.useSearch();
 	const items = data.items ?? [];
 
-	const filtered = applyProviderFilter(items, search.q);
-	const visible = applyProviderSort(filtered, search.psort, search.pdir);
+	const filtered = applyHostFilter(items, search.q);
+	const visible = applyHostSort(filtered, search.hsort, search.hdir);
 
 	function setQ(q: string) {
 		void navigate({ search: (prev) => ({ ...prev, q }) });
 	}
-	function toggleSort(field: ProvidersSortKey) {
-		const dir: ProvidersSortDir =
-			search.psort === field
-				? search.pdir === "asc"
+	function toggleSort(field: HostsSortKey) {
+		const dir: HostsSortDir =
+			search.hsort === field
+				? search.hdir === "asc"
 					? "desc"
 					: "asc"
 				: "asc";
-		void navigate({ search: (prev) => ({ ...prev, psort: field, pdir: dir }) });
+		void navigate({ search: (prev) => ({ ...prev, hsort: field, hdir: dir }) });
 	}
 
 	return (
@@ -172,17 +179,8 @@ function ProvidersList() {
 					<SearchBox
 						value={search.q}
 						onChange={setQ}
-						placeholder="Search providers"
+						placeholder="Search hosts"
 					/>
-				}
-				actions={
-					<Link
-						to="/providers/new"
-						className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-xs font-semibold text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-					>
-						<Plus className="w-3.5 h-3.5" />
-						New provider
-					</Link>
 				}
 			/>
 
@@ -190,15 +188,15 @@ function ProvidersList() {
 				<div className="rounded-lg border border-dashed border-input bg-card px-6 py-14 text-center">
 					<p className="text-sm text-muted-foreground">
 						{items.length === 0
-							? "No providers configured."
-							: "No providers match the current filter."}
+							? "No hosts configured."
+							: "No hosts match the current filter."}
 					</p>
 				</div>
 			) : (
-				<ProvidersTable
+				<HostsTable
 					items={visible}
-					sort={search.psort}
-					dir={search.pdir}
+					sort={search.hsort}
+					dir={search.hdir}
 					onSort={toggleSort}
 				/>
 			)}
@@ -247,7 +245,7 @@ function ModelsPage() {
 			<div className="mb-4">
 				<h1 className="text-lg font-semibold text-foreground">Models</h1>
 				<p className="text-xs text-muted-foreground mt-0.5">
-					Models you've registered and the upstream providers that serve them.
+					Models you've registered and the upstream hosts that serve them.
 				</p>
 			</div>
 
@@ -255,15 +253,15 @@ function ModelsPage() {
 				<TabLink value="models" current={search.tab} onClick={setTab}>
 					Models
 				</TabLink>
-				<TabLink value="providers" current={search.tab} onClick={setTab}>
-					Providers
+				<TabLink value="hosts" current={search.tab} onClick={setTab}>
+					Hosts
 				</TabLink>
 			</div>
 
 			<Suspense
 				fallback={<div className="text-muted-foreground text-sm">Loading…</div>}
 			>
-				{search.tab === "models" ? <ModelsList /> : <ProvidersList />}
+				{search.tab === "models" ? <ModelsList /> : <HostsList />}
 			</Suspense>
 		</div>
 	);

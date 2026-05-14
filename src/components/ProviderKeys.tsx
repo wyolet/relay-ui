@@ -15,13 +15,13 @@ import { z } from "zod";
 import { useModels } from "@/api/hooks/models";
 import { usePolicies, useUpdatePolicy } from "@/api/hooks/policies";
 import {
-	useCreateSecret,
-	useDeleteSecret,
-	useSecrets,
+	useCreateHostKey,
+	useDeleteHostKey,
+	useHostKeys,
 } from "@/api/hooks/hostkeys";
 import { ApiError } from "@/api/types/errors";
 import type { Policy } from "@/api/types/policy";
-import type { SecretResponse } from "@/api/types/hostkey";
+import type { HostKey } from "@/api/types/hostkey";
 import { confirm } from "@/components/ConfirmDialog";
 import { MultiSelect } from "@/components/MultiSelect";
 import { toast } from "@/components/Toast";
@@ -39,11 +39,11 @@ export function ProviderKeys({
 	keyQuery,
 }: ProviderKeysProps) {
 	const { data: policiesData } = usePolicies();
-	const { data: secretsData } = useSecrets();
+	const { data: secretsData } = useHostKeys();
 	const policies = (policiesData.items ?? []).filter(
 		(p) => p.spec.provider === providerName,
 	);
-	const secretsByName: Record<string, SecretResponse> = {};
+	const secretsByName: Record<string, HostKey> = {};
 	for (const s of secretsData.items ?? []) secretsByName[s.name] = s;
 
 	if (policies.length === 0) {
@@ -82,7 +82,7 @@ export function ProviderKeys({
 
 interface PolicyCardProps {
 	policy: Policy;
-	secretsByName: Record<string, SecretResponse>;
+	secretsByName: Record<string, HostKey>;
 	providerName: string;
 	autoOpenAdd?: boolean;
 	keyQuery?: string;
@@ -96,7 +96,7 @@ function PolicyCard({
 	keyQuery,
 }: PolicyCardProps) {
 	const updatePolicy = useUpdatePolicy(policy.metadata.id ?? "");
-	const deleteSecret = useDeleteSecret();
+	const deleteSecret = useDeleteHostKey();
 	const [adding, setAdding] = useState(false);
 	const secrets = policy.spec.secrets ?? [];
 	const ql = keyQuery?.trim().toLowerCase() ?? "";
@@ -228,7 +228,7 @@ function PolicyCard({
 interface KeyRowProps {
 	priority: number;
 	name: string;
-	secret: SecretResponse | undefined;
+	secret: HostKey | undefined;
 	canMoveUp: boolean;
 	canMoveDown: boolean;
 	onMoveUp: () => void;
@@ -381,7 +381,7 @@ function AddKeyForm({
 	onCancel,
 	onSaved,
 }: AddKeyFormProps) {
-	const createSecret = useCreateSecret();
+	const createSecret = useCreateHostKey();
 	const updatePolicy = useUpdatePolicy(policy.metadata.id ?? "");
 	const { data: modelsData } = useModels();
 	const { data: policiesData } = usePolicies();

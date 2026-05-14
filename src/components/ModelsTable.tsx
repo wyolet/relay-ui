@@ -58,20 +58,26 @@ function deprecationNote(m: Model): string | null {
 	return parts.join(" · ") || null;
 }
 
+function providerOf(m: Model): string {
+	return m.metadata.owner?.kind === "provider"
+		? (m.metadata.owner.id ?? "")
+		: "";
+}
+
 function sortValue(m: Model, key: ModelsSortKey): string | number {
 	switch (key) {
 		case "name":
 			return (m.metadata.displayName ?? m.metadata.name).toLowerCase();
 		case "provider":
-			return m.spec.provider.toLowerCase();
+			return providerOf(m).toLowerCase();
 		case "family":
 			return (m.spec.family ?? "").toLowerCase();
 		case "ctx":
-			return m.spec.contextWindowTotal ?? m.spec.contextWindow ?? 0;
+			return m.spec.contextWindowTotal ?? 0;
 		case "input":
-			return m.spec.pricing?.rates?.input ?? Number.POSITIVE_INFINITY;
+			return Number.POSITIVE_INFINITY;
 		case "output":
-			return m.spec.pricing?.rates?.output ?? Number.POSITIVE_INFINITY;
+			return Number.POSITIVE_INFINITY;
 	}
 }
 
@@ -82,14 +88,15 @@ export function applyModelFilter(
 ): Model[] {
 	const ql = q.trim().toLowerCase();
 	return items.filter((m) => {
-		if (provider && m.spec.provider !== provider) return false;
+		if (provider && providerOf(m) !== provider) return false;
 		if (!ql) return true;
+		const hostNames = (m.spec.hosts ?? []).map((h) => h.upstreamName);
 		const hay = [
 			m.metadata.name,
 			m.metadata.displayName,
-			m.spec.upstreamName,
 			m.spec.family,
-			m.spec.provider,
+			providerOf(m),
+			...hostNames,
 			...(m.spec.aliases ?? []),
 			...(m.spec.tags ?? []),
 		]
@@ -188,13 +195,14 @@ function RowMenu({ name }: { name: string }) {
 
 function ModelRow({ m, hideProvider }: { m: Model; hideProvider?: boolean }) {
 	const dep = deprecationNote(m);
-	const ctx = m.spec.contextWindowTotal ?? m.spec.contextWindow;
+	const ctx = m.spec.contextWindowTotal;
 	const ctxIn = m.spec.contextWindowInput;
 	const ctxOut = m.spec.contextWindowOutput ?? m.spec.maxOutputTokens;
-	const input = m.spec.pricing?.rates?.input;
-	const output = m.spec.pricing?.rates?.output;
+	const input: number | undefined = undefined;
+	const output: number | undefined = undefined;
 	const family = m.spec.family;
 	const version = m.spec.version;
+	const provider = providerOf(m);
 
 	return (
 		<tr className="border-t border-border hover:bg-muted/40 transition-colors">
@@ -230,7 +238,7 @@ function ModelRow({ m, hideProvider }: { m: Model; hideProvider?: boolean }) {
 			</td>
 			{!hideProvider && (
 				<td className="px-3 py-2 text-sm text-foreground capitalize">
-					{m.spec.provider}
+					{provider || <span className="text-muted-foreground/70">—</span>}
 				</td>
 			)}
 			<td className="px-3 py-2 text-sm text-foreground">

@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { apiClient } from "@/api/client";
 import { useModels } from "@/api/hooks/models";
 import { usePolicies } from "@/api/hooks/policies";
-import { useDeleteSecret } from "@/api/hooks/hostkeys";
+import { useDeleteHostKey } from "@/api/hooks/hostkeys";
 import { ApiError } from "@/api/types/errors";
 import { confirm } from "@/components/ConfirmDialog";
 import { Modal } from "@/components/Modal";
@@ -33,7 +33,7 @@ export function EditProviderKeyModal({
 		() => relayKeyItems.filter((k) => k.revokedAt === null),
 		[relayKeyItems],
 	);
-	const deleteSecret = useDeleteSecret();
+	const deleteSecret = useDeleteHostKey();
 	const queryClient = useQueryClient();
 
 	const providerPolicies = useMemo(
