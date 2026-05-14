@@ -2,7 +2,11 @@ import { useForm } from "@tanstack/react-form";
 import { useStore } from "@tanstack/react-store";
 import { useMemo, useRef } from "react";
 import { z } from "zod";
-import { useCreateRateLimit, useUpdateRateLimit } from "@/api/hooks/ratelimits";
+import {
+	useCreateRateLimit,
+	useSystemRateLimits,
+	useUpdateRateLimit,
+} from "@/api/hooks/ratelimits";
 import { ApiError } from "@/api/types/errors";
 import type {
 	RateLimit,
@@ -12,7 +16,13 @@ import type {
 } from "@/api/types/ratelimit";
 import { toast } from "@/components/Toast";
 import { displayLabel } from "@/lib/displayLabel";
+import {
+	type SystemReqCap,
+	tightestRequestCap,
+	validateRequestRate,
+} from "@/lib/rateLimitValidation";
 import { randomSuffix, slugify } from "@/lib/slug";
+import { nsToSec, secToNs } from "@/lib/timeWindow";
 
 export type RateLimitStrategy = NonNullable<RateLimitRule["strategy"]>;
 export type RateLimitMeter = RateLimitRule["meter"];
@@ -41,10 +51,10 @@ export const METER_VALUES: readonly RateLimitMeter[] = [
 const DEFAULT_STRATEGY: RateLimitStrategy = "token-bucket";
 
 export interface RuleDraft {
-	amount: number;
+	amount: string;
 	meter: RateLimitMeter;
 	strategy: RateLimitStrategy;
-	window: number;
+	window: string;
 }
 
 export interface RateLimitFormValues {
@@ -68,22 +78,39 @@ const ruleSchema = z.object({
 		.min(1, "Window must be at least 1"),
 });
 
-const schema = z.object({
-	displayName: z
-		.string()
-		.trim()
-		.min(1, "Name is required")
-		.max(120, "Name is too long"),
-	description: z.string().trim().max(500, "Description is too long"),
-	rules: z.array(ruleSchema).min(1, "At least one rule is required"),
-});
+function buildSchema(tightest: SystemReqCap | undefined) {
+	return z
+		.object({
+			displayName: z
+				.string()
+				.trim()
+				.min(1, "Display name is required — the slug is generated from it")
+				.max(120, "Display name is too long"),
+			description: z.string().trim().max(500, "Description is too long"),
+			rules: z.array(ruleSchema).min(1, "At least one rule is required"),
+		})
+		.superRefine((val, ctx) => {
+			if (!tightest) return;
+			val.rules.forEach((r, idx) => {
+				if (r.meter !== "requests") return;
+				const msg = validateRequestRate(r.amount, r.window, tightest);
+				if (msg) {
+					ctx.addIssue({
+						code: z.ZodIssueCode.custom,
+						path: ["rules", idx, "amount"],
+						message: msg,
+					});
+				}
+			});
+		});
+}
 
 export function emptyRule(): RuleDraft {
 	return {
-		amount: 100,
+		amount: "100",
 		meter: "requests",
 		strategy: DEFAULT_STRATEGY,
-		window: 60,
+		window: "60",
 	};
 }
 
@@ -95,19 +122,15 @@ function emptyValues(): RateLimitFormValues {
 	};
 }
 
-const NS_PER_SEC = 1_000_000_000;
-export const nsToSeconds = (ns: number): number => Math.round(ns / NS_PER_SEC);
-export const secondsToNs = (s: number): number => Math.round(s * NS_PER_SEC);
-
 function rlToValues(rl: RateLimit): RateLimitFormValues {
 	const specRules = rl.spec.rules ?? null;
 	const rules: RuleDraft[] =
 		specRules && specRules.length > 0
 			? specRules.map((r) => ({
-					amount: r.amount,
+					amount: String(r.amount),
 					meter: r.meter,
 					strategy: r.strategy,
-					window: nsToSeconds(r.window),
+					window: String(nsToSec(r.window)),
 				}))
 			: [emptyRule()];
 	return {
@@ -129,6 +152,12 @@ export function useRateLimitForm({
 	const isEdit = rateLimit !== undefined;
 	const createRL = useCreateRateLimit();
 	const updateRL = useUpdateRateLimit(rateLimit?.metadata.id ?? "");
+	const systemRLs = useSystemRateLimits();
+	const tightestCap = useMemo(
+		() => tightestRequestCap(systemRLs),
+		[systemRLs],
+	);
+	const schema = useMemo(() => buildSchema(tightestCap), [tightestCap]);
 
 	const initial = useMemo<RateLimitFormValues>(
 		() => (rateLimit ? rlToValues(rateLimit) : emptyValues()),
@@ -157,13 +186,23 @@ export function useRateLimitForm({
 				}
 				return { fields };
 			},
+			onChange: ({ value }) => {
+				const r = schema.safeParse(value);
+				if (r.success) return undefined;
+				const fields: Record<string, string> = {};
+				for (const issue of r.error.issues) {
+					const key = issue.path.join(".");
+					if (key && !fields[key]) fields[key] = issue.message;
+				}
+				return { fields };
+			},
 		},
 		onSubmit: async ({ value }) => {
 			const rules: RateLimitRule[] = value.rules.map((r) => ({
 				amount: Number(r.amount),
 				meter: r.meter,
 				strategy: r.strategy,
-				window: secondsToNs(Number(r.window)),
+				window: secToNs(Number(r.window)),
 			}));
 			const displayName = value.displayName.trim();
 			const description = value.description.trim();
@@ -191,6 +230,7 @@ export function useRateLimitForm({
 						metadata: {
 							name,
 							displayName,
+							owner: { kind: "user" },
 							...(description ? { description } : {}),
 						},
 						spec,
@@ -224,6 +264,24 @@ export function useRateLimitForm({
 		for (const e of errs) if (typeof e === "string") return e;
 		return undefined;
 	});
+	const ruleErrors = useStore(form.store, (s) => {
+		const meta = s.fieldMeta ?? {};
+		const byIdx: Record<number, { amount?: string; window?: string }> = {};
+		for (const [key, value] of Object.entries(meta)) {
+			const m = key.match(/^rules\.(\d+)\.(amount|window)$/);
+			if (!m) continue;
+			const idx = Number(m[1]);
+			const field = m[2] as "amount" | "window";
+			const errs = value?.errors ?? [];
+			for (const e of errs) {
+				if (typeof e === "string") {
+					byIdx[idx] = { ...byIdx[idx], [field]: e };
+					break;
+				}
+			}
+		}
+		return byIdx;
+	});
 
 	function addRule() {
 		form.setFieldValue("rules", [...values.rules, emptyRule()]);
@@ -246,6 +304,7 @@ export function useRateLimitForm({
 		slugPreview,
 		displayNameError,
 		rulesError,
+		ruleErrors,
 		addRule,
 		removeRule,
 		updateRule,

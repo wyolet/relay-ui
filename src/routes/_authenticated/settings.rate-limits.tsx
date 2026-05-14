@@ -42,6 +42,7 @@ import {
 	type SystemRateLimitName,
 } from "@/lib/systemRateLimits";
 import { proxyModeQueryOptions, useProxyMode } from "@/api/hooks/settings";
+import { nsToSec, secToNs, WINDOW_PRESETS } from "@/lib/timeWindow";
 
 export const Route = createFileRoute("/_authenticated/settings/rate-limits")({
 	loader: ({ context }) =>
@@ -52,27 +53,7 @@ export const Route = createFileRoute("/_authenticated/settings/rate-limits")({
 	component: SystemRateLimitsPage,
 });
 
-const NS_PER_SEC = 1_000_000_000;
-const nsToSec = (ns: number): number => Math.round(ns / NS_PER_SEC);
-const secToNs = (s: number): number => Math.round(s * NS_PER_SEC);
-
-interface WindowPreset {
-	value: number;
-	label: string;
-	short: string;
-}
-
-const WINDOW_PRESETS: readonly WindowPreset[] = [
-	{ value: 1, label: "Per second", short: "RPS" },
-	{ value: 60, label: "Per minute", short: "RPM" },
-	{ value: 3600, label: "Per hour", short: "RPH" },
-	{ value: 86_400, label: "Per day", short: "RPD" },
-] as const;
-
-const CONTROL_WINDOWS: readonly WindowPreset[] = [
-	WINDOW_PRESETS[0],
-	WINDOW_PRESETS[1],
-];
+const CONTROL_WINDOWS = [WINDOW_PRESETS[0], WINDOW_PRESETS[1]] as const;
 
 interface RuleDraft {
 	amount: string;
@@ -156,7 +137,7 @@ function SystemRateLimitsInner() {
 	const { data } = useRateLimits();
 	const { data: proxyEnvelope } = useProxyMode();
 	const allowProxy = proxyEnvelope.value.enabled;
-	const allowUnauthenticated = false;
+	const allowUnauthenticated = proxyEnvelope.value.allowUnauthenticated;
 
 	const rlByName = useMemo(() => {
 		const map = new Map<string, RateLimit>();

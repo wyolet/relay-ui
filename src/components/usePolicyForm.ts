@@ -1,6 +1,6 @@
 import { useForm } from "@tanstack/react-form";
 import { useStore } from "@tanstack/react-store";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { z } from "zod";
 import { useCreatePolicy, useUpdatePolicy } from "@/api/hooks/policies";
 import { ApiError } from "@/api/types/errors";
@@ -8,6 +8,7 @@ import type { components } from "@/api/types.gen";
 import type { Policy, PolicyCreate, PolicyUpdate } from "@/api/types/policy";
 import { toast } from "@/components/Toast";
 import { displayLabel } from "@/lib/displayLabel";
+import { randomSuffix, slugify } from "@/lib/slug";
 
 export type KeySelection = NonNullable<
 	components["schemas"]["PolicySpec"]["keySelection"]
@@ -22,7 +23,8 @@ export const KEY_SELECTION_VALUES: readonly KeySelection[] = [
 export const DEFAULT_KEY_SELECTION: KeySelection = "prioritized";
 
 export interface PolicyFormValues {
-	name: string;
+	displayName: string;
+	description: string;
 	hostKeyIds: string[];
 	keySelection: KeySelection;
 	modelIds: string[];
@@ -31,9 +33,13 @@ export interface PolicyFormValues {
 	enabled: boolean;
 }
 
-const nameRegex = /^[a-zA-Z0-9_.-]+$/;
-
-const baseSchema = z.object({
+const schema = z.object({
+	displayName: z
+		.string()
+		.trim()
+		.min(1, "Display name is required — the slug is generated from it")
+		.max(120, "Display name is too long"),
+	description: z.string().trim().max(500, "Description is too long"),
 	hostKeyIds: z.array(z.string()),
 	keySelection: z.enum(
 		KEY_SELECTION_VALUES as readonly [KeySelection, ...KeySelection[]],
@@ -44,20 +50,10 @@ const baseSchema = z.object({
 	enabled: z.boolean(),
 });
 
-const createSchema = baseSchema.extend({
-	name: z
-		.string()
-		.trim()
-		.min(1, "Name is required")
-		.max(64, "Name is too long")
-		.regex(nameRegex, "Use letters, digits, _ . -"),
-});
-
-const editSchema = baseSchema.extend({ name: z.string() });
-
 function emptyValues(): PolicyFormValues {
 	return {
-		name: "",
+		displayName: "",
+		description: "",
 		hostKeyIds: [],
 		keySelection: DEFAULT_KEY_SELECTION,
 		modelIds: [],
@@ -69,7 +65,8 @@ function emptyValues(): PolicyFormValues {
 
 function policyToValues(policy: Policy): PolicyFormValues {
 	return {
-		name: policy.metadata.name,
+		displayName: displayLabel(policy.metadata),
+		description: policy.metadata.description ?? "",
 		hostKeyIds: policy.spec.hostKeyIds ?? [],
 		keySelection: policy.spec.keySelection ?? DEFAULT_KEY_SELECTION,
 		modelIds: policy.spec.modelIds ?? [],
@@ -94,23 +91,36 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 		() => (policy ? policyToValues(policy) : emptyValues()),
 		[policy],
 	);
-	const schema = isEdit ? editSchema : createSchema;
+	const suffixRef = useRef<string>(
+		policy?.metadata.name.match(/-(\d{4,8})$/)?.[1] ?? randomSuffix(),
+	);
+	const computeSlug = (displayName: string): string => {
+		const trimmed = displayName.trim();
+		if (!trimmed) return "";
+		const base = slugify(trimmed) || "policy";
+		return `${base}-${suffixRef.current}`;
+	};
+
+	function runValidation({ value }: { value: PolicyFormValues }) {
+		const r = schema.safeParse(value);
+		if (r.success) return undefined;
+		const fields: Record<string, string> = {};
+		for (const issue of r.error.issues) {
+			const key = issue.path.join(".");
+			if (key && !fields[key]) fields[key] = issue.message;
+		}
+		return { fields };
+	}
 
 	const form = useForm({
 		defaultValues: initial,
 		validators: {
-			onSubmit: ({ value }) => {
-				const r = schema.safeParse(value);
-				if (r.success) return undefined;
-				const fields: Record<string, string> = {};
-				for (const issue of r.error.issues) {
-					const p = issue.path[0];
-					if (typeof p === "string" && !fields[p]) fields[p] = issue.message;
-				}
-				return { fields };
-			},
+			onSubmit: runValidation,
+			onChange: runValidation,
 		},
 		onSubmit: async ({ value }) => {
+			const displayName = value.displayName.trim();
+			const description = value.description.trim();
 			const spec = {
 				enabled: value.enabled,
 				hostKeyIds: value.hostKeyIds.length > 0 ? value.hostKeyIds : null,
@@ -122,18 +132,31 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 			try {
 				if (isEdit && policy) {
 					const payload: PolicyUpdate = {
-						metadata: policy.metadata,
+						metadata: {
+							...policy.metadata,
+							displayName,
+							...(description
+								? { description }
+								: policy.metadata.description !== undefined
+									? { description: "" }
+									: {}),
+						},
 						spec: { ...policy.spec, ...spec },
 					};
 					await updatePolicy.mutateAsync(payload);
-					toast("success", `Policy "${displayLabel(policy.metadata)}" updated.`);
+					toast("success", `Policy "${displayName}" updated.`);
 				} else {
+					const name = computeSlug(displayName);
 					const payload: PolicyCreate = {
-						metadata: { name: value.name.trim() },
+						metadata: {
+							name,
+							displayName,
+							...(description ? { description } : {}),
+						},
 						spec,
 					};
 					await createPolicy.mutateAsync(payload);
-					toast("success", `Policy "${payload.metadata.name}" created.`);
+					toast("success", `Policy "${displayName}" created.`);
 				}
 				onSaved();
 			} catch (err) {
@@ -155,11 +178,26 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 	}, [open, initial, form]);
 
 	const values = useStore(form.store, (s) => s.values);
-	const nameError = useStore(form.store, (s) => {
-		const errs = s.fieldMeta?.name?.errors ?? [];
+	const slugPreview = isEdit
+		? (policy?.metadata.name ?? "")
+		: computeSlug(values.displayName);
+	const displayNameError = useStore(form.store, (s) => {
+		const errs = s.fieldMeta?.displayName?.errors ?? [];
+		for (const e of errs) if (typeof e === "string") return e;
+		return undefined;
+	});
+	const descriptionError = useStore(form.store, (s) => {
+		const errs = s.fieldMeta?.description?.errors ?? [];
 		for (const e of errs) if (typeof e === "string") return e;
 		return undefined;
 	});
 
-	return { form, values, isEdit, nameError };
+	return {
+		form,
+		values,
+		isEdit,
+		slugPreview,
+		displayNameError,
+		descriptionError,
+	};
 }

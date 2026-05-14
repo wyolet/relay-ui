@@ -1,4 +1,5 @@
-import { Gauge, Plus, X } from "lucide-react";
+import { Gauge, Plus, Undo2, X } from "lucide-react";
+import { useState } from "react";
 import type { RateLimit } from "@/api/types/ratelimit";
 import { FormSection } from "@/components/FormSection";
 import { IdentitySection } from "@/components/IdentitySection";
@@ -17,6 +18,12 @@ import {
 	STRATEGY_VALUES,
 	useRateLimitForm,
 } from "@/components/useRateLimitForm";
+import {
+	digitsOnly,
+	formatThousands,
+	makeStepHandler,
+} from "@/lib/numberFormat";
+import { WINDOW_PRESETS } from "@/lib/timeWindow";
 
 interface RateLimitFormProps {
 	rateLimit?: RateLimit;
@@ -105,6 +112,7 @@ export function RateLimitForm({
 		addRule,
 		removeRule,
 		updateRule,
+		ruleErrors,
 	} = useRateLimitForm({ rateLimit, onSaved });
 
 	return (
@@ -140,6 +148,8 @@ export function RateLimitForm({
 								key={idx}
 								rule={rule}
 								canRemove={values.rules.length > 1}
+								amountError={ruleErrors[idx]?.amount}
+								windowError={ruleErrors[idx]?.window}
 								onChange={(patch) => updateRule(idx, patch)}
 								onRemove={() => removeRule(idx)}
 							/>
@@ -185,46 +195,121 @@ export function RateLimitForm({
 
 interface RuleRowProps {
 	rule: {
-		amount: number;
+		amount: string;
 		meter: RateLimitMeter;
 		strategy: RateLimitStrategy;
-		window: number;
+		window: string;
 	};
 	canRemove: boolean;
+	amountError?: string;
+	windowError?: string;
 	onChange: (
 		patch: Partial<{
-			amount: number;
+			amount: string;
 			meter: RateLimitMeter;
 			strategy: RateLimitStrategy;
-			window: number;
+			window: string;
 		}>,
 	) => void;
 	onRemove: () => void;
 }
 
-function RuleRow({ rule, canRemove, onChange, onRemove }: RuleRowProps) {
+function RuleRow({
+	rule,
+	canRemove,
+	amountError,
+	windowError,
+	onChange,
+	onRemove,
+}: RuleRowProps) {
+	const hasError = Boolean(amountError || windowError);
+	const matchedPreset = WINDOW_PRESETS.find(
+		(p) => String(p.value) === rule.window,
+	);
+	const [customWindow, setCustomWindow] = useState<boolean>(!matchedPreset);
 	return (
-		<div className="grid grid-cols-[1fr_1fr_2fr_2fr_auto] gap-2 items-end rounded-md border border-border bg-card p-3">
-			<LabeledInput label="Amount">
-				<Input
-					type="number"
-					min={1}
-					inputMode="numeric"
-					value={rule.amount}
-					onChange={(e) => onChange({ amount: Number(e.currentTarget.value) })}
-					placeholder="100"
-				/>
-			</LabeledInput>
-			<LabeledInput label="Window (s)">
-				<Input
-					type="number"
-					min={1}
-					inputMode="numeric"
-					value={rule.window}
-					onChange={(e) => onChange({ window: Number(e.currentTarget.value) })}
-					placeholder="60"
-				/>
-			</LabeledInput>
+		<div
+			className={[
+				"rounded-md border bg-card overflow-hidden",
+				hasError ? "border-destructive/60" : "border-border",
+			].join(" ")}
+		>
+			<div className="grid grid-cols-[1fr_1fr_2fr_2fr_auto] gap-2 items-end p-3">
+				<LabeledInput label="Amount">
+					<Input
+						type="text"
+						inputMode="numeric"
+						value={formatThousands(rule.amount)}
+						aria-invalid={amountError ? true : undefined}
+						onChange={(e) =>
+							onChange({ amount: digitsOnly(e.currentTarget.value) })
+						}
+						onKeyDown={makeStepHandler(rule.amount, (next) =>
+							onChange({ amount: next }),
+						)}
+						placeholder="100"
+					/>
+				</LabeledInput>
+				<LabeledInput
+					label={customWindow ? "Window (s)" : "Window"}
+					action={
+						customWindow ? (
+							<button
+								type="button"
+								onClick={() => {
+									setCustomWindow(false);
+									onChange({ window: "60" });
+								}}
+								className="inline-flex items-center gap-0.5 text-[10px] font-medium text-muted-foreground hover:text-foreground"
+							>
+								<Undo2 className="w-3 h-3" />
+								Preset
+							</button>
+						) : undefined
+					}
+				>
+					{customWindow ? (
+						<Input
+							type="text"
+							inputMode="numeric"
+							value={formatThousands(rule.window)}
+							aria-invalid={windowError ? true : undefined}
+							onChange={(e) =>
+								onChange({ window: digitsOnly(e.currentTarget.value) })
+							}
+							onKeyDown={makeStepHandler(rule.window, (next) =>
+								onChange({ window: next }),
+							)}
+							placeholder="60"
+						/>
+					) : (
+						<Select
+							value={String(matchedPreset?.value ?? WINDOW_PRESETS[1].value)}
+							onValueChange={(v) => {
+								if (v === null) return;
+								if (v === "custom") {
+									setCustomWindow(true);
+									return;
+								}
+								onChange({ window: v });
+							}}
+						>
+							<SelectTrigger className="w-full">
+								<SelectValue>
+									{matchedPreset?.label ?? WINDOW_PRESETS[1].label}
+								</SelectValue>
+							</SelectTrigger>
+							<SelectContent>
+								{WINDOW_PRESETS.map((p) => (
+									<SelectItem key={p.value} value={String(p.value)}>
+										{p.label}
+									</SelectItem>
+								))}
+								<SelectItem value="custom">Custom…</SelectItem>
+							</SelectContent>
+						</Select>
+					)}
+				</LabeledInput>
 			<LabeledInput label="Meter">
 				<Select
 					value={rule.meter}
@@ -274,6 +359,24 @@ function RuleRow({ rule, canRemove, onChange, onRemove }: RuleRowProps) {
 			>
 				<X className="w-3.5 h-3.5" />
 			</button>
+			</div>
+			{hasError && (
+				<div
+					role="alert"
+					className="border-t border-destructive/40 bg-destructive/10 px-3 py-2 text-[11px] text-destructive space-y-0.5"
+				>
+					{amountError && (
+						<div>
+							<span className="font-medium">Amount:</span> {amountError}
+						</div>
+					)}
+					{windowError && (
+						<div>
+							<span className="font-medium">Window:</span> {windowError}
+						</div>
+					)}
+				</div>
+			)}
 		</div>
 	);
 }
@@ -291,15 +394,20 @@ function OptionWithHint({ label, hint }: { label: string; hint: string }) {
 
 function LabeledInput({
 	label,
+	action,
 	children,
 }: {
 	label: string;
+	action?: React.ReactNode;
 	children: React.ReactNode;
 }) {
 	return (
 		<div>
-			<div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-1">
-				{label}
+			<div className="flex items-center justify-between gap-2 mb-1 h-3.5">
+				<div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+					{label}
+				</div>
+				{action}
 			</div>
 			{children}
 		</div>

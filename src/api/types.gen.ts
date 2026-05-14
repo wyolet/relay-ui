@@ -865,7 +865,7 @@ export interface components {
              * @example https://example.com/schemas/ProxyMode.json
              */
             readonly $schema?: string;
-            allowedHostSlugs?: string[] | null;
+            allowUnauthenticated: boolean;
             enabled: boolean;
         };
         ProxyModeEnvelope: {

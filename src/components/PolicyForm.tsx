@@ -4,14 +4,13 @@ import {
 	KeyRound,
 	type LucideIcon,
 	ShieldCheck,
-	Tag,
 } from "lucide-react";
 import { useHostKeys } from "@/api/hooks/hostkeys";
 import { useModels } from "@/api/hooks/models";
 import { useAttachableRateLimits } from "@/api/hooks/ratelimits";
 import type { Policy } from "@/api/types/policy";
+import { IdentitySection } from "@/components/IdentitySection";
 import { MultiSelect } from "@/components/MultiSelect";
-import { Input } from "@/components/ui/input";
 import {
 	Select,
 	SelectContent,
@@ -19,7 +18,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { displayLabel } from "@/lib/displayLabel";
 import {
 	KEY_SELECTION_VALUES,
@@ -56,7 +54,14 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 	const { data: modelsData } = useModels();
 	const allRateLimits = useAttachableRateLimits();
 
-	const { form, values, isEdit, nameError } = usePolicyForm({
+	const {
+		form,
+		values,
+		isEdit,
+		slugPreview,
+		displayNameError,
+		descriptionError,
+	} = usePolicyForm({
 		open: true,
 		policy,
 		onSaved,
@@ -78,14 +83,6 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 		label: displayLabel(rl.metadata),
 	}));
 
-	const modelsMode = values.modelIds.length === 0 ? "all" : "specific";
-
-	function setModelsMode(mode: "all" | "specific") {
-		if (mode === "all") {
-			form.setFieldValue("modelIds", []);
-		}
-	}
-
 	return (
 		<form
 			onSubmit={(e) => {
@@ -96,62 +93,38 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 			className="flex flex-col"
 		>
 			<div className="divide-y divide-border">
-				{!isEdit && (
-					<Section
-						icon={Tag}
-						title="Name"
-						description="A slug used in URLs and references. Letters, digits, _ . - allowed."
-					>
-						<Input
-							type="text"
-							value={values.name}
-							onChange={(e) =>
-								form.setFieldValue("name", e.currentTarget.value)
-							}
-							placeholder="dev-policy"
-							aria-invalid={nameError ? true : undefined}
-							autoFocus
-						/>
-						{nameError && (
-							<p className="mt-1.5 text-[11px] text-destructive">{nameError}</p>
-						)}
-					</Section>
-				)}
+				<IdentitySection
+					displayName={values.displayName}
+					description={values.description}
+					onDisplayNameChange={(v) => form.setFieldValue("displayName", v)}
+					onDescriptionChange={(v) => form.setFieldValue("description", v)}
+					slugPreview={slugPreview}
+					displayNameError={displayNameError}
+					descriptionError={descriptionError}
+					autoFocus={!isEdit}
+					placeholder="Default policy"
+				/>
 
 				<Section
 					icon={Boxes}
 					title="Allowed models"
 					description="Restrict which models relay keys using this policy can call."
 				>
-					<p className="mb-2 text-sm text-muted-foreground">
-						Leave on <strong className="text-foreground">All</strong> to permit
-						every model, or switch to{" "}
-						<strong className="text-foreground">Specific</strong> to whitelist.
+					<MultiSelect
+						options={modelOptions}
+						selected={values.modelIds}
+						onChange={(next) => form.setFieldValue("modelIds", next)}
+						placeholder="All models"
+						emptyHint="No models registered."
+						aria-label="Allowed models"
+					/>
+					<p className="mt-1.5 text-[11px] text-muted-foreground">
+						Leave empty to allow every model
+						{allModels.length > 0
+							? ` (${allModels.length} available)`
+							: ""}
+						.
 					</p>
-					<div className="flex items-center gap-3 mb-2">
-						<Tabs
-							value={modelsMode}
-							onValueChange={(v) => setModelsMode(v as "all" | "specific")}
-						>
-							<TabsList>
-								<TabsTrigger value="all">All</TabsTrigger>
-								<TabsTrigger value="specific">Specific</TabsTrigger>
-							</TabsList>
-						</Tabs>
-						<span className="text-[11px] text-muted-foreground tabular-nums">
-							{allModels.length} model{allModels.length === 1 ? "" : "s"}
-						</span>
-					</div>
-					{modelsMode === "specific" && (
-						<MultiSelect
-							options={modelOptions}
-							selected={values.modelIds}
-							onChange={(next) => form.setFieldValue("modelIds", next)}
-							placeholder="Pick models…"
-							emptyHint="No models registered."
-							aria-label="Allowed models"
-						/>
-					)}
 				</Section>
 
 				<Section

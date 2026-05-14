@@ -1,12 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import {
-	Boxes,
-	ChevronLeft,
-	Forward,
-	type LucideIcon,
-} from "lucide-react";
+import { ChevronLeft, Forward, type LucideIcon, ShieldOff } from "lucide-react";
 import { Suspense, useMemo, useState } from "react";
-import { hostsListQueryOptions, useHosts } from "@/api/hooks/hosts";
 import {
 	type ProxyMode,
 	proxyModeQueryOptions,
@@ -14,51 +8,40 @@ import {
 	useUpdateProxyMode,
 } from "@/api/hooks/settings";
 import { ApiError } from "@/api/types/errors";
-import { MultiSelect } from "@/components/MultiSelect";
 import { toast } from "@/components/Toast";
 import { Switch } from "@/components/ui/switch";
 
 export const Route = createFileRoute("/_authenticated/settings/proxy-mode")({
 	loader: ({ context }) =>
-		Promise.all([
-			context.queryClient.ensureQueryData(hostsListQueryOptions),
-			context.queryClient.ensureQueryData(proxyModeQueryOptions),
-		]),
+		context.queryClient.ensureQueryData(proxyModeQueryOptions),
 	component: ProxyModeSettingsPage,
 });
 
 interface FormState {
 	enabled: boolean;
-	allowedHostSlugs: string[];
+	allowUnauthenticated: boolean;
 }
 
 function envelopeToState(value: ProxyMode): FormState {
 	return {
 		enabled: value.enabled,
-		allowedHostSlugs: value.allowedHostSlugs ?? [],
+		allowUnauthenticated: value.allowUnauthenticated,
 	};
 }
 
 function stateToValue(state: FormState): ProxyMode {
 	return {
 		enabled: state.enabled,
-		allowedHostSlugs:
-			state.allowedHostSlugs.length > 0 ? state.allowedHostSlugs : null,
+		allowUnauthenticated: state.allowUnauthenticated,
 	};
 }
 
 function ProxyModeSettingsInner() {
 	const { data: envelope } = useProxyMode();
-	const { data: hostsData } = useHosts();
 	const updateProxyMode = useUpdateProxyMode();
 
 	const initial = useMemo(() => envelopeToState(envelope.value), [envelope]);
 	const [state, setState] = useState<FormState>(initial);
-
-	const hostOptions = (hostsData.items ?? []).map((h) => ({
-		value: h.metadata.name,
-		label: h.metadata.displayName ?? h.metadata.name,
-	}));
 
 	function patch(next: Partial<FormState>) {
 		setState((s) => ({ ...s, ...next }));
@@ -119,19 +102,21 @@ function ProxyModeSettingsInner() {
 				</Section>
 
 				<Section
-					icon={Boxes}
-					title="Allowed hosts"
-					description="Restrict which hosts proxy-mode callers can target. Empty allows all."
+					icon={ShieldOff}
+					title="Allow unauthenticated"
+					description="Accept proxy-mode requests without a Relay key. Usage is still recorded, but cannot be attributed to a caller."
 				>
-					<MultiSelect
-						options={hostOptions}
-						selected={state.allowedHostSlugs}
-						onChange={(next) => patch({ allowedHostSlugs: next })}
-						placeholder="Allow all"
-						emptyHint="No hosts registered."
-						aria-label="Allowed hosts"
-						disabled={!state.enabled}
-					/>
+					<div className="inline-flex items-center gap-2.5">
+						<Switch
+							checked={state.allowUnauthenticated}
+							onCheckedChange={(c) => patch({ allowUnauthenticated: c })}
+							aria-label="Allow unauthenticated proxy requests"
+							disabled={!state.enabled}
+						/>
+						<span className="text-sm text-foreground">
+							{state.allowUnauthenticated ? "Allowed" : "Required"}
+						</span>
+					</div>
 				</Section>
 			</div>
 
