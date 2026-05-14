@@ -14,7 +14,6 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedUsageRouteImport } from './routes/_authenticated/usage'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
-import { Route as AuthenticatedSecretsRouteImport } from './routes/_authenticated/secrets'
 import { Route as AuthenticatedRoutesRouteImport } from './routes/_authenticated/routes'
 import { Route as AuthenticatedRoutersRouteImport } from './routes/_authenticated/routers'
 import { Route as AuthenticatedRatelimitsRouteImport } from './routes/_authenticated/ratelimits'
@@ -24,20 +23,19 @@ import { Route as AuthenticatedPoliciesRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedModelsRouteImport } from './routes/_authenticated/models'
 import { Route as AuthenticatedLogsRouteImport } from './routes/_authenticated/logs'
 import { Route as AuthenticatedKeysRouteImport } from './routes/_authenticated/keys'
+import { Route as AuthenticatedHostKeysRouteImport } from './routes/_authenticated/host-keys'
 import { Route as AuthenticatedBootstrapRouteImport } from './routes/_authenticated/bootstrap'
 import { Route as AuthenticatedAttachmentsRouteImport } from './routes/_authenticated/attachments'
 import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated/settings.index'
-import { Route as AuthenticatedSecretsIndexRouteImport } from './routes/_authenticated/secrets.index'
 import { Route as AuthenticatedRoutesIndexRouteImport } from './routes/_authenticated/routes.index'
 import { Route as AuthenticatedRatelimitsIndexRouteImport } from './routes/_authenticated/ratelimits.index'
 import { Route as AuthenticatedProvidersIndexRouteImport } from './routes/_authenticated/providers.index'
 import { Route as AuthenticatedPoolsIndexRouteImport } from './routes/_authenticated/pools.index'
 import { Route as AuthenticatedPoliciesIndexRouteImport } from './routes/_authenticated/policies.index'
 import { Route as AuthenticatedModelsIndexRouteImport } from './routes/_authenticated/models.index'
+import { Route as AuthenticatedHostKeysIndexRouteImport } from './routes/_authenticated/host-keys.index'
 import { Route as AuthenticatedSettingsRateLimitsRouteImport } from './routes/_authenticated/settings.rate-limits'
 import { Route as AuthenticatedSettingsProxyModeRouteImport } from './routes/_authenticated/settings.proxy-mode'
-import { Route as AuthenticatedSecretsNewRouteImport } from './routes/_authenticated/secrets.new'
-import { Route as AuthenticatedSecretsNameRouteImport } from './routes/_authenticated/secrets.$name'
 import { Route as AuthenticatedRoutesNewRouteImport } from './routes/_authenticated/routes.new'
 import { Route as AuthenticatedRoutesNameRouteImport } from './routes/_authenticated/routes.$name'
 import { Route as AuthenticatedRatelimitsNameRouteImport } from './routes/_authenticated/ratelimits.$name'
@@ -49,12 +47,14 @@ import { Route as AuthenticatedPoliciesNameRouteImport } from './routes/_authent
 import { Route as AuthenticatedModelsNewRouteImport } from './routes/_authenticated/models.new'
 import { Route as AuthenticatedModelsNameRouteImport } from './routes/_authenticated/models.$name'
 import { Route as AuthenticatedKeysIdRouteImport } from './routes/_authenticated/keys.$id'
-import { Route as AuthenticatedSecretsNameEditRouteImport } from './routes/_authenticated/secrets.$name.edit'
+import { Route as AuthenticatedHostKeysNewRouteImport } from './routes/_authenticated/host-keys.new'
+import { Route as AuthenticatedHostKeysNameRouteImport } from './routes/_authenticated/host-keys.$name'
 import { Route as AuthenticatedRoutesNameEditRouteImport } from './routes/_authenticated/routes.$name.edit'
 import { Route as AuthenticatedProvidersNameEditRouteImport } from './routes/_authenticated/providers.$name.edit'
 import { Route as AuthenticatedPoliciesRateLimitsNewRouteImport } from './routes/_authenticated/policies.rate-limits.new'
 import { Route as AuthenticatedPoliciesRateLimitsNameRouteImport } from './routes/_authenticated/policies.rate-limits.$name'
 import { Route as AuthenticatedModelsNameEditRouteImport } from './routes/_authenticated/models.$name.edit'
+import { Route as AuthenticatedHostKeysNameEditRouteImport } from './routes/_authenticated/host-keys.$name.edit'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -78,11 +78,6 @@ const AuthenticatedUsageRoute = AuthenticatedUsageRouteImport.update({
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
-const AuthenticatedSecretsRoute = AuthenticatedSecretsRouteImport.update({
-  id: '/secrets',
-  path: '/secrets',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedRoutesRoute = AuthenticatedRoutesRouteImport.update({
@@ -130,6 +125,11 @@ const AuthenticatedKeysRoute = AuthenticatedKeysRouteImport.update({
   path: '/keys',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedHostKeysRoute = AuthenticatedHostKeysRouteImport.update({
+  id: '/host-keys',
+  path: '/host-keys',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedBootstrapRoute = AuthenticatedBootstrapRouteImport.update({
   id: '/bootstrap',
   path: '/bootstrap',
@@ -146,12 +146,6 @@ const AuthenticatedSettingsIndexRoute =
     id: '/',
     path: '/',
     getParentRoute: () => AuthenticatedSettingsRoute,
-  } as any)
-const AuthenticatedSecretsIndexRoute =
-  AuthenticatedSecretsIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => AuthenticatedSecretsRoute,
   } as any)
 const AuthenticatedRoutesIndexRoute =
   AuthenticatedRoutesIndexRouteImport.update({
@@ -188,6 +182,12 @@ const AuthenticatedModelsIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedModelsRoute,
   } as any)
+const AuthenticatedHostKeysIndexRoute =
+  AuthenticatedHostKeysIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedHostKeysRoute,
+  } as any)
 const AuthenticatedSettingsRateLimitsRoute =
   AuthenticatedSettingsRateLimitsRouteImport.update({
     id: '/rate-limits',
@@ -199,17 +199,6 @@ const AuthenticatedSettingsProxyModeRoute =
     id: '/proxy-mode',
     path: '/proxy-mode',
     getParentRoute: () => AuthenticatedSettingsRoute,
-  } as any)
-const AuthenticatedSecretsNewRoute = AuthenticatedSecretsNewRouteImport.update({
-  id: '/new',
-  path: '/new',
-  getParentRoute: () => AuthenticatedSecretsRoute,
-} as any)
-const AuthenticatedSecretsNameRoute =
-  AuthenticatedSecretsNameRouteImport.update({
-    id: '/$name',
-    path: '/$name',
-    getParentRoute: () => AuthenticatedSecretsRoute,
   } as any)
 const AuthenticatedRoutesNewRoute = AuthenticatedRoutesNewRouteImport.update({
   id: '/new',
@@ -271,11 +260,17 @@ const AuthenticatedKeysIdRoute = AuthenticatedKeysIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => AuthenticatedKeysRoute,
 } as any)
-const AuthenticatedSecretsNameEditRoute =
-  AuthenticatedSecretsNameEditRouteImport.update({
-    id: '/edit',
-    path: '/edit',
-    getParentRoute: () => AuthenticatedSecretsNameRoute,
+const AuthenticatedHostKeysNewRoute =
+  AuthenticatedHostKeysNewRouteImport.update({
+    id: '/new',
+    path: '/new',
+    getParentRoute: () => AuthenticatedHostKeysRoute,
+  } as any)
+const AuthenticatedHostKeysNameRoute =
+  AuthenticatedHostKeysNameRouteImport.update({
+    id: '/$name',
+    path: '/$name',
+    getParentRoute: () => AuthenticatedHostKeysRoute,
   } as any)
 const AuthenticatedRoutesNameEditRoute =
   AuthenticatedRoutesNameEditRouteImport.update({
@@ -307,12 +302,19 @@ const AuthenticatedModelsNameEditRoute =
     path: '/edit',
     getParentRoute: () => AuthenticatedModelsNameRoute,
   } as any)
+const AuthenticatedHostKeysNameEditRoute =
+  AuthenticatedHostKeysNameEditRouteImport.update({
+    id: '/edit',
+    path: '/edit',
+    getParentRoute: () => AuthenticatedHostKeysNameRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/login': typeof LoginRoute
   '/attachments': typeof AuthenticatedAttachmentsRoute
   '/bootstrap': typeof AuthenticatedBootstrapRoute
+  '/host-keys': typeof AuthenticatedHostKeysRouteWithChildren
   '/keys': typeof AuthenticatedKeysRouteWithChildren
   '/logs': typeof AuthenticatedLogsRoute
   '/models': typeof AuthenticatedModelsRouteWithChildren
@@ -322,9 +324,10 @@ export interface FileRoutesByFullPath {
   '/ratelimits': typeof AuthenticatedRatelimitsRouteWithChildren
   '/routers': typeof AuthenticatedRoutersRoute
   '/routes': typeof AuthenticatedRoutesRouteWithChildren
-  '/secrets': typeof AuthenticatedSecretsRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRouteWithChildren
   '/usage': typeof AuthenticatedUsageRoute
+  '/host-keys/$name': typeof AuthenticatedHostKeysNameRouteWithChildren
+  '/host-keys/new': typeof AuthenticatedHostKeysNewRoute
   '/keys/$id': typeof AuthenticatedKeysIdRoute
   '/models/$name': typeof AuthenticatedModelsNameRouteWithChildren
   '/models/new': typeof AuthenticatedModelsNewRoute
@@ -336,24 +339,22 @@ export interface FileRoutesByFullPath {
   '/ratelimits/$name': typeof AuthenticatedRatelimitsNameRoute
   '/routes/$name': typeof AuthenticatedRoutesNameRouteWithChildren
   '/routes/new': typeof AuthenticatedRoutesNewRoute
-  '/secrets/$name': typeof AuthenticatedSecretsNameRouteWithChildren
-  '/secrets/new': typeof AuthenticatedSecretsNewRoute
   '/settings/proxy-mode': typeof AuthenticatedSettingsProxyModeRoute
   '/settings/rate-limits': typeof AuthenticatedSettingsRateLimitsRoute
+  '/host-keys/': typeof AuthenticatedHostKeysIndexRoute
   '/models/': typeof AuthenticatedModelsIndexRoute
   '/policies/': typeof AuthenticatedPoliciesIndexRoute
   '/pools/': typeof AuthenticatedPoolsIndexRoute
   '/providers/': typeof AuthenticatedProvidersIndexRoute
   '/ratelimits/': typeof AuthenticatedRatelimitsIndexRoute
   '/routes/': typeof AuthenticatedRoutesIndexRoute
-  '/secrets/': typeof AuthenticatedSecretsIndexRoute
   '/settings/': typeof AuthenticatedSettingsIndexRoute
+  '/host-keys/$name/edit': typeof AuthenticatedHostKeysNameEditRoute
   '/models/$name/edit': typeof AuthenticatedModelsNameEditRoute
   '/policies/rate-limits/$name': typeof AuthenticatedPoliciesRateLimitsNameRoute
   '/policies/rate-limits/new': typeof AuthenticatedPoliciesRateLimitsNewRoute
   '/providers/$name/edit': typeof AuthenticatedProvidersNameEditRoute
   '/routes/$name/edit': typeof AuthenticatedRoutesNameEditRoute
-  '/secrets/$name/edit': typeof AuthenticatedSecretsNameEditRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
@@ -364,6 +365,8 @@ export interface FileRoutesByTo {
   '/routers': typeof AuthenticatedRoutersRoute
   '/usage': typeof AuthenticatedUsageRoute
   '/': typeof AuthenticatedIndexRoute
+  '/host-keys/$name': typeof AuthenticatedHostKeysNameRouteWithChildren
+  '/host-keys/new': typeof AuthenticatedHostKeysNewRoute
   '/keys/$id': typeof AuthenticatedKeysIdRoute
   '/models/$name': typeof AuthenticatedModelsNameRouteWithChildren
   '/models/new': typeof AuthenticatedModelsNewRoute
@@ -375,24 +378,22 @@ export interface FileRoutesByTo {
   '/ratelimits/$name': typeof AuthenticatedRatelimitsNameRoute
   '/routes/$name': typeof AuthenticatedRoutesNameRouteWithChildren
   '/routes/new': typeof AuthenticatedRoutesNewRoute
-  '/secrets/$name': typeof AuthenticatedSecretsNameRouteWithChildren
-  '/secrets/new': typeof AuthenticatedSecretsNewRoute
   '/settings/proxy-mode': typeof AuthenticatedSettingsProxyModeRoute
   '/settings/rate-limits': typeof AuthenticatedSettingsRateLimitsRoute
+  '/host-keys': typeof AuthenticatedHostKeysIndexRoute
   '/models': typeof AuthenticatedModelsIndexRoute
   '/policies': typeof AuthenticatedPoliciesIndexRoute
   '/pools': typeof AuthenticatedPoolsIndexRoute
   '/providers': typeof AuthenticatedProvidersIndexRoute
   '/ratelimits': typeof AuthenticatedRatelimitsIndexRoute
   '/routes': typeof AuthenticatedRoutesIndexRoute
-  '/secrets': typeof AuthenticatedSecretsIndexRoute
   '/settings': typeof AuthenticatedSettingsIndexRoute
+  '/host-keys/$name/edit': typeof AuthenticatedHostKeysNameEditRoute
   '/models/$name/edit': typeof AuthenticatedModelsNameEditRoute
   '/policies/rate-limits/$name': typeof AuthenticatedPoliciesRateLimitsNameRoute
   '/policies/rate-limits/new': typeof AuthenticatedPoliciesRateLimitsNewRoute
   '/providers/$name/edit': typeof AuthenticatedProvidersNameEditRoute
   '/routes/$name/edit': typeof AuthenticatedRoutesNameEditRoute
-  '/secrets/$name/edit': typeof AuthenticatedSecretsNameEditRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -400,6 +401,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_authenticated/attachments': typeof AuthenticatedAttachmentsRoute
   '/_authenticated/bootstrap': typeof AuthenticatedBootstrapRoute
+  '/_authenticated/host-keys': typeof AuthenticatedHostKeysRouteWithChildren
   '/_authenticated/keys': typeof AuthenticatedKeysRouteWithChildren
   '/_authenticated/logs': typeof AuthenticatedLogsRoute
   '/_authenticated/models': typeof AuthenticatedModelsRouteWithChildren
@@ -409,10 +411,11 @@ export interface FileRoutesById {
   '/_authenticated/ratelimits': typeof AuthenticatedRatelimitsRouteWithChildren
   '/_authenticated/routers': typeof AuthenticatedRoutersRoute
   '/_authenticated/routes': typeof AuthenticatedRoutesRouteWithChildren
-  '/_authenticated/secrets': typeof AuthenticatedSecretsRouteWithChildren
   '/_authenticated/settings': typeof AuthenticatedSettingsRouteWithChildren
   '/_authenticated/usage': typeof AuthenticatedUsageRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/host-keys/$name': typeof AuthenticatedHostKeysNameRouteWithChildren
+  '/_authenticated/host-keys/new': typeof AuthenticatedHostKeysNewRoute
   '/_authenticated/keys/$id': typeof AuthenticatedKeysIdRoute
   '/_authenticated/models/$name': typeof AuthenticatedModelsNameRouteWithChildren
   '/_authenticated/models/new': typeof AuthenticatedModelsNewRoute
@@ -424,24 +427,22 @@ export interface FileRoutesById {
   '/_authenticated/ratelimits/$name': typeof AuthenticatedRatelimitsNameRoute
   '/_authenticated/routes/$name': typeof AuthenticatedRoutesNameRouteWithChildren
   '/_authenticated/routes/new': typeof AuthenticatedRoutesNewRoute
-  '/_authenticated/secrets/$name': typeof AuthenticatedSecretsNameRouteWithChildren
-  '/_authenticated/secrets/new': typeof AuthenticatedSecretsNewRoute
   '/_authenticated/settings/proxy-mode': typeof AuthenticatedSettingsProxyModeRoute
   '/_authenticated/settings/rate-limits': typeof AuthenticatedSettingsRateLimitsRoute
+  '/_authenticated/host-keys/': typeof AuthenticatedHostKeysIndexRoute
   '/_authenticated/models/': typeof AuthenticatedModelsIndexRoute
   '/_authenticated/policies/': typeof AuthenticatedPoliciesIndexRoute
   '/_authenticated/pools/': typeof AuthenticatedPoolsIndexRoute
   '/_authenticated/providers/': typeof AuthenticatedProvidersIndexRoute
   '/_authenticated/ratelimits/': typeof AuthenticatedRatelimitsIndexRoute
   '/_authenticated/routes/': typeof AuthenticatedRoutesIndexRoute
-  '/_authenticated/secrets/': typeof AuthenticatedSecretsIndexRoute
   '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
+  '/_authenticated/host-keys/$name/edit': typeof AuthenticatedHostKeysNameEditRoute
   '/_authenticated/models/$name/edit': typeof AuthenticatedModelsNameEditRoute
   '/_authenticated/policies/rate-limits/$name': typeof AuthenticatedPoliciesRateLimitsNameRoute
   '/_authenticated/policies/rate-limits/new': typeof AuthenticatedPoliciesRateLimitsNewRoute
   '/_authenticated/providers/$name/edit': typeof AuthenticatedProvidersNameEditRoute
   '/_authenticated/routes/$name/edit': typeof AuthenticatedRoutesNameEditRoute
-  '/_authenticated/secrets/$name/edit': typeof AuthenticatedSecretsNameEditRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -450,6 +451,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/attachments'
     | '/bootstrap'
+    | '/host-keys'
     | '/keys'
     | '/logs'
     | '/models'
@@ -459,9 +461,10 @@ export interface FileRouteTypes {
     | '/ratelimits'
     | '/routers'
     | '/routes'
-    | '/secrets'
     | '/settings'
     | '/usage'
+    | '/host-keys/$name'
+    | '/host-keys/new'
     | '/keys/$id'
     | '/models/$name'
     | '/models/new'
@@ -473,24 +476,22 @@ export interface FileRouteTypes {
     | '/ratelimits/$name'
     | '/routes/$name'
     | '/routes/new'
-    | '/secrets/$name'
-    | '/secrets/new'
     | '/settings/proxy-mode'
     | '/settings/rate-limits'
+    | '/host-keys/'
     | '/models/'
     | '/policies/'
     | '/pools/'
     | '/providers/'
     | '/ratelimits/'
     | '/routes/'
-    | '/secrets/'
     | '/settings/'
+    | '/host-keys/$name/edit'
     | '/models/$name/edit'
     | '/policies/rate-limits/$name'
     | '/policies/rate-limits/new'
     | '/providers/$name/edit'
     | '/routes/$name/edit'
-    | '/secrets/$name/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
@@ -501,6 +502,8 @@ export interface FileRouteTypes {
     | '/routers'
     | '/usage'
     | '/'
+    | '/host-keys/$name'
+    | '/host-keys/new'
     | '/keys/$id'
     | '/models/$name'
     | '/models/new'
@@ -512,30 +515,29 @@ export interface FileRouteTypes {
     | '/ratelimits/$name'
     | '/routes/$name'
     | '/routes/new'
-    | '/secrets/$name'
-    | '/secrets/new'
     | '/settings/proxy-mode'
     | '/settings/rate-limits'
+    | '/host-keys'
     | '/models'
     | '/policies'
     | '/pools'
     | '/providers'
     | '/ratelimits'
     | '/routes'
-    | '/secrets'
     | '/settings'
+    | '/host-keys/$name/edit'
     | '/models/$name/edit'
     | '/policies/rate-limits/$name'
     | '/policies/rate-limits/new'
     | '/providers/$name/edit'
     | '/routes/$name/edit'
-    | '/secrets/$name/edit'
   id:
     | '__root__'
     | '/_authenticated'
     | '/login'
     | '/_authenticated/attachments'
     | '/_authenticated/bootstrap'
+    | '/_authenticated/host-keys'
     | '/_authenticated/keys'
     | '/_authenticated/logs'
     | '/_authenticated/models'
@@ -545,10 +547,11 @@ export interface FileRouteTypes {
     | '/_authenticated/ratelimits'
     | '/_authenticated/routers'
     | '/_authenticated/routes'
-    | '/_authenticated/secrets'
     | '/_authenticated/settings'
     | '/_authenticated/usage'
     | '/_authenticated/'
+    | '/_authenticated/host-keys/$name'
+    | '/_authenticated/host-keys/new'
     | '/_authenticated/keys/$id'
     | '/_authenticated/models/$name'
     | '/_authenticated/models/new'
@@ -560,24 +563,22 @@ export interface FileRouteTypes {
     | '/_authenticated/ratelimits/$name'
     | '/_authenticated/routes/$name'
     | '/_authenticated/routes/new'
-    | '/_authenticated/secrets/$name'
-    | '/_authenticated/secrets/new'
     | '/_authenticated/settings/proxy-mode'
     | '/_authenticated/settings/rate-limits'
+    | '/_authenticated/host-keys/'
     | '/_authenticated/models/'
     | '/_authenticated/policies/'
     | '/_authenticated/pools/'
     | '/_authenticated/providers/'
     | '/_authenticated/ratelimits/'
     | '/_authenticated/routes/'
-    | '/_authenticated/secrets/'
     | '/_authenticated/settings/'
+    | '/_authenticated/host-keys/$name/edit'
     | '/_authenticated/models/$name/edit'
     | '/_authenticated/policies/rate-limits/$name'
     | '/_authenticated/policies/rate-limits/new'
     | '/_authenticated/providers/$name/edit'
     | '/_authenticated/routes/$name/edit'
-    | '/_authenticated/secrets/$name/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -620,13 +621,6 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/secrets': {
-      id: '/_authenticated/secrets'
-      path: '/secrets'
-      fullPath: '/secrets'
-      preLoaderRoute: typeof AuthenticatedSecretsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/routes': {
@@ -692,6 +686,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedKeysRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/host-keys': {
+      id: '/_authenticated/host-keys'
+      path: '/host-keys'
+      fullPath: '/host-keys'
+      preLoaderRoute: typeof AuthenticatedHostKeysRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/bootstrap': {
       id: '/_authenticated/bootstrap'
       path: '/bootstrap'
@@ -712,13 +713,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/settings/'
       preLoaderRoute: typeof AuthenticatedSettingsIndexRouteImport
       parentRoute: typeof AuthenticatedSettingsRoute
-    }
-    '/_authenticated/secrets/': {
-      id: '/_authenticated/secrets/'
-      path: '/'
-      fullPath: '/secrets/'
-      preLoaderRoute: typeof AuthenticatedSecretsIndexRouteImport
-      parentRoute: typeof AuthenticatedSecretsRoute
     }
     '/_authenticated/routes/': {
       id: '/_authenticated/routes/'
@@ -762,6 +756,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedModelsIndexRouteImport
       parentRoute: typeof AuthenticatedModelsRoute
     }
+    '/_authenticated/host-keys/': {
+      id: '/_authenticated/host-keys/'
+      path: '/'
+      fullPath: '/host-keys/'
+      preLoaderRoute: typeof AuthenticatedHostKeysIndexRouteImport
+      parentRoute: typeof AuthenticatedHostKeysRoute
+    }
     '/_authenticated/settings/rate-limits': {
       id: '/_authenticated/settings/rate-limits'
       path: '/rate-limits'
@@ -775,20 +776,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/settings/proxy-mode'
       preLoaderRoute: typeof AuthenticatedSettingsProxyModeRouteImport
       parentRoute: typeof AuthenticatedSettingsRoute
-    }
-    '/_authenticated/secrets/new': {
-      id: '/_authenticated/secrets/new'
-      path: '/new'
-      fullPath: '/secrets/new'
-      preLoaderRoute: typeof AuthenticatedSecretsNewRouteImport
-      parentRoute: typeof AuthenticatedSecretsRoute
-    }
-    '/_authenticated/secrets/$name': {
-      id: '/_authenticated/secrets/$name'
-      path: '/$name'
-      fullPath: '/secrets/$name'
-      preLoaderRoute: typeof AuthenticatedSecretsNameRouteImport
-      parentRoute: typeof AuthenticatedSecretsRoute
     }
     '/_authenticated/routes/new': {
       id: '/_authenticated/routes/new'
@@ -867,12 +854,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedKeysIdRouteImport
       parentRoute: typeof AuthenticatedKeysRoute
     }
-    '/_authenticated/secrets/$name/edit': {
-      id: '/_authenticated/secrets/$name/edit'
-      path: '/edit'
-      fullPath: '/secrets/$name/edit'
-      preLoaderRoute: typeof AuthenticatedSecretsNameEditRouteImport
-      parentRoute: typeof AuthenticatedSecretsNameRoute
+    '/_authenticated/host-keys/new': {
+      id: '/_authenticated/host-keys/new'
+      path: '/new'
+      fullPath: '/host-keys/new'
+      preLoaderRoute: typeof AuthenticatedHostKeysNewRouteImport
+      parentRoute: typeof AuthenticatedHostKeysRoute
+    }
+    '/_authenticated/host-keys/$name': {
+      id: '/_authenticated/host-keys/$name'
+      path: '/$name'
+      fullPath: '/host-keys/$name'
+      preLoaderRoute: typeof AuthenticatedHostKeysNameRouteImport
+      parentRoute: typeof AuthenticatedHostKeysRoute
     }
     '/_authenticated/routes/$name/edit': {
       id: '/_authenticated/routes/$name/edit'
@@ -909,8 +903,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedModelsNameEditRouteImport
       parentRoute: typeof AuthenticatedModelsNameRoute
     }
+    '/_authenticated/host-keys/$name/edit': {
+      id: '/_authenticated/host-keys/$name/edit'
+      path: '/edit'
+      fullPath: '/host-keys/$name/edit'
+      preLoaderRoute: typeof AuthenticatedHostKeysNameEditRouteImport
+      parentRoute: typeof AuthenticatedHostKeysNameRoute
+    }
   }
 }
+
+interface AuthenticatedHostKeysNameRouteChildren {
+  AuthenticatedHostKeysNameEditRoute: typeof AuthenticatedHostKeysNameEditRoute
+}
+
+const AuthenticatedHostKeysNameRouteChildren: AuthenticatedHostKeysNameRouteChildren =
+  {
+    AuthenticatedHostKeysNameEditRoute: AuthenticatedHostKeysNameEditRoute,
+  }
+
+const AuthenticatedHostKeysNameRouteWithChildren =
+  AuthenticatedHostKeysNameRoute._addFileChildren(
+    AuthenticatedHostKeysNameRouteChildren,
+  )
+
+interface AuthenticatedHostKeysRouteChildren {
+  AuthenticatedHostKeysNameRoute: typeof AuthenticatedHostKeysNameRouteWithChildren
+  AuthenticatedHostKeysNewRoute: typeof AuthenticatedHostKeysNewRoute
+  AuthenticatedHostKeysIndexRoute: typeof AuthenticatedHostKeysIndexRoute
+}
+
+const AuthenticatedHostKeysRouteChildren: AuthenticatedHostKeysRouteChildren = {
+  AuthenticatedHostKeysNameRoute: AuthenticatedHostKeysNameRouteWithChildren,
+  AuthenticatedHostKeysNewRoute: AuthenticatedHostKeysNewRoute,
+  AuthenticatedHostKeysIndexRoute: AuthenticatedHostKeysIndexRoute,
+}
+
+const AuthenticatedHostKeysRouteWithChildren =
+  AuthenticatedHostKeysRoute._addFileChildren(
+    AuthenticatedHostKeysRouteChildren,
+  )
 
 interface AuthenticatedKeysRouteChildren {
   AuthenticatedKeysIdRoute: typeof AuthenticatedKeysIdRoute
@@ -1066,35 +1098,6 @@ const AuthenticatedRoutesRouteChildren: AuthenticatedRoutesRouteChildren = {
 const AuthenticatedRoutesRouteWithChildren =
   AuthenticatedRoutesRoute._addFileChildren(AuthenticatedRoutesRouteChildren)
 
-interface AuthenticatedSecretsNameRouteChildren {
-  AuthenticatedSecretsNameEditRoute: typeof AuthenticatedSecretsNameEditRoute
-}
-
-const AuthenticatedSecretsNameRouteChildren: AuthenticatedSecretsNameRouteChildren =
-  {
-    AuthenticatedSecretsNameEditRoute: AuthenticatedSecretsNameEditRoute,
-  }
-
-const AuthenticatedSecretsNameRouteWithChildren =
-  AuthenticatedSecretsNameRoute._addFileChildren(
-    AuthenticatedSecretsNameRouteChildren,
-  )
-
-interface AuthenticatedSecretsRouteChildren {
-  AuthenticatedSecretsNameRoute: typeof AuthenticatedSecretsNameRouteWithChildren
-  AuthenticatedSecretsNewRoute: typeof AuthenticatedSecretsNewRoute
-  AuthenticatedSecretsIndexRoute: typeof AuthenticatedSecretsIndexRoute
-}
-
-const AuthenticatedSecretsRouteChildren: AuthenticatedSecretsRouteChildren = {
-  AuthenticatedSecretsNameRoute: AuthenticatedSecretsNameRouteWithChildren,
-  AuthenticatedSecretsNewRoute: AuthenticatedSecretsNewRoute,
-  AuthenticatedSecretsIndexRoute: AuthenticatedSecretsIndexRoute,
-}
-
-const AuthenticatedSecretsRouteWithChildren =
-  AuthenticatedSecretsRoute._addFileChildren(AuthenticatedSecretsRouteChildren)
-
 interface AuthenticatedSettingsRouteChildren {
   AuthenticatedSettingsProxyModeRoute: typeof AuthenticatedSettingsProxyModeRoute
   AuthenticatedSettingsRateLimitsRoute: typeof AuthenticatedSettingsRateLimitsRoute
@@ -1115,6 +1118,7 @@ const AuthenticatedSettingsRouteWithChildren =
 interface AuthenticatedRouteChildren {
   AuthenticatedAttachmentsRoute: typeof AuthenticatedAttachmentsRoute
   AuthenticatedBootstrapRoute: typeof AuthenticatedBootstrapRoute
+  AuthenticatedHostKeysRoute: typeof AuthenticatedHostKeysRouteWithChildren
   AuthenticatedKeysRoute: typeof AuthenticatedKeysRouteWithChildren
   AuthenticatedLogsRoute: typeof AuthenticatedLogsRoute
   AuthenticatedModelsRoute: typeof AuthenticatedModelsRouteWithChildren
@@ -1124,7 +1128,6 @@ interface AuthenticatedRouteChildren {
   AuthenticatedRatelimitsRoute: typeof AuthenticatedRatelimitsRouteWithChildren
   AuthenticatedRoutersRoute: typeof AuthenticatedRoutersRoute
   AuthenticatedRoutesRoute: typeof AuthenticatedRoutesRouteWithChildren
-  AuthenticatedSecretsRoute: typeof AuthenticatedSecretsRouteWithChildren
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRouteWithChildren
   AuthenticatedUsageRoute: typeof AuthenticatedUsageRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
@@ -1133,6 +1136,7 @@ interface AuthenticatedRouteChildren {
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAttachmentsRoute: AuthenticatedAttachmentsRoute,
   AuthenticatedBootstrapRoute: AuthenticatedBootstrapRoute,
+  AuthenticatedHostKeysRoute: AuthenticatedHostKeysRouteWithChildren,
   AuthenticatedKeysRoute: AuthenticatedKeysRouteWithChildren,
   AuthenticatedLogsRoute: AuthenticatedLogsRoute,
   AuthenticatedModelsRoute: AuthenticatedModelsRouteWithChildren,
@@ -1142,7 +1146,6 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedRatelimitsRoute: AuthenticatedRatelimitsRouteWithChildren,
   AuthenticatedRoutersRoute: AuthenticatedRoutersRoute,
   AuthenticatedRoutesRoute: AuthenticatedRoutesRouteWithChildren,
-  AuthenticatedSecretsRoute: AuthenticatedSecretsRouteWithChildren,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRouteWithChildren,
   AuthenticatedUsageRoute: AuthenticatedUsageRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,

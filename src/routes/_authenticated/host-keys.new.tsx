@@ -1,31 +1,22 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Suspense, useState } from "react";
-import {
-	secretDetailQueryOptions,
-	useSecret,
-	useUpdateSecret,
-} from "@/api/hooks/secrets";
+import { useCreateHostKey } from "@/api/hooks/hostkeys";
 import type { ApiErrorBody } from "@/api/types/errors";
 import { ApiError } from "@/api/types/errors";
-import type { SecretKind, SecretUpdate } from "@/api/types/secret";
+import type { HostKeyCreate, HostKeyKind } from "@/api/types/hostkey";
 import { toast } from "@/components/Toast";
 
-export const Route = createFileRoute("/_authenticated/secrets/$name/edit")({
-	loader: ({ context, params }) =>
-		context.queryClient.ensureQueryData(secretDetailQueryOptions(params.name)),
-	component: EditSecretPage,
+export const Route = createFileRoute("/_authenticated/host-keys/new")({
+	component: NewHostKeyPage,
 });
 
-function EditSecretInner() {
-	const { name } = Route.useParams();
-	const { data: secret } = useSecret(name);
-	const updateSecret = useUpdateSecret(name);
+function NewHostKeyInner() {
 	const navigate = useNavigate();
+	const createHostKey = useCreateHostKey();
 
-	const [kind, setKind] = useState<SecretKind>(
-		secret.valueFrom.kind === "stored" ? "stored" : "env",
-	);
-	const [envVar, setEnvVar] = useState(secret.valueFrom.env ?? "");
+	const [name, setName] = useState("");
+	const [kind, setKind] = useState<HostKeyKind>("stored");
+	const [envVar, setEnvVar] = useState("");
 	const [storedValue, setStoredValue] = useState("");
 	const [serverError, setServerError] = useState<ApiErrorBody | undefined>();
 	const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -33,6 +24,7 @@ function EditSecretInner() {
 
 	function validate() {
 		const errs: Record<string, string> = {};
+		if (!name.trim()) errs.name = "Name is required.";
 		if (kind === "env" && !envVar.trim())
 			errs.envVar = "Environment variable name is required.";
 		if (kind === "stored" && !storedValue.trim())
@@ -48,23 +40,27 @@ function EditSecretInner() {
 		if (Object.keys(errs).length > 0) return;
 
 		setServerError(undefined);
-		const payload: SecretUpdate = {
-			name,
-			valueFrom:
+		const trimmedName = name.trim();
+		const payload: HostKeyCreate = {
+			metadata: { name: trimmedName },
+			spec:
 				kind === "env"
-					? { kind: "env", env: envVar.trim() }
-					: { kind: "stored", value: storedValue },
+					? { valueFrom: { kind: "env", env: envVar.trim() } }
+					: { valueFrom: { kind: "stored" }, value: storedValue },
 		};
 		try {
-			await updateSecret.mutateAsync(payload);
+			await createHostKey.mutateAsync(payload);
 			// SECURITY: cleartext value is never echoed after this point.
-			toast("success", `Secret "${name}" updated.`);
-			void navigate({ to: "/secrets/$name", params: { name } });
+			toast("success", `Host key "${trimmedName}" created.`);
+			void navigate({
+				to: "/host-keys/$name",
+				params: { name: trimmedName },
+			});
 		} catch (err) {
 			if (err instanceof ApiError) {
 				setServerError(err.body);
 			} else {
-				toast("error", "Failed to update secret.");
+				toast("error", "Failed to create host key.");
 			}
 		}
 	}
@@ -73,9 +69,7 @@ function EditSecretInner() {
 
 	return (
 		<div>
-			<h1 className="text-2xl font-bold text-foreground mb-6">
-				Edit Secret: <span className="font-mono">{name}</span>
-			</h1>
+			<h1 className="text-2xl font-bold text-foreground mb-6">New Secret</h1>
 
 			{serverError && (
 				<div className="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 px-4 py-3 text-sm text-red-700 dark:text-red-300">
@@ -88,6 +82,32 @@ function EditSecretInner() {
 				noValidate
 				className="space-y-5 max-w-xl"
 			>
+				{/* Name */}
+				<div>
+					<label
+						htmlFor="name"
+						className="block text-sm font-medium text-foreground mb-1"
+					>
+						Name{" "}
+						<span className="ml-1 text-red-500" aria-hidden="true">
+							*
+						</span>
+					</label>
+					<input
+						id="name"
+						type="text"
+						value={name}
+						onChange={(e) => setName(e.target.value)}
+						placeholder="openai-key"
+						className="w-full border border-input rounded-lg px-3 py-2 text-sm bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand-400"
+					/>
+					{errs.name && (
+						<p role="alert" className="mt-1 text-xs text-destructive">
+							{errs.name}
+						</p>
+					)}
+				</div>
+
 				{/* Kind toggle */}
 				<div>
 					<span className="block text-sm font-medium text-foreground mb-2">
@@ -143,14 +163,14 @@ function EditSecretInner() {
 					</div>
 				)}
 
-				{/* Stored value input — always required when mode is stored (even on edit, you must re-enter) */}
+				{/* Stored value input */}
 				{kind === "stored" && (
 					<div>
 						<label
 							htmlFor="stored_value"
 							className="block text-sm font-medium text-foreground mb-1"
 						>
-							New secret value{" "}
+							Secret value{" "}
 							<span className="ml-1 text-red-500" aria-hidden="true">
 								*
 							</span>
@@ -161,15 +181,9 @@ function EditSecretInner() {
 							autoComplete="new-password"
 							value={storedValue}
 							onChange={(e) => setStoredValue(e.target.value)}
-							placeholder="Enter new value"
+							placeholder="sk-…"
 							className="w-full border border-input rounded-lg px-3 py-2 text-sm bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand-400"
 						/>
-						<p className="mt-1 text-xs text-muted-foreground">
-							The current masked value is:{" "}
-							<span className="font-mono">
-								{secret.valueFrom.value_masked ?? "—"}
-							</span>
-						</p>
 						{errs.storedValue && (
 							<p role="alert" className="mt-1 text-xs text-destructive">
 								{errs.storedValue}
@@ -181,17 +195,15 @@ function EditSecretInner() {
 				<div className="flex gap-3 pt-2">
 					<button
 						type="submit"
-						disabled={updateSecret.isPending}
+						disabled={createHostKey.isPending}
 						className="px-4 py-2 text-sm font-medium text-white bg-brand-600 rounded-lg hover:bg-brand-700 disabled:opacity-50 transition-colors"
 					>
-						{updateSecret.isPending ? "Saving…" : "Save"}
+						{createHostKey.isPending ? "Saving…" : "Save"}
 					</button>
 					<button
 						type="button"
-						disabled={updateSecret.isPending}
-						onClick={() =>
-							void navigate({ to: "/secrets/$name", params: { name } })
-						}
+						disabled={createHostKey.isPending}
+						onClick={() => void navigate({ to: "/host-keys" })}
 						className="px-4 py-2 text-sm font-medium text-foreground bg-card border border-input rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-50 transition-colors"
 					>
 						Cancel
@@ -202,12 +214,12 @@ function EditSecretInner() {
 	);
 }
 
-function EditSecretPage() {
+function NewHostKeyPage() {
 	return (
 		<Suspense
 			fallback={<div className="text-muted-foreground text-sm">Loading…</div>}
 		>
-			<EditSecretInner />
+			<NewHostKeyInner />
 		</Suspense>
 	);
 }

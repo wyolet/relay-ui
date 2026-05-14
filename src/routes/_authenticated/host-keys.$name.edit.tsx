@@ -1,22 +1,31 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Suspense, useState } from "react";
-import { useCreateSecret } from "@/api/hooks/secrets";
+import {
+	secretDetailQueryOptions,
+	useSecret,
+	useUpdateSecret,
+} from "@/api/hooks/secrets";
 import type { ApiErrorBody } from "@/api/types/errors";
 import { ApiError } from "@/api/types/errors";
-import type { SecretCreate, SecretKind } from "@/api/types/secret";
+import type { SecretKind, SecretUpdate } from "@/api/types/secret";
 import { toast } from "@/components/Toast";
 
-export const Route = createFileRoute("/_authenticated/secrets/new")({
-	component: NewSecretPage,
+export const Route = createFileRoute("/_authenticated/host-keys/$name/edit")({
+	loader: ({ context, params }) =>
+		context.queryClient.ensureQueryData(secretDetailQueryOptions(params.name)),
+	component: EditSecretPage,
 });
 
-function NewSecretInner() {
+function EditSecretInner() {
+	const { name } = Route.useParams();
+	const { data: secret } = useSecret(name);
+	const updateSecret = useUpdateSecret(name);
 	const navigate = useNavigate();
-	const createSecret = useCreateSecret();
 
-	const [name, setName] = useState("");
-	const [kind, setKind] = useState<SecretKind>("stored");
-	const [envVar, setEnvVar] = useState("");
+	const [kind, setKind] = useState<SecretKind>(
+		secret.valueFrom.kind === "stored" ? "stored" : "env",
+	);
+	const [envVar, setEnvVar] = useState(secret.valueFrom.env ?? "");
 	const [storedValue, setStoredValue] = useState("");
 	const [serverError, setServerError] = useState<ApiErrorBody | undefined>();
 	const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -24,7 +33,6 @@ function NewSecretInner() {
 
 	function validate() {
 		const errs: Record<string, string> = {};
-		if (!name.trim()) errs.name = "Name is required.";
 		if (kind === "env" && !envVar.trim())
 			errs.envVar = "Environment variable name is required.";
 		if (kind === "stored" && !storedValue.trim())
@@ -40,27 +48,23 @@ function NewSecretInner() {
 		if (Object.keys(errs).length > 0) return;
 
 		setServerError(undefined);
-		const trimmedName = name.trim();
-		const payload: SecretCreate = {
-			name: trimmedName,
+		const payload: SecretUpdate = {
+			name,
 			valueFrom:
 				kind === "env"
 					? { kind: "env", env: envVar.trim() }
 					: { kind: "stored", value: storedValue },
 		};
 		try {
-			await createSecret.mutateAsync(payload);
+			await updateSecret.mutateAsync(payload);
 			// SECURITY: cleartext value is never echoed after this point.
-			toast("success", `Secret "${trimmedName}" created.`);
-			void navigate({
-				to: "/secrets/$name",
-				params: { name: trimmedName },
-			});
+			toast("success", `Secret "${name}" updated.`);
+			void navigate({ to: "/secrets/$name", params: { name } });
 		} catch (err) {
 			if (err instanceof ApiError) {
 				setServerError(err.body);
 			} else {
-				toast("error", "Failed to create secret.");
+				toast("error", "Failed to update secret.");
 			}
 		}
 	}
@@ -69,7 +73,9 @@ function NewSecretInner() {
 
 	return (
 		<div>
-			<h1 className="text-2xl font-bold text-foreground mb-6">New Secret</h1>
+			<h1 className="text-2xl font-bold text-foreground mb-6">
+				Edit Secret: <span className="font-mono">{name}</span>
+			</h1>
 
 			{serverError && (
 				<div className="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 px-4 py-3 text-sm text-red-700 dark:text-red-300">
@@ -82,32 +88,6 @@ function NewSecretInner() {
 				noValidate
 				className="space-y-5 max-w-xl"
 			>
-				{/* Name */}
-				<div>
-					<label
-						htmlFor="name"
-						className="block text-sm font-medium text-foreground mb-1"
-					>
-						Name{" "}
-						<span className="ml-1 text-red-500" aria-hidden="true">
-							*
-						</span>
-					</label>
-					<input
-						id="name"
-						type="text"
-						value={name}
-						onChange={(e) => setName(e.target.value)}
-						placeholder="openai-key"
-						className="w-full border border-input rounded-lg px-3 py-2 text-sm bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand-400"
-					/>
-					{errs.name && (
-						<p role="alert" className="mt-1 text-xs text-destructive">
-							{errs.name}
-						</p>
-					)}
-				</div>
-
 				{/* Kind toggle */}
 				<div>
 					<span className="block text-sm font-medium text-foreground mb-2">
@@ -163,14 +143,14 @@ function NewSecretInner() {
 					</div>
 				)}
 
-				{/* Stored value input */}
+				{/* Stored value input — always required when mode is stored (even on edit, you must re-enter) */}
 				{kind === "stored" && (
 					<div>
 						<label
 							htmlFor="stored_value"
 							className="block text-sm font-medium text-foreground mb-1"
 						>
-							Secret value{" "}
+							New secret value{" "}
 							<span className="ml-1 text-red-500" aria-hidden="true">
 								*
 							</span>
@@ -181,9 +161,15 @@ function NewSecretInner() {
 							autoComplete="new-password"
 							value={storedValue}
 							onChange={(e) => setStoredValue(e.target.value)}
-							placeholder="sk-…"
+							placeholder="Enter new value"
 							className="w-full border border-input rounded-lg px-3 py-2 text-sm bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand-400"
 						/>
+						<p className="mt-1 text-xs text-muted-foreground">
+							The current masked value is:{" "}
+							<span className="font-mono">
+								{secret.valueFrom.value_masked ?? "—"}
+							</span>
+						</p>
 						{errs.storedValue && (
 							<p role="alert" className="mt-1 text-xs text-destructive">
 								{errs.storedValue}
@@ -195,15 +181,17 @@ function NewSecretInner() {
 				<div className="flex gap-3 pt-2">
 					<button
 						type="submit"
-						disabled={createSecret.isPending}
+						disabled={updateSecret.isPending}
 						className="px-4 py-2 text-sm font-medium text-white bg-brand-600 rounded-lg hover:bg-brand-700 disabled:opacity-50 transition-colors"
 					>
-						{createSecret.isPending ? "Saving…" : "Save"}
+						{updateSecret.isPending ? "Saving…" : "Save"}
 					</button>
 					<button
 						type="button"
-						disabled={createSecret.isPending}
-						onClick={() => void navigate({ to: "/secrets" })}
+						disabled={updateSecret.isPending}
+						onClick={() =>
+							void navigate({ to: "/secrets/$name", params: { name } })
+						}
 						className="px-4 py-2 text-sm font-medium text-foreground bg-card border border-input rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-50 transition-colors"
 					>
 						Cancel
@@ -214,12 +202,12 @@ function NewSecretInner() {
 	);
 }
 
-function NewSecretPage() {
+function EditSecretPage() {
 	return (
 		<Suspense
 			fallback={<div className="text-muted-foreground text-sm">Loading…</div>}
 		>
-			<NewSecretInner />
+			<EditSecretInner />
 		</Suspense>
 	);
 }

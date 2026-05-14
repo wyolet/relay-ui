@@ -12,7 +12,7 @@ import { DeleteConfirm } from "@/components/DeleteConfirm";
 import { SecretRotateDialog } from "@/components/SecretRotateDialog";
 import { toast } from "@/components/Toast";
 
-export const Route = createFileRoute("/_authenticated/secrets/$name")({
+export const Route = createFileRoute("/_authenticated/host-keys/$name")({
 	loader: ({ context, params }) =>
 		Promise.all([
 			context.queryClient.ensureQueryData(
