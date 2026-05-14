@@ -6,28 +6,43 @@ import {
 } from "@/lib/systemRateLimits";
 import { nsToSec } from "@/lib/timeWindow";
 
-const INFERENCE_SYSTEM_NAMES: ReadonlySet<string> = new Set([
-	SYSTEM_RL_INFERENCE,
-	SYSTEM_RL_INFERENCE_PROXY,
-	SYSTEM_RL_INFERENCE_PROXY_ANON,
-]);
-
 export interface SystemReqCap {
 	amount: number;
 	windowSec: number;
+}
+
+export interface SystemEnforcementCtx {
+	proxyEnabled: boolean;
+	proxyAllowUnauthenticated: boolean;
+}
+
+function isActiveInferenceRL(
+	name: string,
+	ctx: SystemEnforcementCtx,
+): boolean {
+	if (name === SYSTEM_RL_INFERENCE) return true;
+	if (name === SYSTEM_RL_INFERENCE_PROXY) return ctx.proxyEnabled;
+	if (name === SYSTEM_RL_INFERENCE_PROXY_ANON)
+		return ctx.proxyEnabled && ctx.proxyAllowUnauthenticated;
+	return false;
 }
 
 /**
  * Pick the tightest enabled inference-family system `requests` rule, expressed
  * as amount/windowSec. Tightness is compared by rate (amount/window) using
  * cross-multiplication, so we never round through floats.
+ *
+ * Skips proxy-family RLs whose enforcement path is currently inactive — proxy
+ * mode disabled means `inference-api-proxy` isn't actually applied at runtime,
+ * so its stored cap shouldn't constrain user RLs.
  */
 export function tightestRequestCap(
 	systemRLs: RateLimit[],
+	ctx: SystemEnforcementCtx,
 ): SystemReqCap | undefined {
 	let tightest: SystemReqCap | undefined;
 	for (const rl of systemRLs) {
-		if (!INFERENCE_SYSTEM_NAMES.has(rl.metadata.name)) continue;
+		if (!isActiveInferenceRL(rl.metadata.name, ctx)) continue;
 		if (rl.spec.enabled === false) continue;
 		for (const r of rl.spec.rules ?? []) {
 			if (r.meter !== "requests") continue;

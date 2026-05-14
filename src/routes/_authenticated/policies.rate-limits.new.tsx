@@ -1,11 +1,20 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ChevronLeft } from "lucide-react";
 import { Suspense } from "react";
+import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
+import { proxyModeQueryOptions } from "@/api/hooks/settings";
 import { RateLimitForm } from "@/components/RateLimitForm";
 
 export const Route = createFileRoute(
 	"/_authenticated/policies/rate-limits/new",
-)({ component: NewRateLimitPage });
+)({
+	loader: ({ context }) =>
+		Promise.all([
+			context.queryClient.ensureQueryData(rateLimitsListQueryOptions),
+			context.queryClient.ensureQueryData(proxyModeQueryOptions),
+		]),
+	component: NewRateLimitPage,
+});
 
 function NewRateLimitInner() {
 	const navigate = useNavigate();

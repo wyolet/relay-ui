@@ -4,9 +4,11 @@ import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { Suspense } from "react";
 import {
 	rateLimitDetailQueryOptions,
+	rateLimitsListQueryOptions,
 	useDeleteRateLimit,
 	useRateLimit,
 } from "@/api/hooks/ratelimits";
+import { proxyModeQueryOptions } from "@/api/hooks/settings";
 import { ApiError } from "@/api/types/errors";
 import { confirm } from "@/components/ConfirmDialog";
 import { RateLimitForm } from "@/components/RateLimitForm";
@@ -16,9 +18,13 @@ export const Route = createFileRoute(
 	"/_authenticated/policies/rate-limits/$name",
 )({
 	loader: ({ context, params }) =>
-		context.queryClient.ensureQueryData(
-			rateLimitDetailQueryOptions(params.name),
-		),
+		Promise.all([
+			context.queryClient.ensureQueryData(
+				rateLimitDetailQueryOptions(params.name),
+			),
+			context.queryClient.ensureQueryData(rateLimitsListQueryOptions),
+			context.queryClient.ensureQueryData(proxyModeQueryOptions),
+		]),
 	component: RateLimitEditPage,
 });
 

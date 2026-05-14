@@ -7,6 +7,7 @@ import {
 	useSystemRateLimits,
 	useUpdateRateLimit,
 } from "@/api/hooks/ratelimits";
+import { useProxyMode } from "@/api/hooks/settings";
 import { ApiError } from "@/api/types/errors";
 import type {
 	RateLimit,
@@ -153,9 +154,15 @@ export function useRateLimitForm({
 	const createRL = useCreateRateLimit();
 	const updateRL = useUpdateRateLimit(rateLimit?.metadata.id ?? "");
 	const systemRLs = useSystemRateLimits();
+	const { data: proxyEnvelope } = useProxyMode();
+	const proxyCtx = proxyEnvelope.value;
 	const tightestCap = useMemo(
-		() => tightestRequestCap(systemRLs),
-		[systemRLs],
+		() =>
+			tightestRequestCap(systemRLs, {
+				proxyEnabled: proxyCtx.enabled,
+				proxyAllowUnauthenticated: proxyCtx.allowUnauthenticated,
+			}),
+		[systemRLs, proxyCtx.enabled, proxyCtx.allowUnauthenticated],
 	);
 	const schema = useMemo(() => buildSchema(tightestCap), [tightestCap]);
 
