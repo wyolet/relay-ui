@@ -5,91 +5,80 @@ import {
 	useModel,
 	useUpdateModel,
 } from "@/api/hooks/models";
-import {
-	rateLimitsListQueryOptions,
-	useAttachableRateLimits,
-} from "@/api/hooks/ratelimits";
 import type { ApiErrorBody } from "@/api/types/errors";
 import { ApiError } from "@/api/types/errors";
 import type { ModelUpdate } from "@/api/types/model";
-import type { RateLimitAttachment } from "@/api/types/ratelimit";
-import { MultiSelect } from "@/components/MultiSelect";
 import type { FieldDef, FormValues } from "@/components/ResourceForm";
 import { ResourceForm } from "@/components/ResourceForm";
 import { toast } from "@/components/Toast";
 
 export const Route = createFileRoute("/_authenticated/models/$name/edit")({
 	loader: ({ context, params }) =>
-		Promise.all([
-			context.queryClient.ensureQueryData(modelDetailQueryOptions(params.name)),
-			context.queryClient.ensureQueryData(rateLimitsListQueryOptions),
-		]),
+		context.queryClient.ensureQueryData(modelDetailQueryOptions(params.name)),
 	component: EditModelPage,
 });
 
 const FIELDS: FieldDef[] = [
 	{
-		name: "provider",
-		label: "Provider name",
+		name: "displayName",
+		label: "Display name",
 		type: "text",
-		required: true,
-		placeholder: "my-provider",
+		placeholder: "GPT-4o",
 	},
 	{
-		name: "upstreamName",
-		label: "Upstream model name",
+		name: "family",
+		label: "Family",
 		type: "text",
-		required: true,
-		placeholder: "gpt-4o",
+		placeholder: "gpt-4",
 	},
 	{
-		name: "input",
-		label: "Input cost per 1M tokens (USD)",
-		type: "number",
-		placeholder: "2.50",
+		name: "version",
+		label: "Version",
+		type: "text",
+		placeholder: "2024-08",
 	},
 	{
-		name: "output",
-		label: "Output cost per 1M tokens (USD)",
-		type: "number",
-		placeholder: "10.00",
+		name: "aliases",
+		label: "Aliases (comma-separated)",
+		type: "text",
+		placeholder: "gpt-4o, gpt-4o-latest",
+	},
+	{
+		name: "tags",
+		label: "Tags (comma-separated)",
+		type: "text",
+		placeholder: "preview, recommended",
 	},
 ];
+
+function splitCsv(v: string | undefined): string[] | null {
+	const parts = (v ?? "")
+		.split(",")
+		.map((s) => s.trim())
+		.filter(Boolean);
+	return parts.length > 0 ? parts : null;
+}
 
 function EditModelInner() {
 	const { name } = Route.useParams();
 	const { data: model } = useModel(name);
-	const rateLimitsItems = useAttachableRateLimits();
 	const updateModel = useUpdateModel(model.metadata.id ?? "");
 	const navigate = useNavigate();
 	const [serverError, setServerError] = useState<ApiErrorBody | undefined>();
-	const [rateLimits, setRateLimits] = useState<RateLimitAttachment[]>(
-		model.spec.rateLimits ?? [],
-	);
 
 	async function handleSubmit(values: FormValues) {
 		setServerError(undefined);
-		const inputVal = Number(values.input);
-		const outputVal = Number(values.output);
-		const hasPricing =
-			!Number.isNaN(inputVal) &&
-			!Number.isNaN(outputVal) &&
-			String(values.input).trim() !== "" &&
-			String(values.output).trim() !== "";
-
 		const payload: ModelUpdate = {
-			metadata: model.metadata,
+			metadata: {
+				...model.metadata,
+				displayName: String(values.displayName ?? "").trim() || undefined,
+			},
 			spec: {
-				provider: String(values.provider ?? ""),
-				upstreamName: String(values.upstreamName ?? ""),
-				pricing: hasPricing
-					? {
-							currency: "USD",
-							unit: "1M",
-							rates: { input: inputVal, output: outputVal },
-						}
-					: undefined,
-				rateLimits: rateLimits.length > 0 ? rateLimits : undefined,
+				...model.spec,
+				family: String(values.family ?? "").trim() || undefined,
+				version: String(values.version ?? "").trim() || undefined,
+				aliases: splitCsv(String(values.aliases ?? "")),
+				tags: splitCsv(String(values.tags ?? "")),
 			},
 		};
 		try {
@@ -111,16 +100,11 @@ function EditModelInner() {
 				title={`Edit Model: ${name}`}
 				fields={FIELDS}
 				initialValues={{
-					provider: model.spec.provider,
-					upstreamName: model.spec.upstreamName,
-					input:
-						model.spec.pricing?.rates?.input != null
-							? String(model.spec.pricing.rates.input)
-							: "",
-					output:
-						model.spec.pricing?.rates?.output != null
-							? String(model.spec.pricing.rates.output)
-							: "",
+					displayName: model.metadata.displayName ?? "",
+					family: model.spec.family ?? "",
+					version: model.spec.version ?? "",
+					aliases: (model.spec.aliases ?? []).join(", "),
+					tags: (model.spec.tags ?? []).join(", "),
 				}}
 				onSubmit={handleSubmit}
 				onCancel={() =>
@@ -128,24 +112,6 @@ function EditModelInner() {
 				}
 				isPending={updateModel.isPending}
 				serverError={serverError}
-				extraContent={
-					<div>
-						<div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
-							Rate limits
-						</div>
-						<MultiSelect
-							options={rateLimitsItems.map((rl) => ({
-								value: rl.metadata.name,
-								label: rl.metadata.name,
-							}))}
-							selected={rateLimits.map((rl) => rl.Ref)}
-							onChange={(next) => setRateLimits(next.map((Ref) => ({ Ref })))}
-							placeholder="Attach rate limits…"
-							emptyHint="No rate limits defined."
-							aria-label="Rate limits"
-						/>
-					</div>
-				}
 			/>
 		</div>
 	);

@@ -1,11 +1,9 @@
-import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
 	AlertTriangle,
 	Braces,
 	Brain,
 	ChevronLeft,
-	ExternalLink,
 	Eye,
 	FileText,
 	Globe,
@@ -34,10 +32,12 @@ import {
 	useDeleteModel,
 	useModel,
 } from "@/api/hooks/models";
-import { providerDetailQueryOptions } from "@/api/hooks/providers";
 import { ApiError } from "@/api/types/errors";
-import type { Capabilities, Modalities, Model } from "@/api/types/model";
-import type { Provider } from "@/api/types/provider";
+import type {
+	Model,
+	ModelCapabilities,
+	ModelModalities,
+} from "@/api/types/model";
 import { confirm } from "@/components/ConfirmDialog";
 import { toast } from "@/components/Toast";
 
@@ -49,15 +49,8 @@ const searchSchema = z.object({
 
 export const Route = createFileRoute("/_authenticated/models/$name")({
 	validateSearch: searchSchema,
-	loader: async ({ context, params }) => {
-		const model = await context.queryClient.ensureQueryData(
-			modelDetailQueryOptions(params.name),
-		);
-		void context.queryClient.prefetchQuery(
-			providerDetailQueryOptions(model.spec.provider),
-		);
-		return null;
-	},
+	loader: ({ context, params }) =>
+		context.queryClient.ensureQueryData(modelDetailQueryOptions(params.name)),
 	component: ModelDetailPage,
 });
 
@@ -81,7 +74,7 @@ function deprecationNote(m: Model): string | null {
 	return parts.join(" · ") || null;
 }
 
-function activeCapabilities(cap: Capabilities | undefined): string[] {
+function activeCapabilities(cap: ModelCapabilities | undefined): string[] {
 	if (!cap) return [];
 	return Object.entries(cap)
 		.filter(([, v]) => v === true)
@@ -89,7 +82,7 @@ function activeCapabilities(cap: Capabilities | undefined): string[] {
 }
 
 function modalityList(
-	m: Modalities | undefined,
+	m: ModelModalities | undefined,
 	side: "input" | "output",
 ): string {
 	const arr = m?.[side];
@@ -188,7 +181,7 @@ function CapabilityIcon({ name }: { name: string }) {
 	);
 }
 
-function CapabilityChips({ cap }: { cap: Capabilities | undefined }) {
+function CapabilityChips({ cap }: { cap: ModelCapabilities | undefined }) {
 	const active = activeCapabilities(cap);
 	if (active.length === 0)
 		return <span className="text-muted-foreground/70">—</span>;
@@ -201,73 +194,20 @@ function CapabilityChips({ cap }: { cap: Capabilities | undefined }) {
 	);
 }
 
-function ProviderCard({
-	name,
-	provider,
-}: {
-	name: string;
-	provider: Provider | undefined;
-}) {
+function ProviderCard({ name }: { name: string }) {
 	return (
-		<Link
-			to="/providers/$name"
-			params={{ name }}
-			className="flex items-center justify-between gap-3 rounded-md border border-border bg-card px-3 py-2 hover:border-brand-300 dark:hover:border-brand-800 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-		>
+		<div className="flex items-center justify-between gap-3 rounded-md border border-border bg-card px-3 py-2">
 			<div className="min-w-0 flex items-center gap-2">
 				<span className="text-sm font-medium text-foreground capitalize truncate">
-					{provider?.metadata.displayName ?? name}
+					{name}
 				</span>
-				{provider?.spec.kind && (
-					<span className="inline-flex items-center h-5 px-1.5 rounded text-[10px] font-medium bg-muted text-muted-foreground">
-						{provider.spec.kind}
-					</span>
-				)}
-				{provider?.spec.default && (
-					<span className="text-[10px] uppercase tracking-wide text-muted-foreground">
-						default
-					</span>
-				)}
 			</div>
-			<ExternalLink className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-		</Link>
+		</div>
 	);
 }
 
-function PricingTable({ model }: { model: Model }) {
-	const p = model.spec.pricing;
-	if (!p?.rates || Object.keys(p.rates).length === 0) {
-		return <span className="text-muted-foreground/70">—</span>;
-	}
-	const unit = p.unit || "1M tokens";
-	const currency = p.currency || "USD";
-	const sym = currency === "USD" ? "$" : `${currency} `;
-	const entries = Object.entries(p.rates);
-	return (
-		<table className="w-full text-sm">
-			<thead>
-				<tr className="text-[11px] uppercase tracking-wide text-muted-foreground">
-					<th className="text-left font-medium pb-2">Kind</th>
-					<th className="text-right font-medium pb-2">
-						{sym}per {unit}
-					</th>
-				</tr>
-			</thead>
-			<tbody>
-				{entries.map(([k, v]) => (
-					<tr
-						key={k}
-						className="border-t border-neutral-100 dark:border-neutral-800"
-					>
-						<td className="py-1.5 text-foreground">{k}</td>
-						<td className="py-1.5 text-right tabular-nums text-foreground">
-							{v.toFixed(v < 1 ? 4 : 2)}
-						</td>
-					</tr>
-				))}
-			</tbody>
-		</table>
-	);
+function PricingTable(_props: { model: Model }) {
+	return <span className="text-muted-foreground/70">—</span>;
 }
 
 interface TabLinkProps {
@@ -304,14 +244,17 @@ function ModelDetailInner() {
 	const navigate = useNavigate({ from: "/models/$name" });
 	const { data: model } = useModel(name);
 	const deleteModel = useDeleteModel();
-	const { data: provider } = useQuery(
-		providerDetailQueryOptions(model.spec.provider),
-	);
+
+	const providerName =
+		model.metadata.owner?.kind === "provider"
+			? (model.metadata.owner.id ?? "")
+			: "";
+	const firstHostBinding = model.spec.hosts?.[0];
 
 	const dep = deprecationNote(model);
 	const tags = model.spec.tags ?? [];
 	const aliases = model.spec.aliases ?? [];
-	const ctxTotal = model.spec.contextWindowTotal ?? model.spec.contextWindow;
+	const ctxTotal = model.spec.contextWindowTotal;
 
 	function setTab(tab: Tab) {
 		void navigate({ search: (prev) => ({ ...prev, tab }) });
@@ -364,16 +307,14 @@ function ModelDetailInner() {
 						<div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
 							<code className="font-mono">{model.metadata.name}</code>
 							<span className="text-muted-foreground/50">·</span>
-							<span>
-								via{" "}
-								<Link
-									to="/providers/$name"
-									params={{ name: model.spec.provider }}
-									className="text-foreground hover:underline capitalize"
-								>
-									{model.spec.provider}
-								</Link>
-							</span>
+							{providerName && (
+								<span>
+									by{" "}
+									<span className="text-foreground capitalize">
+										{providerName}
+									</span>
+								</span>
+							)}
 							{aliases.length > 0 && (
 								<>
 									<span className="text-muted-foreground/50">·</span>
@@ -432,7 +373,7 @@ function ModelDetailInner() {
 							</FieldRow>
 							<FieldRow label="Upstream name">
 								<code className="text-xs font-mono">
-									{dash(model.spec.upstreamName)}
+									{dash(firstHostBinding?.upstreamName)}
 								</code>
 							</FieldRow>
 							<FieldRow label="Family · version">
@@ -472,18 +413,18 @@ function ModelDetailInner() {
 
 					<div className="flex flex-col gap-4">
 						<Section title="Provider">
-							<ProviderCard name={model.spec.provider} provider={provider} />
+							<ProviderCard name={providerName || "—"} />
 						</Section>
 						<Section title="Capabilities">
 							<CapabilityChips cap={model.spec.capabilities} />
 						</Section>
 					</div>
 
-					{model.spec.description && (
+					{model.metadata.description && (
 						<div className="lg:col-span-2">
 							<Section title="Description">
 								<p className="text-sm text-foreground whitespace-pre-wrap">
-									{model.spec.description}
+									{model.metadata.description}
 								</p>
 							</Section>
 						</div>
