@@ -190,7 +190,13 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 						}
 					>
 						<SelectTrigger className="w-full max-w-md">
-							<SelectValue placeholder="None" />
+							<SelectValue>
+								{values.rateLimitId
+									? (rateLimitOptions.find(
+											(rl) => rl.value === values.rateLimitId,
+										)?.label ?? values.rateLimitId)
+									: "None"}
+							</SelectValue>
 						</SelectTrigger>
 						<SelectContent>
 							<SelectItem value="none">None</SelectItem>
