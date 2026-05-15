@@ -1,0 +1,86 @@
+import type { Model } from "@/api/types/model";
+import type { Policy } from "@/api/types/policy";
+import type { DiagnosticGraph } from "@/diagnostics/types";
+
+interface ParsedRef {
+	provider: string | null; // null only for `@host` form
+	model: string | null;
+	host: string | null;
+}
+
+/**
+ * Parse a catalog-ref. Pickers emit canonical refs so we trust the syntax
+ * (see project-catalog-ref-dsl). Returns null only on outright garbage.
+ */
+function parseRef(ref: string): ParsedRef | null {
+	if (!ref) return null;
+	const atIdx = ref.indexOf("@");
+	const host = atIdx >= 0 ? ref.slice(atIdx + 1) || null : null;
+	const before = atIdx >= 0 ? ref.slice(0, atIdx) : ref;
+	if (before === "") return { provider: null, model: null, host };
+	const slashIdx = before.indexOf("/");
+	if (slashIdx >= 0) {
+		return {
+			provider: before.slice(0, slashIdx),
+			model: before.slice(slashIdx + 1) || null,
+			host,
+		};
+	}
+	return { provider: before, model: null, host };
+}
+
+function providerSlugOf(m: Model, graph: DiagnosticGraph): string | null {
+	if (m.metadata.owner?.kind !== "provider") return null;
+	const providerId = m.metadata.owner.id;
+	if (!providerId) return null;
+	return graph.providers.get(providerId)?.metadata.name ?? null;
+}
+
+/**
+ * Models reachable through the policy via the ref. A model counts if:
+ *   - it matches the ref (provider / model / @host segments), AND
+ *   - one of the policy's enabled host keys points at an enabled host that
+ *     has an enabled binding for this model.
+ *
+ * Empty result = the grant unlocks nothing through this policy.
+ */
+export function modelsForRefViaPolicy(
+	ref: string,
+	policy: Policy,
+	graph: DiagnosticGraph,
+): Model[] {
+	const parsed = parseRef(ref);
+	if (!parsed) return [];
+
+	// Hosts this policy can actually authenticate against: each enabled host
+	// key contributes its host (if the host itself is enabled).
+	const reachableHostIds = new Set<string>();
+	for (const hkId of policy.spec.hostKeyIds ?? []) {
+		const hk = graph.hostKeys.get(hkId);
+		if (!hk || hk.spec.enabled === false) continue;
+		const host = graph.hosts.get(hk.spec.hostId);
+		if (!host || host.spec.enabled === false) continue;
+		reachableHostIds.add(hk.spec.hostId);
+	}
+	if (reachableHostIds.size === 0) return [];
+
+	const out: Model[] = [];
+	for (const m of graph.models.values()) {
+		if (m.spec.enabled === false) continue;
+		if (parsed.provider) {
+			if (providerSlugOf(m, graph) !== parsed.provider) continue;
+		}
+		if (parsed.model && m.metadata.name !== parsed.model) continue;
+		const reachable = (m.spec.hosts ?? []).some((b) => {
+			if (b.enabled === false) return false;
+			if (!reachableHostIds.has(b.hostId)) return false;
+			if (parsed.host) {
+				const host = graph.hosts.get(b.hostId);
+				if (!host || host.metadata.name !== parsed.host) return false;
+			}
+			return true;
+		});
+		if (reachable) out.push(m);
+	}
+	return out;
+}

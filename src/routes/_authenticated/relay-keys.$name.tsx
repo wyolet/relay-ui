@@ -1,7 +1,12 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ChevronLeft } from "lucide-react";
 import { Suspense, useState } from "react";
+import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
+import { hostsListQueryOptions } from "@/api/hooks/hosts";
+import { modelsListQueryOptions } from "@/api/hooks/models";
 import { policiesListQueryOptions, usePolicies } from "@/api/hooks/policies";
+import { providersListQueryOptions } from "@/api/hooks/providers";
+import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
 import {
 	relayKeyDetailQueryOptions,
 	relayKeysListQueryOptions,
@@ -12,6 +17,8 @@ import { ApiError } from "@/api/types/errors";
 import { DeleteConfirm } from "@/components/DeleteConfirm";
 import { toast } from "@/components/Toast";
 import { Button } from "@/components/ui/button";
+import { DiagnosticList } from "@/diagnostics/DiagnosticList";
+import { useRelayKeyDiagnostics } from "@/diagnostics/useDiagnostics";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 
 export const Route = createFileRoute("/_authenticated/relay-keys/$name")({
@@ -22,6 +29,11 @@ export const Route = createFileRoute("/_authenticated/relay-keys/$name")({
 			),
 			context.queryClient.ensureQueryData(relayKeysListQueryOptions),
 			context.queryClient.ensureQueryData(policiesListQueryOptions),
+			context.queryClient.ensureQueryData(hostKeysListQueryOptions),
+			context.queryClient.ensureQueryData(hostsListQueryOptions),
+			context.queryClient.ensureQueryData(modelsListQueryOptions),
+			context.queryClient.ensureQueryData(rateLimitsListQueryOptions),
+			context.queryClient.ensureQueryData(providersListQueryOptions),
 		]),
 	component: RelayKeyDetailPage,
 });
@@ -36,6 +48,7 @@ function RelayKeyDetailInner() {
 	const [confirming, setConfirming] = useState(false);
 
 	const rkId = rk.metadata.id ?? "";
+	const diagnostics = useRelayKeyDiagnostics(rk.metadata.id);
 	const policy = (policiesData.items ?? []).find(
 		(p) => p.metadata.id === rk.spec.policyId,
 	);
@@ -111,6 +124,8 @@ function RelayKeyDetailInner() {
 					</Button>
 				</div>
 			</div>
+
+			<DiagnosticList diagnostics={diagnostics} />
 
 			<dl className="divide-y divide-border rounded-md border border-border bg-card">
 				<DetailRow label="Slug">

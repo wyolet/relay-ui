@@ -9,7 +9,17 @@ import {
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { Suspense, useState } from "react";
 import { z } from "zod";
+import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
+import { hostsListQueryOptions } from "@/api/hooks/hosts";
+import { modelsListQueryOptions } from "@/api/hooks/models";
+import { providersListQueryOptions } from "@/api/hooks/providers";
+import { relayKeysListQueryOptions } from "@/api/hooks/relayKeys";
 import { ApiError } from "@/api/types/errors";
+import { DiagnosticDot } from "@/diagnostics/DiagnosticDot";
+import {
+	usePolicyDiagnostics,
+	useRateLimitDiagnostics,
+} from "@/diagnostics/useDiagnostics";
 import {
 	policiesListQueryOptions,
 	useDeletePolicy,
@@ -84,6 +94,11 @@ export const Route = createFileRoute("/_authenticated/policies/")({
 		Promise.all([
 			context.queryClient.ensureQueryData(policiesListQueryOptions),
 			context.queryClient.ensureQueryData(rateLimitsListQueryOptions),
+			context.queryClient.ensureQueryData(hostKeysListQueryOptions),
+			context.queryClient.ensureQueryData(hostsListQueryOptions),
+			context.queryClient.ensureQueryData(modelsListQueryOptions),
+			context.queryClient.ensureQueryData(relayKeysListQueryOptions),
+			context.queryClient.ensureQueryData(providersListQueryOptions),
 		]),
 	component: PoliciesPage,
 });
@@ -329,6 +344,7 @@ function PolicyRow({
 	onDelete: () => void;
 }) {
 	const updatePolicy = useUpdatePolicy(policy.metadata.id ?? "");
+	const diagnostics = usePolicyDiagnostics(policy.metadata.id);
 	const catalog = describeCatalog(policy);
 	const enabled = policy.spec.enabled !== false;
 
@@ -356,13 +372,14 @@ function PolicyRow({
 					params={{ name: policy.metadata.name }}
 					className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
 				>
-					<div className="text-sm font-medium text-foreground">
-						{displayLabel(policy.metadata)}
+					<div className="flex items-center gap-2 text-sm font-medium text-foreground">
+						<span>{displayLabel(policy.metadata)}</span>
 						{!hasDisplayName(policy.metadata) && (
-							<span className="ml-1.5 text-[11px] text-muted-foreground">
+							<span className="text-[11px] text-muted-foreground">
 								(no display name)
 							</span>
 						)}
+						<DiagnosticDot diagnostics={diagnostics} />
 					</div>
 					{hasDisplayName(policy.metadata) && (
 						<code className="font-mono text-[11px] text-muted-foreground">
@@ -577,6 +594,7 @@ function RateLimitRow({
 	onDelete: () => void;
 }) {
 	const updateRL = useUpdateRateLimit(rl.metadata.id ?? "");
+	const diagnostics = useRateLimitDiagnostics(rl.metadata.id);
 	const enabled = rl.spec.enabled !== false;
 	async function toggleEnabled(next: boolean) {
 		try {
@@ -596,18 +614,21 @@ function RateLimitRow({
 	return (
 		<tr className="border-t border-border hover:bg-muted/40 transition-colors">
 			<td className="px-3 py-2">
-				<Link
-					to="/policies/rate-limits/$name"
-					params={{ name: rl.metadata.name }}
-					className="text-sm font-medium text-foreground hover:underline"
-				>
-					{displayLabel(rl.metadata)}
-					{!hasDisplayName(rl.metadata) && (
-						<span className="ml-1.5 text-[11px] text-muted-foreground">
-							(no display name)
-						</span>
-					)}
-				</Link>
+				<div className="flex items-center gap-2">
+					<Link
+						to="/policies/rate-limits/$name"
+						params={{ name: rl.metadata.name }}
+						className="text-sm font-medium text-foreground hover:underline"
+					>
+						{displayLabel(rl.metadata)}
+						{!hasDisplayName(rl.metadata) && (
+							<span className="ml-1.5 text-[11px] text-muted-foreground">
+								(no display name)
+							</span>
+						)}
+					</Link>
+					<DiagnosticDot diagnostics={diagnostics} />
+				</div>
 			</td>
 			<td className="px-3 py-2 text-sm">
 				<span className="text-[11px] text-muted-foreground">

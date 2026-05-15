@@ -2,8 +2,13 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Boxes, Plus } from "lucide-react";
 import { Suspense } from "react";
 import { z } from "zod";
+import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
 import { hostsListQueryOptions, useHosts } from "@/api/hooks/hosts";
 import { modelsListQueryOptions, useModels } from "@/api/hooks/models";
+import { policiesListQueryOptions } from "@/api/hooks/policies";
+import { providersListQueryOptions } from "@/api/hooks/providers";
+import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
+import { relayKeysListQueryOptions } from "@/api/hooks/relayKeys";
 import {
 	applyHostFilter,
 	applyHostSort,
@@ -48,6 +53,11 @@ export const Route = createFileRoute("/_authenticated/models/")({
 		Promise.all([
 			context.queryClient.ensureQueryData(modelsListQueryOptions),
 			context.queryClient.ensureQueryData(hostsListQueryOptions),
+			context.queryClient.ensureQueryData(hostKeysListQueryOptions),
+			context.queryClient.ensureQueryData(policiesListQueryOptions),
+			context.queryClient.ensureQueryData(rateLimitsListQueryOptions),
+			context.queryClient.ensureQueryData(relayKeysListQueryOptions),
+			context.queryClient.ensureQueryData(providersListQueryOptions),
 		]),
 	component: ModelsPage,
 });

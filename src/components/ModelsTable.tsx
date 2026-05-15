@@ -12,6 +12,8 @@ import type { Model } from "@/api/types/model";
 import { HostLogo } from "@/components/HostLogo";
 import { Switch } from "@/components/Switch";
 import { toast } from "@/components/Toast";
+import { DiagnosticDot } from "@/diagnostics/DiagnosticDot";
+import { useModelDiagnostics } from "@/diagnostics/useDiagnostics";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -241,6 +243,7 @@ function ModelRow({
 }) {
 	const enabled = m.spec.enabled !== false;
 	const updateModel = useUpdateModel(m.metadata.id ?? "");
+	const diagnostics = useModelDiagnostics(m.metadata.id);
 	async function toggleEnabled(next: boolean) {
 		try {
 			await updateModel.mutateAsync({
@@ -282,6 +285,7 @@ function ModelRow({
 								aria-label={dep}
 							/>
 						)}
+						<DiagnosticDot diagnostics={diagnostics} />
 					</div>
 					{(m.metadata.displayName || dep) && (
 						<div className="text-[11px] text-muted-foreground truncate">

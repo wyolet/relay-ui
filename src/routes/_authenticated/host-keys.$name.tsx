@@ -15,12 +15,18 @@ import {
 	hostKeysListQueryOptions,
 } from "@/api/hooks/hostkeys";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
+import { modelsListQueryOptions } from "@/api/hooks/models";
 import { policiesListQueryOptions } from "@/api/hooks/policies";
+import { providersListQueryOptions } from "@/api/hooks/providers";
+import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
+import { relayKeysListQueryOptions } from "@/api/hooks/relayKeys";
 import { DeleteConfirm } from "@/components/DeleteConfirm";
 import { SecretRotateDialog } from "@/components/SecretRotateDialog";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { useHostKeyDetail } from "@/components/useHostKeyDetail";
+import { DiagnosticList } from "@/diagnostics/DiagnosticList";
+import { useHostKeyDiagnostics } from "@/diagnostics/useDiagnostics";
 
 export const Route = createFileRoute("/_authenticated/host-keys/$name")({
 	loader: ({ context, params }) =>
@@ -31,6 +37,10 @@ export const Route = createFileRoute("/_authenticated/host-keys/$name")({
 			context.queryClient.ensureQueryData(hostKeysListQueryOptions),
 			context.queryClient.ensureQueryData(hostsListQueryOptions),
 			context.queryClient.ensureQueryData(policiesListQueryOptions),
+			context.queryClient.ensureQueryData(modelsListQueryOptions),
+			context.queryClient.ensureQueryData(rateLimitsListQueryOptions),
+			context.queryClient.ensureQueryData(relayKeysListQueryOptions),
+			context.queryClient.ensureQueryData(providersListQueryOptions),
 		]),
 	component: HostKeyDetailPage,
 });
@@ -63,6 +73,7 @@ function HostKeyDetailInner() {
 				search: { tab: "provider", filter: "active", q: "" },
 			}),
 	});
+	const diagnostics = useHostKeyDiagnostics(hk.metadata.id);
 
 	return (
 		<div className="flex flex-col gap-6">
@@ -120,6 +131,8 @@ function HostKeyDetailInner() {
 					</Button>
 				</div>
 			</header>
+
+			<DiagnosticList diagnostics={diagnostics} />
 
 			<div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 				<Card title="Configuration" icon={ShieldCheck} className="lg:col-span-2">

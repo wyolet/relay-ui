@@ -2,17 +2,25 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ChevronLeft, Trash2 } from "lucide-react";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { Suspense } from "react";
+import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
+import { hostsListQueryOptions } from "@/api/hooks/hosts";
+import { modelsListQueryOptions } from "@/api/hooks/models";
+import { policiesListQueryOptions } from "@/api/hooks/policies";
+import { providersListQueryOptions } from "@/api/hooks/providers";
 import {
 	rateLimitDetailQueryOptions,
 	rateLimitsListQueryOptions,
 	useDeleteRateLimit,
 	useRateLimit,
 } from "@/api/hooks/ratelimits";
+import { relayKeysListQueryOptions } from "@/api/hooks/relayKeys";
 import { proxyModeQueryOptions } from "@/api/hooks/settings";
 import { ApiError } from "@/api/types/errors";
 import { confirm } from "@/components/ConfirmDialog";
 import { RateLimitForm } from "@/components/RateLimitForm";
 import { toast } from "@/components/Toast";
+import { DiagnosticList } from "@/diagnostics/DiagnosticList";
+import { useRateLimitDiagnostics } from "@/diagnostics/useDiagnostics";
 
 export const Route = createFileRoute(
 	"/_authenticated/policies/rate-limits/$name",
@@ -24,6 +32,12 @@ export const Route = createFileRoute(
 			),
 			context.queryClient.ensureQueryData(rateLimitsListQueryOptions),
 			context.queryClient.ensureQueryData(proxyModeQueryOptions),
+			context.queryClient.ensureQueryData(policiesListQueryOptions),
+			context.queryClient.ensureQueryData(hostKeysListQueryOptions),
+			context.queryClient.ensureQueryData(hostsListQueryOptions),
+			context.queryClient.ensureQueryData(modelsListQueryOptions),
+			context.queryClient.ensureQueryData(relayKeysListQueryOptions),
+			context.queryClient.ensureQueryData(providersListQueryOptions),
 		]),
 	component: RateLimitEditPage,
 });
@@ -33,6 +47,7 @@ function RateLimitEditInner() {
 	const navigate = useNavigate({ from: "/policies/rate-limits/$name" });
 	const { data: rateLimit } = useRateLimit(name);
 	const deleteRL = useDeleteRateLimit();
+	const diagnostics = useRateLimitDiagnostics(rateLimit.metadata.id);
 
 	const back = () =>
 		void navigate({ to: "/policies", search: { tab: "ratelimits" } });
@@ -102,6 +117,8 @@ function RateLimitEditInner() {
 					</div>
 				</div>
 			</div>
+
+			<DiagnosticList diagnostics={diagnostics} />
 
 			<RateLimitForm rateLimit={rateLimit} onSaved={back} onCancel={back} />
 		</div>

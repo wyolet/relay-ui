@@ -8,7 +8,10 @@ import {
 	useHostKeys,
 } from "@/api/hooks/hostkeys";
 import { hostsListQueryOptions, useHosts } from "@/api/hooks/hosts";
+import { modelsListQueryOptions } from "@/api/hooks/models";
 import { policiesListQueryOptions, usePolicies } from "@/api/hooks/policies";
+import { providersListQueryOptions } from "@/api/hooks/providers";
+import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
 import {
 	relayKeysListQueryOptions,
 	useDeleteRelayKey,
@@ -36,7 +39,22 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { DiagnosticDot } from "@/diagnostics/DiagnosticDot";
+import {
+	useHostKeyDiagnostics,
+	useRelayKeyDiagnostics,
+} from "@/diagnostics/useDiagnostics";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
+
+function RelayKeyDiagDot({ id }: { id: string | undefined }) {
+	const diagnostics = useRelayKeyDiagnostics(id);
+	return <DiagnosticDot diagnostics={diagnostics} />;
+}
+
+function HostKeyDiagDot({ id }: { id: string | undefined }) {
+	const diagnostics = useHostKeyDiagnostics(id);
+	return <DiagnosticDot diagnostics={diagnostics} />;
+}
 
 type Filter = "active" | "revoked" | "all";
 
@@ -60,6 +78,9 @@ export const Route = createFileRoute("/_authenticated/keys")({
 		void context.queryClient.prefetchQuery(hostKeysListQueryOptions);
 		void context.queryClient.prefetchQuery(hostsListQueryOptions);
 		void context.queryClient.prefetchQuery(relayKeysListQueryOptions);
+		void context.queryClient.prefetchQuery(modelsListQueryOptions);
+		void context.queryClient.prefetchQuery(rateLimitsListQueryOptions);
+		void context.queryClient.prefetchQuery(providersListQueryOptions);
 		return null;
 	},
 	component: KeysPage,
@@ -427,18 +448,21 @@ function RelayKeysPanel() {
 											<StatusDot tone={status.tone} label={status.label} />
 										</td>
 										<td className="px-3 py-2">
-											<Link
-												to="/relay-keys/$name"
-												params={{ name: rk.metadata.name }}
-												className={[
-													"text-sm font-medium hover:underline",
-													revoked
-														? "text-neutral-500 dark:text-neutral-500"
-														: "text-foreground",
-												].join(" ")}
-											>
-												{displayLabel(rk.metadata)}
-											</Link>
+											<div className="flex items-center gap-2">
+												<Link
+													to="/relay-keys/$name"
+													params={{ name: rk.metadata.name }}
+													className={[
+														"text-sm font-medium hover:underline",
+														revoked
+															? "text-neutral-500 dark:text-neutral-500"
+															: "text-foreground",
+													].join(" ")}
+												>
+													{displayLabel(rk.metadata)}
+												</Link>
+												<RelayKeyDiagDot id={rk.metadata.id} />
+											</div>
 											{hasDisplayName(rk.metadata) && (
 												<div className="font-mono text-[11px] text-muted-foreground">
 													{rk.metadata.name}
@@ -660,8 +684,9 @@ function HostKeysPanel() {
 												params={{ name: hk.metadata.name }}
 												className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
 											>
-												<div className="text-sm font-medium text-foreground">
-													{displayLabel(hk.metadata)}
+												<div className="flex items-center gap-2 text-sm font-medium text-foreground">
+													<span>{displayLabel(hk.metadata)}</span>
+													<HostKeyDiagDot id={hk.metadata.id} />
 												</div>
 												{hasDisplayName(hk.metadata) && (
 													<div className="font-mono text-[11px] text-muted-foreground">

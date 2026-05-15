@@ -27,11 +27,18 @@ import {
 } from "lucide-react";
 import { Suspense } from "react";
 import { z } from "zod";
+import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
+import { hostsListQueryOptions } from "@/api/hooks/hosts";
 import {
 	modelDetailQueryOptions,
+	modelsListQueryOptions,
 	useDeleteModel,
 	useModel,
 } from "@/api/hooks/models";
+import { policiesListQueryOptions } from "@/api/hooks/policies";
+import { providersListQueryOptions } from "@/api/hooks/providers";
+import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
+import { relayKeysListQueryOptions } from "@/api/hooks/relayKeys";
 import { ApiError } from "@/api/types/errors";
 import type {
 	Model,
@@ -40,6 +47,8 @@ import type {
 } from "@/api/types/model";
 import { confirm } from "@/components/ConfirmDialog";
 import { toast } from "@/components/Toast";
+import { DiagnosticList } from "@/diagnostics/DiagnosticList";
+import { useModelDiagnostics } from "@/diagnostics/useDiagnostics";
 
 type Tab = "overview" | "pricing" | "limits";
 
@@ -50,7 +59,16 @@ const searchSchema = z.object({
 export const Route = createFileRoute("/_authenticated/models/$name")({
 	validateSearch: searchSchema,
 	loader: ({ context, params }) =>
-		context.queryClient.ensureQueryData(modelDetailQueryOptions(params.name)),
+		Promise.all([
+			context.queryClient.ensureQueryData(modelDetailQueryOptions(params.name)),
+			context.queryClient.ensureQueryData(modelsListQueryOptions),
+			context.queryClient.ensureQueryData(hostsListQueryOptions),
+			context.queryClient.ensureQueryData(hostKeysListQueryOptions),
+			context.queryClient.ensureQueryData(policiesListQueryOptions),
+			context.queryClient.ensureQueryData(rateLimitsListQueryOptions),
+			context.queryClient.ensureQueryData(relayKeysListQueryOptions),
+			context.queryClient.ensureQueryData(providersListQueryOptions),
+		]),
 	component: ModelDetailPage,
 });
 
@@ -244,6 +262,7 @@ function ModelDetailInner() {
 	const navigate = useNavigate({ from: "/models/$name" });
 	const { data: model } = useModel(name);
 	const deleteModel = useDeleteModel();
+	const diagnostics = useModelDiagnostics(model.metadata.id);
 
 	const providerName =
 		model.metadata.owner?.kind === "provider"
@@ -351,6 +370,8 @@ function ModelDetailInner() {
 					<span>{dep}</span>
 				</div>
 			)}
+
+			<DiagnosticList diagnostics={diagnostics} />
 
 			<div className="border-b border-border flex items-center gap-1">
 				<TabLink value="overview" current={search.tab} onClick={setTab}>

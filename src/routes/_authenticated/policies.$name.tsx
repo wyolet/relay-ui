@@ -11,10 +11,14 @@ import {
 import { providersListQueryOptions, useProviders } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
 import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
+import { hostsListQueryOptions } from "@/api/hooks/hosts";
+import { relayKeysListQueryOptions } from "@/api/hooks/relayKeys";
 import { ApiError } from "@/api/types/errors";
 import { confirm } from "@/components/ConfirmDialog";
 import { PolicyForm } from "@/components/PolicyForm";
 import { toast } from "@/components/Toast";
+import { DiagnosticList } from "@/diagnostics/DiagnosticList";
+import { usePolicyDiagnostics } from "@/diagnostics/useDiagnostics";
 
 export const Route = createFileRoute("/_authenticated/policies/$name")({
 	loader: ({ context, params }) =>
@@ -23,9 +27,11 @@ export const Route = createFileRoute("/_authenticated/policies/$name")({
 				policyDetailQueryOptions(params.name),
 			),
 			context.queryClient.ensureQueryData(hostKeysListQueryOptions),
+			context.queryClient.ensureQueryData(hostsListQueryOptions),
 			context.queryClient.ensureQueryData(providersListQueryOptions),
 			context.queryClient.ensureQueryData(modelsListQueryOptions),
 			context.queryClient.ensureQueryData(rateLimitsListQueryOptions),
+			context.queryClient.ensureQueryData(relayKeysListQueryOptions),
 		]),
 	component: PolicyDetailPage,
 });
@@ -36,6 +42,7 @@ function PolicyDetailInner() {
 	const { data: policy } = usePolicy(name);
 	const { data: providersData } = useProviders();
 	const deletePolicy = useDeletePolicy();
+	const diagnostics = usePolicyDiagnostics(policy.metadata.id);
 
 	const provider = (providersData.items ?? []).find(
 		(p) => p.metadata.name === (policy.metadata.owner?.kind === "provider" ? (policy.metadata.owner.id ?? "") : ""),
@@ -108,6 +115,8 @@ function PolicyDetailInner() {
 					</div>
 				</div>
 			</div>
+
+			<DiagnosticList diagnostics={diagnostics} />
 
 			<PolicyForm
 				policy={policy}

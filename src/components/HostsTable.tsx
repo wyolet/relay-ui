@@ -6,6 +6,8 @@ import { ApiError } from "@/api/types/errors";
 import { HostLogo } from "@/components/HostLogo";
 import { Switch } from "@/components/Switch";
 import { toast } from "@/components/Toast";
+import { DiagnosticDot } from "@/diagnostics/DiagnosticDot";
+import { useHostDiagnostics } from "@/diagnostics/useDiagnostics";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 
 export type HostsSortKey = "name" | "baseURL";
@@ -90,6 +92,7 @@ function SortHeader({
 function HostRow({ h }: { h: Host }) {
 	const enabled = h.spec.enabled !== false;
 	const update = useUpdateHost(h.metadata.id ?? "");
+	const diagnostics = useHostDiagnostics(h.metadata.id);
 
 	async function toggle(next: boolean) {
 		try {
@@ -124,6 +127,7 @@ function HostRow({ h }: { h: Host }) {
 										(no display name)
 									</span>
 								)}
+								<DiagnosticDot diagnostics={diagnostics} />
 							</div>
 							{hasDisplayName(h.metadata) && (
 								<div className="text-[11px] text-muted-foreground truncate">
