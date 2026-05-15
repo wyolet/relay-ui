@@ -1,6 +1,14 @@
 import { Link } from "@tanstack/react-router";
-import { Globe, KeyRound, Link2, ShieldCheck, Unlink2 } from "lucide-react";
+import {
+	Globe,
+	KeyRound,
+	Link2,
+	ShieldCheck,
+	ToggleLeft,
+	Unlink2,
+} from "lucide-react";
 import type { HostKey, HostKeyKind } from "@/api/types/hostkey";
+import { EnabledField } from "@/components/EnabledField";
 import { FormSection } from "@/components/FormSection";
 import { IdentitySection } from "@/components/IdentitySection";
 import { Button } from "@/components/ui/button";
@@ -76,6 +84,18 @@ export function HostKeyForm({ hostKey, onSaved, onCancel }: HostKeyFormProps) {
 					autoFocus={!isEdit}
 					placeholder="OpenAI production key"
 				/>
+
+				<FormSection
+					icon={ToggleLeft}
+					title="Availability"
+					description="Disable to make this credential inert without detaching it."
+				>
+					<EnabledField
+						value={values.enabled}
+						onChange={(v) => form.setFieldValue("enabled", v)}
+						hint="When off, requests routed to this host key fall through to the next eligible credential (or fail if none)."
+					/>
+				</FormSection>
 
 				<FormSection
 					icon={Globe}

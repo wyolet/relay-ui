@@ -1,6 +1,7 @@
-import { Gauge, Plus, Undo2, X } from "lucide-react";
+import { Gauge, Plus, ToggleLeft, Undo2, X } from "lucide-react";
 import { useState } from "react";
 import type { RateLimit } from "@/api/types/ratelimit";
+import { EnabledField } from "@/components/EnabledField";
 import { FormSection } from "@/components/FormSection";
 import { IdentitySection } from "@/components/IdentitySection";
 import { Input } from "@/components/ui/input";
@@ -135,6 +136,18 @@ export function RateLimitForm({
 					autoFocus
 					placeholder="Default rate limit"
 				/>
+
+				<FormSection
+					icon={ToggleLeft}
+					title="Availability"
+					description="Disable to make this rate limit inert without deleting it."
+				>
+					<EnabledField
+						value={values.enabled}
+						onChange={(v) => form.setFieldValue("enabled", v)}
+						hint="When off, this rate limit doesn't apply to any policy or model — but stays attached so you can re-enable later."
+					/>
+				</FormSection>
 
 				<FormSection
 					icon={Gauge}

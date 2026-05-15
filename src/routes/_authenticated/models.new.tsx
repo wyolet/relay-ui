@@ -5,7 +5,9 @@ import { useCreateModel } from "@/api/hooks/models";
 import type { ApiErrorBody } from "@/api/types/errors";
 import { ApiError } from "@/api/types/errors";
 import type { ModelCreate } from "@/api/types/model";
+import { EnabledField } from "@/components/EnabledField";
 import { HostLogo } from "@/components/HostLogo";
+import { displayLabel } from "@/lib/displayLabel";
 import type { FieldDef, FormValues } from "@/components/ResourceForm";
 import { ResourceForm } from "@/components/ResourceForm";
 import { toast } from "@/components/Toast";
@@ -53,8 +55,11 @@ function NewModelInner() {
 	const [serverError, setServerError] = useState<ApiErrorBody | undefined>();
 	const [hostId, setHostId] = useState<string>("");
 	const [adapter, setAdapter] = useState<string>("openai");
+	const [enabled, setEnabled] = useState<boolean>(true);
 
 	const hosts = hostsData.items ?? [];
+	const selectedHost = hosts.find((h) => h.metadata.id === hostId);
+	const selectedHostLabel = selectedHost && displayLabel(selectedHost.metadata);
 
 	async function handleSubmit(values: FormValues) {
 		setServerError(undefined);
@@ -70,6 +75,7 @@ function NewModelInner() {
 		const payload: ModelCreate = {
 			metadata: { name, displayName: displayName || undefined },
 			spec: {
+				enabled,
 				hosts: [{ hostId, upstreamName, adapter }],
 			},
 		};
@@ -105,7 +111,9 @@ function NewModelInner() {
 							onValueChange={(v) => setHostId(v ?? "")}
 						>
 							<SelectTrigger className="w-full">
-								<SelectValue placeholder="Pick a host" />
+								<SelectValue placeholder="Pick a host">
+									{selectedHostLabel}
+								</SelectValue>
 							</SelectTrigger>
 							<SelectContent>
 								{hosts.length === 0 ? (
@@ -117,7 +125,7 @@ function NewModelInner() {
 										<SelectItem key={h.metadata.id} value={h.metadata.id ?? ""}>
 											<span className="inline-flex items-center gap-2">
 												<HostLogo host={h} size={14} />
-												{h.metadata.displayName ?? h.metadata.name}
+												{displayLabel(h.metadata)}
 											</span>
 										</SelectItem>
 									))
@@ -141,6 +149,11 @@ function NewModelInner() {
 							</SelectContent>
 						</Select>
 					</div>
+					<EnabledField
+						value={enabled}
+						onChange={setEnabled}
+						hint="When off, this model is hidden from policies and rejects requests."
+					/>
 				</div>
 			}
 		/>

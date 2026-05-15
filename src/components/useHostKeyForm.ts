@@ -38,6 +38,7 @@ export interface HostKeyFormValues {
 	kind: HostKeyKind;
 	envVar: string;
 	value: string;
+	enabled: boolean;
 }
 
 function emptyValues(): HostKeyFormValues {
@@ -49,6 +50,7 @@ function emptyValues(): HostKeyFormValues {
 		kind: "stored",
 		envVar: "",
 		value: "",
+		enabled: true,
 	};
 }
 
@@ -63,6 +65,7 @@ function hostKeyToValues(hk: HostKey): HostKeyFormValues {
 		kind,
 		envVar: hk.spec.valueFrom.env ?? "",
 		value: "",
+		enabled: hk.spec.enabled ?? true,
 	};
 }
 
@@ -80,6 +83,7 @@ function buildSchema(isEdit: boolean) {
 			kind: z.enum(["stored", "env"]),
 			envVar: z.string().trim().max(200),
 			value: z.string().max(8192),
+			enabled: z.boolean(),
 		})
 		.superRefine((v, ctx) => {
 			if (v.kind === "env" && !v.envVar.trim()) {
@@ -167,6 +171,7 @@ export function useHostKeyForm({
 						...specWithoutValue,
 						hostId: value.hostId,
 						policyId: value.policyId,
+						enabled: value.enabled,
 					};
 					const payload: HostKeyUpdate = {
 						metadata: {
@@ -191,6 +196,7 @@ export function useHostKeyForm({
 					const baseSpec = {
 						hostId: value.hostId,
 						policyId: value.policyId,
+						enabled: value.enabled,
 					};
 					const spec =
 						value.kind === "env"

@@ -5,6 +5,8 @@ import {
 	ArrowUp,
 	MoreHorizontal,
 } from "lucide-react";
+import { useUpdateModel } from "@/api/hooks/models";
+import { ApiError } from "@/api/types/errors";
 import type { Host } from "@/api/types/host";
 import type { Model } from "@/api/types/model";
 import { HostLogo } from "@/components/HostLogo";
@@ -237,6 +239,21 @@ function ModelRow({
 	hideProvider?: boolean;
 	hostsById?: Map<string, Host>;
 }) {
+	const enabled = m.spec.enabled !== false;
+	const updateModel = useUpdateModel(m.metadata.id ?? "");
+	async function toggleEnabled(next: boolean) {
+		try {
+			await updateModel.mutateAsync({
+				metadata: m.metadata,
+				spec: { ...m.spec, enabled: next },
+			});
+		} catch (err) {
+			toast(
+				"error",
+				err instanceof ApiError ? err.body.message : "Failed to update model.",
+			);
+		}
+	}
 	const dep = deprecationNote(m);
 	const ctx = m.spec.contextWindowTotal;
 	const ctxIn = m.spec.contextWindowInput;
@@ -324,13 +341,9 @@ function ModelRow({
 			</td>
 			<td className="px-3 py-2">
 				<Switch
-					checked
-					onChange={() =>
-						toast(
-							"success",
-							"Model enable/disable — backend support coming soon.",
-						)
-					}
+					checked={enabled}
+					onChange={(next) => void toggleEnabled(next)}
+					disabled={updateModel.isPending}
 					label={`Toggle ${m.metadata.name}`}
 				/>
 			</td>

@@ -4,9 +4,11 @@ import {
 	KeyRound,
 	type LucideIcon,
 	ShieldCheck,
+	ToggleLeft,
 } from "lucide-react";
 import { useHostKeys } from "@/api/hooks/hostkeys";
 import type { Policy } from "@/api/types/policy";
+import { EnabledField } from "@/components/EnabledField";
 import { IdentitySection } from "@/components/IdentitySection";
 import { IncludeDeprecatedSwitch } from "@/components/IncludeDeprecatedSwitch";
 import { ModelPicker } from "@/components/ModelPicker";
@@ -77,6 +79,18 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 					autoFocus={!isEdit}
 					placeholder="Default policy"
 				/>
+
+				<Section
+					icon={ToggleLeft}
+					title="Availability"
+					description="Disable to make this policy inert without deleting it."
+				>
+					<EnabledField
+						value={values.enabled}
+						onChange={(v) => form.setFieldValue("enabled", v)}
+						hint="When off, relay keys attached to this policy reject requests with 401."
+					/>
+				</Section>
 
 				<Section
 					icon={Boxes}

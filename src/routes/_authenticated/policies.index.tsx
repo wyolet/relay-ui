@@ -20,8 +20,10 @@ import {
 	rateLimitsListQueryOptions,
 	useAttachableRateLimits,
 	useDeleteRateLimit,
-	useUserRateLimits,
+	useRateLimits,
+	useUpdateRateLimit,
 } from "@/api/hooks/ratelimits";
+import { FilterDropdown } from "@/components/FilterDropdown";
 import type { Policy } from "@/api/types/policy";
 import type { RateLimit } from "@/api/types/ratelimit";
 import { confirm } from "@/components/ConfirmDialog";
@@ -37,6 +39,40 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 type Tab = "policies" | "ratelimits";
+
+type OwnerFilter = "user" | "host" | "all";
+
+const OWNER_FILTER_OPTIONS: { value: OwnerFilter; label: string }[] = [
+	{ value: "user", label: "User" },
+	{ value: "host", label: "Host" },
+	{ value: "all", label: "All" },
+];
+
+function matchesOwnerFilter(
+	owner: { kind?: string } | undefined,
+	filter: OwnerFilter,
+): boolean {
+	if (filter === "all") return true;
+	const kind = owner?.kind ?? "user";
+	return kind === filter;
+}
+
+function OwnerFilterSelect({
+	value,
+	onChange,
+}: {
+	value: OwnerFilter;
+	onChange: (v: OwnerFilter) => void;
+}) {
+	return (
+		<FilterDropdown
+			label="Owner"
+			value={value}
+			options={OWNER_FILTER_OPTIONS}
+			onChange={onChange}
+		/>
+	);
+}
 
 const searchSchema = z.object({
 	tab: z.enum(["policies", "ratelimits"]).default("policies"),
@@ -149,7 +185,11 @@ function PoliciesPanel() {
 	const deletePolicy = useDeletePolicy();
 	const navigate = useNavigate({ from: "/policies" });
 	const [q, setQ] = useState("");
-	const allItems = policiesData.items ?? [];
+	const [ownerFilter, setOwnerFilter] = useState<OwnerFilter>("user");
+	const rawItems = policiesData.items ?? [];
+	const allItems = rawItems.filter((p) =>
+		matchesOwnerFilter(p.metadata.owner, ownerFilter),
+	);
 	const needle = q.trim().toLowerCase();
 	const items = needle
 		? allItems.filter((p) =>
@@ -187,6 +227,9 @@ function PoliciesPanel() {
 			<TableToolbar
 				search={
 					<SearchBox value={q} onChange={setQ} placeholder="Search policies" />
+				}
+				filters={
+					<OwnerFilterSelect value={ownerFilter} onChange={setOwnerFilter} />
 				}
 				actions={
 					<Link
@@ -396,10 +439,15 @@ function fmtAmount(n: number): string {
 }
 
 function RateLimitsPanel() {
-	const allItems = useUserRateLimits();
+	const { data: rateLimitsData } = useRateLimits();
 	const deleteRL = useDeleteRateLimit();
 	const navigate = useNavigate({ from: "/policies" });
 	const [q, setQ] = useState("");
+	const [ownerFilter, setOwnerFilter] = useState<OwnerFilter>("user");
+	const rawItems = rateLimitsData.items ?? [];
+	const allItems = rawItems.filter((rl) =>
+		matchesOwnerFilter(rl.metadata.owner, ownerFilter),
+	);
 	const needle = q.trim().toLowerCase();
 	const items = needle
 		? allItems.filter((rl) =>
@@ -435,6 +483,9 @@ function RateLimitsPanel() {
 						onChange={setQ}
 						placeholder="Search rate limits"
 					/>
+				}
+				filters={
+					<OwnerFilterSelect value={ownerFilter} onChange={setOwnerFilter} />
 				}
 				actions={
 					<Link
@@ -483,6 +534,12 @@ function RateLimitsPanel() {
 								<Th>Rules</Th>
 								<th
 									scope="col"
+									className="w-12 px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground"
+								>
+									On
+								</th>
+								<th
+									scope="col"
 									className="w-10 px-3 py-2"
 									aria-label="Actions"
 								/>
@@ -490,63 +547,96 @@ function RateLimitsPanel() {
 						</thead>
 						<tbody>
 							{items.map((rl) => (
-								<tr
+								<RateLimitRow
 									key={rl.metadata.name}
-									className="border-t border-border hover:bg-muted/40 transition-colors"
-								>
-									<td className="px-3 py-2">
-										<Link
-											to="/policies/rate-limits/$name"
-											params={{ name: rl.metadata.name }}
-											className="text-sm font-medium text-foreground hover:underline"
-										>
-											{displayLabel(rl.metadata)}
-											{!hasDisplayName(rl.metadata) && (
-												<span className="ml-1.5 text-[11px] text-muted-foreground">
-													(no display name)
-												</span>
-											)}
-										</Link>
-									</td>
-									<td className="px-3 py-2 text-sm">
-										<span className="text-[11px] text-muted-foreground">
-											{rl.spec.rules?.[0]?.strategy ?? "—"}
-										</span>
-									</td>
-									<td className="px-3 py-2 text-right text-sm text-foreground tabular-nums">
-										{rl.spec.rules?.[0]
-											? fmtWindow(rl.spec.rules[0].window)
-											: "—"}
-									</td>
-									<td className="px-3 py-2 text-sm text-muted-foreground">
-										{summarizeRules(rl)}
-									</td>
-									<td className="px-3 py-2 text-right">
-										<RowMenu
-											actions={[
-												{
-													label: "Edit",
-													onClick: () =>
-														void navigate({
-															to: "/policies/rate-limits/$name",
-															params: { name: rl.metadata.name },
-														}),
-												},
-												{
-													label: "Delete",
-													danger: true,
-													onClick: () => void handleDelete(rl),
-												},
-											]}
-										/>
-									</td>
-								</tr>
+									rl={rl}
+									onEdit={() =>
+										void navigate({
+											to: "/policies/rate-limits/$name",
+											params: { name: rl.metadata.name },
+										})
+									}
+									onDelete={() => void handleDelete(rl)}
+								/>
 							))}
 						</tbody>
 					</table>
 				</div>
 			)}
 		</div>
+	);
+}
+
+function RateLimitRow({
+	rl,
+	onEdit,
+	onDelete,
+}: {
+	rl: RateLimit;
+	onEdit: () => void;
+	onDelete: () => void;
+}) {
+	const updateRL = useUpdateRateLimit(rl.metadata.id ?? "");
+	const enabled = rl.spec.enabled !== false;
+	async function toggleEnabled(next: boolean) {
+		try {
+			await updateRL.mutateAsync({
+				metadata: rl.metadata,
+				spec: { ...rl.spec, enabled: next },
+			});
+		} catch (err) {
+			toast(
+				"error",
+				err instanceof ApiError
+					? err.body.message
+					: "Failed to update rate limit.",
+			);
+		}
+	}
+	return (
+		<tr className="border-t border-border hover:bg-muted/40 transition-colors">
+			<td className="px-3 py-2">
+				<Link
+					to="/policies/rate-limits/$name"
+					params={{ name: rl.metadata.name }}
+					className="text-sm font-medium text-foreground hover:underline"
+				>
+					{displayLabel(rl.metadata)}
+					{!hasDisplayName(rl.metadata) && (
+						<span className="ml-1.5 text-[11px] text-muted-foreground">
+							(no display name)
+						</span>
+					)}
+				</Link>
+			</td>
+			<td className="px-3 py-2 text-sm">
+				<span className="text-[11px] text-muted-foreground">
+					{rl.spec.rules?.[0]?.strategy ?? "—"}
+				</span>
+			</td>
+			<td className="px-3 py-2 text-right text-sm text-foreground tabular-nums">
+				{rl.spec.rules?.[0] ? fmtWindow(rl.spec.rules[0].window) : "—"}
+			</td>
+			<td className="px-3 py-2 text-sm text-muted-foreground">
+				{summarizeRules(rl)}
+			</td>
+			<td className="px-3 py-2">
+				<Switch
+					checked={enabled}
+					onChange={(next) => void toggleEnabled(next)}
+					disabled={updateRL.isPending}
+					label={`Toggle ${rl.metadata.name}`}
+				/>
+			</td>
+			<td className="px-3 py-2 text-right">
+				<RowMenu
+					actions={[
+						{ label: "Edit", onClick: onEdit },
+						{ label: "Delete", danger: true, onClick: onDelete },
+					]}
+				/>
+			</td>
+		</tr>
 	);
 }
 

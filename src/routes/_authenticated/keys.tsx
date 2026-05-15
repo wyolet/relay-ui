@@ -9,8 +9,6 @@ import {
 } from "@/api/hooks/hostkeys";
 import { hostsListQueryOptions, useHosts } from "@/api/hooks/hosts";
 import { policiesListQueryOptions, usePolicies } from "@/api/hooks/policies";
-import { Switch } from "@/components/ui/switch";
-import { useToggleHostKeyEnabled } from "@/components/useToggleHostKeyEnabled";
 import {
 	relayKeysListQueryOptions,
 	useDeleteRelayKey,
@@ -22,6 +20,7 @@ import type { HostKey } from "@/api/types/hostkey";
 import type { RelayKey } from "@/api/types/relayKey";
 import { confirm } from "@/components/ConfirmDialog";
 import { SearchBox } from "@/components/SearchBox";
+import { Switch } from "@/components/Switch";
 import { TableToolbar } from "@/components/TableToolbar";
 import { toast } from "@/components/Toast";
 import {
@@ -40,6 +39,12 @@ import {
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 
 type Filter = "active" | "revoked" | "all";
+
+const FILTER_LABELS: Record<Filter, string> = {
+	active: "Active",
+	revoked: "Revoked",
+	all: "All",
+};
 type Tab = "relay" | "provider";
 
 const searchSchema = z.object({
@@ -330,12 +335,14 @@ function RelayKeysPanel() {
 						}}
 					>
 						<SelectTrigger className="w-32">
-							<SelectValue />
+							<SelectValue>{FILTER_LABELS[search.filter]}</SelectValue>
 						</SelectTrigger>
 						<SelectContent>
-							<SelectItem value="active">Active</SelectItem>
-							<SelectItem value="revoked">Revoked</SelectItem>
-							<SelectItem value="all">All</SelectItem>
+							{(Object.keys(FILTER_LABELS) as Filter[]).map((f) => (
+								<SelectItem key={f} value={f}>
+									{FILTER_LABELS[f]}
+								</SelectItem>
+							))}
 						</SelectContent>
 					</Select>
 				}
@@ -385,6 +392,12 @@ function RelayKeysPanel() {
 								<Th>Prefix</Th>
 								<Th>Policy</Th>
 								<Th>Passthrough</Th>
+								<th
+									scope="col"
+									className="w-12 px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground"
+								>
+									On
+								</th>
 								<th
 									scope="col"
 									className="w-10 px-3 py-2"
@@ -450,6 +463,16 @@ function RelayKeysPanel() {
 										<td className="px-3 py-2 text-xs text-muted-foreground">
 											{rk.spec.passthroughAllowed ? "Allowed" : "—"}
 										</td>
+										<td className="px-3 py-2">
+											<Switch
+												checked={enabled}
+												onChange={(next) =>
+													void handleToggleEnabled(rk, next)
+												}
+												disabled={revoked}
+												label={`Toggle ${rk.metadata.name}`}
+											/>
+										</td>
 										<td className="px-3 py-2 text-right">
 											<RowMenu
 												actions={[
@@ -461,11 +484,6 @@ function RelayKeysPanel() {
 																params={{ name: rk.metadata.name }}
 															/>
 														),
-													},
-													{
-														label: enabled ? "Disable" : "Enable",
-														onClick: () =>
-															void handleToggleEnabled(rk, !enabled),
 													},
 													{
 														label: "Delete",
@@ -491,7 +509,6 @@ function HostKeysPanel() {
 	const { data: hostsData } = useHosts();
 	const { data: policiesData } = usePolicies();
 	const deleteHostKey = useDeleteHostKey();
-	const { setEnabled, isPending: isTogglingEnabled } = useToggleHostKeyEnabled();
 	const [q, setQ] = useState("");
 
 	const hostLabels = new Map<string, string>();
@@ -603,7 +620,6 @@ function HostKeysPanel() {
 					<table className="w-full border-collapse">
 						<thead className="bg-muted/40">
 							<tr>
-								<Th>Enabled</Th>
 								<Th>Name</Th>
 								<Th>Host</Th>
 								<Th>Host policy</Th>
@@ -638,17 +654,6 @@ function HostKeysPanel() {
 												: "bg-muted/30 text-muted-foreground/80",
 										].join(" ")}
 									>
-										<td className="px-3 py-2 align-middle">
-											<Switch
-												size="sm"
-												checked={enabled}
-												onCheckedChange={(next) => void setEnabled(hk, next)}
-												disabled={isTogglingEnabled}
-												aria-label={
-													enabled ? "Disable host key" : "Enable host key"
-												}
-											/>
-										</td>
 										<td className="px-3 py-2">
 											<Link
 												to="/host-keys/$name"

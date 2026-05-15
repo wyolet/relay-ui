@@ -61,6 +61,7 @@ export interface RuleDraft {
 export interface RateLimitFormValues {
 	displayName: string;
 	description: string;
+	enabled: boolean;
 	rules: RuleDraft[];
 }
 
@@ -88,6 +89,7 @@ function buildSchema(tightest: SystemReqCap | undefined) {
 				.min(1, "Display name is required — the slug is generated from it")
 				.max(120, "Display name is too long"),
 			description: z.string().trim().max(500, "Description is too long"),
+			enabled: z.boolean(),
 			rules: z.array(ruleSchema).min(1, "At least one rule is required"),
 		})
 		.superRefine((val, ctx) => {
@@ -119,6 +121,7 @@ function emptyValues(): RateLimitFormValues {
 	return {
 		displayName: "",
 		description: "",
+		enabled: true,
 		rules: [emptyRule()],
 	};
 }
@@ -137,6 +140,7 @@ function rlToValues(rl: RateLimit): RateLimitFormValues {
 	return {
 		displayName: displayLabel(rl.metadata),
 		description: rl.metadata.description ?? "",
+		enabled: rl.spec.enabled ?? true,
 		rules,
 	};
 }
@@ -213,7 +217,7 @@ export function useRateLimitForm({
 			}));
 			const displayName = value.displayName.trim();
 			const description = value.description.trim();
-			const spec = { rules };
+			const spec = { rules, enabled: value.enabled };
 			try {
 				const name = computeSlug(displayName);
 				if (isEdit && rateLimit) {
