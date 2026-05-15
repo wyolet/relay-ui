@@ -354,7 +354,7 @@ function PolicyRow({
 					</Link>
 				) : (policy.spec.rlBindings ?? []).length > 0 ? (
 					<span className="text-muted-foreground">
-						{(policy.spec.rlBindings ?? []).length} bindings
+						{(policy.spec.rlBindings ?? []).length} rate limits
 					</span>
 				) : (
 					<span className="text-muted-foreground/70">—</span>

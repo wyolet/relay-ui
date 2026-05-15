@@ -98,7 +98,7 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 				<Section
 					icon={Boxes}
 					title="Allowed catalog"
-					description="Grant providers, models, or specific (model, host) bindings. Wildcard grants auto-include catalog rows added later."
+					description="Grant providers, models, hosts, or specific model+host pairs. Wildcard grants auto-include catalog rows added later."
 				>
 					<div className="flex flex-col gap-2">
 						<ModelPicker

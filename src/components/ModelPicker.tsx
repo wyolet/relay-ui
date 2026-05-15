@@ -927,7 +927,7 @@ const KIND_META: Record<
 	provider: { icon: Building2, label: "Provider" },
 	"provider-on-host": { icon: Building2, label: "Provider · host" },
 	model: { icon: Boxes, label: "Model" },
-	binding: { icon: Boxes, label: "Binding" },
+	binding: { icon: Boxes, label: "Model · host" },
 	host: { icon: Globe, label: "Host" },
 };
 
