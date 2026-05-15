@@ -5,6 +5,7 @@ import {
 	makeHost,
 	makeHostKey,
 	makeModel,
+	makePolicy,
 } from "@/diagnostics/fixtures";
 
 const codes = (ds: { code: string }[]) => ds.map((d) => d.code).sort();
@@ -17,14 +18,28 @@ describe("analyzeHost", () => {
 		expect(codes(ds)).toContain("host.disabled-with-refs");
 	});
 
-	it("warns when default policy is dangling", () => {
+	it("warns when default policy id no longer resolves", () => {
 		const host = makeHost({
 			id: "h1",
 			name: "openai",
-			defaultPolicy: "ghost",
+			defaultPolicy: "ghost-policy-id",
 		});
 		const ds = analyzeHost(host, graph({ hosts: [host] }));
 		expect(codes(ds)).toContain("host.default-policy-dangling");
+	});
+
+	it("doesn't fire when default policy id resolves", () => {
+		const policy = makePolicy({ id: "p-real" });
+		const host = makeHost({
+			id: "h1",
+			name: "openai",
+			defaultPolicy: "p-real",
+		});
+		const ds = analyzeHost(
+			host,
+			graph({ hosts: [host], policies: [policy] }),
+		);
+		expect(codes(ds)).not.toContain("host.default-policy-dangling");
 	});
 
 	it("info: no keys registered", () => {

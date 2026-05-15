@@ -10,7 +10,8 @@
     "lint": "biome lint ./src",
     "format": "biome format ./src",
     "check": "biome check ./src",
-    "test": "bun test",
+    "test": "bun test src/",
+    "test:e2e": "playwright test",
     "ci": "bun run typecheck && bun run lint && bun run test",
     "gen:api": "openapi-typescript ${OPENAPI_URL:-http://localhost:8080/openapi.json} -o src/api/types.gen.ts",
     "gen:api:live": "curl -sk https://relay-control-api.wyolet.dev/openapi.json | bun x openapi-typescript /dev/stdin -o src/api/types.gen.ts"
@@ -38,6 +39,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.5",
+    "@playwright/test": "^1.60.0",
     "@tailwindcss/vite": "^4.1.18",
     "@tanstack/react-query-devtools": "^5.80.5",
     "@tanstack/react-router-devtools": "latest",

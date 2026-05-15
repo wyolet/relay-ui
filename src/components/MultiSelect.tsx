@@ -117,7 +117,14 @@ export function MultiSelect({
 				align="start"
 				className="w-[var(--anchor-width)] min-w-[240px] p-0"
 			>
-				<Command>
+				{/*
+				 * `defaultValue=" "` prevents cmdk from auto-selecting the first
+				 * item on mount and calling `scrollIntoView` on it — that call
+				 * yanked the document because the popup hadn't finished
+				 * positioning yet. User keyboard/pointer interaction still
+				 * highlights items normally afterwards.
+				 */}
+				<Command defaultValue=" ">
 					<CommandInput placeholder="Search…" />
 					<CommandList>
 						<CommandEmpty>

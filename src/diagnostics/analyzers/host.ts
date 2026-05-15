@@ -30,14 +30,13 @@ export function analyzeHost(host: Host, graph: DiagnosticGraph): Diagnostic[] {
 	}
 
 	if (host.spec.defaultPolicy) {
-		const found = Array.from(graph.policies.values()).some(
-			(p) => p.metadata.name === host.spec.defaultPolicy,
-		);
+		// `spec.defaultPolicy` holds the policy id (UUID), not the slug.
+		const found = graph.policies.has(host.spec.defaultPolicy);
 		if (!found) {
 			out.push({
 				severity: "warn",
 				code: "host.default-policy-dangling",
-				message: `Default policy "${host.spec.defaultPolicy}" no longer exists.`,
+				message: "Default policy no longer exists.",
 			});
 		}
 	}
