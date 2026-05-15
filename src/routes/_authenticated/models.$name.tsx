@@ -49,6 +49,7 @@ import { confirm } from "@/components/ConfirmDialog";
 import { toast } from "@/components/Toast";
 import { DiagnosticList } from "@/diagnostics/DiagnosticList";
 import { useModelDiagnostics } from "@/diagnostics/useDiagnostics";
+import { displayLabel } from "@/lib/displayLabel";
 
 type Tab = "overview" | "pricing" | "limits";
 
@@ -314,7 +315,7 @@ function ModelDetailInner() {
 					<div className="min-w-0">
 						<div className="flex items-center gap-2 min-w-0">
 							<h1 className="text-xl font-semibold text-foreground truncate">
-								{model.metadata.displayName ?? model.metadata.name}
+								{displayLabel(model.metadata)}
 							</h1>
 							{dep && (
 								<AlertTriangle

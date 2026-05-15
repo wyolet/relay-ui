@@ -1,6 +1,7 @@
 import { QueryClient } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
 import ReactDOM from "react-dom/client";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { applyTheme, useThemeStore } from "@/stores/theme";
 import { getRouter } from "./router";
 
@@ -21,5 +22,9 @@ const rootElement = document.getElementById("app");
 
 if (rootElement && !rootElement.innerHTML) {
 	const root = ReactDOM.createRoot(rootElement);
-	root.render(<RouterProvider router={router} />);
+	root.render(
+		<TooltipProvider delay={200}>
+			<RouterProvider router={router} />
+		</TooltipProvider>,
+	);
 }

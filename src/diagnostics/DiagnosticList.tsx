@@ -1,5 +1,6 @@
+import { Link } from "@tanstack/react-router";
 import { AlertCircle, AlertTriangle, Info, type LucideIcon } from "lucide-react";
-import type { Diagnostic, Severity } from "@/diagnostics/types";
+import type { Diagnostic, DiagLink, Severity } from "@/diagnostics/types";
 
 const TONE: Record<
 	Severity,
@@ -24,6 +25,70 @@ const TONE: Record<
 		label: "Info",
 	},
 };
+
+/**
+ * Typed dispatcher over the closed set of routes diagnostic links can point
+ * at. Adding a new target = adding a case here; keeps TanStack Router's
+ * typed `to` prop honest without `as any`.
+ */
+function DiagnosticActionLink({ link }: { link: DiagLink }) {
+	if (link.to === "/policies/rate-limits/$name" && link.params?.name) {
+		return (
+			<Link
+				to="/policies/rate-limits/$name"
+				params={{ name: link.params.name }}
+				className="ml-1 underline underline-offset-2 hover:text-primary"
+			>
+				View
+			</Link>
+		);
+	}
+	if (link.to === "/policies/$name" && link.params?.name) {
+		return (
+			<Link
+				to="/policies/$name"
+				params={{ name: link.params.name }}
+				className="ml-1 underline underline-offset-2 hover:text-primary"
+			>
+				View
+			</Link>
+		);
+	}
+	if (link.to === "/host-keys/$name" && link.params?.name) {
+		return (
+			<Link
+				to="/host-keys/$name"
+				params={{ name: link.params.name }}
+				className="ml-1 underline underline-offset-2 hover:text-primary"
+			>
+				View
+			</Link>
+		);
+	}
+	if (link.to === "/relay-keys/$name" && link.params?.name) {
+		return (
+			<Link
+				to="/relay-keys/$name"
+				params={{ name: link.params.name }}
+				className="ml-1 underline underline-offset-2 hover:text-primary"
+			>
+				View
+			</Link>
+		);
+	}
+	if (link.to === "/models/$name" && link.params?.name) {
+		return (
+			<Link
+				to="/models/$name"
+				params={{ name: link.params.name }}
+				className="ml-1 underline underline-offset-2 hover:text-primary"
+			>
+				View
+			</Link>
+		);
+	}
+	return null;
+}
 
 interface DiagnosticListProps {
 	diagnostics: Diagnostic[];
@@ -65,6 +130,7 @@ export function DiagnosticList({
 						/>
 						<span className="text-xs text-foreground leading-snug">
 							{d.message}
+							{d.link && <DiagnosticActionLink link={d.link} />}
 						</span>
 					</li>
 				);

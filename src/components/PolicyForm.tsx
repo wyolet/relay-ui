@@ -10,6 +10,7 @@ import { useHostKeys } from "@/api/hooks/hostkeys";
 import type { Policy } from "@/api/types/policy";
 import { EnabledField } from "@/components/EnabledField";
 import { IdentitySection } from "@/components/IdentitySection";
+import { PolicyAttachedRelayKeys } from "@/components/PolicyAttachedRelayKeys";
 import { IncludeDeprecatedSwitch } from "@/components/IncludeDeprecatedSwitch";
 import { ModelPicker } from "@/components/ModelPicker";
 import { MultiSelect } from "@/components/MultiSelect";
@@ -183,15 +184,15 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 					/>
 				</Section>
 
-				<Section
-					icon={ShieldCheck}
-					title="Relay keys"
-					description="Which relay keys inherit this policy's settings."
-				>
-					<div className="rounded-md border border-dashed border-border bg-muted/30 px-3 py-3 text-sm text-muted-foreground">
-						Attach policies from the relay-key form.
-					</div>
-				</Section>
+				{policy && (
+					<Section
+						icon={ShieldCheck}
+						title="Relay keys"
+						description="Relay keys that resolve to this policy. Use Reassign to move a key to a different policy."
+					>
+						<PolicyAttachedRelayKeys policy={policy} />
+					</Section>
+				)}
 			</div>
 
 			<div className="sticky bottom-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-t border-border mt-6 -mx-6 px-6 py-3 flex items-center justify-end gap-2">

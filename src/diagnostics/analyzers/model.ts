@@ -1,5 +1,6 @@
 import type { Model } from "@/api/types/model";
 import type { Diagnostic, DiagnosticGraph } from "@/diagnostics/types";
+import { displayLabel } from "@/lib/displayLabel";
 
 function isDeprecated(m: Model): boolean {
 	if (m.spec.deprecation?.status) return true;
@@ -62,7 +63,7 @@ export function analyzeModel(
 			const grants = p.spec.models ?? null;
 			if (!grants || grants.length === 0) continue;
 			if (grants.some((g) => g === slug || g.endsWith(`/${slug}`))) {
-				grantedBy.push(p.metadata.displayName ?? p.metadata.name);
+				grantedBy.push(displayLabel(p.metadata));
 			}
 		}
 		if (grantedBy.length > 0) {

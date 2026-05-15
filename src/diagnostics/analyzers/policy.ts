@@ -1,6 +1,7 @@
 import type { Policy } from "@/api/types/policy";
 import { modelsForRefViaPolicy } from "@/diagnostics/analyzers/policyCatalog";
 import type { Diagnostic, DiagnosticGraph } from "@/diagnostics/types";
+import { displayLabel } from "@/lib/displayLabel";
 
 export function analyzePolicy(
 	policy: Policy,
@@ -67,7 +68,7 @@ export function analyzePolicy(
 			out.push({
 				severity: "warn",
 				code: "policy.rate-limit-disabled",
-				message: `Rate limit "${rl.metadata.displayName ?? rl.metadata.name}" is disabled — it silently does not apply.`,
+				message: `Rate limit "${displayLabel(rl.metadata)}" is disabled — it silently does not apply.`,
 				link: {
 					to: "/policies/rate-limits/$name",
 					params: { name: rl.metadata.name },

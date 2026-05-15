@@ -1,5 +1,6 @@
 import type { HostKey } from "@/api/types/hostkey";
 import type { Diagnostic, DiagnosticGraph } from "@/diagnostics/types";
+import { displayLabel } from "@/lib/displayLabel";
 
 export function analyzeHostKey(
 	hk: HostKey,
@@ -21,7 +22,7 @@ export function analyzeHostKey(
 		out.push({
 			severity: "warn",
 			code: "host-key.host-disabled",
-			message: `Host "${host.metadata.displayName ?? host.metadata.name}" is disabled — this credential is unreachable.`,
+			message: `Host "${displayLabel(host.metadata)}" is disabled — this credential is unreachable.`,
 		});
 	}
 
@@ -37,7 +38,7 @@ export function analyzeHostKey(
 		out.push({
 			severity: "warn",
 			code: "host-key.host-policy-disabled",
-			message: `Host policy "${hostPolicy.metadata.displayName ?? hostPolicy.metadata.name}" is disabled.`,
+			message: `Host policy "${displayLabel(hostPolicy.metadata)}" is disabled.`,
 		});
 	}
 

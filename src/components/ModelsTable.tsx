@@ -13,6 +13,7 @@ import { HostLogo } from "@/components/HostLogo";
 import { Switch } from "@/components/Switch";
 import { toast } from "@/components/Toast";
 import { DiagnosticDot } from "@/diagnostics/DiagnosticDot";
+import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { useModelDiagnostics } from "@/diagnostics/useDiagnostics";
 import {
 	DropdownMenu,
@@ -73,7 +74,7 @@ function providerOf(m: Model): string {
 function sortValue(m: Model, key: ModelsSortKey): string | number {
 	switch (key) {
 		case "name":
-			return (m.metadata.displayName ?? m.metadata.name).toLowerCase();
+			return displayLabel(m.metadata).toLowerCase();
 		case "provider":
 			return providerOf(m).toLowerCase();
 		case "family":
@@ -277,7 +278,7 @@ function ModelRow({
 				>
 					<div className="flex items-center gap-2 min-w-0">
 						<span className="text-sm font-medium text-foreground truncate">
-							{m.metadata.displayName ?? m.metadata.name}
+							{displayLabel(m.metadata)}
 						</span>
 						{dep && (
 							<AlertTriangle
@@ -287,7 +288,7 @@ function ModelRow({
 						)}
 						<DiagnosticDot diagnostics={diagnostics} />
 					</div>
-					{(m.metadata.displayName || dep) && (
+					{(hasDisplayName(m.metadata) || dep) && (
 						<div className="text-[11px] text-muted-foreground truncate">
 							{dep ? (
 								<span className="text-amber-700 dark:text-amber-400">

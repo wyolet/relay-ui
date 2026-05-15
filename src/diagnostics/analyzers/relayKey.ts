@@ -1,6 +1,7 @@
 import type { RelayKey } from "@/api/types/relayKey";
 import { analyzePolicy } from "@/diagnostics/analyzers/policy";
 import type { Diagnostic, DiagnosticGraph } from "@/diagnostics/types";
+import { displayLabel } from "@/lib/displayLabel";
 
 export function analyzeRelayKey(
 	rk: RelayKey,
@@ -22,7 +23,7 @@ export function analyzeRelayKey(
 			out.push({
 				severity: "warn",
 				code: "relay-key.policy-disabled",
-				message: `Attached policy "${policy.metadata.displayName ?? policy.metadata.name}" is disabled — requests will return 401.`,
+				message: `Attached policy "${displayLabel(policy.metadata)}" is disabled — requests will return 401.`,
 			});
 		}
 		// Roll up the policy's own errors (don't duplicate messages — just summarise).
