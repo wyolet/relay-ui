@@ -2,17 +2,22 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Check, Copy, KeyRound, MoreHorizontal, Plus } from "lucide-react";
 import { useState } from "react";
 import { z } from "zod";
-import { policiesListQueryOptions, usePolicies } from "@/api/hooks/policies";
 import {
 	hostKeysListQueryOptions,
 	useDeleteHostKey,
 	useHostKeys,
 } from "@/api/hooks/hostkeys";
+import { policiesListQueryOptions, usePolicies } from "@/api/hooks/policies";
+import {
+	relayKeysListQueryOptions,
+	useDeleteRelayKey,
+	useRelayKeys,
+	useUpdateRelayKey,
+} from "@/api/hooks/relayKeys";
 import { ApiError } from "@/api/types/errors";
 import type { HostKey } from "@/api/types/hostkey";
+import type { RelayKey } from "@/api/types/relayKey";
 import { confirm } from "@/components/ConfirmDialog";
-import { CreateRelayKeyModal } from "@/components/CreateRelayKeyModal";
-import { EditRelayKeyModal } from "@/components/EditRelayKeyModal";
 import { SearchBox } from "@/components/SearchBox";
 import { TableToolbar } from "@/components/TableToolbar";
 import { toast } from "@/components/Toast";
@@ -30,7 +35,6 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
-import { type ApiKey, useKeysStore } from "@/stores/keys";
 
 type Filter = "active" | "revoked" | "all";
 type Tab = "relay" | "provider";
@@ -46,39 +50,11 @@ export const Route = createFileRoute("/_authenticated/keys")({
 	loader: ({ context }) => {
 		void context.queryClient.prefetchQuery(policiesListQueryOptions);
 		void context.queryClient.prefetchQuery(hostKeysListQueryOptions);
+		void context.queryClient.prefetchQuery(relayKeysListQueryOptions);
 		return null;
 	},
 	component: KeysPage,
 });
-
-function timeAgo(iso: string | null): string {
-	if (iso === null) return "—";
-	const t = new Date(iso).getTime();
-	const diff = Date.now() - t;
-	const sec = Math.round(diff / 1_000);
-	if (sec < 60) return `${sec}s ago`;
-	const min = Math.round(sec / 60);
-	if (min < 60) return `${min}m ago`;
-	const hr = Math.round(min / 60);
-	if (hr < 24) return `${hr}h ago`;
-	const day = Math.round(hr / 24);
-	if (day < 30) return `${day}d ago`;
-	const mo = Math.round(day / 30);
-	return `${mo}mo ago`;
-}
-
-function applyFilter(items: ApiKey[], filter: Filter, q: string): ApiKey[] {
-	const needle = q.trim().toLowerCase();
-	return items.filter((k) => {
-		if (filter === "active" && k.revokedAt !== null) return false;
-		if (filter === "revoked" && k.revokedAt === null) return false;
-		if (needle.length === 0) return true;
-		return (
-			k.name.toLowerCase().includes(needle) ||
-			k.prefix.toLowerCase().includes(needle)
-		);
-	});
-}
 
 interface MenuAction {
 	label: string;
@@ -138,75 +114,6 @@ function PrefixCell({ text, copyText }: { text: string; copyText: string }) {
 			)}
 		</button>
 	);
-}
-
-function formatAmount(n: number): string {
-	if (n >= 1_000_000)
-		return `${(n / 1_000_000).toFixed(n % 1_000_000 ? 1 : 0)}M`;
-	if (n >= 1_000) return `${(n / 1_000).toFixed(n % 1_000 ? 1 : 0)}k`;
-	return `${n}`;
-}
-
-function formatWindow(seconds: number): string {
-	if (seconds < 60) return `${seconds}s`;
-	if (seconds < 3600) return `${Math.round(seconds / 60)}m`;
-	if (seconds < 86_400) return `${Math.round(seconds / 3600)}h`;
-	return `${Math.round(seconds / 86_400)}d`;
-}
-
-function LimitsCell({
-	rateLimit,
-}: {
-	rateLimit: import("@/stores/keys").RateLimitDraft;
-}) {
-	if (rateLimit.kind === "none") {
-		return <span className="text-[11px] text-muted-foreground/70">—</span>;
-	}
-	if (rateLimit.kind === "ref") {
-		return (
-			<span className="inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded bg-brand-600/10 dark:bg-brand-500/15 text-brand-700 dark:text-brand-300 font-medium">
-				{rateLimit.name || "(unset)"}
-			</span>
-		);
-	}
-	const parts: string[] = [];
-	if (rateLimit.requests)
-		parts.push(
-			`${formatAmount(rateLimit.requests.amount)}/${formatWindow(rateLimit.requests.window)} req`,
-		);
-	if (rateLimit.tokens)
-		parts.push(
-			`${formatAmount(rateLimit.tokens.amount)}/${formatWindow(rateLimit.tokens.window)} tok`,
-		);
-	if (rateLimit.concurrency) parts.push(`${rateLimit.concurrency.amount} conc`);
-	if (rateLimit.spend)
-		parts.push(
-			`$${rateLimit.spend.amount}/${formatWindow(rateLimit.spend.window)}`,
-		);
-	if (parts.length === 0) {
-		return (
-			<span className="text-[11px] text-muted-foreground/70">
-				custom (empty)
-			</span>
-		);
-	}
-	return (
-		<span className="text-[11px] font-mono text-muted-foreground">
-			{parts.join(" · ")}
-		</span>
-	);
-}
-
-function formatExpires(iso: string | null): string {
-	if (iso === null) return "Never";
-	const t = new Date(iso).getTime();
-	const diff = t - Date.now();
-	if (diff < 0) return "Expired";
-	const day = Math.round(diff / 86_400_000);
-	if (day < 1) return "<1d";
-	if (day < 60) return `in ${day}d`;
-	const mo = Math.round(day / 30);
-	return `in ${mo}mo`;
 }
 
 function Th({
@@ -309,22 +216,93 @@ function TabLink({ value, current, onClick, children }: TabLinkProps) {
 	);
 }
 
+function relayStatus(rk: RelayKey): { tone: StatusTone; label: string } {
+	if (rk.spec.revokedAt) return { tone: "danger", label: "Revoked" };
+	if (rk.spec.enabled === false) return { tone: "warn", label: "Disabled" };
+	return { tone: "active", label: "Active" };
+}
+
+function isRelayKeyRevoked(rk: RelayKey): boolean {
+	return Boolean(rk.spec.revokedAt) || rk.spec.enabled === false;
+}
+
 function RelayKeysPanel() {
 	const navigate = useNavigate({ from: "/keys" });
 	const search = Route.useSearch();
-	const items = useKeysStore((s) => s.items);
-	const revoke = useKeysStore((s) => s.revoke);
-	const [createOpen, setCreateOpen] = useState(false);
-	const [editId, setEditId] = useState<string | null>(null);
+	const { data: relayKeysData } = useRelayKeys();
+	const { data: policiesData } = usePolicies();
+	const updateRelayKey = useUpdateRelayKey();
+	const deleteRelayKey = useDeleteRelayKey();
 
-	const visible = applyFilter(items, search.filter, search.q);
-	const editKey = editId ? (items.find((k) => k.id === editId) ?? null) : null;
+	const policyLabels = new Map<string, string>();
+	for (const p of policiesData.items ?? []) {
+		if (p.metadata.id)
+			policyLabels.set(p.metadata.id, displayLabel(p.metadata));
+	}
+
+	const allItems = relayKeysData.items ?? [];
+	const needle = search.q.trim().toLowerCase();
+	const items = allItems.filter((rk) => {
+		const revoked = isRelayKeyRevoked(rk);
+		if (search.filter === "active" && revoked) return false;
+		if (search.filter === "revoked" && !revoked) return false;
+		if (!needle) return true;
+		return (
+			displayLabel(rk.metadata).toLowerCase().includes(needle) ||
+			rk.metadata.name.toLowerCase().includes(needle) ||
+			(rk.spec.prefix ?? "").toLowerCase().includes(needle)
+		);
+	});
 
 	function setFilter(filter: Filter) {
 		void navigate({ search: (prev) => ({ ...prev, filter }) });
 	}
 	function setQ(q: string) {
 		void navigate({ search: (prev) => ({ ...prev, q }) });
+	}
+
+	async function handleToggleEnabled(rk: RelayKey, nextEnabled: boolean) {
+		try {
+			await updateRelayKey.mutateAsync({
+				id: rk.metadata.id ?? "",
+				body: {
+					metadata: rk.metadata,
+					spec: { ...rk.spec, enabled: nextEnabled },
+				},
+			});
+			toast(
+				"success",
+				`Relay key "${displayLabel(rk.metadata)}" ${nextEnabled ? "enabled" : "disabled"}.`,
+			);
+		} catch (err) {
+			toast(
+				"error",
+				err instanceof ApiError
+					? err.body.message
+					: "Failed to update relay key.",
+			);
+		}
+	}
+
+	async function handleDelete(rk: RelayKey) {
+		const ok = await confirm({
+			title: `Delete ${displayLabel(rk.metadata)}?`,
+			description: "Apps using this key will start returning 401.",
+			confirmLabel: "Delete",
+			danger: true,
+		});
+		if (!ok) return;
+		try {
+			await deleteRelayKey.mutateAsync(rk.metadata.id ?? "");
+			toast("success", `Relay key "${displayLabel(rk.metadata)}" deleted.`);
+		} catch (err) {
+			toast(
+				"error",
+				err instanceof ApiError
+					? err.body.message
+					: "Failed to delete relay key.",
+			);
+		}
 	}
 
 	return (
@@ -355,21 +333,20 @@ function RelayKeysPanel() {
 					</Select>
 				}
 				actions={
-					<button
-						type="button"
-						onClick={() => setCreateOpen(true)}
+					<Link
+						to="/relay-keys/new"
 						className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-xs font-semibold text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 					>
 						<Plus className="w-3.5 h-3.5" />
 						New key
-					</button>
+					</Link>
 				}
 			/>
 
-			{visible.length === 0 ? (
+			{items.length === 0 ? (
 				<div className="rounded-lg border border-dashed border-input bg-card px-6 py-14 text-center">
 					<KeyRound className="w-6 h-6 mx-auto mb-3 text-muted-foreground/50" />
-					{items.length === 0 ? (
+					{allItems.length === 0 ? (
 						<>
 							<p className="text-sm font-medium text-foreground mb-1">
 								No keys yet
@@ -377,14 +354,13 @@ function RelayKeysPanel() {
 							<p className="text-sm text-muted-foreground mb-5">
 								Create a key for the first app that calls this relay.
 							</p>
-							<button
-								type="button"
-								onClick={() => setCreateOpen(true)}
+							<Link
+								to="/relay-keys/new"
 								className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-sm font-semibold text-white transition-colors"
 							>
 								<Plus className="w-4 h-4" />
 								Create your first key
-							</button>
+							</Link>
 						</>
 					) : (
 						<p className="text-sm text-muted-foreground">
@@ -400,10 +376,8 @@ function RelayKeysPanel() {
 								<th scope="col" className="w-6 px-3 py-2" aria-label="Status" />
 								<Th>Name</Th>
 								<Th>Prefix</Th>
-								<Th>Limits</Th>
-								<Th align="right">Last used</Th>
-								<Th align="right">Created</Th>
-								<Th align="right">Expires</Th>
+								<Th>Policy</Th>
+								<Th>Passthrough</Th>
 								<th
 									scope="col"
 									className="w-10 px-3 py-2"
@@ -412,35 +386,19 @@ function RelayKeysPanel() {
 							</tr>
 						</thead>
 						<tbody>
-							{visible.map((k) => {
-								const revoked = k.revokedAt !== null;
-								const expired =
-									k.expiresAt !== null &&
-									new Date(k.expiresAt).getTime() < Date.now();
-								const status: { tone: StatusTone; label: string } = revoked
-									? { tone: "muted", label: "Revoked" }
-									: expired
-										? { tone: "warn", label: "Expired" }
-										: { tone: "active", label: "Active" };
-								async function doRevoke() {
-									const ok = await confirm({
-										title: `Revoke ${k.name}?`,
-										description:
-											"Apps using this key will start returning 401.",
-										confirmLabel: "Revoke",
-										danger: true,
-									});
-									if (ok) {
-										revoke(k.id);
-										toast("success", `"${k.name}" revoked.`);
-									}
-								}
+							{items.map((rk) => {
+								const status = relayStatus(rk);
+								const revoked = isRelayKeyRevoked(rk);
+								const enabled = rk.spec.enabled ?? true;
+								const policyLabel =
+									policyLabels.get(rk.spec.policyId) ??
+									`Unknown (${rk.spec.policyId.slice(0, 6)}…)`;
 								return (
 									<tr
-										key={k.id}
+										key={rk.metadata.name}
 										className={[
 											"border-t border-border transition-colors",
-											revoked || expired
+											revoked
 												? "bg-muted/30 text-muted-foreground/70"
 												: "hover:bg-muted/40",
 										].join(" ")}
@@ -450,45 +408,61 @@ function RelayKeysPanel() {
 										</td>
 										<td className="px-3 py-2">
 											<Link
-												to="/keys/$id"
-												params={{ id: k.id }}
+												to="/relay-keys/$name"
+												params={{ name: rk.metadata.name }}
 												className={[
 													"text-sm font-medium hover:underline",
-													revoked || expired
-														? "text-neutral-500 dark:text-neutral-500 line-through decoration-neutral-400/60"
+													revoked
+														? "text-neutral-500 dark:text-neutral-500"
 														: "text-foreground",
 												].join(" ")}
 											>
-												{k.name}
+												{displayLabel(rk.metadata)}
 											</Link>
+											{hasDisplayName(rk.metadata) && (
+												<div className="font-mono text-[11px] text-muted-foreground">
+													{rk.metadata.name}
+												</div>
+											)}
 										</td>
 										<td className="px-3 py-2">
-											<PrefixCell text={`${k.prefix}…`} copyText={k.prefix} />
+											{rk.spec.prefix ? (
+												<PrefixCell
+													text={`${rk.spec.prefix}…`}
+													copyText={rk.spec.prefix}
+												/>
+											) : (
+												<span className="text-[11px] text-muted-foreground/70">
+													—
+												</span>
+											)}
 										</td>
-										<td className="px-3 py-2">
-											<LimitsCell rateLimit={k.rateLimit} />
+										<td className="px-3 py-2 text-xs text-foreground">
+											{policyLabel}
 										</td>
-										<td className="px-3 py-2 text-right text-xs text-muted-foreground tabular-nums">
-											{timeAgo(k.lastUsedAt)}
-										</td>
-										<td className="px-3 py-2 text-right text-xs text-muted-foreground tabular-nums">
-											{timeAgo(k.createdAt)}
-										</td>
-										<td className="px-3 py-2 text-right text-xs text-muted-foreground tabular-nums">
-											{formatExpires(k.expiresAt)}
+										<td className="px-3 py-2 text-xs text-muted-foreground">
+											{rk.spec.passthroughAllowed ? "Allowed" : "—"}
 										</td>
 										<td className="px-3 py-2 text-right">
 											<RowMenu
 												actions={[
 													{
 														label: "Edit",
-														onClick: () => setEditId(k.id),
+														onClick: () =>
+															void navigate({
+																to: "/relay-keys/$name/edit",
+																params: { name: rk.metadata.name },
+															}),
 													},
 													{
-														label: revoked ? "Revoked" : "Revoke",
-														disabled: revoked,
-														danger: !revoked,
-														onClick: doRevoke,
+														label: enabled ? "Disable" : "Enable",
+														onClick: () =>
+															void handleToggleEnabled(rk, !enabled),
+													},
+													{
+														label: "Delete",
+														danger: true,
+														onClick: () => void handleDelete(rk),
 													},
 												]}
 											/>
@@ -500,16 +474,6 @@ function RelayKeysPanel() {
 					</table>
 				</div>
 			)}
-
-			<CreateRelayKeyModal
-				open={createOpen}
-				onClose={() => setCreateOpen(false)}
-			/>
-			<EditRelayKeyModal
-				open={editId !== null}
-				keyItem={editKey}
-				onClose={() => setEditId(null)}
-			/>
 		</div>
 	);
 }
@@ -554,7 +518,9 @@ function HostKeysPanel() {
 		} catch (err) {
 			toast(
 				"error",
-				err instanceof ApiError ? err.body.message : "Failed to delete host key.",
+				err instanceof ApiError
+					? err.body.message
+					: "Failed to delete host key.",
 			);
 		}
 	}
