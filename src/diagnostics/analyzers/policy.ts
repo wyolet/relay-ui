@@ -10,48 +10,60 @@ export function analyzePolicy(
 	const out: Diagnostic[] = [];
 	const policyId = policy.metadata.id;
 	const enabled = policy.spec.enabled !== false;
+	// Host-owned policies (provider tiers) are reference shapes pointed AT
+	// by host keys; they don't pool keys, can't be attached to relay keys,
+	// and their rate-limit / catalog state is the provider's contract, not
+	// something an operator can fix from this UI. Skip every check.
+	if (policy.metadata.owner?.kind === "host") {
+		return out;
+	}
 
 	const hostKeyIds = policy.spec.hostKeyIds ?? [];
 	const resolvedKeys = hostKeyIds.map((id) => graph.hostKeys.get(id));
 	const livingKeys = resolvedKeys.filter((k) => k !== undefined);
 	const enabledKeys = livingKeys.filter((k) => k.spec.enabled !== false);
 
-	if (hostKeyIds.length === 0) {
-		out.push({
-			severity: "error",
-			code: "policy.no-host-keys",
-			message:
-				"No host keys attached — this policy can't authenticate any upstream request.",
-		});
-	} else if (enabledKeys.length === 0) {
-		out.push({
-			severity: "error",
-			code: "policy.host-keys-all-disabled",
-			message:
-				"All attached host keys are disabled or deleted — no upstream credential is usable.",
-		});
-	} else if (enabledKeys.length < livingKeys.length) {
-		const disabledCount = livingKeys.length - enabledKeys.length;
-		out.push({
-			severity: "warn",
-			code: "policy.host-keys-degraded",
-			message: `${disabledCount} of ${livingKeys.length} attached host keys are disabled.`,
-		});
-	}
-
-	// Transitive: at least one enabled host key has its host disabled / missing.
-	if (enabledKeys.length > 0) {
-		const allHostsUnreachable = enabledKeys.every((k) => {
-			const host = graph.hosts.get(k.spec.hostId);
-			return !host || host.spec.enabled === false;
-		});
-		if (allHostsUnreachable) {
+	{
+		if (hostKeyIds.length === 0) {
 			out.push({
 				severity: "error",
-				code: "policy.host-disabled-transitive",
+				code: "policy.no-host-keys",
 				message:
-					"Every enabled host key points at a host that is disabled or deleted.",
+					"No host keys attached — this policy can't authenticate any upstream request.",
 			});
+		} else if (enabledKeys.length === 0) {
+			out.push({
+				severity: "error",
+				code: "policy.host-keys-all-disabled",
+				message:
+					"All attached host keys are disabled or deleted — no upstream credential is usable.",
+			});
+		} else if (enabledKeys.length < livingKeys.length) {
+			const disabledKeys = livingKeys.filter((k) => k.spec.enabled === false);
+			const names = disabledKeys
+				.map((k) => `"${displayLabel(k.metadata)}"`)
+				.join(", ");
+			out.push({
+				severity: "warn",
+				code: "policy.host-keys-degraded",
+				message: `Disabled host keys in the pool: ${names}.`,
+			});
+		}
+
+		// Transitive: at least one enabled host key has its host disabled / missing.
+		if (enabledKeys.length > 0) {
+			const allHostsUnreachable = enabledKeys.every((k) => {
+				const host = graph.hosts.get(k.spec.hostId);
+				return !host || host.spec.enabled === false;
+			});
+			if (allHostsUnreachable) {
+				out.push({
+					severity: "error",
+					code: "policy.host-disabled-transitive",
+					message:
+						"Every enabled host key points at a host that is disabled or deleted.",
+				});
+			}
 		}
 	}
 
@@ -89,14 +101,17 @@ export function analyzePolicy(
 			out.push({
 				severity: "error",
 				code: "policy.catalog-resolves-empty",
-				message:
-					"Every catalog grant resolves to no reachable model — none of this policy's host keys can serve them.",
+				message: `Every catalog grant is unreachable: ${deadGrants
+					.map((g) => `"${g}"`)
+					.join(", ")}.`,
 			});
 		} else if (deadGrants.length > 0) {
 			out.push({
 				severity: "warn",
 				code: "policy.catalog-resolves-empty",
-				message: `${deadGrants.length} of ${grants.length} catalog grants don't resolve to a model this policy's host keys can serve.`,
+				message: `Unreachable catalog grants: ${deadGrants
+					.map((g) => `"${g}"`)
+					.join(", ")}. Remove them or attach a host key that serves them.`,
 			});
 		}
 	}
@@ -107,40 +122,43 @@ export function analyzePolicy(
 		for (const b of policy.spec.rlBindings ?? []) {
 			const models = b.models ?? [];
 			if (models.length === 0) continue;
-			const hasOverlap = models.some((m) => grantSet.has(m));
-			if (!hasOverlap) {
+			const orphans = models.filter((m) => !grantSet.has(m));
+			if (orphans.length === models.length) {
 				out.push({
 					severity: "warn",
 					code: "policy.rl-binding-dead",
-					message:
-						"A rate-limit binding is scoped to models not in this policy's catalog.",
+					message: `Rate-limit binding scoped to ${orphans
+						.map((m) => `"${m}"`)
+						.join(", ")} — none are in this policy's catalog.`,
 				});
-				break;
 			}
 		}
 	}
 
-	const attachedRelayKeys = policyId
-		? (graph.relayKeysByPolicyId.get(policyId) ?? [])
-		: [];
-	const enabledRelayKeys = attachedRelayKeys.filter(
-		(rk) => rk.spec.enabled !== false,
-	);
+	{
+		const attachedRelayKeys = policyId
+			? (graph.relayKeysByPolicyId.get(policyId) ?? [])
+			: [];
+		const enabledRelayKeys = attachedRelayKeys.filter(
+			(rk) => rk.spec.enabled !== false,
+		);
 
-	if (!enabled && enabledRelayKeys.length > 0) {
-		out.push({
-			severity: "warn",
-			code: "policy.disabled-with-relay-keys",
-			message: `Policy is disabled but ${enabledRelayKeys.length} enabled relay key${enabledRelayKeys.length === 1 ? "" : "s"} reference it — they will reject requests.`,
-		});
-	}
+		if (!enabled && enabledRelayKeys.length > 0) {
+			out.push({
+				severity: "warn",
+				code: "policy.disabled-with-relay-keys",
+				message: `Policy is disabled but ${enabledRelayKeys.length} enabled relay key${enabledRelayKeys.length === 1 ? "" : "s"} reference it — they will reject requests.`,
+			});
+		}
 
-	if (attachedRelayKeys.length === 0) {
-		out.push({
-			severity: "info",
-			code: "policy.no-relay-keys",
-			message: "No relay keys are attached — this policy receives no traffic.",
-		});
+		if (attachedRelayKeys.length === 0) {
+			out.push({
+				severity: "info",
+				code: "policy.no-relay-keys",
+				message:
+					"No relay keys are attached — this policy receives no traffic.",
+			});
+		}
 	}
 
 	return out;

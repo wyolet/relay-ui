@@ -124,6 +124,27 @@ describe("analyzePolicy", () => {
 		expect(codes(ds)).toContain("policy.disabled-with-relay-keys");
 	});
 
+	it("skips host-key and relay-key checks for host-owned policies", () => {
+		// Host-owned (tier) policy with no hostKeyIds — would normally trigger
+		// policy.no-host-keys, but tier policies don't pool host keys.
+		const tier: ReturnType<typeof makePolicy> = {
+			...makePolicy({ id: "tier-1", name: "anthropic-tier-1", hostKeyIds: [] }),
+			metadata: {
+				id: "tier-1",
+				name: "anthropic-tier-1",
+				owner: { kind: "host", id: "host-1" },
+			},
+		};
+		const ds = analyzePolicy(tier, graph({ policies: [tier] }));
+		const c = codes(ds);
+		expect(c).not.toContain("policy.no-host-keys");
+		expect(c).not.toContain("policy.host-keys-all-disabled");
+		expect(c).not.toContain("policy.host-keys-degraded");
+		expect(c).not.toContain("policy.host-disabled-transitive");
+		expect(c).not.toContain("policy.no-relay-keys");
+		expect(c).not.toContain("policy.disabled-with-relay-keys");
+	});
+
 	it("info: no relay keys attached", () => {
 		const host = makeHost({ id: "h1", name: "openai" });
 		const hk = makeHostKey({ id: "k1", hostId: "h1", policyId: "p1" });

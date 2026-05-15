@@ -6,11 +6,15 @@ import {
 	ShieldCheck,
 	ToggleLeft,
 } from "lucide-react";
+import { useMemo } from "react";
 import { useHostKeys } from "@/api/hooks/hostkeys";
 import type { Policy } from "@/api/types/policy";
 import { EnabledField } from "@/components/EnabledField";
 import { IdentitySection } from "@/components/IdentitySection";
 import { PolicyAttachedRelayKeys } from "@/components/PolicyAttachedRelayKeys";
+import { analyzePolicy } from "@/diagnostics/analyzers/policy";
+import { DiagnosticList } from "@/diagnostics/DiagnosticList";
+import { useDiagnosticGraph } from "@/diagnostics/useDiagnostics";
 import { IncludeDeprecatedSwitch } from "@/components/IncludeDeprecatedSwitch";
 import { ModelPicker } from "@/components/ModelPicker";
 import { MultiSelect } from "@/components/MultiSelect";
@@ -23,7 +27,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { displayLabel } from "@/lib/displayLabel";
-import { usePolicyForm } from "@/components/usePolicyForm";
+import { policyFromFormValues, usePolicyForm } from "@/components/usePolicyForm";
 import {
 	KEY_SELECTION_OPTIONS,
 	KEY_SELECTION_VALUES,
@@ -59,6 +63,15 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 		label: displayLabel(hk.metadata),
 	}));
 
+	// Live diagnostics: synthesize a draft policy from form values and run
+	// the analyzer against it. Updates on every field change so warnings
+	// disappear as soon as the user fixes them — no Save round-trip needed.
+	const graph = useDiagnosticGraph();
+	const draftDiagnostics = useMemo(
+		() => analyzePolicy(policyFromFormValues(policy, values), graph),
+		[policy, values, graph],
+	);
+
 	return (
 		<form
 			onSubmit={(e) => {
@@ -68,6 +81,11 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 			}}
 			className="flex flex-col"
 		>
+			{draftDiagnostics.length > 0 && (
+				<div className="mb-4">
+					<DiagnosticList diagnostics={draftDiagnostics} />
+				</div>
+			)}
 			<div className="divide-y divide-border">
 				<IdentitySection
 					displayName={values.displayName}

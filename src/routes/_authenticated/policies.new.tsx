@@ -5,6 +5,9 @@ import { modelsListQueryOptions } from "@/api/hooks/models";
 import { providersListQueryOptions } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
 import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
+import { hostsListQueryOptions } from "@/api/hooks/hosts";
+import { policiesListQueryOptions } from "@/api/hooks/policies";
+import { relayKeysListQueryOptions } from "@/api/hooks/relayKeys";
 import { PolicyForm } from "@/components/PolicyForm";
 
 export const Route = createFileRoute("/_authenticated/policies/new")({
@@ -12,8 +15,11 @@ export const Route = createFileRoute("/_authenticated/policies/new")({
 		Promise.all([
 			context.queryClient.ensureQueryData(providersListQueryOptions),
 			context.queryClient.ensureQueryData(hostKeysListQueryOptions),
+			context.queryClient.ensureQueryData(hostsListQueryOptions),
 			context.queryClient.ensureQueryData(modelsListQueryOptions),
 			context.queryClient.ensureQueryData(rateLimitsListQueryOptions),
+			context.queryClient.ensureQueryData(policiesListQueryOptions),
+			context.queryClient.ensureQueryData(relayKeysListQueryOptions),
 		]),
 	component: NewPolicyPage,
 });

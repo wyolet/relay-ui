@@ -29,11 +29,27 @@ export interface CatalogRef {
 	host: string | undefined;
 }
 
-/** DNS-1123 label: lowercase alnum + hyphen, 1–63 chars, must start/end alnum. */
+/** DNS-1123 label: lowercase alnum + hyphen. Used for provider and host slugs. */
 const SLUG_RE = /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/;
+
+/**
+ * Model slugs in the relay catalog use a wider charset than DNS-1123 —
+ * upstream names like `gpt-3.5-turbo` and `ft:gpt-4o-mini-2024-07-18`
+ * include periods and colons. Mirror what the backend actually stores.
+ *
+ * TODO(slug-normalization): revert to strict DNS-1123 once the backend
+ * normalizes slugs at sync time (clean slug in `metadata.name`, raw
+ * upstream in `spec.hosts[].upstreamName`). See memory
+ * project-model-slug-normalization.
+ */
+const MODEL_SLUG_RE = /^[a-z0-9]([a-z0-9.:_-]*[a-z0-9])?$/;
 
 function isSlug(s: string): boolean {
 	return SLUG_RE.test(s);
+}
+
+function isModelSlug(s: string): boolean {
+	return MODEL_SLUG_RE.test(s);
 }
 
 /**
@@ -73,7 +89,7 @@ export function validateCatalogRef(ref: string): string | undefined {
 	if (!isSlug(provider)) return `Invalid provider slug: "${provider}"`;
 
 	if (model !== undefined) {
-		if (!isSlug(model)) return `Invalid model slug: "${model}"`;
+		if (!isModelSlug(model)) return `Invalid model slug: "${model}"`;
 	}
 
 	if (host !== undefined) {

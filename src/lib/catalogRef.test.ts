@@ -57,6 +57,18 @@ describe("validateCatalogRef", () => {
 		expect(validateCatalogRef("@bedrock")).toBeUndefined();
 		expect(validateCatalogRef("anthropic/claude-opus-4-7@bedrock")).toBeUndefined();
 	});
+
+	it("accepts model slugs with dots and colons (real upstream names)", () => {
+		expect(validateCatalogRef("openai/gpt-3.5-turbo")).toBeUndefined();
+		expect(validateCatalogRef("openai/gpt-4.1-mini-2025-04-14")).toBeUndefined();
+		expect(validateCatalogRef("openai/ft:gpt-4o-mini-2024-07-18")).toBeUndefined();
+		expect(validateCatalogRef("openai/gpt-5.5-pro")).toBeUndefined();
+	});
+
+	it("keeps provider and host slugs strict DNS-1123", () => {
+		expect(validateCatalogRef("open.ai/gpt-4o")).toBeDefined();
+		expect(validateCatalogRef("openai/gpt-4o@open.ai")).toBeDefined();
+	});
 });
 
 describe("formatCatalogRef", () => {

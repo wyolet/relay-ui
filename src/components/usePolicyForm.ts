@@ -20,6 +20,42 @@ export interface RLBindingValue {
 	models: string[];
 }
 
+/**
+ * Build a Policy snapshot from the current form values + the base policy
+ * being edited (or undefined for a new policy). Used to feed analyzers a
+ * draft view so diagnostics update live as the user edits, instead of
+ * reflecting the last saved state.
+ */
+export function policyFromFormValues(
+	base: Policy | undefined,
+	values: PolicyFormValues,
+): Policy {
+	const cleanedBindings = values.rlBindings.filter((b) => b.rateLimitId);
+	const single =
+		cleanedBindings.length === 1 && cleanedBindings[0]?.models.length === 0
+			? cleanedBindings[0]
+			: null;
+	return {
+		metadata: base?.metadata ?? { name: "" },
+		spec: {
+			enabled: values.enabled,
+			hostKeyIds: values.hostKeyIds.length > 0 ? values.hostKeyIds : null,
+			keySelection: values.keySelection,
+			models: values.models.length > 0 ? values.models : null,
+			rateLimitId: single ? single.rateLimitId : undefined,
+			rlBindings:
+				!single && cleanedBindings.length > 0
+					? cleanedBindings.map((b) => ({
+							rateLimitId: b.rateLimitId,
+							models: b.models.length > 0 ? b.models : null,
+						}))
+					: null,
+			skipDefaultLimits: values.skipDefaultLimits,
+			includeDeprecated: values.includeDeprecated,
+		},
+	};
+}
+
 export interface PolicyFormValues {
 	displayName: string;
 	description: string;

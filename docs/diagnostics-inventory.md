@@ -31,14 +31,16 @@ Severities:
 
 ## Policy
 
+**Host-owned policies (provider tiers, `owner.kind="host"`) skip every check below.** They're reference shapes pointed at by host keys; they don't pool keys, can't be attached to relay keys, and their rate-limit / catalog state is the provider's contract — not something the operator fixes from this UI.
+
 | # | Check | Verdict | Notes |
 |---|---|---|---|
 | 1 | `hostKeyIds` empty or all disabled → no upstream credential | **FE-owns** | Sanitizer drops dead hostkey ids from snapshot but PG keeps them. FE renders. |
 | 2 | Every referenced hostkey's host disabled | **FE-owns** | Transitive — render on policy. |
-| 3 | Catalog grants resolve to zero models | **FE-owns, async** | Use `/catalog/resolve`. **Note A2 redefines grants** — empty `Spec.Models` means "no DSL filter, allow anything reachable by hostkeys", not "grants nothing". After A2 lands, this check becomes "no hostkeys can reach any model" rather than "no model grants". |
+| 3 | Catalog grants resolve to zero models | **FE-owns, sync** | Implemented locally via host-key reachability — no `/catalog/resolve` round-trip needed. **A2 will redefine grants** — empty `Spec.Models` will mean "allow anything reachable by hostkeys" instead of "grants nothing". After A2 the check becomes "no hostkeys reach any model" rather than "no grants resolve". |
 | 4 | Some hostkeys disabled (degraded) | **FE-owns** | Warn. |
 | 5 | `rateLimitId` / `rlBindings[]` ref disabled RL | **FE-owns** | The bootstrap-killer case is now backend-tolerant; UI surfaces it. **After BE-soon: B3**, RL delete will strip from rlBindings — so "missing" RL ids won't accumulate. "Disabled" RL stays a soft state requiring UI warn. |
-| 6 | `rlBindings[]` scoped to a model not in this policy's catalog | **FE-owns** | Dead binding. |
+| 6 | `rlBindings[]` scoped to a model not in this policy's catalog | **FE-owns** | Dead binding. Fires only when **all** of the binding's models are outside the catalog — partial overlap is intentional narrowing. |
 | 7 | Multiple hosts in pool, no explicit `keySelection` | **DROP** | `EffectiveKeySelection()` defaults to `prioritized` — deterministic. |
 | 8 | Policy disabled but attached to enabled relay keys | **FE-owns** | Warn. |
 | 9 | No relay key attached | **FE-owns** | Info badge. |
@@ -127,6 +129,7 @@ Severities:
 - **B1+B3** — `GET /{kind}/by-id/{id}/references` endpoint + RL delete cascade. FE wires the delete-confirm dialog (M7) and can simplify "in use by" rendering.
 - **B2/B4/B5** — DELETE returns 405 on host/provider/model. FE hides the buttons.
 - **A2** — empty `Spec.Models` semantics: separate PR; FE coverage analyzer needs to adapt when it lands.
+- **Slug normalization** (separate ask) — sync currently uses upstream model name for both `metadata.name` and `spec.hosts[].upstreamName`, producing messy slugs (`ft:gpt-4o-mini-2024-07-18`). Normalize at sync time so slugs stay DNS-1123. FE relaxed `MODEL_SLUG_RE` as a shim; revert once shipped. Tracked in memory `project-model-slug-normalization`.
 
 ---
 

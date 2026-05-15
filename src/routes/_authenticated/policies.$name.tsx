@@ -17,8 +17,6 @@ import { ApiError } from "@/api/types/errors";
 import { confirm } from "@/components/ConfirmDialog";
 import { PolicyForm } from "@/components/PolicyForm";
 import { toast } from "@/components/Toast";
-import { DiagnosticList } from "@/diagnostics/DiagnosticList";
-import { usePolicyDiagnostics } from "@/diagnostics/useDiagnostics";
 
 export const Route = createFileRoute("/_authenticated/policies/$name")({
 	loader: ({ context, params }) =>
@@ -42,7 +40,6 @@ function PolicyDetailInner() {
 	const { data: policy } = usePolicy(name);
 	const { data: providersData } = useProviders();
 	const deletePolicy = useDeletePolicy();
-	const diagnostics = usePolicyDiagnostics(policy.metadata.id);
 
 	const provider = (providersData.items ?? []).find(
 		(p) => p.metadata.name === (policy.metadata.owner?.kind === "provider" ? (policy.metadata.owner.id ?? "") : ""),
@@ -115,8 +112,6 @@ function PolicyDetailInner() {
 					</div>
 				</div>
 			</div>
-
-			<DiagnosticList diagnostics={diagnostics} />
 
 			<PolicyForm
 				policy={policy}
