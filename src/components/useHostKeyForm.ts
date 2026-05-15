@@ -14,11 +14,6 @@ import { toast } from "@/components/Toast";
 import { displayLabel } from "@/lib/displayLabel";
 import { randomSuffix, slugify } from "@/lib/slug";
 
-export const HOST_KEY_KINDS: readonly HostKeyKind[] = [
-	"stored",
-	"env",
-] as const;
-
 export interface HostKeyFormValues {
 	displayName: string;
 	description: string;

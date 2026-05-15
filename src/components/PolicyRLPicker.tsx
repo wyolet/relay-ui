@@ -1,6 +1,5 @@
 import {
 	AlertTriangle,
-	ChevronLeft,
 	Pencil,
 	Plus,
 	Trash2,
@@ -10,25 +9,23 @@ import { useHosts } from "@/api/hooks/hosts";
 import { useModels } from "@/api/hooks/models";
 import { useProviders } from "@/api/hooks/providers";
 import { useAttachableRateLimits } from "@/api/hooks/ratelimits";
-import { ModelPicker } from "@/components/ModelPicker";
+import { AttachRateLimitModal } from "@/components/AttachRateLimitModal";
+import type { RLMeta } from "@/components/AttachRateLimitModal";
 import { Button } from "@/components/ui/button";
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from "@/components/ui/dialog";
-import {
-	assignBindingsSpecificityWins,
-	type CatalogRef,
-	type ConcreteBinding,
-	parseCatalogRef,
-	refCovers,
-} from "@/lib/catalogRef";
 import { buildConcreteCatalog } from "@/lib/concreteCatalog";
 import { displayLabel } from "@/lib/displayLabel";
+import {
+	describeRef,
+	formatScope,
+	formatScopeFromConcrete,
+	hostLabel,
+	joinList,
+	type LabelLookups,
+	modelLabel,
+	resolveBindings,
+	type Carveout,
+	type RefStats,
+} from "@/lib/policyRLResolution";
 import { formatRulesShort } from "@/lib/rateLimitFormat";
 import type { RLBindingValue } from "@/components/usePolicyForm";
 
@@ -37,12 +34,6 @@ interface PolicyRLPickerProps {
 	allowedModels: string[];
 	includeDeprecated: boolean;
 	onChange: (next: RLBindingValue[]) => void;
-}
-
-interface RLMeta {
-	id: string;
-	label: string;
-	rules: string;
 }
 
 export function PolicyRLPicker({
@@ -119,6 +110,18 @@ export function PolicyRLPicker({
 		{ kind: "new" } | { kind: "edit"; idx: number } | null
 	>(null);
 
+	const usedRLIds = useMemo(
+		() =>
+			new Set(
+				bindings
+					.map((b, i) =>
+						editing?.kind === "edit" && editing.idx === i ? null : b.rateLimitId,
+					)
+					.filter((v): v is string => Boolean(v)),
+			),
+		[bindings, editing],
+	);
+
 	function remove(idx: number) {
 		onChange(bindings.filter((_, i) => i !== idx));
 	}
@@ -136,12 +139,6 @@ export function PolicyRLPicker({
 		}
 		setEditing(null);
 	}
-
-	const usedRLIds = new Set(
-		bindings
-			.map((b, i) => (editing?.kind === "edit" && editing.idx === i ? null : b.rateLimitId))
-			.filter((v): v is string => Boolean(v)),
-	);
 
 	return (
 		<div className="flex flex-col gap-2">
@@ -252,363 +249,6 @@ export function PolicyRLPicker({
 	);
 }
 
-// ---------------------------------------------------------------------------
-// Attach / edit modal — two-step wizard.
-// ---------------------------------------------------------------------------
-
-interface AttachRateLimitModalProps {
-	existing: RLBindingValue | undefined;
-	rateLimits: RLMeta[];
-	excludeRLIds: Set<string>;
-	allowedModels: string[];
-	includeDeprecated: boolean;
-	onClose: () => void;
-	onSave: (rateLimitId: string, models: string[]) => void;
-}
-
-function AttachRateLimitModal({
-	existing,
-	rateLimits,
-	excludeRLIds,
-	allowedModels,
-	includeDeprecated,
-	onClose,
-	onSave,
-}: AttachRateLimitModalProps) {
-	const isEdit = existing !== undefined;
-	const [step, setStep] = useState<1 | 2>(isEdit ? 2 : 1);
-	const [rateLimitId, setRateLimitId] = useState(existing?.rateLimitId ?? "");
-	const [models, setModels] = useState<string[]>(existing?.models ?? []);
-
-	const availableRLs = rateLimits.filter(
-		(rl) => rl.id === rateLimitId || !excludeRLIds.has(rl.id),
-	);
-
-	return (
-		<Dialog
-			open
-			onOpenChange={(open, details) => {
-				// Block overlay click so the operator doesn't lose their picks.
-				if (!open && details.reason === "outside-press") return;
-				if (!open) onClose();
-			}}
-		>
-			<DialogContent className="sm:max-w-3xl lg:max-w-4xl max-h-[85vh] overflow-y-auto">
-				<DialogHeader>
-					<DialogTitle>
-						{isEdit ? "Edit rate limit" : "Attach rate limit"}
-					</DialogTitle>
-					<DialogDescription>
-						Step {step} of 2 —{" "}
-						{step === 1
-							? "pick the rate limit to attach"
-							: "pick which models this rate limit governs"}
-					</DialogDescription>
-				</DialogHeader>
-
-				{step === 1 ? (
-					<Step1RateLimit
-						value={rateLimitId}
-						onChange={setRateLimitId}
-						options={availableRLs}
-					/>
-				) : (
-					<Step2Models
-						value={models}
-						onChange={setModels}
-						allowedModels={allowedModels}
-						includeDeprecated={includeDeprecated}
-						rateLimitLabel={
-							rateLimits.find((rl) => rl.id === rateLimitId)?.label ?? "—"
-						}
-					/>
-				)}
-
-				<DialogFooter>
-					<Button type="button" variant="ghost" onClick={onClose}>
-						Cancel
-					</Button>
-					{step === 1 ? (
-						<Button
-							type="button"
-							onClick={() => setStep(2)}
-							disabled={!rateLimitId}
-						>
-							Continue
-						</Button>
-					) : (
-						<>
-							<Button
-								type="button"
-								variant="ghost"
-								onClick={() => setStep(1)}
-							>
-								<ChevronLeft className="w-3.5 h-3.5" />
-								Back
-							</Button>
-							<Button type="button" onClick={() => onSave(rateLimitId, models)}>
-								{isEdit ? "Save changes" : "Attach"}
-							</Button>
-						</>
-					)}
-				</DialogFooter>
-			</DialogContent>
-		</Dialog>
-	);
-}
-
-// ---------------------------------------------------------------------------
-// Step 1: rate limit picker
-// ---------------------------------------------------------------------------
-
-interface Step1Props {
-	value: string;
-	onChange: (id: string) => void;
-	options: RLMeta[];
-}
-
-function Step1RateLimit({ value, onChange, options }: Step1Props) {
-	const [q, setQ] = useState("");
-	const filtered = q
-		? options.filter(
-				(o) =>
-					o.label.toLowerCase().includes(q.toLowerCase()) ||
-					o.rules.toLowerCase().includes(q.toLowerCase()),
-			)
-		: options;
-
-	if (options.length === 0) {
-		return (
-			<div className="rounded-md border border-dashed border-border bg-muted/30 px-3 py-4 text-sm text-muted-foreground text-center">
-				No rate limits available — create one first.
-			</div>
-		);
-	}
-
-	return (
-		<div className="flex flex-col gap-2">
-			<input
-				type="text"
-				value={q}
-				onChange={(e) => setQ(e.currentTarget.value)}
-				placeholder="Search rate limits…"
-				className="h-8 px-2 rounded-md border border-input bg-input/30 text-xs focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
-			/>
-			<ul className="max-h-80 overflow-auto rounded-md border border-border bg-muted/20 divide-y divide-border">
-				{filtered.length === 0 && (
-					<li className="px-3 py-3 text-center text-xs text-muted-foreground">
-						No matches.
-					</li>
-				)}
-				{filtered.map((opt) => {
-					const selected = opt.id === value;
-					return (
-						<li key={opt.id}>
-							<button
-								type="button"
-								onClick={() => onChange(opt.id)}
-								className={`w-full flex items-start gap-2 px-2 py-2 text-left hover:bg-muted/50 ${
-									selected ? "bg-primary/10" : ""
-								}`}
-							>
-								<span
-									className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${
-										selected
-											? "border-primary bg-primary"
-											: "border-input"
-									}`}
-								>
-									{selected && (
-										<span className="h-1.5 w-1.5 rounded-full bg-primary-foreground" />
-									)}
-								</span>
-								<span className="flex flex-col min-w-0">
-									<span className="text-sm font-medium text-foreground truncate">
-										{opt.label}
-									</span>
-									{opt.rules && (
-										<span className="font-mono text-[10px] text-muted-foreground truncate">
-											{opt.rules}
-										</span>
-									)}
-								</span>
-							</button>
-						</li>
-					);
-				})}
-			</ul>
-		</div>
-	);
-}
-
-// ---------------------------------------------------------------------------
-// Step 2: model picker — constrained to allowedModels.
-// ---------------------------------------------------------------------------
-
-interface Step2Props {
-	value: string[];
-	onChange: (models: string[]) => void;
-	allowedModels: string[];
-	includeDeprecated: boolean;
-	rateLimitLabel: string;
-}
-
-function Step2Models({
-	value,
-	onChange,
-	allowedModels,
-	includeDeprecated,
-	rateLimitLabel,
-}: Step2Props) {
-	if (allowedModels.length === 0) {
-		return (
-			<div className="flex flex-col gap-2">
-				<div className="text-[11px] text-muted-foreground">
-					Attaching{" "}
-					<span className="font-medium text-foreground">{rateLimitLabel}</span>
-				</div>
-				<div className="rounded-md border border-dashed border-border bg-muted/30 px-3 py-4 text-sm text-muted-foreground text-center">
-					The Allowed catalog is empty. Save with no models to make this rate
-					limit apply to every request, or add models to the Allowed catalog
-					first to scope it.
-				</div>
-			</div>
-		);
-	}
-
-	return (
-		<div className="flex flex-col gap-2">
-			<div className="text-[11px] text-muted-foreground">
-				Attaching{" "}
-				<span className="font-medium text-foreground">{rateLimitLabel}</span>
-				{" — "}
-				pick providers, models, or hosts from the policy's Allowed catalog.
-			</div>
-			<ModelPicker
-				value={value}
-				onChange={onChange}
-				includeDeprecated={includeDeprecated}
-				restrictTo={allowedModels}
-			/>
-			<p className="text-[10px] text-muted-foreground">
-				No selection = this rate limit applies to every request to the policy.
-			</p>
-		</div>
-	);
-}
-
-// ---------------------------------------------------------------------------
-// Overlap resolution
-// ---------------------------------------------------------------------------
-
-interface RefStats {
-	raw: string;
-	parsed: CatalogRef | null;
-	coveredBindings: ConcreteBinding[];
-	covered: number;
-	kept: number;
-	keptModels: number;
-	keptHosts: number;
-	lostTo: { ownerIdx: number; bindings: ConcreteBinding[] }[];
-}
-
-interface BindingStats {
-	refs: RefStats[];
-}
-
-interface Carveout {
-	binding: ConcreteBinding;
-	winner: number;
-	losers: number[];
-}
-
-interface Resolution {
-	perBinding: BindingStats[];
-	carveouts: Carveout[];
-}
-
-function resolveBindings(
-	bindings: readonly RLBindingValue[],
-	catalog: readonly ConcreteBinding[],
-): Resolution {
-	const parsedRefsByBinding: (CatalogRef | null)[][] = bindings.map((b) =>
-		b.models.map((s) => {
-			try {
-				return parseCatalogRef(s);
-			} catch {
-				return null;
-			}
-		}),
-	);
-	const groups = parsedRefsByBinding.map((refs, i) => ({
-		owner: i,
-		refs: refs.filter((r): r is CatalogRef => r !== null),
-	}));
-	const { assignments, carveouts } = assignBindingsSpecificityWins(
-		groups,
-		catalog,
-	);
-
-	const perBinding: BindingStats[] = bindings.map((b, i) => {
-		const owned = assignments.get(i) ?? [];
-		const refs: RefStats[] = b.models.map((raw, refIdx) => {
-			const parsed = parsedRefsByBinding[i]?.[refIdx] ?? null;
-			if (!parsed) {
-				return {
-					raw,
-					parsed: null,
-					coveredBindings: [],
-					covered: 0,
-					kept: 0,
-					keptModels: 0,
-					keptHosts: 0,
-					lostTo: [],
-				};
-			}
-			const covered = catalog.filter((bnd) => refCovers(parsed, bnd));
-			const kept = covered.filter((bnd) => owned.includes(bnd));
-			const keptModels = new Set(
-				kept.map((bnd) => `${bnd.provider}/${bnd.model}`),
-			).size;
-			const keptHosts = new Set(kept.map((bnd) => bnd.host)).size;
-			// For bindings this ref covers but didn't keep, find the actual winner.
-			const lostMap = new Map<number, ConcreteBinding[]>();
-			for (const bnd of covered) {
-				if (kept.includes(bnd)) continue;
-				for (const c of carveouts) {
-					if (c.binding === bnd && c.losers.includes(i)) {
-						const list = lostMap.get(c.winner) ?? [];
-						list.push(bnd);
-						lostMap.set(c.winner, list);
-						break;
-					}
-				}
-			}
-			const lostTo = [...lostMap.entries()].map(([ownerIdx, bnds]) => ({
-				ownerIdx,
-				bindings: bnds,
-			}));
-			return {
-				raw,
-				parsed,
-				coveredBindings: covered,
-				covered: covered.length,
-				kept: kept.length,
-				keptModels,
-				keptHosts,
-				lostTo,
-			};
-		});
-		return { refs };
-	});
-
-	return { perBinding, carveouts };
-}
-
-// ---------------------------------------------------------------------------
-// Overlap warning banner
-// ---------------------------------------------------------------------------
-
 interface OverlapWarningProps {
 	carveouts: Carveout[];
 	bindings: RLBindingValue[];
@@ -714,10 +354,6 @@ function OverlapWarning({
 	);
 }
 
-// ---------------------------------------------------------------------------
-// Per-ref block (inside a binding card)
-// ---------------------------------------------------------------------------
-
 interface RefBlockProps {
 	stats: RefStats;
 	labels: LabelLookups;
@@ -807,96 +443,3 @@ function RefBlock({ stats, labels, rlMetaById, bindings }: RefBlockProps) {
 	);
 }
 
-
-function formatScope(models: number, hosts: number): string {
-	const m = `${models} ${models === 1 ? "model" : "models"}`;
-	const h = `${hosts} ${hosts === 1 ? "host" : "hosts"}`;
-	return `${m} · ${h}`;
-}
-
-function formatScopeFromConcrete(items: readonly ConcreteBinding[]): string {
-	const models = new Set(items.map((b) => `${b.provider}/${b.model}`)).size;
-	const hosts = new Set(items.map((b) => b.host)).size;
-	return formatScope(models, hosts);
-}
-
-// ---------------------------------------------------------------------------
-// Human-readable ref descriptions
-// ---------------------------------------------------------------------------
-
-interface LabelLookups {
-	providerByName: Map<string, string>;
-	hostByName: Map<string, string>;
-	/** Keyed by `${providerSlug}/${modelSlug}`. */
-	modelByKey: Map<string, string>;
-}
-
-function providerLabel(slug: string | undefined, labels: LabelLookups): string {
-	if (!slug) return "—";
-	return labels.providerByName.get(slug) ?? slug;
-}
-
-function hostLabel(slug: string | undefined, labels: LabelLookups): string {
-	if (!slug) return "—";
-	return labels.hostByName.get(slug) ?? slug;
-}
-
-function modelLabel(
-	provider: string,
-	model: string,
-	labels: LabelLookups,
-): string {
-	return labels.modelByKey.get(`${provider}/${model}`) ?? model;
-}
-
-function describeRef(
-	ref: CatalogRef,
-	labels: LabelLookups,
-	covered: readonly ConcreteBinding[],
-): string {
-	switch (ref.kind) {
-		case "provider": {
-			const p = providerLabel(ref.provider, labels);
-			const hosts = uniqueHostLabels(covered, labels);
-			if (hosts.length === 0) return `All ${p} models`;
-			return `All ${p} models hosted by ${joinList(hosts)}`;
-		}
-		case "provider-on-host":
-			return `All ${providerLabel(ref.provider, labels)} models hosted by ${hostLabel(
-				ref.host,
-				labels,
-			)}`;
-		case "model": {
-			if (!ref.provider || !ref.model) return ref.raw;
-			const m = modelLabel(ref.provider, ref.model, labels);
-			const hosts = uniqueHostLabels(covered, labels);
-			if (hosts.length === 0) return `${m} on any host`;
-			return `${m} hosted by ${joinList(hosts)}`;
-		}
-		case "binding": {
-			if (!ref.provider || !ref.model || !ref.host) return ref.raw;
-			return `${modelLabel(ref.provider, ref.model, labels)} hosted by ${hostLabel(
-				ref.host,
-				labels,
-			)}`;
-		}
-		case "host":
-			return `Every model hosted by ${hostLabel(ref.host, labels)}`;
-	}
-}
-
-function uniqueHostLabels(
-	bindings: readonly ConcreteBinding[],
-	labels: LabelLookups,
-): string[] {
-	const set = new Set<string>();
-	for (const b of bindings) set.add(b.host);
-	return [...set].map((slug) => hostLabel(slug, labels));
-}
-
-function joinList(items: readonly string[]): string {
-	if (items.length === 0) return "";
-	if (items.length === 1) return items[0] ?? "";
-	if (items.length === 2) return `${items[0]} and ${items[1]}`;
-	return `${items.slice(0, -1).join(", ")}, and ${items[items.length - 1]}`;
-}

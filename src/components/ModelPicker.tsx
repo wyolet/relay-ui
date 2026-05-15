@@ -8,6 +8,7 @@ import {
 	X,
 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { KIND_META } from "@/config/catalogRef";
 import { useHosts } from "@/api/hooks/hosts";
 import { useModels } from "@/api/hooks/models";
 import { useProviders } from "@/api/hooks/providers";
@@ -19,7 +20,6 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
 	type CatalogRef,
-	type CatalogRefKind,
 	formatCatalogRef,
 	parseCatalogRef,
 	refCovers,
@@ -198,22 +198,25 @@ export function ModelPicker({
 		setRefs(next);
 	}
 
-	const filteredProviders = filter(providers, q, (p) => [
-		p.metadata.name,
-		displayLabel(p.metadata),
-	]);
-	const visibleModels = includeDeprecated
-		? index.modelRows
-		: index.modelRows.filter((m) => !m.deprecated);
-	const filteredModels = filter(visibleModels, q, (m) => [
-		m.name,
-		m.displayName,
-		m.provider,
-	]);
-	const filteredHosts = filter(hosts, q, (h) => [
-		h.metadata.name,
-		displayLabel(h.metadata),
-	]);
+	const filteredProviders = useMemo(
+		() => filter(providers, q, (p) => [p.metadata.name, displayLabel(p.metadata)]),
+		[providers, q],
+	);
+	const visibleModels = useMemo(
+		() =>
+			includeDeprecated
+				? index.modelRows
+				: index.modelRows.filter((m) => !m.deprecated),
+		[index.modelRows, includeDeprecated],
+	);
+	const filteredModels = useMemo(
+		() => filter(visibleModels, q, (m) => [m.name, m.displayName, m.provider]),
+		[visibleModels, q],
+	);
+	const filteredHosts = useMemo(
+		() => filter(hosts, q, (h) => [h.metadata.name, displayLabel(h.metadata)]),
+		[hosts, q],
+	);
 
 	return (
 		<div className="flex flex-col rounded-md border border-border bg-card overflow-hidden">
@@ -302,7 +305,12 @@ export function ModelPicker({
 					/>
 				)}
 				{tab === "raw" && (
-					<RawEditor value={value} onChange={onChange} index={index} />
+					<RawEditor
+						key={`${value.join("\n")}|raw`}
+						value={value}
+						onChange={onChange}
+						index={index}
+					/>
 				)}
 			</div>
 
@@ -920,16 +928,6 @@ function describeRef(ref: CatalogRef, index: PickerIndex): string {
 	}
 }
 
-const KIND_META: Record<
-	CatalogRefKind,
-	{ icon: typeof Building2; label: string }
-> = {
-	provider: { icon: Building2, label: "Provider" },
-	"provider-on-host": { icon: Building2, label: "Provider · host" },
-	model: { icon: Boxes, label: "Model" },
-	binding: { icon: Boxes, label: "Model · host" },
-	host: { icon: Globe, label: "Host" },
-};
 
 function SelectionSummary({
 	refs,

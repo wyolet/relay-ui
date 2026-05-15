@@ -4,23 +4,16 @@ import { useEffect, useMemo, useRef } from "react";
 import { z } from "zod";
 import { useCreatePolicy, useUpdatePolicy } from "@/api/hooks/policies";
 import { ApiError } from "@/api/types/errors";
-import type { components } from "@/api/types.gen";
 import type { Policy, PolicyCreate, PolicyUpdate } from "@/api/types/policy";
 import { toast } from "@/components/Toast";
+import {
+	DEFAULT_KEY_SELECTION,
+	KEY_SELECTION_VALUES,
+	type KeySelection,
+} from "@/config/policy";
 import { displayLabel } from "@/lib/displayLabel";
 import { randomSuffix, slugify } from "@/lib/slug";
 
-export type KeySelection = NonNullable<
-	components["schemas"]["PolicySpec"]["keySelection"]
->;
-
-export const KEY_SELECTION_VALUES: readonly KeySelection[] = [
-	"prioritized",
-	"round-robin",
-	"least-recently-used",
-] as const;
-
-export const DEFAULT_KEY_SELECTION: KeySelection = "prioritized";
 
 export interface RLBindingValue {
 	rateLimitId: string;

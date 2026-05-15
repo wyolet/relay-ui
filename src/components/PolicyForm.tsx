@@ -20,29 +20,12 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { displayLabel } from "@/lib/displayLabel";
+import { usePolicyForm } from "@/components/usePolicyForm";
 import {
+	KEY_SELECTION_OPTIONS,
 	KEY_SELECTION_VALUES,
 	type KeySelection,
-	usePolicyForm,
-} from "@/components/usePolicyForm";
-
-const KEY_SELECTION_OPTIONS: Record<
-	KeySelection,
-	{ label: string; hint: string }
-> = {
-	prioritized: {
-		label: "Prioritized",
-		hint: "Drain the first healthy key in declaration order.",
-	},
-	"round-robin": {
-		label: "Round-robin",
-		hint: "Rotate evenly across healthy keys, one request per key.",
-	},
-	"least-recently-used": {
-		label: "Least recently used",
-		hint: "Pick whichever healthy key has been idle longest.",
-	},
-};
+} from "@/config/policy";
 
 interface PolicyFormProps {
 	policy?: Policy;
