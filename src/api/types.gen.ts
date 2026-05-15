@@ -62,7 +62,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Resolve a modelref into matched catalog rows */
+        /** Resolve one or more modelrefs into matched catalog rows */
         get: operations["catalog_resolve"];
         put?: never;
         post?: never;
@@ -1071,11 +1071,10 @@ export interface components {
              */
             readonly $schema?: string;
             bindings: components["schemas"]["resolveBindingRef"][] | null;
+            expanded: string[] | null;
             hosts: components["schemas"]["resolveEntity"][] | null;
-            kind: string;
             models: components["schemas"]["resolveEntity"][] | null;
-            provider?: components["schemas"]["resolveEntity"];
-            ref: string;
+            refs: string[] | null;
         };
         settingsCatalogItem: {
             description?: string;
@@ -1260,8 +1259,8 @@ export interface operations {
     catalog_resolve: {
         parameters: {
             query: {
-                /** @description Catalog ref string in the modelref DSL: provider[/model[@host]]; * allowed in model and host positions. */
-                ref: string;
+                /** @description One or more catalog refs in the modelref DSL: provider[/model][@host], or @host. Repeat the parameter to union multiple refs. */
+                ref: string[] | null;
             };
             header?: never;
             path?: never;

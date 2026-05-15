@@ -33,6 +33,13 @@ interface ModelPickerProps {
 	value: string[];
 	onChange: (next: string[]) => void;
 	includeDeprecated: boolean;
+	/**
+	 * Optional list of catalog-ref strings (a parent policy's allowed catalog)
+	 * to restrict the providers / models / hosts shown to only those covered
+	 * by at least one of these refs. When provided, the "Restrict access"
+	 * toggle is hidden and the picker is always in restricted mode.
+	 */
+	restrictTo?: readonly string[];
 }
 
 /**
@@ -49,6 +56,7 @@ export function ModelPicker({
 	value,
 	onChange,
 	includeDeprecated,
+	restrictTo,
 }: ModelPickerProps) {
 	const [tab, setTab] = useState<Tab>("providers");
 	const [q, setQ] = useState("");
@@ -57,8 +65,10 @@ export function ModelPicker({
 	// Empty `value` is the "allow all" sentinel per backend semantics. The
 	// "Restrict access" switch flips between empty (all) and editing mode.
 	// `forceRestrict` keeps the picker open when the operator wants to narrow
-	// access but hasn't picked anything yet.
-	const restricted = value.length > 0 || forceRestrict;
+	// access but hasn't picked anything yet. When `restrictTo` is provided the
+	// toggle is hidden — the picker is always restricted to that parent grant.
+	const hasParentRestriction = restrictTo !== undefined;
+	const restricted = hasParentRestriction || value.length > 0 || forceRestrict;
 	function setRestricted(next: boolean) {
 		setForceRestrict(next);
 		if (!next) onChange([]);
@@ -68,9 +78,34 @@ export function ModelPicker({
 	const { data: modelsData } = useModels();
 	const { data: hostsData } = useHosts();
 
-	const providers = providersData.items ?? [];
-	const models = modelsData.items ?? [];
-	const hosts = hostsData.items ?? [];
+	const rawProviders = providersData.items ?? [];
+	const rawModels = modelsData.items ?? [];
+	const rawHosts = hostsData.items ?? [];
+
+	const restrictRefs = useMemo(() => {
+		if (!restrictTo) return null;
+		const parsed: CatalogRef[] = [];
+		for (const s of restrictTo) {
+			try {
+				parsed.push(parseCatalogRef(s));
+			} catch {
+				// Skip invalid refs — they can't grant anything.
+			}
+		}
+		return parsed;
+	}, [restrictTo]);
+
+	const { providers, models, hosts } = useMemo(() => {
+		if (!restrictRefs) {
+			return { providers: rawProviders, models: rawModels, hosts: rawHosts };
+		}
+		return filterCatalogByRestriction({
+			providers: rawProviders,
+			models: rawModels,
+			hosts: rawHosts,
+			restrictRefs,
+		});
+	}, [rawProviders, rawModels, rawHosts, restrictRefs]);
 
 	const index = useMemo(
 		() => buildIndex({ providers, models, hosts }),
@@ -182,25 +217,27 @@ export function ModelPicker({
 
 	return (
 		<div className="flex flex-col rounded-md border border-border bg-card overflow-hidden">
-			<div className="flex items-center justify-between gap-3 border-b border-border px-3 py-2">
-				<div className="flex items-center gap-2.5">
-					<Switch
-						checked={restricted}
-						onCheckedChange={setRestricted}
-						aria-label="Restrict catalog access"
-					/>
-					<div className="leading-tight">
-						<div className="text-[12px] font-medium text-foreground">
-							{restricted ? "Restricted" : "All catalog allowed"}
-						</div>
-						<div className="text-[10px] text-muted-foreground">
-							{restricted
-								? "Pick what relay keys may call."
-								: "Every provider, model, and host."}
+			{!hasParentRestriction && (
+				<div className="flex items-center justify-between gap-3 border-b border-border px-3 py-2">
+					<div className="flex items-center gap-2.5">
+						<Switch
+							checked={restricted}
+							onCheckedChange={setRestricted}
+							aria-label="Restrict catalog access"
+						/>
+						<div className="leading-tight">
+							<div className="text-[12px] font-medium text-foreground">
+								{restricted ? "Restricted" : "All catalog allowed"}
+							</div>
+							<div className="text-[10px] text-muted-foreground">
+								{restricted
+									? "Pick what relay keys may call."
+									: "Every provider, model, and host."}
+							</div>
 						</div>
 					</div>
 				</div>
-			</div>
+			)}
 
 			{!restricted ? null : (
 			<>
@@ -303,6 +340,64 @@ interface PickerIndex {
 	modelRows: ModelRow[];
 	modelsByProvider: Map<string, ModelRow[]>;
 	bindingsByHostName: Map<string, { provider: string; model: string }[]>;
+}
+
+/**
+ * Filter providers, models, and hosts down to only those covered by at least
+ * one of the parent restriction refs. A model is kept only if it has at least
+ * one host binding under restriction — and its `spec.hosts[]` is trimmed to
+ * the allowed hosts. Providers and hosts with no surviving bindings drop out.
+ */
+function filterCatalogByRestriction(input: {
+	providers: Provider[];
+	models: Model[];
+	hosts: Host[];
+	restrictRefs: readonly CatalogRef[];
+}): { providers: Provider[]; models: Model[]; hosts: Host[] } {
+	const providerSlugById = new Map<string, string>();
+	for (const p of input.providers) {
+		if (p.metadata.id) providerSlugById.set(p.metadata.id, p.metadata.name);
+	}
+	const hostSlugById = new Map<string, string>();
+	for (const h of input.hosts) {
+		if (h.metadata.id) hostSlugById.set(h.metadata.id, h.metadata.name);
+	}
+
+	const allowedProviders = new Set<string>();
+	const allowedHosts = new Set<string>();
+	const filteredModels: Model[] = [];
+
+	for (const m of input.models) {
+		const ownerId =
+			m.metadata.owner?.kind === "provider" ? m.metadata.owner.id : undefined;
+		const provider = ownerId ? providerSlugById.get(ownerId) : undefined;
+		if (!provider) continue;
+		const keptHostBindings = (m.spec.hosts ?? []).filter((b) => {
+			const host = hostSlugById.get(b.hostId);
+			if (!host) return false;
+			return input.restrictRefs.some((ref) =>
+				refCovers(ref, { provider, model: m.metadata.name, host }),
+			);
+		});
+		if (keptHostBindings.length === 0) continue;
+		filteredModels.push({
+			...m,
+			spec: { ...m.spec, hosts: keptHostBindings },
+		});
+		allowedProviders.add(provider);
+		for (const b of keptHostBindings) {
+			const host = hostSlugById.get(b.hostId);
+			if (host) allowedHosts.add(host);
+		}
+	}
+
+	return {
+		providers: input.providers.filter((p) =>
+			allowedProviders.has(p.metadata.name),
+		),
+		models: filteredModels,
+		hosts: input.hosts.filter((h) => allowedHosts.has(h.metadata.name)),
+	};
 }
 
 function buildIndex(input: {

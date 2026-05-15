@@ -22,8 +22,6 @@ export const KEY_SELECTION_VALUES: readonly KeySelection[] = [
 
 export const DEFAULT_KEY_SELECTION: KeySelection = "prioritized";
 
-export type RateLimitMode = "single" | "bindings";
-
 export interface RLBindingValue {
 	rateLimitId: string;
 	models: string[];
@@ -35,8 +33,6 @@ export interface PolicyFormValues {
 	hostKeyIds: string[];
 	keySelection: KeySelection;
 	models: string[];
-	rateLimitMode: RateLimitMode;
-	rateLimitId: string;
 	rlBindings: RLBindingValue[];
 	skipDefaultLimits: boolean;
 	enabled: boolean;
@@ -55,8 +51,6 @@ const schema = z.object({
 		KEY_SELECTION_VALUES as readonly [KeySelection, ...KeySelection[]],
 	),
 	models: z.array(z.string()),
-	rateLimitMode: z.enum(["single", "bindings"]),
-	rateLimitId: z.string(),
 	rlBindings: z.array(
 		z.object({
 			rateLimitId: z.string().min(1, "Pick a rate limit"),
@@ -75,8 +69,6 @@ function emptyValues(): PolicyFormValues {
 		hostKeyIds: [],
 		keySelection: DEFAULT_KEY_SELECTION,
 		models: [],
-		rateLimitMode: "single",
-		rateLimitId: "",
 		rlBindings: [],
 		skipDefaultLimits: false,
 		enabled: true,
@@ -85,18 +77,19 @@ function emptyValues(): PolicyFormValues {
 }
 
 function policyToValues(policy: Policy): PolicyFormValues {
-	const bindings = (policy.spec.rlBindings ?? []).map((b) => ({
-		rateLimitId: b.rateLimitId,
-		models: b.models ?? [],
-	}));
+	const bindings: RLBindingValue[] = (policy.spec.rlBindings ?? []).map(
+		(b) => ({ rateLimitId: b.rateLimitId, models: b.models ?? [] }),
+	);
+	// Migrate legacy single rateLimitId → one binding covering everything.
+	if (bindings.length === 0 && policy.spec.rateLimitId) {
+		bindings.push({ rateLimitId: policy.spec.rateLimitId, models: [] });
+	}
 	return {
 		displayName: displayLabel(policy.metadata),
 		description: policy.metadata.description ?? "",
 		hostKeyIds: policy.spec.hostKeyIds ?? [],
 		keySelection: policy.spec.keySelection ?? DEFAULT_KEY_SELECTION,
 		models: policy.spec.models ?? [],
-		rateLimitMode: bindings.length > 0 ? "bindings" : "single",
-		rateLimitId: policy.spec.rateLimitId ?? "",
 		rlBindings: bindings,
 		skipDefaultLimits: policy.spec.skipDefaultLimits ?? false,
 		enabled: policy.spec.enabled ?? true,
@@ -149,16 +142,21 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 		onSubmit: async ({ value }) => {
 			const displayName = value.displayName.trim();
 			const description = value.description.trim();
-			const useBindings = value.rateLimitMode === "bindings";
 			const cleanedBindings = value.rlBindings.filter((b) => b.rateLimitId);
+			// A single binding with no model scope collapses back to the legacy
+			// single-RL representation on the wire.
+			const single =
+				cleanedBindings.length === 1 && cleanedBindings[0]?.models.length === 0
+					? cleanedBindings[0]
+					: null;
 			const spec = {
 				enabled: value.enabled,
 				hostKeyIds: value.hostKeyIds.length > 0 ? value.hostKeyIds : null,
 				keySelection: value.keySelection,
 				models: value.models.length > 0 ? value.models : null,
-				rateLimitId: useBindings ? undefined : value.rateLimitId || undefined,
+				rateLimitId: single ? single.rateLimitId : undefined,
 				rlBindings:
-					useBindings && cleanedBindings.length > 0
+					!single && cleanedBindings.length > 0
 						? cleanedBindings.map((b) => ({
 								rateLimitId: b.rateLimitId,
 								models: b.models.length > 0 ? b.models : null,

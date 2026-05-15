@@ -9,9 +9,9 @@ import { useHostKeys } from "@/api/hooks/hostkeys";
 import type { Policy } from "@/api/types/policy";
 import { IdentitySection } from "@/components/IdentitySection";
 import { IncludeDeprecatedSwitch } from "@/components/IncludeDeprecatedSwitch";
-import { useAttachableRateLimits } from "@/api/hooks/ratelimits";
 import { ModelPicker } from "@/components/ModelPicker";
 import { MultiSelect } from "@/components/MultiSelect";
+import { PolicyRLPicker } from "@/components/PolicyRLPicker";
 import {
 	Select,
 	SelectContent,
@@ -67,15 +67,10 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 	});
 
 	const allHostKeys = hostKeysData.items ?? [];
-	const allRateLimits = useAttachableRateLimits();
 
 	const hostKeyOptions = allHostKeys.map((hk) => ({
 		value: hk.metadata.id ?? "",
 		label: displayLabel(hk.metadata),
-	}));
-	const rateLimitOptions = allRateLimits.map((rl) => ({
-		value: rl.metadata.id ?? "",
-		label: displayLabel(rl.metadata),
 	}));
 
 	return (
@@ -180,36 +175,15 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 
 				<Section
 					icon={Gauge}
-					title="Rate limit"
-					description="Throttling rule applied to every request hitting this policy."
+					title="Rate limits"
+					description="Attach one or more rate limits and pick which models each governs."
 				>
-					<Select
-						value={values.rateLimitId || "none"}
-						onValueChange={(v) =>
-							form.setFieldValue(
-								"rateLimitId",
-								v === "none" || v == null ? "" : v,
-							)
-						}
-					>
-						<SelectTrigger className="w-full max-w-md">
-							<SelectValue>
-								{values.rateLimitId
-									? (rateLimitOptions.find(
-											(rl) => rl.value === values.rateLimitId,
-										)?.label ?? values.rateLimitId)
-									: "None"}
-							</SelectValue>
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value="none">None</SelectItem>
-							{rateLimitOptions.map((rl) => (
-								<SelectItem key={rl.value} value={rl.value}>
-									{rl.label}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
+					<PolicyRLPicker
+						bindings={values.rlBindings}
+						allowedModels={values.models}
+						includeDeprecated={values.includeDeprecated}
+						onChange={(next) => form.setFieldValue("rlBindings", next)}
+					/>
 				</Section>
 
 				<Section
