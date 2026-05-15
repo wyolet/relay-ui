@@ -1,10 +1,8 @@
-import { Globe, KeyRound, ShieldCheck } from "lucide-react";
-import { useHosts } from "@/api/hooks/hosts";
-import { usePolicies } from "@/api/hooks/policies";
+import { Link } from "@tanstack/react-router";
+import { Globe, KeyRound, Link2, ShieldCheck, Unlink2 } from "lucide-react";
 import type { HostKey, HostKeyKind } from "@/api/types/hostkey";
 import { FormSection } from "@/components/FormSection";
 import { IdentitySection } from "@/components/IdentitySection";
-import { displayLabel } from "@/lib/displayLabel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -38,7 +36,6 @@ export function HostKeyForm({ hostKey, onSaved, onCancel }: HostKeyFormProps) {
 		form,
 		values,
 		isEdit,
-		originalKind,
 		slugPreview,
 		displayNameError,
 		descriptionError,
@@ -46,19 +43,17 @@ export function HostKeyForm({ hostKey, onSaved, onCancel }: HostKeyFormProps) {
 		policyIdError,
 		envVarError,
 		valueError,
-		needsValueOnEdit,
+		hostOptions,
+		policyOptions,
+		hostSelected,
+		selectedHostLabel,
+		selectedPolicyLabel,
+		attachedPolicies,
+		detachFromPolicy,
+		isDetachPending,
+		setHost,
+		setPolicy,
 	} = useHostKeyForm({ open: true, hostKey, onSaved });
-
-	const { data: hostsData } = useHosts();
-	const { data: policiesData } = usePolicies();
-	const hostOptions = (hostsData.items ?? []).map((h) => ({
-		value: h.metadata.id ?? "",
-		label: displayLabel(h.metadata),
-	}));
-	const policyOptions = (policiesData.items ?? []).map((p) => ({
-		value: p.metadata.id ?? "",
-		label: displayLabel(p.metadata),
-	}));
 
 	return (
 		<form
@@ -84,8 +79,8 @@ export function HostKeyForm({ hostKey, onSaved, onCancel }: HostKeyFormProps) {
 
 				<FormSection
 					icon={Globe}
-					title="Host & policy"
-					description="Which upstream this credential authenticates against and which policy owns it."
+					title="Host & host policy"
+					description="Which upstream provider this credential authenticates against, and the host policy (mirrors the provider's own tier, e.g. OpenAI Tier 2) that governs its rate limits and capacity."
 				>
 					<div className="flex flex-col gap-4">
 						<div>
@@ -94,14 +89,14 @@ export function HostKeyForm({ hostKey, onSaved, onCancel }: HostKeyFormProps) {
 							</div>
 							<Select
 								value={values.hostId || undefined}
-								onValueChange={(v) => form.setFieldValue("hostId", v ?? "")}
+								onValueChange={(v) => setHost(v ?? "")}
 							>
 								<SelectTrigger
 									className="w-full max-w-md"
 									aria-invalid={hostIdError ? true : undefined}
 								>
 									<SelectValue placeholder="Pick a host…">
-										{hostOptions.find((h) => h.value === values.hostId)?.label}
+										{selectedHostLabel}
 									</SelectValue>
 								</SelectTrigger>
 								<SelectContent>
@@ -121,21 +116,27 @@ export function HostKeyForm({ hostKey, onSaved, onCancel }: HostKeyFormProps) {
 						<div>
 							<div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-1 inline-flex items-center gap-1">
 								<ShieldCheck className="w-3 h-3" />
-								Policy
+								Host policy
 							</div>
 							<Select
 								value={values.policyId || undefined}
-								onValueChange={(v) => form.setFieldValue("policyId", v ?? "")}
+								onValueChange={(v) => setPolicy(v ?? "")}
+								disabled={!hostSelected}
 							>
 								<SelectTrigger
 									className="w-full max-w-md"
 									aria-invalid={policyIdError ? true : undefined}
 								>
-									<SelectValue placeholder="Pick a policy…">
-										{
-											policyOptions.find((p) => p.value === values.policyId)
-												?.label
+									<SelectValue
+										placeholder={
+											hostSelected
+												? policyOptions.length === 0
+													? "No host policies defined for this host"
+													: "Pick a host policy…"
+												: "Pick a host first…"
 										}
+									>
+										{selectedPolicyLabel}
 									</SelectValue>
 								</SelectTrigger>
 								<SelectContent>
@@ -151,110 +152,159 @@ export function HostKeyForm({ hostKey, onSaved, onCancel }: HostKeyFormProps) {
 									{policyIdError}
 								</p>
 							)}
-						</div>
-					</div>
-				</FormSection>
-
-				<FormSection
-					icon={KeyRound}
-					title="Source"
-					description="Where Relay reads the credential from at request time."
-				>
-					<div className="flex flex-col gap-4">
-						<div>
-							<Select
-								value={values.kind}
-								onValueChange={(v) =>
-									form.setFieldValue("kind", v as HostKeyKind)
-								}
-							>
-								<SelectTrigger className="w-full max-w-md">
-									<SelectValue>{KIND_OPTIONS[values.kind].label}</SelectValue>
-								</SelectTrigger>
-								<SelectContent>
-									{(Object.keys(KIND_OPTIONS) as HostKeyKind[]).map((k) => (
-										<SelectItem key={k} value={k}>
-											<span className="flex flex-col items-start gap-0.5 whitespace-normal">
-												<span className="text-sm text-foreground">
-													{KIND_OPTIONS[k].label}
-												</span>
-												<span className="text-[11px] leading-snug text-muted-foreground">
-													{KIND_OPTIONS[k].hint}
-												</span>
-											</span>
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-							<p className="mt-1.5 text-[11px] text-muted-foreground">
-								{KIND_OPTIONS[values.kind].hint}
+							<p className="mt-1.5 text-[11px] text-muted-foreground leading-snug">
+								Mirrors the provider's own tier (e.g. <em>OpenAI Tier 2</em>) so
+								Relay knows the real ceiling for this key. Distinct from a user
+								policy — even if this host key is added to a user policy's pool,
+								the host policy chosen here is never overridden, only respected
+								as a hard cap.
 							</p>
 						</div>
-
-						{values.kind === "env" && (
-							<div>
-								<div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-1">
-									Environment variable
-								</div>
-								<Input
-									type="text"
-									value={values.envVar}
-									onChange={(e) =>
-										form.setFieldValue("envVar", e.currentTarget.value)
-									}
-									placeholder="OPENAI_API_KEY"
-									className="font-mono w-full max-w-md"
-									aria-invalid={envVarError ? true : undefined}
-								/>
-								{envVarError && (
-									<p className="mt-1.5 text-[11px] text-destructive">
-										{envVarError}
-									</p>
-								)}
-								<p className="mt-1.5 text-[11px] text-muted-foreground">
-									Set this env var on your relay deployment.
-								</p>
-							</div>
-						)}
-
-						{values.kind === "stored" && (
-							<div>
-								<div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-1">
-									{isEdit
-										? needsValueOnEdit
-											? "Secret value"
-											: "New secret value (optional)"
-										: "Secret value"}
-								</div>
-								<Input
-									type="password"
-									autoComplete="new-password"
-									value={values.value}
-									onChange={(e) =>
-										form.setFieldValue("value", e.currentTarget.value)
-									}
-									placeholder={
-										isEdit && !needsValueOnEdit
-											? "Leave blank to keep current value"
-											: "sk-…"
-									}
-									className="w-full max-w-md"
-									aria-invalid={valueError ? true : undefined}
-								/>
-								{valueError && (
-									<p className="mt-1.5 text-[11px] text-destructive">
-										{valueError}
-									</p>
-								)}
-								{isEdit && originalKind === "stored" && (
-									<p className="mt-1.5 text-[11px] text-muted-foreground">
-										Rotation also available from the detail page.
-									</p>
-								)}
-							</div>
-						)}
 					</div>
 				</FormSection>
+
+				{!isEdit && (
+					<FormSection
+						icon={KeyRound}
+						title="Source"
+						description="Where Relay reads the credential from at request time."
+					>
+						<div className="flex flex-col gap-4">
+							<div>
+								<Select
+									value={values.kind}
+									onValueChange={(v) =>
+										form.setFieldValue("kind", v as HostKeyKind)
+									}
+								>
+									<SelectTrigger className="w-full max-w-md">
+										<SelectValue>{KIND_OPTIONS[values.kind].label}</SelectValue>
+									</SelectTrigger>
+									<SelectContent>
+										{(Object.keys(KIND_OPTIONS) as HostKeyKind[]).map((k) => (
+											<SelectItem key={k} value={k}>
+												<span className="flex flex-col items-start gap-0.5 whitespace-normal">
+													<span className="text-sm text-foreground">
+														{KIND_OPTIONS[k].label}
+													</span>
+													<span className="text-[11px] leading-snug text-muted-foreground">
+														{KIND_OPTIONS[k].hint}
+													</span>
+												</span>
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+								<p className="mt-1.5 text-[11px] text-muted-foreground">
+									{KIND_OPTIONS[values.kind].hint}
+								</p>
+							</div>
+
+							{values.kind === "env" && (
+								<div>
+									<div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-1">
+										Environment variable
+									</div>
+									<Input
+										type="text"
+										value={values.envVar}
+										onChange={(e) =>
+											form.setFieldValue("envVar", e.currentTarget.value)
+										}
+										placeholder="OPENAI_API_KEY"
+										className="font-mono w-full max-w-md"
+										aria-invalid={envVarError ? true : undefined}
+									/>
+									{envVarError && (
+										<p className="mt-1.5 text-[11px] text-destructive">
+											{envVarError}
+										</p>
+									)}
+									<p className="mt-1.5 text-[11px] text-muted-foreground">
+										Set this env var on your relay deployment.
+									</p>
+								</div>
+							)}
+
+							{values.kind === "stored" && (
+								<div>
+									<div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-1">
+										Secret value
+									</div>
+									<Input
+										type="password"
+										autoComplete="new-password"
+										value={values.value}
+										onChange={(e) =>
+											form.setFieldValue("value", e.currentTarget.value)
+										}
+										placeholder="sk-…"
+										className="w-full max-w-md"
+										aria-invalid={valueError ? true : undefined}
+									/>
+									{valueError && (
+										<p className="mt-1.5 text-[11px] text-destructive">
+											{valueError}
+										</p>
+									)}
+								</div>
+							)}
+						</div>
+					</FormSection>
+				)}
+
+				{isEdit && (
+					<FormSection
+						icon={Link2}
+						title="Attached to user policies"
+						description="User policies that include this host key in their pool. Detach from a policy to remove it from rotation."
+					>
+						{attachedPolicies.length === 0 ? (
+							<p className="text-xs text-muted-foreground">
+								This host key is not attached to any user policy yet.
+							</p>
+						) : (
+							<ul className="divide-y divide-border">
+								{attachedPolicies.map((p) => (
+									<li
+										key={p.id}
+										className="flex items-start justify-between gap-4 py-3 first:pt-0 last:pb-0"
+									>
+										<div className="min-w-0 flex flex-col gap-0.5">
+											<Link
+												to="/policies/$name"
+												params={{ name: p.name }}
+												className="text-sm font-medium text-foreground hover:text-primary hover:underline truncate"
+											>
+												{p.label}
+											</Link>
+											{p.hasDisplayName && (
+												<code className="font-mono text-[11px] text-muted-foreground">
+													{p.name}
+												</code>
+											)}
+											{p.description && (
+												<p className="mt-1 text-[11px] text-muted-foreground leading-snug">
+													{p.description}
+												</p>
+											)}
+										</div>
+										<Button
+											type="button"
+											variant="outline"
+											size="sm"
+											onClick={() => void detachFromPolicy(p.id)}
+											disabled={isDetachPending}
+										>
+											<Unlink2 className="w-3 h-3" />
+											Detach
+										</Button>
+									</li>
+								))}
+							</ul>
+						)}
+					</FormSection>
+				)}
 			</div>
 
 			<div className="sticky bottom-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-t border-border mt-6 -mx-6 px-6 py-3 flex items-center justify-end gap-2">

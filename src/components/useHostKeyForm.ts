@@ -3,6 +3,8 @@ import { useStore } from "@tanstack/react-store";
 import { useEffect, useMemo, useRef } from "react";
 import { z } from "zod";
 import { useCreateHostKey, useUpdateHostKey } from "@/api/hooks/hostkeys";
+import { useHosts } from "@/api/hooks/hosts";
+import { usePolicies } from "@/api/hooks/policies";
 import { ApiError } from "@/api/types/errors";
 import type {
 	HostKey,
@@ -11,8 +13,22 @@ import type {
 	HostKeyUpdate,
 } from "@/api/types/hostkey";
 import { toast } from "@/components/Toast";
+import { useDetachHostKeyFromPolicy } from "@/components/useDetachHostKeyFromPolicy";
 import { displayLabel } from "@/lib/displayLabel";
 import { randomSuffix, slugify } from "@/lib/slug";
+
+export interface SelectOption {
+	value: string;
+	label: string;
+}
+
+export interface ReferencingPolicyView {
+	id: string;
+	name: string;
+	label: string;
+	hasDisplayName: boolean;
+	description: string | undefined;
+}
 
 export interface HostKeyFormValues {
 	displayName: string;
@@ -50,7 +66,7 @@ function hostKeyToValues(hk: HostKey): HostKeyFormValues {
 	};
 }
 
-function buildSchema(isEdit: boolean, originalKind: HostKeyKind | null) {
+function buildSchema(isEdit: boolean) {
 	return z
 		.object({
 			displayName: z
@@ -73,15 +89,13 @@ function buildSchema(isEdit: boolean, originalKind: HostKeyKind | null) {
 					message: "Environment variable name is required.",
 				});
 			}
-			const valueRequired =
-				v.kind === "stored" && (!isEdit || originalKind !== "stored");
-			if (valueRequired && !v.value.trim()) {
+			// Secret rotation is gated behind the dedicated Rotate dialog on the
+			// detail page, so the edit form never collects a value.
+			if (!isEdit && v.kind === "stored" && !v.value.trim()) {
 				ctx.addIssue({
 					code: z.ZodIssueCode.custom,
 					path: ["value"],
-					message: isEdit
-						? "Secret value is required when switching to a stored key."
-						: "Secret value is required.",
+					message: "Secret value is required.",
 				});
 			}
 		});
@@ -100,13 +114,8 @@ export function useHostKeyForm({
 }: UseHostKeyFormOptions) {
 	const isEdit = hostKey !== undefined;
 	const createHostKey = useCreateHostKey();
-	const updateHostKey = useUpdateHostKey(hostKey?.metadata.id ?? "");
-
-	const originalKind: HostKeyKind | null = hostKey
-		? hostKey.spec.valueFrom.kind === "stored"
-			? "stored"
-			: "env"
-		: null;
+	const updateHostKey = useUpdateHostKey();
+	const { detach, isPending: isDetachPending } = useDetachHostKeyFromPolicy();
 
 	const initial = useMemo<HostKeyFormValues>(
 		() => (hostKey ? hostKeyToValues(hostKey) : emptyValues()),
@@ -122,10 +131,7 @@ export function useHostKeyForm({
 		return `${base}-${suffixRef.current}`;
 	};
 
-	const schema = useMemo(
-		() => buildSchema(isEdit, originalKind),
-		[isEdit, originalKind],
-	);
+	const schema = useMemo(() => buildSchema(isEdit), [isEdit]);
 
 	function runValidation({ value }: { value: HostKeyFormValues }) {
 		const r = schema.safeParse(value);
@@ -152,19 +158,16 @@ export function useHostKeyForm({
 
 			try {
 				if (isEdit && hostKey) {
-					const baseSpec = hostKey.spec;
-					const nextSpec =
-						value.kind === "env"
-							? {
-									...baseSpec,
-									valueFrom: { kind: "env", env: envVar },
-									value: undefined,
-								}
-							: {
-									...baseSpec,
-									valueFrom: { kind: "stored" },
-									...(newValue.length > 0 ? { value: newValue } : {}),
-								};
+					// Secret rotation goes through the Rotate dialog on the detail
+					// page. The edit form only touches identity + host/policy, so we
+					// preserve the existing valueFrom/value untouched.
+					const { value: _existingValue, ...specWithoutValue } = hostKey.spec;
+					void _existingValue;
+					const nextSpec = {
+						...specWithoutValue,
+						hostId: value.hostId,
+						policyId: value.policyId,
+					};
 					const payload: HostKeyUpdate = {
 						metadata: {
 							...hostKey.metadata,
@@ -177,7 +180,10 @@ export function useHostKeyForm({
 						},
 						spec: nextSpec,
 					};
-					const saved = await updateHostKey.mutateAsync(payload);
+					const saved = await updateHostKey.mutateAsync({
+						id: hostKey.metadata.id ?? "",
+						body: payload,
+					});
 					toast("success", `Host key "${displayName}" updated.`);
 					onSaved(saved.metadata.name);
 				} else {
@@ -255,14 +261,101 @@ export function useHostKeyForm({
 		return undefined;
 	});
 
-	const needsValueOnEdit =
-		isEdit && values.kind === "stored" && originalKind !== "stored";
+	const { data: hostsData } = useHosts();
+	const { data: policiesData } = usePolicies();
+
+	// Policies (user-defined) that have this host key in their pool. The
+	// backend includes the slug + id on `hostKey.policies`; we resolve display
+	// names + description from the full policy list so we render labels, not
+	// slugs.
+	const attachedPolicies = useMemo<ReferencingPolicyView[]>(() => {
+		const refs = hostKey?.policies ?? [];
+		return refs.map((ref) => {
+			const match = (policiesData.items ?? []).find(
+				(p) => p.metadata.id === ref.id,
+			);
+			return {
+				id: ref.id,
+				name: ref.name,
+				label: match ? displayLabel(match.metadata) : ref.name,
+				hasDisplayName: match
+					? match.metadata.displayName !== undefined &&
+						match.metadata.displayName !== ""
+					: false,
+				description: match?.metadata.description?.trim() || undefined,
+			};
+		});
+	}, [hostKey?.policies, policiesData.items]);
+
+	const hostOptions = useMemo<SelectOption[]>(
+		() =>
+			(hostsData.items ?? []).map((h) => ({
+				value: h.metadata.id ?? "",
+				label: displayLabel(h.metadata),
+			})),
+		[hostsData.items],
+	);
+
+	// Host-key policies are owned by the host/provider, not the user. Today the
+	// backend tags them with `owner.kind === "provider"`; once per-host
+	// ownership lands we'll get `"host"` with `owner.id === hostId` too. Accept
+	// either so existing data renders correctly.
+	const policyOptions = useMemo<SelectOption[]>(
+		() =>
+			(policiesData.items ?? [])
+				.filter((p) => {
+					const owner = p.metadata.owner;
+					if (!owner || owner.kind === "user") return false;
+					if (owner.kind === "host") return owner.id === values.hostId;
+					return true;
+				})
+				.map((p) => ({
+					value: p.metadata.id ?? "",
+					label: displayLabel(p.metadata),
+				})),
+		[policiesData.items, values.hostId],
+	);
+
+	const hostSelected = values.hostId !== "";
+	const selectedHostLabel = hostOptions.find((h) => h.value === values.hostId)
+		?.label;
+	// Resolve the saved label from the full policy list, not from the
+	// (host-filtered) dropdown options — older rows or mis-tagged owners may
+	// fall outside the filter, but we still want their name to render.
+	const selectedPolicyLabel = useMemo(() => {
+		if (!values.policyId) return undefined;
+		const match = (policiesData.items ?? []).find(
+			(p) => p.metadata.id === values.policyId,
+		);
+		return match ? displayLabel(match.metadata) : undefined;
+	}, [policiesData.items, values.policyId]);
+
+	function setHost(hostId: string) {
+		form.setFieldValue("hostId", hostId);
+		// Tier list is host-scoped; clear any prior choice.
+		form.setFieldValue("policyId", "");
+	}
+
+	function setPolicy(policyId: string) {
+		form.setFieldValue("policyId", policyId);
+	}
+
+	async function detachFromPolicy(policyId: string) {
+		if (!hostKey) {
+			toast("error", "Host key not loaded.");
+			return;
+		}
+		await detach({
+			policyId,
+			hostKeyId: hostKey.metadata.id ?? "",
+			policies: policiesData.items ?? [],
+		});
+	}
 
 	return {
 		form,
 		values,
 		isEdit,
-		originalKind,
 		slugPreview,
 		displayNameError,
 		descriptionError,
@@ -270,6 +363,15 @@ export function useHostKeyForm({
 		policyIdError,
 		envVarError,
 		valueError,
-		needsValueOnEdit,
+		hostOptions,
+		policyOptions,
+		hostSelected,
+		selectedHostLabel,
+		selectedPolicyLabel,
+		attachedPolicies,
+		detachFromPolicy,
+		isDetachPending,
+		setHost,
+		setPolicy,
 	};
 }

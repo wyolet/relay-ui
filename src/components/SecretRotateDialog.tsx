@@ -1,8 +1,18 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useUpdateHostKey } from "@/api/hooks/hostkeys";
 import { ApiError } from "@/api/types/errors";
 import type { HostKey } from "@/api/types/hostkey";
 import { toast } from "@/components/Toast";
+import { Button } from "@/components/ui/button";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 
 interface SecretRotateDialogProps {
 	hk: HostKey;
@@ -12,7 +22,8 @@ interface SecretRotateDialogProps {
 export function SecretRotateDialog({ hk, onClose }: SecretRotateDialogProps) {
 	const [value, setValue] = useState("");
 	const [inlineError, setInlineError] = useState<string | undefined>();
-	const updateHostKey = useUpdateHostKey(hk.metadata.id ?? "");
+	const inputId = useId();
+	const updateHostKey = useUpdateHostKey();
 
 	async function handleConfirm() {
 		if (!value.trim()) {
@@ -22,87 +33,89 @@ export function SecretRotateDialog({ hk, onClose }: SecretRotateDialogProps) {
 		setInlineError(undefined);
 		try {
 			await updateHostKey.mutateAsync({
-				metadata: hk.metadata,
-				spec: {
-					...hk.spec,
-					valueFrom: { kind: "stored" },
-					value,
+				id: hk.metadata.id ?? "",
+				body: {
+					metadata: hk.metadata,
+					spec: {
+						...hk.spec,
+						valueFrom: { kind: "stored" },
+						value,
+					},
 				},
 			});
 			setValue("");
 			toast("success", "Host key rotated.");
 			onClose();
 		} catch (err) {
-			if (err instanceof ApiError) {
-				setInlineError(err.body.message);
-			} else {
-				setInlineError("Failed to rotate. Please try again.");
-			}
+			setInlineError(
+				err instanceof ApiError
+					? err.body.message
+					: "Failed to rotate. Please try again.",
+			);
 		}
 	}
 
 	return (
-		<div
-			role="dialog"
-			aria-modal="true"
-			aria-labelledby="rotate-dialog-title"
-			className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 dark:bg-black/60"
+		<Dialog
+			open
+			onOpenChange={(next) => !next && !updateHostKey.isPending && onClose()}
 		>
-			<div className="bg-card rounded-xl shadow-xl dark:shadow-black/40 w-full max-w-md mx-4 p-6">
-				<h2
-					id="rotate-dialog-title"
-					className="text-lg font-semibold text-foreground mb-4"
-				>
-					Rotate Host Key:{" "}
-					<span className="font-mono">{hk.metadata.name}</span>
-				</h2>
+			<DialogContent className="sm:max-w-md">
+				<DialogHeader>
+					<DialogTitle>
+						Rotate{" "}
+						<span className="font-mono text-sm font-normal text-muted-foreground">
+							{hk.metadata.name}
+						</span>
+					</DialogTitle>
+					<DialogDescription>
+						Paste the new secret. It's hashed at rest; the plaintext leaves your
+						browser once.
+					</DialogDescription>
+				</DialogHeader>
 
 				{inlineError && (
-					<div className="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 px-4 py-3 text-sm text-red-700 dark:text-red-300">
+					<div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
 						{inlineError}
 					</div>
 				)}
 
-				<div className="mb-6">
+				<div>
 					<label
-						htmlFor="rotate-value"
-						className="block text-sm font-medium text-foreground mb-1"
+						htmlFor={inputId}
+						className="block text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-1"
 					>
-						New value{" "}
-						<span className="ml-1 text-red-500" aria-hidden="true">
-							*
-						</span>
+						New value
 					</label>
-					<input
-						id="rotate-value"
+					<Input
+						id={inputId}
 						type="password"
 						autoComplete="new-password"
 						value={value}
-						onChange={(e) => setValue(e.target.value)}
-						placeholder="Enter new value"
-						className="w-full border border-input rounded-lg px-3 py-2 text-sm bg-white dark:bg-neutral-800 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand-400"
+						onChange={(e) => setValue(e.currentTarget.value)}
+						placeholder="sk-…"
+						autoFocus
 					/>
 				</div>
 
-				<div className="flex gap-3 justify-end">
-					<button
+				<DialogFooter>
+					<Button
 						type="button"
+						variant="ghost"
 						onClick={onClose}
 						disabled={updateHostKey.isPending}
-						className="px-4 py-2 text-sm font-medium text-foreground bg-card border border-input rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-50 transition-colors"
 					>
 						Cancel
-					</button>
-					<button
+					</Button>
+					<Button
 						type="button"
 						onClick={() => void handleConfirm()}
 						disabled={updateHostKey.isPending}
-						className="px-4 py-2 text-sm font-medium text-white bg-brand-600 rounded-lg hover:bg-brand-700 disabled:opacity-50 transition-colors"
 					>
-						{updateHostKey.isPending ? "Rotating…" : "Confirm"}
-					</button>
-				</div>
-			</div>
-		</div>
+						{updateHostKey.isPending ? "Rotating…" : "Rotate"}
+					</Button>
+				</DialogFooter>
+			</DialogContent>
+		</Dialog>
 	);
 }

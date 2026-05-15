@@ -7,7 +7,10 @@ import {
 	useDeleteHostKey,
 	useHostKeys,
 } from "@/api/hooks/hostkeys";
+import { hostsListQueryOptions, useHosts } from "@/api/hooks/hosts";
 import { policiesListQueryOptions, usePolicies } from "@/api/hooks/policies";
+import { Switch } from "@/components/ui/switch";
+import { useToggleHostKeyEnabled } from "@/components/useToggleHostKeyEnabled";
 import {
 	relayKeysListQueryOptions,
 	useDeleteRelayKey,
@@ -50,6 +53,7 @@ export const Route = createFileRoute("/_authenticated/keys")({
 	loader: ({ context }) => {
 		void context.queryClient.prefetchQuery(policiesListQueryOptions);
 		void context.queryClient.prefetchQuery(hostKeysListQueryOptions);
+		void context.queryClient.prefetchQuery(hostsListQueryOptions);
 		void context.queryClient.prefetchQuery(relayKeysListQueryOptions);
 		return null;
 	},
@@ -58,7 +62,9 @@ export const Route = createFileRoute("/_authenticated/keys")({
 
 interface MenuAction {
 	label: string;
-	onClick: () => void;
+	onClick?: () => void;
+	/** Render the menu item as another element (e.g. a TanStack <Link>). */
+	render?: React.ReactElement;
 	danger?: boolean;
 	disabled?: boolean;
 }
@@ -79,6 +85,7 @@ function RowMenu({ actions }: { actions: MenuAction[] }) {
 						disabled={a.disabled}
 						variant={a.danger ? "destructive" : "default"}
 						onClick={a.onClick}
+						render={a.render}
 					>
 						{a.label}
 					</DropdownMenuItem>
@@ -448,11 +455,12 @@ function RelayKeysPanel() {
 												actions={[
 													{
 														label: "Edit",
-														onClick: () =>
-															void navigate({
-																to: "/relay-keys/$name/edit",
-																params: { name: rk.metadata.name },
-															}),
+														render: (
+															<Link
+																to="/relay-keys/$name/edit"
+																params={{ name: rk.metadata.name }}
+															/>
+														),
 													},
 													{
 														label: enabled ? "Disable" : "Enable",
@@ -479,35 +487,57 @@ function RelayKeysPanel() {
 }
 
 function HostKeysPanel() {
-	const navigate = useNavigate({ from: "/keys" });
 	const { data: hostKeysData } = useHostKeys();
+	const { data: hostsData } = useHosts();
 	const { data: policiesData } = usePolicies();
 	const deleteHostKey = useDeleteHostKey();
+	const { setEnabled, isPending: isTogglingEnabled } = useToggleHostKeyEnabled();
 	const [q, setQ] = useState("");
+
+	const hostLabels = new Map<string, string>();
+	for (const h of hostsData.items ?? []) {
+		if (h.metadata.id) hostLabels.set(h.metadata.id, displayLabel(h.metadata));
+	}
+	const policyLabels = new Map<string, string>();
+	for (const p of policiesData.items ?? []) {
+		if (p.metadata.id) policyLabels.set(p.metadata.id, displayLabel(p.metadata));
+	}
 
 	const allItems = hostKeysData.items ?? [];
 	const needle = q.trim().toLowerCase();
 	const items = needle
-		? allItems.filter(
-				(hk) =>
+		? allItems.filter((hk) => {
+				const hostLabel = hostLabels.get(hk.spec.hostId) ?? "";
+				const tierLabel = policyLabels.get(hk.spec.policyId) ?? "";
+				return (
 					displayLabel(hk.metadata).toLowerCase().includes(needle) ||
 					hk.metadata.name.toLowerCase().includes(needle) ||
-					(hk.spec.valueFrom.env?.toLowerCase().includes(needle) ?? false),
-			)
+					hostLabel.toLowerCase().includes(needle) ||
+					tierLabel.toLowerCase().includes(needle) ||
+					(hk.spec.valueFrom.env?.toLowerCase().includes(needle) ?? false)
+				);
+			})
 		: allItems;
 
-	const refCounts = new Map<string, number>();
-	for (const policy of policiesData.items ?? []) {
-		for (const id of policy.spec.hostKeyIds ?? []) {
-			refCounts.set(id, (refCounts.get(id) ?? 0) + 1);
-		}
-	}
-
 	async function handleDelete(hk: HostKey) {
+		const refs = hk.policies ?? [];
+		if (refs.length > 0) {
+			const preview = refs
+				.slice(0, 3)
+				.map((r) => r.name)
+				.join(", ");
+			const overflow = refs.length > 3 ? ` (+${refs.length - 3} more)` : "";
+			toast(
+				"error",
+				`Detach from ${refs.length} ${
+					refs.length === 1 ? "policy" : "policies"
+				} first: ${preview}${overflow}.`,
+			);
+			return;
+		}
 		const ok = await confirm({
 			title: `Delete host key ${displayLabel(hk.metadata)}?`,
-			description:
-				"Policies referencing this key will lose access until you reattach another.",
+			description: "This host key is not attached to any user policy.",
 			confirmLabel: "Delete",
 			danger: true,
 		});
@@ -573,10 +603,12 @@ function HostKeysPanel() {
 					<table className="w-full border-collapse">
 						<thead className="bg-muted/40">
 							<tr>
+								<Th>Enabled</Th>
 								<Th>Name</Th>
+								<Th>Host</Th>
+								<Th>Host policy</Th>
 								<Th>Source</Th>
-								<Th>Env var</Th>
-								<Th align="right">References</Th>
+								<Th align="right">Used by</Th>
 								<th
 									scope="col"
 									className="w-10 px-3 py-2"
@@ -587,12 +619,36 @@ function HostKeysPanel() {
 						<tbody>
 							{items.map((hk) => {
 								const isStored = hk.spec.valueFrom.kind === "stored";
-								const refCount = refCounts.get(hk.metadata.id ?? "") ?? 0;
+								const refCount = hk.policies?.length ?? 0;
+								const enabled = hk.spec.enabled ?? true;
+								const hostLabel =
+									hostLabels.get(hk.spec.hostId) ??
+									`Unknown (${hk.spec.hostId.slice(0, 6)}…)`;
+								const tierLabel = hk.spec.policyId
+									? (policyLabels.get(hk.spec.policyId) ??
+										`Unknown (${hk.spec.policyId.slice(0, 6)}…)`)
+									: null;
 								return (
 									<tr
 										key={hk.metadata.name}
-										className="border-t border-border hover:bg-muted/40 transition-colors"
+										className={[
+											"border-t border-border transition-colors",
+											enabled
+												? "hover:bg-muted/40"
+												: "bg-muted/30 text-muted-foreground/80",
+										].join(" ")}
 									>
+										<td className="px-3 py-2 align-middle">
+											<Switch
+												size="sm"
+												checked={enabled}
+												onCheckedChange={(next) => void setEnabled(hk, next)}
+												disabled={isTogglingEnabled}
+												aria-label={
+													enabled ? "Disable host key" : "Enable host key"
+												}
+											/>
+										</td>
 										<td className="px-3 py-2">
 											<Link
 												to="/host-keys/$name"
@@ -609,31 +665,56 @@ function HostKeysPanel() {
 												)}
 											</Link>
 										</td>
-										<td className="px-3 py-2 text-sm text-foreground">
-											{isStored ? "Stored" : "Env"}
+										<td className="px-3 py-2 text-xs text-foreground">
+											{hostLabel}
 										</td>
-										<td className="px-3 py-2 text-sm">
-											{hk.spec.valueFrom.env ? (
-												<span className="font-mono text-foreground">
-													{hk.spec.valueFrom.env}
+										<td className="px-3 py-2">
+											{tierLabel ? (
+												<span className="inline-flex items-center rounded-md border border-border bg-muted px-1.5 py-0.5 text-[11px] font-medium text-foreground">
+													{tierLabel}
 												</span>
 											) : (
-												<span className="text-muted-foreground">—</span>
+												<span className="text-[11px] text-muted-foreground/70">
+													—
+												</span>
 											)}
 										</td>
-										<td className="px-3 py-2 text-right text-sm text-muted-foreground tabular-nums">
-											{refCount}
+										<td className="px-3 py-2 text-xs">
+											{isStored ? (
+												<span className="text-foreground">Stored</span>
+											) : (
+												<span className="flex items-center gap-1">
+													<span className="text-foreground">Env</span>
+													{hk.spec.valueFrom.env && (
+														<span className="font-mono text-muted-foreground">
+															${hk.spec.valueFrom.env}
+														</span>
+													)}
+												</span>
+											)}
+										</td>
+										<td className="px-3 py-2 text-right text-xs tabular-nums">
+											{refCount === 0 ? (
+												<span className="text-muted-foreground/70">
+													Unattached
+												</span>
+											) : (
+												<span className="text-foreground">
+													{refCount} {refCount === 1 ? "policy" : "policies"}
+												</span>
+											)}
 										</td>
 										<td className="px-3 py-2 text-right">
 											<RowMenu
 												actions={[
 													{
 														label: "Edit",
-														onClick: () =>
-															void navigate({
-																to: "/host-keys/$name/edit",
-																params: { name: hk.metadata.name },
-															}),
+														render: (
+															<Link
+																to="/host-keys/$name/edit"
+																params={{ name: hk.metadata.name }}
+															/>
+														),
 													},
 													{
 														label: "Delete",

@@ -1,19 +1,26 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ChevronLeft } from "lucide-react";
-import { Suspense, useState } from "react";
+import {
+	ChevronLeft,
+	Copy,
+	KeyRound,
+	Link2,
+	Pencil,
+	ShieldCheck,
+	Trash2,
+	Unlink2,
+} from "lucide-react";
+import { Suspense } from "react";
 import {
 	hostKeyDetailQueryOptions,
 	hostKeysListQueryOptions,
-	useDeleteHostKey,
-	useHostKey,
 } from "@/api/hooks/hostkeys";
-import { policiesListQueryOptions, usePolicies } from "@/api/hooks/policies";
-import { ApiError } from "@/api/types/errors";
+import { hostsListQueryOptions } from "@/api/hooks/hosts";
+import { policiesListQueryOptions } from "@/api/hooks/policies";
 import { DeleteConfirm } from "@/components/DeleteConfirm";
 import { SecretRotateDialog } from "@/components/SecretRotateDialog";
-import { toast } from "@/components/Toast";
 import { Button } from "@/components/ui/button";
-import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
+import { Switch } from "@/components/ui/switch";
+import { useHostKeyDetail } from "@/components/useHostKeyDetail";
 
 export const Route = createFileRoute("/_authenticated/host-keys/$name")({
 	loader: ({ context, params }) =>
@@ -22,6 +29,7 @@ export const Route = createFileRoute("/_authenticated/host-keys/$name")({
 				hostKeyDetailQueryOptions(params.name),
 			),
 			context.queryClient.ensureQueryData(hostKeysListQueryOptions),
+			context.queryClient.ensureQueryData(hostsListQueryOptions),
 			context.queryClient.ensureQueryData(policiesListQueryOptions),
 		]),
 	component: HostKeyDetailPage,
@@ -29,36 +37,32 @@ export const Route = createFileRoute("/_authenticated/host-keys/$name")({
 
 function HostKeyDetailInner() {
 	const { name } = Route.useParams();
-	const { data: hk } = useHostKey(name);
-	const { data: policiesData } = usePolicies();
-	const deleteHostKey = useDeleteHostKey();
 	const navigate = useNavigate();
-
-	const [confirming, setConfirming] = useState(false);
-	const [rotating, setRotating] = useState(false);
-
-	const hkId = hk.metadata.id ?? "";
-	const referencingPolicies = (policiesData.items ?? []).filter((policy) =>
-		(policy.spec.hostKeyIds ?? []).includes(hkId),
-	);
-	const isStored = hk.spec.valueFrom.kind === "stored";
-	const description = hk.metadata.description?.trim();
-
-	async function handleDelete() {
-		try {
-			await deleteHostKey.mutateAsync(hkId);
-			toast("success", `Host key "${displayLabel(hk.metadata)}" deleted.`);
+	const {
+		hk,
+		view,
+		referencingPolicies,
+		confirming,
+		rotating,
+		isDeletingPending,
+		attemptDelete,
+		confirmDelete,
+		cancelDelete,
+		openRotate,
+		closeRotate,
+		copyId,
+		setEnabled,
+		isToggling,
+		detachFromPolicy,
+		isDetachPending,
+	} = useHostKeyDetail({
+		name,
+		onDeleted: () =>
 			void navigate({
 				to: "/keys",
 				search: { tab: "provider", filter: "active", q: "" },
-			});
-		} catch (err) {
-			toast(
-				"error",
-				err instanceof ApiError ? err.body.message : "Failed to delete host key.",
-			);
-		}
-	}
+			}),
+	});
 
 	return (
 		<div className="flex flex-col gap-6">
@@ -73,129 +77,264 @@ function HostKeyDetailInner() {
 				</Link>
 			</div>
 
-			<div className="flex items-start justify-between gap-4">
-				<div className="min-w-0">
-					<div className="flex items-center gap-2">
+			<header className="flex items-start justify-between gap-4">
+				<div className="min-w-0 flex flex-col gap-1.5">
+					<div className="flex items-center gap-2 flex-wrap">
 						<h1 className="text-xl font-semibold text-foreground truncate">
-							{displayLabel(hk.metadata)}
+							{view.displayName}
 						</h1>
-						<KindBadge kind={isStored ? "stored" : "env"} />
+						<KindBadge stored={view.isStored} />
 					</div>
-					{hasDisplayName(hk.metadata) && (
-						<p className="mt-1 font-mono text-[11px] text-muted-foreground">
-							{hk.metadata.name}
+					{view.hasDisplayName && (
+						<p className="font-mono text-[11px] text-muted-foreground">
+							{view.slug}
 						</p>
 					)}
-					{description && (
-						<p className="mt-2 max-w-2xl text-xs text-muted-foreground leading-relaxed">
-							{description}
+					{view.description && (
+						<p className="mt-1 max-w-2xl text-xs text-muted-foreground leading-relaxed">
+							{view.description}
 						</p>
 					)}
 				</div>
-				<div className="flex gap-2 shrink-0">
+				<div className="flex items-center gap-3 shrink-0">
+					<label className="inline-flex items-center gap-2 text-xs text-foreground cursor-pointer select-none">
+						<Switch
+							checked={view.enabled}
+							onCheckedChange={(next) => void setEnabled(next)}
+							disabled={isToggling}
+							aria-label={view.enabled ? "Disable host key" : "Enable host key"}
+						/>
+						<span className="font-medium">
+							{view.enabled ? "Enabled" : "Disabled"}
+						</span>
+					</label>
 					<Link to="/host-keys/$name/edit" params={{ name }}>
 						<Button type="button" variant="outline">
+							<Pencil className="w-3.5 h-3.5" />
 							Edit
 						</Button>
 					</Link>
-					<Button
-						type="button"
-						variant="destructive"
-						onClick={() => setConfirming(true)}
-					>
+					<Button type="button" variant="destructive" onClick={attemptDelete}>
+						<Trash2 className="w-3.5 h-3.5" />
 						Delete
 					</Button>
 				</div>
-			</div>
+			</header>
 
-			<dl className="divide-y divide-border rounded-md border border-border bg-card">
-				<DetailRow label="Slug">
-					<span className="font-mono text-foreground">{hk.metadata.name}</span>
-				</DetailRow>
-				<DetailRow label="Source">
-					{isStored ? "Stored value" : "Environment variable"}
-				</DetailRow>
-				{!isStored && (
-					<DetailRow label="Environment variable">
-						{hk.spec.valueFrom.env ? (
-							<span className="font-mono text-foreground">
-								{hk.spec.valueFrom.env}
-							</span>
-						) : (
-							<span className="text-muted-foreground">—</span>
+			<div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+				<Card title="Configuration" icon={ShieldCheck} className="lg:col-span-2">
+					<dl className="divide-y divide-border">
+						<Row label="Host">
+							{view.hostName ? (
+								<Link
+									to="/host-keys"
+									className="text-primary hover:underline"
+								>
+									{view.hostLabel}
+								</Link>
+							) : (
+								<span className="text-foreground">{view.hostLabel}</span>
+							)}
+						</Row>
+						<Row label="Host policy">
+							{view.hostPolicyLabel === null ? (
+								<span className="text-muted-foreground">— (none set)</span>
+							) : view.hostPolicyName ? (
+								<Link
+									to="/policies/$name"
+									params={{ name: view.hostPolicyName }}
+									className="text-primary hover:underline"
+								>
+									{view.hostPolicyLabel}
+								</Link>
+							) : (
+								<span className="text-foreground">{view.hostPolicyLabel}</span>
+							)}
+							<p className="mt-0.5 text-[11px] text-muted-foreground leading-snug">
+								Mirrors the provider's own tier — acts as a hard cap on user
+								policies that route through this key.
+							</p>
+						</Row>
+						{view.defaultTier && (
+							<Row label="Default tier">
+								<span className="font-mono text-foreground">
+									{view.defaultTier}
+								</span>
+							</Row>
 						)}
-						<p className="mt-1 text-[11px] text-muted-foreground">
-							Set this env var on your relay deployment.
-						</p>
-					</DetailRow>
-				)}
-				{isStored && (
-					<DetailRow label="Value">
-						<div className="flex items-center gap-3">
-							<span className="font-mono text-muted-foreground">••••••••</span>
+						<Row label="Source">
+							{view.sourceLabel}
+							{!view.isStored && view.envVar && (
+								<p className="mt-1 text-[11px] text-muted-foreground">
+									Reads from{" "}
+									<code className="font-mono text-foreground/80">
+										${view.envVar}
+									</code>{" "}
+									on the relay deployment.
+								</p>
+							)}
+						</Row>
+					</dl>
+				</Card>
+
+				<Card title="Secret" icon={KeyRound}>
+					{view.isStored ? (
+						<div className="flex flex-col gap-3">
+							<div className="flex items-center gap-2">
+								<span className="font-mono text-sm text-muted-foreground">
+									••••••••••••
+								</span>
+								<span className="inline-flex items-center rounded-full border border-border bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+									encrypted at rest
+								</span>
+							</div>
 							<Button
 								type="button"
 								variant="outline"
 								size="sm"
-								onClick={() => setRotating(true)}
+								onClick={openRotate}
 							>
 								Rotate value
 							</Button>
+							<p className="text-[11px] text-muted-foreground leading-snug">
+								Rotating issues a new ciphertext. The plaintext never leaves
+								your browser after submission.
+							</p>
 						</div>
-					</DetailRow>
-				)}
-			</dl>
+					) : (
+						<div className="flex flex-col gap-2">
+							<p className="text-xs text-foreground">
+								Sourced from environment at request time.
+							</p>
+							{view.envVar ? (
+								<code className="inline-flex items-center self-start rounded-md border border-border bg-muted px-2 py-1 text-[11px] font-mono text-foreground">
+									${view.envVar}
+								</code>
+							) : (
+								<p className="text-[11px] text-destructive">
+									No env var configured.
+								</p>
+							)}
+							<p className="text-[11px] text-muted-foreground leading-snug">
+								Set this variable on the relay deployment. Edit to change.
+							</p>
+						</div>
+					)}
+				</Card>
 
-			<section>
-				<h2 className="text-sm font-semibold text-foreground mb-2">
-					Referenced by policies
-				</h2>
-				{referencingPolicies.length === 0 ? (
-					<p className="text-xs text-muted-foreground">
-						No policies reference this host key.
-					</p>
-				) : (
-					<ul className="flex flex-col gap-1">
-						{referencingPolicies.map((policy) => (
-							<li key={policy.metadata.name}>
-								<Link
-									to="/policies/$name"
-									params={{ name: policy.metadata.name }}
-									className="text-xs text-primary hover:underline"
+				<Card
+					title="Attached to user policies"
+					icon={Link2}
+					className="lg:col-span-3"
+				>
+					{referencingPolicies.length === 0 ? (
+						<p className="text-xs text-muted-foreground">
+							This host key is not attached to any user policy. Attach it from a
+							policy's host-key pool to start routing traffic through it.
+						</p>
+					) : (
+						<ul className="divide-y divide-border">
+							{referencingPolicies.map((p) => (
+								<li
+									key={p.id}
+									className="flex items-start justify-between gap-4 py-3 first:pt-0 last:pb-0"
 								>
-									{displayLabel(policy.metadata)}
-									{!hasDisplayName(policy.metadata) && (
-										<span className="font-mono"> </span>
-									)}
-								</Link>
-								{hasDisplayName(policy.metadata) && (
-									<span className="ml-2 font-mono text-[11px] text-muted-foreground">
-										{policy.metadata.name}
-									</span>
-								)}
-							</li>
-						))}
-					</ul>
-				)}
-			</section>
+									<div className="min-w-0 flex flex-col gap-0.5">
+										<Link
+											to="/policies/$name"
+											params={{ name: p.name }}
+											className="text-sm font-medium text-foreground hover:text-primary hover:underline truncate"
+										>
+											{p.label}
+										</Link>
+										{p.hasDisplayName && (
+											<code className="font-mono text-[11px] text-muted-foreground">
+												{p.name}
+											</code>
+										)}
+										{p.description && (
+											<p className="mt-1 text-[11px] text-muted-foreground leading-snug">
+												{p.description}
+											</p>
+										)}
+									</div>
+									<Button
+										type="button"
+										variant="outline"
+										size="sm"
+										onClick={() => void detachFromPolicy(p.id)}
+										disabled={isDetachPending}
+									>
+										<Unlink2 className="w-3 h-3" />
+										Detach
+									</Button>
+								</li>
+							))}
+						</ul>
+					)}
+				</Card>
 
-			{rotating && (
-				<SecretRotateDialog hk={hk} onClose={() => setRotating(false)} />
-			)}
+				<Card title="Identifiers" icon={Copy} className="lg:col-span-3">
+					<dl className="divide-y divide-border">
+						<Row label="Slug">
+							<span className="font-mono text-foreground">{view.slug}</span>
+						</Row>
+						<Row label="ID">
+							<button
+								type="button"
+								onClick={() => void copyId()}
+								className="group inline-flex items-center gap-1.5 font-mono text-foreground hover:text-primary transition-colors"
+								title="Copy ID"
+							>
+								<span className="truncate">{view.id || "—"}</span>
+								<Copy className="w-3 h-3 opacity-60 group-hover:opacity-100" />
+							</button>
+						</Row>
+					</dl>
+				</Card>
+			</div>
+
+			{rotating && <SecretRotateDialog hk={hk} onClose={closeRotate} />}
 
 			{confirming && (
 				<DeleteConfirm
-					resourceName={hk.metadata.name}
-					onConfirm={() => void handleDelete()}
-					onCancel={() => setConfirming(false)}
-					isPending={deleteHostKey.isPending}
+					resourceName={view.slug}
+					onConfirm={() => void confirmDelete()}
+					onCancel={cancelDelete}
+					isPending={isDeletingPending}
 				/>
 			)}
 		</div>
 	);
 }
 
-function DetailRow({
+function Card({
+	title,
+	icon: Icon,
+	children,
+	className,
+}: {
+	title: string;
+	icon: typeof KeyRound;
+	children: React.ReactNode;
+	className?: string;
+}) {
+	return (
+		<section
+			className={`rounded-md border border-border bg-card ${className ?? ""}`}
+		>
+			<header className="flex items-center gap-1.5 border-b border-border px-4 py-2.5">
+				<Icon className="w-3.5 h-3.5 text-muted-foreground" aria-hidden="true" />
+				<h2 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+					{title}
+				</h2>
+			</header>
+			<div className="px-4 py-3">{children}</div>
+		</section>
+	);
+}
+
+function Row({
 	label,
 	children,
 }: {
@@ -203,19 +342,19 @@ function DetailRow({
 	children: React.ReactNode;
 }) {
 	return (
-		<div className="px-4 py-3 grid grid-cols-1 sm:grid-cols-[180px_1fr] gap-1 sm:gap-4">
+		<div className="py-3 first:pt-0 last:pb-0 grid grid-cols-1 sm:grid-cols-[160px_1fr] gap-1 sm:gap-4">
 			<dt className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
 				{label}
 			</dt>
-			<dd className="text-xs text-foreground">{children}</dd>
+			<dd className="text-xs text-foreground min-w-0">{children}</dd>
 		</div>
 	);
 }
 
-function KindBadge({ kind }: { kind: "stored" | "env" }) {
+function KindBadge({ stored }: { stored: boolean }) {
 	return (
 		<span className="inline-flex items-center rounded-full border border-border bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-			{kind === "stored" ? "stored" : "env"}
+			{stored ? "stored" : "env"}
 		</span>
 	);
 }

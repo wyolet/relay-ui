@@ -659,6 +659,7 @@ export interface components {
              */
             readonly $schema?: string;
             metadata: components["schemas"]["Metadata"];
+            policies?: components["schemas"]["HostKeyPolicyRef"][] | null;
             spec: components["schemas"]["HostKeySpec"];
         };
         HostKeyList: {
@@ -669,6 +670,10 @@ export interface components {
              */
             readonly $schema?: string;
             items: components["schemas"]["HostKey"][] | null;
+        };
+        HostKeyPolicyRef: {
+            id: string;
+            name: string;
         };
         HostKeySpec: {
             defaultTier?: string;

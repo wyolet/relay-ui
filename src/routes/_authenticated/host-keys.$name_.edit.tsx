@@ -5,7 +5,7 @@ import { hostKeyDetailQueryOptions, useHostKey } from "@/api/hooks/hostkeys";
 import { HostKeyForm } from "@/components/HostKeyForm";
 import { displayLabel } from "@/lib/displayLabel";
 
-export const Route = createFileRoute("/_authenticated/host-keys/$name/edit")({
+export const Route = createFileRoute("/_authenticated/host-keys/$name_/edit")({
 	loader: ({ context, params }) =>
 		context.queryClient.ensureQueryData(
 			hostKeyDetailQueryOptions(params.name),

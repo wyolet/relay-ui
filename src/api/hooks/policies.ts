@@ -67,17 +67,20 @@ export function useCreatePolicy() {
 	});
 }
 
-export function useUpdatePolicy(id: string) {
+export function useUpdatePolicy(id?: string) {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: async (body: PolicyUpdate): Promise<Policy> => {
-			const { data, error } = await apiClient.PUT(
-				"/policies/by-id/{id}",
-				{
-					params: { path: { id } },
-					body,
-				},
-			);
+		mutationFn: async (
+			arg: PolicyUpdate | { id: string; body: PolicyUpdate },
+		): Promise<Policy> => {
+			const resolved: { id: string; body: PolicyUpdate } =
+				"body" in arg && "id" in arg
+					? arg
+					: { id: id ?? "", body: arg as PolicyUpdate };
+			const { data, error } = await apiClient.PUT("/policies/by-id/{id}", {
+				params: { path: { id: resolved.id } },
+				body: resolved.body,
+			});
 			if (error) throw new ApiError(0, error.error);
 			return data;
 		},

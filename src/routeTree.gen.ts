@@ -34,11 +34,11 @@ import { Route as AuthenticatedModelsNewRouteImport } from './routes/_authentica
 import { Route as AuthenticatedModelsNameRouteImport } from './routes/_authenticated/models.$name'
 import { Route as AuthenticatedHostKeysNewRouteImport } from './routes/_authenticated/host-keys.new'
 import { Route as AuthenticatedHostKeysNameRouteImport } from './routes/_authenticated/host-keys.$name'
-import { Route as AuthenticatedRelayKeysNameEditRouteImport } from './routes/_authenticated/relay-keys.$name.edit'
+import { Route as AuthenticatedRelayKeysNameEditRouteImport } from './routes/_authenticated/relay-keys.$name_.edit'
 import { Route as AuthenticatedPoliciesRateLimitsNewRouteImport } from './routes/_authenticated/policies.rate-limits.new'
 import { Route as AuthenticatedPoliciesRateLimitsNameRouteImport } from './routes/_authenticated/policies.rate-limits.$name'
 import { Route as AuthenticatedModelsNameEditRouteImport } from './routes/_authenticated/models.$name.edit'
-import { Route as AuthenticatedHostKeysNameEditRouteImport } from './routes/_authenticated/host-keys.$name.edit'
+import { Route as AuthenticatedHostKeysNameEditRouteImport } from './routes/_authenticated/host-keys.$name_.edit'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -178,9 +178,9 @@ const AuthenticatedHostKeysNameRoute =
   } as any)
 const AuthenticatedRelayKeysNameEditRoute =
   AuthenticatedRelayKeysNameEditRouteImport.update({
-    id: '/edit',
-    path: '/edit',
-    getParentRoute: () => AuthenticatedRelayKeysNameRoute,
+    id: '/relay-keys/$name_/edit',
+    path: '/relay-keys/$name/edit',
+    getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedPoliciesRateLimitsNewRoute =
   AuthenticatedPoliciesRateLimitsNewRouteImport.update({
@@ -202,9 +202,9 @@ const AuthenticatedModelsNameEditRoute =
   } as any)
 const AuthenticatedHostKeysNameEditRoute =
   AuthenticatedHostKeysNameEditRouteImport.update({
-    id: '/edit',
-    path: '/edit',
-    getParentRoute: () => AuthenticatedHostKeysNameRoute,
+    id: '/$name_/edit',
+    path: '/$name/edit',
+    getParentRoute: () => AuthenticatedHostKeysRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -218,13 +218,13 @@ export interface FileRoutesByFullPath {
   '/policies': typeof AuthenticatedPoliciesRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRouteWithChildren
   '/usage': typeof AuthenticatedUsageRoute
-  '/host-keys/$name': typeof AuthenticatedHostKeysNameRouteWithChildren
+  '/host-keys/$name': typeof AuthenticatedHostKeysNameRoute
   '/host-keys/new': typeof AuthenticatedHostKeysNewRoute
   '/models/$name': typeof AuthenticatedModelsNameRouteWithChildren
   '/models/new': typeof AuthenticatedModelsNewRoute
   '/policies/$name': typeof AuthenticatedPoliciesNameRoute
   '/policies/new': typeof AuthenticatedPoliciesNewRoute
-  '/relay-keys/$name': typeof AuthenticatedRelayKeysNameRouteWithChildren
+  '/relay-keys/$name': typeof AuthenticatedRelayKeysNameRoute
   '/relay-keys/new': typeof AuthenticatedRelayKeysNewRoute
   '/settings/proxy-mode': typeof AuthenticatedSettingsProxyModeRoute
   '/settings/rate-limits': typeof AuthenticatedSettingsRateLimitsRoute
@@ -245,13 +245,13 @@ export interface FileRoutesByTo {
   '/logs': typeof AuthenticatedLogsRoute
   '/usage': typeof AuthenticatedUsageRoute
   '/': typeof AuthenticatedIndexRoute
-  '/host-keys/$name': typeof AuthenticatedHostKeysNameRouteWithChildren
+  '/host-keys/$name': typeof AuthenticatedHostKeysNameRoute
   '/host-keys/new': typeof AuthenticatedHostKeysNewRoute
   '/models/$name': typeof AuthenticatedModelsNameRouteWithChildren
   '/models/new': typeof AuthenticatedModelsNewRoute
   '/policies/$name': typeof AuthenticatedPoliciesNameRoute
   '/policies/new': typeof AuthenticatedPoliciesNewRoute
-  '/relay-keys/$name': typeof AuthenticatedRelayKeysNameRouteWithChildren
+  '/relay-keys/$name': typeof AuthenticatedRelayKeysNameRoute
   '/relay-keys/new': typeof AuthenticatedRelayKeysNewRoute
   '/settings/proxy-mode': typeof AuthenticatedSettingsProxyModeRoute
   '/settings/rate-limits': typeof AuthenticatedSettingsRateLimitsRoute
@@ -278,13 +278,13 @@ export interface FileRoutesById {
   '/_authenticated/settings': typeof AuthenticatedSettingsRouteWithChildren
   '/_authenticated/usage': typeof AuthenticatedUsageRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
-  '/_authenticated/host-keys/$name': typeof AuthenticatedHostKeysNameRouteWithChildren
+  '/_authenticated/host-keys/$name': typeof AuthenticatedHostKeysNameRoute
   '/_authenticated/host-keys/new': typeof AuthenticatedHostKeysNewRoute
   '/_authenticated/models/$name': typeof AuthenticatedModelsNameRouteWithChildren
   '/_authenticated/models/new': typeof AuthenticatedModelsNewRoute
   '/_authenticated/policies/$name': typeof AuthenticatedPoliciesNameRoute
   '/_authenticated/policies/new': typeof AuthenticatedPoliciesNewRoute
-  '/_authenticated/relay-keys/$name': typeof AuthenticatedRelayKeysNameRouteWithChildren
+  '/_authenticated/relay-keys/$name': typeof AuthenticatedRelayKeysNameRoute
   '/_authenticated/relay-keys/new': typeof AuthenticatedRelayKeysNewRoute
   '/_authenticated/settings/proxy-mode': typeof AuthenticatedSettingsProxyModeRoute
   '/_authenticated/settings/rate-limits': typeof AuthenticatedSettingsRateLimitsRoute
@@ -292,11 +292,11 @@ export interface FileRoutesById {
   '/_authenticated/models/': typeof AuthenticatedModelsIndexRoute
   '/_authenticated/policies/': typeof AuthenticatedPoliciesIndexRoute
   '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
-  '/_authenticated/host-keys/$name/edit': typeof AuthenticatedHostKeysNameEditRoute
+  '/_authenticated/host-keys/$name_/edit': typeof AuthenticatedHostKeysNameEditRoute
   '/_authenticated/models/$name/edit': typeof AuthenticatedModelsNameEditRoute
   '/_authenticated/policies/rate-limits/$name': typeof AuthenticatedPoliciesRateLimitsNameRoute
   '/_authenticated/policies/rate-limits/new': typeof AuthenticatedPoliciesRateLimitsNewRoute
-  '/_authenticated/relay-keys/$name/edit': typeof AuthenticatedRelayKeysNameEditRoute
+  '/_authenticated/relay-keys/$name_/edit': typeof AuthenticatedRelayKeysNameEditRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -384,11 +384,11 @@ export interface FileRouteTypes {
     | '/_authenticated/models/'
     | '/_authenticated/policies/'
     | '/_authenticated/settings/'
-    | '/_authenticated/host-keys/$name/edit'
+    | '/_authenticated/host-keys/$name_/edit'
     | '/_authenticated/models/$name/edit'
     | '/_authenticated/policies/rate-limits/$name'
     | '/_authenticated/policies/rate-limits/new'
-    | '/_authenticated/relay-keys/$name/edit'
+    | '/_authenticated/relay-keys/$name_/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -573,12 +573,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedHostKeysNameRouteImport
       parentRoute: typeof AuthenticatedHostKeysRoute
     }
-    '/_authenticated/relay-keys/$name/edit': {
-      id: '/_authenticated/relay-keys/$name/edit'
-      path: '/edit'
+    '/_authenticated/relay-keys/$name_/edit': {
+      id: '/_authenticated/relay-keys/$name_/edit'
+      path: '/relay-keys/$name/edit'
       fullPath: '/relay-keys/$name/edit'
       preLoaderRoute: typeof AuthenticatedRelayKeysNameEditRouteImport
-      parentRoute: typeof AuthenticatedRelayKeysNameRoute
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/policies/rate-limits/new': {
       id: '/_authenticated/policies/rate-limits/new'
@@ -601,40 +601,28 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedModelsNameEditRouteImport
       parentRoute: typeof AuthenticatedModelsNameRoute
     }
-    '/_authenticated/host-keys/$name/edit': {
-      id: '/_authenticated/host-keys/$name/edit'
-      path: '/edit'
+    '/_authenticated/host-keys/$name_/edit': {
+      id: '/_authenticated/host-keys/$name_/edit'
+      path: '/$name/edit'
       fullPath: '/host-keys/$name/edit'
       preLoaderRoute: typeof AuthenticatedHostKeysNameEditRouteImport
-      parentRoute: typeof AuthenticatedHostKeysNameRoute
+      parentRoute: typeof AuthenticatedHostKeysRoute
     }
   }
 }
 
-interface AuthenticatedHostKeysNameRouteChildren {
+interface AuthenticatedHostKeysRouteChildren {
+  AuthenticatedHostKeysNameRoute: typeof AuthenticatedHostKeysNameRoute
+  AuthenticatedHostKeysNewRoute: typeof AuthenticatedHostKeysNewRoute
+  AuthenticatedHostKeysIndexRoute: typeof AuthenticatedHostKeysIndexRoute
   AuthenticatedHostKeysNameEditRoute: typeof AuthenticatedHostKeysNameEditRoute
 }
 
-const AuthenticatedHostKeysNameRouteChildren: AuthenticatedHostKeysNameRouteChildren =
-  {
-    AuthenticatedHostKeysNameEditRoute: AuthenticatedHostKeysNameEditRoute,
-  }
-
-const AuthenticatedHostKeysNameRouteWithChildren =
-  AuthenticatedHostKeysNameRoute._addFileChildren(
-    AuthenticatedHostKeysNameRouteChildren,
-  )
-
-interface AuthenticatedHostKeysRouteChildren {
-  AuthenticatedHostKeysNameRoute: typeof AuthenticatedHostKeysNameRouteWithChildren
-  AuthenticatedHostKeysNewRoute: typeof AuthenticatedHostKeysNewRoute
-  AuthenticatedHostKeysIndexRoute: typeof AuthenticatedHostKeysIndexRoute
-}
-
 const AuthenticatedHostKeysRouteChildren: AuthenticatedHostKeysRouteChildren = {
-  AuthenticatedHostKeysNameRoute: AuthenticatedHostKeysNameRouteWithChildren,
+  AuthenticatedHostKeysNameRoute: AuthenticatedHostKeysNameRoute,
   AuthenticatedHostKeysNewRoute: AuthenticatedHostKeysNewRoute,
   AuthenticatedHostKeysIndexRoute: AuthenticatedHostKeysIndexRoute,
+  AuthenticatedHostKeysNameEditRoute: AuthenticatedHostKeysNameEditRoute,
 }
 
 const AuthenticatedHostKeysRouteWithChildren =
@@ -711,20 +699,6 @@ const AuthenticatedSettingsRouteWithChildren =
     AuthenticatedSettingsRouteChildren,
   )
 
-interface AuthenticatedRelayKeysNameRouteChildren {
-  AuthenticatedRelayKeysNameEditRoute: typeof AuthenticatedRelayKeysNameEditRoute
-}
-
-const AuthenticatedRelayKeysNameRouteChildren: AuthenticatedRelayKeysNameRouteChildren =
-  {
-    AuthenticatedRelayKeysNameEditRoute: AuthenticatedRelayKeysNameEditRoute,
-  }
-
-const AuthenticatedRelayKeysNameRouteWithChildren =
-  AuthenticatedRelayKeysNameRoute._addFileChildren(
-    AuthenticatedRelayKeysNameRouteChildren,
-  )
-
 interface AuthenticatedRouteChildren {
   AuthenticatedBootstrapRoute: typeof AuthenticatedBootstrapRoute
   AuthenticatedHostKeysRoute: typeof AuthenticatedHostKeysRouteWithChildren
@@ -735,8 +709,9 @@ interface AuthenticatedRouteChildren {
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRouteWithChildren
   AuthenticatedUsageRoute: typeof AuthenticatedUsageRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
-  AuthenticatedRelayKeysNameRoute: typeof AuthenticatedRelayKeysNameRouteWithChildren
+  AuthenticatedRelayKeysNameRoute: typeof AuthenticatedRelayKeysNameRoute
   AuthenticatedRelayKeysNewRoute: typeof AuthenticatedRelayKeysNewRoute
+  AuthenticatedRelayKeysNameEditRoute: typeof AuthenticatedRelayKeysNameEditRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
@@ -749,8 +724,9 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedSettingsRoute: AuthenticatedSettingsRouteWithChildren,
   AuthenticatedUsageRoute: AuthenticatedUsageRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
-  AuthenticatedRelayKeysNameRoute: AuthenticatedRelayKeysNameRouteWithChildren,
+  AuthenticatedRelayKeysNameRoute: AuthenticatedRelayKeysNameRoute,
   AuthenticatedRelayKeysNewRoute: AuthenticatedRelayKeysNewRoute,
+  AuthenticatedRelayKeysNameEditRoute: AuthenticatedRelayKeysNameEditRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(

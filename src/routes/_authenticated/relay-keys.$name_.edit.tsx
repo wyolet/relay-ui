@@ -6,7 +6,7 @@ import { relayKeyDetailQueryOptions, useRelayKey } from "@/api/hooks/relayKeys";
 import { RelayKeyForm } from "@/components/RelayKeyForm";
 import { displayLabel } from "@/lib/displayLabel";
 
-export const Route = createFileRoute("/_authenticated/relay-keys/$name/edit")({
+export const Route = createFileRoute("/_authenticated/relay-keys/$name_/edit")({
 	loader: ({ context, params }) =>
 		Promise.all([
 			context.queryClient.ensureQueryData(

@@ -61,10 +61,16 @@ export function useCreateHostKey() {
 	});
 }
 
-export function useUpdateHostKey(id: string) {
+export function useUpdateHostKey() {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: async (body: HostKeyUpdate): Promise<HostKey> => {
+		mutationFn: async ({
+			id,
+			body,
+		}: {
+			id: string;
+			body: HostKeyUpdate;
+		}): Promise<HostKey> => {
 			const { data, error } = await apiClient.PUT("/host-keys/by-id/{id}", {
 				params: { path: { id } },
 				body,
