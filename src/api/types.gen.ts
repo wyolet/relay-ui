@@ -835,6 +835,10 @@ export interface components {
             readonly $schema?: string;
             items: components["schemas"]["Policy"][] | null;
         };
+        PolicyRLBinding: {
+            models: string[] | null;
+            rateLimitId: string;
+        };
         PolicySpec: {
             enabled?: boolean;
             hostKeyIds?: string[] | null;
@@ -843,6 +847,7 @@ export interface components {
             modelIds?: string[] | null;
             models?: string[] | null;
             rateLimitId?: string;
+            rlBindings?: components["schemas"]["PolicyRLBinding"][] | null;
             skipDefaultLimits?: boolean;
         };
         Pricing: {

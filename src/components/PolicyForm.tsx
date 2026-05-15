@@ -6,10 +6,10 @@ import {
 	ShieldCheck,
 } from "lucide-react";
 import { useHostKeys } from "@/api/hooks/hostkeys";
-import { useAttachableRateLimits } from "@/api/hooks/ratelimits";
 import type { Policy } from "@/api/types/policy";
 import { IdentitySection } from "@/components/IdentitySection";
 import { IncludeDeprecatedSwitch } from "@/components/IncludeDeprecatedSwitch";
+import { useAttachableRateLimits } from "@/api/hooks/ratelimits";
 import { ModelPicker } from "@/components/ModelPicker";
 import { MultiSelect } from "@/components/MultiSelect";
 import {
@@ -52,7 +52,6 @@ interface PolicyFormProps {
 
 export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 	const { data: hostKeysData } = useHostKeys();
-	const allRateLimits = useAttachableRateLimits();
 
 	const {
 		form,
@@ -68,6 +67,7 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 	});
 
 	const allHostKeys = hostKeysData.items ?? [];
+	const allRateLimits = useAttachableRateLimits();
 
 	const hostKeyOptions = allHostKeys.map((hk) => ({
 		value: hk.metadata.id ?? "",
@@ -186,7 +186,10 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 					<Select
 						value={values.rateLimitId || "none"}
 						onValueChange={(v) =>
-							form.setFieldValue("rateLimitId", v === "none" || v == null ? "" : v)
+							form.setFieldValue(
+								"rateLimitId",
+								v === "none" || v == null ? "" : v,
+							)
 						}
 					>
 						<SelectTrigger className="w-full max-w-md">

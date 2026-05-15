@@ -17,6 +17,8 @@ import {
 export interface MultiSelectOption {
 	value: string;
 	label: string;
+	/** Secondary line shown in the popover items (not in chips). */
+	description?: string;
 }
 
 interface MultiSelectProps {
@@ -127,7 +129,7 @@ export function MultiSelect({
 								return (
 									<CommandItem
 										key={opt.value}
-										value={`${opt.label} ${opt.value}`}
+										value={`${opt.label} ${opt.description ?? ""} ${opt.value}`}
 										onSelect={() => toggle(opt.value)}
 									>
 										<span
@@ -139,7 +141,14 @@ export function MultiSelect({
 										>
 											{on && <Check className="w-3 h-3" strokeWidth={3} />}
 										</span>
-										<span className="flex-1 truncate">{opt.label}</span>
+										<span className="flex-1 min-w-0">
+											<span className="block truncate">{opt.label}</span>
+											{opt.description && (
+												<span className="block truncate text-[10px] text-muted-foreground font-mono">
+													{opt.description}
+												</span>
+											)}
+										</span>
 									</CommandItem>
 								);
 							})}

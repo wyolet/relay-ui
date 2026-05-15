@@ -22,6 +22,8 @@ export const HOST_KEY_KINDS: readonly HostKeyKind[] = [
 export interface HostKeyFormValues {
 	displayName: string;
 	description: string;
+	hostId: string;
+	policyId: string;
 	kind: HostKeyKind;
 	envVar: string;
 	value: string;
@@ -31,6 +33,8 @@ function emptyValues(): HostKeyFormValues {
 	return {
 		displayName: "",
 		description: "",
+		hostId: "",
+		policyId: "",
 		kind: "stored",
 		envVar: "",
 		value: "",
@@ -43,6 +47,8 @@ function hostKeyToValues(hk: HostKey): HostKeyFormValues {
 	return {
 		displayName: displayLabel(hk.metadata),
 		description: hk.metadata.description ?? "",
+		hostId: hk.spec.hostId,
+		policyId: hk.spec.policyId,
 		kind,
 		envVar: hk.spec.valueFrom.env ?? "",
 		value: "",
@@ -58,6 +64,8 @@ function buildSchema(isEdit: boolean, originalKind: HostKeyKind | null) {
 				.min(1, "Display name is required — the slug is generated from it")
 				.max(120, "Display name is too long"),
 			description: z.string().trim().max(500, "Description is too long"),
+			hostId: z.string().min(1, "Pick the host this credential authenticates against."),
+			policyId: z.string().min(1, "Pick the policy this credential belongs to."),
 			kind: z.enum(["stored", "env"]),
 			envVar: z.string().trim().max(200),
 			value: z.string().max(8192),
@@ -179,10 +187,14 @@ export function useHostKeyForm({
 					onSaved(saved.metadata.name);
 				} else {
 					const name = computeSlug(displayName);
+					const baseSpec = {
+						hostId: value.hostId,
+						policyId: value.policyId,
+					};
 					const spec =
 						value.kind === "env"
-							? { valueFrom: { kind: "env", env: envVar } }
-							: { valueFrom: { kind: "stored" }, value: newValue };
+							? { ...baseSpec, valueFrom: { kind: "env", env: envVar } }
+							: { ...baseSpec, valueFrom: { kind: "stored" }, value: newValue };
 					const payload: HostKeyCreate = {
 						metadata: {
 							name,
@@ -227,6 +239,16 @@ export function useHostKeyForm({
 		for (const e of errs) if (typeof e === "string") return e;
 		return undefined;
 	});
+	const hostIdError = useStore(form.store, (s) => {
+		const errs = s.fieldMeta?.hostId?.errors ?? [];
+		for (const e of errs) if (typeof e === "string") return e;
+		return undefined;
+	});
+	const policyIdError = useStore(form.store, (s) => {
+		const errs = s.fieldMeta?.policyId?.errors ?? [];
+		for (const e of errs) if (typeof e === "string") return e;
+		return undefined;
+	});
 	const envVarError = useStore(form.store, (s) => {
 		const errs = s.fieldMeta?.envVar?.errors ?? [];
 		for (const e of errs) if (typeof e === "string") return e;
@@ -249,6 +271,8 @@ export function useHostKeyForm({
 		slugPreview,
 		displayNameError,
 		descriptionError,
+		hostIdError,
+		policyIdError,
 		envVarError,
 		valueError,
 		needsValueOnEdit,

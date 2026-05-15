@@ -22,13 +22,22 @@ export const KEY_SELECTION_VALUES: readonly KeySelection[] = [
 
 export const DEFAULT_KEY_SELECTION: KeySelection = "prioritized";
 
+export type RateLimitMode = "single" | "bindings";
+
+export interface RLBindingValue {
+	rateLimitId: string;
+	models: string[];
+}
+
 export interface PolicyFormValues {
 	displayName: string;
 	description: string;
 	hostKeyIds: string[];
 	keySelection: KeySelection;
 	models: string[];
+	rateLimitMode: RateLimitMode;
 	rateLimitId: string;
+	rlBindings: RLBindingValue[];
 	skipDefaultLimits: boolean;
 	enabled: boolean;
 	includeDeprecated: boolean;
@@ -46,7 +55,14 @@ const schema = z.object({
 		KEY_SELECTION_VALUES as readonly [KeySelection, ...KeySelection[]],
 	),
 	models: z.array(z.string()),
+	rateLimitMode: z.enum(["single", "bindings"]),
 	rateLimitId: z.string(),
+	rlBindings: z.array(
+		z.object({
+			rateLimitId: z.string().min(1, "Pick a rate limit"),
+			models: z.array(z.string()),
+		}),
+	),
 	skipDefaultLimits: z.boolean(),
 	enabled: z.boolean(),
 	includeDeprecated: z.boolean(),
@@ -59,7 +75,9 @@ function emptyValues(): PolicyFormValues {
 		hostKeyIds: [],
 		keySelection: DEFAULT_KEY_SELECTION,
 		models: [],
+		rateLimitMode: "single",
 		rateLimitId: "",
+		rlBindings: [],
 		skipDefaultLimits: false,
 		enabled: true,
 		includeDeprecated: false,
@@ -67,13 +85,19 @@ function emptyValues(): PolicyFormValues {
 }
 
 function policyToValues(policy: Policy): PolicyFormValues {
+	const bindings = (policy.spec.rlBindings ?? []).map((b) => ({
+		rateLimitId: b.rateLimitId,
+		models: b.models ?? [],
+	}));
 	return {
 		displayName: displayLabel(policy.metadata),
 		description: policy.metadata.description ?? "",
 		hostKeyIds: policy.spec.hostKeyIds ?? [],
 		keySelection: policy.spec.keySelection ?? DEFAULT_KEY_SELECTION,
 		models: policy.spec.models ?? [],
+		rateLimitMode: bindings.length > 0 ? "bindings" : "single",
 		rateLimitId: policy.spec.rateLimitId ?? "",
+		rlBindings: bindings,
 		skipDefaultLimits: policy.spec.skipDefaultLimits ?? false,
 		enabled: policy.spec.enabled ?? true,
 		includeDeprecated: policy.spec.includeDeprecated ?? false,
@@ -125,12 +149,21 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 		onSubmit: async ({ value }) => {
 			const displayName = value.displayName.trim();
 			const description = value.description.trim();
+			const useBindings = value.rateLimitMode === "bindings";
+			const cleanedBindings = value.rlBindings.filter((b) => b.rateLimitId);
 			const spec = {
 				enabled: value.enabled,
 				hostKeyIds: value.hostKeyIds.length > 0 ? value.hostKeyIds : null,
 				keySelection: value.keySelection,
 				models: value.models.length > 0 ? value.models : null,
-				rateLimitId: value.rateLimitId || undefined,
+				rateLimitId: useBindings ? undefined : value.rateLimitId || undefined,
+				rlBindings:
+					useBindings && cleanedBindings.length > 0
+						? cleanedBindings.map((b) => ({
+								rateLimitId: b.rateLimitId,
+								models: b.models.length > 0 ? b.models : null,
+							}))
+						: null,
 				skipDefaultLimits: value.skipDefaultLimits,
 				includeDeprecated: value.includeDeprecated,
 			};

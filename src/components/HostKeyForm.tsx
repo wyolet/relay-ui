@@ -1,7 +1,10 @@
-import { KeyRound } from "lucide-react";
+import { Globe, KeyRound, ShieldCheck } from "lucide-react";
+import { useHosts } from "@/api/hooks/hosts";
+import { usePolicies } from "@/api/hooks/policies";
 import type { HostKey, HostKeyKind } from "@/api/types/hostkey";
 import { FormSection } from "@/components/FormSection";
 import { IdentitySection } from "@/components/IdentitySection";
+import { displayLabel } from "@/lib/displayLabel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -39,10 +42,23 @@ export function HostKeyForm({ hostKey, onSaved, onCancel }: HostKeyFormProps) {
 		slugPreview,
 		displayNameError,
 		descriptionError,
+		hostIdError,
+		policyIdError,
 		envVarError,
 		valueError,
 		needsValueOnEdit,
 	} = useHostKeyForm({ open: true, hostKey, onSaved });
+
+	const { data: hostsData } = useHosts();
+	const { data: policiesData } = usePolicies();
+	const hostOptions = (hostsData.items ?? []).map((h) => ({
+		value: h.metadata.id ?? "",
+		label: displayLabel(h.metadata),
+	}));
+	const policyOptions = (policiesData.items ?? []).map((p) => ({
+		value: p.metadata.id ?? "",
+		label: displayLabel(p.metadata),
+	}));
 
 	return (
 		<form
@@ -65,6 +81,79 @@ export function HostKeyForm({ hostKey, onSaved, onCancel }: HostKeyFormProps) {
 					autoFocus={!isEdit}
 					placeholder="OpenAI production key"
 				/>
+
+				<FormSection
+					icon={Globe}
+					title="Host & policy"
+					description="Which upstream this credential authenticates against and which policy owns it."
+				>
+					<div className="flex flex-col gap-4">
+						<div>
+							<div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-1">
+								Host
+							</div>
+							<Select
+								value={values.hostId || undefined}
+								onValueChange={(v) => form.setFieldValue("hostId", v ?? "")}
+							>
+								<SelectTrigger
+									className="w-full max-w-md"
+									aria-invalid={hostIdError ? true : undefined}
+								>
+									<SelectValue placeholder="Pick a host…">
+										{hostOptions.find((h) => h.value === values.hostId)?.label}
+									</SelectValue>
+								</SelectTrigger>
+								<SelectContent>
+									{hostOptions.map((h) => (
+										<SelectItem key={h.value} value={h.value}>
+											{h.label}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+							{hostIdError && (
+								<p className="mt-1.5 text-[11px] text-destructive">
+									{hostIdError}
+								</p>
+							)}
+						</div>
+						<div>
+							<div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-1 inline-flex items-center gap-1">
+								<ShieldCheck className="w-3 h-3" />
+								Policy
+							</div>
+							<Select
+								value={values.policyId || undefined}
+								onValueChange={(v) => form.setFieldValue("policyId", v ?? "")}
+							>
+								<SelectTrigger
+									className="w-full max-w-md"
+									aria-invalid={policyIdError ? true : undefined}
+								>
+									<SelectValue placeholder="Pick a policy…">
+										{
+											policyOptions.find((p) => p.value === values.policyId)
+												?.label
+										}
+									</SelectValue>
+								</SelectTrigger>
+								<SelectContent>
+									{policyOptions.map((p) => (
+										<SelectItem key={p.value} value={p.value}>
+											{p.label}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+							{policyIdError && (
+								<p className="mt-1.5 text-[11px] text-destructive">
+									{policyIdError}
+								</p>
+							)}
+						</div>
+					</div>
+				</FormSection>
 
 				<FormSection
 					icon={KeyRound}

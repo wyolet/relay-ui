@@ -352,6 +352,10 @@ function PolicyRow({
 					>
 						{displayLabel(rateLimit.metadata)}
 					</Link>
+				) : (policy.spec.rlBindings ?? []).length > 0 ? (
+					<span className="text-muted-foreground">
+						{(policy.spec.rlBindings ?? []).length} bindings
+					</span>
 				) : (
 					<span className="text-muted-foreground/70">—</span>
 				)}
