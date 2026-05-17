@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Boxes, Plus } from "lucide-react";
 import { Suspense } from "react";
 import { z } from "zod";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
 import { hostsListQueryOptions, useHosts } from "@/api/hooks/hosts";
 import { modelsListQueryOptions, useModels } from "@/api/hooks/models";
@@ -221,34 +222,6 @@ function HostsList() {
 	);
 }
 
-interface TabLinkProps {
-	value: Tab;
-	current: Tab;
-	onClick: (t: Tab) => void;
-	children: React.ReactNode;
-}
-
-function TabLink({ value, current, onClick, children }: TabLinkProps) {
-	const active = current === value;
-	return (
-		<button
-			type="button"
-			onClick={() => onClick(value)}
-			className={[
-				"relative h-9 px-3 text-xs font-medium transition-colors",
-				active
-					? "text-foreground"
-					: "text-muted-foreground hover:text-foreground",
-			].join(" ")}
-		>
-			{children}
-			{active && (
-				<span className="absolute left-2 right-2 -bottom-px h-0.5 bg-brand-500" />
-			)}
-		</button>
-	);
-}
-
 function ModelsPage() {
 	const navigate = useNavigate({ from: "/models" });
 	const search = Route.useSearch();
@@ -266,14 +239,20 @@ function ModelsPage() {
 				</p>
 			</div>
 
-			<div className="border-b border-border flex items-center gap-1 mb-4">
-				<TabLink value="models" current={search.tab} onClick={setTab}>
-					Models
-				</TabLink>
-				<TabLink value="hosts" current={search.tab} onClick={setTab}>
-					Hosts
-				</TabLink>
-			</div>
+			<Tabs
+				value={search.tab}
+				onValueChange={(v) => setTab((v ?? "models") as Tab)}
+				className="mb-4"
+			>
+				<TabsList variant="underline">
+					<TabsTrigger value="models" className="px-3 h-9">
+						Models
+					</TabsTrigger>
+					<TabsTrigger value="hosts" className="px-3 h-9">
+						Hosts
+					</TabsTrigger>
+				</TabsList>
+			</Tabs>
 
 			<Suspense
 				fallback={<div className="text-muted-foreground text-sm">Loading…</div>}

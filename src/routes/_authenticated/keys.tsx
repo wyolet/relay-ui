@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Check, Copy, KeyRound, MoreHorizontal, Plus } from "lucide-react";
 import { useState } from "react";
 import { z } from "zod";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
 	hostKeysListQueryOptions,
 	useDeleteHostKey,
@@ -206,14 +207,20 @@ function KeysPage() {
 				</p>
 			</div>
 
-			<div className="border-b border-border flex items-center gap-1 mb-4">
-				<TabLink value="relay" current={search.tab} onClick={setTab}>
-					Relay keys
-				</TabLink>
-				<TabLink value="provider" current={search.tab} onClick={setTab}>
-					Host keys
-				</TabLink>
-			</div>
+			<Tabs
+				value={search.tab}
+				onValueChange={(v) => setTab((v ?? "relay") as Tab)}
+				className="mb-4"
+			>
+				<TabsList variant="underline">
+					<TabsTrigger value="relay" className="px-3 h-9">
+						Relay keys
+					</TabsTrigger>
+					<TabsTrigger value="provider" className="px-3 h-9">
+						Host keys
+					</TabsTrigger>
+				</TabsList>
+			</Tabs>
 
 			{search.tab === "relay" && <RelayKeysPanel />}
 			{search.tab === "provider" && <HostKeysPanel />}
@@ -221,33 +228,6 @@ function KeysPage() {
 	);
 }
 
-interface TabLinkProps {
-	value: Tab;
-	current: Tab;
-	onClick: (t: Tab) => void;
-	children: React.ReactNode;
-}
-
-function TabLink({ value, current, onClick, children }: TabLinkProps) {
-	const active = current === value;
-	return (
-		<button
-			type="button"
-			onClick={() => onClick(value)}
-			className={[
-				"relative h-9 px-3 text-xs font-medium transition-colors",
-				active
-					? "text-foreground"
-					: "text-muted-foreground hover:text-foreground",
-			].join(" ")}
-		>
-			{children}
-			{active && (
-				<span className="absolute left-2 right-2 -bottom-px h-0.5 bg-brand-500" />
-			)}
-		</button>
-	);
-}
 
 function relayStatus(rk: RelayKey): { tone: StatusTone; label: string } {
 	if (rk.spec.revokedAt) return { tone: "danger", label: "Revoked" };
