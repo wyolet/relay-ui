@@ -26,6 +26,7 @@ export function DeleteConfirm({
 	const [typed, setTyped] = useState("");
 	const inputId = useId();
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: reset typed value when the dialog targets a different resource
 	useEffect(() => {
 		setTyped("");
 	}, [resourceName]);

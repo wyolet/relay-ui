@@ -51,6 +51,7 @@ export function DiagnosticDot({ diagnostics, className }: DiagnosticDotProps) {
 			<TooltipTrigger
 				render={
 					<span
+						role="img"
 						className={[
 							"inline-flex items-center gap-1 text-[11px] text-muted-foreground cursor-default",
 							className ?? "",

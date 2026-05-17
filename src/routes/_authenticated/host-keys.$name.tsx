@@ -108,7 +108,7 @@ function HostKeyDetailInner() {
 					)}
 				</div>
 				<div className="flex items-center gap-3 shrink-0">
-					<label className="inline-flex items-center gap-2 text-xs text-foreground cursor-pointer select-none">
+					<span className="inline-flex items-center gap-2 text-xs text-foreground select-none">
 						<Switch
 							checked={view.enabled}
 							onCheckedChange={(next) => void setEnabled(next)}
@@ -118,7 +118,7 @@ function HostKeyDetailInner() {
 						<span className="font-medium">
 							{view.enabled ? "Enabled" : "Disabled"}
 						</span>
-					</label>
+					</span>
 					<Link to="/host-keys/$name/edit" params={{ name }}>
 						<Button type="button" variant="outline">
 							<Pencil className="w-3.5 h-3.5" />

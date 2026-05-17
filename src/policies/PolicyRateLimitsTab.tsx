@@ -109,6 +109,7 @@ export function PolicyRateLimitsTab({ policy }: Props) {
 				const fullyOrphaned = refs.length > 0 && orphans.length === refs.length;
 				return (
 					<BindingPanel
+						// biome-ignore lint/suspicious/noArrayIndexKey: bindings array is stable per render; index disambiguates duplicate rateLimitIds
 						key={`${b.rateLimitId}:${i}`}
 						title={`Rate limit ${i + 1}`}
 						rateLimit={b.rateLimitId ? rlById.get(b.rateLimitId) : undefined}
@@ -321,6 +322,7 @@ function RuleSummaryChips({ rules }: { rules: readonly RateLimitRule[] }) {
 		<div className="mt-3 flex flex-wrap gap-2">
 			{rules.map((r, i) => (
 				<span
+					// biome-ignore lint/suspicious/noArrayIndexKey: rules can repeat (meter, window); index breaks ties
 					key={`${r.meter}:${r.window}:${i}`}
 					className="inline-flex items-center px-2 py-0.5 rounded bg-muted text-foreground text-[11px] tabular-nums font-mono"
 				>
@@ -445,7 +447,8 @@ function RateLimitTable({
 						<tr className="border-b border-border bg-muted/20">
 							{groups.flatMap((g, gi) =>
 								g.rules.map(({ rule, originalIndex }, ri) => (
-									<th
+										<th
+										// biome-ignore lint/suspicious/noArrayIndexKey: originalIndex is stable rule position
 										key={`${gi}:${originalIndex}`}
 										className={`text-right font-mono font-medium px-3 py-1 text-[10px] text-muted-foreground tabular-nums whitespace-nowrap ${ri === 0 ? "border-l border-border" : ""}`}
 									>
@@ -471,7 +474,8 @@ function RateLimitTable({
 								</td>
 								{groups.flatMap((g, gi) =>
 									g.rules.map(({ rule, originalIndex }, ri) => (
-										<td
+											<td
+											// biome-ignore lint/suspicious/noArrayIndexKey: originalIndex is stable rule position
 											key={`${gi}:${originalIndex}`}
 											className={`px-3 py-2 text-right tabular-nums text-foreground whitespace-nowrap ${ri === 0 ? "border-l border-border" : ""}`}
 										>

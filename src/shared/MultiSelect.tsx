@@ -88,6 +88,7 @@ export function MultiSelect({
 									<span className="truncate max-w-[120px]">
 										{labelForValue(labelByValue, v)}
 									</span>
+									{/* biome-ignore lint/a11y/useSemanticElements: nested inside the popover trigger button — can't use a real <button> */}
 									<span
 										role="button"
 										tabIndex={0}
