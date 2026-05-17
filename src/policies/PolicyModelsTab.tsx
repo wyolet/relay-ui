@@ -96,7 +96,7 @@ export function PolicyModelsTab({ policy }: Props) {
 		return (
 			<EmptyState
 				title="No reachable models"
-				message="The catalog refs on this policy don't resolve to any current binding. They may match models added later, or you may need to revisit them."
+				message="The catalog refs on this policy don't match any model currently in the catalog. They may match models added later, or you may need to revisit them."
 			/>
 		);
 	}
@@ -104,18 +104,20 @@ export function PolicyModelsTab({ policy }: Props) {
 	// Sort hosts: ones with most models first feels weird for a detail view;
 	// sort alphabetically by slug so it's stable across renders.
 	const hostSlugs = [...groupedByHost.byHost.keys()].sort();
+	const distinctModels = new Set<string>();
+	for (const list of groupedByHost.byHost.values()) {
+		for (const b of list) distinctModels.add(`${b.provider}/${b.model}`);
+	}
 
 	return (
 		<div className="flex flex-col gap-4 pt-2">
 			<div className="text-[11px] text-muted-foreground">
-				Grouped by host. Catalog grants ({grants.length}) resolve to{" "}
+				Grouped by host. {grants.length} catalog grant
+				{grants.length === 1 ? "" : "s"} reach{" "}
 				<span className="text-foreground tabular-nums">
-					{Array.from(groupedByHost.byHost.values()).reduce(
-						(sum, l) => sum + l.length,
-						0,
-					)}
+					{distinctModels.size}
 				</span>{" "}
-				bindings across{" "}
+				model{distinctModels.size === 1 ? "" : "s"} across{" "}
 				<span className="text-foreground tabular-nums">{hostSlugs.length}</span>{" "}
 				host{hostSlugs.length === 1 ? "" : "s"}.
 			</div>

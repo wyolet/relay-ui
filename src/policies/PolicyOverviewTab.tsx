@@ -20,7 +20,7 @@ export function PolicyOverviewTab({ policy }: Props) {
 			<section className="grid grid-cols-2 sm:grid-cols-4 gap-3">
 				<StatCard label="Catalog refs" value={refsCount} />
 				<StatCard label="Host keys" value={hkCount} />
-				<StatCard label="Rate-limit bindings" value={rlCount} />
+				<StatCard label="Rate limits" value={rlCount} />
 				<StatCard
 					label="Key selection"
 					value={policy.spec.keySelection ?? "random"}

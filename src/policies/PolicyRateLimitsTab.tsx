@@ -59,7 +59,7 @@ export function PolicyRateLimitsTab({ policy }: Props) {
 		return (
 			<div className="rounded-md border border-dashed border-border bg-muted/30 px-4 py-6 text-center mt-2">
 				<div className="text-sm font-medium text-foreground">
-					No rate-limit bindings
+					No rate limits attached
 				</div>
 				<div className="mt-0.5 text-xs text-muted-foreground">
 					Requests through this policy are not rate-limited beyond upstream
@@ -308,7 +308,7 @@ function RateLimitTable({
 			<div className="px-3 py-2 flex items-start gap-2 text-[11px] text-muted-foreground bg-muted/10 border-b border-border">
 				<Info className="w-3.5 h-3.5 mt-0.5 shrink-0" aria-hidden />
 				<span>
-					Limits apply per (model, host) binding. Expand to see every model
+					Limits apply per model on each host. Expand to see every model
 					this rate limit covers in the policy.
 				</span>
 			</div>
