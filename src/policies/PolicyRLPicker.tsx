@@ -9,8 +9,8 @@ import { useHosts } from "@/api/hooks/hosts";
 import { useModels } from "@/api/hooks/models";
 import { useProviders } from "@/api/hooks/providers";
 import { useAttachableRateLimits } from "@/api/hooks/ratelimits";
-import { AttachRateLimitModal } from "@/components/AttachRateLimitModal";
-import type { RLMeta } from "@/components/AttachRateLimitModal";
+import { AttachRateLimitModal } from "@/rate-limits/AttachRateLimitModal";
+import type { RLMeta } from "@/rate-limits/AttachRateLimitModal";
 import { Button } from "@/components/ui/button";
 import { buildConcreteCatalog } from "@/lib/concreteCatalog";
 import { displayLabel } from "@/lib/displayLabel";
@@ -27,7 +27,7 @@ import {
 	type RefStats,
 } from "@/lib/policyRLResolution";
 import { formatRulesShort } from "@/lib/rateLimitFormat";
-import type { RLBindingValue } from "@/components/usePolicyForm";
+import type { RLBindingValue } from "@/policies/usePolicyForm";
 
 interface PolicyRLPickerProps {
 	bindings: RLBindingValue[];

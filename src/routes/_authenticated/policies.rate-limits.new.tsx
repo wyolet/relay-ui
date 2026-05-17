@@ -3,7 +3,7 @@ import { ChevronLeft } from "lucide-react";
 import { Suspense } from "react";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
 import { proxyModeQueryOptions } from "@/api/hooks/settings";
-import { RateLimitForm } from "@/components/RateLimitForm";
+import { RateLimitForm } from "@/rate-limits/RateLimitForm";
 
 export const Route = createFileRoute(
 	"/_authenticated/policies/rate-limits/new",

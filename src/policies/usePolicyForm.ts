@@ -5,7 +5,7 @@ import { z } from "zod";
 import { useCreatePolicy, useUpdatePolicy } from "@/api/hooks/policies";
 import { ApiError } from "@/api/types/errors";
 import type { Policy, PolicyCreate, PolicyUpdate } from "@/api/types/policy";
-import { toast } from "@/components/Toast";
+import { toast } from "@/shared/Toast";
 import {
 	DEFAULT_KEY_SELECTION,
 	KEY_SELECTION_VALUES,

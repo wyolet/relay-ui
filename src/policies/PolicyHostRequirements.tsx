@@ -1,7 +1,7 @@
 import { AlertCircle, CheckCircle2, Circle } from "lucide-react";
 import type { Host } from "@/api/types/host";
 import type { HostKey } from "@/api/types/hostkey";
-import { HostLogo } from "@/components/HostLogo";
+import { HostLogo } from "@/hosts/HostLogo";
 import {
 	Select,
 	SelectContent,
@@ -10,7 +10,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { displayLabel } from "@/lib/displayLabel";
-import type { PolicyHostRequirements as Requirements } from "@/components/usePolicyHostRequirements";
+import type { PolicyHostRequirements as Requirements } from "@/policies/usePolicyHostRequirements";
 
 interface Props {
 	requirements: Requirements;

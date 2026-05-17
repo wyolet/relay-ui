@@ -16,9 +16,9 @@ import {
 import { relayKeysListQueryOptions } from "@/api/hooks/relayKeys";
 import { proxyModeQueryOptions } from "@/api/hooks/settings";
 import { ApiError } from "@/api/types/errors";
-import { confirm } from "@/components/ConfirmDialog";
-import { RateLimitForm } from "@/components/RateLimitForm";
-import { toast } from "@/components/Toast";
+import { confirm } from "@/shared/ConfirmDialog";
+import { RateLimitForm } from "@/rate-limits/RateLimitForm";
+import { toast } from "@/shared/Toast";
 import { DiagnosticList } from "@/diagnostics/DiagnosticList";
 import { useRateLimitDiagnostics } from "@/diagnostics/useDiagnostics";
 

@@ -23,8 +23,8 @@ import {
 } from "@/api/hooks/ratelimits";
 import { ApiError } from "@/api/types/errors";
 import type { RateLimit, RateLimitRule } from "@/api/types/ratelimit";
-import { Switch } from "@/components/Switch";
-import { toast } from "@/components/Toast";
+import { Switch } from "@/shared/Switch";
+import { toast } from "@/shared/Toast";
 import { Input } from "@/components/ui/input";
 import {
 	Select,

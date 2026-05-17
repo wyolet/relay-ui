@@ -15,16 +15,16 @@ import {
 	type HostsSortDir,
 	type HostsSortKey,
 	HostsTable,
-} from "@/components/HostsTable";
+} from "@/hosts/HostsTable";
 import {
 	applyModelFilter,
 	applyModelSort,
 	type ModelsSortDir,
 	type ModelsSortKey,
 	ModelsTable,
-} from "@/components/ModelsTable";
-import { SearchBox } from "@/components/SearchBox";
-import { TableToolbar } from "@/components/TableToolbar";
+} from "@/models/ModelsTable";
+import { SearchBox } from "@/shared/SearchBox";
+import { TableToolbar } from "@/shared/TableToolbar";
 import {
 	Select,
 	SelectContent,

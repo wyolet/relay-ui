@@ -7,6 +7,7 @@ import { providersListQueryOptions } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
 import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
+import { ResourceGraphSVG } from "@/graph/ResourceGraphSVG";
 
 export const Route = createFileRoute("/_authenticated/")({
 	component: DashboardPage,
@@ -93,6 +94,8 @@ function DashboardInner() {
 
 			{/* Metrics placeholder — /control/metrics does not exist yet */}
 			<MetricsPending />
+
+			<ResourceGraphSVG />
 
 			{/* Quick stats */}
 			<section>

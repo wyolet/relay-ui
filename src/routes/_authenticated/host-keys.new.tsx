@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ChevronLeft } from "lucide-react";
 import { Suspense } from "react";
-import { HostKeyForm } from "@/components/HostKeyForm";
+import { HostKeyForm } from "@/host-keys/HostKeyForm";
 
 export const Route = createFileRoute("/_authenticated/host-keys/new")({
 	component: NewHostKeyPage,

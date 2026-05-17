@@ -6,7 +6,7 @@ import {
 	redirect,
 } from "@tanstack/react-router";
 import { whoamiQueryOptions } from "@/api/auth";
-import { ConfirmDialogHost } from "@/components/ConfirmDialog";
+import { ConfirmDialogHost } from "@/shared/ConfirmDialog";
 
 import "../styles.css";
 

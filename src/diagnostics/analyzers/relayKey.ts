@@ -10,7 +10,8 @@ export function analyzeRelayKey(
 	const out: Diagnostic[] = [];
 	const enabled = rk.spec.enabled !== false;
 
-	const policy = graph.policies.get(rk.spec.policyId);
+	const policyId = rk.spec.policyId;
+	const policy = policyId ? graph.policies.get(policyId) : undefined;
 
 	if (!policy) {
 		out.push({

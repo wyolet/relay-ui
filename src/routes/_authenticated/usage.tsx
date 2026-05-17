@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { SectionPlaceholder } from "@/components/SectionPlaceholder";
+import { SectionPlaceholder } from "@/shared/SectionPlaceholder";
 
 export const Route = createFileRoute("/_authenticated/usage")({
 	component: UsagePage,

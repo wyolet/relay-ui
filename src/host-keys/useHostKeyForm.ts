@@ -12,8 +12,8 @@ import type {
 	HostKeyKind,
 	HostKeyUpdate,
 } from "@/api/types/hostkey";
-import { toast } from "@/components/Toast";
-import { useDetachHostKeyFromPolicy } from "@/components/useDetachHostKeyFromPolicy";
+import { toast } from "@/shared/Toast";
+import { useDetachHostKeyFromPolicy } from "@/policies/useDetachHostKeyFromPolicy";
 import { displayLabel } from "@/lib/displayLabel";
 import { randomSuffix, slugify } from "@/lib/slug";
 

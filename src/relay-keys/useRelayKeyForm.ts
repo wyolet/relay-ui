@@ -5,7 +5,7 @@ import { z } from "zod";
 import { useCreateRelayKey, useUpdateRelayKey } from "@/api/hooks/relayKeys";
 import { ApiError } from "@/api/types/errors";
 import type { RelayKey } from "@/api/types/relayKey";
-import { toast } from "@/components/Toast";
+import { toast } from "@/shared/Toast";
 import { displayLabel } from "@/lib/displayLabel";
 import { randomSuffix, slugify } from "@/lib/slug";
 
@@ -31,7 +31,7 @@ function relayKeyToValues(rk: RelayKey): RelayKeyFormValues {
 	return {
 		displayName: displayLabel(rk.metadata),
 		description: rk.metadata.description ?? "",
-		policyId: rk.spec.policyId,
+		policyId: rk.spec.policyId ?? "",
 		enabled: rk.spec.enabled ?? true,
 		passthroughAllowed: rk.spec.passthroughAllowed ?? false,
 	};

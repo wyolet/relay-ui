@@ -33,14 +33,14 @@ import {
 	useRateLimits,
 	useUpdateRateLimit,
 } from "@/api/hooks/ratelimits";
-import { FilterDropdown } from "@/components/FilterDropdown";
+import { FilterDropdown } from "@/shared/FilterDropdown";
 import type { Policy } from "@/api/types/policy";
 import type { RateLimit } from "@/api/types/ratelimit";
-import { confirm } from "@/components/ConfirmDialog";
-import { SearchBox } from "@/components/SearchBox";
-import { Switch } from "@/components/Switch";
-import { TableToolbar } from "@/components/TableToolbar";
-import { toast } from "@/components/Toast";
+import { confirm } from "@/shared/ConfirmDialog";
+import { SearchBox } from "@/shared/SearchBox";
+import { Switch } from "@/shared/Switch";
+import { TableToolbar } from "@/shared/TableToolbar";
+import { toast } from "@/shared/Toast";
 import {
 	DropdownMenu,
 	DropdownMenuContent,

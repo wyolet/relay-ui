@@ -15,7 +15,7 @@ import type {
 	RateLimitRule,
 	RateLimitUpdate,
 } from "@/api/types/ratelimit";
-import { toast } from "@/components/Toast";
+import { toast } from "@/shared/Toast";
 import { displayLabel } from "@/lib/displayLabel";
 import {
 	type SystemReqCap,

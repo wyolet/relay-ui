@@ -1,9 +1,9 @@
 import { Gauge, Plus, ToggleLeft, Undo2, X } from "lucide-react";
 import { useState } from "react";
 import type { RateLimit } from "@/api/types/ratelimit";
-import { EnabledField } from "@/components/EnabledField";
-import { FormSection } from "@/components/FormSection";
-import { IdentitySection } from "@/components/IdentitySection";
+import { EnabledField } from "@/shared/EnabledField";
+import { FormSection } from "@/shared/FormSection";
+import { IdentitySection } from "@/shared/IdentitySection";
 import { Input } from "@/components/ui/input";
 import {
 	Select,
@@ -18,7 +18,7 @@ import {
 	type RateLimitStrategy,
 	STRATEGY_VALUES,
 	useRateLimitForm,
-} from "@/components/useRateLimitForm";
+} from "@/rate-limits/useRateLimitForm";
 import {
 	digitsOnly,
 	formatThousands,

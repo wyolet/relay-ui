@@ -2,7 +2,7 @@ import { Outlet } from "@tanstack/react-router";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useSidebarStore } from "@/stores/sidebar";
 import { Sidebar } from "./Sidebar";
-import { ToastContainer } from "./Toast";
+import { ToastContainer } from "@/shared/Toast";
 
 function Header() {
 	const collapsed = useSidebarStore((s) => s.collapsed);
