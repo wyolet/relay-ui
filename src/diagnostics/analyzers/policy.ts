@@ -1,6 +1,11 @@
 import type { Policy } from "@/api/types/policy";
 import { modelsForRefViaPolicy } from "@/diagnostics/analyzers/policyCatalog";
 import type { Diagnostic, DiagnosticGraph } from "@/diagnostics/types";
+import {
+	parseCatalogRef,
+	refIncludesRef,
+	validateCatalogRef,
+} from "@/lib/catalogRef";
 import { displayLabel } from "@/lib/displayLabel";
 
 export function analyzePolicy(
@@ -116,20 +121,28 @@ export function analyzePolicy(
 		}
 	}
 
-	// Dead rl-binding: model in binding not part of the policy's catalog grants.
+	// Dead rl-binding: binding's scope ref isn't covered by any of the policy's
+	// catalog grants. Containment is conceptual (provider covers provider/model
+	// etc.), so use refIncludesRef rather than literal string equality.
 	if (grants.length > 0) {
-		const grantSet = new Set(grants);
+		const grantRefs = grants
+			.filter((g) => !validateCatalogRef(g))
+			.map((g) => parseCatalogRef(g));
 		for (const b of policy.spec.rlBindings ?? []) {
-			const models = b.models ?? [];
-			if (models.length === 0) continue;
-			const orphans = models.filter((m) => !grantSet.has(m));
-			if (orphans.length === models.length) {
+			const scopeRaws = b.models ?? [];
+			if (scopeRaws.length === 0) continue;
+			const orphans = scopeRaws.filter((raw) => {
+				if (validateCatalogRef(raw)) return false; // syntax-invalid → skip (separate diagnostic)
+				const scope = parseCatalogRef(raw);
+				return !grantRefs.some((g) => refIncludesRef(g, scope));
+			});
+			if (orphans.length === scopeRaws.length) {
 				out.push({
 					severity: "warn",
 					code: "policy.rl-binding-dead",
 					message: `Rate-limit binding scoped to ${orphans
 						.map((m) => `"${m}"`)
-						.join(", ")} — none are in this policy's catalog.`,
+						.join(", ")} — not granted by this policy's catalog.`,
 				});
 			}
 		}
