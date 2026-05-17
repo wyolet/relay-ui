@@ -1,12 +1,16 @@
 import { Link } from "@tanstack/react-router";
-import { ChevronDown, ChevronRight, Gauge, Info } from "lucide-react";
+import { ChevronDown, ChevronRight, Gauge } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useHosts } from "@/api/hooks/hosts";
 import { useModels } from "@/api/hooks/models";
 import { useProviders } from "@/api/hooks/providers";
 import { useRateLimits } from "@/api/hooks/ratelimits";
+import type { Host } from "@/api/types/host";
+import type { Model } from "@/api/types/model";
 import type { Policy } from "@/api/types/policy";
 import type { RateLimit, RateLimitRule } from "@/api/types/ratelimit";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { HostLogo } from "@/hosts/HostLogo";
 import {
 	parseCatalogRef,
 	refCovers,
@@ -15,7 +19,7 @@ import {
 } from "@/lib/catalogRef";
 import { buildConcreteCatalog } from "@/lib/concreteCatalog";
 import { displayLabel } from "@/lib/displayLabel";
-import { formatRuleShort } from "@/lib/rateLimitFormat";
+import { compactNumber } from "@/lib/rateLimitFormat";
 import { nsToSec } from "@/lib/timeWindow";
 import { PolicyRLOverlapWarning } from "@/policies/PolicyRLOverlapWarning";
 import { usePolicyRLResolution } from "@/policies/usePolicyRLResolution";
@@ -27,9 +31,9 @@ interface Props {
 }
 
 /**
- * Per-binding tables. Each binding picks a RL and a list of catalog refs;
- * we resolve those refs to concrete models against the local catalog and
- * render a table with one column per RL rule (the window/meter pair).
+ * One panel per rate limit attached to the policy. Layout: rules on the
+ * left as a definition list (Token / Request / Other groups), models on
+ * the right grouped by host in a collapsible scroll area.
  */
 export function PolicyRateLimitsTab({ policy }: Props) {
 	const { data: rateLimitsData } = useRateLimits();
@@ -55,6 +59,18 @@ export function PolicyRateLimitsTab({ policy }: Props) {
 			}),
 		[providers, models, hosts, policy.spec.includeDeprecated],
 	);
+
+	const modelBySlug = useMemo(() => {
+		const m = new Map<string, Model>();
+		for (const x of models.items ?? []) m.set(x.metadata.name, x);
+		return m;
+	}, [models]);
+
+	const hostBySlug = useMemo(() => {
+		const m = new Map<string, Host>();
+		for (const h of hosts.items ?? []) m.set(h.metadata.name, h);
+		return m;
+	}, [hosts]);
 
 	const bindings = policy.spec.rlBindings ?? [];
 	const globalId = policy.spec.rateLimitId;
@@ -90,17 +106,19 @@ export function PolicyRateLimitsTab({ policy }: Props) {
 	}
 
 	return (
-		<div className="flex flex-col gap-5 pt-2">
+		<div className="flex flex-col gap-4 pt-2">
 			<OverlapBanner policy={policy} />
 			<UnthrottledModelsPanel policy={policy} />
 			{globalId && (
-				<BindingPanel
-					title="Default"
+				<RateLimitPanel
+					isDefault
 					subtitle="Applies to every catalog ref in this policy."
 					rateLimit={rlById.get(globalId)}
 					rateLimitId={globalId}
 					refs={policy.spec.models ?? []}
 					catalog={catalog}
+					modelBySlug={modelBySlug}
+					hostBySlug={hostBySlug}
 				/>
 			)}
 			{bindings.map((b, i) => {
@@ -108,14 +126,15 @@ export function PolicyRateLimitsTab({ policy }: Props) {
 				const orphans = orphansFor(refs);
 				const fullyOrphaned = refs.length > 0 && orphans.length === refs.length;
 				return (
-					<BindingPanel
-						// biome-ignore lint/suspicious/noArrayIndexKey: bindings array is stable per render; index disambiguates duplicate rateLimitIds
+					<RateLimitPanel
+						// biome-ignore lint/suspicious/noArrayIndexKey: bindings array is stable per render
 						key={`${b.rateLimitId}:${i}`}
-						title={`Rate limit ${i + 1}`}
 						rateLimit={b.rateLimitId ? rlById.get(b.rateLimitId) : undefined}
 						rateLimitId={b.rateLimitId}
 						refs={refs}
 						catalog={catalog}
+						modelBySlug={modelBySlug}
+						hostBySlug={hostBySlug}
 						orphans={fullyOrphaned ? orphans : []}
 					/>
 				);
@@ -180,7 +199,6 @@ function UnthrottledModelsPanel({ policy }: { policy: Policy }) {
 function OverlapBanner({ policy }: { policy: Policy }) {
 	const allBindings = useMemo(() => {
 		const out: { rateLimitId: string; models: string[] }[] = [];
-		// Global default first: scopes to the entire policy's catalog.
 		if (policy.spec.rateLimitId) {
 			out.push({
 				rateLimitId: policy.spec.rateLimitId,
@@ -210,36 +228,63 @@ function OverlapBanner({ policy }: { policy: Policy }) {
 	);
 }
 
-interface BindingPanelProps {
-	title: string;
+interface PanelProps {
+	isDefault?: boolean;
 	subtitle?: string;
 	rateLimit: RateLimit | undefined;
 	rateLimitId: string | undefined;
 	refs: readonly string[];
 	catalog: ReturnType<typeof buildConcreteCatalog>;
-	/** Refs that aren't covered by the policy's catalog grants. Non-empty → render a warning. */
+	modelBySlug: Map<string, Model>;
+	hostBySlug: Map<string, Host>;
 	orphans?: readonly string[];
 }
 
-const COLLAPSE_THRESHOLD = 6;
-
-function BindingPanel({
-	title,
+function RateLimitPanel({
+	isDefault,
 	subtitle,
 	rateLimit,
 	rateLimitId,
 	refs,
 	catalog,
+	modelBySlug,
+	hostBySlug,
 	orphans = [],
-}: BindingPanelProps) {
+}: PanelProps) {
 	const rules = rateLimit?.spec.rules ?? [];
-	const models = useMemo(
-		() => resolveModelNames(refs, catalog),
-		[refs, catalog],
+	const ruleGroups = useMemo(() => groupRules(rules), [rules]);
+
+	const resolved = useMemo(
+		() => resolveModels(refs, catalog, modelBySlug, hostBySlug),
+		[refs, catalog, modelBySlug, hostBySlug],
 	);
-	const [expanded, setExpanded] = useState(false);
-	const visible = expanded ? models : models.slice(0, COLLAPSE_THRESHOLD);
-	const showToggle = models.length > COLLAPSE_THRESHOLD;
+	const grouped = useMemo(() => groupByHost(resolved), [resolved]);
+	const totalModels = resolved.length;
+	const totalHosts = grouped.length;
+	const providerCount = useMemo(() => {
+		const s = new Set<string>();
+		for (const m of resolved) s.add(m.provider);
+		return s.size;
+	}, [resolved]);
+	const defaultOpen = useMemo<Set<string>>(() => {
+		const first = grouped[0]?.host.metadata.name;
+		return first ? new Set([first]) : new Set();
+	}, [grouped]);
+	const [userOpen, setUserOpen] = useState<Set<string> | null>(null);
+	const openHosts = userOpen ?? defaultOpen;
+	const toggleHost = (slug: string) =>
+		setUserOpen(() => {
+			const next = new Set(openHosts);
+			if (next.has(slug)) next.delete(slug);
+			else next.add(slug);
+			return next;
+		});
+	const allOpen = openHosts.size === grouped.length && grouped.length > 0;
+	const toggleAll = () =>
+		setUserOpen(
+			allOpen ? new Set() : new Set(grouped.map((g) => g.host.metadata.name)),
+		);
+
 	const hasOrphans = orphans.length > 0;
 
 	return (
@@ -264,31 +309,33 @@ function BindingPanel({
 					</AlertBanner>
 				</div>
 			)}
-			<header className="flex items-center gap-3 px-3 py-2 border-b border-border bg-muted/30">
+			<header className="flex items-center gap-2 px-3 py-2 border-b border-border bg-muted/30">
 				<Gauge className="w-3.5 h-3.5 text-muted-foreground" aria-hidden />
-				<div className="min-w-0">
-					<div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-						{title}
+				<div className="min-w-0 flex-1">
+					<div className="flex items-center gap-2 min-w-0">
+						{rateLimit ? (
+							<Link
+								to="/policies/rate-limits/$name"
+								params={{ name: rateLimit.metadata.name }}
+								className="text-sm text-foreground hover:underline truncate"
+							>
+								{displayLabel(rateLimit.metadata)}
+							</Link>
+						) : rateLimitId ? (
+							<span className="text-destructive font-mono text-[11px]">
+								missing ({rateLimitId.slice(0, 6)}…)
+							</span>
+						) : (
+							<span className="text-muted-foreground text-[11px]">unset</span>
+						)}
+						{isDefault && (
+							<span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium uppercase tracking-wide bg-muted text-muted-foreground border border-border">
+								default
+							</span>
+						)}
 					</div>
 					{subtitle && (
 						<div className="text-[11px] text-muted-foreground">{subtitle}</div>
-					)}
-				</div>
-				<div className="ml-auto text-sm">
-					{rateLimit ? (
-						<Link
-							to="/policies/rate-limits/$name"
-							params={{ name: rateLimit.metadata.name }}
-							className="text-foreground hover:underline"
-						>
-							{displayLabel(rateLimit.metadata)}
-						</Link>
-					) : rateLimitId ? (
-						<span className="text-destructive font-mono text-[11px]">
-							missing ({rateLimitId.slice(0, 6)}…)
-						</span>
-					) : (
-						<span className="text-muted-foreground text-[11px]">unset</span>
 					)}
 				</div>
 			</header>
@@ -297,71 +344,149 @@ function BindingPanel({
 				<div className="px-3 py-3 text-xs text-muted-foreground">
 					Rate limit has no rules configured.
 				</div>
-			) : models.length === 0 ? (
+			) : resolved.length === 0 ? (
 				<div className="px-3 py-3 text-xs text-muted-foreground">
-					Doesn't match any current model — the rules below won't apply until
-					catalog catches up.
-					<RuleSummaryChips rules={rules} />
+					Doesn't match any current model.
 				</div>
 			) : (
-				<RateLimitTable
-					rules={rules}
-					models={visible}
-					expanded={expanded}
-					hiddenCount={models.length - visible.length}
-					showToggle={showToggle}
-					onToggle={() => setExpanded((v) => !v)}
-				/>
+				<div className="grid grid-cols-[200px_1fr]">
+					<aside className="border-r border-border p-3 space-y-3 bg-muted/10">
+						{ruleGroups.map((g) => (
+							<div key={g.label}>
+								<div className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground mb-1">
+									{g.label}
+								</div>
+								<ul className="space-y-0.5">
+									{g.rules.map((rule, i) => (
+										<li
+											// biome-ignore lint/suspicious/noArrayIndexKey: rules per group are stable
+											key={`${rule.meter}:${rule.window}:${i}`}
+											className="text-[12px] tabular-nums text-foreground"
+										>
+											<span className="font-mono">
+												{compactNumber(rule.amount)}
+											</span>{" "}
+											<span className="text-muted-foreground font-mono text-[10px]">
+												{ruleShortTag(rule.meter, nsToSec(rule.window)) ??
+													`${rule.meter}/${nsToSec(rule.window)}s`}
+											</span>
+										</li>
+									))}
+								</ul>
+							</div>
+						))}
+					</aside>
+					<div className="flex flex-col">
+						<div className="px-3 py-2 border-b border-border bg-muted/5 flex items-center gap-2 text-[10px] text-muted-foreground">
+							<span className="font-semibold uppercase tracking-wide text-foreground tabular-nums">
+								{totalModels}
+							</span>
+							<span>model{totalModels === 1 ? "" : "s"}</span>
+							<span className="text-muted-foreground/50">·</span>
+							<span className="font-semibold uppercase tracking-wide text-foreground tabular-nums">
+								{totalHosts}
+							</span>
+							<span>host{totalHosts === 1 ? "" : "s"}</span>
+							<span className="text-muted-foreground/50">·</span>
+							<span className="font-semibold uppercase tracking-wide text-foreground tabular-nums">
+								{providerCount}
+							</span>
+							<span>provider{providerCount === 1 ? "" : "s"}</span>
+							<button
+								type="button"
+								onClick={toggleAll}
+								className="ml-auto text-[10px] text-muted-foreground hover:text-foreground"
+							>
+								{allOpen ? "Collapse all" : "Expand all"}
+							</button>
+						</div>
+						<ScrollArea className="min-h-[180px] max-h-[320px]">
+							<ul className="divide-y divide-border">
+								{grouped.map((g) => {
+									const isOpen = openHosts.has(g.host.metadata.name);
+									return (
+										<li key={g.host.metadata.name}>
+											<button
+												type="button"
+												onClick={() => toggleHost(g.host.metadata.name)}
+												aria-expanded={isOpen}
+												className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-muted/40 transition-colors"
+											>
+												{isOpen ? (
+													<ChevronDown className="w-3 h-3 text-muted-foreground shrink-0" />
+												) : (
+													<ChevronRight className="w-3 h-3 text-muted-foreground shrink-0" />
+												)}
+												<HostLogo host={g.host} size={18} />
+												<div className="min-w-0 flex-1">
+													<div className="text-[12px] text-foreground truncate">
+														<span className="tabular-nums">
+															{g.models.length}
+														</span>{" "}
+														model{g.models.length === 1 ? "" : "s"} hosted by{" "}
+														<span className="font-medium">
+															{displayLabel(g.host.metadata)}
+														</span>
+													</div>
+													<div className="text-[10px] text-muted-foreground font-mono truncate">
+														{g.host.metadata.name}
+														{g.providers.length > 0 && (
+															<>
+																{" · "}
+																<span className="capitalize">
+																	{g.providers.join(", ")}
+																</span>
+															</>
+														)}
+													</div>
+												</div>
+											</button>
+											{isOpen && (
+												<ul className="px-3 pb-2 pl-9 space-y-1">
+													{g.models.map((m) => (
+														<li
+															key={`${m.provider}/${m.model}`}
+															className="flex items-baseline gap-2 min-w-0"
+														>
+															{m.label !== m.model && (
+																<span className="text-[12px] text-foreground truncate">
+																	{m.label}
+																</span>
+															)}
+															<code className="font-mono text-[10px] text-muted-foreground truncate">
+																{m.model}
+															</code>
+														</li>
+													))}
+												</ul>
+											)}
+										</li>
+									);
+								})}
+							</ul>
+						</ScrollArea>
+					</div>
+				</div>
 			)}
 		</section>
 	);
 }
 
-function RuleSummaryChips({ rules }: { rules: readonly RateLimitRule[] }) {
-	return (
-		<div className="mt-3 flex flex-wrap gap-2">
-			{rules.map((r, i) => (
-				<span
-					// biome-ignore lint/suspicious/noArrayIndexKey: rules can repeat (meter, window); index breaks ties
-					key={`${r.meter}:${r.window}:${i}`}
-					className="inline-flex items-center px-2 py-0.5 rounded bg-muted text-foreground text-[11px] tabular-nums font-mono"
-				>
-					{formatRuleShort(r)}
-				</span>
-			))}
-		</div>
-	);
-}
-
-/**
- * OpenAI-style table. Columns are grouped into semantic buckets (Token / Request),
- * one column per (meter, window) within a bucket. Cells show the raw amount + short code.
- */
 interface RuleGroup {
 	label: string;
-	rules: { rule: RateLimitRule; originalIndex: number }[];
+	rules: RateLimitRule[];
 }
 
 function groupRules(rules: readonly RateLimitRule[]): RuleGroup[] {
 	const tokens: RuleGroup = { label: "Token limits", rules: [] };
 	const requests: RuleGroup = { label: "Request limits", rules: [] };
 	const other: RuleGroup = { label: "Other limits", rules: [] };
-	rules.forEach((rule, i) => {
-		if (rule.meter.startsWith("tokens"))
-			tokens.rules.push({ rule, originalIndex: i });
-		else if (rule.meter === "requests")
-			requests.rules.push({ rule, originalIndex: i });
-		else other.rules.push({ rule, originalIndex: i });
-	});
+	for (const r of rules) {
+		if (r.meter.startsWith("tokens")) tokens.rules.push(r);
+		else if (r.meter === "requests") requests.rules.push(r);
+		else other.rules.push(r);
+	}
 	return [tokens, requests, other].filter((g) => g.rules.length > 0);
-}
-
-function ruleColumnHeader(rule: RateLimitRule): string {
-	const seconds = nsToSec(rule.window);
-	const tag = ruleShortTag(rule.meter, seconds);
-	if (tag) return tag;
-	// Fallback: full meter, custom window.
-	return `${rule.meter}/${seconds}s`;
 }
 
 const WINDOW_LETTER: Record<number, string> = {
@@ -396,148 +521,78 @@ function ruleShortTag(meter: string, seconds: number): string | undefined {
 	}
 }
 
-interface RateLimitTableProps {
-	rules: readonly RateLimitRule[];
-	models: ResolvedModel[];
-	expanded: boolean;
-	hiddenCount: number;
-	showToggle: boolean;
-	onToggle: () => void;
-}
-
-function RateLimitTable({
-	rules,
-	models,
-	expanded,
-	hiddenCount,
-	showToggle,
-	onToggle,
-}: RateLimitTableProps) {
-	const groups = useMemo(() => groupRules(rules), [rules]);
-
-	return (
-		<>
-			<div className="px-3 py-2 flex items-start gap-2 text-[11px] text-muted-foreground bg-muted/10 border-b border-border">
-				<Info className="w-3.5 h-3.5 mt-0.5 shrink-0" aria-hidden />
-				<span>
-					Limits apply per model on each host. Expand to see every model this
-					rate limit covers in the policy.
-				</span>
-			</div>
-			<div className="overflow-x-auto">
-				<table className="w-full text-sm">
-					<thead>
-						<tr className="border-b border-border">
-							<th
-								className="text-left font-medium px-3 py-1.5 text-[10px] uppercase tracking-wide text-muted-foreground"
-								rowSpan={2}
-							>
-								Model
-							</th>
-							{groups.map((g) => (
-								<th
-									key={g.label}
-									colSpan={g.rules.length}
-									className="text-center font-medium px-3 py-1.5 text-[10px] uppercase tracking-wide text-muted-foreground border-l border-border"
-								>
-									{g.label}
-								</th>
-							))}
-						</tr>
-						<tr className="border-b border-border bg-muted/20">
-							{groups.flatMap((g, gi) =>
-								g.rules.map(({ rule, originalIndex }, ri) => (
-										<th
-										// biome-ignore lint/suspicious/noArrayIndexKey: originalIndex is stable rule position
-										key={`${gi}:${originalIndex}`}
-										className={`text-right font-mono font-medium px-3 py-1 text-[10px] text-muted-foreground tabular-nums whitespace-nowrap ${ri === 0 ? "border-l border-border" : ""}`}
-									>
-										{ruleColumnHeader(rule)}
-									</th>
-								)),
-							)}
-						</tr>
-					</thead>
-					<tbody className="divide-y divide-border">
-						{models.map((m) => (
-							<tr
-								key={`${m.provider}/${m.model}`}
-								className="hover:bg-muted/40"
-							>
-								<td className="px-3 py-2 align-top">
-									<div className="font-mono text-foreground text-[13px]">
-										{m.model}
-									</div>
-									<div className="text-[10px] text-muted-foreground capitalize mt-0.5">
-										{m.provider}
-									</div>
-								</td>
-								{groups.flatMap((g, gi) =>
-									g.rules.map(({ rule, originalIndex }, ri) => (
-											<td
-											// biome-ignore lint/suspicious/noArrayIndexKey: originalIndex is stable rule position
-											key={`${gi}:${originalIndex}`}
-											className={`px-3 py-2 text-right tabular-nums text-foreground whitespace-nowrap ${ri === 0 ? "border-l border-border" : ""}`}
-										>
-											<span>{rule.amount.toLocaleString()}</span>
-											<span className="text-muted-foreground text-[11px] font-mono ml-1">
-												{ruleColumnHeader(rule)}
-											</span>
-										</td>
-									)),
-								)}
-							</tr>
-						))}
-					</tbody>
-				</table>
-			</div>
-			{showToggle && (
-				<button
-					type="button"
-					onClick={onToggle}
-					className="w-full px-3 py-1.5 text-[11px] text-muted-foreground hover:text-foreground hover:bg-muted/40 flex items-center justify-center gap-1 border-t border-border"
-				>
-					{expanded ? (
-						<>
-							<ChevronDown className="w-3 h-3" /> Show fewer
-						</>
-					) : (
-						<>
-							<ChevronRight className="w-3 h-3" />
-							Show all models ({hiddenCount} more)
-						</>
-					)}
-				</button>
-			)}
-		</>
-	);
-}
-
 interface ResolvedModel {
 	provider: string;
 	model: string;
+	label: string;
+	hosts: { slug: string; host: Host }[];
 }
 
-function resolveModelNames(
+function resolveModels(
 	refs: readonly string[],
 	catalog: ReturnType<typeof buildConcreteCatalog>,
+	modelBySlug: Map<string, Model>,
+	hostBySlug: Map<string, Host>,
 ): ResolvedModel[] {
-	const seen = new Set<string>();
-	const out: ResolvedModel[] = [];
+	const byKey = new Map<string, ResolvedModel>();
 	for (const raw of refs) {
 		if (validateCatalogRef(raw)) continue;
 		const parsed = parseCatalogRef(raw);
 		for (const b of catalog) {
 			if (!refCovers(parsed, b)) continue;
 			const key = `${b.provider}/${b.model}`;
-			if (seen.has(key)) continue;
-			seen.add(key);
-			out.push({ provider: b.provider, model: b.model });
+			let entry = byKey.get(key);
+			if (!entry) {
+				const model = modelBySlug.get(b.model);
+				entry = {
+					provider: b.provider,
+					model: b.model,
+					label: model ? displayLabel(model.metadata) : b.model,
+					hosts: [],
+				};
+				byKey.set(key, entry);
+			}
+			const host = hostBySlug.get(b.host);
+			if (host && !entry.hosts.some((h) => h.slug === b.host)) {
+				entry.hosts.push({ slug: b.host, host });
+			}
 		}
 	}
+	const out = [...byKey.values()];
 	out.sort(
 		(a, b) =>
 			a.provider.localeCompare(b.provider) || a.model.localeCompare(b.model),
 	);
 	return out;
+}
+
+interface HostGroup {
+	host: Host;
+	models: { provider: string; model: string; label: string }[];
+	providers: string[];
+}
+
+function groupByHost(models: ResolvedModel[]): HostGroup[] {
+	const byHost = new Map<string, HostGroup>();
+	for (const m of models) {
+		for (const h of m.hosts) {
+			let g = byHost.get(h.slug);
+			if (!g) {
+				g = { host: h.host, models: [], providers: [] };
+				byHost.set(h.slug, g);
+			}
+			g.models.push({ provider: m.provider, model: m.model, label: m.label });
+			if (!g.providers.includes(m.provider)) g.providers.push(m.provider);
+		}
+	}
+	for (const g of byHost.values()) {
+		g.models.sort(
+			(a, b) =>
+				a.provider.localeCompare(b.provider) || a.model.localeCompare(b.model),
+		);
+		g.providers.sort();
+	}
+	return [...byHost.values()].sort((a, b) =>
+		displayLabel(a.host.metadata).localeCompare(displayLabel(b.host.metadata)),
+	);
 }

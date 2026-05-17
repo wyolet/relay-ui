@@ -30,11 +30,11 @@ function Header() {
 
 export function Layout() {
 	return (
-		<div className="flex min-h-screen bg-muted/30">
+		<div className="flex h-screen overflow-hidden bg-muted/30">
 			<Sidebar />
-			<div className="flex-1 min-w-0 flex flex-col">
+			<div className="flex-1 min-w-0 flex flex-col h-screen">
 				<Header />
-				<main className="flex-1 overflow-auto">
+				<main className="flex-1 overflow-auto min-h-0">
 					<div className="mx-auto max-w-7xl px-6 py-5">
 						<Outlet />
 					</div>
