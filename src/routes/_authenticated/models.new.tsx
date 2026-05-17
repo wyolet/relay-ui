@@ -6,7 +6,7 @@ import type { ApiErrorBody } from "@/api/types/errors";
 import { ApiError } from "@/api/types/errors";
 import type { ModelCreate } from "@/api/types/model";
 import { EnabledField } from "@/shared/EnabledField";
-import { HostLogo } from "@/components/HostLogo";
+import { HostLogo } from "@/hosts/HostLogo";
 import { displayLabel } from "@/lib/displayLabel";
 import type { FieldDef, FormValues } from "@/shared/ResourceForm";
 import { ResourceForm } from "@/shared/ResourceForm";

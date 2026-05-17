@@ -3,7 +3,7 @@ import { ArrowDown, ArrowUp } from "lucide-react";
 import { useUpdateHost } from "@/api/hooks/hosts";
 import type { Host } from "@/api/types/host";
 import { ApiError } from "@/api/types/errors";
-import { HostLogo } from "@/components/HostLogo";
+import { HostLogo } from "@/hosts/HostLogo";
 import { Switch } from "@/shared/Switch";
 import { toast } from "@/shared/Toast";
 import { DiagnosticDot } from "@/diagnostics/DiagnosticDot";

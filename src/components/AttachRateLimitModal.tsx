@@ -1,6 +1,6 @@
 import { ChevronLeft } from "lucide-react";
 import { useMemo, useState } from "react";
-import { ModelPicker } from "@/components/ModelPicker";
+import { ModelPicker } from "@/models/ModelPicker";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,

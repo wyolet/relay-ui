@@ -15,7 +15,7 @@ import { useProviders } from "@/api/hooks/providers";
 import type { Host } from "@/api/types/host";
 import type { Model } from "@/api/types/model";
 import type { Provider } from "@/api/types/provider";
-import { HostLogo } from "@/components/HostLogo";
+import { HostLogo } from "@/hosts/HostLogo";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {

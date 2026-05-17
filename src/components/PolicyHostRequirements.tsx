@@ -1,7 +1,7 @@
 import { AlertCircle, CheckCircle2, Circle } from "lucide-react";
 import type { Host } from "@/api/types/host";
 import type { HostKey } from "@/api/types/hostkey";
-import { HostLogo } from "@/components/HostLogo";
+import { HostLogo } from "@/hosts/HostLogo";
 import {
 	Select,
 	SelectContent,

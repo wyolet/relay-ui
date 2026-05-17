@@ -18,7 +18,7 @@ import { analyzePolicy } from "@/diagnostics/analyzers/policy";
 import { DiagnosticList } from "@/diagnostics/DiagnosticList";
 import { useDiagnosticGraph } from "@/diagnostics/useDiagnostics";
 import { IncludeDeprecatedSwitch } from "@/shared/IncludeDeprecatedSwitch";
-import { ModelPicker } from "@/components/ModelPicker";
+import { ModelPicker } from "@/models/ModelPicker";
 import { MultiSelect } from "@/shared/MultiSelect";
 import { PolicyRLPicker } from "@/components/PolicyRLPicker";
 import {

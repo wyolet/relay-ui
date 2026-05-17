@@ -9,7 +9,7 @@ import { useUpdateModel } from "@/api/hooks/models";
 import { ApiError } from "@/api/types/errors";
 import type { Host } from "@/api/types/host";
 import type { Model } from "@/api/types/model";
-import { HostLogo } from "@/components/HostLogo";
+import { HostLogo } from "@/hosts/HostLogo";
 import { Switch } from "@/shared/Switch";
 import { toast } from "@/shared/Toast";
 import { DiagnosticDot } from "@/diagnostics/DiagnosticDot";
