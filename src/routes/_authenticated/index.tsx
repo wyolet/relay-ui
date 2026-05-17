@@ -1,12 +1,21 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import { modelsListQueryOptions } from "@/api/hooks/models";
 import { policiesListQueryOptions } from "@/api/hooks/policies";
 import { providersListQueryOptions } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
 import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
+import { ResourceGraphSVG } from "@/graph/ResourceGraphSVG";
+import { PolicyInstanceGraphSVG } from "@/graph/PolicyInstanceGraphSVG";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 
 export const Route = createFileRoute("/_authenticated/")({
 	component: DashboardPage,
@@ -94,6 +103,10 @@ function DashboardInner() {
 			{/* Metrics placeholder — /control/metrics does not exist yet */}
 			<MetricsPending />
 
+			<ResourceGraphSVG />
+
+			<PolicyGraphPanel />
+
 			{/* Quick stats */}
 			<section>
 				<h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
@@ -109,6 +122,48 @@ function DashboardInner() {
 				</div>
 			</section>
 		</div>
+	);
+}
+
+function PolicyGraphPanel() {
+	const { data: policies } = useQuery(policiesListQueryOptions);
+	const items = policies?.items ?? [];
+	const [selectedId, setSelectedId] = useState<string>(
+		() => items[0]?.metadata.id ?? items[0]?.metadata.name ?? "",
+	);
+	if (items.length === 0) return null;
+	const selected = items.find(
+		(p) => (p.metadata.id ?? p.metadata.name) === selectedId,
+	) ?? items[0];
+	if (!selected) return null;
+
+	return (
+		<section className="rounded-lg border border-border bg-card p-4">
+			<div className="flex items-center justify-between mb-3 gap-3">
+				<h3 className="text-sm font-semibold text-foreground">
+					Policy graph
+				</h3>
+				<Select
+					value={selectedId || (selected.metadata.id ?? selected.metadata.name)}
+					onValueChange={(v) => setSelectedId(v ?? "")}
+				>
+					<SelectTrigger className="w-64">
+						<SelectValue />
+					</SelectTrigger>
+					<SelectContent>
+						{items.map((p) => {
+							const id = p.metadata.id ?? p.metadata.name;
+							return (
+								<SelectItem key={id} value={id}>
+									{p.metadata.displayName || p.metadata.name}
+								</SelectItem>
+							);
+						})}
+					</SelectContent>
+				</Select>
+			</div>
+			<PolicyInstanceGraphSVG policy={selected} />
+		</section>
 	);
 }
 
