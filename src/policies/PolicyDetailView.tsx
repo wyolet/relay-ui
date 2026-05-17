@@ -69,9 +69,9 @@ export function PolicyDetailView({
 				value={tab}
 				onValueChange={(v) => onTabChange((v ?? "overview") as PolicyDetailTab)}
 			>
-				<TabsList>
+				<TabsList variant="line" className="border-b border-border w-full justify-start">
 					{TABS.map(({ value, label, icon: Icon }) => (
-						<TabsTrigger key={value} value={value}>
+						<TabsTrigger key={value} value={value} className="px-3 h-9">
 							<Icon className="w-3.5 h-3.5" aria-hidden />
 							{label}
 						</TabsTrigger>
