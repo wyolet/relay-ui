@@ -88,17 +88,25 @@ export function MultiSelect({
 									<span className="truncate max-w-[120px]">
 										{labelByValue.get(v) ?? v}
 									</span>
-									<button
-										type="button"
+									<span
+										role="button"
+										tabIndex={0}
 										aria-label={`Remove ${labelByValue.get(v) ?? v}`}
 										onClick={(e) => {
 											e.stopPropagation();
 											toggle(v);
 										}}
-										className="h-4 w-4 inline-flex items-center justify-center rounded hover:bg-primary/20"
+										onKeyDown={(e) => {
+											if (e.key === "Enter" || e.key === " ") {
+												e.preventDefault();
+												e.stopPropagation();
+												toggle(v);
+											}
+										}}
+										className="h-4 w-4 inline-flex items-center justify-center rounded hover:bg-primary/20 cursor-pointer"
 									>
 										<X className="w-3 h-3" />
-									</button>
+									</span>
 								</span>
 							))}
 							{overflow > 0 && (
