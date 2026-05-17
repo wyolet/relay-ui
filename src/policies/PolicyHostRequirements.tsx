@@ -171,7 +171,14 @@ function HostRow({
 						}
 					>
 						<SelectTrigger className="w-full">
-							<SelectValue placeholder="Select a key…" />
+							<SelectValue placeholder="Select a key…">
+								{(() => {
+									const k = hostKeys.find(
+										(x) => x.metadata.id === selectedKeyId,
+									);
+									return k ? displayLabel(k.metadata) : "Select a key…";
+								})()}
+							</SelectValue>
 						</SelectTrigger>
 						<SelectContent>
 							{hostKeys.map((k) => (
