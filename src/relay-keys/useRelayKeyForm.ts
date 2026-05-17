@@ -31,7 +31,7 @@ function relayKeyToValues(rk: RelayKey): RelayKeyFormValues {
 	return {
 		displayName: displayLabel(rk.metadata),
 		description: rk.metadata.description ?? "",
-		policyId: rk.spec.policyId,
+		policyId: rk.spec.policyId ?? "",
 		enabled: rk.spec.enabled ?? true,
 		passthroughAllowed: rk.spec.passthroughAllowed ?? false,
 	};

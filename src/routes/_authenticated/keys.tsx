@@ -431,9 +431,10 @@ function RelayKeysPanel() {
 								const status = relayStatus(rk);
 								const revoked = isRelayKeyRevoked(rk);
 								const enabled = rk.spec.enabled ?? true;
-								const policyLabel =
-									policyLabels.get(rk.spec.policyId) ??
-									`Unknown (${rk.spec.policyId.slice(0, 6)}…)`;
+								const pid = rk.spec.policyId ?? "";
+								const policyLabel = pid
+									? (policyLabels.get(pid) ?? `Unknown (${pid.slice(0, 6)}…)`)
+									: "—";
 								return (
 									<tr
 										key={rk.metadata.name}

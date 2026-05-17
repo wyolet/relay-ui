@@ -72,6 +72,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/debug/snapshot": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Dump the current data-plane snapshot
+         * @description Returns the in-memory catalog snapshot the hot path reads. Use to compare against PG (admin list endpoints) when investigating why a row isn't reaching the data plane — the sanitizer may have dropped it.
+         */
+        get: operations["debug_snapshot"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/host-keys": {
         parameters: {
             query?: never;
@@ -103,6 +123,40 @@ export interface paths {
         post?: never;
         /** Delete host-key by id */
         delete: operations["delete_host-key"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/host-keys/by-id/{id}/references": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List rows that reference this host-key */
+        get: operations["list_host-key_references"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/host-keys/by-id/{id}/rotate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Rotate a stored-mode HostKey credential */
+        post: operations["rotate_host_key"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -154,8 +208,24 @@ export interface paths {
         /** Update host by id */
         put: operations["update_host"];
         post?: never;
-        /** Delete host by id */
-        delete: operations["delete_host"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hosts/by-id/{id}/references": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List rows that reference this host */
+        get: operations["list_host_references"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -247,8 +317,24 @@ export interface paths {
         /** Update model by id */
         put: operations["update_model"];
         post?: never;
-        /** Delete model by id */
-        delete: operations["delete_model"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/models/by-id/{id}/references": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List rows that reference this model */
+        get: operations["list_model_references"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -302,6 +388,47 @@ export interface paths {
         post?: never;
         /** Delete policy by id */
         delete: operations["delete_policy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/policies/by-id/{id}/references": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List rows that reference this policy */
+        get: operations["list_policy_references"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/policies/by-id/{id}/relay-keys/{relayKeyId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Attach a RelayKey to this Policy
+         * @description Sets RelayKey.Spec.PolicyID to this policy. Overwrites any prior attachment (moving a key from A to B is the common case).
+         */
+        post: operations["attach_relay_key_to_policy"];
+        /**
+         * Detach a RelayKey from this Policy
+         * @description Clears RelayKey.Spec.PolicyID. Returns 409 if the key currently points at a different policy (the caller is acting on stale state).
+         */
+        delete: operations["detach_relay_key_from_policy"];
         options?: never;
         head?: never;
         patch?: never;
@@ -406,8 +533,24 @@ export interface paths {
         /** Update provider by id */
         put: operations["update_provider"];
         post?: never;
-        /** Delete provider by id */
-        delete: operations["delete_provider"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/providers/by-id/{id}/references": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List rows that reference this provider */
+        get: operations["list_provider_references"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -461,6 +604,23 @@ export interface paths {
         post?: never;
         /** Delete rate-limit by id */
         delete: operations["delete_rate-limit"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/rate-limits/by-id/{id}/references": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List rows that reference this rate-limit */
+        get: operations["list_rate-limit_references"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -569,6 +729,30 @@ export interface paths {
          */
         get: operations["list_settings"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/settings/inference": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get settings section: inference
+         * @description Authenticated /v1/* behavior. AllowMissingPolicy lets RelayKeys with no Spec.PolicyID reach any host the relay has hostkeys for, bypassing the per-policy authorization gate. Default off.
+         */
+        get: operations["get_settings_inference"];
+        /**
+         * Update settings section: inference
+         * @description Authenticated /v1/* behavior. AllowMissingPolicy lets RelayKeys with no Spec.PolicyID reach any host the relay has hostkeys for, bypassing the per-policy authorization gate. Default off.
+         */
+        put: operations["update_settings_inference"];
         post?: never;
         delete?: never;
         options?: never;
@@ -712,6 +896,29 @@ export interface components {
         };
         Icon: {
             path?: string;
+        };
+        Inference: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Inference.json
+             */
+            readonly $schema?: string;
+            allowMissingPolicy: boolean;
+        };
+        InferenceEnvelope: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/InferenceEnvelope.json
+             */
+            readonly $schema?: string;
+            /**
+             * @description One of the relay's registered settings section keys.
+             * @enum {string}
+             */
+            section: "inference" | "proxy-mode";
+            value: components["schemas"]["Inference"];
         };
         Metadata: {
             description?: string;
@@ -935,7 +1142,7 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            section: "proxy-mode";
+            section: "inference" | "proxy-mode";
             value: components["schemas"]["ProxyMode"];
         };
         RateLimit: {
@@ -992,7 +1199,7 @@ export interface components {
             enabled?: boolean;
             keyHash: string;
             passthroughAllowed?: boolean;
-            policyId: string;
+            policyId?: string;
             prefix?: string;
             /** Format: date-time */
             revokedAt?: string;
@@ -1006,6 +1213,51 @@ export interface components {
             readonly $schema?: string;
             user_id: string;
             username: string;
+        };
+        debugPolicyJoin: {
+            /** Format: int64 */
+            hostKeys: number;
+            /** Format: int64 */
+            models: number;
+            policyId: string;
+            policyName: string;
+            rateLimited: boolean;
+        };
+        debugSnapshotBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/debugSnapshotBody.json
+             */
+            readonly $schema?: string;
+            counts: components["schemas"]["debugSnapshotCounts"];
+            hostKeys?: components["schemas"]["HostKey"][] | null;
+            hosts?: components["schemas"]["Host"][] | null;
+            models?: components["schemas"]["Model"][] | null;
+            policies?: components["schemas"]["Policy"][] | null;
+            policyJoins?: components["schemas"]["debugPolicyJoin"][] | null;
+            pricings?: components["schemas"]["Pricing"][] | null;
+            providers?: components["schemas"]["Provider"][] | null;
+            rateLimits?: components["schemas"]["RateLimit"][] | null;
+            relayKeys?: components["schemas"]["RelayKey"][] | null;
+        };
+        debugSnapshotCounts: {
+            /** Format: int64 */
+            hostKeys: number;
+            /** Format: int64 */
+            hosts: number;
+            /** Format: int64 */
+            models: number;
+            /** Format: int64 */
+            policies: number;
+            /** Format: int64 */
+            pricings: number;
+            /** Format: int64 */
+            providers: number;
+            /** Format: int64 */
+            rateLimits: number;
+            /** Format: int64 */
+            relayKeys: number;
         };
         loginInputBody: {
             /**
@@ -1049,6 +1301,25 @@ export interface components {
              */
             rotated: number;
         };
+        referenceItem: {
+            /** @description Resource id. */
+            id: string;
+            /** @description Resource kind (host, policy, host-key, relay-key, model, pricing). */
+            kind: string;
+            /** @description Resource slug. */
+            name: string;
+            /** @description Field path on the referencing row that points at the target. */
+            via: string;
+        };
+        referencesOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/referencesOutputBody.json
+             */
+            readonly $schema?: string;
+            items: components["schemas"]["referenceItem"][] | null;
+        };
         reloadOutputBody: {
             /**
              * Format: uri
@@ -1081,13 +1352,23 @@ export interface components {
             models: components["schemas"]["resolveEntity"][] | null;
             refs: string[] | null;
         };
+        rotateHostKeyInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/rotateHostKeyInputBody.json
+             */
+            readonly $schema?: string;
+            /** @description New cleartext credential. */
+            value: string;
+        };
         settingsCatalogItem: {
             description?: string;
             /**
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            name: "proxy-mode";
+            name: "inference" | "proxy-mode";
             /** @description OpenAPI component name for this section's typed value. */
             schemaRef?: string;
         };
@@ -1105,7 +1386,7 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            section: "proxy-mode";
+            section: "inference" | "proxy-mode";
             value: unknown;
         };
         settingsListOutputBody: {
@@ -1289,6 +1570,56 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    debug_snapshot: {
+        parameters: {
+            query?: {
+                /** @description counts = per-kind sizes only; full = every entity. */
+                detail?: "counts" | "full";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["debugSnapshotBody"];
                 };
             };
             /** @description Unauthorized */
@@ -1508,6 +1839,128 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    "list_host-key_references": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Target resource id. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["referencesOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    rotate_host_key: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description HostKey id (UUIDv7). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["rotateHostKeyInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HostKey"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
             };
             /** @description Unauthorized */
             401: {
@@ -1776,36 +2229,29 @@ export interface operations {
             };
         };
     };
-    delete_host: {
+    list_host_references: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description Resource id (UUIDv7). */
+                /** @description Target resource id. */
                 id: string;
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description No Content */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Unauthorized */
-            401: {
+            /** @description OK */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenAIError"];
+                    "application/json": components["schemas"]["referencesOutputBody"];
                 };
             };
-            /** @description Not Found */
-            404: {
+            /** @description Unauthorized */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2138,36 +2584,29 @@ export interface operations {
             };
         };
     };
-    delete_model: {
+    list_model_references: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description Resource id (UUIDv7). */
+                /** @description Target resource id. */
                 id: string;
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description No Content */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Unauthorized */
-            401: {
+            /** @description OK */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenAIError"];
+                    "application/json": components["schemas"]["referencesOutputBody"];
                 };
             };
-            /** @description Not Found */
-            404: {
+            /** @description Unauthorized */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2454,6 +2893,187 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    list_policy_references: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Target resource id. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["referencesOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    attach_relay_key_to_policy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Policy id (UUIDv7). */
+                id: string;
+                /** @description RelayKey id (UUIDv7). */
+                relayKeyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelayKey"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    detach_relay_key_from_policy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Policy id (UUIDv7). */
+                id: string;
+                /** @description RelayKey id (UUIDv7). */
+                relayKeyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelayKey"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2996,36 +3616,29 @@ export interface operations {
             };
         };
     };
-    delete_provider: {
+    list_provider_references: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description Resource id (UUIDv7). */
+                /** @description Target resource id. */
                 id: string;
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description No Content */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Unauthorized */
-            401: {
+            /** @description OK */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenAIError"];
+                    "application/json": components["schemas"]["referencesOutputBody"];
                 };
             };
-            /** @description Not Found */
-            404: {
+            /** @description Unauthorized */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3312,6 +3925,56 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    "list_rate-limit_references": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Target resource id. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["referencesOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3742,6 +4405,104 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    get_settings_inference: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InferenceEnvelope"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    update_settings_inference: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Inference"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InferenceEnvelope"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -20,7 +20,6 @@ import {
 	PencilLine,
 	Radio,
 	Settings2,
-	Trash2,
 	Volume2,
 	Wrench,
 	Zap,
@@ -32,21 +31,17 @@ import { hostsListQueryOptions } from "@/api/hooks/hosts";
 import {
 	modelDetailQueryOptions,
 	modelsListQueryOptions,
-	useDeleteModel,
 	useModel,
 } from "@/api/hooks/models";
 import { policiesListQueryOptions } from "@/api/hooks/policies";
 import { providersListQueryOptions } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
 import { relayKeysListQueryOptions } from "@/api/hooks/relayKeys";
-import { ApiError } from "@/api/types/errors";
 import type {
 	Model,
 	ModelCapabilities,
 	ModelModalities,
 } from "@/api/types/model";
-import { confirm } from "@/shared/ConfirmDialog";
-import { toast } from "@/shared/Toast";
 import { DiagnosticList } from "@/diagnostics/DiagnosticList";
 import { useModelDiagnostics } from "@/diagnostics/useDiagnostics";
 import { displayLabel } from "@/lib/displayLabel";
@@ -262,7 +257,6 @@ function ModelDetailInner() {
 	const search = Route.useSearch();
 	const navigate = useNavigate({ from: "/models/$name" });
 	const { data: model } = useModel(name);
-	const deleteModel = useDeleteModel();
 	const diagnostics = useModelDiagnostics(model.metadata.id);
 
 	const providerName =
@@ -278,27 +272,6 @@ function ModelDetailInner() {
 
 	function setTab(tab: Tab) {
 		void navigate({ search: (prev) => ({ ...prev, tab }) });
-	}
-
-	async function handleDelete() {
-		const ok = await confirm({
-			title: `Delete model ${name}?`,
-			description: "This cannot be undone.",
-			confirmLabel: "Delete",
-			danger: true,
-		});
-		if (!ok) return;
-		try {
-			await deleteModel.mutateAsync(model.metadata.id ?? "");
-			toast("success", `Model "${name}" deleted.`);
-			void navigate({ to: "/models" });
-		} catch (err) {
-			if (err instanceof ApiError) {
-				toast("error", err.body.message);
-			} else {
-				toast("error", "Failed to delete model.");
-			}
-		}
 	}
 
 	return (
@@ -352,15 +325,6 @@ function ModelDetailInner() {
 							<Pencil className="w-3.5 h-3.5" />
 							Edit
 						</Link>
-						<button
-							type="button"
-							onClick={handleDelete}
-							disabled={deleteModel.isPending}
-							className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium text-destructive border border-border hover:bg-destructive/10 disabled:opacity-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-						>
-							<Trash2 className="w-3.5 h-3.5" />
-							Delete
-						</button>
 					</div>
 				</div>
 			</div>
