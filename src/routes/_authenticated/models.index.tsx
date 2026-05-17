@@ -23,8 +23,8 @@ import {
 	type ModelsSortKey,
 	ModelsTable,
 } from "@/components/ModelsTable";
-import { SearchBox } from "@/components/SearchBox";
-import { TableToolbar } from "@/components/TableToolbar";
+import { SearchBox } from "@/shared/SearchBox";
+import { TableToolbar } from "@/shared/TableToolbar";
 import {
 	Select,
 	SelectContent,

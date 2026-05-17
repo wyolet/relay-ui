@@ -45,8 +45,8 @@ import type {
 	ModelCapabilities,
 	ModelModalities,
 } from "@/api/types/model";
-import { confirm } from "@/components/ConfirmDialog";
-import { toast } from "@/components/Toast";
+import { confirm } from "@/shared/ConfirmDialog";
+import { toast } from "@/shared/Toast";
 import { DiagnosticList } from "@/diagnostics/DiagnosticList";
 import { useModelDiagnostics } from "@/diagnostics/useDiagnostics";
 import { displayLabel } from "@/lib/displayLabel";

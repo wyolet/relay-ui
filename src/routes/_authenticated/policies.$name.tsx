@@ -14,9 +14,9 @@ import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
 import { relayKeysListQueryOptions } from "@/api/hooks/relayKeys";
 import { ApiError } from "@/api/types/errors";
-import { confirm } from "@/components/ConfirmDialog";
+import { confirm } from "@/shared/ConfirmDialog";
 import { PolicyForm } from "@/components/PolicyForm";
-import { toast } from "@/components/Toast";
+import { toast } from "@/shared/Toast";
 
 export const Route = createFileRoute("/_authenticated/policies/$name")({
 	loader: ({ context, params }) =>

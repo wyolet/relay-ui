@@ -1,8 +1,8 @@
 import { ShieldCheck, ToggleLeft } from "lucide-react";
 import { usePolicies } from "@/api/hooks/policies";
 import type { RelayKey } from "@/api/types/relayKey";
-import { FormSection } from "@/components/FormSection";
-import { IdentitySection } from "@/components/IdentitySection";
+import { FormSection } from "@/shared/FormSection";
+import { IdentitySection } from "@/shared/IdentitySection";
 import { Button } from "@/components/ui/button";
 import {
 	Select,

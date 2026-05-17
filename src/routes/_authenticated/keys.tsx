@@ -21,11 +21,11 @@ import {
 import { ApiError } from "@/api/types/errors";
 import type { HostKey } from "@/api/types/hostkey";
 import type { RelayKey } from "@/api/types/relayKey";
-import { confirm } from "@/components/ConfirmDialog";
-import { SearchBox } from "@/components/SearchBox";
-import { Switch } from "@/components/Switch";
-import { TableToolbar } from "@/components/TableToolbar";
-import { toast } from "@/components/Toast";
+import { confirm } from "@/shared/ConfirmDialog";
+import { SearchBox } from "@/shared/SearchBox";
+import { Switch } from "@/shared/Switch";
+import { TableToolbar } from "@/shared/TableToolbar";
+import { toast } from "@/shared/Toast";
 import {
 	DropdownMenu,
 	DropdownMenuContent,

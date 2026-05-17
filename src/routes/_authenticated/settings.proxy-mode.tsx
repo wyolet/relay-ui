@@ -8,7 +8,7 @@ import {
 	useUpdateProxyMode,
 } from "@/api/hooks/settings";
 import { ApiError } from "@/api/types/errors";
-import { toast } from "@/components/Toast";
+import { toast } from "@/shared/Toast";
 import { Switch } from "@/components/ui/switch";
 
 export const Route = createFileRoute("/_authenticated/settings/proxy-mode")({

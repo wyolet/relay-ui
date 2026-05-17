@@ -14,8 +14,8 @@ import {
 	useRelayKey,
 } from "@/api/hooks/relayKeys";
 import { ApiError } from "@/api/types/errors";
-import { DeleteConfirm } from "@/components/DeleteConfirm";
-import { toast } from "@/components/Toast";
+import { DeleteConfirm } from "@/shared/DeleteConfirm";
+import { toast } from "@/shared/Toast";
 import { Button } from "@/components/ui/button";
 import { DiagnosticList } from "@/diagnostics/DiagnosticList";
 import { useRelayKeyDiagnostics } from "@/diagnostics/useDiagnostics";

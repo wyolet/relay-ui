@@ -8,9 +8,9 @@ import {
 import type { ApiErrorBody } from "@/api/types/errors";
 import { ApiError } from "@/api/types/errors";
 import type { ModelUpdate } from "@/api/types/model";
-import type { FieldDef, FormValues } from "@/components/ResourceForm";
-import { ResourceForm } from "@/components/ResourceForm";
-import { toast } from "@/components/Toast";
+import type { FieldDef, FormValues } from "@/shared/ResourceForm";
+import { ResourceForm } from "@/shared/ResourceForm";
+import { toast } from "@/shared/Toast";
 
 export const Route = createFileRoute("/_authenticated/models/$name/edit")({
 	loader: ({ context, params }) =>

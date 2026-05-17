@@ -9,17 +9,17 @@ import {
 import { useMemo } from "react";
 import { useHostKeys } from "@/api/hooks/hostkeys";
 import type { Policy } from "@/api/types/policy";
-import { EnabledField } from "@/components/EnabledField";
-import { IdentitySection } from "@/components/IdentitySection";
+import { EnabledField } from "@/shared/EnabledField";
+import { IdentitySection } from "@/shared/IdentitySection";
 import { PolicyAttachedRelayKeys } from "@/components/PolicyAttachedRelayKeys";
 import { PolicyHostRequirements } from "@/components/PolicyHostRequirements";
 import { usePolicyHostRequirements } from "@/components/usePolicyHostRequirements";
 import { analyzePolicy } from "@/diagnostics/analyzers/policy";
 import { DiagnosticList } from "@/diagnostics/DiagnosticList";
 import { useDiagnosticGraph } from "@/diagnostics/useDiagnostics";
-import { IncludeDeprecatedSwitch } from "@/components/IncludeDeprecatedSwitch";
+import { IncludeDeprecatedSwitch } from "@/shared/IncludeDeprecatedSwitch";
 import { ModelPicker } from "@/components/ModelPicker";
-import { MultiSelect } from "@/components/MultiSelect";
+import { MultiSelect } from "@/shared/MultiSelect";
 import { PolicyRLPicker } from "@/components/PolicyRLPicker";
 import {
 	Select,

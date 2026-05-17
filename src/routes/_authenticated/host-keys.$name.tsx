@@ -20,7 +20,7 @@ import { policiesListQueryOptions } from "@/api/hooks/policies";
 import { providersListQueryOptions } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
 import { relayKeysListQueryOptions } from "@/api/hooks/relayKeys";
-import { DeleteConfirm } from "@/components/DeleteConfirm";
+import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { SecretRotateDialog } from "@/components/SecretRotateDialog";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";

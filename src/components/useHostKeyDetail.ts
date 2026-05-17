@@ -3,7 +3,7 @@ import { useDeleteHostKey, useHostKey } from "@/api/hooks/hostkeys";
 import { useHosts } from "@/api/hooks/hosts";
 import { usePolicies } from "@/api/hooks/policies";
 import { ApiError } from "@/api/types/errors";
-import { toast } from "@/components/Toast";
+import { toast } from "@/shared/Toast";
 import { useDetachHostKeyFromPolicy } from "@/components/useDetachHostKeyFromPolicy";
 import type { ReferencingPolicyView } from "@/components/useHostKeyForm";
 import { useToggleHostKeyEnabled } from "@/components/useToggleHostKeyEnabled";
