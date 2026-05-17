@@ -2,6 +2,11 @@ import { AlertTriangle, Pencil, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
+	parseCatalogRef,
+	refIncludesRef,
+	validateCatalogRef,
+} from "@/lib/catalogRef";
+import {
 	describeRef,
 	formatScope,
 	formatScopeFromConcrete,
@@ -15,6 +20,7 @@ import type { RLBindingValue } from "@/policies/usePolicyForm";
 import { usePolicyRLResolution } from "@/policies/usePolicyRLResolution";
 import type { RLMeta } from "@/rate-limits/AttachRateLimitModal";
 import { AttachRateLimitModal } from "@/rate-limits/AttachRateLimitModal";
+import { AlertBanner } from "@/shared/AlertBanner";
 
 interface PolicyRLPickerProps {
 	bindings: RLBindingValue[];
@@ -33,6 +39,22 @@ export function PolicyRLPicker({
 		bindings,
 		includeDeprecated,
 	);
+
+	const grantRefs = useMemo(
+		() =>
+			allowedModels
+				.filter((g) => !validateCatalogRef(g))
+				.map((g) => parseCatalogRef(g)),
+		[allowedModels],
+	);
+
+	function orphansFor(refs: readonly string[]): string[] {
+		return refs.filter((raw) => {
+			if (validateCatalogRef(raw)) return false;
+			const scope = parseCatalogRef(raw);
+			return !grantRefs.some((g) => refIncludesRef(g, scope));
+		});
+	}
 
 	const [editing, setEditing] = useState<
 		{ kind: "new" } | { kind: "edit"; idx: number } | null
@@ -91,11 +113,38 @@ export function PolicyRLPicker({
 						{bindings.map((b, i) => {
 							const meta = rlMetaById.get(b.rateLimitId);
 							const refStats = resolution.perBinding[i]?.refs ?? [];
+							const orphans = orphansFor(b.models);
+							const fullyOrphaned =
+								b.models.length > 0 && orphans.length === b.models.length;
 							return (
 								<li
 									key={b.rateLimitId || `binding-${i}`}
-									className="rounded-md border border-border bg-card px-3 py-2.5 shadow-sm"
+									className={`rounded-md border bg-card overflow-hidden shadow-sm ${
+										fullyOrphaned ? "border-amber-500/40" : "border-border"
+									}`}
 								>
+									{fullyOrphaned && (
+										<div className="border-b border-amber-500/30 bg-amber-500/5 px-3 py-2">
+											<AlertBanner severity="warn">
+												This rate limit targets{" "}
+												{orphans.map((m, idx) => (
+													<span key={m}>
+														{idx > 0 && ", "}
+														<code className="font-mono text-foreground">
+															"{m}"
+														</code>
+													</span>
+												))}
+												{orphans.length === 1
+													? ", which isn't"
+													: ", which aren't"}{" "}
+												in this policy's catalog. Remove this rate limit, or
+												add {orphans.length === 1 ? "it" : "them"} to the
+												policy's models.
+											</AlertBanner>
+										</div>
+									)}
+									<div className="px-3 py-2.5">
 									<div className="flex items-start justify-between gap-3">
 										<div className="min-w-0 flex-1">
 											<div className="text-sm font-medium text-foreground truncate">
@@ -143,6 +192,7 @@ export function PolicyRLPicker({
 											))}
 										</ul>
 									)}
+									</div>
 								</li>
 							);
 						})}

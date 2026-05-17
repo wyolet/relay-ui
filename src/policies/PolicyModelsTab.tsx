@@ -1,10 +1,20 @@
 import { Link } from "@tanstack/react-router";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import {
+	AudioLines,
+	Brain,
+	ChevronDown,
+	ChevronRight,
+	Eye,
+	type LucideIcon,
+	Network,
+	Wrench,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 import { useHosts } from "@/api/hooks/hosts";
 import { useModels } from "@/api/hooks/models";
 import { useProviders } from "@/api/hooks/providers";
 import type { Host } from "@/api/types/host";
+import type { Model } from "@/api/types/model";
 import type { Policy } from "@/api/types/policy";
 import { HostLogo } from "@/hosts/HostLogo";
 import {
@@ -20,12 +30,12 @@ interface Props {
 	policy: Policy;
 }
 
-/**
- * Host-grouped view of the policy's effective catalog. Each host that the
- * policy can route to is a card, with the list of models it serves under
- * the current grants. Mirrors the operator's mental model: a request hits
- * a host, which serves a model.
- */
+interface BindingRow {
+	binding: ConcreteBinding;
+	model: Model | undefined;
+	matchedBy: string[];
+}
+
 export function PolicyModelsTab({ policy }: Props) {
 	const { data: providers } = useProviders();
 	const { data: models } = useModels();
@@ -48,11 +58,17 @@ export function PolicyModelsTab({ policy }: Props) {
 		return m;
 	}, [hostsData]);
 
+	const modelBySlug = useMemo(() => {
+		const m = new Map<string, Model>();
+		for (const x of models.items ?? []) m.set(x.metadata.name, x);
+		return m;
+	}, [models]);
+
 	const grants = policy.spec.models ?? [];
 
 	const groupedByHost = useMemo(() => {
-		const granted = new Set<string>(); // key: provider/model@host
-		const refsThatHit = new Map<string, Set<string>>(); // key → ref strings that contributed
+		const granted = new Set<string>();
+		const refsThatHit = new Map<string, Set<string>>();
 		for (const raw of grants) {
 			if (validateCatalogRef(raw)) continue;
 			const parsed = parseCatalogRef(raw);
@@ -102,8 +118,6 @@ export function PolicyModelsTab({ policy }: Props) {
 		);
 	}
 
-	// Sort hosts: ones with most models first feels weird for a detail view;
-	// sort alphabetically by slug so it's stable across renders.
 	const hostSlugs = [...groupedByHost.byHost.keys()].sort();
 	const distinctModels = new Set<string>();
 	for (const list of groupedByHost.byHost.values()) {
@@ -126,13 +140,17 @@ export function PolicyModelsTab({ policy }: Props) {
 			{hostSlugs.map((hostSlug) => {
 				const host = hostBySlug.get(hostSlug);
 				const bindings = groupedByHost.byHost.get(hostSlug) ?? [];
+				const rows: BindingRow[] = bindings.map((b) => {
+					const key = `${b.provider}/${b.model}@${b.host}`;
+					const matched = groupedByHost.refsThatHit.get(key);
+					return {
+						binding: b,
+						model: modelBySlug.get(b.model),
+						matchedBy: matched ? [...matched].sort() : [],
+					};
+				});
 				return (
-					<HostGroup
-						key={hostSlug}
-						host={host}
-						hostSlug={hostSlug}
-						bindings={bindings}
-					/>
+					<HostGroup key={hostSlug} host={host} hostSlug={hostSlug} rows={rows} />
 				);
 			})}
 		</div>
@@ -142,17 +160,17 @@ export function PolicyModelsTab({ policy }: Props) {
 interface HostGroupProps {
 	host: Host | undefined;
 	hostSlug: string;
-	bindings: ConcreteBinding[];
+	rows: BindingRow[];
 }
 
 const COLLAPSE_THRESHOLD = 6;
 
-function HostGroup({ host, hostSlug, bindings }: HostGroupProps) {
+function HostGroup({ host, hostSlug, rows }: HostGroupProps) {
 	const hostEnabled = host ? host.spec.enabled !== false : false;
 	const [expanded, setExpanded] = useState(false);
-	const showToggle = bindings.length > COLLAPSE_THRESHOLD;
-	const visible = expanded ? bindings : bindings.slice(0, COLLAPSE_THRESHOLD);
-	const hiddenCount = bindings.length - visible.length;
+	const showToggle = rows.length > COLLAPSE_THRESHOLD;
+	const visible = expanded ? rows : rows.slice(0, COLLAPSE_THRESHOLD);
+	const hiddenCount = rows.length - visible.length;
 
 	return (
 		<section className="rounded-md border border-border bg-card overflow-hidden">
@@ -178,29 +196,16 @@ function HostGroup({ host, hostSlug, bindings }: HostGroupProps) {
 					</span>
 				)}
 				<span className="text-[11px] text-muted-foreground tabular-nums whitespace-nowrap">
-					{bindings.length} model{bindings.length === 1 ? "" : "s"}
+					{rows.length} model{rows.length === 1 ? "" : "s"}
 				</span>
 			</header>
 
 			<ul className="divide-y divide-border">
-				{visible.map((b) => (
-					<li
-						key={`${b.provider}/${b.model}`}
-						className="flex items-center gap-3 px-3 py-1.5 text-sm hover:bg-muted/40"
-					>
-						<div className="flex-1 min-w-0">
-							<Link
-								to="/models/$name"
-								params={{ name: b.model }}
-								className="font-mono text-foreground text-[13px] hover:underline"
-							>
-								{b.model}
-							</Link>
-							<span className="ml-1.5 text-[10px] text-muted-foreground capitalize">
-								{b.provider}
-							</span>
-						</div>
-					</li>
+				{visible.map((row) => (
+					<ModelRow
+						key={`${row.binding.provider}/${row.binding.model}`}
+						row={row}
+					/>
 				))}
 			</ul>
 
@@ -223,6 +228,106 @@ function HostGroup({ host, hostSlug, bindings }: HostGroupProps) {
 				</button>
 			)}
 		</section>
+	);
+}
+
+function ModelRow({ row }: { row: BindingRow }) {
+	const { binding, model, matchedBy } = row;
+	const displayName = model?.metadata.displayName?.trim();
+	const ctx = pickContextWindow(model);
+	const deprecation = model?.spec.deprecation?.status;
+	return (
+		<li className="flex items-center gap-3 px-3 py-1.5 text-sm hover:bg-muted/40">
+			<div className="flex items-baseline gap-2 min-w-0 flex-1 flex-wrap">
+				{displayName && (
+					<span className="text-foreground text-[13px] truncate">
+						{displayName}
+					</span>
+				)}
+				<Link
+					to="/models/$name"
+					params={{ name: binding.model }}
+					className="font-mono text-foreground text-[11px] hover:underline truncate"
+				>
+					{binding.model}
+				</Link>
+				{deprecation && <DeprecationBadge status={deprecation} />}
+				{matchedBy.length > 0 && (
+					<span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+						<span>via</span>
+						{matchedBy.map((ref) => (
+							<code
+								key={ref}
+								className="font-mono px-1 py-px rounded bg-muted text-foreground/80"
+							>
+								{ref}
+							</code>
+						))}
+					</span>
+				)}
+			</div>
+			<CapabilityIcons caps={model?.spec.capabilities} />
+			{ctx && (
+				<span className="text-[11px] text-muted-foreground tabular-nums whitespace-nowrap min-w-[3.5rem] text-right">
+					{ctx} ctx
+				</span>
+			)}
+		</li>
+	);
+}
+
+const CAPS: { key: keyof NonNullable<Model["spec"]["capabilities"]>; Icon: LucideIcon; label: string }[] = [
+	{ key: "vision", Icon: Eye, label: "Vision" },
+	{ key: "tools", Icon: Wrench, label: "Tools" },
+	{ key: "reasoning", Icon: Brain, label: "Reasoning" },
+	{ key: "audio", Icon: AudioLines, label: "Audio" },
+	{ key: "embeddings", Icon: Network, label: "Embeddings" },
+];
+
+function CapabilityIcons({
+	caps,
+}: {
+	caps: Model["spec"]["capabilities"] | undefined;
+}) {
+	if (!caps) return null;
+	const active = CAPS.filter((c) => caps[c.key]);
+	if (active.length === 0) return null;
+	return (
+		<div className="flex items-center gap-1 text-muted-foreground shrink-0">
+			{active.map(({ key, Icon, label }) => (
+				<Icon
+					key={key}
+					className="w-3.5 h-3.5"
+					aria-label={label}
+				/>
+			))}
+		</div>
+	);
+}
+
+function pickContextWindow(model: Model | undefined): string | undefined {
+	if (!model) return undefined;
+	const n =
+		model.spec.contextWindowTotal ??
+		model.spec.contextWindowInput ??
+		undefined;
+	if (!n || n <= 0) return undefined;
+	if (n >= 1_000_000) {
+		const m = n / 1_000_000;
+		return `${m % 1 === 0 ? m.toFixed(0) : m.toFixed(1)}M`;
+	}
+	if (n >= 1_000) {
+		return `${Math.round(n / 1_000)}K`;
+	}
+	return `${n}`;
+}
+
+function DeprecationBadge({ status }: { status: string }) {
+	const label = status.toLowerCase() === "sunset" ? "Sunset" : "Deprecated";
+	return (
+		<span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium uppercase tracking-wide bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/30 whitespace-nowrap">
+			{label}
+		</span>
 	);
 }
 

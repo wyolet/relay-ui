@@ -211,7 +211,7 @@ function Legend() {
 	return (
 		<div className="flex items-center gap-3 text-[10px] text-muted-foreground">
 			<LegendDot className="bg-rose-500" label="required (blocks enable)" />
-			<LegendDot className="bg-amber-500" label="partial (per-binding)" />
+			<LegendDot className="bg-amber-500" label="partial (per-model)" />
 			<LegendDot className="bg-muted-foreground/40" label="info (catalog)" />
 		</div>
 	);

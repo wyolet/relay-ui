@@ -10,6 +10,7 @@ import type { RateLimit, RateLimitRule } from "@/api/types/ratelimit";
 import {
 	parseCatalogRef,
 	refCovers,
+	refIncludesRef,
 	validateCatalogRef,
 } from "@/lib/catalogRef";
 import { buildConcreteCatalog } from "@/lib/concreteCatalog";
@@ -18,6 +19,7 @@ import { formatRuleShort } from "@/lib/rateLimitFormat";
 import { nsToSec } from "@/lib/timeWindow";
 import { PolicyRLOverlapWarning } from "@/policies/PolicyRLOverlapWarning";
 import { usePolicyRLResolution } from "@/policies/usePolicyRLResolution";
+import { AlertBanner } from "@/shared/AlertBanner";
 
 interface Props {
 	policy: Policy;
@@ -56,6 +58,22 @@ export function PolicyRateLimitsTab({ policy }: Props) {
 	const bindings = policy.spec.rlBindings ?? [];
 	const globalId = policy.spec.rateLimitId;
 
+	const grantRefs = useMemo(
+		() =>
+			(policy.spec.models ?? [])
+				.filter((g) => !validateCatalogRef(g))
+				.map((g) => parseCatalogRef(g)),
+		[policy.spec.models],
+	);
+
+	function orphansFor(refs: readonly string[]): string[] {
+		return refs.filter((raw) => {
+			if (validateCatalogRef(raw)) return false;
+			const scope = parseCatalogRef(raw);
+			return !grantRefs.some((g) => refIncludesRef(g, scope));
+		});
+	}
+
 	if (!globalId && bindings.length === 0) {
 		return (
 			<div className="rounded-md border border-dashed border-border bg-muted/30 px-4 py-6 text-center mt-2">
@@ -83,16 +101,22 @@ export function PolicyRateLimitsTab({ policy }: Props) {
 					catalog={catalog}
 				/>
 			)}
-			{bindings.map((b, i) => (
-				<BindingPanel
-					key={`${b.rateLimitId}:${i}`}
-					title={`Binding ${i + 1}`}
-					rateLimit={b.rateLimitId ? rlById.get(b.rateLimitId) : undefined}
-					rateLimitId={b.rateLimitId}
-					refs={b.models ?? []}
-					catalog={catalog}
-				/>
-			))}
+			{bindings.map((b, i) => {
+				const refs = b.models ?? [];
+				const orphans = orphansFor(refs);
+				const fullyOrphaned = refs.length > 0 && orphans.length === refs.length;
+				return (
+					<BindingPanel
+						key={`${b.rateLimitId}:${i}`}
+						title={`Rate limit ${i + 1}`}
+						rateLimit={b.rateLimitId ? rlById.get(b.rateLimitId) : undefined}
+						rateLimitId={b.rateLimitId}
+						refs={refs}
+						catalog={catalog}
+						orphans={fullyOrphaned ? orphans : []}
+					/>
+				);
+			})}
 		</div>
 	);
 }
@@ -137,6 +161,8 @@ interface BindingPanelProps {
 	rateLimitId: string | undefined;
 	refs: readonly string[];
 	catalog: ReturnType<typeof buildConcreteCatalog>;
+	/** Refs that aren't covered by the policy's catalog grants. Non-empty → render a warning. */
+	orphans?: readonly string[];
 }
 
 const COLLAPSE_THRESHOLD = 6;
@@ -148,6 +174,7 @@ function BindingPanel({
 	rateLimitId,
 	refs,
 	catalog,
+	orphans = [],
 }: BindingPanelProps) {
 	const rules = rateLimit?.spec.rules ?? [];
 	const models = useMemo(
@@ -157,9 +184,30 @@ function BindingPanel({
 	const [expanded, setExpanded] = useState(false);
 	const visible = expanded ? models : models.slice(0, COLLAPSE_THRESHOLD);
 	const showToggle = models.length > COLLAPSE_THRESHOLD;
+	const hasOrphans = orphans.length > 0;
 
 	return (
-		<section className="rounded-md border border-border bg-card overflow-hidden">
+		<section
+			className={`rounded-md border bg-card overflow-hidden ${
+				hasOrphans ? "border-amber-500/40" : "border-border"
+			}`}
+		>
+			{hasOrphans && (
+				<div className="border-b border-amber-500/30 bg-amber-500/5 px-3 py-2">
+					<AlertBanner severity="warn">
+						This rate limit targets{" "}
+						{orphans.map((m, i) => (
+							<span key={m}>
+								{i > 0 && ", "}
+								<code className="font-mono text-foreground">"{m}"</code>
+							</span>
+						))}
+						{orphans.length === 1 ? ", which isn't" : ", which aren't"} in this
+						policy's catalog. Remove this rate limit, or add{" "}
+						{orphans.length === 1 ? "it" : "them"} to the policy's models.
+					</AlertBanner>
+				</div>
+			)}
 			<header className="flex items-center gap-3 px-3 py-2 border-b border-border bg-muted/30">
 				<Gauge className="w-3.5 h-3.5 text-muted-foreground" aria-hidden />
 				<div className="min-w-0">

@@ -134,12 +134,16 @@ export function analyzePolicy(
 				return !grantRefs.some((g) => refIncludesRef(g, scope));
 			});
 			if (orphans.length === scopeRaws.length) {
+				const rl = b.rateLimitId ? graph.rateLimits.get(b.rateLimitId) : undefined;
+				const rlLabel = rl ? `"${displayLabel(rl.metadata)}"` : "Rate limit";
+				const targets = orphans.map((m) => `"${m}"`).join(", ");
+				const isPlural = orphans.length > 1;
 				out.push({
 					severity: "warn",
 					code: "policy.rl-binding-dead",
-					message: `Rate-limit binding scoped to ${orphans
-						.map((m) => `"${m}"`)
-						.join(", ")} — not granted by this policy's catalog.`,
+					message: `Rate limit ${rlLabel} in this policy targets ${targets}, which ${
+						isPlural ? "aren't" : "isn't"
+					} in the policy's catalog. Remove this rate limit, or add ${targets} to the policy's models.`,
 				});
 			}
 		}
