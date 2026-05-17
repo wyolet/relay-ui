@@ -1,10 +1,12 @@
 import {
+	Activity,
 	Boxes,
 	Gauge,
 	KeyRound,
 	LayoutGrid,
 	Pencil,
 	Power,
+	ScrollText,
 	Trash2,
 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
@@ -19,7 +21,13 @@ import { PolicyModelsTab } from "@/policies/PolicyModelsTab";
 import { PolicyKeysTab } from "@/policies/PolicyKeysTab";
 import { PolicyRateLimitsTab } from "@/policies/PolicyRateLimitsTab";
 
-export type PolicyDetailTab = "overview" | "models" | "keys" | "rate-limits";
+export type PolicyDetailTab =
+	| "overview"
+	| "models"
+	| "keys"
+	| "rate-limits"
+	| "usage"
+	| "logs";
 
 interface Props {
 	policy: Policy;
@@ -36,6 +44,8 @@ const TABS: { value: PolicyDetailTab; label: string; icon: typeof LayoutGrid }[]
 	{ value: "models", label: "Models", icon: Boxes },
 	{ value: "keys", label: "Host keys", icon: KeyRound },
 	{ value: "rate-limits", label: "Rate limits", icon: Gauge },
+	{ value: "usage", label: "Usage", icon: Activity },
+	{ value: "logs", label: "Logs", icon: ScrollText },
 ];
 
 export function PolicyDetailView({
@@ -93,6 +103,20 @@ export function PolicyDetailView({
 				</TabsContent>
 				<TabsContent value="rate-limits">
 					<PolicyRateLimitsTab policy={policy} />
+				</TabsContent>
+				<TabsContent value="usage">
+					<ComingSoon
+						icon={Activity}
+						title="Usage"
+						body="Aggregate token, request, and cost counters for this policy. Pending the /admin/metrics endpoint."
+					/>
+				</TabsContent>
+				<TabsContent value="logs">
+					<ComingSoon
+						icon={ScrollText}
+						title="Logs"
+						body="Recent inference requests routed through this policy with status, latency, and host key used."
+					/>
 				</TabsContent>
 			</Tabs>
 		</div>
@@ -179,5 +203,29 @@ function StatusBadge({ enabled }: { enabled: boolean }) {
 		<span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground border border-border">
 			Disabled
 		</span>
+	);
+}
+
+interface ComingSoonProps {
+	icon: typeof LayoutGrid;
+	title: string;
+	body: string;
+}
+
+function ComingSoon({ icon: Icon, title, body }: ComingSoonProps) {
+	return (
+		<div className="mt-4 rounded-md border border-dashed border-border bg-muted/30 px-6 py-10 text-center">
+			<Icon
+				className="mx-auto w-6 h-6 text-muted-foreground/60 mb-2"
+				aria-hidden
+			/>
+			<div className="text-sm font-medium text-foreground">{title}</div>
+			<div className="mt-1 text-xs text-muted-foreground max-w-md mx-auto">
+				{body}
+			</div>
+			<div className="mt-3 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground border border-border uppercase tracking-wide">
+				Coming soon
+			</div>
+		</div>
 	);
 }

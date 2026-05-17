@@ -24,7 +24,7 @@ import { displayLabel } from "@/lib/displayLabel";
 
 const searchSchema = z.object({
 	tab: z
-		.enum(["overview", "models", "keys", "rate-limits"])
+		.enum(["overview", "models", "keys", "rate-limits", "usage", "logs"])
 		.optional()
 		.default("overview"),
 });

@@ -1,44 +1,89 @@
 import { useMemo } from "react";
-import { Boxes } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { useHosts } from "@/api/hooks/hosts";
 import { useModels } from "@/api/hooks/models";
 import { useProviders } from "@/api/hooks/providers";
+import type { Host } from "@/api/types/host";
 import type { Policy } from "@/api/types/policy";
-import { KIND_META } from "@/config/catalogRef";
+import { HostLogo } from "@/hosts/HostLogo";
 import {
+	type ConcreteBinding,
 	parseCatalogRef,
 	refCovers,
 	validateCatalogRef,
 } from "@/lib/catalogRef";
 import { buildConcreteCatalog } from "@/lib/concreteCatalog";
+import { displayLabel } from "@/lib/displayLabel";
 
 interface Props {
 	policy: Policy;
 }
 
 /**
- * Read-only view of a policy's catalog grants. Each ref shows its DSL form,
- * its kind, and the concrete bindings it resolves to from the local catalog.
+ * Host-grouped view of the policy's effective catalog. Each host that the
+ * policy can route to is a card, with the list of models it serves under
+ * the current grants. Mirrors the operator's mental model: a request hits
+ * a host, which serves a model.
  */
 export function PolicyModelsTab({ policy }: Props) {
 	const { data: providers } = useProviders();
 	const { data: models } = useModels();
-	const { data: hosts } = useHosts();
+	const { data: hostsData } = useHosts();
 
 	const catalog = useMemo(
 		() =>
 			buildConcreteCatalog({
 				providers: providers.items ?? [],
 				models: models.items ?? [],
-				hosts: hosts.items ?? [],
+				hosts: hostsData.items ?? [],
 				includeDeprecated: policy.spec.includeDeprecated ?? false,
 			}),
-		[providers, models, hosts, policy.spec.includeDeprecated],
+		[providers, models, hostsData, policy.spec.includeDeprecated],
 	);
 
-	const refs = policy.spec.models ?? [];
+	const hostBySlug = useMemo(() => {
+		const m = new Map<string, Host>();
+		for (const h of hostsData.items ?? []) m.set(h.metadata.name, h);
+		return m;
+	}, [hostsData]);
 
-	if (refs.length === 0) {
+	const grants = policy.spec.models ?? [];
+
+	const groupedByHost = useMemo(() => {
+		const granted = new Set<string>(); // key: provider/model@host
+		const refsThatHit = new Map<string, Set<string>>(); // key → ref strings that contributed
+		for (const raw of grants) {
+			if (validateCatalogRef(raw)) continue;
+			const parsed = parseCatalogRef(raw);
+			for (const b of catalog) {
+				if (!refCovers(parsed, b)) continue;
+				const key = `${b.provider}/${b.model}@${b.host}`;
+				granted.add(key);
+				const set = refsThatHit.get(key) ?? new Set<string>();
+				set.add(raw);
+				refsThatHit.set(key, set);
+			}
+		}
+
+		const byHost = new Map<string, ConcreteBinding[]>();
+		for (const b of catalog) {
+			const key = `${b.provider}/${b.model}@${b.host}`;
+			if (!granted.has(key)) continue;
+			const list = byHost.get(b.host) ?? [];
+			list.push(b);
+			byHost.set(b.host, list);
+		}
+		for (const list of byHost.values()) {
+			list.sort(
+				(a, b) =>
+					a.provider.localeCompare(b.provider) ||
+					a.model.localeCompare(b.model),
+			);
+		}
+		return { byHost, refsThatHit };
+	}, [catalog, grants]);
+
+	if (grants.length === 0) {
 		return (
 			<EmptyState
 				title="No catalog refs"
@@ -47,83 +92,126 @@ export function PolicyModelsTab({ policy }: Props) {
 		);
 	}
 
-	return (
-		<div className="flex flex-col gap-3 pt-2">
-			{refs.map((raw) => (
-				<RefRow key={raw} raw={raw} catalog={catalog} />
-			))}
-		</div>
-	);
-}
-
-function RefRow({
-	raw,
-	catalog,
-}: {
-	raw: string;
-	catalog: ReturnType<typeof buildConcreteCatalog>;
-}) {
-	const err = validateCatalogRef(raw);
-	if (err) {
+	if (groupedByHost.byHost.size === 0) {
 		return (
-			<div className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm">
-				<code className="font-mono">{raw}</code>{" "}
-				<span className="text-destructive text-xs">— {err}</span>
-			</div>
+			<EmptyState
+				title="No reachable models"
+				message="The catalog refs on this policy don't resolve to any current binding. They may match models added later, or you may need to revisit them."
+			/>
 		);
 	}
-	const parsed = parseCatalogRef(raw);
-	const matches = catalog.filter((b) => refCovers(parsed, b));
-	const meta = KIND_META[parsed.kind];
+
+	// Sort hosts: ones with most models first feels weird for a detail view;
+	// sort alphabetically by slug so it's stable across renders.
+	const hostSlugs = [...groupedByHost.byHost.keys()].sort();
 
 	return (
-		<div className="rounded-md border border-border bg-card overflow-hidden">
-			<div className="flex items-center gap-3 px-3 py-2 border-b border-border bg-muted/30">
-				<code className="font-mono text-sm text-foreground">{raw}</code>
-				<KindChip label={meta?.label ?? parsed.kind} />
-				<span className="ml-auto text-[11px] text-muted-foreground tabular-nums">
-					{matches.length} binding{matches.length === 1 ? "" : "s"}
-				</span>
-			</div>
-			{matches.length === 0 ? (
-				<div className="px-3 py-2 text-xs text-muted-foreground">
-					Doesn't match any current binding.
-				</div>
-			) : (
-				<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1 px-3 py-2">
-					{matches.slice(0, 18).map((b) => (
-						<div
-							key={`${b.provider}/${b.model}@${b.host}`}
-							className="text-[11px] text-muted-foreground truncate"
-						>
-							<span className="text-foreground">{b.model}</span>
-							<span className="text-muted-foreground/60"> @ </span>
-							<span>{b.host}</span>
-						</div>
-					))}
-					{matches.length > 18 && (
-						<div className="text-[11px] text-muted-foreground col-span-full">
-							+{matches.length - 18} more…
-						</div>
+		<div className="flex flex-col gap-4 pt-2">
+			<div className="text-[11px] text-muted-foreground">
+				Grouped by host. Catalog grants ({grants.length}) resolve to{" "}
+				<span className="text-foreground tabular-nums">
+					{Array.from(groupedByHost.byHost.values()).reduce(
+						(sum, l) => sum + l.length,
+						0,
 					)}
-				</div>
-			)}
+				</span>{" "}
+				bindings across{" "}
+				<span className="text-foreground tabular-nums">{hostSlugs.length}</span>{" "}
+				host{hostSlugs.length === 1 ? "" : "s"}.
+			</div>
+
+			{hostSlugs.map((hostSlug) => {
+				const host = hostBySlug.get(hostSlug);
+				const bindings = groupedByHost.byHost.get(hostSlug) ?? [];
+				return (
+					<HostGroup
+						key={hostSlug}
+						host={host}
+						hostSlug={hostSlug}
+						bindings={bindings}
+					/>
+				);
+			})}
 		</div>
 	);
 }
 
-function KindChip({ label }: { label: string }) {
+interface HostGroupProps {
+	host: Host | undefined;
+	hostSlug: string;
+	bindings: ConcreteBinding[];
+}
+
+function HostGroup({ host, hostSlug, bindings }: HostGroupProps) {
+	const hostEnabled = host ? host.spec.enabled !== false : false;
 	return (
-		<span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground border border-border">
-			<Boxes className="w-3 h-3" aria-hidden />
-			{label}
+		<section className="rounded-md border border-border bg-card overflow-hidden">
+			<header className="flex items-center gap-3 px-3 py-2 border-b border-border bg-muted/30">
+				{host ? (
+					<HostLogo host={host} size={20} />
+				) : (
+					<div className="w-5 h-5 rounded bg-muted" aria-hidden />
+				)}
+				<div className="min-w-0 flex-1">
+					<div className="text-sm font-medium text-foreground truncate">
+						{host ? displayLabel(host.metadata) : hostSlug}
+					</div>
+					<div className="text-[11px] text-muted-foreground truncate font-mono">
+						{hostSlug}
+					</div>
+				</div>
+				{host ? (
+					<HostBadge enabled={hostEnabled} />
+				) : (
+					<span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-destructive/10 text-destructive border border-destructive/30">
+						Missing
+					</span>
+				)}
+				<span className="text-[11px] text-muted-foreground tabular-nums whitespace-nowrap">
+					{bindings.length} model{bindings.length === 1 ? "" : "s"}
+				</span>
+			</header>
+
+			<ul className="divide-y divide-border">
+				{bindings.map((b) => (
+					<li
+						key={`${b.provider}/${b.model}`}
+						className="flex items-center gap-3 px-3 py-1.5 text-sm hover:bg-muted/40"
+					>
+						<div className="flex-1 min-w-0">
+							<Link
+								to="/models/$name"
+								params={{ name: b.model }}
+								className="font-mono text-foreground text-[13px] hover:underline"
+							>
+								{b.model}
+							</Link>
+							<span className="ml-1.5 text-[10px] text-muted-foreground capitalize">
+								{b.provider}
+							</span>
+						</div>
+					</li>
+				))}
+			</ul>
+		</section>
+	);
+}
+
+function HostBadge({ enabled }: { enabled: boolean }) {
+	return enabled ? (
+		<span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-900/60">
+			Enabled
+		</span>
+	) : (
+		<span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground border border-border">
+			Disabled
 		</span>
 	);
 }
 
 function EmptyState({ title, message }: { title: string; message: string }) {
 	return (
-		<div className="rounded-md border border-dashed border-border bg-muted/30 px-4 py-6 text-center">
+		<div className="rounded-md border border-dashed border-border bg-muted/30 px-4 py-6 text-center mt-2">
 			<div className="text-sm font-medium text-foreground">{title}</div>
 			<div className="mt-0.5 text-xs text-muted-foreground">{message}</div>
 		</div>
