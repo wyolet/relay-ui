@@ -114,16 +114,14 @@ function ModelsList() {
 				filters={
 					<Select
 						value={search.provider || "all"}
+						items={[
+							{ value: "all", label: "All providers" },
+							...providers.map((p) => ({ value: p, label: p })),
+						]}
 						onValueChange={(v) => setProvider(v === "all" || v == null ? "" : v)}
 					>
 						<SelectTrigger className="w-40">
-							<SelectValue>
-								{search.provider ? (
-									<span className="capitalize">{search.provider}</span>
-								) : (
-									"All providers"
-								)}
-							</SelectValue>
+							<SelectValue />
 						</SelectTrigger>
 						<SelectContent>
 							<SelectItem value="all">All providers</SelectItem>

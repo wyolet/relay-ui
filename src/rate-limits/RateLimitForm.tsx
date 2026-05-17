@@ -298,6 +298,13 @@ function RuleRow({
 					) : (
 						<Select
 							value={String(matchedPreset?.value ?? WINDOW_PRESETS[1].value)}
+							items={[
+								...WINDOW_PRESETS.map((p) => ({
+									value: String(p.value),
+									label: p.label,
+								})),
+								{ value: "custom", label: "Custom…" },
+							]}
 							onValueChange={(v) => {
 								if (v === null) return;
 								if (v === "custom") {
@@ -308,9 +315,7 @@ function RuleRow({
 							}}
 						>
 							<SelectTrigger className="w-full">
-								<SelectValue>
-									{matchedPreset?.label ?? WINDOW_PRESETS[1].label}
-								</SelectValue>
+								<SelectValue />
 							</SelectTrigger>
 							<SelectContent>
 								{WINDOW_PRESETS.map((p) => (
@@ -326,10 +331,14 @@ function RuleRow({
 			<LabeledInput label="Meter">
 				<Select
 					value={rule.meter}
+					items={METER_VALUES.map((m) => ({
+						value: m,
+						label: METER_OPTIONS[m].label,
+					}))}
 					onValueChange={(v) => onChange({ meter: v as RateLimitMeter })}
 				>
 					<SelectTrigger className="w-full">
-						<SelectValue>{METER_OPTIONS[rule.meter].label}</SelectValue>
+						<SelectValue />
 					</SelectTrigger>
 					<SelectContent>
 						{METER_VALUES.map((m) => (
@@ -346,10 +355,14 @@ function RuleRow({
 			<LabeledInput label="Strategy">
 				<Select
 					value={rule.strategy}
+					items={STRATEGY_VALUES.map((s) => ({
+						value: s,
+						label: STRATEGY_OPTIONS[s].label,
+					}))}
 					onValueChange={(v) => onChange({ strategy: v as RateLimitStrategy })}
 				>
 					<SelectTrigger className="w-full">
-						<SelectValue>{STRATEGY_OPTIONS[rule.strategy].label}</SelectValue>
+						<SelectValue />
 					</SelectTrigger>
 					<SelectContent>
 						{STRATEGY_VALUES.map((s) => (

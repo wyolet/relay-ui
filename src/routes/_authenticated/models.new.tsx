@@ -58,8 +58,6 @@ function NewModelInner() {
 	const [enabled, setEnabled] = useState<boolean>(true);
 
 	const hosts = hostsData.items ?? [];
-	const selectedHost = hosts.find((h) => h.metadata.id === hostId);
-	const selectedHostLabel = selectedHost && displayLabel(selectedHost.metadata);
 
 	async function handleSubmit(values: FormValues) {
 		setServerError(undefined);
@@ -107,13 +105,15 @@ function NewModelInner() {
 							Host
 						</div>
 						<Select
-							value={hostId || undefined}
+							value={hostId}
+							items={hosts.map((h) => ({
+								value: h.metadata.id ?? "",
+								label: displayLabel(h.metadata),
+							}))}
 							onValueChange={(v) => setHostId(v ?? "")}
 						>
 							<SelectTrigger className="w-full">
-								<SelectValue placeholder="Pick a host">
-									{selectedHostLabel}
-								</SelectValue>
+								<SelectValue placeholder="Pick a host" />
 							</SelectTrigger>
 							<SelectContent>
 								{hosts.length === 0 ? (

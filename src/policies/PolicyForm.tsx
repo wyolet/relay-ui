@@ -175,14 +175,16 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 						</div>
 						<Select
 							value={values.keySelection}
+							items={KEY_SELECTION_VALUES.map((k) => ({
+								value: k,
+								label: KEY_SELECTION_OPTIONS[k].label,
+							}))}
 							onValueChange={(v) =>
 								form.setFieldValue("keySelection", v as KeySelection)
 							}
 						>
 							<SelectTrigger className="w-full max-w-md">
-								<SelectValue>
-									{KEY_SELECTION_OPTIONS[values.keySelection].label}
-								</SelectValue>
+								<SelectValue />
 							</SelectTrigger>
 							<SelectContent>
 								{KEY_SELECTION_VALUES.map((k) => (

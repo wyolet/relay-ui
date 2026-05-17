@@ -166,19 +166,16 @@ function HostRow({
 				{hasAnyKey ? (
 					<Select
 						value={selectedKeyId ?? ""}
+						items={hostKeys.map((k) => ({
+							value: k.metadata.id ?? "",
+							label: displayLabel(k.metadata),
+						}))}
 						onValueChange={(v) =>
 							onPickKey(hostId, v == null || v === "" ? undefined : v)
 						}
 					>
 						<SelectTrigger className="w-full">
-							<SelectValue placeholder="Select a key…">
-								{(() => {
-									const k = hostKeys.find(
-										(x) => x.metadata.id === selectedKeyId,
-									);
-									return k ? displayLabel(k.metadata) : "Select a key…";
-								})()}
-							</SelectValue>
+							<SelectValue placeholder="Select a key…" />
 						</SelectTrigger>
 						<SelectContent>
 							{hostKeys.map((k) => (

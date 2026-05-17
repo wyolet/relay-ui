@@ -331,12 +331,16 @@ function RelayKeysPanel() {
 				filters={
 					<Select
 						value={search.filter}
+						items={(Object.keys(FILTER_LABELS) as Filter[]).map((f) => ({
+							value: f,
+							label: FILTER_LABELS[f],
+						}))}
 						onValueChange={(v) => {
 							if (v !== null) setFilter(v as Filter);
 						}}
 					>
 						<SelectTrigger className="w-32">
-							<SelectValue>{FILTER_LABELS[search.filter]}</SelectValue>
+							<SelectValue />
 						</SelectTrigger>
 						<SelectContent>
 							{(Object.keys(FILTER_LABELS) as Filter[]).map((f) => (

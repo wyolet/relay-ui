@@ -72,19 +72,15 @@ export function RelayKeyForm({
 				>
 					<div>
 						<Select
-							value={values.policyId || undefined}
+							value={values.policyId}
+							items={policyOptions}
 							onValueChange={(v) => form.setFieldValue("policyId", v ?? "")}
 						>
 							<SelectTrigger
 								className="w-full max-w-md"
 								aria-invalid={policyIdError ? true : undefined}
 							>
-								<SelectValue placeholder="Pick a policy…">
-									{
-										policyOptions.find((p) => p.value === values.policyId)
-											?.label
-									}
-								</SelectValue>
+								<SelectValue placeholder="Pick a policy…" />
 							</SelectTrigger>
 							<SelectContent>
 								{policyOptions.map((p) => (

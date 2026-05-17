@@ -54,8 +54,6 @@ export function HostKeyForm({ hostKey, onSaved, onCancel }: HostKeyFormProps) {
 		hostOptions,
 		policyOptions,
 		hostSelected,
-		selectedHostLabel,
-		selectedPolicyLabel,
 		attachedPolicies,
 		detachFromPolicy,
 		isDetachPending,
@@ -109,15 +107,14 @@ export function HostKeyForm({ hostKey, onSaved, onCancel }: HostKeyFormProps) {
 							</div>
 							<Select
 								value={values.hostId}
+								items={hostOptions}
 								onValueChange={(v) => setHost(v ?? "")}
 							>
 								<SelectTrigger
 									className="w-full max-w-md"
 									aria-invalid={hostIdError ? true : undefined}
 								>
-									<SelectValue placeholder="Pick a host…">
-										{selectedHostLabel}
-									</SelectValue>
+									<SelectValue placeholder="Pick a host…" />
 								</SelectTrigger>
 								<SelectContent>
 									{hostOptions.map((h) => (
@@ -140,6 +137,7 @@ export function HostKeyForm({ hostKey, onSaved, onCancel }: HostKeyFormProps) {
 							</div>
 							<Select
 								value={values.policyId}
+								items={policyOptions}
 								onValueChange={(v) => setPolicy(v ?? "")}
 								disabled={!hostSelected}
 							>
@@ -155,9 +153,7 @@ export function HostKeyForm({ hostKey, onSaved, onCancel }: HostKeyFormProps) {
 													: "Pick a host policy…"
 												: "Pick a host first…"
 										}
-									>
-										{selectedPolicyLabel}
-									</SelectValue>
+									/>
 								</SelectTrigger>
 								<SelectContent>
 									{policyOptions.map((p) => (

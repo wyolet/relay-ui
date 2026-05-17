@@ -323,18 +323,6 @@ export function useHostKeyForm({
 	);
 
 	const hostSelected = values.hostId !== "";
-	const selectedHostLabel = hostOptions.find((h) => h.value === values.hostId)
-		?.label;
-	// Resolve the saved label from the full policy list, not from the
-	// (host-filtered) dropdown options — older rows or mis-tagged owners may
-	// fall outside the filter, but we still want their name to render.
-	const selectedPolicyLabel = useMemo(() => {
-		if (!values.policyId) return undefined;
-		const match = (policiesData.items ?? []).find(
-			(p) => p.metadata.id === values.policyId,
-		);
-		return match ? displayLabel(match.metadata) : undefined;
-	}, [policiesData.items, values.policyId]);
 
 	function setHost(hostId: string) {
 		form.setFieldValue("hostId", hostId);
@@ -372,8 +360,6 @@ export function useHostKeyForm({
 		hostOptions,
 		policyOptions,
 		hostSelected,
-		selectedHostLabel,
-		selectedPolicyLabel,
 		attachedPolicies,
 		detachFromPolicy,
 		isDetachPending,

@@ -653,6 +653,13 @@ function InferenceRuleRow({
 				</div>
 				<Select
 					value={selectValue}
+					items={[
+						...WINDOW_PRESETS.map((w) => ({
+							value: String(w.value),
+							label: w.label,
+						})),
+						{ value: "custom", label: "Custom…" },
+					]}
 					onValueChange={(v) => {
 						if (v === null) return;
 						if (v === "custom") return;
@@ -660,7 +667,7 @@ function InferenceRuleRow({
 					}}
 				>
 					<SelectTrigger className="w-full">
-						<SelectValue>{preset ? preset.label : "Custom"}</SelectValue>
+						<SelectValue />
 					</SelectTrigger>
 					<SelectContent>
 						{WINDOW_PRESETS.map((w) => (
