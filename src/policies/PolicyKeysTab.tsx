@@ -7,6 +7,7 @@ import type { HostKey } from "@/api/types/hostkey";
 import type { Policy } from "@/api/types/policy";
 import { useDiagnosticGraph } from "@/diagnostics/useDiagnostics";
 import { HostLogo } from "@/hosts/HostLogo";
+import { parseCatalogRef, validateCatalogRef } from "@/lib/catalogRef";
 import { displayLabel } from "@/lib/displayLabel";
 import { usePolicyHostRequirements } from "@/policies/usePolicyHostRequirements";
 
@@ -92,9 +93,14 @@ export function PolicyKeysTab({ policy }: Props) {
 				<Section
 					key={g.ref}
 					title={
-						<span className="font-mono text-foreground">{g.ref}</span>
+						<span className="text-foreground normal-case font-medium">
+							{describeOptionalRef(g.ref)}{" "}
+							<code className="ml-1 font-mono text-[10px] text-muted-foreground">
+								{g.ref}
+							</code>
+						</span>
 					}
-					hint="One key from any candidate satisfies this ref."
+					hint="These models route through more than one host. Set up a key on any one of them — Relay will use whichever has keys."
 				>
 					<div className="flex flex-col gap-3">
 						{g.candidateHostIds.map((id) => {
@@ -347,4 +353,23 @@ function Section({
 			{children}
 		</div>
 	);
+}
+
+/**
+ * Plain-English label for a model-level ref that resolves to multiple hosts.
+ * The raw ref string is shown next to it for operators who use the DSL.
+ */
+function describeOptionalRef(raw: string): string {
+	if (validateCatalogRef(raw)) return raw;
+	const r = parseCatalogRef(raw);
+	const capitalize = (s: string) =>
+		s.charAt(0).toUpperCase() + s.slice(1);
+	switch (r.kind) {
+		case "provider":
+			return `All ${capitalize(r.provider ?? "")} models`;
+		case "model":
+			return `Model ${r.model}`;
+		default:
+			return raw;
+	}
 }
