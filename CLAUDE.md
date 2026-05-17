@@ -99,8 +99,38 @@ Never `useEffect` for fetching, and never store query results in `useState`.
 - Imports use `@/...` for src.
 - Biome owns formatting and lint — run `bun run check` before finishing. `src/components/ui/**` and `src/styles/**` are biome-ignored (vendored / Tailwind directives).
 
-## Layout (current → target)
+## Layout
 
-We currently have a flat layout (`src/components/`, `src/stores/`, `src/api/hooks/`). The target shape — **domain folders** (`src/keys/`, `src/policies/`, `src/models/`, …) each owning `components/ hooks/ types.ts` — is in flight. Until that migration happens, place new domain-specific hooks (`usePolicyForm`, `useCreateRelayKeyForm`, etc.) next to the components that use them and migrate together when you split a domain out.
+**Domain folders** own their components, hooks, and contexts together. Shared infra (api, stores, lib, types) lives outside.
 
-A small `src/components/_legacy/` exists for hand-rolled components we kept around as fallbacks (e.g. the pre-shadcn MultiSelect). Don't import from there in new code.
+```
+src/
+  policies/     PolicyForm, PolicyRLPicker, PolicyHostRequirements, usePolicyForm, …
+  host-keys/    HostKeyForm, SecretRotateDialog, useHostKeyForm, …
+  relay-keys/   RelayKeyForm, useRelayKeyForm
+  rate-limits/  RateLimitForm, AttachRateLimitModal, useRateLimitForm
+  models/       ModelsTable, ModelPicker
+  hosts/        HostsTable, HostLogo
+  shell/        Layout, Sidebar (app chrome, not a domain)
+  shared/       cross-domain primitives: IdentitySection, EnabledField, MultiSelect, …
+  components/ui/  vendored shadcn (biome-ignored)
+
+  api/          OpenAPI-bound services + per-domain queryOptions
+  stores/       zustand
+  lib/          pure utilities (catalogRef, displayLabel, …)
+  diagnostics/  health analyzers
+  config/       constants
+  routes/       TanStack file-based routes (framework-locked)
+```
+
+**Rules** (non-negotiable):
+
+1. **Components, hooks, and contexts stay in their domain folder.** A `.tsx` and its `useXForm.ts` always sit together.
+2. **`.tsx` files never import from `@/api/...` or `@/stores/...` directly.** Wrap them in a domain hook (TQ `queryOptions`, store selector, etc.) and import the hook from the same folder.
+3. **Cross-domain UI/logic lives in the domain that owns the binding** — the higher node in the dependency DAG. Example: `PolicyHostRequirements` derives hosts from a policy's catalog refs → it lives in `policies/`, not in `hosts/`. Don't lift it to `shared/`.
+4. **Dependency direction is downward.** Rough DAG:
+   `relay-keys → policies → { host-keys → hosts, rate-limits, models }`
+   A higher domain may import from a lower one. Reverse is a smell — refactor instead. No circular imports between domains.
+5. **Routes are slim orchestrators.** Parse params → call domain hook → render domain component. No business logic, no cross-domain composition there.
+6. **`shared/`** is for genuinely domain-agnostic primitives only. If you're tempted to put something there, first check whether it's actually one domain reaching into another (lift to that owning domain instead).
+7. **`components/ui/`** is vendored shadcn — owned, not vendored-as-dep; customize freely but treat it as the primitive layer, not a domain.
