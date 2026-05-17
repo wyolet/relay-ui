@@ -12,6 +12,8 @@ import type { Policy } from "@/api/types/policy";
 import { EnabledField } from "@/components/EnabledField";
 import { IdentitySection } from "@/components/IdentitySection";
 import { PolicyAttachedRelayKeys } from "@/components/PolicyAttachedRelayKeys";
+import { PolicyHostRequirements } from "@/components/PolicyHostRequirements";
+import { usePolicyHostRequirements } from "@/components/usePolicyHostRequirements";
 import { analyzePolicy } from "@/diagnostics/analyzers/policy";
 import { DiagnosticList } from "@/diagnostics/DiagnosticList";
 import { useDiagnosticGraph } from "@/diagnostics/useDiagnostics";
@@ -66,6 +68,12 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 	// Live diagnostics: synthesize a draft policy from form values and run
 	// the analyzer against it. Updates on every field change so warnings
 	// disappear as soon as the user fixes them — no Save round-trip needed.
+	const hostRequirements = usePolicyHostRequirements(
+		values.models,
+		values.hostKeyIds,
+		values.includeDeprecated,
+	);
+
 	const graph = useDiagnosticGraph();
 	const draftDiagnostics = useMemo(
 		() => analyzePolicy(policyFromFormValues(policy, values), graph),
@@ -136,22 +144,30 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 					title="Host keys"
 					description="Credentials Relay rotates through when calls hit this policy."
 				>
-					<p className="mb-2 text-sm text-muted-foreground">
-						Order is preserved — Relay tries them top-to-bottom on rate-limit
-						errors.
-					</p>
-					<MultiSelect
-						options={hostKeyOptions}
-						selected={values.hostKeyIds}
+					<PolicyHostRequirements
+						requirements={hostRequirements}
+						selectedHostKeyIds={values.hostKeyIds}
 						onChange={(next) => form.setFieldValue("hostKeyIds", next)}
-						placeholder="Attach host keys…"
-						emptyHint="No host keys defined."
-						aria-label="Host keys"
 					/>
-					<p className="mt-1.5 text-[11px] text-muted-foreground">
-						No keys means relay keys using this policy will fail until you
-						attach at least one.
-					</p>
+
+					<div className="mt-4">
+						<div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-1">
+							Additional keys
+						</div>
+						<p className="mb-2 text-[11px] text-muted-foreground">
+							Attach extra keys beyond what your catalog selection requires.
+							Order is preserved — Relay tries them top-to-bottom on rate-limit
+							errors.
+						</p>
+						<MultiSelect
+							options={hostKeyOptions}
+							selected={values.hostKeyIds}
+							onChange={(next) => form.setFieldValue("hostKeyIds", next)}
+							placeholder="Attach host keys…"
+							emptyHint="No host keys defined."
+							aria-label="Host keys"
+						/>
+					</div>
 
 					<div className="mt-4">
 						<div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-1">
