@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
-import { CheckCircle2, Circle, KeyRound } from "lucide-react";
+import { KeyRound } from "lucide-react";
+import { useMemo } from "react";
 import { useHostKeys } from "@/api/hooks/hostkeys";
 import { useHosts } from "@/api/hooks/hosts";
 import type { Host } from "@/api/types/host";
@@ -7,369 +8,210 @@ import type { HostKey } from "@/api/types/hostkey";
 import type { Policy } from "@/api/types/policy";
 import { useDiagnosticGraph } from "@/diagnostics/useDiagnostics";
 import { HostLogo } from "@/hosts/HostLogo";
-import { parseCatalogRef, validateCatalogRef } from "@/lib/catalogRef";
 import { displayLabel } from "@/lib/displayLabel";
 import { usePolicyHostRequirements } from "@/policies/usePolicyHostRequirements";
+import { AlertBanner } from "@/shared/AlertBanner";
 
 interface Props {
 	policy: Policy;
 }
 
+interface Row {
+	key: HostKey;
+	host: Host | undefined;
+	otherPolicies: number;
+}
+
 /**
- * Per-host detail view. Each host card shows host status, selected key
- * status, alternative keys defined for the same host, and how many other
- * policies reuse the selected key.
+ * Flat table of every host key attached to this policy. All attached keys
+ * are equal — Relay rotates across them. We don't visually rank one as
+ * "primary" because that's not how routing works.
  */
 export function PolicyKeysTab({ policy }: Props) {
+	const { data: hostKeysData } = useHostKeys();
+	const { data: hostsData } = useHosts();
+	const graph = useDiagnosticGraph();
 	const requirements = usePolicyHostRequirements(
 		policy.spec.models ?? [],
 		policy.spec.hostKeyIds ?? [],
 		policy.spec.includeDeprecated ?? false,
 	);
-	const { data: hostKeysData } = useHostKeys();
-	const { data: hostsData } = useHosts();
-	const graph = useDiagnosticGraph();
-
-	const allHostKeys = hostKeysData.items ?? [];
-	const hostsById = new Map<string, Host>();
-	for (const h of hostsData.items ?? []) {
-		if (h.metadata.id) hostsById.set(h.metadata.id, h);
-	}
-
-	const selectedKeyIds = new Set(policy.spec.hostKeyIds ?? []);
-	const selectedKeys = allHostKeys.filter((k) =>
-		k.metadata.id ? selectedKeyIds.has(k.metadata.id) : false,
-	);
 
 	const policyId = policy.metadata.id;
+	const attachedIds = policy.spec.hostKeyIds ?? [];
 
-	const requiredHostIds = new Set(
-		requirements.groups
+	const rows = useMemo<Row[]>(() => {
+		const hostsById = new Map<string, Host>();
+		for (const h of hostsData.items ?? []) {
+			if (h.metadata.id) hostsById.set(h.metadata.id, h);
+		}
+		const keysById = new Map<string, HostKey>();
+		for (const k of hostKeysData.items ?? []) {
+			if (k.metadata.id) keysById.set(k.metadata.id, k);
+		}
+		const out: Row[] = [];
+		for (const id of attachedIds) {
+			const key = keysById.get(id);
+			if (!key) continue;
+			const host = hostsById.get(key.spec.hostId);
+			const otherPolicies = (graph.policiesByHostKeyId.get(id) ?? []).filter(
+				(p) => (p.metadata.id ?? p.metadata.name) !== policyId,
+			).length;
+			out.push({ key, host, otherPolicies });
+		}
+		out.sort((a, b) => {
+			const ha = a.host ? displayLabel(a.host.metadata) : "";
+			const hb = b.host ? displayLabel(b.host.metadata) : "";
+			return (
+				ha.localeCompare(hb) ||
+				displayLabel(a.key.metadata).localeCompare(displayLabel(b.key.metadata))
+			);
+		});
+		return out;
+	}, [attachedIds, hostKeysData, hostsData, graph, policyId]);
+
+	const requiredHostIdsWithoutKey = useMemo(() => {
+		const attachedHostIds = new Set<string>();
+		for (const r of rows) {
+			if (r.host?.metadata.id) attachedHostIds.add(r.host.metadata.id);
+		}
+		return requirements.groups
 			.filter((g) => g.kind === "required")
-			.flatMap((g) => g.candidateHostIds),
-	);
-	const optionalGroups = requirements.groups.filter(
-		(g) => g.kind === "optional",
-	);
+			.flatMap((g) => g.candidateHostIds)
+			.filter((id) => !attachedHostIds.has(id));
+	}, [rows, requirements.groups]);
 
-	if (requiredHostIds.size === 0 && optionalGroups.length === 0) {
+	if (rows.length === 0) {
 		return (
 			<div className="rounded-md border border-dashed border-border bg-muted/30 px-4 py-6 text-center mt-2">
 				<div className="text-sm font-medium text-foreground">
-					Nothing to attach
+					No host keys attached
 				</div>
 				<div className="mt-0.5 text-xs text-muted-foreground">
-					Pick models on the Models tab and Relay will list which hosts need
-					keys.
+					Pick models on the Models tab, then attach host keys in the edit form.
 				</div>
 			</div>
 		);
 	}
 
 	return (
-		<div className="flex flex-col gap-6 pt-2">
-			{requiredHostIds.size > 0 && (
-				<Section title="Required hosts">
-					<div className="flex flex-col gap-3">
-						{Array.from(requiredHostIds).map((id) => {
-							const req = requirements.hosts.get(id);
-							if (!req) return null;
-							return (
-								<HostCard
-									key={id}
-									host={req.host}
-									hostKeys={req.hostKeys}
-									selectedKeyId={req.selectedKeyId}
-									graph={graph}
-									currentPolicyId={policyId}
-								/>
-							);
-						})}
-					</div>
-				</Section>
+		<div className="flex flex-col gap-3 pt-2">
+			{requiredHostIdsWithoutKey.length > 0 && (
+				<GapWarning
+					hostIds={requiredHostIdsWithoutKey}
+					hosts={requirements.hosts}
+				/>
 			)}
 
-			{optionalGroups.map((g) => (
-				<Section
-					key={g.ref}
-					title={
-						<span className="text-foreground normal-case font-medium">
-							{describeOptionalRef(g.ref)}{" "}
-							<code className="ml-1 font-mono text-[10px] text-muted-foreground">
-								{g.ref}
-							</code>
-						</span>
-					}
-					hint="These models route through more than one host. Set up a key on any one of them — Relay will use whichever has keys."
-				>
-					<div className="flex flex-col gap-3">
-						{g.candidateHostIds.map((id) => {
-							const req = requirements.hosts.get(id);
-							if (!req) return null;
-							return (
-								<HostCard
-									key={id}
-									host={req.host}
-									hostKeys={req.hostKeys}
-									selectedKeyId={req.selectedKeyId}
-									graph={graph}
-									currentPolicyId={policyId}
-								/>
-							);
-						})}
-					</div>
-				</Section>
-			))}
-
-			{requirements.extraSelectedKeyIds.length > 0 && (
-				<Section
-					title="Additional keys"
-					hint="Attached beyond what the catalog refs imply — Relay still uses them in rotation."
-				>
-					<ul className="divide-y divide-border rounded-md border border-border">
-						{requirements.extraSelectedKeyIds.map((keyId) => {
-							const key = selectedKeys.find((k) => k.metadata.id === keyId);
-							if (!key) return null;
-							const host = hostsById.get(key.spec.hostId);
-							return (
-								<li
-									key={keyId}
-									className="flex items-center gap-3 px-3 py-2 text-sm"
-								>
-									{host ? (
-										<HostLogo host={host} size={20} />
-									) : (
-										<div className="w-5 h-5 rounded bg-muted" aria-hidden />
-									)}
-									<div className="flex-1 min-w-0">
-										<div className="text-foreground truncate">
-											{displayLabel(key.metadata)}
-										</div>
-										<div className="text-[11px] text-muted-foreground truncate">
-											{host ? displayLabel(host.metadata) : "unknown host"}
-										</div>
-									</div>
-								</li>
-							);
-						})}
-					</ul>
-				</Section>
-			)}
+			<div className="rounded-md border border-border bg-card overflow-hidden">
+				<table className="w-full text-sm">
+					<thead>
+						<tr className="border-b border-border bg-muted/30 text-left">
+							<th className="px-3 py-1.5 text-[10px] uppercase tracking-wide text-muted-foreground font-medium">
+								Key
+							</th>
+							<th className="px-3 py-1.5 text-[10px] uppercase tracking-wide text-muted-foreground font-medium">
+								Host
+							</th>
+							<th className="px-3 py-1.5 text-[10px] uppercase tracking-wide text-muted-foreground font-medium">
+								Status
+							</th>
+							<th className="px-3 py-1.5 text-[10px] uppercase tracking-wide text-muted-foreground font-medium text-right">
+								Shared with
+							</th>
+						</tr>
+					</thead>
+					<tbody className="divide-y divide-border">
+						{rows.map((row) => (
+							<KeyRow key={row.key.metadata.id} row={row} />
+						))}
+					</tbody>
+				</table>
+			</div>
 		</div>
 	);
 }
 
-interface HostCardProps {
-	host: Host;
-	hostKeys: HostKey[];
-	selectedKeyId: string | undefined;
-	graph: ReturnType<typeof useDiagnosticGraph>;
-	currentPolicyId: string | undefined;
-}
-
-function HostCard({
-	host,
-	hostKeys,
-	selectedKeyId,
-	graph,
-	currentPolicyId,
-}: HostCardProps) {
-	const hostEnabled = host.spec.enabled !== false;
-	const selectedKey = hostKeys.find((k) => k.metadata.id === selectedKeyId);
-	const selectedKeyEnabled = selectedKey
-		? selectedKey.spec.enabled !== false
-		: false;
-	const alternativeKeys = hostKeys.filter(
-		(k) => k.metadata.id !== selectedKeyId,
-	);
-	const satisfied = !!selectedKey && selectedKeyEnabled && hostEnabled;
-
-	// Cross-policy usage of the selected key.
-	const otherPoliciesCount =
-		selectedKey && selectedKey.metadata.id
-			? (graph.policiesByHostKeyId.get(selectedKey.metadata.id) ?? []).filter(
-					(p) => (p.metadata.id ?? p.metadata.name) !== currentPolicyId,
-				).length
-			: 0;
-
+function KeyRow({ row }: { row: Row }) {
+	const { key, host, otherPolicies } = row;
+	const keyEnabled = key.spec.enabled !== false;
+	const hostEnabled = host ? host.spec.enabled !== false : false;
 	return (
-		<article className="rounded-md border border-border bg-card overflow-hidden">
-			<header className="flex items-center gap-3 px-3 py-2 border-b border-border bg-muted/30">
-				<HostLogo host={host} size={20} />
-				<div className="flex-1 min-w-0">
+		<tr className="hover:bg-muted/40">
+			<td className="px-3 py-2">
+				<div className="flex items-center gap-2 min-w-0">
+					<KeyRound
+						className="w-3.5 h-3.5 text-muted-foreground shrink-0"
+						aria-hidden
+					/>
 					<Link
-						to="/host-keys"
-						className="text-sm font-medium text-foreground hover:underline truncate"
+						to="/host-keys/$name"
+						params={{ name: key.metadata.name }}
+						className="text-foreground hover:underline truncate"
 					>
-						{displayLabel(host.metadata)}
+						{displayLabel(key.metadata)}
 					</Link>
-					<div className="text-[11px] text-muted-foreground truncate font-mono">
-						{host.metadata.name}
-					</div>
 				</div>
-				<HealthBadge enabled={hostEnabled} label="host" />
-				{satisfied ? (
-					<CheckCircle2
-						className="h-4 w-4 text-emerald-500"
-						aria-label="satisfied"
-					/>
+			</td>
+			<td className="px-3 py-2">
+				{host ? (
+					<div className="flex items-center gap-2 min-w-0">
+						<HostLogo host={host} size={16} />
+						<span className="text-foreground truncate">
+							{displayLabel(host.metadata)}
+						</span>
+					</div>
 				) : (
-					<Circle
-						className="h-4 w-4 text-amber-500"
-						aria-label="not satisfied"
-					/>
+					<span className="text-[11px] text-destructive">missing host</span>
 				)}
-			</header>
-
-			<div className="px-3 py-2 flex flex-col gap-2">
-				<div className="flex items-center gap-3">
-					<div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground w-20 shrink-0">
-						Selected
-					</div>
-					<div className="flex-1 min-w-0">
-						{selectedKey ? (
-							<div className="flex items-center gap-2 min-w-0">
-								<KeyRound
-									className="w-3.5 h-3.5 text-muted-foreground shrink-0"
-									aria-hidden
-								/>
-								<Link
-									to="/host-keys/$name"
-									params={{ name: selectedKey.metadata.name }}
-									className="text-sm text-foreground truncate hover:underline"
-								>
-									{displayLabel(selectedKey.metadata)}
-								</Link>
-								<HealthBadge enabled={selectedKeyEnabled} label="key" />
-								{otherPoliciesCount > 0 && (
-									<span className="ml-auto text-[11px] text-muted-foreground whitespace-nowrap">
-										also used by {otherPoliciesCount}{" "}
-										other polic{otherPoliciesCount === 1 ? "y" : "ies"}
-									</span>
-								)}
-							</div>
-						) : hostKeys.length > 0 ? (
-							<div className="text-[11px] text-amber-600 dark:text-amber-400">
-								No key selected — pick one of the {hostKeys.length} available
-								below in edit.
-							</div>
-						) : (
-							<div className="text-[11px] text-amber-600 dark:text-amber-400">
-								No keys for this host. Create one before enabling the policy.
-							</div>
-						)}
-					</div>
+			</td>
+			<td className="px-3 py-2">
+				<div className="flex items-center gap-1.5">
+					<StatusPill enabled={keyEnabled} label="key" />
+					{host && !hostEnabled && <StatusPill enabled={false} label="host" />}
 				</div>
-
-				{alternativeKeys.length > 0 && (
-					<div className="flex items-start gap-3">
-						<div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground w-20 shrink-0 mt-1">
-							Alternatives
-						</div>
-						<ul className="flex-1 flex flex-col gap-1 min-w-0">
-							{alternativeKeys.map((k) => (
-								<li
-									key={k.metadata.id}
-									className="flex items-center gap-2 text-[12px] min-w-0"
-								>
-									<KeyRound
-										className="w-3 h-3 text-muted-foreground/70 shrink-0"
-										aria-hidden
-									/>
-									<Link
-										to="/host-keys/$name"
-										params={{ name: k.metadata.name }}
-										className="text-muted-foreground truncate hover:text-foreground hover:underline"
-									>
-										{displayLabel(k.metadata)}
-									</Link>
-									<HealthBadge
-										enabled={k.spec.enabled !== false}
-										label="key"
-										subtle
-									/>
-								</li>
-							))}
-						</ul>
-					</div>
-				)}
-			</div>
-		</article>
+			</td>
+			<td className="px-3 py-2 text-right text-[11px] text-muted-foreground tabular-nums">
+				{otherPolicies === 0
+					? "—"
+					: `${otherPolicies} other polic${otherPolicies === 1 ? "y" : "ies"}`}
+			</td>
+		</tr>
 	);
 }
 
-function HealthBadge({
-	enabled,
-	label,
-	subtle,
-}: {
-	enabled: boolean;
-	label: string;
-	subtle?: boolean;
-}) {
-	const base =
-		"inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border whitespace-nowrap";
+function StatusPill({ enabled, label }: { enabled: boolean; label: string }) {
 	if (enabled) {
 		return (
-			<span
-				className={`${base} ${
-					subtle
-						? "bg-transparent text-muted-foreground border-transparent"
-						: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-200/60 dark:border-emerald-900/60"
-				}`}
-			>
+			<span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-900/60 whitespace-nowrap">
 				{label} on
 			</span>
 		);
 	}
 	return (
-		<span
-			className={`${base} bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300 border-amber-200/60 dark:border-amber-900/60`}
-		>
+		<span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300 border border-amber-200/60 dark:border-amber-900/60 whitespace-nowrap">
 			{label} off
 		</span>
 	);
 }
 
-function Section({
-	title,
-	hint,
-	children,
+function GapWarning({
+	hostIds,
+	hosts,
 }: {
-	title: React.ReactNode;
-	hint?: string;
-	children: React.ReactNode;
+	hostIds: string[];
+	hosts: Map<string, { host: Host }>;
 }) {
+	const labels = hostIds
+		.map((id) => hosts.get(id)?.host)
+		.filter((h): h is Host => !!h)
+		.map((h) => displayLabel(h.metadata));
+	if (labels.length === 0) return null;
 	return (
-		<div>
-			<div className="mb-1.5">
-				<div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-					{title}
-				</div>
-				{hint && (
-					<div className="text-[11px] text-muted-foreground">{hint}</div>
-				)}
-			</div>
-			{children}
-		</div>
+		<AlertBanner severity="warn">
+			No key attached for required host
+			{labels.length === 1 ? "" : "s"}: {labels.join(", ")}. Models routed there
+			will fail until you attach a key.
+		</AlertBanner>
 	);
-}
-
-/**
- * Plain-English label for a model-level ref that resolves to multiple hosts.
- * The raw ref string is shown next to it for operators who use the DSL.
- */
-function describeOptionalRef(raw: string): string {
-	if (validateCatalogRef(raw)) return raw;
-	const r = parseCatalogRef(raw);
-	const capitalize = (s: string) =>
-		s.charAt(0).toUpperCase() + s.slice(1);
-	switch (r.kind) {
-		case "provider":
-			return `All ${capitalize(r.provider ?? "")} models`;
-		case "model":
-			return `Model ${r.model}`;
-		default:
-			return raw;
-	}
 }

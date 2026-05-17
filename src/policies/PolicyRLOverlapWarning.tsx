@@ -1,4 +1,3 @@
-import { AlertTriangle } from "lucide-react";
 import {
 	type Carveout,
 	hostLabel,
@@ -7,6 +6,7 @@ import {
 	modelLabel,
 } from "@/lib/policyRLResolution";
 import type { RLMeta } from "@/rate-limits/AttachRateLimitModal";
+import { AlertBanner } from "@/shared/AlertBanner";
 
 interface Props {
 	carveouts: Carveout[];
@@ -33,25 +33,14 @@ export function PolicyRLOverlapWarning({
 	}
 
 	return (
-		<div className="rounded-md border border-amber-500/40 bg-amber-500/5">
-			<div className="flex items-start gap-2 px-3 py-2">
-				<AlertTriangle
-					className="w-3.5 h-3.5 mt-0.5 text-amber-600 shrink-0"
-					aria-hidden="true"
-				/>
-				<div className="flex-1 min-w-0">
-					<div className="text-[12px] font-medium text-foreground">
-						{carveouts.length === 1
-							? "1 model overlaps between rate limits"
-							: `${carveouts.length} models overlap between rate limits`}
-					</div>
-					<p className="text-[11px] text-muted-foreground">
-						The most specific rule wins (host &gt; model &gt; provider). Ties
-						go to whichever rate limit is listed first.
-					</p>
-				</div>
-			</div>
-			<div className="overflow-hidden border-t border-amber-500/30">
+		<AlertBanner
+			severity="warn"
+			title={
+				carveouts.length === 1
+					? "1 model overlaps between rate limits"
+					: `${carveouts.length} models overlap between rate limits`
+			}
+			body={
 				<table className="w-full text-[11px]">
 					<thead className="bg-amber-500/10 text-muted-foreground">
 						<tr>
@@ -113,7 +102,10 @@ export function PolicyRLOverlapWarning({
 						})}
 					</tbody>
 				</table>
-			</div>
-		</div>
+			}
+		>
+			The most specific rule wins (host &gt; model &gt; provider). Ties go to
+			whichever rate limit is listed first.
+		</AlertBanner>
 	);
 }

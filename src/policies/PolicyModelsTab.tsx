@@ -1,5 +1,6 @@
-import { useMemo } from "react";
 import { Link } from "@tanstack/react-router";
+import { ChevronDown, ChevronRight } from "lucide-react";
+import { useMemo, useState } from "react";
 import { useHosts } from "@/api/hooks/hosts";
 import { useModels } from "@/api/hooks/models";
 import { useProviders } from "@/api/hooks/providers";
@@ -144,8 +145,15 @@ interface HostGroupProps {
 	bindings: ConcreteBinding[];
 }
 
+const COLLAPSE_THRESHOLD = 6;
+
 function HostGroup({ host, hostSlug, bindings }: HostGroupProps) {
 	const hostEnabled = host ? host.spec.enabled !== false : false;
+	const [expanded, setExpanded] = useState(false);
+	const showToggle = bindings.length > COLLAPSE_THRESHOLD;
+	const visible = expanded ? bindings : bindings.slice(0, COLLAPSE_THRESHOLD);
+	const hiddenCount = bindings.length - visible.length;
+
 	return (
 		<section className="rounded-md border border-border bg-card overflow-hidden">
 			<header className="flex items-center gap-3 px-3 py-2 border-b border-border bg-muted/30">
@@ -175,7 +183,7 @@ function HostGroup({ host, hostSlug, bindings }: HostGroupProps) {
 			</header>
 
 			<ul className="divide-y divide-border">
-				{bindings.map((b) => (
+				{visible.map((b) => (
 					<li
 						key={`${b.provider}/${b.model}`}
 						className="flex items-center gap-3 px-3 py-1.5 text-sm hover:bg-muted/40"
@@ -195,6 +203,25 @@ function HostGroup({ host, hostSlug, bindings }: HostGroupProps) {
 					</li>
 				))}
 			</ul>
+
+			{showToggle && (
+				<button
+					type="button"
+					onClick={() => setExpanded((v) => !v)}
+					className="w-full px-3 py-1.5 text-[11px] text-muted-foreground hover:text-foreground hover:bg-muted/40 flex items-center justify-center gap-1 border-t border-border"
+				>
+					{expanded ? (
+						<>
+							<ChevronDown className="w-3 h-3" /> Show fewer
+						</>
+					) : (
+						<>
+							<ChevronRight className="w-3 h-3" />
+							Show all models ({hiddenCount} more)
+						</>
+					)}
+				</button>
+			)}
 		</section>
 	);
 }
