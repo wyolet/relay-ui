@@ -18,7 +18,7 @@ import {
 	type RateLimitStrategy,
 	STRATEGY_VALUES,
 	useRateLimitForm,
-} from "@/components/useRateLimitForm";
+} from "@/rate-limits/useRateLimitForm";
 import {
 	digitsOnly,
 	formatThousands,

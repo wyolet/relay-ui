@@ -20,7 +20,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { useHostKeyForm } from "@/components/useHostKeyForm";
+import { useHostKeyForm } from "@/host-keys/useHostKeyForm";
 
 const KIND_OPTIONS: Record<HostKeyKind, { label: string; hint: string }> = {
 	stored: {

@@ -21,10 +21,10 @@ import { providersListQueryOptions } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
 import { relayKeysListQueryOptions } from "@/api/hooks/relayKeys";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
-import { SecretRotateDialog } from "@/components/SecretRotateDialog";
+import { SecretRotateDialog } from "@/host-keys/SecretRotateDialog";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { useHostKeyDetail } from "@/components/useHostKeyDetail";
+import { useHostKeyDetail } from "@/host-keys/useHostKeyDetail";
 import { DiagnosticList } from "@/diagnostics/DiagnosticList";
 import { useHostKeyDiagnostics } from "@/diagnostics/useDiagnostics";
 
