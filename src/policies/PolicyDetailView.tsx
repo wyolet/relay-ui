@@ -71,7 +71,11 @@ export function PolicyDetailView({
 			>
 				<TabsList variant="line" className="border-b border-border w-full justify-start">
 					{TABS.map(({ value, label, icon: Icon }) => (
-						<TabsTrigger key={value} value={value} className="px-3 h-9">
+						<TabsTrigger
+							key={value}
+							value={value}
+							className="flex-none px-3 h-9"
+						>
 							<Icon className="w-3.5 h-3.5" aria-hidden />
 							{label}
 						</TabsTrigger>
