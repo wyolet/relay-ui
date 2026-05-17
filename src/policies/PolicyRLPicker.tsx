@@ -27,7 +27,7 @@ import {
 	type RefStats,
 } from "@/lib/policyRLResolution";
 import { formatRulesShort } from "@/lib/rateLimitFormat";
-import type { RLBindingValue } from "@/components/usePolicyForm";
+import type { RLBindingValue } from "@/policies/usePolicyForm";
 
 interface PolicyRLPickerProps {
 	bindings: RLBindingValue[];

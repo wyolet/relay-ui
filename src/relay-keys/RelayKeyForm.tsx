@@ -11,7 +11,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { useRelayKeyForm } from "@/components/useRelayKeyForm";
+import { useRelayKeyForm } from "@/relay-keys/useRelayKeyForm";
 import { displayLabel } from "@/lib/displayLabel";
 
 interface RelayKeyFormProps {

@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Check, ChevronLeft, Copy } from "lucide-react";
 import { Suspense, useState } from "react";
 import { policiesListQueryOptions } from "@/api/hooks/policies";
-import { RelayKeyForm } from "@/components/RelayKeyForm";
+import { RelayKeyForm } from "@/relay-keys/RelayKeyForm";
 import { toast } from "@/shared/Toast";
 import { Button } from "@/components/ui/button";
 

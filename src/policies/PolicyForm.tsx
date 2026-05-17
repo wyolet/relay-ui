@@ -11,16 +11,16 @@ import { useHostKeys } from "@/api/hooks/hostkeys";
 import type { Policy } from "@/api/types/policy";
 import { EnabledField } from "@/shared/EnabledField";
 import { IdentitySection } from "@/shared/IdentitySection";
-import { PolicyAttachedRelayKeys } from "@/components/PolicyAttachedRelayKeys";
-import { PolicyHostRequirements } from "@/components/PolicyHostRequirements";
-import { usePolicyHostRequirements } from "@/components/usePolicyHostRequirements";
+import { PolicyAttachedRelayKeys } from "@/policies/PolicyAttachedRelayKeys";
+import { PolicyHostRequirements } from "@/policies/PolicyHostRequirements";
+import { usePolicyHostRequirements } from "@/policies/usePolicyHostRequirements";
 import { analyzePolicy } from "@/diagnostics/analyzers/policy";
 import { DiagnosticList } from "@/diagnostics/DiagnosticList";
 import { useDiagnosticGraph } from "@/diagnostics/useDiagnostics";
 import { IncludeDeprecatedSwitch } from "@/shared/IncludeDeprecatedSwitch";
 import { ModelPicker } from "@/models/ModelPicker";
 import { MultiSelect } from "@/shared/MultiSelect";
-import { PolicyRLPicker } from "@/components/PolicyRLPicker";
+import { PolicyRLPicker } from "@/policies/PolicyRLPicker";
 import {
 	Select,
 	SelectContent,
@@ -29,7 +29,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { displayLabel } from "@/lib/displayLabel";
-import { policyFromFormValues, usePolicyForm } from "@/components/usePolicyForm";
+import { policyFromFormValues, usePolicyForm } from "@/policies/usePolicyForm";
 import {
 	KEY_SELECTION_OPTIONS,
 	KEY_SELECTION_VALUES,

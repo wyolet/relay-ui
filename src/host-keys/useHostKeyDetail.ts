@@ -4,7 +4,7 @@ import { useHosts } from "@/api/hooks/hosts";
 import { usePolicies } from "@/api/hooks/policies";
 import { ApiError } from "@/api/types/errors";
 import { toast } from "@/shared/Toast";
-import { useDetachHostKeyFromPolicy } from "@/components/useDetachHostKeyFromPolicy";
+import { useDetachHostKeyFromPolicy } from "@/policies/useDetachHostKeyFromPolicy";
 import type { ReferencingPolicyView } from "@/host-keys/useHostKeyForm";
 import { useToggleHostKeyEnabled } from "@/host-keys/useToggleHostKeyEnabled";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";

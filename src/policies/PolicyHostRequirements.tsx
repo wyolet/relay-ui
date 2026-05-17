@@ -10,7 +10,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { displayLabel } from "@/lib/displayLabel";
-import type { PolicyHostRequirements as Requirements } from "@/components/usePolicyHostRequirements";
+import type { PolicyHostRequirements as Requirements } from "@/policies/usePolicyHostRequirements";
 
 interface Props {
 	requirements: Requirements;

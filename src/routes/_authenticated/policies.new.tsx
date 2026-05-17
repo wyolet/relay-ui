@@ -8,7 +8,7 @@ import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
 import { policiesListQueryOptions } from "@/api/hooks/policies";
 import { relayKeysListQueryOptions } from "@/api/hooks/relayKeys";
-import { PolicyForm } from "@/components/PolicyForm";
+import { PolicyForm } from "@/policies/PolicyForm";
 
 export const Route = createFileRoute("/_authenticated/policies/new")({
 	loader: ({ context }) =>
