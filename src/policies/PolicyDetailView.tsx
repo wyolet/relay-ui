@@ -12,8 +12,6 @@ import {
 } from "lucide-react";
 import type { Policy } from "@/api/types/policy";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { DiagnosticList } from "@/diagnostics/DiagnosticList";
-import { usePolicyDiagnostics } from "@/diagnostics/useDiagnostics";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { PolicyAttachedRelayKeys } from "@/policies/PolicyAttachedRelayKeys";
 import { PolicyKeysTab } from "@/policies/PolicyKeysTab";
@@ -61,7 +59,6 @@ export function PolicyDetailView({
 	deleting,
 	toggling,
 }: Props) {
-	const diagnostics = usePolicyDiagnostics(policy.metadata.id);
 	const enabled = policy.spec.enabled !== false;
 
 	return (
@@ -74,8 +71,6 @@ export function PolicyDetailView({
 				deleting={deleting}
 				toggling={toggling}
 			/>
-
-			{diagnostics.length > 0 && <DiagnosticList diagnostics={diagnostics} />}
 
 			<Tabs
 				value={tab}

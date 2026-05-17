@@ -1,6 +1,8 @@
 import { Suspense } from "react";
 import { usePolicyReferences } from "@/api/hooks/policies";
 import type { Policy } from "@/api/types/policy";
+import { DiagnosticList } from "@/diagnostics/DiagnosticList";
+import { usePolicyDiagnostics } from "@/diagnostics/useDiagnostics";
 import { displayLabel } from "@/lib/displayLabel";
 
 interface Props {
@@ -16,6 +18,8 @@ export function PolicyOverviewTab({ policy }: Props) {
 
 	return (
 		<div className="flex flex-col gap-6">
+			<IssuesPanel policyId={policy.metadata.id} />
+
 			<section className="grid grid-cols-2 sm:grid-cols-4 gap-3">
 				<StatCard label="Catalog refs" value={refsCount} />
 				<StatCard label="Host keys" value={hkCount} />
@@ -71,6 +75,34 @@ export function PolicyOverviewTab({ policy }: Props) {
 			{/* keeps the unused expression around to silence biome no-unused-vars without disabling */}
 			{created ? <span hidden>{created}</span> : null}
 		</div>
+	);
+}
+
+function IssuesPanel({ policyId }: { policyId: string | undefined }) {
+	const diagnostics = usePolicyDiagnostics(policyId);
+	if (diagnostics.length === 0) return null;
+	const counts = {
+		error: diagnostics.filter((d) => d.severity === "error").length,
+		warn: diagnostics.filter((d) => d.severity === "warn").length,
+		info: diagnostics.filter((d) => d.severity === "info").length,
+	};
+	const summary = [
+		counts.error && `${counts.error} error${counts.error === 1 ? "" : "s"}`,
+		counts.warn && `${counts.warn} warning${counts.warn === 1 ? "" : "s"}`,
+		counts.info && `${counts.info} info`,
+	]
+		.filter(Boolean)
+		.join(" · ");
+	return (
+		<section>
+			<div className="mb-2 flex items-baseline justify-between gap-2">
+				<SectionTitle>Issues</SectionTitle>
+				<span className="text-[10px] text-muted-foreground tabular-nums">
+					{summary}
+				</span>
+			</div>
+			<DiagnosticList diagnostics={diagnostics} />
+		</section>
 	);
 }
 

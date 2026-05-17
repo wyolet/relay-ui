@@ -10,7 +10,7 @@ import type { RateLimit, RateLimitRule } from "@/api/types/ratelimit";
 import {
 	parseCatalogRef,
 	refCovers,
-	refIncludesRef,
+	refsOverlap,
 	validateCatalogRef,
 } from "@/lib/catalogRef";
 import { buildConcreteCatalog } from "@/lib/concreteCatalog";
@@ -19,6 +19,7 @@ import { formatRuleShort } from "@/lib/rateLimitFormat";
 import { nsToSec } from "@/lib/timeWindow";
 import { PolicyRLOverlapWarning } from "@/policies/PolicyRLOverlapWarning";
 import { usePolicyRLResolution } from "@/policies/usePolicyRLResolution";
+import { usePolicyUnthrottledModels } from "@/policies/usePolicyUnthrottledModels";
 import { AlertBanner } from "@/shared/AlertBanner";
 
 interface Props {
@@ -70,7 +71,7 @@ export function PolicyRateLimitsTab({ policy }: Props) {
 		return refs.filter((raw) => {
 			if (validateCatalogRef(raw)) return false;
 			const scope = parseCatalogRef(raw);
-			return !grantRefs.some((g) => refIncludesRef(g, scope));
+			return !grantRefs.some((g) => refsOverlap(g, scope));
 		});
 	}
 
@@ -91,6 +92,7 @@ export function PolicyRateLimitsTab({ policy }: Props) {
 	return (
 		<div className="flex flex-col gap-5 pt-2">
 			<OverlapBanner policy={policy} />
+			<UnthrottledModelsPanel policy={policy} />
 			{globalId && (
 				<BindingPanel
 					title="Default"
@@ -118,6 +120,59 @@ export function PolicyRateLimitsTab({ policy }: Props) {
 				);
 			})}
 		</div>
+	);
+}
+
+function UnthrottledModelsPanel({ policy }: { policy: Policy }) {
+	const { rows } = usePolicyUnthrottledModels(policy);
+	if (rows.length === 0) return null;
+	return (
+		<AlertBanner
+			severity="info"
+			title={`${rows.length} model${rows.length === 1 ? "" : "s"} pass without rate limits`}
+			body={
+				<table className="w-full text-[11px]">
+					<thead className="bg-sky-500/10 text-muted-foreground">
+						<tr>
+							<th
+								scope="col"
+								className="px-3 py-1.5 text-left font-medium text-[10px] uppercase tracking-wide"
+							>
+								Model
+							</th>
+							<th
+								scope="col"
+								className="px-3 py-1.5 text-left font-medium text-[10px] uppercase tracking-wide"
+							>
+								Hosts
+							</th>
+						</tr>
+					</thead>
+					<tbody>
+						{rows.map((r) => (
+							<tr
+								key={`${r.provider}/${r.model}`}
+								className="border-t border-sky-500/20"
+							>
+								<td className="px-3 py-1.5">
+									<span className="text-foreground">{r.modelLabel}</span>
+									<code className="ml-1.5 font-mono text-[10px] text-muted-foreground">
+										{r.provider}/{r.model}
+									</code>
+								</td>
+								<td className="px-3 py-1.5 text-foreground">
+									{r.hosts.map((h) => h.label).join(", ")}
+								</td>
+							</tr>
+						))}
+					</tbody>
+				</table>
+			}
+		>
+			These models are granted by the policy's catalog but no rate-limit
+			binding covers them. Requests will pass without throttling — fine if
+			intentional, otherwise scope a rate limit at them.
+		</AlertBanner>
 	);
 }
 

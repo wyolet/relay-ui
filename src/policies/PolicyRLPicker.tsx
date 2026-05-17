@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	parseCatalogRef,
-	refIncludesRef,
+	refsOverlap,
 	validateCatalogRef,
 } from "@/lib/catalogRef";
 import {
@@ -52,7 +52,7 @@ export function PolicyRLPicker({
 		return refs.filter((raw) => {
 			if (validateCatalogRef(raw)) return false;
 			const scope = parseCatalogRef(raw);
-			return !grantRefs.some((g) => refIncludesRef(g, scope));
+			return !grantRefs.some((g) => refsOverlap(g, scope));
 		});
 	}
 

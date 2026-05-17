@@ -36,7 +36,7 @@ export function HostLogo({ host, size = 16, className }: HostLogoProps) {
 	return (
 		<span
 			className={[
-				"inline-flex shrink-0 items-center justify-center rounded-sm bg-primary p-0.5",
+				"inline-flex shrink-0 items-center justify-center rounded-sm overflow-hidden",
 				className ?? "",
 			].join(" ")}
 			style={style}

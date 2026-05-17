@@ -22,6 +22,8 @@ export type DiagCode =
 	| "policy.host-keys-degraded"
 	| "policy.rate-limit-disabled"
 	| "policy.rl-binding-dead"
+	| "policy.host-keys-outside-catalog"
+	| "policy.models-unthrottled"
 	| "policy.disabled-with-relay-keys"
 	| "policy.no-relay-keys"
 	// Host Key
