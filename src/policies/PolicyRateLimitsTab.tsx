@@ -15,6 +15,8 @@ import { buildConcreteCatalog } from "@/lib/concreteCatalog";
 import { displayLabel } from "@/lib/displayLabel";
 import { formatRuleShort } from "@/lib/rateLimitFormat";
 import { nsToSec } from "@/lib/timeWindow";
+import { PolicyRLOverlapWarning } from "@/policies/PolicyRLOverlapWarning";
+import { usePolicyRLResolution } from "@/policies/usePolicyRLResolution";
 
 interface Props {
 	policy: Policy;
@@ -69,6 +71,7 @@ export function PolicyRateLimitsTab({ policy }: Props) {
 
 	return (
 		<div className="flex flex-col gap-5 pt-2">
+			<OverlapBanner policy={policy} />
 			{globalId && (
 				<BindingPanel
 					title="Default"
@@ -90,6 +93,38 @@ export function PolicyRateLimitsTab({ policy }: Props) {
 				/>
 			))}
 		</div>
+	);
+}
+
+function OverlapBanner({ policy }: { policy: Policy }) {
+	const allBindings = useMemo(() => {
+		const out: { rateLimitId: string; models: string[] }[] = [];
+		// Global default first: scopes to the entire policy's catalog.
+		if (policy.spec.rateLimitId) {
+			out.push({
+				rateLimitId: policy.spec.rateLimitId,
+				models: policy.spec.models ?? [],
+			});
+		}
+		for (const b of policy.spec.rlBindings ?? []) {
+			if (b.rateLimitId) out.push({ rateLimitId: b.rateLimitId, models: b.models ?? [] });
+		}
+		return out;
+	}, [policy]);
+
+	const { resolution, labels, rlMetaById } = usePolicyRLResolution(
+		allBindings,
+		policy.spec.includeDeprecated ?? false,
+	);
+
+	if (resolution.carveouts.length === 0) return null;
+	return (
+		<PolicyRLOverlapWarning
+			carveouts={resolution.carveouts}
+			bindings={allBindings}
+			rlMetaById={rlMetaById}
+			labels={labels}
+		/>
 	);
 }
 
