@@ -86,12 +86,12 @@ export function MultiSelect({
 									className="inline-flex items-center gap-1 h-5 pl-1.5 pr-0.5 rounded bg-primary/10 text-primary text-[11px] font-medium"
 								>
 									<span className="truncate max-w-[120px]">
-										{labelByValue.get(v) ?? v}
+										{labelForValue(labelByValue, v)}
 									</span>
 									<span
 										role="button"
 										tabIndex={0}
-										aria-label={`Remove ${labelByValue.get(v) ?? v}`}
+										aria-label={`Remove ${labelForValue(labelByValue, v)}`}
 										onClick={(e) => {
 											e.stopPropagation();
 											toggle(v);
@@ -193,4 +193,15 @@ export function MultiSelect({
 			</PopoverContent>
 		</Popover>
 	);
+}
+
+/**
+ * Resolve a selected value's display label. If the value is missing from
+ * the options map (e.g. references a deleted row), show a clearly-marked
+ * placeholder instead of leaking the raw UUID into the UI.
+ */
+function labelForValue(labels: Map<string, string>, v: string): string {
+	const hit = labels.get(v);
+	if (hit) return hit;
+	return v.length > 8 ? `Unknown (${v.slice(0, 6)}…)` : `Unknown (${v})`;
 }
