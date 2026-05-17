@@ -108,7 +108,7 @@ export function HostKeyForm({ hostKey, onSaved, onCancel }: HostKeyFormProps) {
 								Host
 							</div>
 							<Select
-								value={values.hostId || undefined}
+								value={values.hostId}
 								onValueChange={(v) => setHost(v ?? "")}
 							>
 								<SelectTrigger
@@ -139,7 +139,7 @@ export function HostKeyForm({ hostKey, onSaved, onCancel }: HostKeyFormProps) {
 								Host policy
 							</div>
 							<Select
-								value={values.policyId || undefined}
+								value={values.policyId}
 								onValueChange={(v) => setPolicy(v ?? "")}
 								disabled={!hostSelected}
 							>
