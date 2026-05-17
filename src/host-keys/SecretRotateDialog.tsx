@@ -2,7 +2,6 @@ import { useId, useState } from "react";
 import { useUpdateHostKey } from "@/api/hooks/hostkeys";
 import { ApiError } from "@/api/types/errors";
 import type { HostKey } from "@/api/types/hostkey";
-import { toast } from "@/shared/Toast";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -13,6 +12,8 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { AlertBanner } from "@/shared/AlertBanner";
+import { toast } from "@/shared/Toast";
 
 interface SecretRotateDialogProps {
 	hk: HostKey;
@@ -75,9 +76,7 @@ export function SecretRotateDialog({ hk, onClose }: SecretRotateDialogProps) {
 				</DialogHeader>
 
 				{inlineError && (
-					<div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
-						{inlineError}
-					</div>
+					<AlertBanner severity="error">{inlineError}</AlertBanner>
 				)}
 
 				<div>

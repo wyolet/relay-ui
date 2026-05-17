@@ -1,33 +1,26 @@
-import {
-	AlertTriangle,
-	Pencil,
-	Plus,
-	Trash2,
-} from "lucide-react";
+import { AlertTriangle, Pencil, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
-import { useHosts } from "@/api/hooks/hosts";
-import { useModels } from "@/api/hooks/models";
-import { useProviders } from "@/api/hooks/providers";
-import { useAttachableRateLimits } from "@/api/hooks/ratelimits";
-import { AttachRateLimitModal } from "@/rate-limits/AttachRateLimitModal";
-import type { RLMeta } from "@/rate-limits/AttachRateLimitModal";
 import { Button } from "@/components/ui/button";
-import { buildConcreteCatalog } from "@/lib/concreteCatalog";
-import { displayLabel } from "@/lib/displayLabel";
+import {
+	parseCatalogRef,
+	refsOverlap,
+	validateCatalogRef,
+} from "@/lib/catalogRef";
 import {
 	describeRef,
 	formatScope,
 	formatScopeFromConcrete,
 	hostLabel,
-	joinList,
 	type LabelLookups,
 	modelLabel,
-	resolveBindings,
-	type Carveout,
 	type RefStats,
 } from "@/lib/policyRLResolution";
-import { formatRulesShort } from "@/lib/rateLimitFormat";
+import { PolicyRLOverlapWarning } from "@/policies/PolicyRLOverlapWarning";
 import type { RLBindingValue } from "@/policies/usePolicyForm";
+import { usePolicyRLResolution } from "@/policies/usePolicyRLResolution";
+import type { RLMeta } from "@/rate-limits/AttachRateLimitModal";
+import { AttachRateLimitModal } from "@/rate-limits/AttachRateLimitModal";
+import { AlertBanner } from "@/shared/AlertBanner";
 
 interface PolicyRLPickerProps {
 	bindings: RLBindingValue[];
@@ -42,69 +35,26 @@ export function PolicyRLPicker({
 	includeDeprecated,
 	onChange,
 }: PolicyRLPickerProps) {
-	const allRateLimits = useAttachableRateLimits();
-	const { data: providersData } = useProviders();
-	const { data: modelsData } = useModels();
-	const { data: hostsData } = useHosts();
+	const { resolution, labels, rlMetaById } = usePolicyRLResolution(
+		bindings,
+		includeDeprecated,
+	);
 
-	const rlMetaById = useMemo(() => {
-		const m = new Map<string, RLMeta>();
-		for (const rl of allRateLimits) {
-			const id = rl.metadata.id;
-			if (!id) continue;
-			m.set(id, {
-				id,
-				label: displayLabel(rl.metadata),
-				rules: formatRulesShort(rl.spec.rules),
-			});
-		}
-		return m;
-	}, [allRateLimits]);
-
-	const concreteCatalog = useMemo(
+	const grantRefs = useMemo(
 		() =>
-			buildConcreteCatalog({
-				providers: providersData.items ?? [],
-				models: modelsData.items ?? [],
-				hosts: hostsData.items ?? [],
-				includeDeprecated,
-			}),
-		[providersData, modelsData, hostsData, includeDeprecated],
+			allowedModels
+				.filter((g) => !validateCatalogRef(g))
+				.map((g) => parseCatalogRef(g)),
+		[allowedModels],
 	);
 
-	const labels = useMemo<LabelLookups>(() => {
-		const providerByName = new Map<string, string>();
-		for (const p of providersData.items ?? []) {
-			providerByName.set(p.metadata.name, displayLabel(p.metadata));
-		}
-		const hostByName = new Map<string, string>();
-		for (const h of hostsData.items ?? []) {
-			hostByName.set(h.metadata.name, displayLabel(h.metadata));
-		}
-		const modelByKey = new Map<string, string>();
-		const providerIdToSlug = new Map<string, string>();
-		for (const p of providersData.items ?? []) {
-			if (p.metadata.id) providerIdToSlug.set(p.metadata.id, p.metadata.name);
-		}
-		for (const m of modelsData.items ?? []) {
-			const ownerId =
-				m.metadata.owner?.kind === "provider"
-					? m.metadata.owner.id
-					: undefined;
-			const provider = ownerId ? providerIdToSlug.get(ownerId) : undefined;
-			if (!provider) continue;
-			modelByKey.set(
-				`${provider}/${m.metadata.name}`,
-				displayLabel(m.metadata),
-			);
-		}
-		return { providerByName, hostByName, modelByKey };
-	}, [providersData, modelsData, hostsData]);
-
-	const resolution = useMemo(
-		() => resolveBindings(bindings, concreteCatalog),
-		[bindings, concreteCatalog],
-	);
+	function orphansFor(refs: readonly string[]): string[] {
+		return refs.filter((raw) => {
+			if (validateCatalogRef(raw)) return false;
+			const scope = parseCatalogRef(raw);
+			return !grantRefs.some((g) => refsOverlap(g, scope));
+		});
+	}
 
 	const [editing, setEditing] = useState<
 		{ kind: "new" } | { kind: "edit"; idx: number } | null
@@ -115,7 +65,9 @@ export function PolicyRLPicker({
 			new Set(
 				bindings
 					.map((b, i) =>
-						editing?.kind === "edit" && editing.idx === i ? null : b.rateLimitId,
+						editing?.kind === "edit" && editing.idx === i
+							? null
+							: b.rateLimitId,
 					)
 					.filter((v): v is string => Boolean(v)),
 			),
@@ -150,7 +102,7 @@ export function PolicyRLPicker({
 			) : (
 				<>
 					{resolution.carveouts.length > 0 && (
-						<OverlapWarning
+						<PolicyRLOverlapWarning
 							carveouts={resolution.carveouts}
 							bindings={bindings}
 							rlMetaById={rlMetaById}
@@ -161,11 +113,38 @@ export function PolicyRLPicker({
 						{bindings.map((b, i) => {
 							const meta = rlMetaById.get(b.rateLimitId);
 							const refStats = resolution.perBinding[i]?.refs ?? [];
+							const orphans = orphansFor(b.models);
+							const fullyOrphaned =
+								b.models.length > 0 && orphans.length === b.models.length;
 							return (
 								<li
 									key={b.rateLimitId || `binding-${i}`}
-									className="rounded-md border border-border bg-card px-3 py-2.5 shadow-sm"
+									className={`rounded-md border bg-card overflow-hidden shadow-sm ${
+										fullyOrphaned ? "border-amber-500/40" : "border-border"
+									}`}
 								>
+									{fullyOrphaned && (
+										<div className="border-b border-amber-500/30 bg-amber-500/5 px-3 py-2">
+											<AlertBanner severity="warn">
+												This rate limit targets{" "}
+												{orphans.map((m, idx) => (
+													<span key={m}>
+														{idx > 0 && ", "}
+														<code className="font-mono text-foreground">
+															"{m}"
+														</code>
+													</span>
+												))}
+												{orphans.length === 1
+													? ", which isn't"
+													: ", which aren't"}{" "}
+												in this policy's catalog. Remove this rate limit, or
+												add {orphans.length === 1 ? "it" : "them"} to the
+												policy's models.
+											</AlertBanner>
+										</div>
+									)}
+									<div className="px-3 py-2.5">
 									<div className="flex items-start justify-between gap-3">
 										<div className="min-w-0 flex-1">
 											<div className="text-sm font-medium text-foreground truncate">
@@ -213,6 +192,7 @@ export function PolicyRLPicker({
 											))}
 										</ul>
 									)}
+									</div>
 								</li>
 							);
 						})}
@@ -232,11 +212,7 @@ export function PolicyRLPicker({
 
 			{editing && (
 				<AttachRateLimitModal
-					existing={
-						editing.kind === "edit"
-							? bindings[editing.idx]
-							: undefined
-					}
+					existing={editing.kind === "edit" ? bindings[editing.idx] : undefined}
 					rateLimits={[...rlMetaById.values()]}
 					excludeRLIds={usedRLIds}
 					allowedModels={allowedModels}
@@ -245,111 +221,6 @@ export function PolicyRLPicker({
 					onSave={save}
 				/>
 			)}
-		</div>
-	);
-}
-
-interface OverlapWarningProps {
-	carveouts: Carveout[];
-	bindings: RLBindingValue[];
-	rlMetaById: Map<string, RLMeta>;
-	labels: LabelLookups;
-}
-
-function OverlapWarning({
-	carveouts,
-	bindings,
-	rlMetaById,
-	labels,
-}: OverlapWarningProps) {
-	function labelOf(idx: number): string {
-		const b = bindings[idx];
-		if (!b) return "unknown";
-		return rlMetaById.get(b.rateLimitId)?.label ?? b.rateLimitId ?? "unknown";
-	}
-
-	return (
-		<div className="rounded-md border border-amber-500/40 bg-amber-500/5">
-			<div className="flex items-start gap-2 px-3 py-2">
-				<AlertTriangle
-					className="w-3.5 h-3.5 mt-0.5 text-amber-600 shrink-0"
-					aria-hidden="true"
-				/>
-				<div className="flex-1 min-w-0">
-					<div className="text-[12px] font-medium text-foreground">
-						{carveouts.length === 1
-							? "1 model overlaps between rate limits"
-							: `${carveouts.length} models overlap between rate limits`}
-					</div>
-					<p className="text-[11px] text-muted-foreground">
-						The most specific rule wins (host &gt; model &gt; provider). Ties
-						go to whichever rate limit is listed first.
-					</p>
-				</div>
-			</div>
-			<div className="overflow-hidden border-t border-amber-500/30">
-				<table className="w-full text-[11px]">
-					<thead className="bg-amber-500/10 text-muted-foreground">
-						<tr>
-							<th
-								scope="col"
-								className="px-3 py-1.5 text-left font-medium text-[10px] uppercase tracking-wide"
-							>
-								Model
-							</th>
-							<th
-								scope="col"
-								className="px-3 py-1.5 text-left font-medium text-[10px] uppercase tracking-wide"
-							>
-								Host
-							</th>
-							<th
-								scope="col"
-								className="px-3 py-1.5 text-left font-medium text-[10px] uppercase tracking-wide"
-							>
-								Follows
-							</th>
-							<th
-								scope="col"
-								className="px-3 py-1.5 text-left font-medium text-[10px] uppercase tracking-wide"
-							>
-								Ignores
-							</th>
-						</tr>
-					</thead>
-					<tbody>
-						{carveouts.map((c) => {
-							const bnd = c.binding;
-							const winnerLabel = labelOf(c.winner);
-							const loserLabels = c.losers.map(labelOf);
-							return (
-								<tr
-									key={`${bnd.provider}/${bnd.model}@${bnd.host}`}
-									className="border-t border-amber-500/20"
-								>
-									<td className="px-3 py-1.5">
-										<span className="text-foreground">
-											{modelLabel(bnd.provider, bnd.model, labels)}
-										</span>
-										<code className="ml-1.5 font-mono text-[10px] text-muted-foreground">
-											{bnd.provider}/{bnd.model}
-										</code>
-									</td>
-									<td className="px-3 py-1.5 text-foreground">
-										{hostLabel(bnd.host, labels)}
-									</td>
-									<td className="px-3 py-1.5 font-medium text-foreground">
-										{winnerLabel}
-									</td>
-									<td className="px-3 py-1.5 text-muted-foreground line-through">
-										{joinList(loserLabels)}
-									</td>
-								</tr>
-							);
-						})}
-					</tbody>
-				</table>
-			</div>
 		</div>
 	);
 }
@@ -407,17 +278,17 @@ function RefBlock({ stats, labels, rlMetaById, bindings }: RefBlockProps) {
 						Except {formatScopeFromConcrete(lostConcrete)} below — already
 						governed by{" "}
 						{stats.lostTo.length === 1
-							? rlMetaById.get(
+							? (rlMetaById.get(
 									bindings[stats.lostTo[0]?.ownerIdx ?? -1]?.rateLimitId ?? "",
-								)?.label ?? "another rate limit"
+								)?.label ?? "another rate limit")
 							: "other rate limits"}
 						.
 					</div>
 					<ul className="mt-1 flex flex-col gap-0.5">
 						{stats.lostTo.map((l) => {
 							const otherLabel =
-								rlMetaById.get(bindings[l.ownerIdx]?.rateLimitId ?? "")?.label ??
-								"unknown";
+								rlMetaById.get(bindings[l.ownerIdx]?.rateLimitId ?? "")
+									?.label ?? "unknown";
 							return l.bindings.map((bnd) => (
 								<li
 									key={`${l.ownerIdx}-${bnd.provider}/${bnd.model}@${bnd.host}`}
@@ -442,4 +313,3 @@ function RefBlock({ stats, labels, rlMetaById, bindings }: RefBlockProps) {
 		</li>
 	);
 }
-

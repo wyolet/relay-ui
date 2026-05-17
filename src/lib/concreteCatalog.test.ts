@@ -30,8 +30,16 @@ const models: Model[] = [
 		},
 		spec: {
 			hosts: [
-				{ hostId: "h-anthropic", adapter: "anthropic", upstreamName: "claude-opus-4-7" },
-				{ hostId: "h-bedrock", adapter: "anthropic", upstreamName: "claude-opus-4-7" },
+				{
+					hostId: "h-anthropic",
+					adapter: "anthropic",
+					upstreamName: "claude-opus-4-7",
+				},
+				{
+					hostId: "h-bedrock",
+					adapter: "anthropic",
+					upstreamName: "claude-opus-4-7",
+				},
 			],
 		},
 	} as Model,
@@ -42,7 +50,9 @@ const models: Model[] = [
 			owner: { kind: "provider", id: "p-openai" },
 		},
 		spec: {
-			hosts: [{ hostId: "h-openai", adapter: "openai", upstreamName: "gpt-4o" }],
+			hosts: [
+				{ hostId: "h-openai", adapter: "openai", upstreamName: "gpt-4o" },
+			],
 		},
 	} as Model,
 	{
@@ -53,7 +63,11 @@ const models: Model[] = [
 		},
 		spec: {
 			hosts: [
-				{ hostId: "h-anthropic", adapter: "anthropic", upstreamName: "claude-2" },
+				{
+					hostId: "h-anthropic",
+					adapter: "anthropic",
+					upstreamName: "claude-2",
+				},
 			],
 			deprecation: "Use claude-opus-4-7 instead.",
 		},

@@ -21,11 +21,6 @@ import {
 import { ApiError } from "@/api/types/errors";
 import type { HostKey } from "@/api/types/hostkey";
 import type { RelayKey } from "@/api/types/relayKey";
-import { confirm } from "@/shared/ConfirmDialog";
-import { SearchBox } from "@/shared/SearchBox";
-import { Switch } from "@/shared/Switch";
-import { TableToolbar } from "@/shared/TableToolbar";
-import { toast } from "@/shared/Toast";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -39,12 +34,18 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DiagnosticDot } from "@/diagnostics/DiagnosticDot";
 import {
 	useHostKeyDiagnostics,
 	useRelayKeyDiagnostics,
 } from "@/diagnostics/useDiagnostics";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
+import { confirm } from "@/shared/ConfirmDialog";
+import { SearchBox } from "@/shared/SearchBox";
+import { Switch } from "@/shared/Switch";
+import { TableToolbar } from "@/shared/TableToolbar";
+import { toast } from "@/shared/Toast";
 
 function RelayKeyDiagDot({ id }: { id: string | undefined }) {
 	const diagnostics = useRelayKeyDiagnostics(id);
@@ -206,46 +207,24 @@ function KeysPage() {
 				</p>
 			</div>
 
-			<div className="border-b border-border flex items-center gap-1 mb-4">
-				<TabLink value="relay" current={search.tab} onClick={setTab}>
-					Relay keys
-				</TabLink>
-				<TabLink value="provider" current={search.tab} onClick={setTab}>
-					Host keys
-				</TabLink>
-			</div>
+			<Tabs
+				value={search.tab}
+				onValueChange={(v) => setTab((v ?? "relay") as Tab)}
+				className="mb-4"
+			>
+				<TabsList variant="underline">
+					<TabsTrigger value="relay" className="px-3 h-9">
+						Relay keys
+					</TabsTrigger>
+					<TabsTrigger value="provider" className="px-3 h-9">
+						Host keys
+					</TabsTrigger>
+				</TabsList>
+			</Tabs>
 
 			{search.tab === "relay" && <RelayKeysPanel />}
 			{search.tab === "provider" && <HostKeysPanel />}
 		</div>
-	);
-}
-
-interface TabLinkProps {
-	value: Tab;
-	current: Tab;
-	onClick: (t: Tab) => void;
-	children: React.ReactNode;
-}
-
-function TabLink({ value, current, onClick, children }: TabLinkProps) {
-	const active = current === value;
-	return (
-		<button
-			type="button"
-			onClick={() => onClick(value)}
-			className={[
-				"relative h-9 px-3 text-xs font-medium transition-colors",
-				active
-					? "text-foreground"
-					: "text-muted-foreground hover:text-foreground",
-			].join(" ")}
-		>
-			{children}
-			{active && (
-				<span className="absolute left-2 right-2 -bottom-px h-0.5 bg-brand-500" />
-			)}
-		</button>
 	);
 }
 
@@ -351,12 +330,16 @@ function RelayKeysPanel() {
 				filters={
 					<Select
 						value={search.filter}
+						items={(Object.keys(FILTER_LABELS) as Filter[]).map((f) => ({
+							value: f,
+							label: FILTER_LABELS[f],
+						}))}
 						onValueChange={(v) => {
 							if (v !== null) setFilter(v as Filter);
 						}}
 					>
 						<SelectTrigger className="w-32">
-							<SelectValue>{FILTER_LABELS[search.filter]}</SelectValue>
+							<SelectValue />
 						</SelectTrigger>
 						<SelectContent>
 							{(Object.keys(FILTER_LABELS) as Filter[]).map((f) => (
@@ -491,9 +474,7 @@ function RelayKeysPanel() {
 										<td className="px-3 py-2">
 											<Switch
 												checked={enabled}
-												onChange={(next) =>
-													void handleToggleEnabled(rk, next)
-												}
+												onChange={(next) => void handleToggleEnabled(rk, next)}
 												disabled={revoked}
 												label={`Toggle ${rk.metadata.name}`}
 											/>
@@ -542,7 +523,8 @@ function HostKeysPanel() {
 	}
 	const policyLabels = new Map<string, string>();
 	for (const p of policiesData.items ?? []) {
-		if (p.metadata.id) policyLabels.set(p.metadata.id, displayLabel(p.metadata));
+		if (p.metadata.id)
+			policyLabels.set(p.metadata.id, displayLabel(p.metadata));
 	}
 
 	const allItems = hostKeysData.items ?? [];

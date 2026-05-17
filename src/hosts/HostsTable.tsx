@@ -1,14 +1,14 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowDown, ArrowUp } from "lucide-react";
 import { useUpdateHost } from "@/api/hooks/hosts";
-import type { Host } from "@/api/types/host";
 import { ApiError } from "@/api/types/errors";
-import { HostLogo } from "@/hosts/HostLogo";
-import { Switch } from "@/shared/Switch";
-import { toast } from "@/shared/Toast";
+import type { Host } from "@/api/types/host";
 import { DiagnosticDot } from "@/diagnostics/DiagnosticDot";
 import { useHostDiagnostics } from "@/diagnostics/useDiagnostics";
+import { HostLogo } from "@/hosts/HostLogo";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
+import { Switch } from "@/shared/Switch";
+import { toast } from "@/shared/Toast";
 
 export type HostsSortKey = "name" | "baseURL";
 export type HostsSortDir = "asc" | "desc";
@@ -60,13 +60,7 @@ interface SortHeaderProps {
 	onClick: (field: HostsSortKey) => void;
 }
 
-function SortHeader({
-	label,
-	field,
-	current,
-	dir,
-	onClick,
-}: SortHeaderProps) {
+function SortHeader({ label, field, current, dir, onClick }: SortHeaderProps) {
 	const active = current === field;
 	const Icon = dir === "asc" ? ArrowUp : ArrowDown;
 	return (

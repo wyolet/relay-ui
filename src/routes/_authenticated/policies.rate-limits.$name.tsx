@@ -1,6 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ChevronLeft, Trash2 } from "lucide-react";
-import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { Suspense } from "react";
 import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
@@ -16,11 +15,12 @@ import {
 import { relayKeysListQueryOptions } from "@/api/hooks/relayKeys";
 import { proxyModeQueryOptions } from "@/api/hooks/settings";
 import { ApiError } from "@/api/types/errors";
-import { confirm } from "@/shared/ConfirmDialog";
-import { RateLimitForm } from "@/rate-limits/RateLimitForm";
-import { toast } from "@/shared/Toast";
 import { DiagnosticList } from "@/diagnostics/DiagnosticList";
 import { useRateLimitDiagnostics } from "@/diagnostics/useDiagnostics";
+import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
+import { RateLimitForm } from "@/rate-limits/RateLimitForm";
+import { confirm } from "@/shared/ConfirmDialog";
+import { toast } from "@/shared/Toast";
 
 export const Route = createFileRoute(
 	"/_authenticated/policies/rate-limits/$name",
@@ -62,7 +62,10 @@ function RateLimitEditInner() {
 		if (!ok) return;
 		try {
 			await deleteRL.mutateAsync(rateLimit.metadata.id ?? "");
-			toast("success", `Rate limit "${displayLabel(rateLimit.metadata)}" deleted.`);
+			toast(
+				"success",
+				`Rate limit "${displayLabel(rateLimit.metadata)}" deleted.`,
+			);
 			back();
 		} catch (err) {
 			toast(

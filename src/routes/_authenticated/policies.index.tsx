@@ -6,26 +6,18 @@ import {
 	Plus,
 	ShieldCheck,
 } from "lucide-react";
-import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { Suspense, useState } from "react";
 import { z } from "zod";
 import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
 import { modelsListQueryOptions } from "@/api/hooks/models";
-import { providersListQueryOptions } from "@/api/hooks/providers";
-import { relayKeysListQueryOptions } from "@/api/hooks/relayKeys";
-import { ApiError } from "@/api/types/errors";
-import { DiagnosticDot } from "@/diagnostics/DiagnosticDot";
-import {
-	usePolicyDiagnostics,
-	useRateLimitDiagnostics,
-} from "@/diagnostics/useDiagnostics";
 import {
 	policiesListQueryOptions,
 	useDeletePolicy,
 	usePolicies,
 	useUpdatePolicy,
 } from "@/api/hooks/policies";
+import { providersListQueryOptions } from "@/api/hooks/providers";
 import {
 	rateLimitsListQueryOptions,
 	useAttachableRateLimits,
@@ -33,20 +25,29 @@ import {
 	useRateLimits,
 	useUpdateRateLimit,
 } from "@/api/hooks/ratelimits";
-import { FilterDropdown } from "@/shared/FilterDropdown";
+import { relayKeysListQueryOptions } from "@/api/hooks/relayKeys";
+import { ApiError } from "@/api/types/errors";
 import type { Policy } from "@/api/types/policy";
 import type { RateLimit } from "@/api/types/ratelimit";
-import { confirm } from "@/shared/ConfirmDialog";
-import { SearchBox } from "@/shared/SearchBox";
-import { Switch } from "@/shared/Switch";
-import { TableToolbar } from "@/shared/TableToolbar";
-import { toast } from "@/shared/Toast";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DiagnosticDot } from "@/diagnostics/DiagnosticDot";
+import {
+	usePolicyDiagnostics,
+	useRateLimitDiagnostics,
+} from "@/diagnostics/useDiagnostics";
+import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
+import { confirm } from "@/shared/ConfirmDialog";
+import { FilterDropdown } from "@/shared/FilterDropdown";
+import { SearchBox } from "@/shared/SearchBox";
+import { Switch } from "@/shared/Switch";
+import { TableToolbar } from "@/shared/TableToolbar";
+import { toast } from "@/shared/Toast";
 
 type Tab = "policies" | "ratelimits";
 
@@ -102,34 +103,6 @@ export const Route = createFileRoute("/_authenticated/policies/")({
 		]),
 	component: PoliciesPage,
 });
-
-interface TabLinkProps {
-	value: Tab;
-	current: Tab;
-	onClick: (t: Tab) => void;
-	children: React.ReactNode;
-}
-
-function TabLink({ value, current, onClick, children }: TabLinkProps) {
-	const active = current === value;
-	return (
-		<button
-			type="button"
-			onClick={() => onClick(value)}
-			className={[
-				"relative h-9 px-3 text-xs font-medium transition-colors",
-				active
-					? "text-foreground"
-					: "text-muted-foreground hover:text-foreground",
-			].join(" ")}
-		>
-			{children}
-			{active && (
-				<span className="absolute left-2 right-2 -bottom-px h-0.5 bg-brand-500" />
-			)}
-		</button>
-	);
-}
 
 interface MenuAction {
 	label: string;
@@ -357,9 +330,7 @@ function PolicyRow({
 		} catch (err) {
 			toast(
 				"error",
-				err instanceof ApiError
-					? err.body.message
-					: "Failed to update policy.",
+				err instanceof ApiError ? err.body.message : "Failed to update policy.",
 			);
 		}
 	}
@@ -698,14 +669,20 @@ function PoliciesPage() {
 						</p>
 					</div>
 				</div>
-				<div className="border-b border-border flex items-center gap-1 mb-4">
-					<TabLink value="policies" current={search.tab} onClick={setTab}>
-						Policies
-					</TabLink>
-					<TabLink value="ratelimits" current={search.tab} onClick={setTab}>
-						Rate limits
-					</TabLink>
-				</div>
+				<Tabs
+					value={search.tab}
+					onValueChange={(v) => setTab((v ?? "policies") as Tab)}
+					className="mb-4"
+				>
+					<TabsList variant="underline">
+						<TabsTrigger value="policies" className="px-3 h-9">
+							Policies
+						</TabsTrigger>
+						<TabsTrigger value="ratelimits" className="px-3 h-9">
+							Rate limits
+						</TabsTrigger>
+					</TabsList>
+				</Tabs>
 				{search.tab === "policies" && <PoliciesPanel />}
 				{search.tab === "ratelimits" && <RateLimitsPanel />}
 			</div>

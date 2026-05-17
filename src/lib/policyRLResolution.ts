@@ -128,18 +128,26 @@ export function formatScope(models: number, hosts: number): string {
 	return `${m} · ${h}`;
 }
 
-export function formatScopeFromConcrete(items: readonly ConcreteBinding[]): string {
+export function formatScopeFromConcrete(
+	items: readonly ConcreteBinding[],
+): string {
 	const models = new Set(items.map((b) => `${b.provider}/${b.model}`)).size;
 	const hosts = new Set(items.map((b) => b.host)).size;
 	return formatScope(models, hosts);
 }
 
-export function providerLabel(slug: string | undefined, labels: LabelLookups): string {
+export function providerLabel(
+	slug: string | undefined,
+	labels: LabelLookups,
+): string {
 	if (!slug) return "—";
 	return labels.providerByName.get(slug) ?? slug;
 }
 
-export function hostLabel(slug: string | undefined, labels: LabelLookups): string {
+export function hostLabel(
+	slug: string | undefined,
+	labels: LabelLookups,
+): string {
 	if (!slug) return "—";
 	return labels.hostByName.get(slug) ?? slug;
 }

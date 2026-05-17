@@ -22,7 +22,6 @@
     "@tanstack/react-form": "^1.29.1",
     "@tanstack/react-query": "^5.80.5",
     "@tanstack/react-router": "latest",
-    "@wyolet/design": "../design",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",

@@ -22,7 +22,8 @@ export function compactNumber(n: number): string {
 			const scaled = abs / base;
 			const rounded = Math.round(scaled);
 			// Use one decimal when integer rounding is >5% off and value is < 100.
-			const useDecimal = scaled < 100 && Math.abs(scaled - rounded) / scaled > 0.05;
+			const useDecimal =
+				scaled < 100 && Math.abs(scaled - rounded) / scaled > 0.05;
 			const out = useDecimal ? scaled.toFixed(1) : String(rounded);
 			return `${sign}${out}${suffix}`;
 		}

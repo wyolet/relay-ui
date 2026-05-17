@@ -1,8 +1,8 @@
 import { useUpdateHostKey } from "@/api/hooks/hostkeys";
 import { ApiError } from "@/api/types/errors";
 import type { HostKey } from "@/api/types/hostkey";
-import { toast } from "@/shared/Toast";
 import { displayLabel } from "@/lib/displayLabel";
+import { toast } from "@/shared/Toast";
 
 /**
  * Toggle a host key's `spec.enabled` flag. Shared between the host-keys table

@@ -95,13 +95,10 @@ export function useUpdateModel(id: string) {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: async (body: ModelUpdate): Promise<Model> => {
-			const { data, error } = await apiClient.PUT(
-				"/models/by-id/{id}",
-				{
-					params: { path: { id } },
-					body,
-				},
-			);
+			const { data, error } = await apiClient.PUT("/models/by-id/{id}", {
+				params: { path: { id } },
+				body,
+			});
 			if (error) throw new ApiError(0, error.error);
 			return data;
 		},
@@ -110,4 +107,3 @@ export function useUpdateModel(id: string) {
 		},
 	});
 }
-

@@ -8,9 +8,6 @@ import {
 	Unlink2,
 } from "lucide-react";
 import type { HostKey, HostKeyKind } from "@/api/types/hostkey";
-import { EnabledField } from "@/shared/EnabledField";
-import { FormSection } from "@/shared/FormSection";
-import { IdentitySection } from "@/shared/IdentitySection";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -21,6 +18,9 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { useHostKeyForm } from "@/host-keys/useHostKeyForm";
+import { EnabledField } from "@/shared/EnabledField";
+import { FormSection } from "@/shared/FormSection";
+import { IdentitySection } from "@/shared/IdentitySection";
 
 const KIND_OPTIONS: Record<HostKeyKind, { label: string; hint: string }> = {
 	stored: {
@@ -54,8 +54,6 @@ export function HostKeyForm({ hostKey, onSaved, onCancel }: HostKeyFormProps) {
 		hostOptions,
 		policyOptions,
 		hostSelected,
-		selectedHostLabel,
-		selectedPolicyLabel,
 		attachedPolicies,
 		detachFromPolicy,
 		isDetachPending,
@@ -108,16 +106,15 @@ export function HostKeyForm({ hostKey, onSaved, onCancel }: HostKeyFormProps) {
 								Host
 							</div>
 							<Select
-								value={values.hostId || undefined}
+								value={values.hostId}
+								items={hostOptions}
 								onValueChange={(v) => setHost(v ?? "")}
 							>
 								<SelectTrigger
 									className="w-full max-w-md"
 									aria-invalid={hostIdError ? true : undefined}
 								>
-									<SelectValue placeholder="Pick a host…">
-										{selectedHostLabel}
-									</SelectValue>
+									<SelectValue placeholder="Pick a host…" />
 								</SelectTrigger>
 								<SelectContent>
 									{hostOptions.map((h) => (
@@ -139,7 +136,8 @@ export function HostKeyForm({ hostKey, onSaved, onCancel }: HostKeyFormProps) {
 								Host policy
 							</div>
 							<Select
-								value={values.policyId || undefined}
+								value={values.policyId}
+								items={policyOptions}
 								onValueChange={(v) => setPolicy(v ?? "")}
 								disabled={!hostSelected}
 							>
@@ -155,9 +153,7 @@ export function HostKeyForm({ hostKey, onSaved, onCancel }: HostKeyFormProps) {
 													: "Pick a host policy…"
 												: "Pick a host first…"
 										}
-									>
-										{selectedPolicyLabel}
-									</SelectValue>
+									/>
 								</SelectTrigger>
 								<SelectContent>
 									{policyOptions.map((p) => (

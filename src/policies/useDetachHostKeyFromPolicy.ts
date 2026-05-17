@@ -2,8 +2,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useUpdatePolicy } from "@/api/hooks/policies";
 import { ApiError } from "@/api/types/errors";
 import type { Policy } from "@/api/types/policy";
-import { toast } from "@/shared/Toast";
 import { displayLabel } from "@/lib/displayLabel";
+import { toast } from "@/shared/Toast";
 
 interface DetachArgs {
 	policyId: string;

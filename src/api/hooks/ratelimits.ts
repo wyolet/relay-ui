@@ -118,13 +118,10 @@ export function useUpdateRateLimit(id: string) {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: async (body: RateLimitUpdate): Promise<RateLimit> => {
-			const { data, error } = await apiClient.PUT(
-				"/rate-limits/by-id/{id}",
-				{
-					params: { path: { id } },
-					body,
-				},
-			);
+			const { data, error } = await apiClient.PUT("/rate-limits/by-id/{id}", {
+				params: { path: { id } },
+				body,
+			});
 			if (error) throw new ApiError(0, error.error);
 			return data;
 		},
@@ -138,12 +135,9 @@ export function useDeleteRateLimit() {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: async (id: string): Promise<void> => {
-			const { error } = await apiClient.DELETE(
-				"/rate-limits/by-id/{id}",
-				{
-					params: { path: { id } },
-				},
-			);
+			const { error } = await apiClient.DELETE("/rate-limits/by-id/{id}", {
+				params: { path: { id } },
+			});
 			if (error) throw new ApiError(0, error.error);
 		},
 		onMutate: async (id) => {

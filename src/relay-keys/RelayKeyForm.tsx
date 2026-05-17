@@ -1,8 +1,6 @@
 import { ShieldCheck, ToggleLeft } from "lucide-react";
 import { usePolicies } from "@/api/hooks/policies";
 import type { RelayKey } from "@/api/types/relayKey";
-import { FormSection } from "@/shared/FormSection";
-import { IdentitySection } from "@/shared/IdentitySection";
 import { Button } from "@/components/ui/button";
 import {
 	Select,
@@ -11,8 +9,10 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { useRelayKeyForm } from "@/relay-keys/useRelayKeyForm";
 import { displayLabel } from "@/lib/displayLabel";
+import { useRelayKeyForm } from "@/relay-keys/useRelayKeyForm";
+import { FormSection } from "@/shared/FormSection";
+import { IdentitySection } from "@/shared/IdentitySection";
 
 interface RelayKeyFormProps {
 	relayKey?: RelayKey;
@@ -72,19 +72,15 @@ export function RelayKeyForm({
 				>
 					<div>
 						<Select
-							value={values.policyId || undefined}
+							value={values.policyId}
+							items={policyOptions}
 							onValueChange={(v) => form.setFieldValue("policyId", v ?? "")}
 						>
 							<SelectTrigger
 								className="w-full max-w-md"
 								aria-invalid={policyIdError ? true : undefined}
 							>
-								<SelectValue placeholder="Pick a policy…">
-									{
-										policyOptions.find((p) => p.value === values.policyId)
-											?.label
-									}
-								</SelectValue>
+								<SelectValue placeholder="Pick a policy…" />
 							</SelectTrigger>
 							<SelectContent>
 								{policyOptions.map((p) => (

@@ -35,10 +35,7 @@ describe("analyzeHost", () => {
 			name: "openai",
 			defaultPolicy: "p-real",
 		});
-		const ds = analyzeHost(
-			host,
-			graph({ hosts: [host], policies: [policy] }),
-		);
+		const ds = analyzeHost(host, graph({ hosts: [host], policies: [policy] }));
 		expect(codes(ds)).not.toContain("host.default-policy-dangling");
 	});
 

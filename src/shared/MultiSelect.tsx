@@ -86,19 +86,28 @@ export function MultiSelect({
 									className="inline-flex items-center gap-1 h-5 pl-1.5 pr-0.5 rounded bg-primary/10 text-primary text-[11px] font-medium"
 								>
 									<span className="truncate max-w-[120px]">
-										{labelByValue.get(v) ?? v}
+										{labelForValue(labelByValue, v)}
 									</span>
-									<button
-										type="button"
-										aria-label={`Remove ${labelByValue.get(v) ?? v}`}
+									{/* biome-ignore lint/a11y/useSemanticElements: nested inside the popover trigger button — can't use a real <button> */}
+									<span
+										role="button"
+										tabIndex={0}
+										aria-label={`Remove ${labelForValue(labelByValue, v)}`}
 										onClick={(e) => {
 											e.stopPropagation();
 											toggle(v);
 										}}
-										className="h-4 w-4 inline-flex items-center justify-center rounded hover:bg-primary/20"
+										onKeyDown={(e) => {
+											if (e.key === "Enter" || e.key === " ") {
+												e.preventDefault();
+												e.stopPropagation();
+												toggle(v);
+											}
+										}}
+										className="h-4 w-4 inline-flex items-center justify-center rounded hover:bg-primary/20 cursor-pointer"
 									>
 										<X className="w-3 h-3" />
-									</button>
+									</span>
 								</span>
 							))}
 							{overflow > 0 && (
@@ -185,4 +194,15 @@ export function MultiSelect({
 			</PopoverContent>
 		</Popover>
 	);
+}
+
+/**
+ * Resolve a selected value's display label. If the value is missing from
+ * the options map (e.g. references a deleted row), show a clearly-marked
+ * placeholder instead of leaking the raw UUID into the UI.
+ */
+function labelForValue(labels: Map<string, string>, v: string): string {
+	const hit = labels.get(v);
+	if (hit) return hit;
+	return v.length > 8 ? `Unknown (${v.slice(0, 6)}…)` : `Unknown (${v})`;
 }

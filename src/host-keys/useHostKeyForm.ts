@@ -12,10 +12,10 @@ import type {
 	HostKeyKind,
 	HostKeyUpdate,
 } from "@/api/types/hostkey";
-import { toast } from "@/shared/Toast";
-import { useDetachHostKeyFromPolicy } from "@/policies/useDetachHostKeyFromPolicy";
 import { displayLabel } from "@/lib/displayLabel";
 import { randomSuffix, slugify } from "@/lib/slug";
+import { useDetachHostKeyFromPolicy } from "@/policies/useDetachHostKeyFromPolicy";
+import { toast } from "@/shared/Toast";
 
 export interface SelectOption {
 	value: string;
@@ -78,8 +78,12 @@ function buildSchema(isEdit: boolean) {
 				.min(1, "Display name is required — the slug is generated from it")
 				.max(120, "Display name is too long"),
 			description: z.string().trim().max(500, "Description is too long"),
-			hostId: z.string().min(1, "Pick the host this credential authenticates against."),
-			policyId: z.string().min(1, "Pick the policy this credential belongs to."),
+			hostId: z
+				.string()
+				.min(1, "Pick the host this credential authenticates against."),
+			policyId: z
+				.string()
+				.min(1, "Pick the policy this credential belongs to."),
 			kind: z.enum(["stored", "env"]),
 			envVar: z.string().trim().max(200),
 			value: z.string().max(8192),
@@ -323,18 +327,6 @@ export function useHostKeyForm({
 	);
 
 	const hostSelected = values.hostId !== "";
-	const selectedHostLabel = hostOptions.find((h) => h.value === values.hostId)
-		?.label;
-	// Resolve the saved label from the full policy list, not from the
-	// (host-filtered) dropdown options — older rows or mis-tagged owners may
-	// fall outside the filter, but we still want their name to render.
-	const selectedPolicyLabel = useMemo(() => {
-		if (!values.policyId) return undefined;
-		const match = (policiesData.items ?? []).find(
-			(p) => p.metadata.id === values.policyId,
-		);
-		return match ? displayLabel(match.metadata) : undefined;
-	}, [policiesData.items, values.policyId]);
 
 	function setHost(hostId: string) {
 		form.setFieldValue("hostId", hostId);
@@ -372,8 +364,6 @@ export function useHostKeyForm({
 		hostOptions,
 		policyOptions,
 		hostSelected,
-		selectedHostLabel,
-		selectedPolicyLabel,
 		attachedPolicies,
 		detachFromPolicy,
 		isDetachPending,

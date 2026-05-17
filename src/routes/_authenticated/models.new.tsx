@@ -5,12 +5,6 @@ import { useCreateModel } from "@/api/hooks/models";
 import type { ApiErrorBody } from "@/api/types/errors";
 import { ApiError } from "@/api/types/errors";
 import type { ModelCreate } from "@/api/types/model";
-import { EnabledField } from "@/shared/EnabledField";
-import { HostLogo } from "@/hosts/HostLogo";
-import { displayLabel } from "@/lib/displayLabel";
-import type { FieldDef, FormValues } from "@/shared/ResourceForm";
-import { ResourceForm } from "@/shared/ResourceForm";
-import { toast } from "@/shared/Toast";
 import {
 	Select,
 	SelectContent,
@@ -18,6 +12,12 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { HostLogo } from "@/hosts/HostLogo";
+import { displayLabel } from "@/lib/displayLabel";
+import { EnabledField } from "@/shared/EnabledField";
+import type { FieldDef, FormValues } from "@/shared/ResourceForm";
+import { ResourceForm } from "@/shared/ResourceForm";
+import { toast } from "@/shared/Toast";
 
 export const Route = createFileRoute("/_authenticated/models/new")({
 	loader: ({ context }) =>
@@ -58,8 +58,6 @@ function NewModelInner() {
 	const [enabled, setEnabled] = useState<boolean>(true);
 
 	const hosts = hostsData.items ?? [];
-	const selectedHost = hosts.find((h) => h.metadata.id === hostId);
-	const selectedHostLabel = selectedHost && displayLabel(selectedHost.metadata);
 
 	async function handleSubmit(values: FormValues) {
 		setServerError(undefined);
@@ -107,13 +105,15 @@ function NewModelInner() {
 							Host
 						</div>
 						<Select
-							value={hostId || undefined}
+							value={hostId}
+							items={hosts.map((h) => ({
+								value: h.metadata.id ?? "",
+								label: displayLabel(h.metadata),
+							}))}
 							onValueChange={(v) => setHostId(v ?? "")}
 						>
 							<SelectTrigger className="w-full">
-								<SelectValue placeholder="Pick a host">
-									{selectedHostLabel}
-								</SelectValue>
+								<SelectValue placeholder="Pick a host" />
 							</SelectTrigger>
 							<SelectContent>
 								{hosts.length === 0 ? (
@@ -137,7 +137,10 @@ function NewModelInner() {
 						<div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
 							Adapter
 						</div>
-						<Select value={adapter} onValueChange={(v) => setAdapter(v ?? "openai")}>
+						<Select
+							value={adapter}
+							onValueChange={(v) => setAdapter(v ?? "openai")}
+						>
 							<SelectTrigger className="w-full">
 								<SelectValue />
 							</SelectTrigger>

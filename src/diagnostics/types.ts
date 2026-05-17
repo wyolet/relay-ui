@@ -1,5 +1,5 @@
-import type { HostKey } from "@/api/types/hostkey";
 import type { Host } from "@/api/types/host";
+import type { HostKey } from "@/api/types/hostkey";
 import type { Model } from "@/api/types/model";
 import type { Policy } from "@/api/types/policy";
 import type { Provider } from "@/api/types/provider";
@@ -22,6 +22,8 @@ export type DiagCode =
 	| "policy.host-keys-degraded"
 	| "policy.rate-limit-disabled"
 	| "policy.rl-binding-dead"
+	| "policy.host-keys-outside-catalog"
+	| "policy.models-unthrottled"
 	| "policy.disabled-with-relay-keys"
 	| "policy.no-relay-keys"
 	// Host Key

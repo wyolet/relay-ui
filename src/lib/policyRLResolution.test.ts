@@ -96,7 +96,13 @@ describe("formatScopeFromConcrete", () => {
 describe("describeRef", () => {
 	it("provider kind — no covered hosts", () => {
 		const result = describeRef(
-			{ raw: "anthropic", kind: "provider", provider: "anthropic", model: undefined, host: undefined },
+			{
+				raw: "anthropic",
+				kind: "provider",
+				provider: "anthropic",
+				model: undefined,
+				host: undefined,
+			},
 			RICH_LABELS,
 			[],
 		);
@@ -109,16 +115,30 @@ describe("describeRef", () => {
 			{ provider: "anthropic", model: "claude-opus", host: "bedrock" },
 		];
 		const result = describeRef(
-			{ raw: "anthropic", kind: "provider", provider: "anthropic", model: undefined, host: undefined },
+			{
+				raw: "anthropic",
+				kind: "provider",
+				provider: "anthropic",
+				model: undefined,
+				host: undefined,
+			},
 			RICH_LABELS,
 			covered,
 		);
-		expect(result).toBe("All Anthropic models hosted by Anthropic Direct and AWS Bedrock");
+		expect(result).toBe(
+			"All Anthropic models hosted by Anthropic Direct and AWS Bedrock",
+		);
 	});
 
 	it("provider-on-host kind", () => {
 		const result = describeRef(
-			{ raw: "anthropic@bedrock", kind: "provider-on-host", provider: "anthropic", model: undefined, host: "bedrock" },
+			{
+				raw: "anthropic@bedrock",
+				kind: "provider-on-host",
+				provider: "anthropic",
+				model: undefined,
+				host: "bedrock",
+			},
 			RICH_LABELS,
 			[],
 		);
@@ -127,7 +147,13 @@ describe("describeRef", () => {
 
 	it("model kind — no covered hosts", () => {
 		const result = describeRef(
-			{ raw: "anthropic/claude-opus", kind: "model", provider: "anthropic", model: "claude-opus", host: undefined },
+			{
+				raw: "anthropic/claude-opus",
+				kind: "model",
+				provider: "anthropic",
+				model: "claude-opus",
+				host: undefined,
+			},
 			RICH_LABELS,
 			[],
 		);
@@ -140,16 +166,30 @@ describe("describeRef", () => {
 			{ provider: "anthropic", model: "claude-opus", host: "bedrock" },
 		];
 		const result = describeRef(
-			{ raw: "anthropic/claude-opus", kind: "model", provider: "anthropic", model: "claude-opus", host: undefined },
+			{
+				raw: "anthropic/claude-opus",
+				kind: "model",
+				provider: "anthropic",
+				model: "claude-opus",
+				host: undefined,
+			},
 			RICH_LABELS,
 			covered,
 		);
-		expect(result).toBe("Claude Opus hosted by Anthropic Direct and AWS Bedrock");
+		expect(result).toBe(
+			"Claude Opus hosted by Anthropic Direct and AWS Bedrock",
+		);
 	});
 
 	it("binding kind", () => {
 		const result = describeRef(
-			{ raw: "anthropic/claude-opus@bedrock", kind: "binding", provider: "anthropic", model: "claude-opus", host: "bedrock" },
+			{
+				raw: "anthropic/claude-opus@bedrock",
+				kind: "binding",
+				provider: "anthropic",
+				model: "claude-opus",
+				host: "bedrock",
+			},
 			RICH_LABELS,
 			[],
 		);
@@ -158,7 +198,13 @@ describe("describeRef", () => {
 
 	it("host kind", () => {
 		const result = describeRef(
-			{ raw: "@bedrock", kind: "host", provider: undefined, model: undefined, host: "bedrock" },
+			{
+				raw: "@bedrock",
+				kind: "host",
+				provider: undefined,
+				model: undefined,
+				host: "bedrock",
+			},
 			RICH_LABELS,
 			[],
 		);
@@ -167,7 +213,13 @@ describe("describeRef", () => {
 
 	it("uses slug as fallback when label not found", () => {
 		const result = describeRef(
-			{ raw: "@unknown-host", kind: "host", provider: undefined, model: undefined, host: "unknown-host" },
+			{
+				raw: "@unknown-host",
+				kind: "host",
+				provider: undefined,
+				model: undefined,
+				host: "unknown-host",
+			},
 			EMPTY_LABELS,
 			[],
 		);
@@ -201,7 +253,9 @@ describe("resolveBindings", () => {
 		const rl2Ref = result.perBinding[1]?.refs[0];
 		expect(rl2Ref?.kept).toBeGreaterThan(0);
 		// The carveout should reflect that rl-2 won bedrock bindings from rl-1
-		const bedrocKCarveouts = result.carveouts.filter((c) => c.binding.host === "bedrock");
+		const bedrocKCarveouts = result.carveouts.filter(
+			(c) => c.binding.host === "bedrock",
+		);
 		expect(bedrocKCarveouts.every((c) => c.winner === 1)).toBe(true);
 	});
 
@@ -215,7 +269,9 @@ describe("resolveBindings", () => {
 	});
 
 	it("ref that covers nothing in catalog has zero coverage", () => {
-		const bindings = [{ rateLimitId: "rl-1", models: ["nonexistent-provider"] }];
+		const bindings = [
+			{ rateLimitId: "rl-1", models: ["nonexistent-provider"] },
+		];
 		const result = resolveBindings(bindings, CATALOG);
 		const ref = result.perBinding[0]?.refs[0];
 		expect(ref?.covered).toBe(0);

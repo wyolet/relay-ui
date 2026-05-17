@@ -1,0 +1,188 @@
+@import "tailwindcss";
+
+/*
+ * @wyolet/design — single source of truth for brand tokens.
+ *
+ * Strategy:
+ *   :root  — declares every token as a plain CSS variable. Always resolves
+ *            via var(), regardless of whether tailwind processed the file.
+ *   @theme — mirrors the same tokens so consuming apps get tailwind utility
+ *            classes (bg-brand-500, text-accent-300, rounded-md, etc.).
+ *
+ * Edit only the :root scales below. The @theme block at the bottom mirrors
+ * them so tailwind's utility class generator sees them too.
+ */
+
+:root {
+  /* radius / type */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* brand — wyolet violet */
+  --color-brand-50: oklch(0.975 0.008 290);
+  --color-brand-100: oklch(0.955 0.018 290);
+  --color-brand-200: oklch(0.91 0.04 290);
+  --color-brand-300: oklch(0.84 0.07 290);
+  --color-brand-400: oklch(0.74 0.11 290);
+  --color-brand-500: oklch(0.62 0.14 290);
+  --color-brand-600: oklch(0.54 0.15 290);
+  --color-brand-700: oklch(0.45 0.14 290);
+  --color-brand-800: oklch(0.36 0.11 290);
+  --color-brand-900: oklch(0.27 0.08 290);
+  --color-brand-950: oklch(0.19 0.05 290);
+
+  /* accent — warm coral */
+  --color-accent-50: oklch(0.97 0.012 30);
+  --color-accent-100: oklch(0.94 0.025 30);
+  --color-accent-200: oklch(0.89 0.05 30);
+  --color-accent-300: oklch(0.82 0.075 30);
+  --color-accent-400: oklch(0.75 0.095 30);
+  --color-accent-500: oklch(0.68 0.11 30);
+  --color-accent-600: oklch(0.60 0.115 30);
+  --color-accent-700: oklch(0.51 0.105 30);
+  --color-accent-800: oklch(0.41 0.085 30);
+  --color-accent-900: oklch(0.31 0.06 30);
+  --color-accent-950: oklch(0.22 0.04 30);
+
+  /* neutrals — slightly cool */
+  --color-neutral-50: oklch(0.985 0.002 270);
+  --color-neutral-100: oklch(0.965 0.004 270);
+  --color-neutral-200: oklch(0.92 0.006 270);
+  --color-neutral-300: oklch(0.86 0.008 270);
+  --color-neutral-400: oklch(0.72 0.01 270);
+  --color-neutral-500: oklch(0.58 0.012 270);
+  --color-neutral-600: oklch(0.46 0.012 270);
+  --color-neutral-700: oklch(0.36 0.01 270);
+  --color-neutral-800: oklch(0.26 0.008 270);
+  --color-neutral-900: oklch(0.18 0.006 270);
+  --color-neutral-950: oklch(0.13 0.004 270);
+
+  /* destructive */
+  --color-danger-500: oklch(0.62 0.22 25);
+  --color-danger-600: oklch(0.54 0.22 25);
+
+  /* shadcn-compatible semantic tokens (light) */
+  --background: var(--color-neutral-50);
+  --foreground: var(--color-neutral-900);
+
+  --card: oklch(1 0 0);
+  --card-foreground: var(--color-neutral-900);
+
+  --popover: oklch(1 0 0);
+  --popover-foreground: var(--color-neutral-900);
+
+  --primary: var(--color-brand-600);
+  --primary-foreground: var(--color-neutral-50);
+
+  --secondary: var(--color-neutral-100);
+  --secondary-foreground: var(--color-neutral-900);
+
+  --muted: var(--color-neutral-100);
+  --muted-foreground: var(--color-neutral-500);
+
+  --accent: var(--color-accent-500);
+  --accent-foreground: var(--color-neutral-950);
+
+  --destructive: var(--color-danger-500);
+  --destructive-foreground: var(--color-neutral-50);
+
+  --border: var(--color-neutral-200);
+  --input: var(--color-neutral-200);
+  --ring: var(--color-brand-500);
+
+  --radius: 0.5rem;
+}
+
+.dark,
+[data-theme="dark"] {
+  --background: var(--color-neutral-950);
+  --foreground: var(--color-neutral-100);
+
+  --card: var(--color-neutral-900);
+  --card-foreground: var(--color-neutral-100);
+
+  --popover: var(--color-neutral-900);
+  --popover-foreground: var(--color-neutral-100);
+
+  --primary: var(--color-brand-400);
+  --primary-foreground: var(--color-neutral-950);
+
+  --secondary: var(--color-neutral-800);
+  --secondary-foreground: var(--color-neutral-100);
+
+  --muted: var(--color-neutral-800);
+  --muted-foreground: var(--color-neutral-400);
+
+  --accent: var(--color-accent-400);
+  --accent-foreground: var(--color-neutral-950);
+
+  --destructive: var(--color-danger-500);
+  --destructive-foreground: var(--color-neutral-50);
+
+  --border: var(--color-neutral-800);
+  --input: var(--color-neutral-800);
+  --ring: var(--color-brand-400);
+}
+
+/* ----------------------------------------------------------------------
+ * @theme — mirror of the same scales so tailwind v4 generates utilities.
+ *
+ * If you edit a value above, edit it here too. Yes, it's duplication; the
+ * tradeoff buys reliable var() resolution AND utility class generation.
+ * ---------------------------------------------------------------------- */
+
+@theme {
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --color-brand-50: oklch(0.975 0.008 290);
+  --color-brand-100: oklch(0.955 0.018 290);
+  --color-brand-200: oklch(0.91 0.04 290);
+  --color-brand-300: oklch(0.84 0.07 290);
+  --color-brand-400: oklch(0.74 0.11 290);
+  --color-brand-500: oklch(0.62 0.14 290);
+  --color-brand-600: oklch(0.54 0.15 290);
+  --color-brand-700: oklch(0.45 0.14 290);
+  --color-brand-800: oklch(0.36 0.11 290);
+  --color-brand-900: oklch(0.27 0.08 290);
+  --color-brand-950: oklch(0.19 0.05 290);
+
+  --color-accent-50: oklch(0.97 0.012 30);
+  --color-accent-100: oklch(0.94 0.025 30);
+  --color-accent-200: oklch(0.89 0.05 30);
+  --color-accent-300: oklch(0.82 0.075 30);
+  --color-accent-400: oklch(0.75 0.095 30);
+  --color-accent-500: oklch(0.68 0.11 30);
+  --color-accent-600: oklch(0.60 0.115 30);
+  --color-accent-700: oklch(0.51 0.105 30);
+  --color-accent-800: oklch(0.41 0.085 30);
+  --color-accent-900: oklch(0.31 0.06 30);
+  --color-accent-950: oklch(0.22 0.04 30);
+
+  --color-neutral-50: oklch(0.985 0.002 270);
+  --color-neutral-100: oklch(0.965 0.004 270);
+  --color-neutral-200: oklch(0.92 0.006 270);
+  --color-neutral-300: oklch(0.86 0.008 270);
+  --color-neutral-400: oklch(0.72 0.01 270);
+  --color-neutral-500: oklch(0.58 0.012 270);
+  --color-neutral-600: oklch(0.46 0.012 270);
+  --color-neutral-700: oklch(0.36 0.01 270);
+  --color-neutral-800: oklch(0.26 0.008 270);
+  --color-neutral-900: oklch(0.18 0.006 270);
+  --color-neutral-950: oklch(0.13 0.004 270);
+
+  --color-danger-500: oklch(0.62 0.22 25);
+  --color-danger-600: oklch(0.54 0.22 25);
+}

@@ -1,5 +1,5 @@
-import { Boxes, Building2, Globe } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { Boxes, Building2, Globe } from "lucide-react";
 import type { CatalogRefKind } from "@/lib/catalogRef";
 
 export const KIND_META: Record<

@@ -8,16 +8,16 @@ import {
 	X,
 } from "lucide-react";
 import { useMemo, useState } from "react";
-import { KIND_META } from "@/config/catalogRef";
 import { useHosts } from "@/api/hooks/hosts";
 import { useModels } from "@/api/hooks/models";
 import { useProviders } from "@/api/hooks/providers";
 import type { Host } from "@/api/types/host";
 import type { Model } from "@/api/types/model";
 import type { Provider } from "@/api/types/provider";
-import { HostLogo } from "@/hosts/HostLogo";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { KIND_META } from "@/config/catalogRef";
+import { HostLogo } from "@/hosts/HostLogo";
 import {
 	type CatalogRef,
 	formatCatalogRef,
@@ -139,16 +139,15 @@ export function ModelPicker({
 	function toggleProvider(p: Provider): void {
 		const name = p.metadata.name;
 		const ref = formatCatalogRef({ provider: name });
-		const existing = refs.find((r) => r.kind === "provider" && r.provider === name);
+		const existing = refs.find(
+			(r) => r.kind === "provider" && r.provider === name,
+		);
 		if (existing) {
 			setRefs(refs.filter((r) => r.raw !== existing.raw));
 			return;
 		}
 		// Drop any finer-grained refs subsumed by this provider grant.
-		setRefs([
-			...refs.filter((r) => r.provider !== name),
-			parseCatalogRef(ref),
-		]);
+		setRefs([...refs.filter((r) => r.provider !== name), parseCatalogRef(ref)]);
 	}
 
 	function toggleModel(m: ModelRow): void {
@@ -183,9 +182,7 @@ export function ModelPicker({
 		// Selecting a host emits a single `@{host}` ref (host-only grant) — all
 		// current and future bindings on this host, regardless of provider.
 		const hostName = h.metadata.name;
-		const existing = refs.find(
-			(r) => r.kind === "host" && r.host === hostName,
-		);
+		const existing = refs.find((r) => r.kind === "host" && r.host === hostName);
 		if (existing) {
 			setRefs(refs.filter((r) => r.raw !== existing.raw));
 			return;
@@ -199,7 +196,8 @@ export function ModelPicker({
 	}
 
 	const filteredProviders = useMemo(
-		() => filter(providers, q, (p) => [p.metadata.name, displayLabel(p.metadata)]),
+		() =>
+			filter(providers, q, (p) => [p.metadata.name, displayLabel(p.metadata)]),
 		[providers, q],
 	);
 	const visibleModels = useMemo(
@@ -243,90 +241,90 @@ export function ModelPicker({
 			)}
 
 			{!restricted ? null : (
-			<>
-			<div className="flex items-center justify-between gap-3 border-b border-border px-3 py-2">
-				<Tabs value={tab} onValueChange={(v) => setTab(v as Tab)}>
-					<TabsList>
-						<TabsTrigger value="providers">
-							<Building2 className="w-3 h-3" />
-							Providers
-						</TabsTrigger>
-						<TabsTrigger value="models">
-							<Boxes className="w-3 h-3" />
-							Models
-						</TabsTrigger>
-						<TabsTrigger value="hosts">
-							<Globe className="w-3 h-3" />
-							Hosts
-						</TabsTrigger>
-						<TabsTrigger value="raw">
-							<TextCursorInput className="w-3 h-3" />
-							Raw
-						</TabsTrigger>
-					</TabsList>
-				</Tabs>
-				{tab !== "raw" && (
-					<div className="relative flex-1 max-w-xs">
-						<Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
-						<input
-							type="text"
-							value={q}
-							onChange={(e) => setQ(e.currentTarget.value)}
-							placeholder={`Search ${tab}…`}
-							className="w-full h-7 pl-7 pr-2 rounded-md border border-input bg-input/30 text-xs outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
-						/>
-					</div>
-				)}
-			</div>
-
-			<div className="max-h-72 overflow-y-auto">
-				{tab === "providers" && (
-					<ProviderList
-						providers={filteredProviders}
-						index={index}
-						refs={refs}
-						onToggle={toggleProvider}
-					/>
-				)}
-				{tab === "models" && (
-					<ModelList
-						models={filteredModels}
-						index={index}
-						refs={refs}
-						onToggleModel={toggleModel}
-					/>
-				)}
-				{tab === "hosts" && (
-					<HostList
-						hosts={filteredHosts}
-						index={index}
-						refs={refs}
-						onToggle={toggleHost}
-					/>
-				)}
-				{tab === "raw" && (
-					<RawEditor
-						key={`${value.join("\n")}|raw`}
-						value={value}
-						onChange={onChange}
-						index={index}
-					/>
-				)}
-			</div>
-
-			{tab !== "raw" && (
 				<>
-					<SelectionFooter refs={value} onRemove={removeRaw} />
-					{refs.length > 0 && (
-						<SelectionSummary
-							refs={refs}
-							index={index}
-							includeDeprecated={includeDeprecated}
-						/>
+					<div className="flex items-center justify-between gap-3 border-b border-border px-3 py-2">
+						<Tabs value={tab} onValueChange={(v) => setTab(v as Tab)}>
+							<TabsList>
+								<TabsTrigger value="providers">
+									<Building2 className="w-3 h-3" />
+									Providers
+								</TabsTrigger>
+								<TabsTrigger value="models">
+									<Boxes className="w-3 h-3" />
+									Models
+								</TabsTrigger>
+								<TabsTrigger value="hosts">
+									<Globe className="w-3 h-3" />
+									Hosts
+								</TabsTrigger>
+								<TabsTrigger value="raw">
+									<TextCursorInput className="w-3 h-3" />
+									Raw
+								</TabsTrigger>
+							</TabsList>
+						</Tabs>
+						{tab !== "raw" && (
+							<div className="relative flex-1 max-w-xs">
+								<Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
+								<input
+									type="text"
+									value={q}
+									onChange={(e) => setQ(e.currentTarget.value)}
+									placeholder={`Search ${tab}…`}
+									className="w-full h-7 pl-7 pr-2 rounded-md border border-input bg-input/30 text-xs outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
+								/>
+							</div>
+						)}
+					</div>
+
+					<div className="max-h-72 overflow-y-auto">
+						{tab === "providers" && (
+							<ProviderList
+								providers={filteredProviders}
+								index={index}
+								refs={refs}
+								onToggle={toggleProvider}
+							/>
+						)}
+						{tab === "models" && (
+							<ModelList
+								models={filteredModels}
+								index={index}
+								refs={refs}
+								onToggleModel={toggleModel}
+							/>
+						)}
+						{tab === "hosts" && (
+							<HostList
+								hosts={filteredHosts}
+								index={index}
+								refs={refs}
+								onToggle={toggleHost}
+							/>
+						)}
+						{tab === "raw" && (
+							<RawEditor
+								key={`${value.join("\n")}|raw`}
+								value={value}
+								onChange={onChange}
+								index={index}
+							/>
+						)}
+					</div>
+
+					{tab !== "raw" && (
+						<>
+							<SelectionFooter refs={value} onRemove={removeRaw} />
+							{refs.length > 0 && (
+								<SelectionSummary
+									refs={refs}
+									index={index}
+									includeDeprecated={includeDeprecated}
+								/>
+							)}
+						</>
 					)}
 				</>
-			)}
-			</>
 			)}
 		</div>
 	);
@@ -928,7 +926,6 @@ function describeRef(ref: CatalogRef, index: PickerIndex): string {
 	}
 }
 
-
 function SelectionSummary({
 	refs,
 	index,
@@ -997,7 +994,8 @@ function Empty({ label }: { label: string }) {
 type CheckState = "off" | "on" | "indeterminate" | "covered";
 
 function RowCheckbox({ state }: { state: CheckState }) {
-	const base = "flex h-4 w-4 items-center justify-center rounded border shrink-0";
+	const base =
+		"flex h-4 w-4 items-center justify-center rounded border shrink-0";
 	if (state === "off")
 		return <span className={`${base} border-input`} aria-hidden="true" />;
 	if (state === "covered")

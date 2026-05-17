@@ -16,10 +16,7 @@ export interface SystemEnforcementCtx {
 	proxyAllowUnauthenticated: boolean;
 }
 
-function isActiveInferenceRL(
-	name: string,
-	ctx: SystemEnforcementCtx,
-): boolean {
+function isActiveInferenceRL(name: string, ctx: SystemEnforcementCtx): boolean {
 	if (name === SYSTEM_RL_INFERENCE) return true;
 	if (name === SYSTEM_RL_INFERENCE_PROXY) return ctx.proxyEnabled;
 	if (name === SYSTEM_RL_INFERENCE_PROXY_ANON)

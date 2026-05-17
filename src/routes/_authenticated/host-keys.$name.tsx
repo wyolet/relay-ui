@@ -20,13 +20,13 @@ import { policiesListQueryOptions } from "@/api/hooks/policies";
 import { providersListQueryOptions } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
 import { relayKeysListQueryOptions } from "@/api/hooks/relayKeys";
-import { DeleteConfirm } from "@/shared/DeleteConfirm";
-import { SecretRotateDialog } from "@/host-keys/SecretRotateDialog";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { useHostKeyDetail } from "@/host-keys/useHostKeyDetail";
 import { DiagnosticList } from "@/diagnostics/DiagnosticList";
 import { useHostKeyDiagnostics } from "@/diagnostics/useDiagnostics";
+import { SecretRotateDialog } from "@/host-keys/SecretRotateDialog";
+import { useHostKeyDetail } from "@/host-keys/useHostKeyDetail";
+import { DeleteConfirm } from "@/shared/DeleteConfirm";
 
 export const Route = createFileRoute("/_authenticated/host-keys/$name")({
 	loader: ({ context, params }) =>
@@ -108,7 +108,7 @@ function HostKeyDetailInner() {
 					)}
 				</div>
 				<div className="flex items-center gap-3 shrink-0">
-					<label className="inline-flex items-center gap-2 text-xs text-foreground cursor-pointer select-none">
+					<span className="inline-flex items-center gap-2 text-xs text-foreground select-none">
 						<Switch
 							checked={view.enabled}
 							onCheckedChange={(next) => void setEnabled(next)}
@@ -118,7 +118,7 @@ function HostKeyDetailInner() {
 						<span className="font-medium">
 							{view.enabled ? "Enabled" : "Disabled"}
 						</span>
-					</label>
+					</span>
 					<Link to="/host-keys/$name/edit" params={{ name }}>
 						<Button type="button" variant="outline">
 							<Pencil className="w-3.5 h-3.5" />
@@ -135,14 +135,15 @@ function HostKeyDetailInner() {
 			<DiagnosticList diagnostics={diagnostics} />
 
 			<div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-				<Card title="Configuration" icon={ShieldCheck} className="lg:col-span-2">
+				<Card
+					title="Configuration"
+					icon={ShieldCheck}
+					className="lg:col-span-2"
+				>
 					<dl className="divide-y divide-border">
 						<Row label="Host">
 							{view.hostName ? (
-								<Link
-									to="/host-keys"
-									className="text-primary hover:underline"
-								>
+								<Link to="/host-keys" className="text-primary hover:underline">
 									{view.hostLabel}
 								</Link>
 							) : (
@@ -337,7 +338,10 @@ function Card({
 			className={`rounded-md border border-border bg-card ${className ?? ""}`}
 		>
 			<header className="flex items-center gap-1.5 border-b border-border px-4 py-2.5">
-				<Icon className="w-3.5 h-3.5 text-muted-foreground" aria-hidden="true" />
+				<Icon
+					className="w-3.5 h-3.5 text-muted-foreground"
+					aria-hidden="true"
+				/>
 				<h2 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
 					{title}
 				</h2>

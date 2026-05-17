@@ -15,7 +15,6 @@ import type {
 	RateLimitRule,
 	RateLimitUpdate,
 } from "@/api/types/ratelimit";
-import { toast } from "@/shared/Toast";
 import { displayLabel } from "@/lib/displayLabel";
 import {
 	type SystemReqCap,
@@ -24,6 +23,7 @@ import {
 } from "@/lib/rateLimitValidation";
 import { randomSuffix, slugify } from "@/lib/slug";
 import { nsToSec, secToNs } from "@/lib/timeWindow";
+import { toast } from "@/shared/Toast";
 
 export type RateLimitStrategy = NonNullable<RateLimitRule["strategy"]>;
 export type RateLimitMeter = RateLimitRule["meter"];

@@ -37,6 +37,41 @@ function providerSlugOf(m: Model, graph: DiagnosticGraph): string | null {
 }
 
 /**
+ * Set of host IDs the policy's catalog refs touch — ignoring whether the
+ * policy has keys for them. Used to detect attached host keys whose host
+ * isn't in the policy's catalog (dangling keys after a ref edit).
+ */
+export function hostIdsInPolicyCatalog(
+	policy: Policy,
+	graph: DiagnosticGraph,
+): Set<string> {
+	const out = new Set<string>();
+	const refs = (policy.spec.models ?? [])
+		.map(parseRef)
+		.filter((r): r is ParsedRef => r !== null);
+	if (refs.length === 0) return out;
+
+	for (const m of graph.models.values()) {
+		if (m.spec.enabled === false) continue;
+		const provider = providerSlugOf(m, graph);
+		for (const binding of m.spec.hosts ?? []) {
+			if (binding.enabled === false) continue;
+			const host = graph.hosts.get(binding.hostId);
+			if (!host) continue;
+			const hostSlug = host.metadata.name;
+			const matches = refs.some((r) => {
+				if (r.provider && r.provider !== provider) return false;
+				if (r.model && r.model !== m.metadata.name) return false;
+				if (r.host && r.host !== hostSlug) return false;
+				return true;
+			});
+			if (matches) out.add(binding.hostId);
+		}
+	}
+	return out;
+}
+
+/**
  * Models reachable through the policy via the ref. A model counts if:
  *   - it matches the ref (provider / model / @host segments), AND
  *   - one of the policy's enabled host keys points at an enabled host that

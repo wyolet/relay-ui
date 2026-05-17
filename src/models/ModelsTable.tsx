@@ -9,18 +9,18 @@ import { useUpdateModel } from "@/api/hooks/models";
 import { ApiError } from "@/api/types/errors";
 import type { Host } from "@/api/types/host";
 import type { Model } from "@/api/types/model";
-import { HostLogo } from "@/hosts/HostLogo";
-import { Switch } from "@/shared/Switch";
-import { toast } from "@/shared/Toast";
-import { DiagnosticDot } from "@/diagnostics/DiagnosticDot";
-import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
-import { useModelDiagnostics } from "@/diagnostics/useDiagnostics";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { DiagnosticDot } from "@/diagnostics/DiagnosticDot";
+import { useModelDiagnostics } from "@/diagnostics/useDiagnostics";
+import { HostLogo } from "@/hosts/HostLogo";
+import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
+import { Switch } from "@/shared/Switch";
+import { toast } from "@/shared/Toast";
 
 export type ModelsSortKey =
 	| "name"
@@ -306,9 +306,7 @@ function ModelRow({
 					<div className="inline-flex items-center gap-2">
 						<HostBadges m={m} hostsById={hostsById} />
 						<span className="capitalize">
-							{provider || (
-								<span className="text-muted-foreground/70">—</span>
-							)}
+							{provider || <span className="text-muted-foreground/70">—</span>}
 						</span>
 					</div>
 				</td>
@@ -440,11 +438,11 @@ export function ModelsTable({
 				<tbody>
 					{items.map((m) => (
 						<ModelRow
-						key={m.metadata.name}
-						m={m}
-						hideProvider={hideProvider}
-						hostsById={hostsById}
-					/>
+							key={m.metadata.name}
+							m={m}
+							hideProvider={hideProvider}
+							hostsById={hostsById}
+						/>
 					))}
 				</tbody>
 			</table>

@@ -1,7 +1,6 @@
 import { AlertCircle, CheckCircle2, Circle } from "lucide-react";
 import type { Host } from "@/api/types/host";
 import type { HostKey } from "@/api/types/hostkey";
-import { HostLogo } from "@/hosts/HostLogo";
 import {
 	Select,
 	SelectContent,
@@ -9,6 +8,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { HostLogo } from "@/hosts/HostLogo";
 import { displayLabel } from "@/lib/displayLabel";
 import type { PolicyHostRequirements as Requirements } from "@/policies/usePolicyHostRequirements";
 
@@ -87,7 +87,7 @@ export function PolicyHostRequirements({
 						<code className="font-mono text-foreground">
 							{unresolvedRefs.join(", ")}
 						</code>{" "}
-						don't resolve to any current binding — no host key needed yet.
+						don't resolve to any current model — no host key needed yet.
 					</div>
 				</div>
 			)}
@@ -166,6 +166,10 @@ function HostRow({
 				{hasAnyKey ? (
 					<Select
 						value={selectedKeyId ?? ""}
+						items={hostKeys.map((k) => ({
+							value: k.metadata.id ?? "",
+							label: displayLabel(k.metadata),
+						}))}
 						onValueChange={(v) =>
 							onPickKey(hostId, v == null || v === "" ? undefined : v)
 						}

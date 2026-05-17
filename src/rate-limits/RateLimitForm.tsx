@@ -1,9 +1,6 @@
 import { Gauge, Plus, ToggleLeft, Undo2, X } from "lucide-react";
 import { useState } from "react";
 import type { RateLimit } from "@/api/types/ratelimit";
-import { EnabledField } from "@/shared/EnabledField";
-import { FormSection } from "@/shared/FormSection";
-import { IdentitySection } from "@/shared/IdentitySection";
 import { Input } from "@/components/ui/input";
 import {
 	Select,
@@ -13,18 +10,21 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import {
+	digitsOnly,
+	formatThousands,
+	makeStepHandler,
+} from "@/lib/numberFormat";
+import { WINDOW_PRESETS } from "@/lib/timeWindow";
+import {
 	METER_VALUES,
 	type RateLimitMeter,
 	type RateLimitStrategy,
 	STRATEGY_VALUES,
 	useRateLimitForm,
 } from "@/rate-limits/useRateLimitForm";
-import {
-	digitsOnly,
-	formatThousands,
-	makeStepHandler,
-} from "@/lib/numberFormat";
-import { WINDOW_PRESETS } from "@/lib/timeWindow";
+import { EnabledField } from "@/shared/EnabledField";
+import { FormSection } from "@/shared/FormSection";
+import { IdentitySection } from "@/shared/IdentitySection";
 
 interface RateLimitFormProps {
 	rateLimit?: RateLimit;
@@ -298,6 +298,13 @@ function RuleRow({
 					) : (
 						<Select
 							value={String(matchedPreset?.value ?? WINDOW_PRESETS[1].value)}
+							items={[
+								...WINDOW_PRESETS.map((p) => ({
+									value: String(p.value),
+									label: p.label,
+								})),
+								{ value: "custom", label: "Custom…" },
+							]}
 							onValueChange={(v) => {
 								if (v === null) return;
 								if (v === "custom") {
@@ -308,9 +315,7 @@ function RuleRow({
 							}}
 						>
 							<SelectTrigger className="w-full">
-								<SelectValue>
-									{matchedPreset?.label ?? WINDOW_PRESETS[1].label}
-								</SelectValue>
+								<SelectValue />
 							</SelectTrigger>
 							<SelectContent>
 								{WINDOW_PRESETS.map((p) => (
@@ -323,55 +328,65 @@ function RuleRow({
 						</Select>
 					)}
 				</LabeledInput>
-			<LabeledInput label="Meter">
-				<Select
-					value={rule.meter}
-					onValueChange={(v) => onChange({ meter: v as RateLimitMeter })}
+				<LabeledInput label="Meter">
+					<Select
+						value={rule.meter}
+						items={METER_VALUES.map((m) => ({
+							value: m,
+							label: METER_OPTIONS[m].label,
+						}))}
+						onValueChange={(v) => onChange({ meter: v as RateLimitMeter })}
+					>
+						<SelectTrigger className="w-full">
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent>
+							{METER_VALUES.map((m) => (
+								<SelectItem key={m} value={m}>
+									<OptionWithHint
+										label={METER_OPTIONS[m].label}
+										hint={METER_OPTIONS[m].hint}
+									/>
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+				</LabeledInput>
+				<LabeledInput label="Strategy">
+					<Select
+						value={rule.strategy}
+						items={STRATEGY_VALUES.map((s) => ({
+							value: s,
+							label: STRATEGY_OPTIONS[s].label,
+						}))}
+						onValueChange={(v) =>
+							onChange({ strategy: v as RateLimitStrategy })
+						}
+					>
+						<SelectTrigger className="w-full">
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent>
+							{STRATEGY_VALUES.map((s) => (
+								<SelectItem key={s} value={s}>
+									<OptionWithHint
+										label={STRATEGY_OPTIONS[s].label}
+										hint={STRATEGY_OPTIONS[s].hint}
+									/>
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+				</LabeledInput>
+				<button
+					type="button"
+					onClick={onRemove}
+					disabled={!canRemove}
+					aria-label="Remove rule"
+					className="h-9 w-9 inline-flex items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-destructive disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-muted-foreground"
 				>
-					<SelectTrigger className="w-full">
-						<SelectValue>{METER_OPTIONS[rule.meter].label}</SelectValue>
-					</SelectTrigger>
-					<SelectContent>
-						{METER_VALUES.map((m) => (
-							<SelectItem key={m} value={m}>
-								<OptionWithHint
-									label={METER_OPTIONS[m].label}
-									hint={METER_OPTIONS[m].hint}
-								/>
-							</SelectItem>
-						))}
-					</SelectContent>
-				</Select>
-			</LabeledInput>
-			<LabeledInput label="Strategy">
-				<Select
-					value={rule.strategy}
-					onValueChange={(v) => onChange({ strategy: v as RateLimitStrategy })}
-				>
-					<SelectTrigger className="w-full">
-						<SelectValue>{STRATEGY_OPTIONS[rule.strategy].label}</SelectValue>
-					</SelectTrigger>
-					<SelectContent>
-						{STRATEGY_VALUES.map((s) => (
-							<SelectItem key={s} value={s}>
-								<OptionWithHint
-									label={STRATEGY_OPTIONS[s].label}
-									hint={STRATEGY_OPTIONS[s].hint}
-								/>
-							</SelectItem>
-						))}
-					</SelectContent>
-				</Select>
-			</LabeledInput>
-			<button
-				type="button"
-				onClick={onRemove}
-				disabled={!canRemove}
-				aria-label="Remove rule"
-				className="h-9 w-9 inline-flex items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-destructive disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-muted-foreground"
-			>
-				<X className="w-3.5 h-3.5" />
-			</button>
+					<X className="w-3.5 h-3.5" />
+				</button>
 			</div>
 			{hasError && (
 				<div

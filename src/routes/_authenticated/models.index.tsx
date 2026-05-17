@@ -10,6 +10,14 @@ import { providersListQueryOptions } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
 import { relayKeysListQueryOptions } from "@/api/hooks/relayKeys";
 import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
 	applyHostFilter,
 	applyHostSort,
 	type HostsSortDir,
@@ -25,13 +33,6 @@ import {
 } from "@/models/ModelsTable";
 import { SearchBox } from "@/shared/SearchBox";
 import { TableToolbar } from "@/shared/TableToolbar";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
 
 type Tab = "models" | "hosts";
 
@@ -113,16 +114,16 @@ function ModelsList() {
 				filters={
 					<Select
 						value={search.provider || "all"}
-						onValueChange={(v) => setProvider(v === "all" || v == null ? "" : v)}
+						items={[
+							{ value: "all", label: "All providers" },
+							...providers.map((p) => ({ value: p, label: p })),
+						]}
+						onValueChange={(v) =>
+							setProvider(v === "all" || v == null ? "" : v)
+						}
 					>
 						<SelectTrigger className="w-40">
-							<SelectValue>
-								{search.provider ? (
-									<span className="capitalize">{search.provider}</span>
-								) : (
-									"All providers"
-								)}
-							</SelectValue>
+							<SelectValue />
 						</SelectTrigger>
 						<SelectContent>
 							<SelectItem value="all">All providers</SelectItem>
@@ -181,11 +182,7 @@ function HostsList() {
 	}
 	function toggleSort(field: HostsSortKey) {
 		const dir: HostsSortDir =
-			search.hsort === field
-				? search.hdir === "asc"
-					? "desc"
-					: "asc"
-				: "asc";
+			search.hsort === field ? (search.hdir === "asc" ? "desc" : "asc") : "asc";
 		void navigate({ search: (prev) => ({ ...prev, hsort: field, hdir: dir }) });
 	}
 
@@ -221,34 +218,6 @@ function HostsList() {
 	);
 }
 
-interface TabLinkProps {
-	value: Tab;
-	current: Tab;
-	onClick: (t: Tab) => void;
-	children: React.ReactNode;
-}
-
-function TabLink({ value, current, onClick, children }: TabLinkProps) {
-	const active = current === value;
-	return (
-		<button
-			type="button"
-			onClick={() => onClick(value)}
-			className={[
-				"relative h-9 px-3 text-xs font-medium transition-colors",
-				active
-					? "text-foreground"
-					: "text-muted-foreground hover:text-foreground",
-			].join(" ")}
-		>
-			{children}
-			{active && (
-				<span className="absolute left-2 right-2 -bottom-px h-0.5 bg-brand-500" />
-			)}
-		</button>
-	);
-}
-
 function ModelsPage() {
 	const navigate = useNavigate({ from: "/models" });
 	const search = Route.useSearch();
@@ -266,14 +235,20 @@ function ModelsPage() {
 				</p>
 			</div>
 
-			<div className="border-b border-border flex items-center gap-1 mb-4">
-				<TabLink value="models" current={search.tab} onClick={setTab}>
-					Models
-				</TabLink>
-				<TabLink value="hosts" current={search.tab} onClick={setTab}>
-					Hosts
-				</TabLink>
-			</div>
+			<Tabs
+				value={search.tab}
+				onValueChange={(v) => setTab((v ?? "models") as Tab)}
+				className="mb-4"
+			>
+				<TabsList variant="underline">
+					<TabsTrigger value="models" className="px-3 h-9">
+						Models
+					</TabsTrigger>
+					<TabsTrigger value="hosts" className="px-3 h-9">
+						Hosts
+					</TabsTrigger>
+				</TabsList>
+			</Tabs>
 
 			<Suspense
 				fallback={<div className="text-muted-foreground text-sm">Loading…</div>}

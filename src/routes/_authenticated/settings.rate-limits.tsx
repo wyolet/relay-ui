@@ -2,6 +2,8 @@
  * System rate limits — flat form for the four backend-owned RLs.
  * Hidden from /policies and PolicyForm pickers (see lib/systemRateLimits).
  */
+
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
 	ChevronLeft,
@@ -15,16 +17,14 @@ import {
 	X,
 } from "lucide-react";
 import { Suspense, useMemo, useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/api/client";
 import {
 	rateLimitsListQueryOptions,
 	useRateLimits,
 } from "@/api/hooks/ratelimits";
+import { proxyModeQueryOptions, useProxyMode } from "@/api/hooks/settings";
 import { ApiError } from "@/api/types/errors";
 import type { RateLimit, RateLimitRule } from "@/api/types/ratelimit";
-import { Switch } from "@/shared/Switch";
-import { toast } from "@/shared/Toast";
 import { Input } from "@/components/ui/input";
 import {
 	Select,
@@ -41,8 +41,9 @@ import {
 	SYSTEM_RL_INFERENCE_PROXY_ANON,
 	type SystemRateLimitName,
 } from "@/lib/systemRateLimits";
-import { proxyModeQueryOptions, useProxyMode } from "@/api/hooks/settings";
 import { nsToSec, secToNs, WINDOW_PRESETS } from "@/lib/timeWindow";
+import { Switch } from "@/shared/Switch";
+import { toast } from "@/shared/Toast";
 
 export const Route = createFileRoute("/_authenticated/settings/rate-limits")({
 	loader: ({ context }) =>
@@ -161,10 +162,10 @@ function SystemRateLimitsInner() {
 			id: string;
 			body: RateLimit;
 		}): Promise<RateLimit> => {
-			const { data, error } = await apiClient.PUT(
-				"/rate-limits/by-id/{id}",
-				{ params: { path: { id } }, body },
-			);
+			const { data, error } = await apiClient.PUT("/rate-limits/by-id/{id}", {
+				params: { path: { id } },
+				body,
+			});
 			if (error) throw new ApiError(0, error.error);
 			return data;
 		},
@@ -189,9 +190,7 @@ function SystemRateLimitsInner() {
 			...s,
 			[key]: {
 				...s[key],
-				rules: s[key].rules.map((r, i) =>
-					i === idx ? { ...r, ...patch } : r,
-				),
+				rules: s[key].rules.map((r, i) => (i === idx ? { ...r, ...patch } : r)),
 			},
 		}));
 	}
@@ -285,7 +284,9 @@ function SystemRateLimitsInner() {
 			} else {
 				toast(
 					"success",
-					updated === 1 ? "1 rate limit updated." : `${updated} rate limits updated.`,
+					updated === 1
+						? "1 rate limit updated."
+						: `${updated} rate limits updated.`,
 				);
 			}
 		} catch (err) {
@@ -480,10 +481,7 @@ function SectionShell({
 						</span>
 					)}
 				</div>
-				<fieldset
-					disabled={missing || locked || !enabled}
-					className="contents"
-				>
+				<fieldset disabled={missing || locked || !enabled} className="contents">
 					{children}
 				</fieldset>
 			</div>
@@ -653,6 +651,13 @@ function InferenceRuleRow({
 				</div>
 				<Select
 					value={selectValue}
+					items={[
+						...WINDOW_PRESETS.map((w) => ({
+							value: String(w.value),
+							label: w.label,
+						})),
+						{ value: "custom", label: "Custom…" },
+					]}
 					onValueChange={(v) => {
 						if (v === null) return;
 						if (v === "custom") return;
@@ -660,7 +665,7 @@ function InferenceRuleRow({
 					}}
 				>
 					<SelectTrigger className="w-full">
-						<SelectValue>{preset ? preset.label : "Custom"}</SelectValue>
+						<SelectValue />
 					</SelectTrigger>
 					<SelectContent>
 						{WINDOW_PRESETS.map((w) => (
@@ -715,12 +720,9 @@ function InferenceRuleRow({
 function SystemRateLimitsPage() {
 	return (
 		<Suspense
-			fallback={
-				<div className="text-muted-foreground text-sm">Loading…</div>
-			}
+			fallback={<div className="text-muted-foreground text-sm">Loading…</div>}
 		>
 			<SystemRateLimitsInner />
 		</Suspense>
 	);
 }
-

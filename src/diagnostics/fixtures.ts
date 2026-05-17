@@ -1,5 +1,5 @@
-import type { HostKey } from "@/api/types/hostkey";
 import type { Host } from "@/api/types/host";
+import type { HostKey } from "@/api/types/hostkey";
 import type { Model } from "@/api/types/model";
 import type { Policy } from "@/api/types/policy";
 import type { Provider } from "@/api/types/provider";
@@ -99,9 +99,7 @@ export function makeModel(o: ModelOpts): Model {
 		metadata: {
 			id: o.id ?? `model-${o.name}`,
 			name: o.name,
-			owner: o.providerId
-				? { kind: "provider", id: o.providerId }
-				: undefined,
+			owner: o.providerId ? { kind: "provider", id: o.providerId } : undefined,
 		},
 		spec: {
 			enabled: o.enabled ?? true,
