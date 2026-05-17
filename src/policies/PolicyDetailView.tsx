@@ -77,7 +77,7 @@ export function PolicyDetailView({
 						<TabsTrigger
 							key={value}
 							value={value}
-							className="flex-none px-3 h-9 after:bottom-[-1px]"
+							className="flex-none px-3 h-9 after:!bottom-0"
 						>
 							<Icon className="w-3.5 h-3.5" aria-hidden />
 							{label}
