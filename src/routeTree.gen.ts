@@ -37,6 +37,7 @@ import { Route as AuthenticatedHostKeysNameRouteImport } from './routes/_authent
 import { Route as AuthenticatedRelayKeysNameEditRouteImport } from './routes/_authenticated/relay-keys.$name_.edit'
 import { Route as AuthenticatedPoliciesRateLimitsNewRouteImport } from './routes/_authenticated/policies.rate-limits.new'
 import { Route as AuthenticatedPoliciesRateLimitsNameRouteImport } from './routes/_authenticated/policies.rate-limits.$name'
+import { Route as AuthenticatedPoliciesNameEditRouteImport } from './routes/_authenticated/policies.$name_.edit'
 import { Route as AuthenticatedModelsNameEditRouteImport } from './routes/_authenticated/models.$name.edit'
 import { Route as AuthenticatedHostKeysNameEditRouteImport } from './routes/_authenticated/host-keys.$name_.edit'
 
@@ -194,6 +195,12 @@ const AuthenticatedPoliciesRateLimitsNameRoute =
     path: '/rate-limits/$name',
     getParentRoute: () => AuthenticatedPoliciesRoute,
   } as any)
+const AuthenticatedPoliciesNameEditRoute =
+  AuthenticatedPoliciesNameEditRouteImport.update({
+    id: '/$name_/edit',
+    path: '/$name/edit',
+    getParentRoute: () => AuthenticatedPoliciesRoute,
+  } as any)
 const AuthenticatedModelsNameEditRoute =
   AuthenticatedModelsNameEditRouteImport.update({
     id: '/edit',
@@ -234,6 +241,7 @@ export interface FileRoutesByFullPath {
   '/settings/': typeof AuthenticatedSettingsIndexRoute
   '/host-keys/$name/edit': typeof AuthenticatedHostKeysNameEditRoute
   '/models/$name/edit': typeof AuthenticatedModelsNameEditRoute
+  '/policies/$name/edit': typeof AuthenticatedPoliciesNameEditRoute
   '/policies/rate-limits/$name': typeof AuthenticatedPoliciesRateLimitsNameRoute
   '/policies/rate-limits/new': typeof AuthenticatedPoliciesRateLimitsNewRoute
   '/relay-keys/$name/edit': typeof AuthenticatedRelayKeysNameEditRoute
@@ -261,6 +269,7 @@ export interface FileRoutesByTo {
   '/settings': typeof AuthenticatedSettingsIndexRoute
   '/host-keys/$name/edit': typeof AuthenticatedHostKeysNameEditRoute
   '/models/$name/edit': typeof AuthenticatedModelsNameEditRoute
+  '/policies/$name/edit': typeof AuthenticatedPoliciesNameEditRoute
   '/policies/rate-limits/$name': typeof AuthenticatedPoliciesRateLimitsNameRoute
   '/policies/rate-limits/new': typeof AuthenticatedPoliciesRateLimitsNewRoute
   '/relay-keys/$name/edit': typeof AuthenticatedRelayKeysNameEditRoute
@@ -294,6 +303,7 @@ export interface FileRoutesById {
   '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
   '/_authenticated/host-keys/$name_/edit': typeof AuthenticatedHostKeysNameEditRoute
   '/_authenticated/models/$name/edit': typeof AuthenticatedModelsNameEditRoute
+  '/_authenticated/policies/$name_/edit': typeof AuthenticatedPoliciesNameEditRoute
   '/_authenticated/policies/rate-limits/$name': typeof AuthenticatedPoliciesRateLimitsNameRoute
   '/_authenticated/policies/rate-limits/new': typeof AuthenticatedPoliciesRateLimitsNewRoute
   '/_authenticated/relay-keys/$name_/edit': typeof AuthenticatedRelayKeysNameEditRoute
@@ -327,6 +337,7 @@ export interface FileRouteTypes {
     | '/settings/'
     | '/host-keys/$name/edit'
     | '/models/$name/edit'
+    | '/policies/$name/edit'
     | '/policies/rate-limits/$name'
     | '/policies/rate-limits/new'
     | '/relay-keys/$name/edit'
@@ -354,6 +365,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/host-keys/$name/edit'
     | '/models/$name/edit'
+    | '/policies/$name/edit'
     | '/policies/rate-limits/$name'
     | '/policies/rate-limits/new'
     | '/relay-keys/$name/edit'
@@ -386,6 +398,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings/'
     | '/_authenticated/host-keys/$name_/edit'
     | '/_authenticated/models/$name/edit'
+    | '/_authenticated/policies/$name_/edit'
     | '/_authenticated/policies/rate-limits/$name'
     | '/_authenticated/policies/rate-limits/new'
     | '/_authenticated/relay-keys/$name_/edit'
@@ -594,6 +607,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPoliciesRateLimitsNameRouteImport
       parentRoute: typeof AuthenticatedPoliciesRoute
     }
+    '/_authenticated/policies/$name_/edit': {
+      id: '/_authenticated/policies/$name_/edit'
+      path: '/$name/edit'
+      fullPath: '/policies/$name/edit'
+      preLoaderRoute: typeof AuthenticatedPoliciesNameEditRouteImport
+      parentRoute: typeof AuthenticatedPoliciesRoute
+    }
     '/_authenticated/models/$name/edit': {
       id: '/_authenticated/models/$name/edit'
       path: '/edit'
@@ -663,6 +683,7 @@ interface AuthenticatedPoliciesRouteChildren {
   AuthenticatedPoliciesNameRoute: typeof AuthenticatedPoliciesNameRoute
   AuthenticatedPoliciesNewRoute: typeof AuthenticatedPoliciesNewRoute
   AuthenticatedPoliciesIndexRoute: typeof AuthenticatedPoliciesIndexRoute
+  AuthenticatedPoliciesNameEditRoute: typeof AuthenticatedPoliciesNameEditRoute
   AuthenticatedPoliciesRateLimitsNameRoute: typeof AuthenticatedPoliciesRateLimitsNameRoute
   AuthenticatedPoliciesRateLimitsNewRoute: typeof AuthenticatedPoliciesRateLimitsNewRoute
 }
@@ -671,6 +692,7 @@ const AuthenticatedPoliciesRouteChildren: AuthenticatedPoliciesRouteChildren = {
   AuthenticatedPoliciesNameRoute: AuthenticatedPoliciesNameRoute,
   AuthenticatedPoliciesNewRoute: AuthenticatedPoliciesNewRoute,
   AuthenticatedPoliciesIndexRoute: AuthenticatedPoliciesIndexRoute,
+  AuthenticatedPoliciesNameEditRoute: AuthenticatedPoliciesNameEditRoute,
   AuthenticatedPoliciesRateLimitsNameRoute:
     AuthenticatedPoliciesRateLimitsNameRoute,
   AuthenticatedPoliciesRateLimitsNewRoute:

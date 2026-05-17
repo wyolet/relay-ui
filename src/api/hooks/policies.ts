@@ -128,3 +128,23 @@ export function useDeletePolicy() {
 		},
 	});
 }
+
+export function policyReferencesQueryOptions(id: string) {
+	return queryOptions({
+		queryKey: ["policies", "references", id] as const,
+		queryFn: async () => {
+			const { data, error } = await apiClient.GET(
+				"/policies/by-id/{id}/references",
+				{ params: { path: { id } } },
+			);
+			if (error) throw new ApiError(0, error.error);
+			return data;
+		},
+		enabled: id.length > 0,
+		staleTime: 10_000,
+	});
+}
+
+export function usePolicyReferences(id: string | undefined) {
+	return useSuspenseQuery(policyReferencesQueryOptions(id ?? ""));
+}
