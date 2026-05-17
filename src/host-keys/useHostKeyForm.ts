@@ -12,10 +12,10 @@ import type {
 	HostKeyKind,
 	HostKeyUpdate,
 } from "@/api/types/hostkey";
-import { toast } from "@/shared/Toast";
-import { useDetachHostKeyFromPolicy } from "@/policies/useDetachHostKeyFromPolicy";
 import { displayLabel } from "@/lib/displayLabel";
 import { randomSuffix, slugify } from "@/lib/slug";
+import { useDetachHostKeyFromPolicy } from "@/policies/useDetachHostKeyFromPolicy";
+import { toast } from "@/shared/Toast";
 
 export interface SelectOption {
 	value: string;
@@ -78,8 +78,12 @@ function buildSchema(isEdit: boolean) {
 				.min(1, "Display name is required — the slug is generated from it")
 				.max(120, "Display name is too long"),
 			description: z.string().trim().max(500, "Description is too long"),
-			hostId: z.string().min(1, "Pick the host this credential authenticates against."),
-			policyId: z.string().min(1, "Pick the policy this credential belongs to."),
+			hostId: z
+				.string()
+				.min(1, "Pick the host this credential authenticates against."),
+			policyId: z
+				.string()
+				.min(1, "Pick the policy this credential belongs to."),
 			kind: z.enum(["stored", "env"]),
 			envVar: z.string().trim().max(200),
 			value: z.string().max(8192),

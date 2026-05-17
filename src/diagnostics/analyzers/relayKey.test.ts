@@ -42,10 +42,7 @@ describe("analyzeRelayKey", () => {
 	it("rolls up policy errors (no-host-keys) without duplicating message", () => {
 		const p = makePolicy({ id: "p1", hostKeyIds: [] });
 		const rk = makeRelayKey({ policyId: "p1" });
-		const ds = analyzeRelayKey(
-			rk,
-			graph({ policies: [p], relayKeys: [rk] }),
-		);
+		const ds = analyzeRelayKey(rk, graph({ policies: [p], relayKeys: [rk] }));
 		const rolled = ds.find((d) => d.code === "relay-key.policy-broken");
 		expect(rolled?.severity).toBe("error");
 	});

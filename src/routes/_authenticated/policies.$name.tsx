@@ -7,20 +7,20 @@ import { modelsListQueryOptions } from "@/api/hooks/models";
 import {
 	policyDetailQueryOptions,
 	useDeletePolicy,
-	useUpdatePolicy,
 	usePolicy,
+	useUpdatePolicy,
 } from "@/api/hooks/policies";
 import { providersListQueryOptions } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
 import { relayKeysListQueryOptions } from "@/api/hooks/relayKeys";
 import { ApiError } from "@/api/types/errors";
+import { displayLabel } from "@/lib/displayLabel";
+import {
+	type PolicyDetailTab,
+	PolicyDetailView,
+} from "@/policies/PolicyDetailView";
 import { confirm } from "@/shared/ConfirmDialog";
 import { toast } from "@/shared/Toast";
-import {
-	PolicyDetailView,
-	type PolicyDetailTab,
-} from "@/policies/PolicyDetailView";
-import { displayLabel } from "@/lib/displayLabel";
 
 const searchSchema = z.object({
 	tab: z

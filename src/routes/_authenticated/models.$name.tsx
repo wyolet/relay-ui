@@ -1,5 +1,4 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
 	AlertTriangle,
 	Braces,
@@ -43,6 +42,7 @@ import type {
 	ModelCapabilities,
 	ModelModalities,
 } from "@/api/types/model";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DiagnosticList } from "@/diagnostics/DiagnosticList";
 import { useModelDiagnostics } from "@/diagnostics/useDiagnostics";
 import { displayLabel } from "@/lib/displayLabel";

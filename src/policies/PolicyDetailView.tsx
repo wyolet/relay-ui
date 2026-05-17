@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import {
 	Activity,
 	Boxes,
@@ -9,16 +10,15 @@ import {
 	ScrollText,
 	Trash2,
 } from "lucide-react";
-import { Link } from "@tanstack/react-router";
 import type { Policy } from "@/api/types/policy";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { DiagnosticList } from "@/diagnostics/DiagnosticList";
 import { usePolicyDiagnostics } from "@/diagnostics/useDiagnostics";
+import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { PolicyAttachedRelayKeys } from "@/policies/PolicyAttachedRelayKeys";
-import { PolicyOverviewTab } from "@/policies/PolicyOverviewTab";
-import { PolicyModelsTab } from "@/policies/PolicyModelsTab";
 import { PolicyKeysTab } from "@/policies/PolicyKeysTab";
+import { PolicyModelsTab } from "@/policies/PolicyModelsTab";
+import { PolicyOverviewTab } from "@/policies/PolicyOverviewTab";
 import { PolicyRateLimitsTab } from "@/policies/PolicyRateLimitsTab";
 
 export type PolicyDetailTab =
@@ -39,7 +39,11 @@ interface Props {
 	toggling?: boolean;
 }
 
-const TABS: { value: PolicyDetailTab; label: string; icon: typeof LayoutGrid }[] = [
+const TABS: {
+	value: PolicyDetailTab;
+	label: string;
+	icon: typeof LayoutGrid;
+}[] = [
 	{ value: "overview", label: "Overview", icon: LayoutGrid },
 	{ value: "models", label: "Models", icon: Boxes },
 	{ value: "keys", label: "Host keys", icon: KeyRound },
@@ -71,9 +75,7 @@ export function PolicyDetailView({
 				toggling={toggling}
 			/>
 
-			{diagnostics.length > 0 && (
-				<DiagnosticList diagnostics={diagnostics} />
-			)}
+			{diagnostics.length > 0 && <DiagnosticList diagnostics={diagnostics} />}
 
 			<Tabs
 				value={tab}
@@ -82,7 +84,6 @@ export function PolicyDetailView({
 				<TabsList variant="underline">
 					{TABS.map(({ value, label, icon: Icon }) => (
 						<TabsTrigger key={value} value={value} className="px-3 h-9">
-
 							<Icon className="w-3.5 h-3.5" aria-hidden />
 							{label}
 						</TabsTrigger>

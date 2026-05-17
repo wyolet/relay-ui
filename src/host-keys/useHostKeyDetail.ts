@@ -3,11 +3,11 @@ import { useDeleteHostKey, useHostKey } from "@/api/hooks/hostkeys";
 import { useHosts } from "@/api/hooks/hosts";
 import { usePolicies } from "@/api/hooks/policies";
 import { ApiError } from "@/api/types/errors";
-import { toast } from "@/shared/Toast";
-import { useDetachHostKeyFromPolicy } from "@/policies/useDetachHostKeyFromPolicy";
 import type { ReferencingPolicyView } from "@/host-keys/useHostKeyForm";
 import { useToggleHostKeyEnabled } from "@/host-keys/useToggleHostKeyEnabled";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
+import { useDetachHostKeyFromPolicy } from "@/policies/useDetachHostKeyFromPolicy";
+import { toast } from "@/shared/Toast";
 
 interface UseHostKeyDetailOptions {
 	name: string;
@@ -70,9 +70,7 @@ export function useHostKeyDetail({ name, onDeleted }: UseHostKeyDetailOptions) {
 		(h) => h.metadata.id === hk.spec.hostId,
 	);
 	const matchedHostPolicy = hk.spec.policyId
-		? (policiesData.items ?? []).find(
-				(p) => p.metadata.id === hk.spec.policyId,
-			)
+		? (policiesData.items ?? []).find((p) => p.metadata.id === hk.spec.policyId)
 		: undefined;
 
 	const enabled = hk.spec.enabled ?? true;

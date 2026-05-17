@@ -1,6 +1,6 @@
 import { useMemo } from "react";
-import { useHosts } from "@/api/hooks/hosts";
 import { useHostKeys } from "@/api/hooks/hostkeys";
+import { useHosts } from "@/api/hooks/hosts";
 import { useModels } from "@/api/hooks/models";
 import { useProviders } from "@/api/hooks/providers";
 import type { Host } from "@/api/types/host";

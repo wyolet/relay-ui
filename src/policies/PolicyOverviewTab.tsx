@@ -1,6 +1,6 @@
 import { Suspense } from "react";
-import type { Policy } from "@/api/types/policy";
 import { usePolicyReferences } from "@/api/hooks/policies";
+import type { Policy } from "@/api/types/policy";
 import { displayLabel } from "@/lib/displayLabel";
 
 interface Props {
@@ -12,8 +12,7 @@ export function PolicyOverviewTab({ policy }: Props) {
 	const refsCount = (policy.spec.models ?? []).length;
 	const hkCount = (policy.spec.hostKeyIds ?? []).length;
 	const rlCount =
-		(policy.spec.rlBindings ?? []).length +
-		(policy.spec.rateLimitId ? 1 : 0);
+		(policy.spec.rlBindings ?? []).length + (policy.spec.rateLimitId ? 1 : 0);
 
 	return (
 		<div className="flex flex-col gap-6">
@@ -152,7 +151,13 @@ function DescList({ children }: { children: React.ReactNode }) {
 	);
 }
 
-function Term({ label, children }: { label: string; children: React.ReactNode }) {
+function Term({
+	label,
+	children,
+}: {
+	label: string;
+	children: React.ReactNode;
+}) {
 	return (
 		<div className="grid grid-cols-[140px_1fr] gap-3 px-3 py-2 text-sm">
 			<dt className="text-[11px] text-muted-foreground self-center">{label}</dt>

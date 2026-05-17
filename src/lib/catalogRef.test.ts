@@ -55,13 +55,19 @@ describe("validateCatalogRef", () => {
 	it("accepts canonical shapes", () => {
 		expect(validateCatalogRef("anthropic")).toBeUndefined();
 		expect(validateCatalogRef("@bedrock")).toBeUndefined();
-		expect(validateCatalogRef("anthropic/claude-opus-4-7@bedrock")).toBeUndefined();
+		expect(
+			validateCatalogRef("anthropic/claude-opus-4-7@bedrock"),
+		).toBeUndefined();
 	});
 
 	it("accepts model slugs with dots and colons (real upstream names)", () => {
 		expect(validateCatalogRef("openai/gpt-3.5-turbo")).toBeUndefined();
-		expect(validateCatalogRef("openai/gpt-4.1-mini-2025-04-14")).toBeUndefined();
-		expect(validateCatalogRef("openai/ft:gpt-4o-mini-2024-07-18")).toBeUndefined();
+		expect(
+			validateCatalogRef("openai/gpt-4.1-mini-2025-04-14"),
+		).toBeUndefined();
+		expect(
+			validateCatalogRef("openai/ft:gpt-4o-mini-2024-07-18"),
+		).toBeUndefined();
 		expect(validateCatalogRef("openai/gpt-5.5-pro")).toBeUndefined();
 	});
 
@@ -82,7 +88,11 @@ describe("formatCatalogRef", () => {
 		]) {
 			const p = ref(s);
 			expect(
-				formatCatalogRef({ provider: p.provider, model: p.model, host: p.host }),
+				formatCatalogRef({
+					provider: p.provider,
+					model: p.model,
+					host: p.host,
+				}),
 			).toBe(s);
 		}
 	});
@@ -105,26 +115,35 @@ describe("refCovers (concrete binding)", () => {
 	});
 
 	it("exact binding ref is most specific", () => {
-		expect(refCovers(ref("anthropic/claude-opus-4-7@anthropic"), opus)).toBe(true);
-		expect(refCovers(ref("anthropic/claude-opus-4-7@bedrock"), opus)).toBe(false);
+		expect(refCovers(ref("anthropic/claude-opus-4-7@anthropic"), opus)).toBe(
+			true,
+		);
+		expect(refCovers(ref("anthropic/claude-opus-4-7@bedrock"), opus)).toBe(
+			false,
+		);
 	});
 });
 
 describe("refIncludesRef (ref-vs-ref subset)", () => {
 	it("provider ref includes its narrower forms", () => {
-		expect(refIncludesRef(ref("anthropic"), ref("anthropic/claude-opus-4-7"))).toBe(
+		expect(
+			refIncludesRef(ref("anthropic"), ref("anthropic/claude-opus-4-7")),
+		).toBe(true);
+		expect(refIncludesRef(ref("anthropic"), ref("anthropic@bedrock"))).toBe(
 			true,
 		);
-		expect(refIncludesRef(ref("anthropic"), ref("anthropic@bedrock"))).toBe(true);
 		expect(
-			refIncludesRef(ref("anthropic"), ref("anthropic/claude-opus-4-7@bedrock")),
+			refIncludesRef(
+				ref("anthropic"),
+				ref("anthropic/claude-opus-4-7@bedrock"),
+			),
 		).toBe(true);
 	});
 
 	it("narrower never includes broader", () => {
-		expect(refIncludesRef(ref("anthropic/claude-opus-4-7"), ref("anthropic"))).toBe(
-			false,
-		);
+		expect(
+			refIncludesRef(ref("anthropic/claude-opus-4-7"), ref("anthropic")),
+		).toBe(false);
 	});
 
 	it("@host and provider don't include each other", () => {
@@ -137,7 +156,10 @@ describe("refIncludesRef (ref-vs-ref subset)", () => {
 			refIncludesRef(ref("@bedrock"), ref("anthropic/claude-opus-4-7@bedrock")),
 		).toBe(true);
 		expect(
-			refIncludesRef(ref("@bedrock"), ref("anthropic/claude-opus-4-7@anthropic")),
+			refIncludesRef(
+				ref("@bedrock"),
+				ref("anthropic/claude-opus-4-7@anthropic"),
+			),
 		).toBe(false);
 	});
 
@@ -238,7 +260,9 @@ describe("refSpecificity", () => {
 	});
 
 	it("only literally identical refs tie", () => {
-		expect(refSpecificity(ref("anthropic"))).toBe(refSpecificity(ref("anthropic")));
+		expect(refSpecificity(ref("anthropic"))).toBe(
+			refSpecificity(ref("anthropic")),
+		);
 		expect(refSpecificity(ref("anthropic@bedrock"))).not.toBe(
 			refSpecificity(ref("anthropic/claude-opus-4-7")),
 		);

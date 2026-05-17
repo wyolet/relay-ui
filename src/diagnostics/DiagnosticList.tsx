@@ -1,6 +1,11 @@
 import { Link } from "@tanstack/react-router";
-import { AlertCircle, AlertTriangle, Info, type LucideIcon } from "lucide-react";
-import type { Diagnostic, DiagLink, Severity } from "@/diagnostics/types";
+import {
+	AlertCircle,
+	AlertTriangle,
+	Info,
+	type LucideIcon,
+} from "lucide-react";
+import type { DiagLink, Diagnostic, Severity } from "@/diagnostics/types";
 
 const TONE: Record<
 	Severity,
@@ -104,7 +109,9 @@ export function DiagnosticList({
 	if (diagnostics.length === 0) {
 		if (!emptyHint) return null;
 		return (
-			<p className={["text-xs text-muted-foreground", className ?? ""].join(" ")}>
+			<p
+				className={["text-xs text-muted-foreground", className ?? ""].join(" ")}
+			>
 				{emptyHint}
 			</p>
 		);

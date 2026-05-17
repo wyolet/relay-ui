@@ -1,12 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Suspense } from "react";
+import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
+import { hostsListQueryOptions } from "@/api/hooks/hosts";
 import { modelsListQueryOptions } from "@/api/hooks/models";
 import { policiesListQueryOptions } from "@/api/hooks/policies";
 import { providersListQueryOptions } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
-import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
-import { hostsListQueryOptions } from "@/api/hooks/hosts";
 import { ResourceGraphSVG } from "@/graph/ResourceGraphSVG";
 
 export const Route = createFileRoute("/_authenticated/")({

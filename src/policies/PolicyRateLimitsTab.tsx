@@ -1,16 +1,17 @@
+import { Link } from "@tanstack/react-router";
 import { ChevronDown, ChevronRight, Gauge, Info } from "lucide-react";
 import { useMemo, useState } from "react";
-import { Link } from "@tanstack/react-router";
 import { useHosts } from "@/api/hooks/hosts";
 import { useModels } from "@/api/hooks/models";
 import { useProviders } from "@/api/hooks/providers";
 import { useRateLimits } from "@/api/hooks/ratelimits";
 import type { Policy } from "@/api/types/policy";
-import type {
-	RateLimit,
-	RateLimitRule,
-} from "@/api/types/ratelimit";
-import { parseCatalogRef, refCovers, validateCatalogRef } from "@/lib/catalogRef";
+import type { RateLimit, RateLimitRule } from "@/api/types/ratelimit";
+import {
+	parseCatalogRef,
+	refCovers,
+	validateCatalogRef,
+} from "@/lib/catalogRef";
 import { buildConcreteCatalog } from "@/lib/concreteCatalog";
 import { displayLabel } from "@/lib/displayLabel";
 import { formatRuleShort } from "@/lib/rateLimitFormat";
@@ -107,7 +108,8 @@ function OverlapBanner({ policy }: { policy: Policy }) {
 			});
 		}
 		for (const b of policy.spec.rlBindings ?? []) {
-			if (b.rateLimitId) out.push({ rateLimitId: b.rateLimitId, models: b.models ?? [] });
+			if (b.rateLimitId)
+				out.push({ rateLimitId: b.rateLimitId, models: b.models ?? [] });
 		}
 		return out;
 	}, [policy]);
@@ -148,7 +150,10 @@ function BindingPanel({
 	catalog,
 }: BindingPanelProps) {
 	const rules = rateLimit?.spec.rules ?? [];
-	const models = useMemo(() => resolveModelNames(refs, catalog), [refs, catalog]);
+	const models = useMemo(
+		() => resolveModelNames(refs, catalog),
+		[refs, catalog],
+	);
 	const [expanded, setExpanded] = useState(false);
 	const visible = expanded ? models : models.slice(0, COLLAPSE_THRESHOLD);
 	const showToggle = models.length > COLLAPSE_THRESHOLD;
@@ -237,8 +242,10 @@ function groupRules(rules: readonly RateLimitRule[]): RuleGroup[] {
 	const requests: RuleGroup = { label: "Request limits", rules: [] };
 	const other: RuleGroup = { label: "Other limits", rules: [] };
 	rules.forEach((rule, i) => {
-		if (rule.meter.startsWith("tokens")) tokens.rules.push({ rule, originalIndex: i });
-		else if (rule.meter === "requests") requests.rules.push({ rule, originalIndex: i });
+		if (rule.meter.startsWith("tokens"))
+			tokens.rules.push({ rule, originalIndex: i });
+		else if (rule.meter === "requests")
+			requests.rules.push({ rule, originalIndex: i });
 		else other.rules.push({ rule, originalIndex: i });
 	});
 	return [tokens, requests, other].filter((g) => g.rules.length > 0);
@@ -256,7 +263,7 @@ const WINDOW_LETTER: Record<number, string> = {
 	1: "S",
 	60: "M",
 	3600: "H",
-	86_400: "D",
+	86400: "D",
 };
 
 function ruleShortTag(meter: string, seconds: number): string | undefined {
@@ -308,8 +315,8 @@ function RateLimitTable({
 			<div className="px-3 py-2 flex items-start gap-2 text-[11px] text-muted-foreground bg-muted/10 border-b border-border">
 				<Info className="w-3.5 h-3.5 mt-0.5 shrink-0" aria-hidden />
 				<span>
-					Limits apply per model on each host. Expand to see every model
-					this rate limit covers in the policy.
+					Limits apply per model on each host. Expand to see every model this
+					rate limit covers in the policy.
 				</span>
 			</div>
 			<div className="overflow-x-auto">
@@ -347,7 +354,10 @@ function RateLimitTable({
 					</thead>
 					<tbody className="divide-y divide-border">
 						{models.map((m) => (
-							<tr key={`${m.provider}/${m.model}`} className="hover:bg-muted/40">
+							<tr
+								key={`${m.provider}/${m.model}`}
+								className="hover:bg-muted/40"
+							>
 								<td className="px-3 py-2 align-top">
 									<div className="font-mono text-foreground text-[13px]">
 										{m.model}

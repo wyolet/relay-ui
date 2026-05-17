@@ -7,8 +7,8 @@ import { buildConcreteCatalog } from "@/lib/concreteCatalog";
 import { displayLabel } from "@/lib/displayLabel";
 import {
 	type LabelLookups,
-	resolveBindings,
 	type Resolution,
+	resolveBindings,
 } from "@/lib/policyRLResolution";
 import { formatRulesShort } from "@/lib/rateLimitFormat";
 import type { RLMeta } from "@/rate-limits/AttachRateLimitModal";
@@ -60,9 +60,7 @@ export function usePolicyRLResolution(
 		}
 		for (const m of modelsData.items ?? []) {
 			const ownerId =
-				m.metadata.owner?.kind === "provider"
-					? m.metadata.owner.id
-					: undefined;
+				m.metadata.owner?.kind === "provider" ? m.metadata.owner.id : undefined;
 			const provider = ownerId ? providerIdToSlug.get(ownerId) : undefined;
 			if (!provider) continue;
 			modelByKey.set(

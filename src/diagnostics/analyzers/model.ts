@@ -23,7 +23,8 @@ export function analyzeModel(
 
 	const livingBindings = bindings.filter((b) => graph.hosts.has(b.hostId));
 	const enabledBindings = livingBindings.filter(
-		(b) => b.enabled !== false && graph.hosts.get(b.hostId)?.spec.enabled !== false,
+		(b) =>
+			b.enabled !== false && graph.hosts.get(b.hostId)?.spec.enabled !== false,
 	);
 
 	if (bindings.length > 0 && enabledBindings.length === 0) {

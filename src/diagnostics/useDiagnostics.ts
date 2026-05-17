@@ -1,3 +1,4 @@
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
@@ -6,7 +7,6 @@ import { policiesListQueryOptions } from "@/api/hooks/policies";
 import { providersListQueryOptions } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
 import { relayKeysListQueryOptions } from "@/api/hooks/relayKeys";
-import { useSuspenseQuery } from "@tanstack/react-query";
 import { analyzeHost } from "@/diagnostics/analyzers/host";
 import { analyzeHostKey } from "@/diagnostics/analyzers/hostKey";
 import { analyzeModel } from "@/diagnostics/analyzers/model";
@@ -48,7 +48,9 @@ export function useDiagnosticGraph(): DiagnosticGraph {
 	);
 }
 
-export function usePolicyDiagnostics(policyId: string | undefined): Diagnostic[] {
+export function usePolicyDiagnostics(
+	policyId: string | undefined,
+): Diagnostic[] {
 	const graph = useDiagnosticGraph();
 	return useMemo(() => {
 		if (!policyId) return [];

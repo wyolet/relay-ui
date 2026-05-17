@@ -34,8 +34,7 @@ function SettingsPage() {
 		<div>
 			<h1 className="text-2xl font-bold text-foreground mb-2">Settings</h1>
 			<p className="text-sm text-muted-foreground mb-8">
-				Relay-wide behavior — proxy mode, rate limits, and other operator
-				knobs.
+				Relay-wide behavior — proxy mode, rate limits, and other operator knobs.
 			</p>
 			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
 				{ITEMS.map((item) => {

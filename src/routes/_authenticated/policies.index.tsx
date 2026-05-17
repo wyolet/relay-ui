@@ -1,5 +1,4 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
 	Gauge,
 	KeyRound,
@@ -7,26 +6,18 @@ import {
 	Plus,
 	ShieldCheck,
 } from "lucide-react";
-import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { Suspense, useState } from "react";
 import { z } from "zod";
 import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
 import { modelsListQueryOptions } from "@/api/hooks/models";
-import { providersListQueryOptions } from "@/api/hooks/providers";
-import { relayKeysListQueryOptions } from "@/api/hooks/relayKeys";
-import { ApiError } from "@/api/types/errors";
-import { DiagnosticDot } from "@/diagnostics/DiagnosticDot";
-import {
-	usePolicyDiagnostics,
-	useRateLimitDiagnostics,
-} from "@/diagnostics/useDiagnostics";
 import {
 	policiesListQueryOptions,
 	useDeletePolicy,
 	usePolicies,
 	useUpdatePolicy,
 } from "@/api/hooks/policies";
+import { providersListQueryOptions } from "@/api/hooks/providers";
 import {
 	rateLimitsListQueryOptions,
 	useAttachableRateLimits,
@@ -34,20 +25,29 @@ import {
 	useRateLimits,
 	useUpdateRateLimit,
 } from "@/api/hooks/ratelimits";
-import { FilterDropdown } from "@/shared/FilterDropdown";
+import { relayKeysListQueryOptions } from "@/api/hooks/relayKeys";
+import { ApiError } from "@/api/types/errors";
 import type { Policy } from "@/api/types/policy";
 import type { RateLimit } from "@/api/types/ratelimit";
-import { confirm } from "@/shared/ConfirmDialog";
-import { SearchBox } from "@/shared/SearchBox";
-import { Switch } from "@/shared/Switch";
-import { TableToolbar } from "@/shared/TableToolbar";
-import { toast } from "@/shared/Toast";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DiagnosticDot } from "@/diagnostics/DiagnosticDot";
+import {
+	usePolicyDiagnostics,
+	useRateLimitDiagnostics,
+} from "@/diagnostics/useDiagnostics";
+import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
+import { confirm } from "@/shared/ConfirmDialog";
+import { FilterDropdown } from "@/shared/FilterDropdown";
+import { SearchBox } from "@/shared/SearchBox";
+import { Switch } from "@/shared/Switch";
+import { TableToolbar } from "@/shared/TableToolbar";
+import { toast } from "@/shared/Toast";
 
 type Tab = "policies" | "ratelimits";
 
@@ -330,9 +330,7 @@ function PolicyRow({
 		} catch (err) {
 			toast(
 				"error",
-				err instanceof ApiError
-					? err.body.message
-					: "Failed to update policy.",
+				err instanceof ApiError ? err.body.message : "Failed to update policy.",
 			);
 		}
 	}

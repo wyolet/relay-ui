@@ -8,9 +8,6 @@ import {
 	Unlink2,
 } from "lucide-react";
 import type { HostKey, HostKeyKind } from "@/api/types/hostkey";
-import { EnabledField } from "@/shared/EnabledField";
-import { FormSection } from "@/shared/FormSection";
-import { IdentitySection } from "@/shared/IdentitySection";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -21,6 +18,9 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { useHostKeyForm } from "@/host-keys/useHostKeyForm";
+import { EnabledField } from "@/shared/EnabledField";
+import { FormSection } from "@/shared/FormSection";
+import { IdentitySection } from "@/shared/IdentitySection";
 
 const KIND_OPTIONS: Record<HostKeyKind, { label: string; hint: string }> = {
 	stored: {

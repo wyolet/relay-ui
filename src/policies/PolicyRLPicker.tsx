@@ -1,7 +1,5 @@
 import { AlertTriangle, Pencil, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
-import { AttachRateLimitModal } from "@/rate-limits/AttachRateLimitModal";
-import type { RLMeta } from "@/rate-limits/AttachRateLimitModal";
 import { Button } from "@/components/ui/button";
 import {
 	describeRef,
@@ -15,6 +13,8 @@ import {
 import { PolicyRLOverlapWarning } from "@/policies/PolicyRLOverlapWarning";
 import type { RLBindingValue } from "@/policies/usePolicyForm";
 import { usePolicyRLResolution } from "@/policies/usePolicyRLResolution";
+import type { RLMeta } from "@/rate-limits/AttachRateLimitModal";
+import { AttachRateLimitModal } from "@/rate-limits/AttachRateLimitModal";
 
 interface PolicyRLPickerProps {
 	bindings: RLBindingValue[];
@@ -43,7 +43,9 @@ export function PolicyRLPicker({
 			new Set(
 				bindings
 					.map((b, i) =>
-						editing?.kind === "edit" && editing.idx === i ? null : b.rateLimitId,
+						editing?.kind === "edit" && editing.idx === i
+							? null
+							: b.rateLimitId,
 					)
 					.filter((v): v is string => Boolean(v)),
 			),
@@ -160,11 +162,7 @@ export function PolicyRLPicker({
 
 			{editing && (
 				<AttachRateLimitModal
-					existing={
-						editing.kind === "edit"
-							? bindings[editing.idx]
-							: undefined
-					}
+					existing={editing.kind === "edit" ? bindings[editing.idx] : undefined}
 					rateLimits={[...rlMetaById.values()]}
 					excludeRLIds={usedRLIds}
 					allowedModels={allowedModels}
@@ -230,17 +228,17 @@ function RefBlock({ stats, labels, rlMetaById, bindings }: RefBlockProps) {
 						Except {formatScopeFromConcrete(lostConcrete)} below — already
 						governed by{" "}
 						{stats.lostTo.length === 1
-							? rlMetaById.get(
+							? (rlMetaById.get(
 									bindings[stats.lostTo[0]?.ownerIdx ?? -1]?.rateLimitId ?? "",
-								)?.label ?? "another rate limit"
+								)?.label ?? "another rate limit")
 							: "other rate limits"}
 						.
 					</div>
 					<ul className="mt-1 flex flex-col gap-0.5">
 						{stats.lostTo.map((l) => {
 							const otherLabel =
-								rlMetaById.get(bindings[l.ownerIdx]?.rateLimitId ?? "")?.label ??
-								"unknown";
+								rlMetaById.get(bindings[l.ownerIdx]?.rateLimitId ?? "")
+									?.label ?? "unknown";
 							return l.bindings.map((bnd) => (
 								<li
 									key={`${l.ownerIdx}-${bnd.provider}/${bnd.model}@${bnd.host}`}
@@ -265,4 +263,3 @@ function RefBlock({ stats, labels, rlMetaById, bindings }: RefBlockProps) {
 		</li>
 	);
 }
-

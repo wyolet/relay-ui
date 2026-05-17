@@ -1,6 +1,5 @@
 import { ChevronLeft } from "lucide-react";
 import { useMemo, useState } from "react";
-import { ModelPicker } from "@/models/ModelPicker";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -10,6 +9,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
+import { ModelPicker } from "@/models/ModelPicker";
 
 export interface RLMeta {
 	id: string;
@@ -99,11 +99,7 @@ export function AttachRateLimitModal({
 						</Button>
 					) : (
 						<>
-							<Button
-								type="button"
-								variant="ghost"
-								onClick={() => setStep(1)}
-							>
+							<Button type="button" variant="ghost" onClick={() => setStep(1)}>
 								<ChevronLeft className="w-3.5 h-3.5" />
 								Back
 							</Button>
@@ -174,9 +170,7 @@ function Step1RateLimit({ value, onChange, options }: Step1Props) {
 							>
 								<span
 									className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${
-										selected
-											? "border-primary bg-primary"
-											: "border-input"
+										selected ? "border-primary bg-primary" : "border-input"
 									}`}
 								>
 									{selected && (

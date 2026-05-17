@@ -2,7 +2,6 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Check, Copy, KeyRound, MoreHorizontal, Plus } from "lucide-react";
 import { useState } from "react";
 import { z } from "zod";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
 	hostKeysListQueryOptions,
 	useDeleteHostKey,
@@ -22,11 +21,6 @@ import {
 import { ApiError } from "@/api/types/errors";
 import type { HostKey } from "@/api/types/hostkey";
 import type { RelayKey } from "@/api/types/relayKey";
-import { confirm } from "@/shared/ConfirmDialog";
-import { SearchBox } from "@/shared/SearchBox";
-import { Switch } from "@/shared/Switch";
-import { TableToolbar } from "@/shared/TableToolbar";
-import { toast } from "@/shared/Toast";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -40,12 +34,18 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DiagnosticDot } from "@/diagnostics/DiagnosticDot";
 import {
 	useHostKeyDiagnostics,
 	useRelayKeyDiagnostics,
 } from "@/diagnostics/useDiagnostics";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
+import { confirm } from "@/shared/ConfirmDialog";
+import { SearchBox } from "@/shared/SearchBox";
+import { Switch } from "@/shared/Switch";
+import { TableToolbar } from "@/shared/TableToolbar";
+import { toast } from "@/shared/Toast";
 
 function RelayKeyDiagDot({ id }: { id: string | undefined }) {
 	const diagnostics = useRelayKeyDiagnostics(id);
@@ -227,7 +227,6 @@ function KeysPage() {
 		</div>
 	);
 }
-
 
 function relayStatus(rk: RelayKey): { tone: StatusTone; label: string } {
 	if (rk.spec.revokedAt) return { tone: "danger", label: "Revoked" };
@@ -475,9 +474,7 @@ function RelayKeysPanel() {
 										<td className="px-3 py-2">
 											<Switch
 												checked={enabled}
-												onChange={(next) =>
-													void handleToggleEnabled(rk, next)
-												}
+												onChange={(next) => void handleToggleEnabled(rk, next)}
 												disabled={revoked}
 												label={`Toggle ${rk.metadata.name}`}
 											/>
@@ -526,7 +523,8 @@ function HostKeysPanel() {
 	}
 	const policyLabels = new Map<string, string>();
 	for (const p of policiesData.items ?? []) {
-		if (p.metadata.id) policyLabels.set(p.metadata.id, displayLabel(p.metadata));
+		if (p.metadata.id)
+			policyLabels.set(p.metadata.id, displayLabel(p.metadata));
 	}
 
 	const allItems = hostKeysData.items ?? [];

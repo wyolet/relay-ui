@@ -27,48 +27,45 @@ export function analyzePolicy(
 	const resolvedKeys = hostKeyIds.map((id) => graph.hostKeys.get(id));
 	const livingKeys = resolvedKeys.filter((k) => k !== undefined);
 	const enabledKeys = livingKeys.filter((k) => k.spec.enabled !== false);
+	if (hostKeyIds.length === 0) {
+		out.push({
+			severity: "error",
+			code: "policy.no-host-keys",
+			message:
+				"No host keys attached — this policy can't authenticate any upstream request.",
+		});
+	} else if (enabledKeys.length === 0) {
+		out.push({
+			severity: "error",
+			code: "policy.host-keys-all-disabled",
+			message:
+				"All attached host keys are disabled or deleted — no upstream credential is usable.",
+		});
+	} else if (enabledKeys.length < livingKeys.length) {
+		const disabledKeys = livingKeys.filter((k) => k.spec.enabled === false);
+		const names = disabledKeys
+			.map((k) => `"${displayLabel(k.metadata)}"`)
+			.join(", ");
+		out.push({
+			severity: "warn",
+			code: "policy.host-keys-degraded",
+			message: `Disabled host keys in the pool: ${names}.`,
+		});
+	}
 
-	{
-		if (hostKeyIds.length === 0) {
+	// Transitive: at least one enabled host key has its host disabled / missing.
+	if (enabledKeys.length > 0) {
+		const allHostsUnreachable = enabledKeys.every((k) => {
+			const host = graph.hosts.get(k.spec.hostId);
+			return !host || host.spec.enabled === false;
+		});
+		if (allHostsUnreachable) {
 			out.push({
 				severity: "error",
-				code: "policy.no-host-keys",
+				code: "policy.host-disabled-transitive",
 				message:
-					"No host keys attached — this policy can't authenticate any upstream request.",
+					"Every enabled host key points at a host that is disabled or deleted.",
 			});
-		} else if (enabledKeys.length === 0) {
-			out.push({
-				severity: "error",
-				code: "policy.host-keys-all-disabled",
-				message:
-					"All attached host keys are disabled or deleted — no upstream credential is usable.",
-			});
-		} else if (enabledKeys.length < livingKeys.length) {
-			const disabledKeys = livingKeys.filter((k) => k.spec.enabled === false);
-			const names = disabledKeys
-				.map((k) => `"${displayLabel(k.metadata)}"`)
-				.join(", ");
-			out.push({
-				severity: "warn",
-				code: "policy.host-keys-degraded",
-				message: `Disabled host keys in the pool: ${names}.`,
-			});
-		}
-
-		// Transitive: at least one enabled host key has its host disabled / missing.
-		if (enabledKeys.length > 0) {
-			const allHostsUnreachable = enabledKeys.every((k) => {
-				const host = graph.hosts.get(k.spec.hostId);
-				return !host || host.spec.enabled === false;
-			});
-			if (allHostsUnreachable) {
-				out.push({
-					severity: "error",
-					code: "policy.host-disabled-transitive",
-					message:
-						"Every enabled host key points at a host that is disabled or deleted.",
-				});
-			}
 		}
 	}
 

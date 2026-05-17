@@ -1,8 +1,6 @@
 import { ShieldCheck, ToggleLeft } from "lucide-react";
 import { usePolicies } from "@/api/hooks/policies";
 import type { RelayKey } from "@/api/types/relayKey";
-import { FormSection } from "@/shared/FormSection";
-import { IdentitySection } from "@/shared/IdentitySection";
 import { Button } from "@/components/ui/button";
 import {
 	Select,
@@ -11,8 +9,10 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { useRelayKeyForm } from "@/relay-keys/useRelayKeyForm";
 import { displayLabel } from "@/lib/displayLabel";
+import { useRelayKeyForm } from "@/relay-keys/useRelayKeyForm";
+import { FormSection } from "@/shared/FormSection";
+import { IdentitySection } from "@/shared/IdentitySection";
 
 interface RelayKeyFormProps {
 	relayKey?: RelayKey;

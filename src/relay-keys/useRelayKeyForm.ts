@@ -5,9 +5,9 @@ import { z } from "zod";
 import { useCreateRelayKey, useUpdateRelayKey } from "@/api/hooks/relayKeys";
 import { ApiError } from "@/api/types/errors";
 import type { RelayKey } from "@/api/types/relayKey";
-import { toast } from "@/shared/Toast";
 import { displayLabel } from "@/lib/displayLabel";
 import { randomSuffix, slugify } from "@/lib/slug";
+import { toast } from "@/shared/Toast";
 
 export interface RelayKeyFormValues {
 	displayName: string;

@@ -8,8 +8,8 @@ import { policyDetailQueryOptions, usePolicy } from "@/api/hooks/policies";
 import { providersListQueryOptions } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
 import { relayKeysListQueryOptions } from "@/api/hooks/relayKeys";
-import { PolicyForm } from "@/policies/PolicyForm";
 import { displayLabel } from "@/lib/displayLabel";
+import { PolicyForm } from "@/policies/PolicyForm";
 
 export const Route = createFileRoute("/_authenticated/policies/$name_/edit")({
 	loader: ({ context, params }) =>

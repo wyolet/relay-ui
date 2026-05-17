@@ -9,18 +9,6 @@ import {
 import { useMemo } from "react";
 import { useHostKeys } from "@/api/hooks/hostkeys";
 import type { Policy } from "@/api/types/policy";
-import { EnabledField } from "@/shared/EnabledField";
-import { IdentitySection } from "@/shared/IdentitySection";
-import { PolicyAttachedRelayKeys } from "@/policies/PolicyAttachedRelayKeys";
-import { PolicyHostRequirements } from "@/policies/PolicyHostRequirements";
-import { usePolicyHostRequirements } from "@/policies/usePolicyHostRequirements";
-import { analyzePolicy } from "@/diagnostics/analyzers/policy";
-import { DiagnosticList } from "@/diagnostics/DiagnosticList";
-import { useDiagnosticGraph } from "@/diagnostics/useDiagnostics";
-import { IncludeDeprecatedSwitch } from "@/shared/IncludeDeprecatedSwitch";
-import { ModelPicker } from "@/models/ModelPicker";
-import { MultiSelect } from "@/shared/MultiSelect";
-import { PolicyRLPicker } from "@/policies/PolicyRLPicker";
 import {
 	Select,
 	SelectContent,
@@ -28,13 +16,25 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { displayLabel } from "@/lib/displayLabel";
-import { policyFromFormValues, usePolicyForm } from "@/policies/usePolicyForm";
 import {
 	KEY_SELECTION_OPTIONS,
 	KEY_SELECTION_VALUES,
 	type KeySelection,
 } from "@/config/policy";
+import { analyzePolicy } from "@/diagnostics/analyzers/policy";
+import { DiagnosticList } from "@/diagnostics/DiagnosticList";
+import { useDiagnosticGraph } from "@/diagnostics/useDiagnostics";
+import { displayLabel } from "@/lib/displayLabel";
+import { ModelPicker } from "@/models/ModelPicker";
+import { PolicyAttachedRelayKeys } from "@/policies/PolicyAttachedRelayKeys";
+import { PolicyHostRequirements } from "@/policies/PolicyHostRequirements";
+import { PolicyRLPicker } from "@/policies/PolicyRLPicker";
+import { policyFromFormValues, usePolicyForm } from "@/policies/usePolicyForm";
+import { usePolicyHostRequirements } from "@/policies/usePolicyHostRequirements";
+import { EnabledField } from "@/shared/EnabledField";
+import { IdentitySection } from "@/shared/IdentitySection";
+import { IncludeDeprecatedSwitch } from "@/shared/IncludeDeprecatedSwitch";
+import { MultiSelect } from "@/shared/MultiSelect";
 
 interface PolicyFormProps {
 	policy?: Policy;
@@ -132,9 +132,7 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 						/>
 						<IncludeDeprecatedSwitch
 							value={values.includeDeprecated}
-							onChange={(next) =>
-								form.setFieldValue("includeDeprecated", next)
-							}
+							onChange={(next) => form.setFieldValue("includeDeprecated", next)}
 						/>
 					</div>
 				</Section>

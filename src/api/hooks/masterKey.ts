@@ -11,7 +11,8 @@ import { apiClient } from "@/api/client";
 import { ApiError } from "@/api/types/errors";
 import type { components } from "@/api/types.gen";
 
-export type MasterKeyResponse = components["schemas"]["masterKeyGenerateOutputBody"];
+export type MasterKeyResponse =
+	components["schemas"]["masterKeyGenerateOutputBody"];
 
 export function useGenerateMasterKey() {
 	return useMutation({

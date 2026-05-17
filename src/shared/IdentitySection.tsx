@@ -1,6 +1,6 @@
 import { Tag } from "lucide-react";
-import { FormSection } from "@/shared/FormSection";
 import { Input } from "@/components/ui/input";
+import { FormSection } from "@/shared/FormSection";
 
 interface IdentitySectionProps {
 	displayName: string;

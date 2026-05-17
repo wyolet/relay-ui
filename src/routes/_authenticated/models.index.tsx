@@ -2,7 +2,6 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Boxes, Plus } from "lucide-react";
 import { Suspense } from "react";
 import { z } from "zod";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
 import { hostsListQueryOptions, useHosts } from "@/api/hooks/hosts";
 import { modelsListQueryOptions, useModels } from "@/api/hooks/models";
@@ -10,6 +9,14 @@ import { policiesListQueryOptions } from "@/api/hooks/policies";
 import { providersListQueryOptions } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
 import { relayKeysListQueryOptions } from "@/api/hooks/relayKeys";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
 	applyHostFilter,
 	applyHostSort,
@@ -26,13 +33,6 @@ import {
 } from "@/models/ModelsTable";
 import { SearchBox } from "@/shared/SearchBox";
 import { TableToolbar } from "@/shared/TableToolbar";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
 
 type Tab = "models" | "hosts";
 
@@ -118,7 +118,9 @@ function ModelsList() {
 							{ value: "all", label: "All providers" },
 							...providers.map((p) => ({ value: p, label: p })),
 						]}
-						onValueChange={(v) => setProvider(v === "all" || v == null ? "" : v)}
+						onValueChange={(v) =>
+							setProvider(v === "all" || v == null ? "" : v)
+						}
 					>
 						<SelectTrigger className="w-40">
 							<SelectValue />
@@ -180,11 +182,7 @@ function HostsList() {
 	}
 	function toggleSort(field: HostsSortKey) {
 		const dir: HostsSortDir =
-			search.hsort === field
-				? search.hdir === "asc"
-					? "desc"
-					: "asc"
-				: "asc";
+			search.hsort === field ? (search.hdir === "asc" ? "desc" : "asc") : "asc";
 		void navigate({ search: (prev) => ({ ...prev, hsort: field, hdir: dir }) });
 	}
 
