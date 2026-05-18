@@ -17,7 +17,8 @@ import { buildConcreteCatalog } from "@/lib/concreteCatalog";
 export interface HostRequirement {
 	host: Host;
 	hostKeys: HostKey[];
-	selectedKeyId: string | undefined;
+	/** All selected key IDs that belong to this host (multi-select). */
+	selectedKeyIds: string[];
 	/** Refs (raw strings) that this host is a candidate for. */
 	contributingRefs: string[];
 }
@@ -38,6 +39,8 @@ export interface PolicyHostRequirements {
 	unresolvedRefs: string[];
 	/** Any selected hostKeyId whose host isn't required by current refs. */
 	extraSelectedKeyIds: string[];
+	/** Selected keys whose host isn't required by refs, grouped by host. */
+	danglingHosts: Map<string, HostRequirement>;
 }
 
 /**
@@ -153,7 +156,7 @@ function derive(input: {
 				hosts.set(id, {
 					host,
 					hostKeys: keysByHostId.get(id) ?? [],
-					selectedKeyId: pickSelected(
+					selectedKeyIds: pickSelectedAll(
 						keysByHostId.get(id) ?? [],
 						input.selectedHostKeyIds,
 					),
@@ -175,22 +178,48 @@ function derive(input: {
 	for (const id of requiredHostIds) requiredHostIdSet.add(id);
 
 	const extraSelectedKeyIds: string[] = [];
+	const danglingHosts = new Map<string, HostRequirement>();
+	const hostById = new Map<string, Host>();
+	for (const h of input.hosts) {
+		if (h.metadata.id) hostById.set(h.metadata.id, h);
+	}
 	for (const keyId of input.selectedHostKeyIds) {
 		const key = input.hostKeys.find((k) => k.metadata.id === keyId);
 		if (!key) continue;
-		if (!hosts.has(key.spec.hostId)) extraSelectedKeyIds.push(keyId);
+		if (hosts.has(key.spec.hostId)) continue;
+		extraSelectedKeyIds.push(keyId);
+		const host = hostById.get(key.spec.hostId);
+		if (!host) continue;
+		const existing = danglingHosts.get(key.spec.hostId);
+		if (existing) {
+			existing.selectedKeyIds.push(keyId);
+		} else {
+			danglingHosts.set(key.spec.hostId, {
+				host,
+				hostKeys: keysByHostId.get(key.spec.hostId) ?? [],
+				selectedKeyIds: [keyId],
+				contributingRefs: [],
+			});
+		}
 	}
 
-	return { groups, hosts, unresolvedRefs, extraSelectedKeyIds };
+	return {
+		groups,
+		hosts,
+		unresolvedRefs,
+		extraSelectedKeyIds,
+		danglingHosts,
+	};
 }
 
-function pickSelected(
+function pickSelectedAll(
 	keys: readonly HostKey[],
 	selected: readonly string[],
-): string | undefined {
+): string[] {
 	const sel = new Set(selected);
+	const out: string[] = [];
 	for (const k of keys) {
-		if (k.metadata.id && sel.has(k.metadata.id)) return k.metadata.id;
+		if (k.metadata.id && sel.has(k.metadata.id)) out.push(k.metadata.id);
 	}
-	return undefined;
+	return out;
 }

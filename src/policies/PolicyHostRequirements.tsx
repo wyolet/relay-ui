@@ -1,16 +1,25 @@
-import { AlertCircle, CheckCircle2, Circle } from "lucide-react";
-import type { Host } from "@/api/types/host";
+import { Link } from "@tanstack/react-router";
+import {
+	AlertTriangle,
+	CheckCircle2,
+	ChevronDown,
+	Circle,
+	Plus,
+	X,
+} from "lucide-react";
 import type { HostKey } from "@/api/types/hostkey";
 import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
 import { HostLogo } from "@/hosts/HostLogo";
 import { displayLabel } from "@/lib/displayLabel";
-import type { PolicyHostRequirements as Requirements } from "@/policies/usePolicyHostRequirements";
+import { AlertBanner } from "@/shared/AlertBanner";
+import type {
+	HostRequirement,
+	PolicyHostRequirements as Requirements,
+} from "@/policies/usePolicyHostRequirements";
 
 interface Props {
 	requirements: Requirements;
@@ -20,17 +29,21 @@ interface Props {
 
 /**
  * Drives Policy.hostKeyIds from what the catalog ref selection implies:
- * one row per candidate host with an inline key picker, plus a
- * "satisfied / unsatisfied" status dot.
+ * one card per candidate host with a multi-select key list, plus a
+ * "satisfied / needs key" status.
  */
 export function PolicyHostRequirements({
 	requirements,
 	selectedHostKeyIds,
 	onChange,
 }: Props) {
-	const { groups, hosts, unresolvedRefs } = requirements;
+	const { groups, hosts, unresolvedRefs, danglingHosts } = requirements;
 
-	if (groups.length === 0 && unresolvedRefs.length === 0) {
+	if (
+		groups.length === 0 &&
+		unresolvedRefs.length === 0 &&
+		danglingHosts.size === 0
+	) {
 		return (
 			<p className="text-[11px] text-muted-foreground">
 				Pick models above and Relay will list which hosts need keys here.
@@ -38,216 +51,308 @@ export function PolicyHostRequirements({
 		);
 	}
 
-	const setKeyForHost = (hostId: string, keyId: string | undefined) => {
-		const otherKeys = selectedHostKeyIds.filter((id) => {
-			const host = hosts.get(hostId);
-			if (!host) return true;
-			return !host.hostKeys.some((k) => k.metadata.id === id);
-		});
-		onChange(keyId ? [...otherKeys, keyId] : otherKeys);
+	const toggleKey = (keyId: string, on: boolean) => {
+		const set = new Set(selectedHostKeyIds);
+		if (on) set.add(keyId);
+		else set.delete(keyId);
+		onChange(Array.from(set));
 	};
 
 	const requiredGroups = groups.filter((g) => g.kind === "required");
 	const optionalGroups = groups.filter((g) => g.kind === "optional");
 
-	const requiredHostIds = new Set(
-		requiredGroups.flatMap((g) => g.candidateHostIds),
+	const requiredHostIds = Array.from(
+		new Set(requiredGroups.flatMap((g) => g.candidateHostIds)),
+	);
+
+	const missingRequired = requiredHostIds.filter(
+		(id) => (hosts.get(id)?.selectedKeyIds.length ?? 0) === 0,
 	);
 
 	return (
 		<div className="flex flex-col gap-4">
-			{requiredHostIds.size > 0 && (
-				<HostRows
-					title="Required hosts"
-					hint="Each of these hosts has at least one selected model. Pick a key for each."
-					hostIds={Array.from(requiredHostIds)}
-					hosts={hosts}
-					onPickKey={setKeyForHost}
-				/>
+			{missingRequired.length > 0 && (
+				<AlertBanner
+					severity="warn"
+					title={
+						missingRequired.length === 1
+							? "1 host needs a key"
+							: `${missingRequired.length} hosts need keys`
+					}
+				>
+					Your catalog selection requires keys for{" "}
+					{missingRequired
+						.map((id) => {
+							const h = hosts.get(id)?.host;
+							return h ? displayLabel(h.metadata) : id;
+						})
+						.join(", ")}
+					. Calls to those hosts will fail until a key is attached.
+				</AlertBanner>
 			)}
 
-			{optionalGroups.map((g) => (
-				<OptionalRow
-					key={g.ref}
-					refStr={g.ref}
-					candidateHostIds={g.candidateHostIds}
-					hosts={hosts}
-					onPickKey={setKeyForHost}
-				/>
-			))}
+			{requiredHostIds.length > 0 && (
+				<HostGroup title="Required hosts">
+					{requiredHostIds.map((id) => {
+						const req = hosts.get(id);
+						if (!req) return null;
+						return (
+							<HostCard
+								key={id}
+								req={req}
+								onToggle={toggleKey}
+								required
+							/>
+						);
+					})}
+				</HostGroup>
+			)}
+
+			{(() => {
+				const seen = new Set(requiredHostIds);
+				return optionalGroups.flatMap((g) => {
+					const remaining = g.candidateHostIds.filter((id) => !seen.has(id));
+					if (remaining.length === 0) return [];
+					for (const id of remaining) seen.add(id);
+					return [
+						<HostGroup
+							key={g.ref}
+							title="One of these hosts"
+							hint={
+								<>
+									<code className="font-mono text-foreground">{g.ref}</code>{" "}
+									resolves to multiple hosts — a key from any one is enough.
+								</>
+							}
+						>
+							{remaining.map((id) => {
+								const req = hosts.get(id);
+								if (!req) return null;
+								return <HostCard key={id} req={req} onToggle={toggleKey} />;
+							})}
+						</HostGroup>,
+					];
+				});
+			})()}
+
+			{danglingHosts.size > 0 && (
+				<HostGroup
+					title="Keys outside catalog"
+					hint="These keys are attached but their host isn't in your catalog selection. They'll never be used here."
+				>
+					{Array.from(danglingHosts.values()).map((req) => (
+						<HostCard
+							key={req.host.metadata.id ?? req.host.metadata.name}
+							req={req}
+							onToggle={toggleKey}
+							dangling
+						/>
+					))}
+				</HostGroup>
+			)}
 
 			{unresolvedRefs.length > 0 && (
-				<div className="flex items-start gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-[11px] text-muted-foreground">
-					<AlertCircle
-						className="mt-0.5 h-3.5 w-3.5 text-amber-500 shrink-0"
-						aria-hidden
-					/>
-					<div>
-						{unresolvedRefs.length === 1 ? "Ref" : "Refs"}{" "}
-						<code className="font-mono text-foreground">
-							{unresolvedRefs.join(", ")}
-						</code>{" "}
-						don't resolve to any current model — no host key needed yet.
-					</div>
-				</div>
+				<AlertBanner severity="info" title="Unresolved catalog refs">
+					{unresolvedRefs.length === 1 ? "Ref" : "Refs"}{" "}
+					<code className="font-mono text-foreground">
+						{unresolvedRefs.join(", ")}
+					</code>{" "}
+					don't resolve to any current model — no host key needed yet.
+				</AlertBanner>
 			)}
 		</div>
 	);
 }
 
-interface HostRowsProps {
+interface HostGroupProps {
 	title: string;
-	hint: string;
-	hostIds: string[];
-	hosts: Requirements["hosts"];
-	onPickKey: (hostId: string, keyId: string | undefined) => void;
+	hint?: React.ReactNode;
+	children: React.ReactNode;
 }
 
-function HostRows({ title, hint, hostIds, hosts, onPickKey }: HostRowsProps) {
+function HostGroup({ title, hint, children }: HostGroupProps) {
 	return (
 		<div>
 			<div className="mb-1.5">
 				<div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
 					{title}
 				</div>
-				<div className="text-[11px] text-muted-foreground">{hint}</div>
+				{hint && (
+					<div className="text-[11px] text-muted-foreground">{hint}</div>
+				)}
 			</div>
-			<div className="divide-y divide-border rounded-md border border-border">
-				{hostIds.map((id) => {
-					const req = hosts.get(id);
-					if (!req) return null;
-					return (
-						<HostRow
-							key={id}
-							hostId={id}
-							hostKeys={req.hostKeys}
-							host={req.host}
-							selectedKeyId={req.selectedKeyId}
-							onPickKey={onPickKey}
-						/>
-					);
-				})}
-			</div>
+			<div className="flex flex-col gap-2">{children}</div>
 		</div>
 	);
 }
 
-interface HostRowProps {
-	hostId: string;
-	host: Host;
-	hostKeys: HostKey[];
-	selectedKeyId: string | undefined;
-	onPickKey: (hostId: string, keyId: string | undefined) => void;
+interface HostCardProps {
+	req: HostRequirement;
+	onToggle: (keyId: string, on: boolean) => void;
+	required?: boolean;
+	dangling?: boolean;
 }
 
-function HostRow({
-	hostId,
-	host,
-	hostKeys,
-	selectedKeyId,
-	onPickKey,
-}: HostRowProps) {
-	const satisfied = selectedKeyId !== undefined;
+function HostCard({ req, onToggle, required, dangling }: HostCardProps) {
+	const { host, hostKeys, selectedKeyIds } = req;
+	const satisfied = selectedKeyIds.length > 0;
 	const hasAnyKey = hostKeys.length > 0;
+	const selectedSet = new Set(selectedKeyIds);
+	const available = hostKeys.filter(
+		(k) => k.metadata.id && !selectedSet.has(k.metadata.id),
+	);
 
 	return (
-		<div className="flex items-center gap-3 px-3 py-2">
-			<HostLogo host={host} size={20} />
-			<div className="flex-1 min-w-0">
-				<div className="text-sm text-foreground truncate">
-					{displayLabel(host.metadata)}
+		<div className="rounded-md border border-border bg-card">
+			<div className="flex items-center gap-3 px-3 py-2">
+				<HostLogo host={host} size={20} />
+				<div className="flex-1 min-w-0">
+					<div className="text-sm text-foreground truncate">
+						{displayLabel(host.metadata)}
+					</div>
+					<div className="text-[11px] text-muted-foreground truncate">
+						{hostKeys.length} key{hostKeys.length === 1 ? "" : "s"} available
+						{selectedKeyIds.length > 0
+							? ` · ${selectedKeyIds.length} attached`
+							: ""}
+					</div>
 				</div>
-				<div className="text-[11px] text-muted-foreground truncate">
-					{hostKeys.length} key{hostKeys.length === 1 ? "" : "s"} defined
-				</div>
+				<StatusBadge
+					satisfied={satisfied}
+					required={required}
+					dangling={dangling}
+				/>
 			</div>
 
-			<div className="w-64 shrink-0">
+			{selectedKeyIds.length > 0 && (
+				<ul className="border-t border-border divide-y divide-border">
+					{selectedKeyIds.map((id) => {
+						const key = hostKeys.find((k) => k.metadata.id === id);
+						if (!key) return null;
+						return (
+							<li
+								key={id}
+								className="flex items-center justify-between px-3 py-1.5 text-xs"
+							>
+								<span className="truncate text-foreground">
+									{displayLabel(key.metadata)}
+								</span>
+								<button
+									type="button"
+									onClick={() => onToggle(id, false)}
+									className="h-6 w-6 inline-flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted shrink-0"
+									aria-label={`Detach ${displayLabel(key.metadata)}`}
+								>
+									<X className="h-3.5 w-3.5" />
+								</button>
+							</li>
+						);
+					})}
+				</ul>
+			)}
+
+			<div className="border-t border-border px-3 py-1.5 flex items-center justify-between">
 				{hasAnyKey ? (
-					<Select
-						value={selectedKeyId ?? ""}
-						items={hostKeys.map((k) => ({
-							value: k.metadata.id ?? "",
-							label: displayLabel(k.metadata),
-						}))}
-						onValueChange={(v) =>
-							onPickKey(hostId, v == null || v === "" ? undefined : v)
-						}
-					>
-						<SelectTrigger className="w-full">
-							<SelectValue placeholder="Select a key…" />
-						</SelectTrigger>
-						<SelectContent>
-							{hostKeys.map((k) => (
-								<SelectItem key={k.metadata.id} value={k.metadata.id ?? ""}>
-									{displayLabel(k.metadata)}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
+					<AddKeyPopover
+						available={available}
+						onPick={(id) => onToggle(id, true)}
+						disabled={available.length === 0}
+					/>
 				) : (
-					<div className="text-[11px] text-amber-600 dark:text-amber-400">
-						No keys for this host — create one first.
+					<div className="flex items-center gap-1.5 text-[11px] text-amber-600 dark:text-amber-400">
+						<AlertTriangle className="h-3.5 w-3.5" aria-hidden />
+						No keys exist for this host.
 					</div>
 				)}
-			</div>
-
-			<div className="w-5 shrink-0 flex justify-end" aria-hidden>
-				{satisfied ? (
-					<CheckCircle2 className="h-4 w-4 text-emerald-500" />
-				) : (
-					<Circle className="h-4 w-4 text-muted-foreground" />
-				)}
+				<Link
+					to="/host-keys/new"
+					className="text-[11px] text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
+				>
+					<Plus className="h-3 w-3" aria-hidden />
+					Create new key
+				</Link>
 			</div>
 		</div>
 	);
 }
 
-interface OptionalRowProps {
-	refStr: string;
-	candidateHostIds: string[];
-	hosts: Requirements["hosts"];
-	onPickKey: (hostId: string, keyId: string | undefined) => void;
+interface StatusBadgeProps {
+	satisfied: boolean;
+	required?: boolean;
+	dangling?: boolean;
 }
 
-function OptionalRow({
-	refStr,
-	candidateHostIds,
-	hosts,
-	onPickKey,
-}: OptionalRowProps) {
-	const satisfied = candidateHostIds.some(
-		(id) => hosts.get(id)?.selectedKeyId !== undefined,
-	);
+function StatusBadge({ satisfied, required, dangling }: StatusBadgeProps) {
+	if (dangling) {
+		return (
+			<span className="inline-flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
+				<AlertTriangle className="h-3.5 w-3.5" aria-hidden />
+				outside catalog
+			</span>
+		);
+	}
+	if (satisfied) {
+		return (
+			<span className="inline-flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400">
+				<CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
+				attached
+			</span>
+		);
+	}
+	if (required) {
+		return (
+			<span className="inline-flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
+				<AlertTriangle className="h-3.5 w-3.5" aria-hidden />
+				needs key
+			</span>
+		);
+	}
 	return (
-		<div className="rounded-md border border-border">
-			<div className="flex items-center justify-between px-3 py-2 bg-muted/30 border-b border-border">
-				<div className="text-[11px] text-muted-foreground">
-					<code className="font-mono text-foreground">{refStr}</code> — pick a
-					key from any one of these hosts:
-				</div>
-				{satisfied ? (
-					<CheckCircle2 className="h-4 w-4 text-emerald-500" aria-hidden />
-				) : (
-					<Circle className="h-4 w-4 text-muted-foreground" aria-hidden />
-				)}
-			</div>
-			<div className="divide-y divide-border">
-				{candidateHostIds.map((id) => {
-					const req = hosts.get(id);
-					if (!req) return null;
-					return (
-						<HostRow
-							key={id}
-							hostId={id}
-							host={req.host}
-							hostKeys={req.hostKeys}
-							selectedKeyId={req.selectedKeyId}
-							onPickKey={onPickKey}
-						/>
-					);
-				})}
-			</div>
-		</div>
+		<span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+			<Circle className="h-3.5 w-3.5" aria-hidden />
+			none attached
+		</span>
+	);
+}
+
+interface AddKeyPopoverProps {
+	available: HostKey[];
+	onPick: (keyId: string) => void;
+	disabled: boolean;
+}
+
+function AddKeyPopover({ available, onPick, disabled }: AddKeyPopoverProps) {
+	if (disabled) {
+		return (
+			<span className="text-[11px] text-muted-foreground">
+				All keys attached
+			</span>
+		);
+	}
+	return (
+		<Popover>
+			<PopoverTrigger
+				className="inline-flex items-center gap-1 h-6 px-2 rounded text-[11px] font-medium text-foreground border border-border hover:bg-muted"
+			>
+				<Plus className="h-3 w-3" aria-hidden />
+				Add key
+				<ChevronDown className="h-3 w-3" aria-hidden />
+			</PopoverTrigger>
+			<PopoverContent align="start" className="w-64 p-1">
+				<ul className="flex flex-col">
+					{available.map((k) => (
+						<li key={k.metadata.id}>
+							<button
+								type="button"
+								onClick={() => k.metadata.id && onPick(k.metadata.id)}
+								className="w-full text-left px-2 py-1.5 rounded text-xs hover:bg-muted text-foreground"
+							>
+								{displayLabel(k.metadata)}
+							</button>
+						</li>
+					))}
+				</ul>
+			</PopoverContent>
+		</Popover>
 	);
 }

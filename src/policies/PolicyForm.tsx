@@ -7,7 +7,6 @@ import {
 	ToggleLeft,
 } from "lucide-react";
 import { useMemo } from "react";
-import { useHostKeys } from "@/api/hooks/hostkeys";
 import type { Policy } from "@/api/types/policy";
 import {
 	Select,
@@ -24,7 +23,6 @@ import {
 import { analyzePolicy } from "@/diagnostics/analyzers/policy";
 import { DiagnosticList } from "@/diagnostics/DiagnosticList";
 import { useDiagnosticGraph } from "@/diagnostics/useDiagnostics";
-import { displayLabel } from "@/lib/displayLabel";
 import { ModelPicker } from "@/models/ModelPicker";
 import { PolicyAttachedRelayKeys } from "@/policies/PolicyAttachedRelayKeys";
 import { PolicyHostRequirements } from "@/policies/PolicyHostRequirements";
@@ -34,7 +32,6 @@ import { usePolicyHostRequirements } from "@/policies/usePolicyHostRequirements"
 import { EnabledField } from "@/shared/EnabledField";
 import { IdentitySection } from "@/shared/IdentitySection";
 import { IncludeDeprecatedSwitch } from "@/shared/IncludeDeprecatedSwitch";
-import { MultiSelect } from "@/shared/MultiSelect";
 
 interface PolicyFormProps {
 	policy?: Policy;
@@ -43,8 +40,6 @@ interface PolicyFormProps {
 }
 
 export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
-	const { data: hostKeysData } = useHostKeys();
-
 	const {
 		form,
 		values,
@@ -57,13 +52,6 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 		policy,
 		onSaved,
 	});
-
-	const allHostKeys = hostKeysData.items ?? [];
-
-	const hostKeyOptions = allHostKeys.map((hk) => ({
-		value: hk.metadata.id ?? "",
-		label: displayLabel(hk.metadata),
-	}));
 
 	// Live diagnostics: synthesize a draft policy from form values and run
 	// the analyzer against it. Updates on every field change so warnings
@@ -147,25 +135,6 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 						selectedHostKeyIds={values.hostKeyIds}
 						onChange={(next) => form.setFieldValue("hostKeyIds", next)}
 					/>
-
-					<div className="mt-4">
-						<div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-1">
-							Additional keys
-						</div>
-						<p className="mb-2 text-[11px] text-muted-foreground">
-							Attach extra keys beyond what your catalog selection requires.
-							Order is preserved — Relay tries them top-to-bottom on rate-limit
-							errors.
-						</p>
-						<MultiSelect
-							options={hostKeyOptions}
-							selected={values.hostKeyIds}
-							onChange={(next) => form.setFieldValue("hostKeyIds", next)}
-							placeholder="Attach host keys…"
-							emptyHint="No host keys defined."
-							aria-label="Host keys"
-						/>
-					</div>
 
 					<div className="mt-4">
 						<div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-1">
