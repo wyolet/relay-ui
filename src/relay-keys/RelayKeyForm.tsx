@@ -13,6 +13,7 @@ import { displayLabel } from "@/lib/displayLabel";
 import { useRelayKeyForm } from "@/relay-keys/useRelayKeyForm";
 import { FormSection } from "@/shared/FormSection";
 import { IdentitySection } from "@/shared/IdentitySection";
+import { ToggleSwitch } from "@/shared/ToggleSwitch";
 
 interface RelayKeyFormProps {
 	relayKey?: RelayKey;
@@ -103,47 +104,12 @@ export function RelayKeyForm({
 					title="Behavior"
 					description="Operational flags applied at request time."
 				>
-					<div className="flex flex-col gap-3">
-						<label className="flex items-start gap-3 cursor-pointer">
-							<input
-								type="checkbox"
-								checked={values.enabled}
-								onChange={(e) =>
-									form.setFieldValue("enabled", e.currentTarget.checked)
-								}
-								className="mt-0.5 h-3.5 w-3.5 accent-primary"
-							/>
-							<span className="flex flex-col gap-0.5">
-								<span className="text-sm text-foreground">Enabled</span>
-								<span className="text-[11px] text-muted-foreground leading-snug">
-									When off, requests with this key return 401. Re-enable any
-									time without rotating the secret.
-								</span>
-							</span>
-						</label>
-						<label className="flex items-start gap-3 cursor-pointer">
-							<input
-								type="checkbox"
-								checked={values.passthroughAllowed}
-								onChange={(e) =>
-									form.setFieldValue(
-										"passthroughAllowed",
-										e.currentTarget.checked,
-									)
-								}
-								className="mt-0.5 h-3.5 w-3.5 accent-primary"
-							/>
-							<span className="flex flex-col gap-0.5">
-								<span className="text-sm text-foreground">
-									Allow upstream passthrough
-								</span>
-								<span className="text-[11px] text-muted-foreground leading-snug">
-									Permits the caller to forward their own provider API key
-									instead of using the policy's host keys.
-								</span>
-							</span>
-						</label>
-					</div>
+					<ToggleSwitch
+						value={values.passthroughAllowed}
+						onChange={(v) => form.setFieldValue("passthroughAllowed", v)}
+						label="Allow upstream passthrough"
+						hint="Permits the caller to forward their own provider API key instead of using the policy's host keys."
+					/>
 				</FormSection>
 			</div>
 

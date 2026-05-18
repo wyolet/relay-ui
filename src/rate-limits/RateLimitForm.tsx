@@ -1,4 +1,4 @@
-import { Gauge, Plus, ToggleLeft, Undo2, X } from "lucide-react";
+import { Gauge, Plus, Undo2, X } from "lucide-react";
 import { useState } from "react";
 import type { RateLimit } from "@/api/types/ratelimit";
 import { Input } from "@/components/ui/input";
@@ -22,7 +22,6 @@ import {
 	STRATEGY_VALUES,
 	useRateLimitForm,
 } from "@/rate-limits/useRateLimitForm";
-import { EnabledField } from "@/shared/EnabledField";
 import { FormSection } from "@/shared/FormSection";
 import { IdentitySection } from "@/shared/IdentitySection";
 
@@ -137,19 +136,7 @@ export function RateLimitForm({
 					placeholder="Default rate limit"
 				/>
 
-				<FormSection
-					icon={ToggleLeft}
-					title="Availability"
-					description="Disable to make this rate limit inert without deleting it."
-				>
-					<EnabledField
-						value={values.enabled}
-						onChange={(v) => form.setFieldValue("enabled", v)}
-						hint="When off, this rate limit doesn't apply to any policy or model — but stays attached so you can re-enable later."
-					/>
-				</FormSection>
-
-				<FormSection
+<FormSection
 					icon={Gauge}
 					title="Rules"
 					description="Each rule picks a meter, strategy, and window. They're enforced independently — the first to exhaust blocks the request."

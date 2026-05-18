@@ -19,6 +19,7 @@ import {
 	useUpdateRelayKey,
 } from "@/api/hooks/relayKeys";
 import { ApiError } from "@/api/types/errors";
+import type { Host } from "@/api/types/host";
 import type { HostKey } from "@/api/types/hostkey";
 import type { RelayKey } from "@/api/types/relayKey";
 import {
@@ -27,15 +28,9 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DiagnosticDot } from "@/diagnostics/DiagnosticDot";
+import { HostCell } from "@/hosts/HostCell";
 import {
 	useHostKeyDiagnostics,
 	useRelayKeyDiagnostics,
@@ -57,18 +52,10 @@ function HostKeyDiagDot({ id }: { id: string | undefined }) {
 	return <DiagnosticDot diagnostics={diagnostics} />;
 }
 
-type Filter = "active" | "revoked" | "all";
-
-const FILTER_LABELS: Record<Filter, string> = {
-	active: "Active",
-	revoked: "Revoked",
-	all: "All",
-};
 type Tab = "relay" | "provider";
 
 const searchSchema = z.object({
 	tab: z.enum(["relay", "provider"]).default("relay"),
-	filter: z.enum(["active", "revoked", "all"]).default("active"),
 	q: z.string().default(""),
 });
 
@@ -229,13 +216,8 @@ function KeysPage() {
 }
 
 function relayStatus(rk: RelayKey): { tone: StatusTone; label: string } {
-	if (rk.spec.revokedAt) return { tone: "danger", label: "Revoked" };
 	if (rk.spec.enabled === false) return { tone: "warn", label: "Disabled" };
 	return { tone: "active", label: "Active" };
-}
-
-function isRelayKeyRevoked(rk: RelayKey): boolean {
-	return Boolean(rk.spec.revokedAt) || rk.spec.enabled === false;
 }
 
 function RelayKeysPanel() {
@@ -254,21 +236,15 @@ function RelayKeysPanel() {
 
 	const allItems = relayKeysData.items ?? [];
 	const needle = search.q.trim().toLowerCase();
-	const items = allItems.filter((rk) => {
-		const revoked = isRelayKeyRevoked(rk);
-		if (search.filter === "active" && revoked) return false;
-		if (search.filter === "revoked" && !revoked) return false;
-		if (!needle) return true;
-		return (
-			displayLabel(rk.metadata).toLowerCase().includes(needle) ||
-			rk.metadata.name.toLowerCase().includes(needle) ||
-			(rk.spec.prefix ?? "").toLowerCase().includes(needle)
-		);
-	});
+	const items = needle
+		? allItems.filter(
+				(rk) =>
+					displayLabel(rk.metadata).toLowerCase().includes(needle) ||
+					rk.metadata.name.toLowerCase().includes(needle) ||
+					(rk.spec.prefix ?? "").toLowerCase().includes(needle),
+			)
+		: allItems;
 
-	function setFilter(filter: Filter) {
-		void navigate({ search: (prev) => ({ ...prev, filter }) });
-	}
 	function setQ(q: string) {
 		void navigate({ search: (prev) => ({ ...prev, q }) });
 	}
@@ -326,29 +302,6 @@ function RelayKeysPanel() {
 						onChange={setQ}
 						placeholder="Search keys"
 					/>
-				}
-				filters={
-					<Select
-						value={search.filter}
-						items={(Object.keys(FILTER_LABELS) as Filter[]).map((f) => ({
-							value: f,
-							label: FILTER_LABELS[f],
-						}))}
-						onValueChange={(v) => {
-							if (v !== null) setFilter(v as Filter);
-						}}
-					>
-						<SelectTrigger className="w-32">
-							<SelectValue />
-						</SelectTrigger>
-						<SelectContent>
-							{(Object.keys(FILTER_LABELS) as Filter[]).map((f) => (
-								<SelectItem key={f} value={f}>
-									{FILTER_LABELS[f]}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
 				}
 				actions={
 					<Link
@@ -412,7 +365,6 @@ function RelayKeysPanel() {
 						<tbody>
 							{items.map((rk) => {
 								const status = relayStatus(rk);
-								const revoked = isRelayKeyRevoked(rk);
 								const enabled = rk.spec.enabled ?? true;
 								const pid = rk.spec.policyId ?? "";
 								const policyLabel = pid
@@ -423,9 +375,9 @@ function RelayKeysPanel() {
 										key={rk.metadata.name}
 										className={[
 											"border-t border-border transition-colors",
-											revoked
-												? "bg-muted/30 text-muted-foreground/70"
-												: "hover:bg-muted/40",
+											enabled
+												? "hover:bg-muted/40"
+												: "bg-muted/30 text-muted-foreground/70",
 										].join(" ")}
 									>
 										<td className="px-3 py-2 align-middle">
@@ -436,12 +388,7 @@ function RelayKeysPanel() {
 												<Link
 													to="/relay-keys/$name"
 													params={{ name: rk.metadata.name }}
-													className={[
-														"text-sm font-medium hover:underline",
-														revoked
-															? "text-neutral-500 dark:text-neutral-500"
-															: "text-foreground",
-													].join(" ")}
+													className="text-sm font-medium text-foreground hover:underline"
 												>
 													{displayLabel(rk.metadata)}
 												</Link>
@@ -475,7 +422,6 @@ function RelayKeysPanel() {
 											<Switch
 												checked={enabled}
 												onChange={(next) => void handleToggleEnabled(rk, next)}
-												disabled={revoked}
 												label={`Toggle ${rk.metadata.name}`}
 											/>
 										</td>
@@ -517,9 +463,13 @@ function HostKeysPanel() {
 	const deleteHostKey = useDeleteHostKey();
 	const [q, setQ] = useState("");
 
-	const hostLabels = new Map<string, string>();
+	const hostById = new Map<string, Host>();
 	for (const h of hostsData.items ?? []) {
-		if (h.metadata.id) hostLabels.set(h.metadata.id, displayLabel(h.metadata));
+		if (h.metadata.id) hostById.set(h.metadata.id, h);
+	}
+	const hostLabels = new Map<string, string>();
+	for (const [id, h] of hostById.entries()) {
+		hostLabels.set(id, displayLabel(h.metadata));
 	}
 	const policyLabels = new Map<string, string>();
 	for (const p of policiesData.items ?? []) {
@@ -644,6 +594,7 @@ function HostKeysPanel() {
 								const isStored = hk.spec.valueFrom.kind === "stored";
 								const refCount = hk.policies?.length ?? 0;
 								const enabled = hk.spec.enabled ?? true;
+								const host = hostById.get(hk.spec.hostId);
 								const hostLabel =
 									hostLabels.get(hk.spec.hostId) ??
 									`Unknown (${hk.spec.hostId.slice(0, 6)}…)`;
@@ -678,8 +629,12 @@ function HostKeysPanel() {
 												)}
 											</Link>
 										</td>
-										<td className="px-3 py-2 text-xs text-foreground">
-											{hostLabel}
+										<td className="px-3 py-2">
+											<HostCell
+												host={host}
+												fallbackLabel={hostLabel}
+												size="sm"
+											/>
 										</td>
 										<td className="px-3 py-2">
 											{tierLabel ? (

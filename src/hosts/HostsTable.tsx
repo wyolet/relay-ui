@@ -5,8 +5,8 @@ import { ApiError } from "@/api/types/errors";
 import type { Host } from "@/api/types/host";
 import { DiagnosticDot } from "@/diagnostics/DiagnosticDot";
 import { useHostDiagnostics } from "@/diagnostics/useDiagnostics";
-import { HostLogo } from "@/hosts/HostLogo";
-import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
+import { HostCell } from "@/hosts/HostCell";
+import { displayLabel } from "@/lib/displayLabel";
 import { Switch } from "@/shared/Switch";
 import { toast } from "@/shared/Toast";
 
@@ -109,27 +109,10 @@ function HostRow({ h }: { h: Host }) {
 					to="/models"
 					className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
 				>
-					<div className="flex items-center gap-3 min-w-0">
-						<HostLogo host={h} size={32} />
-						<div className="min-w-0">
-							<div className="flex items-center gap-2 min-w-0">
-								<span className="text-sm font-medium text-foreground truncate">
-									{displayLabel(h.metadata)}
-								</span>
-								{!hasDisplayName(h.metadata) && (
-									<span className="text-[11px] text-muted-foreground">
-										(no display name)
-									</span>
-								)}
-								<DiagnosticDot diagnostics={diagnostics} />
-							</div>
-							{hasDisplayName(h.metadata) && (
-								<div className="text-[11px] text-muted-foreground truncate">
-									<code className="font-mono">{h.metadata.name}</code>
-								</div>
-							)}
-						</div>
-					</div>
+					<HostCell
+						host={h}
+						accessory={<DiagnosticDot diagnostics={diagnostics} />}
+					/>
 				</Link>
 			</td>
 			<td className="px-3 py-2 text-sm text-foreground">

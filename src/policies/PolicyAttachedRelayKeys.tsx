@@ -46,7 +46,6 @@ export function PolicyAttachedRelayKeys({
 				<ul className="divide-y divide-border">
 					{attached.map((rk) => {
 						const enabled = rk.spec.enabled !== false;
-						const revoked = Boolean(rk.spec.revokedAt);
 						return (
 							<li
 								key={rk.metadata.name}
@@ -64,11 +63,6 @@ export function PolicyAttachedRelayKeys({
 										{!enabled && (
 											<span className="text-[10px] uppercase tracking-wide text-muted-foreground">
 												Disabled
-											</span>
-										)}
-										{revoked && (
-											<span className="text-[10px] uppercase tracking-wide text-destructive">
-												Revoked
 											</span>
 										)}
 									</div>

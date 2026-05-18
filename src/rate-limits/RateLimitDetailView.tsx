@@ -179,7 +179,6 @@ function PoliciesPanel({ rateLimit }: { rateLimit: RateLimit }) {
 	const relayKeyCountByPolicy = useMemo(() => {
 		const counts = new Map<string, number>();
 		for (const rk of relayKeys.items ?? []) {
-			if (rk.spec.revokedAt) continue;
 			const pid = rk.spec.policyId;
 			if (!pid) continue;
 			counts.set(pid, (counts.get(pid) ?? 0) + 1);

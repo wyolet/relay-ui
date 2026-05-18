@@ -14,7 +14,6 @@ import {
 } from "@/components/ui/select";
 import { HostLogo } from "@/hosts/HostLogo";
 import { displayLabel } from "@/lib/displayLabel";
-import { EnabledField } from "@/shared/EnabledField";
 import type { FieldDef, FormValues } from "@/shared/ResourceForm";
 import { ResourceForm } from "@/shared/ResourceForm";
 import { toast } from "@/shared/Toast";
@@ -55,7 +54,6 @@ function NewModelInner() {
 	const [serverError, setServerError] = useState<ApiErrorBody | undefined>();
 	const [hostId, setHostId] = useState<string>("");
 	const [adapter, setAdapter] = useState<string>("openai");
-	const [enabled, setEnabled] = useState<boolean>(true);
 
 	const hosts = hostsData.items ?? [];
 
@@ -73,7 +71,6 @@ function NewModelInner() {
 		const payload: ModelCreate = {
 			metadata: { name, displayName: displayName || undefined },
 			spec: {
-				enabled,
 				hosts: [{ hostId, upstreamName, adapter }],
 			},
 		};
@@ -152,11 +149,6 @@ function NewModelInner() {
 							</SelectContent>
 						</Select>
 					</div>
-					<EnabledField
-						value={enabled}
-						onChange={setEnabled}
-						hint="When off, this model is hidden from policies and rejects requests."
-					/>
 				</div>
 			}
 		/>

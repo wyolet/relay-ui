@@ -4,7 +4,6 @@ import {
 	KeyRound,
 	Link2,
 	ShieldCheck,
-	ToggleLeft,
 	Unlink2,
 } from "lucide-react";
 import type { HostKey, HostKeyKind } from "@/api/types/hostkey";
@@ -18,7 +17,6 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { useHostKeyForm } from "@/host-keys/useHostKeyForm";
-import { EnabledField } from "@/shared/EnabledField";
 import { FormSection } from "@/shared/FormSection";
 import { IdentitySection } from "@/shared/IdentitySection";
 
@@ -83,19 +81,7 @@ export function HostKeyForm({ hostKey, onSaved, onCancel }: HostKeyFormProps) {
 					placeholder="OpenAI production key"
 				/>
 
-				<FormSection
-					icon={ToggleLeft}
-					title="Availability"
-					description="Disable to make this credential inert without detaching it."
-				>
-					<EnabledField
-						value={values.enabled}
-						onChange={(v) => form.setFieldValue("enabled", v)}
-						hint="When off, requests routed to this host key fall through to the next eligible credential (or fail if none)."
-					/>
-				</FormSection>
-
-				<FormSection
+<FormSection
 					icon={Globe}
 					title="Host & host policy"
 					description="Which upstream provider this credential authenticates against, and the host policy (mirrors the provider's own tier, e.g. OpenAI Tier 2) that governs its rate limits and capacity."

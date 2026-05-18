@@ -42,7 +42,7 @@ function NewRelayKeyInner() {
 						onClick={() =>
 							void navigate({
 								to: "/keys",
-								search: { tab: "relay", filter: "active", q: "" },
+								search: { tab: "relay", q: "" },
 							})
 						}
 					>
@@ -69,7 +69,7 @@ function NewRelayKeyInner() {
 			<div>
 				<Link
 					to="/keys"
-					search={{ tab: "relay", filter: "active", q: "" }}
+					search={{ tab: "relay", q: "" }}
 					className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
 				>
 					<ChevronLeft className="w-3.5 h-3.5" />
@@ -89,7 +89,7 @@ function NewRelayKeyInner() {
 				onCancel={() =>
 					void navigate({
 						to: "/keys",
-						search: { tab: "relay", filter: "active", q: "" },
+						search: { tab: "relay", q: "" },
 					})
 				}
 			/>

@@ -4,7 +4,6 @@ import {
 	KeyRound,
 	type LucideIcon,
 	ShieldCheck,
-	ToggleLeft,
 } from "lucide-react";
 import { useMemo } from "react";
 import type { Policy } from "@/api/types/policy";
@@ -29,7 +28,6 @@ import { PolicyHostRequirements } from "@/policies/PolicyHostRequirements";
 import { PolicyRLPicker } from "@/policies/PolicyRLPicker";
 import { policyFromFormValues, usePolicyForm } from "@/policies/usePolicyForm";
 import { usePolicyHostRequirements } from "@/policies/usePolicyHostRequirements";
-import { EnabledField } from "@/shared/EnabledField";
 import { IdentitySection } from "@/shared/IdentitySection";
 import { IncludeDeprecatedSwitch } from "@/shared/IncludeDeprecatedSwitch";
 
@@ -95,19 +93,7 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 					placeholder="Default policy"
 				/>
 
-				<Section
-					icon={ToggleLeft}
-					title="Availability"
-					description="Disable to make this policy inert without deleting it."
-				>
-					<EnabledField
-						value={values.enabled}
-						onChange={(v) => form.setFieldValue("enabled", v)}
-						hint="When off, relay keys attached to this policy reject requests with 401."
-					/>
-				</Section>
-
-				<Section
+<Section
 					icon={Boxes}
 					title="Allowed catalog"
 					description="Grant providers, models, hosts, or specific model+host pairs. Wildcard grants auto-include catalog rows added later."
