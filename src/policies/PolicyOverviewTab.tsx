@@ -3,80 +3,166 @@ import { usePolicyReferences } from "@/api/hooks/policies";
 import type { Policy } from "@/api/types/policy";
 import { DiagnosticList } from "@/diagnostics/DiagnosticList";
 import { usePolicyDiagnostics } from "@/diagnostics/useDiagnostics";
+import { HostLogo } from "@/hosts/HostLogo";
 import { displayLabel } from "@/lib/displayLabel";
+import { usePolicyResolvedCatalog } from "@/policies/usePolicyResolvedCatalog";
 
 interface Props {
 	policy: Policy;
 }
 
 export function PolicyOverviewTab({ policy }: Props) {
-	const created = policy.metadata.id ? undefined : undefined; // not exposed yet
-	const refsCount = (policy.spec.models ?? []).length;
-	const hkCount = (policy.spec.hostKeyIds ?? []).length;
-	const rlCount =
-		(policy.spec.rlBindings ?? []).length + (policy.spec.rateLimitId ? 1 : 0);
-
 	return (
 		<div className="flex flex-col gap-6">
 			<IssuesPanel policyId={policy.metadata.id} />
 
-			<section className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-				<StatCard label="Catalog refs" value={refsCount} />
-				<StatCard label="Host keys" value={hkCount} />
-				<StatCard label="Rate limits" value={rlCount} />
-				<StatCard
-					label="Key selection"
-					value={policy.spec.keySelection ?? "random"}
-					mono
-				/>
-			</section>
+			<StatsGrid policy={policy} />
 
-			<section>
-				<SectionTitle>Identity</SectionTitle>
-				<DescList>
-					<Term label="Slug">
-						<code className="font-mono text-foreground">
-							{policy.metadata.name}
-						</code>
-					</Term>
-					<Term label="Display name">{displayLabel(policy.metadata)}</Term>
-					{policy.metadata.description && (
-						<Term label="Description">{policy.metadata.description}</Term>
-					)}
-					{policy.metadata.id && (
-						<Term label="ID">
-							<code className="font-mono text-muted-foreground text-[11px]">
-								{policy.metadata.id}
-							</code>
-						</Term>
-					)}
-				</DescList>
-			</section>
-
-			<section>
-				<SectionTitle>What references this policy</SectionTitle>
-				{policy.metadata.id ? (
-					<Suspense
-						fallback={
-							<p className="text-xs text-muted-foreground">
-								Loading references…
-							</p>
-						}
-					>
-						<ReferencesPanel policyId={policy.metadata.id} />
-					</Suspense>
-				) : (
-					<p className="text-xs text-muted-foreground">
-						Policy ID unknown — cannot list references yet.
-					</p>
-				)}
-			</section>
-
-			{/* keeps the unused expression around to silence biome no-unused-vars without disabling */}
-			{created ? <span hidden>{created}</span> : null}
+			<HostsPanel policy={policy} />
 		</div>
 	);
 }
+
+function StatsGrid({ policy }: { policy: Policy }) {
+	const resolved = usePolicyResolvedCatalog(policy);
+
+	return (
+		<section>
+			<div className="mb-2 flex items-baseline justify-between gap-2">
+				<SectionTitle>Overview</SectionTitle>
+				<span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+					usage is mock data
+				</span>
+			</div>
+			<div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+				<StatCard
+					label="Models"
+					value={resolved.modelCount}
+					sub={`across ${resolved.providerCount} provider${resolved.providerCount === 1 ? "" : "s"}`}
+				/>
+				<StatCard
+					label="Hosts"
+					value={resolved.hosts.length}
+					sub={resolved.hosts.length === 0 ? "no host resolved" : "serving requests"}
+				/>
+				{policy.metadata.id ? (
+					<Suspense
+						fallback={<StatCard label="Relay keys" value="…" sub="loading" />}
+					>
+						<RelayKeyStatCard policyId={policy.metadata.id} />
+					</Suspense>
+				) : (
+					<StatCard label="Relay keys" value="—" sub="unsaved" />
+				)}
+				<StatCard
+					label="Requests · 24h"
+					value={MOCK_USAGE.requests24h.toLocaleString()}
+					sub="mock"
+					mono
+				/>
+				<StatCard
+					label="Error rate"
+					value={`${(MOCK_USAGE.errorRate * 100).toFixed(2)}%`}
+					sub="mock"
+					mono
+				/>
+				<StatCard
+					label="p50 latency"
+					value={`${MOCK_USAGE.p50Ms} ms`}
+					sub="mock"
+					mono
+				/>
+				<StatCard
+					label="p95 latency"
+					value={`${MOCK_USAGE.p95Ms} ms`}
+					sub="mock"
+					mono
+				/>
+				<StatCard
+					label="Tokens in / out"
+					value={`${(MOCK_USAGE.tokensIn / 1000).toFixed(0)}K / ${(MOCK_USAGE.tokensOut / 1000).toFixed(0)}K`}
+					sub="mock"
+					mono
+				/>
+			</div>
+		</section>
+	);
+}
+
+function RelayKeyStatCard({ policyId }: { policyId: string }) {
+	const { data } = usePolicyReferences(policyId);
+	const count = (data.items ?? []).filter((r) => r.kind === "relay-key").length;
+	return (
+		<StatCard
+			label="Relay keys"
+			value={count}
+			sub={count === 0 ? "unused" : "using this policy"}
+		/>
+	);
+}
+
+function HostsPanel({ policy }: { policy: Policy }) {
+	const { hosts } = usePolicyResolvedCatalog(policy);
+	if (hosts.length === 0) {
+		return (
+			<section>
+				<SectionTitle>Hosts</SectionTitle>
+				<p className="text-xs text-muted-foreground">
+					No hosts resolved — pick models in the catalog above.
+				</p>
+			</section>
+		);
+	}
+	return (
+		<section>
+			<SectionTitle>Hosts in this policy</SectionTitle>
+			<ul className="divide-y divide-border rounded-md border border-border">
+				{hosts.map(({ host, modelCount }) => (
+					<li
+						key={host.metadata.id ?? host.metadata.name}
+						className="flex items-center gap-3 px-3 py-2"
+					>
+						<HostLogo host={host} size={22} />
+						<div className="flex-1 min-w-0">
+							<div className="text-sm text-foreground truncate">
+								{displayLabel(host.metadata)}
+							</div>
+							<div className="text-[11px] text-muted-foreground truncate">
+								{modelCount} model{modelCount === 1 ? "" : "s"}
+							</div>
+						</div>
+						<MockHostStats />
+					</li>
+				))}
+			</ul>
+		</section>
+	);
+}
+
+function MockHostStats() {
+	return (
+		<div className="hidden sm:flex items-center gap-4 text-[11px] text-muted-foreground tabular-nums">
+			<span>
+				<span className="text-foreground">{Math.floor(Math.random() * 5000 + 100).toLocaleString()}</span>{" "}
+				req
+			</span>
+			<span>
+				<span className="text-foreground">{(Math.random() * 600 + 80).toFixed(0)}</span>{" "}
+				ms p95
+			</span>
+			<span className="text-[10px] uppercase tracking-wide">mock</span>
+		</div>
+	);
+}
+
+const MOCK_USAGE = {
+	requests24h: 12_847,
+	errorRate: 0.012,
+	p50Ms: 184,
+	p95Ms: 612,
+	tokensIn: 1_240_000,
+	tokensOut: 412_000,
+};
 
 function IssuesPanel({ policyId }: { policyId: string | undefined }) {
 	const diagnostics = usePolicyDiagnostics(policyId);
@@ -106,51 +192,15 @@ function IssuesPanel({ policyId }: { policyId: string | undefined }) {
 	);
 }
 
-function ReferencesPanel({ policyId }: { policyId: string }) {
-	const { data } = usePolicyReferences(policyId);
-	const items = data.items ?? [];
-	if (items.length === 0) {
-		return (
-			<p className="text-xs text-muted-foreground">
-				Nothing references this policy. Safe to disable or delete.
-			</p>
-		);
-	}
-	return (
-		<ul className="divide-y divide-border rounded-md border border-border">
-			{items.map((r) => (
-				<li
-					key={`${r.kind}:${r.id}:${r.via}`}
-					className="flex items-center gap-3 px-3 py-2 text-sm"
-				>
-					<KindChip kind={r.kind} />
-					<div className="flex-1 min-w-0">
-						<div className="text-foreground font-medium truncate">{r.name}</div>
-						<div className="text-[11px] text-muted-foreground font-mono truncate">
-							via {r.via}
-						</div>
-					</div>
-				</li>
-			))}
-		</ul>
-	);
-}
-
-function KindChip({ kind }: { kind: string }) {
-	return (
-		<span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground border border-border font-mono">
-			{kind}
-		</span>
-	);
-}
-
 function StatCard({
 	label,
 	value,
+	sub,
 	mono,
 }: {
 	label: string;
 	value: string | number;
+	sub?: string;
 	mono?: boolean;
 }) {
 	return (
@@ -159,10 +209,15 @@ function StatCard({
 				{label}
 			</div>
 			<div
-				className={`mt-0.5 text-lg font-semibold text-foreground tabular-nums ${mono ? "font-mono text-sm" : ""}`}
+				className={`mt-0.5 text-lg font-semibold text-foreground tabular-nums ${mono ? "font-mono text-base" : ""}`}
 			>
 				{value}
 			</div>
+			{sub && (
+				<div className="text-[11px] text-muted-foreground mt-0.5 truncate">
+					{sub}
+				</div>
+			)}
 		</div>
 	);
 }
@@ -175,25 +230,3 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 	);
 }
 
-function DescList({ children }: { children: React.ReactNode }) {
-	return (
-		<dl className="divide-y divide-border rounded-md border border-border">
-			{children}
-		</dl>
-	);
-}
-
-function Term({
-	label,
-	children,
-}: {
-	label: string;
-	children: React.ReactNode;
-}) {
-	return (
-		<div className="grid grid-cols-[140px_1fr] gap-3 px-3 py-2 text-sm">
-			<dt className="text-[11px] text-muted-foreground self-center">{label}</dt>
-			<dd className="text-foreground min-w-0 break-words">{children}</dd>
-		</div>
-	);
-}
