@@ -28,10 +28,12 @@ import { Route as AuthenticatedSettingsRateLimitsRouteImport } from './routes/_a
 import { Route as AuthenticatedSettingsProxyModeRouteImport } from './routes/_authenticated/settings.proxy-mode'
 import { Route as AuthenticatedRelayKeysNewRouteImport } from './routes/_authenticated/relay-keys.new'
 import { Route as AuthenticatedRelayKeysNameRouteImport } from './routes/_authenticated/relay-keys.$name'
+import { Route as AuthenticatedProvidersNameRouteImport } from './routes/_authenticated/providers.$name'
 import { Route as AuthenticatedPoliciesNewRouteImport } from './routes/_authenticated/policies.new'
 import { Route as AuthenticatedPoliciesNameRouteImport } from './routes/_authenticated/policies.$name'
 import { Route as AuthenticatedModelsNewRouteImport } from './routes/_authenticated/models.new'
 import { Route as AuthenticatedModelsNameRouteImport } from './routes/_authenticated/models.$name'
+import { Route as AuthenticatedHostsNameRouteImport } from './routes/_authenticated/hosts.$name'
 import { Route as AuthenticatedHostKeysNewRouteImport } from './routes/_authenticated/host-keys.new'
 import { Route as AuthenticatedHostKeysNameRouteImport } from './routes/_authenticated/host-keys.$name'
 import { Route as AuthenticatedRelayKeysNameEditRouteImport } from './routes/_authenticated/relay-keys.$name_.edit'
@@ -144,6 +146,12 @@ const AuthenticatedRelayKeysNameRoute =
     path: '/relay-keys/$name',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedProvidersNameRoute =
+  AuthenticatedProvidersNameRouteImport.update({
+    id: '/providers/$name',
+    path: '/providers/$name',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedPoliciesNewRoute =
   AuthenticatedPoliciesNewRouteImport.update({
     id: '/new',
@@ -165,6 +173,11 @@ const AuthenticatedModelsNameRoute = AuthenticatedModelsNameRouteImport.update({
   id: '/$name',
   path: '/$name',
   getParentRoute: () => AuthenticatedModelsRoute,
+} as any)
+const AuthenticatedHostsNameRoute = AuthenticatedHostsNameRouteImport.update({
+  id: '/hosts/$name',
+  path: '/hosts/$name',
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedHostKeysNewRoute =
   AuthenticatedHostKeysNewRouteImport.update({
@@ -234,10 +247,12 @@ export interface FileRoutesByFullPath {
   '/usage': typeof AuthenticatedUsageRoute
   '/host-keys/$name': typeof AuthenticatedHostKeysNameRoute
   '/host-keys/new': typeof AuthenticatedHostKeysNewRoute
+  '/hosts/$name': typeof AuthenticatedHostsNameRoute
   '/models/$name': typeof AuthenticatedModelsNameRouteWithChildren
   '/models/new': typeof AuthenticatedModelsNewRoute
   '/policies/$name': typeof AuthenticatedPoliciesNameRoute
   '/policies/new': typeof AuthenticatedPoliciesNewRoute
+  '/providers/$name': typeof AuthenticatedProvidersNameRoute
   '/relay-keys/$name': typeof AuthenticatedRelayKeysNameRoute
   '/relay-keys/new': typeof AuthenticatedRelayKeysNewRoute
   '/settings/proxy-mode': typeof AuthenticatedSettingsProxyModeRoute
@@ -263,10 +278,12 @@ export interface FileRoutesByTo {
   '/': typeof AuthenticatedIndexRoute
   '/host-keys/$name': typeof AuthenticatedHostKeysNameRoute
   '/host-keys/new': typeof AuthenticatedHostKeysNewRoute
+  '/hosts/$name': typeof AuthenticatedHostsNameRoute
   '/models/$name': typeof AuthenticatedModelsNameRouteWithChildren
   '/models/new': typeof AuthenticatedModelsNewRoute
   '/policies/$name': typeof AuthenticatedPoliciesNameRoute
   '/policies/new': typeof AuthenticatedPoliciesNewRoute
+  '/providers/$name': typeof AuthenticatedProvidersNameRoute
   '/relay-keys/$name': typeof AuthenticatedRelayKeysNameRoute
   '/relay-keys/new': typeof AuthenticatedRelayKeysNewRoute
   '/settings/proxy-mode': typeof AuthenticatedSettingsProxyModeRoute
@@ -298,10 +315,12 @@ export interface FileRoutesById {
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/host-keys/$name': typeof AuthenticatedHostKeysNameRoute
   '/_authenticated/host-keys/new': typeof AuthenticatedHostKeysNewRoute
+  '/_authenticated/hosts/$name': typeof AuthenticatedHostsNameRoute
   '/_authenticated/models/$name': typeof AuthenticatedModelsNameRouteWithChildren
   '/_authenticated/models/new': typeof AuthenticatedModelsNewRoute
   '/_authenticated/policies/$name': typeof AuthenticatedPoliciesNameRoute
   '/_authenticated/policies/new': typeof AuthenticatedPoliciesNewRoute
+  '/_authenticated/providers/$name': typeof AuthenticatedProvidersNameRoute
   '/_authenticated/relay-keys/$name': typeof AuthenticatedRelayKeysNameRoute
   '/_authenticated/relay-keys/new': typeof AuthenticatedRelayKeysNewRoute
   '/_authenticated/settings/proxy-mode': typeof AuthenticatedSettingsProxyModeRoute
@@ -333,10 +352,12 @@ export interface FileRouteTypes {
     | '/usage'
     | '/host-keys/$name'
     | '/host-keys/new'
+    | '/hosts/$name'
     | '/models/$name'
     | '/models/new'
     | '/policies/$name'
     | '/policies/new'
+    | '/providers/$name'
     | '/relay-keys/$name'
     | '/relay-keys/new'
     | '/settings/proxy-mode'
@@ -362,10 +383,12 @@ export interface FileRouteTypes {
     | '/'
     | '/host-keys/$name'
     | '/host-keys/new'
+    | '/hosts/$name'
     | '/models/$name'
     | '/models/new'
     | '/policies/$name'
     | '/policies/new'
+    | '/providers/$name'
     | '/relay-keys/$name'
     | '/relay-keys/new'
     | '/settings/proxy-mode'
@@ -396,10 +419,12 @@ export interface FileRouteTypes {
     | '/_authenticated/'
     | '/_authenticated/host-keys/$name'
     | '/_authenticated/host-keys/new'
+    | '/_authenticated/hosts/$name'
     | '/_authenticated/models/$name'
     | '/_authenticated/models/new'
     | '/_authenticated/policies/$name'
     | '/_authenticated/policies/new'
+    | '/_authenticated/providers/$name'
     | '/_authenticated/relay-keys/$name'
     | '/_authenticated/relay-keys/new'
     | '/_authenticated/settings/proxy-mode'
@@ -557,6 +582,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRelayKeysNameRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/providers/$name': {
+      id: '/_authenticated/providers/$name'
+      path: '/providers/$name'
+      fullPath: '/providers/$name'
+      preLoaderRoute: typeof AuthenticatedProvidersNameRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/policies/new': {
       id: '/_authenticated/policies/new'
       path: '/new'
@@ -584,6 +616,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/models/$name'
       preLoaderRoute: typeof AuthenticatedModelsNameRouteImport
       parentRoute: typeof AuthenticatedModelsRoute
+    }
+    '/_authenticated/hosts/$name': {
+      id: '/_authenticated/hosts/$name'
+      path: '/hosts/$name'
+      fullPath: '/hosts/$name'
+      preLoaderRoute: typeof AuthenticatedHostsNameRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/host-keys/new': {
       id: '/_authenticated/host-keys/new'
@@ -754,6 +793,8 @@ interface AuthenticatedRouteChildren {
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRouteWithChildren
   AuthenticatedUsageRoute: typeof AuthenticatedUsageRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedHostsNameRoute: typeof AuthenticatedHostsNameRoute
+  AuthenticatedProvidersNameRoute: typeof AuthenticatedProvidersNameRoute
   AuthenticatedRelayKeysNameRoute: typeof AuthenticatedRelayKeysNameRoute
   AuthenticatedRelayKeysNewRoute: typeof AuthenticatedRelayKeysNewRoute
   AuthenticatedRelayKeysNameEditRoute: typeof AuthenticatedRelayKeysNameEditRoute
@@ -769,6 +810,8 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedSettingsRoute: AuthenticatedSettingsRouteWithChildren,
   AuthenticatedUsageRoute: AuthenticatedUsageRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedHostsNameRoute: AuthenticatedHostsNameRoute,
+  AuthenticatedProvidersNameRoute: AuthenticatedProvidersNameRoute,
   AuthenticatedRelayKeysNameRoute: AuthenticatedRelayKeysNameRoute,
   AuthenticatedRelayKeysNewRoute: AuthenticatedRelayKeysNewRoute,
   AuthenticatedRelayKeysNameEditRoute: AuthenticatedRelayKeysNameEditRoute,

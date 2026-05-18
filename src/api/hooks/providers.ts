@@ -1,4 +1,9 @@
-import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
+import {
+	queryOptions,
+	useMutation,
+	useQueryClient,
+	useSuspenseQuery,
+} from "@tanstack/react-query";
 import { apiClient } from "@/api/client";
 import { ApiError } from "@/api/types/errors";
 import type { Provider, ProviderListResponse } from "@/api/types/provider";
@@ -35,4 +40,21 @@ export function useProviders() {
 
 export function useProvider(ref: string) {
 	return useSuspenseQuery(providerDetailQueryOptions(ref));
+}
+
+export function useUpdateProvider(id: string) {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: async (body: Provider): Promise<Provider> => {
+			const { data, error } = await apiClient.PUT("/providers/by-id/{id}", {
+				params: { path: { id } },
+				body,
+			});
+			if (error) throw new ApiError(0, error.error);
+			return data;
+		},
+		onSuccess: () => {
+			void queryClient.invalidateQueries({ queryKey: ["providers"] });
+		},
+	});
 }

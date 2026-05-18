@@ -98,15 +98,23 @@ function sortValue(
 	}
 }
 
+export type ModelDeprecatedFilter = "active" | "deprecated" | "all";
+
+function isDeprecated(m: Model): boolean {
+	return Boolean(m.spec.deprecation || m.spec.deprecationDate);
+}
+
 export function applyModelFilter(
 	items: Model[],
 	q: string,
-	provider: string,
+	deprecated: ModelDeprecatedFilter,
 	slugById?: Map<string, string>,
 ): Model[] {
 	const ql = q.trim().toLowerCase();
 	return items.filter((m) => {
-		if (provider && providerOf(m, slugById) !== provider) return false;
+		const dep = isDeprecated(m);
+		if (deprecated === "active" && dep) return false;
+		if (deprecated === "deprecated" && !dep) return false;
 		if (!ql) return true;
 		const hostNames = (m.spec.hosts ?? []).map((h) => h.upstreamName);
 		const hay = [

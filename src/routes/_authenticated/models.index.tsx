@@ -33,12 +33,12 @@ type Tab = "models" | "hosts";
 const searchSchema = z.object({
 	tab: z.enum(["models", "hosts"]).default("models"),
 	q: z.string().default(""),
-	provider: z.string().default(""),
+	deprecated: z.enum(["active", "deprecated", "all"]).default("active"),
 	sort: z
 		.enum(["name", "provider", "family", "ctx", "input", "output"])
 		.default("name"),
 	dir: z.enum(["asc", "desc"]).default("asc"),
-	hsort: z.enum(["name", "baseURL"]).default("name"),
+	hsort: z.enum(["name"]).default("name"),
 	hdir: z.enum(["asc", "desc"]).default("asc"),
 });
 
@@ -76,21 +76,10 @@ function ModelsList() {
 			.map((p) => [p.metadata.id as string, p.metadata.name] as const),
 	);
 
-	const providers = Array.from(
-		new Set(
-			items
-				.map((m) =>
-					m.metadata.owner?.kind === "provider"
-						? (providerSlugById.get(m.metadata.owner.id ?? "") ?? "")
-						: "",
-				)
-				.filter(Boolean),
-		),
-	).sort();
 	const filtered = applyModelFilter(
 		items,
 		search.q,
-		search.provider,
+		search.deprecated,
 		providerSlugById,
 	);
 	const visible = applyModelSort(
@@ -103,8 +92,8 @@ function ModelsList() {
 	function setQ(q: string) {
 		void navigate({ search: (prev) => ({ ...prev, q }) });
 	}
-	function setProvider(provider: string) {
-		void navigate({ search: (prev) => ({ ...prev, provider }) });
+	function setDeprecated(deprecated: "active" | "deprecated" | "all") {
+		void navigate({ search: (prev) => ({ ...prev, deprecated }) });
 	}
 	function toggleSort(field: ModelsSortKey) {
 		const dir: ModelsSortDir =
@@ -124,13 +113,14 @@ function ModelsList() {
 				}
 				filters={
 					<FilterDropdown
-						label="Provider"
-						value={search.provider || "all"}
+						label="Status"
+						value={search.deprecated}
 						options={[
-							{ value: "all", label: "All providers" },
-							...providers.map((p) => ({ value: p, label: p })),
+							{ value: "active", label: "Active only" },
+							{ value: "deprecated", label: "Deprecated only" },
+							{ value: "all", label: "All" },
 						]}
-						onChange={(v) => setProvider(v === "all" ? "" : v)}
+						onChange={(v) => setDeprecated(v as "active" | "deprecated" | "all")}
 					/>
 				}
 				actions={

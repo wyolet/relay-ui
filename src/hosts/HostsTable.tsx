@@ -6,20 +6,16 @@ import type { Host } from "@/api/types/host";
 import { DiagnosticDot } from "@/diagnostics/DiagnosticDot";
 import { useHostDiagnostics } from "@/diagnostics/useDiagnostics";
 import { HostCell } from "@/hosts/HostCell";
+import { useHostReferences } from "@/hosts/useHostReferences";
 import { displayLabel } from "@/lib/displayLabel";
 import { Switch } from "@/shared/Switch";
 import { toast } from "@/shared/Toast";
 
-export type HostsSortKey = "name" | "baseURL";
+export type HostsSortKey = "name";
 export type HostsSortDir = "asc" | "desc";
 
-function sortValue(h: Host, key: HostsSortKey): string {
-	switch (key) {
-		case "name":
-			return displayLabel(h.metadata).toLowerCase();
-		case "baseURL":
-			return h.spec.baseURL.toLowerCase();
-	}
+function sortValue(h: Host, _key: HostsSortKey): string {
+	return displayLabel(h.metadata).toLowerCase();
 }
 
 export function applyHostFilter(items: Host[], q: string): Host[] {
@@ -87,6 +83,15 @@ function HostRow({ h }: { h: Host }) {
 	const enabled = h.spec.enabled !== false;
 	const update = useUpdateHost(h.metadata.id ?? "");
 	const diagnostics = useHostDiagnostics(h.metadata.id);
+	const refs = useHostReferences(h);
+	const enabledModels = refs.models.filter((m) =>
+		(m.spec.hosts ?? []).some(
+			(b) => b.hostId === h.metadata.id && b.enabled !== false,
+		),
+	).length;
+	const enabledKeys = refs.hostKeys.filter(
+		(hk) => hk.spec.enabled !== false,
+	).length;
 
 	async function toggle(next: boolean) {
 		try {
@@ -106,7 +111,8 @@ function HostRow({ h }: { h: Host }) {
 		<tr className="border-t border-border hover:bg-muted/40 transition-colors">
 			<td className="px-3 py-2">
 				<Link
-					to="/models"
+					to="/hosts/$name"
+					params={{ name: h.metadata.name }}
 					className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
 				>
 					<HostCell
@@ -115,9 +121,10 @@ function HostRow({ h }: { h: Host }) {
 					/>
 				</Link>
 			</td>
-			<td className="px-3 py-2 text-sm text-foreground">
-				<code className="font-mono text-xs">{h.spec.baseURL}</code>
-			</td>
+			<CountCell total={refs.models.length} enabled={enabledModels} />
+			<CountCell total={refs.hostKeys.length} enabled={enabledKeys} />
+			<CountCell total={refs.hostPolicies.length} />
+			<CountCell total={refs.userPolicies.length} />
 			<td className="px-3 py-2">
 				<Switch
 					checked={enabled}
@@ -126,6 +133,40 @@ function HostRow({ h }: { h: Host }) {
 				/>
 			</td>
 		</tr>
+	);
+}
+
+function CountTh({ label }: { label: string }) {
+	return (
+		<th
+			scope="col"
+			className="px-3 py-2 text-right text-[11px] font-medium uppercase tracking-wide text-muted-foreground"
+		>
+			{label}
+		</th>
+	);
+}
+
+function CountCell({
+	total,
+	enabled,
+}: {
+	total: number;
+	enabled?: number;
+}) {
+	return (
+		<td className="px-3 py-2 text-right tabular-nums">
+			{total === 0 ? (
+				<span className="text-[11px] text-muted-foreground/70">—</span>
+			) : enabled !== undefined && enabled < total ? (
+				<span className="text-xs text-foreground">
+					<span className="font-medium">{enabled}</span>
+					<span className="text-muted-foreground"> / {total}</span>
+				</span>
+			) : (
+				<span className="text-xs text-foreground font-medium">{total}</span>
+			)}
+		</td>
 	);
 }
 
@@ -149,13 +190,10 @@ export function HostsTable({ items, sort, dir, onSort }: HostsTableProps) {
 							dir={dir}
 							onClick={onSort}
 						/>
-						<SortHeader
-							label="Base URL"
-							field="baseURL"
-							current={sort}
-							dir={dir}
-							onClick={onSort}
-						/>
+						<CountTh label="Models" />
+						<CountTh label="Host keys" />
+						<CountTh label="Host policies" />
+						<CountTh label="User policies" />
 						<th
 							scope="col"
 							className="w-12 px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground"

@@ -4,70 +4,69 @@ import { Suspense } from "react";
 import { z } from "zod";
 import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
-import {
-	modelDetailQueryOptions,
-	modelsListQueryOptions,
-	useModel,
-	useUpdateModel,
-} from "@/api/hooks/models";
+import { modelsListQueryOptions } from "@/api/hooks/models";
 import { policiesListQueryOptions } from "@/api/hooks/policies";
-import { providersListQueryOptions } from "@/api/hooks/providers";
+import {
+	providerDetailQueryOptions,
+	providersListQueryOptions,
+	useProvider,
+	useUpdateProvider,
+} from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
 import { relayKeysListQueryOptions } from "@/api/hooks/relayKeys";
 import { ApiError } from "@/api/types/errors";
-import { type ModelDetailTab, ModelDetailView } from "@/models/ModelDetailView";
+import {
+	type ProviderDetailTab,
+	ProviderDetailView,
+} from "@/providers/ProviderDetailView";
 import { toast } from "@/shared/Toast";
 
 const searchSchema = z.object({
 	tab: z
-		.enum([
-			"overview",
-			"hosts",
-			"policies",
-			"limits",
-			"pricing",
-			"usage",
-			"logs",
-		])
+		.enum(["overview", "models", "hosts"])
 		.optional()
 		.default("overview"),
 });
 
-export const Route = createFileRoute("/_authenticated/models/$name")({
+export const Route = createFileRoute("/_authenticated/providers/$name")({
 	validateSearch: searchSchema,
 	loader: ({ context, params }) =>
 		Promise.all([
-			context.queryClient.ensureQueryData(modelDetailQueryOptions(params.name)),
+			context.queryClient.ensureQueryData(
+				providerDetailQueryOptions(params.name),
+			),
+			context.queryClient.ensureQueryData(providersListQueryOptions),
 			context.queryClient.ensureQueryData(modelsListQueryOptions),
 			context.queryClient.ensureQueryData(hostsListQueryOptions),
 			context.queryClient.ensureQueryData(hostKeysListQueryOptions),
 			context.queryClient.ensureQueryData(policiesListQueryOptions),
 			context.queryClient.ensureQueryData(rateLimitsListQueryOptions),
 			context.queryClient.ensureQueryData(relayKeysListQueryOptions),
-			context.queryClient.ensureQueryData(providersListQueryOptions),
 		]),
-	component: ModelDetailPage,
+	component: ProviderDetailPage,
 });
 
-function ModelDetailInner() {
+function ProviderDetailInner() {
 	const { name } = Route.useParams();
 	const { tab } = Route.useSearch();
-	const navigate = useNavigate({ from: "/models/$name" });
-	const { data: model } = useModel(name);
-	const updateModel = useUpdateModel(model.metadata.id ?? "");
+	const navigate = useNavigate({ from: "/providers/$name" });
+	const { data: provider } = useProvider(name);
+	const updateProvider = useUpdateProvider(provider.metadata.id ?? "");
 
 	async function handleToggleEnabled() {
-		const next = !(model.spec.enabled !== false);
+		const next = !(provider.spec.enabled !== false);
 		try {
-			await updateModel.mutateAsync({
-				metadata: model.metadata,
-				spec: { ...model.spec, enabled: next },
+			await updateProvider.mutateAsync({
+				metadata: provider.metadata,
+				spec: { ...provider.spec, enabled: next },
 			});
-			toast("success", next ? "Model enabled." : "Model disabled.");
+			toast("success", next ? "Provider enabled." : "Provider disabled.");
 		} catch (err) {
 			toast(
 				"error",
-				err instanceof ApiError ? err.body.message : "Failed to toggle model.",
+				err instanceof ApiError
+					? err.body.message
+					: "Failed to toggle provider.",
 			);
 		}
 	}
@@ -81,25 +80,25 @@ function ModelDetailInner() {
 				<ChevronLeft className="w-3.5 h-3.5" />
 				Models
 			</Link>
-			<ModelDetailView
-				model={model}
+			<ProviderDetailView
+				provider={provider}
 				tab={tab}
-				onTabChange={(next: ModelDetailTab) =>
+				onTabChange={(next: ProviderDetailTab) =>
 					void navigate({ search: (prev) => ({ ...prev, tab: next }) })
 				}
 				onToggleEnabled={() => void handleToggleEnabled()}
-				toggling={updateModel.isPending}
+				toggling={updateProvider.isPending}
 			/>
 		</div>
 	);
 }
 
-function ModelDetailPage() {
+function ProviderDetailPage() {
 	return (
 		<Suspense
 			fallback={<div className="text-muted-foreground text-sm">Loading…</div>}
 		>
-			<ModelDetailInner />
+			<ProviderDetailInner />
 		</Suspense>
 	);
 }
