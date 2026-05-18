@@ -150,7 +150,12 @@ export function PolicyModelsTab({ policy }: Props) {
 					};
 				});
 				return (
-					<HostGroup key={hostSlug} host={host} hostSlug={hostSlug} rows={rows} />
+					<HostGroup
+						key={hostSlug}
+						host={host}
+						hostSlug={hostSlug}
+						rows={rows}
+					/>
 				);
 			})}
 		</div>
@@ -276,7 +281,11 @@ function ModelRow({ row }: { row: BindingRow }) {
 	);
 }
 
-const CAPS: { key: keyof NonNullable<Model["spec"]["capabilities"]>; Icon: LucideIcon; label: string }[] = [
+const CAPS: {
+	key: keyof NonNullable<Model["spec"]["capabilities"]>;
+	Icon: LucideIcon;
+	label: string;
+}[] = [
 	{ key: "vision", Icon: Eye, label: "Vision" },
 	{ key: "tools", Icon: Wrench, label: "Tools" },
 	{ key: "reasoning", Icon: Brain, label: "Reasoning" },
@@ -295,11 +304,7 @@ function CapabilityIcons({
 	return (
 		<div className="flex items-center gap-1 text-muted-foreground shrink-0">
 			{active.map(({ key, Icon, label }) => (
-				<Icon
-					key={key}
-					className="w-3.5 h-3.5"
-					aria-label={label}
-				/>
+				<Icon key={key} className="w-3.5 h-3.5" aria-label={label} />
 			))}
 		</div>
 	);
@@ -308,9 +313,7 @@ function CapabilityIcons({
 function pickContextWindow(model: Model | undefined): string | undefined {
 	if (!model) return undefined;
 	const n =
-		model.spec.contextWindowTotal ??
-		model.spec.contextWindowInput ??
-		undefined;
+		model.spec.contextWindowTotal ?? model.spec.contextWindowInput ?? undefined;
 	if (!n || n <= 0) return undefined;
 	if (n >= 1_000_000) {
 		const m = n / 1_000_000;

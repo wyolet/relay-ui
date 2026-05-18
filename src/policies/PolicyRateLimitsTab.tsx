@@ -189,9 +189,9 @@ function UnthrottledModelsPanel({ policy }: { policy: Policy }) {
 				</table>
 			}
 		>
-			These models are granted by the policy's catalog but no rate-limit
-			binding covers them. Requests will pass without throttling — fine if
-			intentional, otherwise scope a rate limit at them.
+			These models are granted by the policy's catalog but no rate-limit binding
+			covers them. Requests will pass without throttling — fine if intentional,
+			otherwise scope a rate limit at them.
 		</AlertBanner>
 	);
 }

@@ -43,7 +43,11 @@ function StatsGrid({ policy }: { policy: Policy }) {
 				<StatCard
 					label="Hosts"
 					value={resolved.hosts.length}
-					sub={resolved.hosts.length === 0 ? "no host resolved" : "serving requests"}
+					sub={
+						resolved.hosts.length === 0
+							? "no host resolved"
+							: "serving requests"
+					}
 				/>
 				{policy.metadata.id ? (
 					<Suspense
@@ -143,11 +147,15 @@ function MockHostStats() {
 	return (
 		<div className="hidden sm:flex items-center gap-4 text-[11px] text-muted-foreground tabular-nums">
 			<span>
-				<span className="text-foreground">{Math.floor(Math.random() * 5000 + 100).toLocaleString()}</span>{" "}
+				<span className="text-foreground">
+					{Math.floor(Math.random() * 5000 + 100).toLocaleString()}
+				</span>{" "}
 				req
 			</span>
 			<span>
-				<span className="text-foreground">{(Math.random() * 600 + 80).toFixed(0)}</span>{" "}
+				<span className="text-foreground">
+					{(Math.random() * 600 + 80).toFixed(0)}
+				</span>{" "}
 				ms p95
 			</span>
 			<span className="text-[10px] uppercase tracking-wide">mock</span>
@@ -229,4 +237,3 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 		</h2>
 	);
 }
-

@@ -13,12 +13,12 @@ import {
 import type { Policy } from "@/api/types/policy";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
-import { useAllowEdit } from "@/stores/permissions";
 import { PolicyAttachedRelayKeys } from "@/policies/PolicyAttachedRelayKeys";
 import { PolicyKeysTab } from "@/policies/PolicyKeysTab";
 import { PolicyModelsTab } from "@/policies/PolicyModelsTab";
 import { PolicyOverviewTab } from "@/policies/PolicyOverviewTab";
 import { PolicyRateLimitsTab } from "@/policies/PolicyRateLimitsTab";
+import { useAllowEdit } from "@/stores/permissions";
 
 export type PolicyDetailTab =
 	| "overview"

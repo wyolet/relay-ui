@@ -169,7 +169,9 @@ export function analyzePolicy(
 				return !grantRefs.some((g) => refsOverlap(g, scope));
 			});
 			if (orphans.length === scopeRaws.length) {
-				const rl = b.rateLimitId ? graph.rateLimits.get(b.rateLimitId) : undefined;
+				const rl = b.rateLimitId
+					? graph.rateLimits.get(b.rateLimitId)
+					: undefined;
 				const rlLabel = rl ? `"${displayLabel(rl.metadata)}"` : "Rate limit";
 				const targets = orphans.map((m) => `"${m}"`).join(", ");
 				const isPlural = orphans.length > 1;

@@ -138,60 +138,60 @@ export function PolicyRLPicker({
 												{orphans.length === 1
 													? ", which isn't"
 													: ", which aren't"}{" "}
-												in this policy's catalog. Remove this rate limit, or
-												add {orphans.length === 1 ? "it" : "them"} to the
-												policy's models.
+												in this policy's catalog. Remove this rate limit, or add{" "}
+												{orphans.length === 1 ? "it" : "them"} to the policy's
+												models.
 											</AlertBanner>
 										</div>
 									)}
 									<div className="px-3 py-2.5">
-									<div className="flex items-start justify-between gap-3">
-										<div className="min-w-0 flex-1">
-											<div className="text-sm font-medium text-foreground truncate">
-												{meta?.label ?? b.rateLimitId ?? "unknown rate limit"}
-											</div>
-											{meta?.rules && (
-												<div className="font-mono text-[10px] text-muted-foreground truncate">
-													{meta.rules}
+										<div className="flex items-start justify-between gap-3">
+											<div className="min-w-0 flex-1">
+												<div className="text-sm font-medium text-foreground truncate">
+													{meta?.label ?? b.rateLimitId ?? "unknown rate limit"}
 												</div>
-											)}
+												{meta?.rules && (
+													<div className="font-mono text-[10px] text-muted-foreground truncate">
+														{meta.rules}
+													</div>
+												)}
+											</div>
+											<div className="flex items-center gap-1 shrink-0">
+												<button
+													type="button"
+													onClick={() => setEditing({ kind: "edit", idx: i })}
+													className="h-7 w-7 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
+													aria-label="Edit"
+												>
+													<Pencil className="w-3.5 h-3.5" />
+												</button>
+												<button
+													type="button"
+													onClick={() => remove(i)}
+													className="h-7 w-7 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-destructive hover:bg-muted"
+													aria-label="Remove"
+												>
+													<Trash2 className="w-3.5 h-3.5" />
+												</button>
+											</div>
 										</div>
-										<div className="flex items-center gap-1 shrink-0">
-											<button
-												type="button"
-												onClick={() => setEditing({ kind: "edit", idx: i })}
-												className="h-7 w-7 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
-												aria-label="Edit"
-											>
-												<Pencil className="w-3.5 h-3.5" />
-											</button>
-											<button
-												type="button"
-												onClick={() => remove(i)}
-												className="h-7 w-7 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-destructive hover:bg-muted"
-												aria-label="Remove"
-											>
-												<Trash2 className="w-3.5 h-3.5" />
-											</button>
-										</div>
-									</div>
-									{b.models.length === 0 ? (
-										<p className="mt-1.5 text-[11px] text-muted-foreground italic">
-											applies to every request
-										</p>
-									) : (
-										<ul className="mt-1.5 flex flex-col rounded-md border border-border bg-muted/20 divide-y divide-border">
-											{refStats.map((s) => (
-												<RefBlock
-													key={s.raw}
-													stats={s}
-													labels={labels}
-													rlMetaById={rlMetaById}
-													bindings={bindings}
-												/>
-											))}
-										</ul>
-									)}
+										{b.models.length === 0 ? (
+											<p className="mt-1.5 text-[11px] text-muted-foreground italic">
+												applies to every request
+											</p>
+										) : (
+											<ul className="mt-1.5 flex flex-col rounded-md border border-border bg-muted/20 divide-y divide-border">
+												{refStats.map((s) => (
+													<RefBlock
+														key={s.raw}
+														stats={s}
+														labels={labels}
+														rlMetaById={rlMetaById}
+														bindings={bindings}
+													/>
+												))}
+											</ul>
+										)}
 									</div>
 								</li>
 							);

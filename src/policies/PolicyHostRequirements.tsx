@@ -15,11 +15,11 @@ import {
 } from "@/components/ui/popover";
 import { HostLogo } from "@/hosts/HostLogo";
 import { displayLabel } from "@/lib/displayLabel";
-import { AlertBanner } from "@/shared/AlertBanner";
 import type {
 	HostRequirement,
 	PolicyHostRequirements as Requirements,
 } from "@/policies/usePolicyHostRequirements";
+import { AlertBanner } from "@/shared/AlertBanner";
 
 interface Props {
 	requirements: Requirements;
@@ -97,12 +97,7 @@ export function PolicyHostRequirements({
 						const req = hosts.get(id);
 						if (!req) return null;
 						return (
-							<HostCard
-								key={id}
-								req={req}
-								onToggle={toggleKey}
-								required
-							/>
+							<HostCard key={id} req={req} onToggle={toggleKey} required />
 						);
 					})}
 				</HostGroup>
@@ -331,9 +326,7 @@ function AddKeyPopover({ available, onPick, disabled }: AddKeyPopoverProps) {
 	}
 	return (
 		<Popover>
-			<PopoverTrigger
-				className="inline-flex items-center gap-1 h-6 px-2 rounded text-[11px] font-medium text-foreground border border-border hover:bg-muted"
-			>
+			<PopoverTrigger className="inline-flex items-center gap-1 h-6 px-2 rounded text-[11px] font-medium text-foreground border border-border hover:bg-muted">
 				<Plus className="h-3 w-3" aria-hidden />
 				Add key
 				<ChevronDown className="h-3 w-3" aria-hidden />

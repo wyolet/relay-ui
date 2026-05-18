@@ -75,5 +75,11 @@ export function usePolicyResolvedCatalog(
 			providerCount: providerSet.size,
 			hosts,
 		};
-	}, [providers, models, hostsData, policy.spec.models, policy.spec.includeDeprecated]);
+	}, [
+		providers,
+		models,
+		hostsData,
+		policy.spec.models,
+		policy.spec.includeDeprecated,
+	]);
 }

@@ -43,12 +43,12 @@ import {
 } from "@/diagnostics/useDiagnostics";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { confirm } from "@/shared/ConfirmDialog";
-import { useAllowEdit } from "@/stores/permissions";
 import { FilterDropdown } from "@/shared/FilterDropdown";
 import { SearchBox } from "@/shared/SearchBox";
 import { Switch } from "@/shared/Switch";
 import { TableToolbar } from "@/shared/TableToolbar";
 import { toast } from "@/shared/Toast";
+import { useAllowEdit } from "@/stores/permissions";
 
 type Tab = "policies" | "ratelimits";
 
