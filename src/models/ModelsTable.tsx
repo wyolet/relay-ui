@@ -65,18 +65,28 @@ function deprecationNote(m: Model): string | null {
 	return parts.join(" · ") || null;
 }
 
-function providerOf(m: Model): string {
+function providerIdOf(m: Model): string {
 	return m.metadata.owner?.kind === "provider"
 		? (m.metadata.owner.id ?? "")
 		: "";
 }
 
-function sortValue(m: Model, key: ModelsSortKey): string | number {
+function providerOf(m: Model, slugById?: Map<string, string>): string {
+	const id = providerIdOf(m);
+	if (!id) return "";
+	return slugById?.get(id) ?? id;
+}
+
+function sortValue(
+	m: Model,
+	key: ModelsSortKey,
+	slugById?: Map<string, string>,
+): string | number {
 	switch (key) {
 		case "name":
 			return displayLabel(m.metadata).toLowerCase();
 		case "provider":
-			return providerOf(m).toLowerCase();
+			return providerOf(m, slugById).toLowerCase();
 		case "family":
 			return (m.spec.family ?? "").toLowerCase();
 		case "ctx":
@@ -92,17 +102,18 @@ export function applyModelFilter(
 	items: Model[],
 	q: string,
 	provider: string,
+	slugById?: Map<string, string>,
 ): Model[] {
 	const ql = q.trim().toLowerCase();
 	return items.filter((m) => {
-		if (provider && providerOf(m) !== provider) return false;
+		if (provider && providerOf(m, slugById) !== provider) return false;
 		if (!ql) return true;
 		const hostNames = (m.spec.hosts ?? []).map((h) => h.upstreamName);
 		const hay = [
 			m.metadata.name,
 			m.metadata.displayName,
 			m.spec.family,
-			providerOf(m),
+			providerOf(m, slugById),
 			...hostNames,
 			...(m.spec.aliases ?? []),
 			...(m.spec.tags ?? []),
@@ -118,10 +129,11 @@ export function applyModelSort(
 	items: Model[],
 	key: ModelsSortKey,
 	dir: ModelsSortDir,
+	slugById?: Map<string, string>,
 ): Model[] {
 	const sorted = [...items].sort((a, b) => {
-		const av = sortValue(a, key);
-		const bv = sortValue(b, key);
+		const av = sortValue(a, key, slugById);
+		const bv = sortValue(b, key, slugById);
 		if (typeof av === "number" && typeof bv === "number") return av - bv;
 		return String(av).localeCompare(String(bv), undefined, { numeric: true });
 	});
@@ -225,7 +237,8 @@ function HostBadges({
 				<HostLogo
 					key={h.metadata.id ?? h.metadata.name}
 					host={h}
-					size={14}
+					size={28}
+					titleTooltip
 					className="opacity-90"
 				/>
 			))}
@@ -266,7 +279,6 @@ function ModelRow({
 	const output: number | undefined = undefined;
 	const family = m.spec.family;
 	const version = m.spec.version;
-	const provider = providerOf(m);
 
 	return (
 		<tr className="border-t border-border hover:bg-muted/40 transition-colors">
@@ -303,12 +315,7 @@ function ModelRow({
 			</td>
 			{!hideProvider && (
 				<td className="px-3 py-2 text-sm text-foreground">
-					<div className="inline-flex items-center gap-2">
-						<HostBadges m={m} hostsById={hostsById} />
-						<span className="capitalize">
-							{provider || <span className="text-muted-foreground/70">—</span>}
-						</span>
-					</div>
+					<HostBadges m={m} hostsById={hostsById} />
 				</td>
 			)}
 			<td className="px-3 py-2 text-sm text-foreground">
@@ -387,13 +394,12 @@ export function ModelsTable({
 							onClick={onSort}
 						/>
 						{!hideProvider && (
-							<SortHeader
-								label="Provider"
-								field="provider"
-								current={sort}
-								dir={dir}
-								onClick={onSort}
-							/>
+							<th
+								scope="col"
+								className="px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground text-left"
+							>
+								Hosts
+							</th>
 						)}
 						<SortHeader
 							label="Family"

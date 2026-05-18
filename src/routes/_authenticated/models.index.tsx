@@ -6,16 +6,9 @@ import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
 import { hostsListQueryOptions, useHosts } from "@/api/hooks/hosts";
 import { modelsListQueryOptions, useModels } from "@/api/hooks/models";
 import { policiesListQueryOptions } from "@/api/hooks/policies";
-import { providersListQueryOptions } from "@/api/hooks/providers";
+import { providersListQueryOptions, useProviders } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
 import { relayKeysListQueryOptions } from "@/api/hooks/relayKeys";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
 	applyHostFilter,
@@ -31,6 +24,7 @@ import {
 	type ModelsSortKey,
 	ModelsTable,
 } from "@/models/ModelsTable";
+import { FilterDropdown } from "@/shared/FilterDropdown";
 import { SearchBox } from "@/shared/SearchBox";
 import { TableToolbar } from "@/shared/TableToolbar";
 
@@ -66,6 +60,7 @@ export const Route = createFileRoute("/_authenticated/models/")({
 function ModelsList() {
 	const { data } = useModels();
 	const { data: hostsData } = useHosts();
+	const { data: providersData } = useProviders();
 	const navigate = useNavigate({ from: "/models" });
 	const search = Route.useSearch();
 	const items = data.items ?? [];
@@ -75,19 +70,35 @@ function ModelsList() {
 			.map((h) => [h.metadata.id as string, h] as const),
 	);
 
+	const providerSlugById = new Map(
+		(providersData.items ?? [])
+			.filter((p) => p.metadata.id)
+			.map((p) => [p.metadata.id as string, p.metadata.name] as const),
+	);
+
 	const providers = Array.from(
 		new Set(
 			items
 				.map((m) =>
 					m.metadata.owner?.kind === "provider"
-						? (m.metadata.owner.id ?? "")
+						? (providerSlugById.get(m.metadata.owner.id ?? "") ?? "")
 						: "",
 				)
 				.filter(Boolean),
 		),
 	).sort();
-	const filtered = applyModelFilter(items, search.q, search.provider);
-	const visible = applyModelSort(filtered, search.sort, search.dir);
+	const filtered = applyModelFilter(
+		items,
+		search.q,
+		search.provider,
+		providerSlugById,
+	);
+	const visible = applyModelSort(
+		filtered,
+		search.sort,
+		search.dir,
+		providerSlugById,
+	);
 
 	function setQ(q: string) {
 		void navigate({ search: (prev) => ({ ...prev, q }) });
@@ -112,28 +123,15 @@ function ModelsList() {
 					/>
 				}
 				filters={
-					<Select
+					<FilterDropdown
+						label="Provider"
 						value={search.provider || "all"}
-						items={[
+						options={[
 							{ value: "all", label: "All providers" },
 							...providers.map((p) => ({ value: p, label: p })),
 						]}
-						onValueChange={(v) =>
-							setProvider(v === "all" || v == null ? "" : v)
-						}
-					>
-						<SelectTrigger className="w-40">
-							<SelectValue />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value="all">All providers</SelectItem>
-							{providers.map((p) => (
-								<SelectItem key={p} value={p}>
-									<span className="capitalize">{p}</span>
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
+						onChange={(v) => setProvider(v === "all" ? "" : v)}
+					/>
 				}
 				actions={
 					<Link
