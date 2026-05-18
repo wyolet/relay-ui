@@ -13,6 +13,7 @@ import {
 import type { Policy } from "@/api/types/policy";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
+import { useAllowEdit } from "@/stores/permissions";
 import { PolicyAttachedRelayKeys } from "@/policies/PolicyAttachedRelayKeys";
 import { PolicyKeysTab } from "@/policies/PolicyKeysTab";
 import { PolicyModelsTab } from "@/policies/PolicyModelsTab";
@@ -137,6 +138,9 @@ function Header({
 	toggling,
 }: HeaderProps) {
 	const name = policy.metadata.name;
+	const isHostOwned = policy.metadata.owner?.kind === "host";
+	const allowHostOwnedEdits = useAllowEdit("host-owned-policies");
+	const canMutate = !isHostOwned || allowHostOwnedEdits;
 	return (
 		<div className="flex items-start justify-between gap-4">
 			<div className="min-w-0">
@@ -148,6 +152,14 @@ function Header({
 						</span>
 					)}
 					<StatusBadge enabled={enabled} />
+					{isHostOwned && (
+						<span
+							className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground border border-border"
+							title="This policy is owned by a host and managed by Relay."
+						>
+							Host-owned
+						</span>
+					)}
 				</h1>
 				<p className="mt-1 text-xs text-muted-foreground font-mono truncate">
 					{name}
@@ -159,32 +171,38 @@ function Header({
 				)}
 			</div>
 			<div className="flex items-center gap-2 shrink-0">
-				<button
-					type="button"
-					onClick={onToggleEnabled}
-					disabled={toggling}
-					className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium text-foreground border border-border hover:bg-muted disabled:opacity-50 transition-colors"
-				>
-					<Power className="w-3.5 h-3.5" />
-					{enabled ? "Disable" : "Enable"}
-				</button>
-				<Link
-					to="/policies/$name/edit"
-					params={{ name }}
-					className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium text-foreground border border-border hover:bg-muted transition-colors"
-				>
-					<Pencil className="w-3.5 h-3.5" />
-					Edit
-				</Link>
-				<button
-					type="button"
-					onClick={onDelete}
-					disabled={deleting}
-					className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium text-destructive border border-border hover:bg-destructive/10 disabled:opacity-50 transition-colors"
-				>
-					<Trash2 className="w-3.5 h-3.5" />
-					Delete
-				</button>
+				{canMutate && (
+					<button
+						type="button"
+						onClick={onToggleEnabled}
+						disabled={toggling}
+						className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium text-foreground border border-border hover:bg-muted disabled:opacity-50 transition-colors"
+					>
+						<Power className="w-3.5 h-3.5" />
+						{enabled ? "Disable" : "Enable"}
+					</button>
+				)}
+				{canMutate && (
+					<>
+						<Link
+							to="/policies/$name/edit"
+							params={{ name }}
+							className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium text-foreground border border-border hover:bg-muted transition-colors"
+						>
+							<Pencil className="w-3.5 h-3.5" />
+							Edit
+						</Link>
+						<button
+							type="button"
+							onClick={onDelete}
+							disabled={deleting}
+							className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium text-destructive border border-border hover:bg-destructive/10 disabled:opacity-50 transition-colors"
+						>
+							<Trash2 className="w-3.5 h-3.5" />
+							Delete
+						</button>
+					</>
+				)}
 			</div>
 		</div>
 	);

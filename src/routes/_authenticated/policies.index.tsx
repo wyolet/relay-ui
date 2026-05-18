@@ -43,6 +43,7 @@ import {
 } from "@/diagnostics/useDiagnostics";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { confirm } from "@/shared/ConfirmDialog";
+import { useAllowEdit } from "@/stores/permissions";
 import { FilterDropdown } from "@/shared/FilterDropdown";
 import { SearchBox } from "@/shared/SearchBox";
 import { Switch } from "@/shared/Switch";
@@ -320,6 +321,9 @@ function PolicyRow({
 	const diagnostics = usePolicyDiagnostics(policy.metadata.id);
 	const catalog = describeCatalog(policy);
 	const enabled = policy.spec.enabled !== false;
+	const isHostOwned = policy.metadata.owner?.kind === "host";
+	const allowHostOwnedEdits = useAllowEdit("host-owned-policies");
+	const canMutate = !isHostOwned || allowHostOwnedEdits;
 
 	async function toggleEnabled(next: boolean) {
 		try {
@@ -392,20 +396,43 @@ function PolicyRow({
 				)}
 			</td>
 			<td className="px-3 py-2">
-				<Switch
-					checked={enabled}
-					onChange={(next) => void toggleEnabled(next)}
-					disabled={updatePolicy.isPending}
-					label={`Toggle ${policy.metadata.name}`}
-				/>
+				{canMutate ? (
+					<Switch
+						checked={enabled}
+						onChange={(next) => void toggleEnabled(next)}
+						disabled={updatePolicy.isPending}
+						label={`Toggle ${policy.metadata.name}`}
+					/>
+				) : (
+					<span
+						className={[
+							"inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border",
+							enabled
+								? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-200/60 dark:border-emerald-900/60"
+								: "bg-muted text-muted-foreground border-border",
+						].join(" ")}
+						title="Host-owned — toggle the host or model instead"
+					>
+						{enabled ? "On" : "Off"}
+					</span>
+				)}
 			</td>
 			<td className="px-3 py-2 text-right">
-				<RowMenu
-					actions={[
-						{ label: "Edit", onClick: onEdit },
-						{ label: "Delete", danger: true, onClick: onDelete },
-					]}
-				/>
+				{canMutate ? (
+					<RowMenu
+						actions={[
+							{ label: "Edit", onClick: onEdit },
+							{ label: "Delete", danger: true, onClick: onDelete },
+						]}
+					/>
+				) : (
+					<span
+						className="text-[10px] uppercase tracking-wide text-muted-foreground"
+						title="Host-owned — managed by Relay"
+					>
+						managed
+					</span>
+				)}
 			</td>
 		</tr>
 	);
