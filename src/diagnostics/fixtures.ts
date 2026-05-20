@@ -102,6 +102,8 @@ export function makeModel(o: ModelOpts): Model {
 			owner: o.providerId ? { kind: "provider", id: o.providerId } : undefined,
 		},
 		spec: {
+			pointer: "",
+			snapshots: null,
 			enabled: o.enabled ?? true,
 			deprecation: o.deprecated ? { status: "deprecated" } : undefined,
 			hosts: (o.bindings ?? []).map((b) => ({

@@ -985,6 +985,11 @@ export interface components {
             input?: string[] | null;
             output?: string[] | null;
         };
+        ModelSnapshot: {
+            name: string;
+            originalName: string;
+            releasedAt?: string;
+        };
         ModelSpec: {
             aliases?: string[] | null;
             capabilities?: components["schemas"]["ModelCapabilities"];
@@ -1005,8 +1010,10 @@ export interface components {
             /** Format: int64 */
             maxOutputTokens?: number;
             modalities?: components["schemas"]["ModelModalities"];
+            pointer: string;
             providerModelPageURL?: string;
             releaseDate?: string;
+            snapshots: components["schemas"]["ModelSnapshot"][] | null;
             tags?: string[] | null;
             version?: string;
         };

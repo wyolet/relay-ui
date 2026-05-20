@@ -26,6 +26,7 @@ import {
 	validateCatalogRef,
 } from "@/lib/catalogRef";
 import { displayLabel } from "@/lib/displayLabel";
+import { from as slugFrom } from "@/lib/slug";
 
 type Tab = "summary" | "providers" | "models" | "hosts" | "raw";
 
@@ -303,12 +304,7 @@ export function ModelPicker({
 							/>
 						)}
 						{tab === "raw" && (
-							<RawEditor
-								key={`${value.join("\n")}|raw`}
-								value={value}
-								onChange={onChange}
-								index={index}
-							/>
+							<RawEditor value={value} onChange={onChange} index={index} />
 						)}
 					</div>
 
@@ -707,10 +703,75 @@ function SelectionFooter({
 	);
 }
 
+function slugifyRef(ref: string): string {
+	return ref
+		.split(/([/@])/)
+		.map((part, i) => (i % 2 === 0 ? slugFrom(part) : part))
+		.join("");
+}
+
+function editDistance(a: string, b: string): number {
+	if (a === b) return 0;
+	const m = a.length;
+	const n = b.length;
+	if (m === 0) return n;
+	if (n === 0) return m;
+	let prev = new Array<number>(n + 1);
+	let curr = new Array<number>(n + 1);
+	for (let j = 0; j <= n; j++) prev[j] = j;
+	for (let i = 1; i <= m; i++) {
+		curr[0] = i;
+		for (let j = 1; j <= n; j++) {
+			const cost = a.charCodeAt(i - 1) === b.charCodeAt(j - 1) ? 0 : 1;
+			curr[j] = Math.min(curr[j - 1] + 1, prev[j] + 1, prev[j - 1] + cost);
+		}
+		[prev, curr] = [curr, prev];
+	}
+	return prev[n];
+}
+
+function allRefs(index: PickerIndex): string[] {
+	const out: string[] = [];
+	for (const p of index.providersByName.keys()) out.push(p);
+	for (const [prov, rows] of index.modelsByProvider) {
+		for (const r of rows) out.push(`${prov}/${r.name}`);
+	}
+	for (const h of index.hostsByName.keys()) out.push(`@${h}`);
+	return out;
+}
+
+function closestRef(ref: string, index: PickerIndex): string | undefined {
+	const candidates = allRefs(index);
+	let best: string | undefined;
+	let bestDist = Number.POSITIVE_INFINITY;
+	for (const c of candidates) {
+		const d = editDistance(ref, c);
+		if (d < bestDist) {
+			best = c;
+			bestDist = d;
+		}
+	}
+	if (best === undefined) return undefined;
+	const threshold = Math.max(2, Math.floor(ref.length * 0.34));
+	return bestDist <= threshold ? best : undefined;
+}
+
 function checkRefAgainstCatalog(
 	ref: string,
 	index: PickerIndex,
 ): string | undefined {
+	const bad = ref.match(/[.:]/);
+	if (bad) {
+		const slugged = slugifyRef(ref);
+		if (slugged !== ref && checkRefAgainstCatalog(slugged, index) === undefined) {
+			return `"${bad[0]}" isn't allowed in refs — did you mean "${slugged}"?`;
+		}
+		const near = closestRef(slugged || ref, index);
+		if (near) {
+			return `"${bad[0]}" isn't allowed in refs — closest match is "${near}".`;
+		}
+		return `"${bad[0]}" isn't allowed — refs use DNS-style slugs. Replace "." and ":" with "-".`;
+	}
 	const synErr = validateCatalogRef(ref);
 	if (synErr) return synErr;
 	const parsed = parseCatalogRef(ref);
@@ -731,7 +792,9 @@ function checkRefAgainstCatalog(
 	if (parsed.model !== undefined) {
 		const model = providerModels.find((m) => m.name === parsed.model);
 		if (!model) {
-			return `Model "${parsed.provider}/${parsed.model}" doesn't exist`;
+			const near = closestRef(`${parsed.provider}/${parsed.model}`, index);
+			const hint = near ? ` — did you mean "${near}"?` : "";
+			return `Model "${parsed.provider}/${parsed.model}" doesn't exist${hint}`;
 		}
 		if (parsed.host !== undefined) {
 			if (!index.hostsByName.has(parsed.host)) {
@@ -805,6 +868,11 @@ function RawEditor({
 					anthropic/claude-opus-4-7
 				</code>
 				, <code className="font-mono text-foreground/80">@bedrock</code>.
+				<br />
+				Refs are DNS-style slugs — not upstream model names. Replace{" "}
+				<code className="font-mono text-foreground/80">.</code> and{" "}
+				<code className="font-mono text-foreground/80">:</code> with{" "}
+				<code className="font-mono text-foreground/80">-</code>.
 			</div>
 			<textarea
 				value={draft}

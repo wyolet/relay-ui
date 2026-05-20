@@ -29,6 +29,8 @@ const models: Model[] = [
 			owner: { kind: "provider", id: "p-anthropic" },
 		},
 		spec: {
+			pointer: "",
+			snapshots: null,
 			hosts: [
 				{
 					hostId: "h-anthropic",
@@ -50,6 +52,8 @@ const models: Model[] = [
 			owner: { kind: "provider", id: "p-openai" },
 		},
 		spec: {
+			pointer: "",
+			snapshots: null,
 			hosts: [
 				{ hostId: "h-openai", adapter: "openai", upstreamName: "gpt-4o" },
 			],
@@ -62,6 +66,8 @@ const models: Model[] = [
 			owner: { kind: "provider", id: "p-anthropic" },
 		},
 		spec: {
+			pointer: "",
+			snapshots: null,
 			hosts: [
 				{
 					hostId: "h-anthropic",

@@ -1,10 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import {
-	AlertTriangle,
-	ArrowDown,
-	ArrowUp,
-	MoreHorizontal,
-} from "lucide-react";
+import { AlertTriangle, ArrowDown, ArrowUp, MoreHorizontal } from "lucide-react";
 import { useUpdateModel } from "@/api/hooks/models";
 import { ApiError } from "@/api/types/errors";
 import type { Host } from "@/api/types/host";
@@ -22,36 +17,10 @@ import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { Switch } from "@/shared/Switch";
 import { toast } from "@/shared/Toast";
 
-export type ModelsSortKey =
-	| "name"
-	| "provider"
-	| "family"
-	| "ctx"
-	| "input"
-	| "output";
+export type ModelsSortKey = "name" | "provider";
 export type ModelsSortDir = "asc" | "desc";
 
-export const MODEL_SORT_KEYS = [
-	"name",
-	"provider",
-	"family",
-	"ctx",
-	"input",
-	"output",
-] as const;
-
-function fmtTokens(n: number | undefined): string {
-	if (!n) return "—";
-	if (n >= 1_000_000)
-		return `${(n / 1_000_000).toFixed(n % 1_000_000 === 0 ? 0 : 1)}M`;
-	if (n >= 1_000) return `${Math.round(n / 1_000)}k`;
-	return String(n);
-}
-
-function fmtPrice(v: number | undefined): string {
-	if (v === undefined) return "—";
-	return v.toFixed(2);
-}
+export const MODEL_SORT_KEYS = ["name", "provider"] as const;
 
 function deprecationNote(m: Model): string | null {
 	const d = m.spec.deprecation;
@@ -87,14 +56,6 @@ function sortValue(
 			return displayLabel(m.metadata).toLowerCase();
 		case "provider":
 			return providerOf(m, slugById).toLowerCase();
-		case "family":
-			return (m.spec.family ?? "").toLowerCase();
-		case "ctx":
-			return m.spec.contextWindowTotal ?? 0;
-		case "input":
-			return Number.POSITIVE_INFINITY;
-		case "output":
-			return Number.POSITIVE_INFINITY;
 	}
 }
 
@@ -280,13 +241,6 @@ function ModelRow({
 		}
 	}
 	const dep = deprecationNote(m);
-	const ctx = m.spec.contextWindowTotal;
-	const ctxIn = m.spec.contextWindowInput;
-	const ctxOut = m.spec.contextWindowOutput ?? m.spec.maxOutputTokens;
-	const input: number | undefined = undefined;
-	const output: number | undefined = undefined;
-	const family = m.spec.family;
-	const version = m.spec.version;
 
 	return (
 		<tr className="border-t border-border hover:bg-muted/40 transition-colors">
@@ -326,37 +280,6 @@ function ModelRow({
 					<HostBadges m={m} hostsById={hostsById} />
 				</td>
 			)}
-			<td className="px-3 py-2 text-sm text-foreground">
-				{family ? (
-					<>
-						{family}
-						{version && (
-							<span className="text-muted-foreground">
-								{" · "}
-								{version}
-							</span>
-						)}
-					</>
-				) : (
-					<span className="text-muted-foreground/70">—</span>
-				)}
-			</td>
-			<td
-				className="px-3 py-2 text-sm text-foreground text-right tabular-nums"
-				title={
-					ctxIn || ctxOut
-						? `in ${fmtTokens(ctxIn)} / out ${fmtTokens(ctxOut)}`
-						: undefined
-				}
-			>
-				{fmtTokens(ctx)}
-			</td>
-			<td className="px-3 py-2 text-sm text-foreground text-right tabular-nums">
-				{fmtPrice(input)}
-			</td>
-			<td className="px-3 py-2 text-sm text-foreground text-right tabular-nums">
-				{fmtPrice(output)}
-			</td>
 			<td className="px-3 py-2">
 				<Switch
 					checked={enabled}
@@ -409,37 +332,6 @@ export function ModelsTable({
 								Hosts
 							</th>
 						)}
-						<SortHeader
-							label="Family"
-							field="family"
-							current={sort}
-							dir={dir}
-							onClick={onSort}
-						/>
-						<SortHeader
-							label="Context"
-							field="ctx"
-							current={sort}
-							dir={dir}
-							onClick={onSort}
-							align="right"
-						/>
-						<SortHeader
-							label="Input $/M"
-							field="input"
-							current={sort}
-							dir={dir}
-							onClick={onSort}
-							align="right"
-						/>
-						<SortHeader
-							label="Output $/M"
-							field="output"
-							current={sort}
-							dir={dir}
-							onClick={onSort}
-							align="right"
-						/>
 						<th
 							scope="col"
 							className="w-12 px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground"

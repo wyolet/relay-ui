@@ -71,6 +71,8 @@ function NewModelInner() {
 		const payload: ModelCreate = {
 			metadata: { name, displayName: displayName || undefined },
 			spec: {
+				pointer: "",
+				snapshots: null,
 				hosts: [{ hostId, upstreamName, adapter }],
 			},
 		};

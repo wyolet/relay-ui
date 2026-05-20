@@ -7,6 +7,8 @@ import {
 	Braces,
 	Brain,
 	CalendarDays,
+	GitBranch,
+	History,
 	DollarSign,
 	Eye,
 	FileText,
@@ -422,6 +424,13 @@ function OverviewTab({
 						label="License"
 						value={model.spec.license}
 					/>
+					{model.spec.pointer && (
+						<IdentityTile
+							icon={GitBranch}
+							label="Points to"
+							value={model.spec.pointer}
+						/>
+					)}
 				</div>
 				{tags.length > 0 && (
 					<div className="mt-3 pt-3 border-t border-border flex flex-wrap items-center gap-1.5">
@@ -445,7 +454,52 @@ function OverviewTab({
 					<CapabilityChips caps={caps} />
 				</Card>
 			)}
+
+			{(model.spec.snapshots?.length ?? 0) > 0 && (
+				<Card title="Snapshots" icon={History}>
+					<SnapshotsList snapshots={model.spec.snapshots ?? []} />
+				</Card>
+			)}
 		</div>
+	);
+}
+
+function SnapshotsList({
+	snapshots,
+}: {
+	snapshots: { name: string; originalName: string; releasedAt?: string }[];
+}) {
+	const sorted = [...snapshots].sort((a, b) => {
+		const ad = a.releasedAt ?? "";
+		const bd = b.releasedAt ?? "";
+		if (ad && bd) return bd.localeCompare(ad);
+		if (ad) return -1;
+		if (bd) return 1;
+		return a.name.localeCompare(b.name);
+	});
+	return (
+		<ul className="divide-y divide-border">
+			{sorted.map((s) => (
+				<li
+					key={s.name}
+					className="py-2 first:pt-0 last:pb-0 flex items-baseline justify-between gap-3"
+				>
+					<div className="min-w-0">
+						<div className="font-mono text-xs text-foreground truncate">
+							{s.name}
+						</div>
+						{s.originalName && s.originalName !== s.name && (
+							<div className="font-mono text-[10px] text-muted-foreground truncate">
+								upstream {s.originalName}
+							</div>
+						)}
+					</div>
+					<div className="text-[11px] text-muted-foreground tabular-nums shrink-0">
+						{s.releasedAt || "—"}
+					</div>
+				</li>
+			))}
+		</ul>
 	);
 }
 

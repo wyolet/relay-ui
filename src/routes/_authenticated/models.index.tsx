@@ -34,9 +34,7 @@ const searchSchema = z.object({
 	tab: z.enum(["models", "hosts"]).default("models"),
 	q: z.string().default(""),
 	deprecated: z.enum(["active", "deprecated", "all"]).default("active"),
-	sort: z
-		.enum(["name", "provider", "family", "ctx", "input", "output"])
-		.default("name"),
+	sort: z.enum(["name", "provider"]).default("name"),
 	dir: z.enum(["asc", "desc"]).default("asc"),
 	hsort: z.enum(["name"]).default("name"),
 	hdir: z.enum(["asc", "desc"]).default("asc"),
