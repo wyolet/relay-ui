@@ -136,7 +136,7 @@ export function RateLimitForm({
 					placeholder="Default rate limit"
 				/>
 
-<FormSection
+				<FormSection
 					icon={Gauge}
 					title="Rules"
 					description="Each rule picks a meter, strategy, and window. They're enforced independently — the first to exhaust blocks the request."

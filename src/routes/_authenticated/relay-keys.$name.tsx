@@ -20,8 +20,8 @@ import {
 	useDeleteRelayKey,
 	useRelayKey,
 } from "@/api/hooks/relayKeys";
-import type { Policy } from "@/api/types/policy";
 import { ApiError } from "@/api/types/errors";
+import type { Policy } from "@/api/types/policy";
 import { DiagnosticList } from "@/diagnostics/DiagnosticList";
 import { useRelayKeyDiagnostics } from "@/diagnostics/useDiagnostics";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
@@ -96,10 +96,7 @@ function RelayKeyDetailInner() {
 			<header className="flex items-start justify-between gap-4">
 				<div className="min-w-0 flex items-start gap-3">
 					<div className="mt-0.5 w-9 h-9 rounded-md bg-muted border border-border shrink-0 flex items-center justify-center">
-						<KeyRound
-							className="w-4 h-4 text-muted-foreground"
-							aria-hidden
-						/>
+						<KeyRound className="w-4 h-4 text-muted-foreground" aria-hidden />
 					</div>
 					<div className="min-w-0">
 						<h1 className="text-xl font-semibold text-foreground truncate flex items-center gap-2">

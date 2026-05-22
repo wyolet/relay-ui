@@ -23,7 +23,9 @@ export function HostCell({
 }: HostCellProps) {
 	const logoSize = size === "sm" ? 24 : 32;
 	const labelClass =
-		size === "sm" ? "text-sm text-foreground" : "text-sm font-medium text-foreground";
+		size === "sm"
+			? "text-sm text-foreground"
+			: "text-sm font-medium text-foreground";
 	const slugClass =
 		size === "sm"
 			? "font-mono text-[10px] text-muted-foreground truncate"
@@ -57,9 +59,7 @@ export function HostCell({
 					{!showSlug && <span className={hintClass}>(no display name)</span>}
 					{accessory}
 				</div>
-				{showSlug && (
-					<div className={slugClass}>{host.metadata.name}</div>
-				)}
+				{showSlug && <div className={slugClass}>{host.metadata.name}</div>}
 			</div>
 		</div>
 	);

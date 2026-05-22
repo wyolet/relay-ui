@@ -108,7 +108,6 @@ export function makeModel(o: ModelOpts): Model {
 			deprecation: o.deprecated ? { status: "deprecated" } : undefined,
 			hosts: (o.bindings ?? []).map((b) => ({
 				hostId: b.hostId,
-				upstreamName: o.name,
 				adapter: "openai",
 				enabled: b.enabled ?? true,
 			})),

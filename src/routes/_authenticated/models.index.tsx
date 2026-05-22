@@ -118,7 +118,9 @@ function ModelsList() {
 							{ value: "deprecated", label: "Deprecated only" },
 							{ value: "all", label: "All" },
 						]}
-						onChange={(v) => setDeprecated(v as "active" | "deprecated" | "all")}
+						onChange={(v) =>
+							setDeprecated(v as "active" | "deprecated" | "all")
+						}
 					/>
 				}
 				actions={

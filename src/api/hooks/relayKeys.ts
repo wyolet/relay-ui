@@ -6,7 +6,12 @@ import {
 } from "@tanstack/react-query";
 import { apiClient } from "@/api/client";
 import { ApiError } from "@/api/types/errors";
-import type { RelayKey, RelayKeyList } from "@/api/types/relayKey";
+import type {
+	CreateRelayKeyInput,
+	CreateRelayKeyResponse,
+	RelayKey,
+	RelayKeyList,
+} from "@/api/types/relayKey";
 
 export const relayKeysListQueryOptions = queryOptions({
 	queryKey: ["relay-keys"] as const,
@@ -45,7 +50,9 @@ export function useRelayKey(ref: string) {
 export function useCreateRelayKey() {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: async (body: RelayKey): Promise<RelayKey> => {
+		mutationFn: async (
+			body: CreateRelayKeyInput,
+		): Promise<CreateRelayKeyResponse> => {
 			const { data, error } = await apiClient.POST("/relay-keys", { body });
 			if (error) throw new ApiError(0, error.error);
 			return data;

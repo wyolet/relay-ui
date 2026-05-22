@@ -30,11 +30,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DiagnosticDot } from "@/diagnostics/DiagnosticDot";
-import { HostCell } from "@/hosts/HostCell";
 import {
 	useHostKeyDiagnostics,
 	useRelayKeyDiagnostics,
 } from "@/diagnostics/useDiagnostics";
+import { HostCell } from "@/hosts/HostCell";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { confirm } from "@/shared/ConfirmDialog";
 import { SearchBox } from "@/shared/SearchBox";

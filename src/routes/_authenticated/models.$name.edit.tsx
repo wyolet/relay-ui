@@ -38,12 +38,6 @@ const FIELDS: FieldDef[] = [
 		placeholder: "2024-08",
 	},
 	{
-		name: "aliases",
-		label: "Aliases (comma-separated)",
-		type: "text",
-		placeholder: "gpt-4o, gpt-4o-latest",
-	},
-	{
 		name: "tags",
 		label: "Tags (comma-separated)",
 		type: "text",
@@ -77,7 +71,6 @@ function EditModelInner() {
 				...model.spec,
 				family: String(values.family ?? "").trim() || undefined,
 				version: String(values.version ?? "").trim() || undefined,
-				aliases: splitCsv(String(values.aliases ?? "")),
 				tags: splitCsv(String(values.tags ?? "")),
 			},
 		};
@@ -103,7 +96,6 @@ function EditModelInner() {
 					displayName: model.metadata.displayName ?? "",
 					family: model.spec.family ?? "",
 					version: model.spec.version ?? "",
-					aliases: (model.spec.aliases ?? []).join(", "),
 					tags: (model.spec.tags ?? []).join(", "),
 				}}
 				onSubmit={handleSubmit}

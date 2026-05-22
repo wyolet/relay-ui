@@ -40,10 +40,9 @@ const FIELDS: FieldDef[] = [
 	},
 	{
 		name: "upstreamName",
-		label: "Upstream model name",
+		label: "Upstream model name (leave blank to match name)",
 		type: "text",
-		required: true,
-		placeholder: "gpt-4o",
+		placeholder: "gpt-4o-2024-08-06",
 	},
 ];
 
@@ -61,7 +60,7 @@ function NewModelInner() {
 		setServerError(undefined);
 		const name = String(values.name ?? "");
 		const displayName = String(values.displayName ?? "").trim();
-		const upstreamName = String(values.upstreamName ?? "");
+		const upstreamName = String(values.upstreamName ?? "").trim();
 
 		if (!hostId) {
 			toast("error", "Pick a host first.");
@@ -71,9 +70,13 @@ function NewModelInner() {
 		const payload: ModelCreate = {
 			metadata: { name, displayName: displayName || undefined },
 			spec: {
-				pointer: "",
-				snapshots: null,
-				hosts: [{ hostId, upstreamName, adapter }],
+				pointer: name,
+				snapshots: [
+					upstreamName && upstreamName !== name
+						? { name, originalName: upstreamName }
+						: { name },
+				],
+				hosts: [{ hostId, adapter }],
 			},
 		};
 		try {

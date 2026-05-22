@@ -22,10 +22,7 @@ import {
 import { toast } from "@/shared/Toast";
 
 const searchSchema = z.object({
-	tab: z
-		.enum(["overview", "models", "hosts"])
-		.optional()
-		.default("overview"),
+	tab: z.enum(["overview", "models", "hosts"]).optional().default("overview"),
 });
 
 export const Route = createFileRoute("/_authenticated/providers/$name")({

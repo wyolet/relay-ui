@@ -281,10 +281,7 @@ function PoliciesPanel({
 					</thead>
 					<tbody className="divide-y divide-border">
 						{rows.map((row) => (
-							<tr
-								key={row.id}
-								className="hover:bg-muted/30 transition-colors"
-							>
+							<tr key={row.id} className="hover:bg-muted/30 transition-colors">
 								<Td>
 									<div className="min-w-0">
 										<Link

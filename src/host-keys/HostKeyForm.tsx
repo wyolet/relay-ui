@@ -1,11 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import {
-	Globe,
-	KeyRound,
-	Link2,
-	ShieldCheck,
-	Unlink2,
-} from "lucide-react";
+import { Globe, KeyRound, Link2, ShieldCheck, Unlink2 } from "lucide-react";
 import type { HostKey, HostKeyKind } from "@/api/types/hostkey";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -81,7 +75,7 @@ export function HostKeyForm({ hostKey, onSaved, onCancel }: HostKeyFormProps) {
 					placeholder="OpenAI production key"
 				/>
 
-<FormSection
+				<FormSection
 					icon={Globe}
 					title="Host & host policy"
 					description="Which upstream provider this credential authenticates against, and the host policy (mirrors the provider's own tier, e.g. OpenAI Tier 2) that governs its rate limits and capacity."

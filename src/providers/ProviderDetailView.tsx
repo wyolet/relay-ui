@@ -228,8 +228,8 @@ function ModelsTable({ models }: { models: Model[] }) {
 	return (
 		<div className="mt-2 flex flex-col gap-3">
 			<div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-				{models.length} model{models.length === 1 ? "" : "s"} ·{" "}
-				{grouped.length} famil{grouped.length === 1 ? "y" : "ies"}
+				{models.length} model{models.length === 1 ? "" : "s"} · {grouped.length}{" "}
+				famil{grouped.length === 1 ? "y" : "ies"}
 			</div>
 			<div className="rounded-md border border-border bg-card overflow-hidden">
 				<ul className="divide-y divide-border">
@@ -472,4 +472,3 @@ function EmptyState({
 		</div>
 	);
 }
-

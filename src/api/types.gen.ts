@@ -653,8 +653,11 @@ export interface paths {
         /** List relay-keys */
         get: operations["list_relay-keys"];
         put?: never;
-        /** Create relay-key */
-        post: operations["create_relay-key"];
+        /**
+         * Create a relay-key (server generates plaintext)
+         * @description Generates a fresh bearer token server-side via crypto/rand, persists only sha256(plaintext) + a short display prefix, and returns the plaintext once in the response. The caller MUST save the plaintext on receipt — it is not retrievable later.
+         */
+        post: operations["create_relay_key"];
         delete?: never;
         options?: never;
         head?: never;
@@ -930,6 +933,10 @@ export interface components {
             name: string;
             owner?: components["schemas"]["Owner"];
         };
+        MetadataStruct: {
+            displayName?: string;
+            name?: string;
+        };
         Model: {
             /**
              * Format: uri
@@ -970,7 +977,7 @@ export interface components {
             adapter: string;
             enabled?: boolean;
             hostId: string;
-            upstreamName: string;
+            snapshots?: string[] | null;
         };
         ModelList: {
             /**
@@ -987,11 +994,10 @@ export interface components {
         };
         ModelSnapshot: {
             name: string;
-            originalName: string;
+            originalName?: string;
             releasedAt?: string;
         };
         ModelSpec: {
-            aliases?: string[] | null;
             capabilities?: components["schemas"]["ModelCapabilities"];
             /** Format: int64 */
             contextWindowInput?: number;
@@ -1211,6 +1217,11 @@ export interface components {
             /** Format: date-time */
             revokedAt?: string;
         };
+        SpecStruct: {
+            enabled?: boolean;
+            passthroughAllowed?: boolean;
+            policyId?: string;
+        };
         authResponseBody: {
             /**
              * Format: uri
@@ -1220,6 +1231,26 @@ export interface components {
             readonly $schema?: string;
             user_id: string;
             username: string;
+        };
+        createRelayKeyInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/createRelayKeyInputBody.json
+             */
+            readonly $schema?: string;
+            metadata: components["schemas"]["MetadataStruct"];
+            spec: components["schemas"]["SpecStruct"];
+        };
+        createRelayKeyResponseBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/createRelayKeyResponseBody.json
+             */
+            readonly $schema?: string;
+            plaintext: string;
+            relayKey: components["schemas"]["RelayKey"];
         };
         debugPolicyJoin: {
             /** Format: int64 */
@@ -4106,7 +4137,7 @@ export interface operations {
             };
         };
     };
-    "create_relay-key": {
+    create_relay_key: {
         parameters: {
             query?: never;
             header?: never;
@@ -4115,7 +4146,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["RelayKey"];
+                "application/json": components["schemas"]["createRelayKeyInputBody"];
             };
         };
         responses: {
@@ -4125,7 +4156,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["RelayKey"];
+                    "application/json": components["schemas"]["createRelayKeyResponseBody"];
                 };
             };
             /** @description Bad Request */

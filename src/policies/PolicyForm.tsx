@@ -93,7 +93,7 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 					placeholder="Default policy"
 				/>
 
-<Section
+				<Section
 					icon={Boxes}
 					title="Allowed catalog"
 					description="Grant providers, models, hosts, or specific model+host pairs. Wildcard grants auto-include catalog rows added later."

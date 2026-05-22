@@ -1,5 +1,10 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { AlertTriangle, ArrowDown, ArrowUp, MoreHorizontal } from "lucide-react";
+import {
+	AlertTriangle,
+	ArrowDown,
+	ArrowUp,
+	MoreHorizontal,
+} from "lucide-react";
 import { useUpdateModel } from "@/api/hooks/models";
 import { ApiError } from "@/api/types/errors";
 import type { Host } from "@/api/types/host";
@@ -77,14 +82,15 @@ export function applyModelFilter(
 		if (deprecated === "active" && dep) return false;
 		if (deprecated === "deprecated" && !dep) return false;
 		if (!ql) return true;
-		const hostNames = (m.spec.hosts ?? []).map((h) => h.upstreamName);
+		const snapshotNames = (m.spec.snapshots ?? []).flatMap((s) =>
+			[s.name, s.originalName].filter((v): v is string => Boolean(v)),
+		);
 		const hay = [
 			m.metadata.name,
 			m.metadata.displayName,
 			m.spec.family,
 			providerOf(m, slugById),
-			...hostNames,
-			...(m.spec.aliases ?? []),
+			...snapshotNames,
 			...(m.spec.tags ?? []),
 		]
 			.filter(Boolean)

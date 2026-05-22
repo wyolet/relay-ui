@@ -7,12 +7,17 @@ import type { Host } from "@/api/types/host";
 import type { Model } from "@/api/types/model";
 import type { Policy } from "@/api/types/policy";
 import type { Provider } from "@/api/types/provider";
-import { parseCatalogRef, refCovers, validateCatalogRef } from "@/lib/catalogRef";
+import {
+	parseCatalogRef,
+	refCovers,
+	validateCatalogRef,
+} from "@/lib/catalogRef";
 
 export interface ModelHostRow {
 	host: Host | undefined;
 	hostId: string;
-	upstreamName: string;
+	/** Per-host snapshot allowlist; empty/null means this host serves every snapshot. */
+	snapshots: readonly string[] | null;
 	adapter: string;
 	enabled: boolean;
 }
@@ -64,7 +69,7 @@ export function useModelReferences(model: Model): ModelReferences {
 		const hosts: ModelHostRow[] = (model.spec.hosts ?? []).map((b) => ({
 			host: hostById.get(b.hostId),
 			hostId: b.hostId,
-			upstreamName: b.upstreamName,
+			snapshots: b.snapshots ?? null,
 			adapter: b.adapter,
 			enabled: b.enabled !== false,
 		}));

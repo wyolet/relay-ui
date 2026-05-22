@@ -32,16 +32,8 @@ const models: Model[] = [
 			pointer: "",
 			snapshots: null,
 			hosts: [
-				{
-					hostId: "h-anthropic",
-					adapter: "anthropic",
-					upstreamName: "claude-opus-4-7",
-				},
-				{
-					hostId: "h-bedrock",
-					adapter: "anthropic",
-					upstreamName: "claude-opus-4-7",
-				},
+				{ hostId: "h-anthropic", adapter: "anthropic" },
+				{ hostId: "h-bedrock", adapter: "anthropic" },
 			],
 		},
 	} as Model,
@@ -54,9 +46,7 @@ const models: Model[] = [
 		spec: {
 			pointer: "",
 			snapshots: null,
-			hosts: [
-				{ hostId: "h-openai", adapter: "openai", upstreamName: "gpt-4o" },
-			],
+			hosts: [{ hostId: "h-openai", adapter: "openai" }],
 		},
 	} as Model,
 	{
@@ -68,13 +58,7 @@ const models: Model[] = [
 		spec: {
 			pointer: "",
 			snapshots: null,
-			hosts: [
-				{
-					hostId: "h-anthropic",
-					adapter: "anthropic",
-					upstreamName: "claude-2",
-				},
-			],
+			hosts: [{ hostId: "h-anthropic", adapter: "anthropic" }],
 			deprecation: "Use claude-opus-4-7 instead.",
 		},
 	} as Model,
@@ -114,9 +98,7 @@ describe("buildConcreteCatalog", () => {
 					owner: { kind: "provider", id: "does-not-exist" },
 				},
 				spec: {
-					hosts: [
-						{ hostId: "h-anthropic", adapter: "x", upstreamName: "ghost" },
-					],
+					hosts: [{ hostId: "h-anthropic", adapter: "x" }],
 				},
 			} as Model,
 		];

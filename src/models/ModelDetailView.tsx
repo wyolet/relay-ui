@@ -7,12 +7,12 @@ import {
 	Braces,
 	Brain,
 	CalendarDays,
-	GitBranch,
-	History,
 	DollarSign,
 	Eye,
 	FileText,
+	GitBranch,
 	Globe,
+	History,
 	Image as ImageIcon,
 	KeyRound,
 	Layers,
@@ -175,7 +175,6 @@ function Header({
 	const allowEdit = useAllowEdit("models");
 	const canMutate = !isProviderOwned || allowEdit;
 	const dep = deprecationNote(model);
-	const aliases = model.spec.aliases ?? [];
 
 	return (
 		<div className="flex flex-col gap-3">
@@ -189,10 +188,7 @@ function Header({
 						/>
 					) : (
 						<div className="mt-0.5 w-9 h-9 rounded-md bg-muted border border-border shrink-0 flex items-center justify-center">
-							<Boxes
-								className="w-4 h-4 text-muted-foreground"
-								aria-hidden
-							/>
+							<Boxes className="w-4 h-4 text-muted-foreground" aria-hidden />
 						</div>
 					)}
 					<div className="min-w-0">
@@ -238,15 +234,11 @@ function Header({
 									family{" "}
 									<span className="text-foreground">{model.spec.family}</span>
 									{model.spec.version && (
-										<span className="text-foreground"> {model.spec.version}</span>
+										<span className="text-foreground">
+											{" "}
+											{model.spec.version}
+										</span>
 									)}
-								</>
-							)}
-							{aliases.length > 0 && (
-								<>
-									<span className="text-muted-foreground/50"> · </span>
-									aka{" "}
-									<span className="text-foreground">{aliases.join(", ")}</span>
 								</>
 							)}
 						</p>
@@ -367,9 +359,13 @@ function OverviewTab({
 						sub={caps.length === 0 ? "none declared" : "active"}
 					/>
 					<StatCard
-						label="Aliases"
-						value={(model.spec.aliases ?? []).length}
-						sub={(model.spec.aliases ?? []).length === 0 ? "none" : "see header"}
+						label="Snapshots"
+						value={(model.spec.snapshots ?? []).length}
+						sub={
+							(model.spec.snapshots ?? []).length === 0
+								? "none"
+								: `pointer → ${model.spec.pointer || "—"}`
+						}
 					/>
 					<StatCard
 						label="Requests · 24h"
@@ -467,7 +463,7 @@ function OverviewTab({
 function SnapshotsList({
 	snapshots,
 }: {
-	snapshots: { name: string; originalName: string; releasedAt?: string }[];
+	snapshots: { name: string; originalName?: string; releasedAt?: string }[];
 }) {
 	const sorted = [...snapshots].sort((a, b) => {
 		const ad = a.releasedAt ?? "";
@@ -528,7 +524,7 @@ function HostsTab({ rows }: { rows: ModelHostRow[] }) {
 				<thead className="bg-muted/30 text-[10px] uppercase tracking-wide text-muted-foreground">
 					<tr>
 						<Th>Host</Th>
-						<Th>Upstream name</Th>
+						<Th>Snapshots</Th>
 						<Th>Adapter</Th>
 						<Th className="text-right">Status</Th>
 					</tr>
@@ -557,9 +553,22 @@ function HostsTab({ rows }: { rows: ModelHostRow[] }) {
 								)}
 							</Td>
 							<Td>
-								<code className="font-mono text-xs text-foreground break-all">
-									{row.upstreamName || "—"}
-								</code>
+								{row.snapshots && row.snapshots.length > 0 ? (
+									<ul className="flex flex-wrap gap-1">
+										{row.snapshots.map((s) => (
+											<li
+												key={s}
+												className="inline-flex items-center px-1.5 py-0.5 rounded bg-muted border border-border font-mono text-[10px] text-foreground"
+											>
+												{s}
+											</li>
+										))}
+									</ul>
+								) : (
+									<span className="text-[11px] text-muted-foreground">
+										All snapshots
+									</span>
+								)}
 							</Td>
 							<Td>
 								<span className="text-xs text-foreground">{row.adapter}</span>
@@ -695,7 +704,11 @@ function LimitsTab({ model }: { model: Model }) {
 
 function TokenValue({ n }: { n: number | undefined }) {
 	if (!n) return <Dash />;
-	return <span className="font-mono tabular-nums text-foreground">{fmtTokens(n)}</span>;
+	return (
+		<span className="font-mono tabular-nums text-foreground">
+			{fmtTokens(n)}
+		</span>
+	);
 }
 
 function ModalityList({
@@ -786,8 +799,7 @@ function PricingTab({
 					<Row label="1M-token agent run · 800k in / 200k out">
 						<Money
 							v={
-								(800_000 * MOCK_PRICING.input +
-									200_000 * MOCK_PRICING.output) /
+								(800_000 * MOCK_PRICING.input + 200_000 * MOCK_PRICING.output) /
 								1_000_000
 							}
 						/>

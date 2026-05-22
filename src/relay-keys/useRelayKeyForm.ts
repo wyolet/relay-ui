@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 import { useCreateRelayKey, useUpdateRelayKey } from "@/api/hooks/relayKeys";
 import { ApiError } from "@/api/types/errors";
-import type { RelayKey } from "@/api/types/relayKey";
+import type { CreateRelayKeyInput, RelayKey } from "@/api/types/relayKey";
 import { displayLabel } from "@/lib/displayLabel";
 import { randomSuffix, slugify } from "@/lib/slug";
 import { toast } from "@/shared/Toast";
@@ -48,32 +48,6 @@ const schema = z.object({
 	enabled: z.boolean(),
 	passthroughAllowed: z.boolean(),
 });
-
-// rly_sk_<48 base62 chars>
-const SECRET_ALPHABET =
-	"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-const SECRET_BODY_LEN = 48;
-const SECRET_PREFIX = "rly_sk_";
-const PREFIX_PREVIEW_LEN = 8;
-
-function generatePlaintext(): string {
-	const buf = new Uint32Array(SECRET_BODY_LEN);
-	crypto.getRandomValues(buf);
-	let out = "";
-	for (let i = 0; i < SECRET_BODY_LEN; i += 1) {
-		out += SECRET_ALPHABET.charAt(buf[i] % SECRET_ALPHABET.length);
-	}
-	return `${SECRET_PREFIX}${out}`;
-}
-
-async function sha256Hex(input: string): Promise<string> {
-	const data = new TextEncoder().encode(input);
-	const digest = await crypto.subtle.digest("SHA-256", data);
-	const bytes = new Uint8Array(digest);
-	let hex = "";
-	for (const b of bytes) hex += b.toString(16).padStart(2, "0");
-	return hex;
-}
 
 interface UseRelayKeyFormOptions {
 	open?: boolean;
@@ -156,28 +130,29 @@ export function useRelayKeyForm({
 					onSaved(saved.metadata.name);
 				} else {
 					const name = computeSlug(displayName);
-					const plaintext = generatePlaintext();
-					const keyHash = await sha256Hex(plaintext);
-					const prefix = plaintext.slice(0, PREFIX_PREVIEW_LEN);
-					const payload: RelayKey = {
-						metadata: {
-							name,
-							displayName,
-							...(description ? { description } : {}),
-						},
+					const payload: CreateRelayKeyInput = {
+						metadata: { name, displayName },
 						spec: {
-							keyHash,
 							policyId: value.policyId,
-							prefix,
 							enabled: value.enabled,
 							passthroughAllowed: value.passthroughAllowed,
 						},
 					};
-					const saved = await createRelayKey.mutateAsync(payload);
+					const { plaintext, relayKey: created } =
+						await createRelayKey.mutateAsync(payload);
+					if (description) {
+						await updateRelayKey.mutateAsync({
+							id: created.metadata.id ?? "",
+							body: {
+								metadata: { ...created.metadata, description },
+								spec: created.spec,
+							},
+						});
+					}
 					setFreshSecret(plaintext);
 					onCreated?.(plaintext);
 					toast("success", `Relay key "${displayName}" created.`);
-					onSaved(saved.metadata.name);
+					onSaved(created.metadata.name);
 				}
 			} catch (err) {
 				toast(

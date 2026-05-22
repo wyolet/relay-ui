@@ -52,7 +52,8 @@ export function useHostReferences(host: Host): HostReferences {
 
 		const allPolicies = policiesData.items ?? [];
 		const hostPolicies = allPolicies.filter(
-			(p) => p.metadata.owner?.kind === "host" && p.metadata.owner.id === hostId,
+			(p) =>
+				p.metadata.owner?.kind === "host" && p.metadata.owner.id === hostId,
 		);
 
 		const relayKeyCountByPolicy = new Map<string, number>();

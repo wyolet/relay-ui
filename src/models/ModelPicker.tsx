@@ -763,7 +763,10 @@ function checkRefAgainstCatalog(
 	const bad = ref.match(/[.:]/);
 	if (bad) {
 		const slugged = slugifyRef(ref);
-		if (slugged !== ref && checkRefAgainstCatalog(slugged, index) === undefined) {
+		if (
+			slugged !== ref &&
+			checkRefAgainstCatalog(slugged, index) === undefined
+		) {
 			return `"${bad[0]}" isn't allowed in refs — did you mean "${slugged}"?`;
 		}
 		const near = closestRef(slugged || ref, index);

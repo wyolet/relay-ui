@@ -147,13 +147,7 @@ function CountTh({ label }: { label: string }) {
 	);
 }
 
-function CountCell({
-	total,
-	enabled,
-}: {
-	total: number;
-	enabled?: number;
-}) {
+function CountCell({ total, enabled }: { total: number; enabled?: number }) {
 	return (
 		<td className="px-3 py-2 text-right tabular-nums">
 			{total === 0 ? (
