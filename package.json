@@ -29,6 +29,7 @@
     "openapi-fetch": "^0.14.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "recharts": "3.8.0",
     "shadcn": "^4.7.0",
     "tailwind-merge": "^3.5.0",
     "tailwindcss": "^4.1.18",
@@ -55,5 +56,9 @@
   "trustedDependencies": [
     "esbuild",
     "lightningcss"
-  ]
+  ],
+  "_comment_overrides": "rolldown: vite@8.0.10 pins rolldown rc.17, whose dep-optimizer fails to suffix-disambiguate CJS wrapper names and collides with es-toolkit's `require_*` local bindings (recharts dep) -> 'require_isUnsafeProperty is not a function' in dev. Stable 1.0.2 fixes the rename. Remove this override once Vite ships with rolldown >= 1.0.2.",
+  "overrides": {
+    "rolldown": "1.0.2"
+  }
 }
