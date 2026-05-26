@@ -763,6 +763,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/settings/payload-logging": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get settings section: payload-logging
+         * @description Request/response body capture sink config. Hot-reloaded — toggle, backend (file|s3), size cap, and S3 settings (with secret-ref credentials) take effect without a restart.
+         */
+        get: operations["get_settings_payload-logging"];
+        /**
+         * Update settings section: payload-logging
+         * @description Request/response body capture sink config. Hot-reloaded — toggle, backend (file|s3), size cap, and S3 settings (with secret-ref credentials) take effect without a restart.
+         */
+        put: operations["update_settings_payload-logging"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/settings/proxy-mode": {
         parameters: {
             query?: never;
@@ -807,6 +831,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/usage/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List recent usage events (newest first), filterable
+         * @description Streams the post-flight usage JSONL store with optional dimension filters. Returns raw events for inspection and ad-hoc analysis; for aggregated views use /usage/summary.
+         */
+        get: operations["usage_events"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/usage/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Aggregated usage rows grouped by a chosen dimension
+         * @description Filters the post-flight stream, groups by group_by, and returns per-group totals (requests, tokens, latency percentiles, error count). Rows sorted by request count descending.
+         */
+        get: operations["usage_summary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/usage/timeseries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Time-bucketed usage aggregates for charting
+         * @description Buckets the filtered stream by `interval` (epoch-aligned) and returns per-bucket requests, error_count, and token sums. With `group_by` set, returns one series per dimension value for stacked charts; empty returns a single series. Empty buckets are omitted — zero-fill against the returned from/to range.
+         */
+        get: operations["usage_timeseries"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/version": {
         parameters: {
             query?: never;
@@ -828,6 +912,47 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        DurationStats: {
+            /** Format: int64 */
+            avg: number;
+            /** Format: int64 */
+            max: number;
+            /** Format: int64 */
+            p50: number;
+            /** Format: int64 */
+            p95: number;
+            /** Format: int64 */
+            p99: number;
+        };
+        Event: {
+            /** Format: int64 */
+            attempts?: number;
+            /** Format: int64 */
+            duration_ms: number;
+            error_kind?: string;
+            error_message?: string;
+            extras?: {
+                [key: string]: string;
+            };
+            finish_reason?: string;
+            host_id?: string;
+            host_key_id?: string;
+            model_id?: string;
+            policy_id?: string;
+            relay_key_hash?: string;
+            request_id: string;
+            requested_model?: string;
+            source: string;
+            /** Format: int64 */
+            status: number;
+            streamed?: boolean;
+            tokens?: {
+                [key: string]: number;
+            };
+            /** Format: date-time */
+            ts: string;
+            upstream?: components["schemas"]["UpstreamTiming"];
+        };
         Host: {
             /**
              * Format: uri
@@ -920,7 +1045,7 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            section: "inference" | "proxy-mode";
+            section: "inference" | "payload-logging" | "proxy-mode";
             value: components["schemas"]["Inference"];
         };
         Metadata: {
@@ -1041,6 +1166,46 @@ export interface components {
             id?: string;
             kind?: string;
         };
+        PayloadFile: {
+            path: string;
+        };
+        PayloadLogging: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/PayloadLogging.json
+             */
+            readonly $schema?: string;
+            backend: string;
+            enabled: boolean;
+            file: components["schemas"]["PayloadFile"];
+            /** Format: int64 */
+            maxBytes: number;
+            s3: components["schemas"]["PayloadS3"];
+        };
+        PayloadLoggingEnvelope: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/PayloadLoggingEnvelope.json
+             */
+            readonly $schema?: string;
+            /**
+             * @description One of the relay's registered settings section keys.
+             * @enum {string}
+             */
+            section: "inference" | "payload-logging" | "proxy-mode";
+            value: components["schemas"]["PayloadLogging"];
+        };
+        PayloadS3: {
+            accessKey: components["schemas"]["Ref"];
+            bucket: string;
+            endpoint: string;
+            prefix?: string;
+            region?: string;
+            secretKey: components["schemas"]["Ref"];
+            useSSL: boolean;
+        };
         Policy: {
             /**
              * Format: uri
@@ -1071,6 +1236,7 @@ export interface components {
             keySelection?: string;
             modelIds?: string[] | null;
             models?: string[] | null;
+            payloadLoggingEnabled?: boolean;
             rateLimitId?: string;
             rlBindings?: components["schemas"]["PolicyRLBinding"][] | null;
             skipDefaultLimits?: boolean;
@@ -1155,7 +1321,7 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            section: "inference" | "proxy-mode";
+            section: "inference" | "payload-logging" | "proxy-mode";
             value: components["schemas"]["ProxyMode"];
         };
         RateLimit: {
@@ -1189,6 +1355,11 @@ export interface components {
             enabled?: boolean;
             rules: components["schemas"]["RateLimitRule"][] | null;
         };
+        Ref: {
+            env?: string;
+            id?: string;
+            kind: string;
+        };
         RelayKey: {
             /**
              * Format: uri
@@ -1212,6 +1383,7 @@ export interface components {
             enabled?: boolean;
             keyHash: string;
             passthroughAllowed?: boolean;
+            payloadLoggingEnabled?: boolean;
             policyId?: string;
             prefix?: string;
             /** Format: date-time */
@@ -1221,6 +1393,75 @@ export interface components {
             enabled?: boolean;
             passthroughAllowed?: boolean;
             policyId?: string;
+        };
+        SummaryResult: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/SummaryResult.json
+             */
+            readonly $schema?: string;
+            /** Format: date-time */
+            from: string;
+            rows: components["schemas"]["SummaryRow"][] | null;
+            /** Format: date-time */
+            to: string;
+        };
+        SummaryRow: {
+            duration_ms: components["schemas"]["DurationStats"];
+            /** Format: int64 */
+            error_count: number;
+            /** Format: date-time */
+            first_seen: string;
+            group: {
+                [key: string]: string;
+            };
+            /** Format: date-time */
+            last_seen: string;
+            /** Format: int64 */
+            requests: number;
+            tokens: {
+                [key: string]: number;
+            };
+        };
+        TimeSeriesPoint: {
+            /** Format: date-time */
+            bucket: string;
+            /** Format: int64 */
+            error_count: number;
+            /** Format: int64 */
+            requests: number;
+            tokens: {
+                [key: string]: number;
+            };
+        };
+        TimeSeriesResult: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/TimeSeriesResult.json
+             */
+            readonly $schema?: string;
+            /** Format: date-time */
+            from: string;
+            interval: string;
+            rows: components["schemas"]["TimeSeriesRow"][] | null;
+            /** Format: date-time */
+            to: string;
+        };
+        TimeSeriesRow: {
+            group?: {
+                [key: string]: string;
+            };
+            points: components["schemas"]["TimeSeriesPoint"][] | null;
+        };
+        UpstreamTiming: {
+            /** Format: int64 */
+            response_end: number;
+            /** Format: int64 */
+            response_start: number;
+            /** Format: int64 */
+            start: number;
         };
         authResponseBody: {
             /**
@@ -1406,7 +1647,7 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            name: "inference" | "proxy-mode";
+            name: "inference" | "payload-logging" | "proxy-mode";
             /** @description OpenAPI component name for this section's typed value. */
             schemaRef?: string;
         };
@@ -1424,7 +1665,7 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            section: "inference" | "proxy-mode";
+            section: "inference" | "payload-logging" | "proxy-mode";
             value: unknown;
         };
         settingsListOutputBody: {
@@ -1435,6 +1676,16 @@ export interface components {
              */
             readonly $schema?: string;
             items: components["schemas"]["settingsListItem"][] | null;
+        };
+        usageEventsOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/usageEventsOutputBody.json
+             */
+            readonly $schema?: string;
+            events: components["schemas"]["Event"][] | null;
+            next_cursor?: string;
         };
         versionOutputBody: {
             /**
@@ -4559,6 +4810,104 @@ export interface operations {
             };
         };
     };
+    "get_settings_payload-logging": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayloadLoggingEnvelope"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    "update_settings_payload-logging": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PayloadLogging"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayloadLoggingEnvelope"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
     "get_settings_proxy-mode": {
         parameters: {
             query?: never;
@@ -4677,6 +5026,187 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    usage_events: {
+        parameters: {
+            query?: {
+                /** @description Cap on returned events (page size). Default 100, max 10000. */
+                limit?: number;
+                /** @description Opaque pagination cursor from a previous response's next_cursor. Returns the next (older) page. */
+                cursor?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["usageEventsOutputBody"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    usage_summary: {
+        parameters: {
+            query?: {
+                /** @description "source" (default) | "model_id" | "host_id" | "policy_id" | "relay_key_hash" | "host_key_id". */
+                group_by?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SummaryResult"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    usage_timeseries: {
+        parameters: {
+            query?: {
+                /** @description Bucket width (e.g. "5m", "1h", "1d"). Required. */
+                interval?: string;
+                /** @description Optional dimension to split series by: "source" | "model_id" | "host_id" | "policy_id" | "relay_key_hash" | "host_key_id". Empty returns a single series. */
+                group_by?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TimeSeriesResult"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
