@@ -1,9 +1,36 @@
-import { queryOptions, useQuery } from "@tanstack/react-query";
+import {
+	queryOptions,
+	useQuery,
+	useSuspenseQuery,
+} from "@tanstack/react-query";
 import { apiClient } from "@/api/client";
 import { ApiError } from "@/api/types/errors";
 import type { components } from "@/api/types.gen";
 
 export type CatalogResolveResponse = components["schemas"]["resolveOutputBody"];
+export type CatalogGraphResponse = components["schemas"]["graphOutputBody"];
+
+/**
+ * Query options for `/catalog/graph` — the compact, server-built catalog
+ * (providers + hosts w/ `iconPath` + models w/ `providerId`/`bindings`) used to
+ * populate the model picker. The server filters to enabled rows and dedups, so
+ * the UI never re-derives resolution from the heavyweight `/models` etc. lists.
+ */
+export const catalogGraphQueryOptions = queryOptions({
+	queryKey: ["catalog", "graph"] as const,
+	queryFn: async (): Promise<CatalogGraphResponse> => {
+		const { data, error } = await apiClient.GET("/catalog/graph");
+		if (error) throw new ApiError(0, error.error);
+		return data;
+	},
+	staleTime: 30_000,
+	gcTime: 5 * 60_000,
+});
+
+/** Compact catalog graph for the picker. See {@link catalogGraphQueryOptions}. */
+export function useCatalogGraph() {
+	return useSuspenseQuery(catalogGraphQueryOptions);
+}
 
 /**
  * Query options for `/catalog/resolve`. Pass a list of catalog-ref strings;

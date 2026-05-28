@@ -8,12 +8,6 @@ import {
 	X,
 } from "lucide-react";
 import { useMemo, useState } from "react";
-import { useHosts } from "@/api/hooks/hosts";
-import { useModels } from "@/api/hooks/models";
-import { useProviders } from "@/api/hooks/providers";
-import type { Host } from "@/api/types/host";
-import type { Model } from "@/api/types/model";
-import type { Provider } from "@/api/types/provider";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { KIND_META } from "@/config/catalogRef";
@@ -25,8 +19,14 @@ import {
 	refCovers,
 	validateCatalogRef,
 } from "@/lib/catalogRef";
-import { displayLabel } from "@/lib/displayLabel";
 import { from as slugFrom } from "@/lib/slug";
+import {
+	type HostRow,
+	type ModelRow,
+	type PickerIndex,
+	type ProviderRow,
+	usePickerCatalog,
+} from "@/models/usePickerCatalog";
 
 type Tab = "summary" | "providers" | "models" | "hosts" | "raw";
 
@@ -75,43 +75,8 @@ export function ModelPicker({
 		if (!next) onChange([]);
 	}
 
-	const { data: providersData } = useProviders();
-	const { data: modelsData } = useModels();
-	const { data: hostsData } = useHosts();
-
-	const rawProviders = providersData.items ?? [];
-	const rawModels = modelsData.items ?? [];
-	const rawHosts = hostsData.items ?? [];
-
-	const restrictRefs = useMemo(() => {
-		if (!restrictTo) return null;
-		const parsed: CatalogRef[] = [];
-		for (const s of restrictTo) {
-			try {
-				parsed.push(parseCatalogRef(s));
-			} catch {
-				// Skip invalid refs — they can't grant anything.
-			}
-		}
-		return parsed;
-	}, [restrictTo]);
-
-	const { providers, models, hosts } = useMemo(() => {
-		if (!restrictRefs) {
-			return { providers: rawProviders, models: rawModels, hosts: rawHosts };
-		}
-		return filterCatalogByRestriction({
-			providers: rawProviders,
-			models: rawModels,
-			hosts: rawHosts,
-			restrictRefs,
-		});
-	}, [rawProviders, rawModels, rawHosts, restrictRefs]);
-
-	const index = useMemo(
-		() => buildIndex({ providers, models, hosts }),
-		[providers, models, hosts],
-	);
+	const index = usePickerCatalog(restrictTo);
+	const { providers, hosts } = index;
 
 	const refs = useMemo(
 		() =>
@@ -137,8 +102,8 @@ export function ModelPicker({
 		onChange(value.filter((r) => r !== raw));
 	}
 
-	function toggleProvider(p: Provider): void {
-		const name = p.metadata.name;
+	function toggleProvider(p: ProviderRow): void {
+		const name = p.name;
 		const ref = formatCatalogRef({ provider: name });
 		const existing = refs.find(
 			(r) => r.kind === "provider" && r.provider === name,
@@ -179,10 +144,10 @@ export function ModelPicker({
 		]);
 	}
 
-	function toggleHost(h: Host): void {
+	function toggleHost(h: HostRow): void {
 		// Selecting a host emits a single `@{host}` ref (host-only grant) — all
 		// current and future bindings on this host, regardless of provider.
-		const hostName = h.metadata.name;
+		const hostName = h.name;
 		const existing = refs.find((r) => r.kind === "host" && r.host === hostName);
 		if (existing) {
 			setRefs(refs.filter((r) => r.raw !== existing.raw));
@@ -197,8 +162,7 @@ export function ModelPicker({
 	}
 
 	const filteredProviders = useMemo(
-		() =>
-			filter(providers, q, (p) => [p.metadata.name, displayLabel(p.metadata)]),
+		() => filter(providers, q, (p) => [p.name, p.displayName]),
 		[providers, q],
 	);
 	const visibleModels = useMemo(
@@ -213,7 +177,7 @@ export function ModelPicker({
 		[visibleModels, q],
 	);
 	const filteredHosts = useMemo(
-		() => filter(hosts, q, (h) => [h.metadata.name, displayLabel(h.metadata)]),
+		() => filter(hosts, q, (h) => [h.name, h.displayName]),
 		[hosts, q],
 	);
 
@@ -326,144 +290,6 @@ export function ModelPicker({
 	);
 }
 
-interface ModelRow {
-	id: string;
-	name: string;
-	displayName: string;
-	provider: string;
-	hostNames: string[];
-	deprecated: boolean;
-}
-
-interface PickerIndex {
-	hostsById: Map<string, Host>;
-	hostsByName: Map<string, Host>;
-	providersByName: Map<string, Provider>;
-	modelRows: ModelRow[];
-	modelsByProvider: Map<string, ModelRow[]>;
-	bindingsByHostName: Map<string, { provider: string; model: string }[]>;
-}
-
-/**
- * Filter providers, models, and hosts down to only those covered by at least
- * one of the parent restriction refs. A model is kept only if it has at least
- * one host binding under restriction — and its `spec.hosts[]` is trimmed to
- * the allowed hosts. Providers and hosts with no surviving bindings drop out.
- */
-function filterCatalogByRestriction(input: {
-	providers: Provider[];
-	models: Model[];
-	hosts: Host[];
-	restrictRefs: readonly CatalogRef[];
-}): { providers: Provider[]; models: Model[]; hosts: Host[] } {
-	const providerSlugById = new Map<string, string>();
-	for (const p of input.providers) {
-		if (p.metadata.id) providerSlugById.set(p.metadata.id, p.metadata.name);
-	}
-	const hostSlugById = new Map<string, string>();
-	for (const h of input.hosts) {
-		if (h.metadata.id) hostSlugById.set(h.metadata.id, h.metadata.name);
-	}
-
-	const allowedProviders = new Set<string>();
-	const allowedHosts = new Set<string>();
-	const filteredModels: Model[] = [];
-
-	for (const m of input.models) {
-		const ownerId =
-			m.metadata.owner?.kind === "provider" ? m.metadata.owner.id : undefined;
-		const provider = ownerId ? providerSlugById.get(ownerId) : undefined;
-		if (!provider) continue;
-		const keptHostBindings = (m.spec.hosts ?? []).filter((b) => {
-			const host = hostSlugById.get(b.hostId);
-			if (!host) return false;
-			return input.restrictRefs.some((ref) =>
-				refCovers(ref, { provider, model: m.metadata.name, host }),
-			);
-		});
-		if (keptHostBindings.length === 0) continue;
-		filteredModels.push({
-			...m,
-			spec: { ...m.spec, hosts: keptHostBindings },
-		});
-		allowedProviders.add(provider);
-		for (const b of keptHostBindings) {
-			const host = hostSlugById.get(b.hostId);
-			if (host) allowedHosts.add(host);
-		}
-	}
-
-	return {
-		providers: input.providers.filter((p) =>
-			allowedProviders.has(p.metadata.name),
-		),
-		models: filteredModels,
-		hosts: input.hosts.filter((h) => allowedHosts.has(h.metadata.name)),
-	};
-}
-
-function buildIndex(input: {
-	providers: Provider[];
-	models: Model[];
-	hosts: Host[];
-}): PickerIndex {
-	const hostsById = new Map<string, Host>();
-	const hostsByName = new Map<string, Host>();
-	for (const h of input.hosts) {
-		if (h.metadata.id) hostsById.set(h.metadata.id, h);
-		hostsByName.set(h.metadata.name, h);
-	}
-	const providersByName = new Map<string, Provider>();
-	const providerSlugById = new Map<string, string>();
-	for (const p of input.providers) {
-		providersByName.set(p.metadata.name, p);
-		if (p.metadata.id) providerSlugById.set(p.metadata.id, p.metadata.name);
-	}
-
-	const modelRows: ModelRow[] = [];
-	const modelsByProvider = new Map<string, ModelRow[]>();
-	const bindingsByHostName = new Map<
-		string,
-		{ provider: string; model: string }[]
-	>();
-	for (const m of input.models) {
-		const ownerId =
-			m.metadata.owner?.kind === "provider" ? m.metadata.owner.id : undefined;
-		const provider = ownerId ? providerSlugById.get(ownerId) : undefined;
-		if (!provider) continue;
-		const hostNames: string[] = [];
-		for (const b of m.spec.hosts ?? []) {
-			const h = hostsById.get(b.hostId);
-			if (!h) continue;
-			const hostName = h.metadata.name;
-			if (!hostNames.includes(hostName)) hostNames.push(hostName);
-			const list = bindingsByHostName.get(hostName) ?? [];
-			list.push({ provider, model: m.metadata.name });
-			bindingsByHostName.set(hostName, list);
-		}
-		const row: ModelRow = {
-			id: m.metadata.id ?? m.metadata.name,
-			name: m.metadata.name,
-			displayName: displayLabel(m.metadata),
-			provider,
-			hostNames,
-			deprecated: Boolean(m.spec.deprecation || m.spec.deprecationDate),
-		};
-		modelRows.push(row);
-		const byProv = modelsByProvider.get(provider) ?? [];
-		byProv.push(row);
-		modelsByProvider.set(provider, byProv);
-	}
-	return {
-		hostsById,
-		hostsByName,
-		providersByName,
-		modelRows,
-		modelsByProvider,
-		bindingsByHostName,
-	};
-}
-
 function filter<T>(items: T[], q: string, fields: (item: T) => string[]): T[] {
 	const ql = q.trim().toLowerCase();
 	if (!ql) return items;
@@ -480,22 +306,22 @@ function ProviderList({
 	refs,
 	onToggle,
 }: {
-	providers: Provider[];
+	providers: ProviderRow[];
 	index: PickerIndex;
 	refs: CatalogRef[];
-	onToggle: (p: Provider) => void;
+	onToggle: (p: ProviderRow) => void;
 }) {
 	if (providers.length === 0) return <Empty label="No providers" />;
 	return (
 		<ul className="divide-y divide-border">
 			{providers.map((p) => {
-				const name = p.metadata.name;
+				const name = p.name;
 				const selected = refs.some(
 					(r) => r.kind === "provider" && r.provider === name,
 				);
 				const modelCount = (index.modelsByProvider.get(name) ?? []).length;
 				return (
-					<li key={p.metadata.id ?? name}>
+					<li key={p.id}>
 						<button
 							type="button"
 							onClick={() => onToggle(p)}
@@ -504,7 +330,7 @@ function ProviderList({
 							<span className="flex items-center gap-2.5 min-w-0">
 								<RowCheckbox state={selected ? "on" : "off"} />
 								<span className="text-sm text-foreground truncate">
-									{displayLabel(p.metadata)}
+									{p.displayName}
 								</span>
 								<code className="text-[10px] font-mono text-muted-foreground">
 									{name}
@@ -583,13 +409,13 @@ function ModelList({
 									return (
 										<span
 											key={hostName}
-											title={`Served via ${displayLabel(h.metadata)}`}
+											title={`Served via ${h.displayName}`}
 											className={[
 												"inline-flex items-center justify-center rounded-sm p-0.5 transition-opacity",
 												bindingCovered ? "opacity-100" : "opacity-40",
 											].join(" ")}
 										>
-											<HostLogo host={h} size={16} />
+											<HostLogo host={h.logo} size={16} />
 										</span>
 									);
 								})}
@@ -608,16 +434,16 @@ function HostList({
 	refs,
 	onToggle,
 }: {
-	hosts: Host[];
+	hosts: HostRow[];
 	index: PickerIndex;
 	refs: CatalogRef[];
-	onToggle: (h: Host) => void;
+	onToggle: (h: HostRow) => void;
 }) {
 	if (hosts.length === 0) return <Empty label="No hosts" />;
 	return (
 		<ul className="divide-y divide-border">
 			{hosts.map((h) => {
-				const name = h.metadata.name;
+				const name = h.name;
 				const bindings = index.bindingsByHostName.get(name) ?? [];
 				const total = bindings.length;
 				const covered = bindings.filter((b) =>
@@ -638,7 +464,7 @@ function HostList({
 				);
 				const finalState: CheckState = hostGranted ? "on" : state;
 				return (
-					<li key={h.metadata.id ?? name}>
+					<li key={h.id}>
 						<button
 							type="button"
 							onClick={() => onToggle(h)}
@@ -646,10 +472,10 @@ function HostList({
 						>
 							<span className="flex items-center gap-2.5 min-w-0">
 								<RowCheckbox state={finalState} />
-								<HostLogo host={h} size={20} />
+								<HostLogo host={h.logo} size={20} />
 								<span className="min-w-0">
 									<span className="text-sm text-foreground truncate block">
-										{displayLabel(h.metadata)}
+										{h.displayName}
 									</span>
 									<code className="text-[10px] font-mono text-muted-foreground">
 										{name}
@@ -964,16 +790,10 @@ function formatCounts(c: RefCounts): string | undefined {
 
 function describeRef(ref: CatalogRef, index: PickerIndex): string {
 	const providerLabel = ref.provider
-		? displayLabel(
-				index.providersByName.get(ref.provider)?.metadata ?? {
-					name: ref.provider,
-				},
-			)
+		? (index.providersByName.get(ref.provider)?.displayName ?? ref.provider)
 		: undefined;
 	const hostLabel = ref.host
-		? displayLabel(
-				index.hostsByName.get(ref.host)?.metadata ?? { name: ref.host },
-			)
+		? (index.hostsByName.get(ref.host)?.displayName ?? ref.host)
 		: undefined;
 	const modelLabel = (() => {
 		if (!ref.model || !ref.provider) return undefined;

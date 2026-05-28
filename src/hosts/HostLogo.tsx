@@ -1,9 +1,15 @@
 import { useState } from "react";
-import type { Host } from "@/api/types/host";
 import { displayLabel } from "@/lib/displayLabel";
 
+/** Only the fields the logo actually reads — full `Host` and compact graph
+ * host rows both satisfy this. */
+export interface HostLogoLike {
+	metadata: { name: string; displayName?: string };
+	spec: { icon?: { path?: string } };
+}
+
 interface HostLogoProps {
-	host: Pick<Host, "metadata" | "spec">;
+	host: HostLogoLike;
 	size?: number;
 	className?: string;
 	/** When true, the host label is set as a `title` for native tooltips. */
