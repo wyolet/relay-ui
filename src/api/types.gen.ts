@@ -55,6 +55,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/catalog/graph": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Minimal catalog graph (providers, hosts, models + bindings) for the picker */
+        get: operations["catalog_graph"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/catalog/resolve": {
         parameters: {
             query?: never;
@@ -763,6 +780,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/settings/parsing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get settings section: parsing
+         * @description Inbound request-body parsing depth. RichParsing extracts per-request metadata + messages for attribution/observability; off reads only routing fields. Default on. Hot-reloaded.
+         */
+        get: operations["get_settings_parsing"];
+        /**
+         * Update settings section: parsing
+         * @description Inbound request-body parsing depth. RichParsing extracts per-request metadata + messages for attribution/observability; off reads only routing fields. Default on. Hot-reloaded.
+         */
+        put: operations["update_settings_parsing"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/settings/payload-logging": {
         parameters: {
             query?: never;
@@ -939,6 +980,7 @@ export interface components {
             host_key_id?: string;
             model_id?: string;
             policy_id?: string;
+            reasoning?: components["schemas"]["ReasoningTiming"];
             relay_key_hash?: string;
             request_id: string;
             requested_model?: string;
@@ -1045,7 +1087,7 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            section: "inference" | "payload-logging" | "proxy-mode";
+            section: "inference" | "parsing" | "payload-logging" | "proxy-mode";
             value: components["schemas"]["Inference"];
         };
         Metadata: {
@@ -1166,6 +1208,29 @@ export interface components {
             id?: string;
             kind?: string;
         };
+        Parsing: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Parsing.json
+             */
+            readonly $schema?: string;
+            richParsing: boolean;
+        };
+        ParsingEnvelope: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/ParsingEnvelope.json
+             */
+            readonly $schema?: string;
+            /**
+             * @description One of the relay's registered settings section keys.
+             * @enum {string}
+             */
+            section: "inference" | "parsing" | "payload-logging" | "proxy-mode";
+            value: components["schemas"]["Parsing"];
+        };
         PayloadFile: {
             path: string;
         };
@@ -1194,7 +1259,7 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            section: "inference" | "payload-logging" | "proxy-mode";
+            section: "inference" | "parsing" | "payload-logging" | "proxy-mode";
             value: components["schemas"]["PayloadLogging"];
         };
         PayloadS3: {
@@ -1321,7 +1386,7 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            section: "inference" | "payload-logging" | "proxy-mode";
+            section: "inference" | "parsing" | "payload-logging" | "proxy-mode";
             value: components["schemas"]["ProxyMode"];
         };
         RateLimit: {
@@ -1354,6 +1419,12 @@ export interface components {
         RateLimitSpec: {
             enabled?: boolean;
             rules: components["schemas"]["RateLimitRule"][] | null;
+        };
+        ReasoningTiming: {
+            /** Format: int64 */
+            end: number;
+            /** Format: int64 */
+            start: number;
         };
         Ref: {
             env?: string;
@@ -1538,6 +1609,45 @@ export interface components {
             /** Format: int64 */
             relayKeys: number;
         };
+        graphBinding: {
+            adapter: string;
+            hostId: string;
+        };
+        graphHost: {
+            displayName?: string;
+            iconPath?: string;
+            id: string;
+            name: string;
+        };
+        graphModel: {
+            bindings: components["schemas"]["graphBinding"][] | null;
+            capabilities?: components["schemas"]["ModelCapabilities"];
+            /** Format: int64 */
+            contextWindowInput?: number;
+            /** Format: int64 */
+            contextWindowTotal?: number;
+            deprecated?: string;
+            displayName?: string;
+            id: string;
+            name: string;
+            providerId: string;
+        };
+        graphOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/graphOutputBody.json
+             */
+            readonly $schema?: string;
+            hosts: components["schemas"]["graphHost"][] | null;
+            models: components["schemas"]["graphModel"][] | null;
+            providers: components["schemas"]["graphProvider"][] | null;
+        };
+        graphProvider: {
+            displayName?: string;
+            id: string;
+            name: string;
+        };
         loginInputBody: {
             /**
              * Format: uri
@@ -1579,6 +1689,13 @@ export interface components {
              * @description Number of stored-mode HostKey rows re-encrypted.
              */
             rotated: number;
+        };
+        refResult: {
+            bindings: components["schemas"]["resolveBindingRef"][] | null;
+            expanded: string[] | null;
+            hostIds: string[] | null;
+            modelIds: string[] | null;
+            ref: string;
         };
         referenceItem: {
             /** @description Resource id. */
@@ -1630,6 +1747,8 @@ export interface components {
             hosts: components["schemas"]["resolveEntity"][] | null;
             models: components["schemas"]["resolveEntity"][] | null;
             refs: string[] | null;
+            results: components["schemas"]["refResult"][] | null;
+            unresolved: string[] | null;
         };
         rotateHostKeyInputBody: {
             /**
@@ -1647,7 +1766,7 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            name: "inference" | "payload-logging" | "proxy-mode";
+            name: "inference" | "parsing" | "payload-logging" | "proxy-mode";
             /** @description OpenAPI component name for this section's typed value. */
             schemaRef?: string;
         };
@@ -1665,7 +1784,7 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            section: "inference" | "payload-logging" | "proxy-mode";
+            section: "inference" | "parsing" | "payload-logging" | "proxy-mode";
             value: unknown;
         };
         settingsListOutputBody: {
@@ -1831,11 +1950,63 @@ export interface operations {
             };
         };
     };
+    catalog_graph: {
+        parameters: {
+            query?: {
+                /** @description Include deprecated models (still flagged via 'deprecated'). Default false drops them server-side. */
+                includeDeprecated?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["graphOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
     catalog_resolve: {
         parameters: {
             query: {
                 /** @description One or more catalog refs in the modelref DSL: provider[/model][@host], or @host. Repeat the parameter to union multiple refs. */
                 ref: string[] | null;
+                /** @description Include deprecated models in the expansion. Default false drops them, matching /catalog/graph so counts agree with the picker. */
+                includeDeprecated?: boolean;
             };
             header?: never;
             path?: never;
@@ -4770,6 +4941,104 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["InferenceEnvelope"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    get_settings_parsing: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ParsingEnvelope"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    update_settings_parsing: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Parsing"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ParsingEnvelope"];
                 };
             };
             /** @description Bad Request */
