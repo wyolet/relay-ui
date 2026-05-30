@@ -7,6 +7,13 @@ import { fmtInt, fmtMs, fmtTs, sumTokens } from "./format";
 import { LogsEmpty } from "./LogsEmpty";
 import { isErrorEvent, isSlowEvent } from "./predicates";
 
+/** Case-insensitive match across the fields a row exposes. */
+function matchesQuery(e: LogEvent, needle: string): boolean {
+	return [e.model_id, e.requested_model, e.source, e.request_id].some((v) =>
+		v?.toLowerCase().includes(needle),
+	);
+}
+
 /**
  * Left pane of the logs view: a scannable request feed. Selection and the
  * client-side filters are owned by the route (search params); this renders
@@ -15,18 +22,24 @@ import { isErrorEvent, isSlowEvent } from "./predicates";
 export function LogsTable({
 	selected,
 	onSelect,
+	query,
 	errorsOnly,
 	slowOnly,
 }: {
 	selected: string | null;
 	onSelect: (requestId: string) => void;
+	query: string;
 	errorsOnly: boolean;
 	slowOnly: boolean;
 }) {
 	const { events, fetchNextPage, hasNextPage, isFetchingNextPage } = useLogs();
 
+	const needle = query.trim().toLowerCase();
 	const shown = events.filter(
-		(e) => (!errorsOnly || isErrorEvent(e)) && (!slowOnly || isSlowEvent(e)),
+		(e) =>
+			(!errorsOnly || isErrorEvent(e)) &&
+			(!slowOnly || isSlowEvent(e)) &&
+			(needle === "" || matchesQuery(e, needle)),
 	);
 
 	if (events.length === 0) {

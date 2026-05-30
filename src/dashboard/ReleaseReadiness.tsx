@@ -1,4 +1,4 @@
-import { type ReleaseGap, RELEASE_GAPS } from "@/config/releaseGaps";
+import { RELEASE_GAPS, type ReleaseGap } from "@/config/releaseGaps";
 import { AlertBanner } from "@/shared/AlertBanner";
 
 /**

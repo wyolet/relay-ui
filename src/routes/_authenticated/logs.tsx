@@ -1,14 +1,27 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { AlertTriangle, Timer } from "lucide-react";
 import { Suspense } from "react";
 import { z } from "zod";
 import { logsInfiniteQueryOptions } from "@/api/hooks/logs";
-import { Toggle } from "@/components/ui/toggle";
+import { FilterBar } from "@/filters/FilterBar";
+import type { FilterDef } from "@/filters/types";
 import { LogDetailPanel } from "@/logs/LogDetailPanel";
 import { LogsTable } from "@/logs/LogsTable";
 import { SLOW_MS } from "@/logs/predicates";
 
+const LOG_FILTERS = [
+	{
+		key: "q",
+		type: "search",
+		label: "Search",
+		placeholder: "model, source, request id",
+		default: "",
+	},
+	{ key: "errors", type: "toggle", label: "Errors" },
+	{ key: "slow", type: "toggle", label: `Slow >${SLOW_MS / 1000}s` },
+] as const satisfies readonly FilterDef[];
+
 const searchSchema = z.object({
+	q: z.string().default(""),
 	errors: z.boolean().default(false),
 	slow: z.boolean().default(false),
 	request: z.string().optional(),
@@ -24,50 +37,34 @@ export const Route = createFileRoute("/_authenticated/logs")({
 });
 
 function LogsPage() {
-	const { errors, slow, request } = Route.useSearch();
+	const { q, errors, slow, request } = Route.useSearch();
 	const navigate = useNavigate();
 
-	const setSearch = (patch: Partial<z.infer<typeof searchSchema>>) =>
-		void navigate({
-			to: "/logs",
-			search: { errors, slow, request, ...patch },
-		});
+	const patch = (next: Record<string, string | boolean | undefined>) =>
+		void navigate({ to: "/logs", search: (prev) => ({ ...prev, ...next }) });
 
 	return (
 		<div className="flex flex-col gap-4">
-			<div className="flex flex-wrap items-center justify-between gap-3">
-				<div>
-					<h1 className="text-xl font-semibold text-foreground">Logs</h1>
-					<p className="text-xs text-muted-foreground">
-						Requests through the relay, newest first. Click one to inspect
-						captured bodies.
-					</p>
-				</div>
-				<div className="flex items-center gap-1.5">
-					<Toggle
-						variant="outline"
-						pressed={errors}
-						onPressedChange={(v) => setSearch({ errors: v })}
-					>
-						<AlertTriangle aria-hidden />
-						Errors
-					</Toggle>
-					<Toggle
-						variant="outline"
-						pressed={slow}
-						onPressedChange={(v) => setSearch({ slow: v })}
-					>
-						<Timer aria-hidden />
-						Slow &gt;{SLOW_MS / 1000}s
-					</Toggle>
-				</div>
+			<div>
+				<h1 className="text-xl font-semibold text-foreground">Logs</h1>
+				<p className="text-xs text-muted-foreground">
+					Requests through the relay, newest first. Click one to inspect
+					captured bodies.
+				</p>
 			</div>
+
+			<FilterBar
+				defs={LOG_FILTERS}
+				state={{ q, errors, slow }}
+				onChange={patch}
+			/>
 
 			<div className="flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:items-start">
 				<Suspense fallback={<Loading />}>
 					<LogsTable
 						selected={request ?? null}
-						onSelect={(id) => setSearch({ request: id })}
+						onSelect={(id) => patch({ request: id })}
+						query={q}
 						errorsOnly={errors}
 						slowOnly={slow}
 					/>
