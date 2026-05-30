@@ -26,6 +26,7 @@ import { Route as AuthenticatedModelsIndexRouteImport } from './routes/_authenti
 import { Route as AuthenticatedHostKeysIndexRouteImport } from './routes/_authenticated/host-keys.index'
 import { Route as AuthenticatedSettingsRateLimitsRouteImport } from './routes/_authenticated/settings.rate-limits'
 import { Route as AuthenticatedSettingsProxyModeRouteImport } from './routes/_authenticated/settings.proxy-mode'
+import { Route as AuthenticatedSettingsPayloadLoggingRouteImport } from './routes/_authenticated/settings.payload-logging'
 import { Route as AuthenticatedRelayKeysNewRouteImport } from './routes/_authenticated/relay-keys.new'
 import { Route as AuthenticatedRelayKeysNameRouteImport } from './routes/_authenticated/relay-keys.$name'
 import { Route as AuthenticatedProvidersNameRouteImport } from './routes/_authenticated/providers.$name'
@@ -132,6 +133,12 @@ const AuthenticatedSettingsProxyModeRoute =
   AuthenticatedSettingsProxyModeRouteImport.update({
     id: '/proxy-mode',
     path: '/proxy-mode',
+    getParentRoute: () => AuthenticatedSettingsRoute,
+  } as any)
+const AuthenticatedSettingsPayloadLoggingRoute =
+  AuthenticatedSettingsPayloadLoggingRouteImport.update({
+    id: '/payload-logging',
+    path: '/payload-logging',
     getParentRoute: () => AuthenticatedSettingsRoute,
   } as any)
 const AuthenticatedRelayKeysNewRoute =
@@ -255,6 +262,7 @@ export interface FileRoutesByFullPath {
   '/providers/$name': typeof AuthenticatedProvidersNameRoute
   '/relay-keys/$name': typeof AuthenticatedRelayKeysNameRoute
   '/relay-keys/new': typeof AuthenticatedRelayKeysNewRoute
+  '/settings/payload-logging': typeof AuthenticatedSettingsPayloadLoggingRoute
   '/settings/proxy-mode': typeof AuthenticatedSettingsProxyModeRoute
   '/settings/rate-limits': typeof AuthenticatedSettingsRateLimitsRoute
   '/host-keys/': typeof AuthenticatedHostKeysIndexRoute
@@ -286,6 +294,7 @@ export interface FileRoutesByTo {
   '/providers/$name': typeof AuthenticatedProvidersNameRoute
   '/relay-keys/$name': typeof AuthenticatedRelayKeysNameRoute
   '/relay-keys/new': typeof AuthenticatedRelayKeysNewRoute
+  '/settings/payload-logging': typeof AuthenticatedSettingsPayloadLoggingRoute
   '/settings/proxy-mode': typeof AuthenticatedSettingsProxyModeRoute
   '/settings/rate-limits': typeof AuthenticatedSettingsRateLimitsRoute
   '/host-keys': typeof AuthenticatedHostKeysIndexRoute
@@ -323,6 +332,7 @@ export interface FileRoutesById {
   '/_authenticated/providers/$name': typeof AuthenticatedProvidersNameRoute
   '/_authenticated/relay-keys/$name': typeof AuthenticatedRelayKeysNameRoute
   '/_authenticated/relay-keys/new': typeof AuthenticatedRelayKeysNewRoute
+  '/_authenticated/settings/payload-logging': typeof AuthenticatedSettingsPayloadLoggingRoute
   '/_authenticated/settings/proxy-mode': typeof AuthenticatedSettingsProxyModeRoute
   '/_authenticated/settings/rate-limits': typeof AuthenticatedSettingsRateLimitsRoute
   '/_authenticated/host-keys/': typeof AuthenticatedHostKeysIndexRoute
@@ -360,6 +370,7 @@ export interface FileRouteTypes {
     | '/providers/$name'
     | '/relay-keys/$name'
     | '/relay-keys/new'
+    | '/settings/payload-logging'
     | '/settings/proxy-mode'
     | '/settings/rate-limits'
     | '/host-keys/'
@@ -391,6 +402,7 @@ export interface FileRouteTypes {
     | '/providers/$name'
     | '/relay-keys/$name'
     | '/relay-keys/new'
+    | '/settings/payload-logging'
     | '/settings/proxy-mode'
     | '/settings/rate-limits'
     | '/host-keys'
@@ -427,6 +439,7 @@ export interface FileRouteTypes {
     | '/_authenticated/providers/$name'
     | '/_authenticated/relay-keys/$name'
     | '/_authenticated/relay-keys/new'
+    | '/_authenticated/settings/payload-logging'
     | '/_authenticated/settings/proxy-mode'
     | '/_authenticated/settings/rate-limits'
     | '/_authenticated/host-keys/'
@@ -566,6 +579,13 @@ declare module '@tanstack/react-router' {
       path: '/proxy-mode'
       fullPath: '/settings/proxy-mode'
       preLoaderRoute: typeof AuthenticatedSettingsProxyModeRouteImport
+      parentRoute: typeof AuthenticatedSettingsRoute
+    }
+    '/_authenticated/settings/payload-logging': {
+      id: '/_authenticated/settings/payload-logging'
+      path: '/payload-logging'
+      fullPath: '/settings/payload-logging'
+      preLoaderRoute: typeof AuthenticatedSettingsPayloadLoggingRouteImport
       parentRoute: typeof AuthenticatedSettingsRoute
     }
     '/_authenticated/relay-keys/new': {
@@ -767,12 +787,15 @@ const AuthenticatedPoliciesRouteWithChildren =
   )
 
 interface AuthenticatedSettingsRouteChildren {
+  AuthenticatedSettingsPayloadLoggingRoute: typeof AuthenticatedSettingsPayloadLoggingRoute
   AuthenticatedSettingsProxyModeRoute: typeof AuthenticatedSettingsProxyModeRoute
   AuthenticatedSettingsRateLimitsRoute: typeof AuthenticatedSettingsRateLimitsRoute
   AuthenticatedSettingsIndexRoute: typeof AuthenticatedSettingsIndexRoute
 }
 
 const AuthenticatedSettingsRouteChildren: AuthenticatedSettingsRouteChildren = {
+  AuthenticatedSettingsPayloadLoggingRoute:
+    AuthenticatedSettingsPayloadLoggingRoute,
   AuthenticatedSettingsProxyModeRoute: AuthenticatedSettingsProxyModeRoute,
   AuthenticatedSettingsRateLimitsRoute: AuthenticatedSettingsRateLimitsRoute,
   AuthenticatedSettingsIndexRoute: AuthenticatedSettingsIndexRoute,

@@ -25,15 +25,6 @@ export interface ReleaseGap {
 
 export const RELEASE_GAPS: ReleaseGap[] = [
 	{
-		id: "dashboard-metrics",
-		title: "Replace dashboard 'Drop Counters' placeholder",
-		whatsFake:
-			"Dashboard shows a dashed 'metrics endpoint pending /admin/metrics' box. That endpoint never shipped.",
-		fix: "There is no /admin/metrics — use /usage/summary + /usage/timeseries (already powering the Usage page) for top-line counters.",
-		owner: "frontend",
-		where: ["src/routes/_authenticated/index.tsx"],
-	},
-	{
 		id: "model-pricing",
 		title: "Cut or back the model Pricing tab",
 		whatsFake:
@@ -59,14 +50,5 @@ export const RELEASE_GAPS: ReleaseGap[] = [
 		fix: "Surface them as toggles on a settings page.",
 		owner: "frontend",
 		where: ["src/stores/permissions.ts"],
-	},
-	{
-		id: "global-payload-logging",
-		title: "Global payload-logging default (settings)",
-		whatsFake:
-			"Payload logging is now toggleable per-policy and per-relay-key, but the global default (which overrides both) has no UI — there's no settings endpoint for it.",
-		fix: "BE needs a /settings/payload-logging endpoint mirroring /settings/proxy-mode; then add the settings toggle. Resolution order: global › policy › relay-key.",
-		owner: "backend",
-		where: ["src/routes/_authenticated/settings.tsx"],
 	},
 ];

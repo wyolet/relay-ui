@@ -1,12 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Forward, Gauge, type LucideIcon } from "lucide-react";
+import { Forward, Gauge, type LucideIcon, ScrollText } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/settings/")({
 	component: SettingsPage,
 });
 
 interface SettingItem {
-	to: "/settings/rate-limits" | "/settings/proxy-mode";
+	to:
+		| "/settings/rate-limits"
+		| "/settings/proxy-mode"
+		| "/settings/payload-logging";
 	label: string;
 	description: string;
 	icon: LucideIcon;
@@ -19,6 +22,13 @@ const ITEMS: SettingItem[] = [
 		description:
 			"Accept BYO-credential requests for tracking and schema bridging.",
 		icon: Forward,
+	},
+	{
+		to: "/settings/payload-logging",
+		label: "Payload logging",
+		description:
+			"Global default for capturing request/response bodies. Overrides per-policy and per-relay-key toggles.",
+		icon: ScrollText,
 	},
 	{
 		to: "/settings/rate-limits",

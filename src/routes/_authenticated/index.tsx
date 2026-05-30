@@ -7,6 +7,7 @@ import { modelsListQueryOptions } from "@/api/hooks/models";
 import { policiesListQueryOptions } from "@/api/hooks/policies";
 import { providersListQueryOptions } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
+import { DashboardTraffic } from "@/dashboard/DashboardTraffic";
 import { ReleaseReadiness } from "@/dashboard/ReleaseReadiness";
 import { ResourceGraphSVG } from "@/graph/ResourceGraphSVG";
 
@@ -56,6 +57,31 @@ function WelcomePanel() {
 	);
 }
 
+function TrafficSkeleton() {
+	return (
+		<section>
+			<h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-3">
+				Traffic
+			</h2>
+			<div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+				{["Requests", "Error rate", "Avg latency", "Tokens"].map((l) => (
+					<div
+						key={l}
+						className="rounded-lg border border-border bg-card px-4 py-3"
+					>
+						<div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+							{l}
+						</div>
+						<div className="mt-1 text-2xl font-semibold text-muted-foreground tabular-nums">
+							…
+						</div>
+					</div>
+				))}
+			</div>
+		</section>
+	);
+}
+
 // --- dashboard inner (uses suspense queries) ---
 
 function DashboardInner() {
@@ -75,6 +101,12 @@ function DashboardInner() {
 			{catalogEmpty && <WelcomePanel />}
 
 			<ReleaseReadiness />
+
+			{!catalogEmpty && (
+				<Suspense fallback={<TrafficSkeleton />}>
+					<DashboardTraffic />
+				</Suspense>
+			)}
 
 			<ResourceGraphSVG />
 
