@@ -3085,6 +3085,56 @@ export interface operations {
     logs_list: {
         parameters: {
             query?: {
+                /** @description Relative window (e.g. "1h", "24h", "7d"). Default "1h". Ignored when from is set. */
+                since?: string;
+                /** @description Absolute lower bound (RFC3339). Overrides since. */
+                from?: string;
+                /** @description Absolute upper bound (RFC3339). */
+                to?: string;
+                /** @description Exact match on a single request id (deep-link one event). */
+                request_id?: string;
+                /** @description Match any of the given sha256 hashes of the inbound bearer. */
+                relay_key_hash?: string[] | null;
+                /** @description Match any of the given Policy.metadata.id values. */
+                policy_id?: string[] | null;
+                /** @description Match any of the given Model.metadata.id values. */
+                model_id?: string[] | null;
+                /** @description Match any of the given Host.metadata.id values. */
+                host_id?: string[] | null;
+                /** @description Match any of "pipeline" | "proxy" | "ws" | "batch". */
+                source?: string[] | null;
+                /** @description Match any of "stop" | "length" | "tool_calls" | "content_filter" | "refusal". */
+                finish_reason?: string[] | null;
+                /** @description Match any of the given error_kind values. */
+                error_kind?: string[] | null;
+                /** @description Minimum HTTP status to include. */
+                status_min?: number;
+                /** @description Maximum HTTP status to include. */
+                status_max?: number;
+                /** @description Match any of the given HostKey.metadata.id values. */
+                host_key_id?: string[] | null;
+                /** @description Match any of the model strings as the caller sent them. */
+                requested_model?: string[] | null;
+                /** @description Match any of these exact HTTP status codes. */
+                status?: number[] | null;
+                /** @description Convenience status band: "2xx" | "4xx" | "5xx". Sets status_min/max. */
+                status_class?: string;
+                /** @description true = only streamed responses, false = only non-streamed. */
+                streamed?: "true" | "false";
+                /** @description true = only errors (status>=400 or error_kind set), false = only successes. */
+                error?: "true" | "false";
+                /** @description Minimum upstream try count (failover) — finds retried requests. */
+                attempts_min?: number;
+                /** @description Minimum total duration in ms (slow-request filter). */
+                duration_ms_min?: number;
+                /** @description Maximum total duration in ms. */
+                duration_ms_max?: number;
+                /** @description Minimum upstream time-to-first-byte (ms); excludes requests with no upstream timing. */
+                ttft_ms_min?: number;
+                /** @description Maximum upstream time-to-first-byte (ms). */
+                ttft_ms_max?: number;
+                /** @description Free-text substring across request_id, model_id, requested_model, source. */
+                q?: string;
                 /** @description Cap on returned records (page size). Default 100, max 10000. */
                 limit?: number;
                 /** @description Opaque pagination cursor from a previous response's next_cursor. Returns the next (older) page. */
@@ -5978,6 +6028,56 @@ export interface operations {
     usage_events: {
         parameters: {
             query?: {
+                /** @description Relative window (e.g. "1h", "24h", "7d"). Default "1h". Ignored when from is set. */
+                since?: string;
+                /** @description Absolute lower bound (RFC3339). Overrides since. */
+                from?: string;
+                /** @description Absolute upper bound (RFC3339). */
+                to?: string;
+                /** @description Exact match on a single request id (deep-link one event). */
+                request_id?: string;
+                /** @description Match any of the given sha256 hashes of the inbound bearer. */
+                relay_key_hash?: string[] | null;
+                /** @description Match any of the given Policy.metadata.id values. */
+                policy_id?: string[] | null;
+                /** @description Match any of the given Model.metadata.id values. */
+                model_id?: string[] | null;
+                /** @description Match any of the given Host.metadata.id values. */
+                host_id?: string[] | null;
+                /** @description Match any of "pipeline" | "proxy" | "ws" | "batch". */
+                source?: string[] | null;
+                /** @description Match any of "stop" | "length" | "tool_calls" | "content_filter" | "refusal". */
+                finish_reason?: string[] | null;
+                /** @description Match any of the given error_kind values. */
+                error_kind?: string[] | null;
+                /** @description Minimum HTTP status to include. */
+                status_min?: number;
+                /** @description Maximum HTTP status to include. */
+                status_max?: number;
+                /** @description Match any of the given HostKey.metadata.id values. */
+                host_key_id?: string[] | null;
+                /** @description Match any of the model strings as the caller sent them. */
+                requested_model?: string[] | null;
+                /** @description Match any of these exact HTTP status codes. */
+                status?: number[] | null;
+                /** @description Convenience status band: "2xx" | "4xx" | "5xx". Sets status_min/max. */
+                status_class?: string;
+                /** @description true = only streamed responses, false = only non-streamed. */
+                streamed?: "true" | "false";
+                /** @description true = only errors (status>=400 or error_kind set), false = only successes. */
+                error?: "true" | "false";
+                /** @description Minimum upstream try count (failover) — finds retried requests. */
+                attempts_min?: number;
+                /** @description Minimum total duration in ms (slow-request filter). */
+                duration_ms_min?: number;
+                /** @description Maximum total duration in ms. */
+                duration_ms_max?: number;
+                /** @description Minimum upstream time-to-first-byte (ms); excludes requests with no upstream timing. */
+                ttft_ms_min?: number;
+                /** @description Maximum upstream time-to-first-byte (ms). */
+                ttft_ms_max?: number;
+                /** @description Free-text substring across request_id, model_id, requested_model, source. */
+                q?: string;
                 /** @description Cap on returned events (page size). Default 100, max 10000. */
                 limit?: number;
                 /** @description Opaque pagination cursor from a previous response's next_cursor. Returns the next (older) page. */
@@ -6039,6 +6139,56 @@ export interface operations {
     usage_summary: {
         parameters: {
             query?: {
+                /** @description Relative window (e.g. "1h", "24h", "7d"). Default "1h". Ignored when from is set. */
+                since?: string;
+                /** @description Absolute lower bound (RFC3339). Overrides since. */
+                from?: string;
+                /** @description Absolute upper bound (RFC3339). */
+                to?: string;
+                /** @description Exact match on a single request id (deep-link one event). */
+                request_id?: string;
+                /** @description Match any of the given sha256 hashes of the inbound bearer. */
+                relay_key_hash?: string[] | null;
+                /** @description Match any of the given Policy.metadata.id values. */
+                policy_id?: string[] | null;
+                /** @description Match any of the given Model.metadata.id values. */
+                model_id?: string[] | null;
+                /** @description Match any of the given Host.metadata.id values. */
+                host_id?: string[] | null;
+                /** @description Match any of "pipeline" | "proxy" | "ws" | "batch". */
+                source?: string[] | null;
+                /** @description Match any of "stop" | "length" | "tool_calls" | "content_filter" | "refusal". */
+                finish_reason?: string[] | null;
+                /** @description Match any of the given error_kind values. */
+                error_kind?: string[] | null;
+                /** @description Minimum HTTP status to include. */
+                status_min?: number;
+                /** @description Maximum HTTP status to include. */
+                status_max?: number;
+                /** @description Match any of the given HostKey.metadata.id values. */
+                host_key_id?: string[] | null;
+                /** @description Match any of the model strings as the caller sent them. */
+                requested_model?: string[] | null;
+                /** @description Match any of these exact HTTP status codes. */
+                status?: number[] | null;
+                /** @description Convenience status band: "2xx" | "4xx" | "5xx". Sets status_min/max. */
+                status_class?: string;
+                /** @description true = only streamed responses, false = only non-streamed. */
+                streamed?: "true" | "false";
+                /** @description true = only errors (status>=400 or error_kind set), false = only successes. */
+                error?: "true" | "false";
+                /** @description Minimum upstream try count (failover) — finds retried requests. */
+                attempts_min?: number;
+                /** @description Minimum total duration in ms (slow-request filter). */
+                duration_ms_min?: number;
+                /** @description Maximum total duration in ms. */
+                duration_ms_max?: number;
+                /** @description Minimum upstream time-to-first-byte (ms); excludes requests with no upstream timing. */
+                ttft_ms_min?: number;
+                /** @description Maximum upstream time-to-first-byte (ms). */
+                ttft_ms_max?: number;
+                /** @description Free-text substring across request_id, model_id, requested_model, source. */
+                q?: string;
                 /** @description "source" (default) | "model_id" | "host_id" | "policy_id" | "relay_key_hash" | "host_key_id". */
                 group_by?: string;
             };
@@ -6098,6 +6248,56 @@ export interface operations {
     usage_timeseries: {
         parameters: {
             query?: {
+                /** @description Relative window (e.g. "1h", "24h", "7d"). Default "1h". Ignored when from is set. */
+                since?: string;
+                /** @description Absolute lower bound (RFC3339). Overrides since. */
+                from?: string;
+                /** @description Absolute upper bound (RFC3339). */
+                to?: string;
+                /** @description Exact match on a single request id (deep-link one event). */
+                request_id?: string;
+                /** @description Match any of the given sha256 hashes of the inbound bearer. */
+                relay_key_hash?: string[] | null;
+                /** @description Match any of the given Policy.metadata.id values. */
+                policy_id?: string[] | null;
+                /** @description Match any of the given Model.metadata.id values. */
+                model_id?: string[] | null;
+                /** @description Match any of the given Host.metadata.id values. */
+                host_id?: string[] | null;
+                /** @description Match any of "pipeline" | "proxy" | "ws" | "batch". */
+                source?: string[] | null;
+                /** @description Match any of "stop" | "length" | "tool_calls" | "content_filter" | "refusal". */
+                finish_reason?: string[] | null;
+                /** @description Match any of the given error_kind values. */
+                error_kind?: string[] | null;
+                /** @description Minimum HTTP status to include. */
+                status_min?: number;
+                /** @description Maximum HTTP status to include. */
+                status_max?: number;
+                /** @description Match any of the given HostKey.metadata.id values. */
+                host_key_id?: string[] | null;
+                /** @description Match any of the model strings as the caller sent them. */
+                requested_model?: string[] | null;
+                /** @description Match any of these exact HTTP status codes. */
+                status?: number[] | null;
+                /** @description Convenience status band: "2xx" | "4xx" | "5xx". Sets status_min/max. */
+                status_class?: string;
+                /** @description true = only streamed responses, false = only non-streamed. */
+                streamed?: "true" | "false";
+                /** @description true = only errors (status>=400 or error_kind set), false = only successes. */
+                error?: "true" | "false";
+                /** @description Minimum upstream try count (failover) — finds retried requests. */
+                attempts_min?: number;
+                /** @description Minimum total duration in ms (slow-request filter). */
+                duration_ms_min?: number;
+                /** @description Maximum total duration in ms. */
+                duration_ms_max?: number;
+                /** @description Minimum upstream time-to-first-byte (ms); excludes requests with no upstream timing. */
+                ttft_ms_min?: number;
+                /** @description Maximum upstream time-to-first-byte (ms). */
+                ttft_ms_max?: number;
+                /** @description Free-text substring across request_id, model_id, requested_model, source. */
+                q?: string;
                 /** @description Bucket width (e.g. "5m", "1h", "1d"). Required. */
                 interval?: string;
                 /** @description Optional dimension to split series by: "source" | "model_id" | "host_id" | "policy_id" | "relay_key_hash" | "host_key_id". Empty returns a single series. */
