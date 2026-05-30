@@ -23,6 +23,7 @@ import { HostLogo } from "@/hosts/HostLogo";
 import { useHostReferences } from "@/hosts/useHostReferences";
 import { useHostUsage } from "@/hosts/useHostUsage";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
+import { ResourceLogs } from "@/logs/ResourceLogs";
 import {
 	ResourceUsageCards,
 	UsageCardsSkeleton,
@@ -124,11 +125,15 @@ export function HostDetailView({
 					/>
 				</TabsContent>
 				<TabsContent value="logs">
-					<ComingSoon
-						icon={ScrollText}
-						title="Logs"
-						body="Recent requests routed through this host with status, latency, and host key used."
-					/>
+					{host.metadata.id ? (
+						<ResourceLogs scope="host_id" id={host.metadata.id} label="host" />
+					) : (
+						<ComingSoon
+							icon={ScrollText}
+							title="Logs"
+							body="Save this host to see the requests routed through it."
+						/>
+					)}
 				</TabsContent>
 			</Tabs>
 		</div>

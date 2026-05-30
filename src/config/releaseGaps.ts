@@ -34,19 +34,6 @@ export const RELEASE_GAPS: ReleaseGap[] = [
 		where: ["src/routes/_authenticated/index.tsx"],
 	},
 	{
-		id: "resource-logs-tabs",
-		title: "Make per-resource Logs tabs real",
-		whatsFake:
-			"Host/Model/Policy detail 'Logs' tabs are inline ComingSoon stubs.",
-		fix: "Now unblocked — /logs takes ?host_id/model_id/policy_id. Render a filtered Logs feed in each detail tab (reuse the Logs page table).",
-		owner: "frontend",
-		where: [
-			"src/hosts/HostDetailView.tsx",
-			"src/models/ModelDetailView.tsx",
-			"src/policies/PolicyDetailView.tsx",
-		],
-	},
-	{
 		id: "model-pricing",
 		title: "Cut or back the model Pricing tab",
 		whatsFake:

@@ -1,5 +1,5 @@
 import { ScrollText } from "lucide-react";
-import type { LogEvent } from "@/api/hooks/logs";
+import type { LogEvent, LogsFilter } from "@/api/hooks/logs";
 import { useLogs } from "@/api/hooks/logs";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -25,14 +25,21 @@ export function LogsTable({
 	query,
 	errorsOnly,
 	slowOnly,
+	filter,
+	emptyBody,
 }: {
 	selected: string | null;
 	onSelect: (requestId: string) => void;
 	query: string;
 	errorsOnly: boolean;
 	slowOnly: boolean;
+	/** Server-side filter passed to GET /logs (e.g. scope to a host/model/policy). */
+	filter?: LogsFilter;
+	/** Override the empty-state body copy. */
+	emptyBody?: string;
 }) {
-	const { events, fetchNextPage, hasNextPage, isFetchingNextPage } = useLogs();
+	const { events, fetchNextPage, hasNextPage, isFetchingNextPage } =
+		useLogs(filter);
 
 	const needle = query.trim().toLowerCase();
 	const shown = events.filter(
@@ -47,7 +54,10 @@ export function LogsTable({
 			<LogsEmpty
 				icon={ScrollText}
 				title="No logs yet"
-				body="Requests through the relay land here, newest first. Opt a policy or relay-key into payload logging to also capture request and response bodies."
+				body={
+					emptyBody ??
+					"Requests through the relay land here, newest first. Opt a policy or relay-key into payload logging to also capture request and response bodies."
+				}
 			/>
 		);
 	}

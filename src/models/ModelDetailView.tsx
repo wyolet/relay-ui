@@ -44,6 +44,7 @@ import { DiagnosticList } from "@/diagnostics/DiagnosticList";
 import { useModelDiagnostics } from "@/diagnostics/useDiagnostics";
 import { HostCell } from "@/hosts/HostCell";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
+import { ResourceLogs } from "@/logs/ResourceLogs";
 import {
 	type ModelHostRow,
 	type ModelPolicyRow,
@@ -148,11 +149,19 @@ export function ModelDetailView({
 					/>
 				</TabsContent>
 				<TabsContent value="logs">
-					<ComingSoon
-						icon={ScrollText}
-						title="Logs"
-						body="Recent inference requests targeting this model."
-					/>
+					{model.metadata.id ? (
+						<ResourceLogs
+							scope="model_id"
+							id={model.metadata.id}
+							label="model"
+						/>
+					) : (
+						<ComingSoon
+							icon={ScrollText}
+							title="Logs"
+							body="Save this model to see the inference requests targeting it."
+						/>
+					)}
 				</TabsContent>
 			</Tabs>
 		</div>

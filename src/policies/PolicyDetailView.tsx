@@ -13,6 +13,7 @@ import {
 import type { Policy } from "@/api/types/policy";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
+import { ResourceLogs } from "@/logs/ResourceLogs";
 import { PolicyAttachedRelayKeys } from "@/policies/PolicyAttachedRelayKeys";
 import { PolicyKeysTab } from "@/policies/PolicyKeysTab";
 import { PolicyModelsTab } from "@/policies/PolicyModelsTab";
@@ -109,11 +110,19 @@ export function PolicyDetailView({
 					/>
 				</TabsContent>
 				<TabsContent value="logs">
-					<ComingSoon
-						icon={ScrollText}
-						title="Logs"
-						body="Recent inference requests routed through this policy with status, latency, and host key used."
-					/>
+					{policy.metadata.id ? (
+						<ResourceLogs
+							scope="policy_id"
+							id={policy.metadata.id}
+							label="policy"
+						/>
+					) : (
+						<ComingSoon
+							icon={ScrollText}
+							title="Logs"
+							body="Save this policy to see the requests routed through it."
+						/>
+					)}
 				</TabsContent>
 			</Tabs>
 		</div>

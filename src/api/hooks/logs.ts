@@ -7,7 +7,7 @@ import {
 } from "@tanstack/react-query";
 import { apiClient } from "@/api/client";
 import { ApiError } from "@/api/types/errors";
-import type { components } from "@/api/types.gen";
+import type { components, operations } from "@/api/types.gen";
 
 // --- Schema-derived types ---
 
@@ -18,17 +18,22 @@ export type LogListPage = components["schemas"]["logsListOutputBody"];
 export type LogDetail = components["schemas"]["logGetOutputBody"];
 export type LogPayload = components["schemas"]["logPayload"];
 
+/** Server-side filters accepted by GET /logs (minus pagination, which we own). */
+export type LogsFilter = Omit<
+	NonNullable<operations["logs_list"]["parameters"]["query"]>,
+	"limit" | "cursor"
+>;
+
 const LIST_PAGE_SIZE = 100;
 
-// --- Query options ---
-
-export function logsInfiniteQueryOptions() {
+export function logsInfiniteQueryOptions(filter: LogsFilter = {}) {
 	return infiniteQueryOptions({
-		queryKey: ["logs", "list"] as const,
+		queryKey: ["logs", "list", filter] as const,
 		queryFn: async ({ pageParam }): Promise<LogListPage> => {
 			const { data, error } = await apiClient.GET("/logs", {
 				params: {
 					query: {
+						...filter,
 						limit: LIST_PAGE_SIZE,
 						cursor: pageParam || undefined,
 					},
@@ -65,8 +70,8 @@ export function logDetailQueryOptions(requestId: string) {
  * Paginated log feed (newest first). Flattens the infinite-query pages into a
  * single `events` array so components render strings, not query plumbing.
  */
-export function useLogs() {
-	const query = useSuspenseInfiniteQuery(logsInfiniteQueryOptions());
+export function useLogs(filter: LogsFilter = {}) {
+	const query = useSuspenseInfiniteQuery(logsInfiniteQueryOptions(filter));
 	return {
 		events: flattenEvents(query.data),
 		fetchNextPage: query.fetchNextPage,
