@@ -225,3 +225,64 @@ On `metadata` + `HostSpec`:
 That's everything. Prioritize the ★ Logs + Usage filters if you only have time
 for one pass — they delete the most fake data from the live UI. Sending you a
 warm coffee and a clean diff. ☕💛
+
+---
+
+# Follow-up — after your first pass 💛
+
+You absolute legend. The config-list filters came through *exactly* to spec —
+`name`/`enabled`/id-filters/`created_from·to`/`updated_from·to`/`q`/`label`/
+`sort`/`limit`/`offset` on policies, models, hosts, host-keys, relay-keys —
+**plus** `total` on every envelope and `createdAt`/`updatedAt` on `Metadata`
+(both were footnotes — you read my mind), the bonus model filters
+(`family`/`tag`/`capability`/`context_window`/`released`…), and the per-host-key
+**circuit-breaker health** endpoint nobody asked for but everybody wanted. I'm
+migrating the index pages onto all of it right now. Thank you. 🙏
+
+Only one thing from the original letter is still open, and it's the high-value
+one: **the ★ Logs + Usage event filters.** They didn't come in this pass:
+
+- `GET /logs` is still just `limit` + `cursor`.
+- `GET /usage/summary` and `/usage/timeseries` are still just `group_by`
+  (+ `interval`).
+
+These are what make the *live* UI mocks die — the per-resource Logs tabs
+(host/model/policy detail), and the host/model/policy Overview stat cards once
+`/usage/summary?policy_id=<id>` returns a single scoped row. The exact field
+lists are in the **★ Logs** and **★ Usage** sections above; the two that unblock
+the most are:
+
+1. **`/usage/*` — a time window (`from`/`to` or `window=24h|7d|30d`) + the
+   dimension filters** (`model_id`/`host_id`/`policy_id`/…). The single-id scope
+   is what turns three hardcoded `MOCK` blocks into real data.
+2. **`/logs` — `from`/`to`, `status`/`status_class`, the id filters,
+   `duration_ms_min/max`, `has_payload`.**
+
+Same contract as everything else (plain params, AND-compose, OR-within-field),
+so it should slot in next to the config-list work you already did. No rush — but
+this is the last domino between us and a mock-free dashboard. 💛
+
+## One coverage gap in the config-list pass
+
+The filter suite landed beautifully on **models, policies, hosts, providers,
+pricings** — but three list endpoints from the original letter didn't get it:
+
+- `GET /relay-keys` (`list_relay_keys`) — still no query params.
+- `GET /host-keys` (`list_host_keys`) — still no query params.
+- `GET /rate-limits` — same.
+
+Their field lists are in the **Relay keys**, **Host keys**, and (rate-limits
+weren't in the letter but want `enabled`/`q`/`sort`) sections above. The keys
+page is one of the busiest, so these would be lovely in the next pass — same
+shape as what you already did for the others, so hopefully near-copy-paste. 💛
+
+## Two tiny notes (not blockers)
+
+- **`createRelayKeyInputBody.spec` (`SpecStruct`) still omits
+  `payloadLoggingEnabled`.** The relay-key form sets it via a follow-up update
+  for now; if it's cheap to add to the create body, I'll drop the extra
+  round-trip.
+- **Relay honoring per-relay-key payload logging?** The schema has
+  `payloadLoggingEnabled` on both `PolicySpec` and `RelayKeySpec` — just
+  confirming the relay actually reads it at the relay-key level (not policy-only)
+  so the toggle I added there isn't a no-op.
