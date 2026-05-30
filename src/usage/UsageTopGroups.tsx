@@ -6,10 +6,12 @@ import {
 } from "@/api/hooks/usage";
 import { dimensionLabel, fmtCompact, fmtMs, fmtPct } from "./format";
 import { UsageEmpty } from "./UsageEmpty";
+import { useGroupLabeler } from "./useGroupLabeler";
 
 /** Ranked leaderboard for one dimension, with inline volume bars. */
 export function UsageTopGroups({ groupBy }: { groupBy: UsageGroupBy }) {
 	const { groups } = useUsageOverview(groupBy);
+	const labelFor = useGroupLabeler(groupBy);
 
 	if (groups.length === 0) {
 		return (
@@ -35,20 +37,23 @@ export function UsageTopGroups({ groupBy }: { groupBy: UsageGroupBy }) {
 			</div>
 			<ul className="divide-y divide-border">
 				{groups.map((g) => (
-					<GroupRow key={g.key} stat={g} />
+					<GroupRow key={g.key} stat={g} label={labelFor(g.key)} />
 				))}
 			</ul>
 		</div>
 	);
 }
 
-function GroupRow({ stat }: { stat: UsageGroupStat }) {
+function GroupRow({ stat, label }: { stat: UsageGroupStat; label: string }) {
 	const hasErrors = stat.errorCount > 0;
 	return (
 		<li className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 px-4 py-2.5">
 			<div className="min-w-0">
-				<code className="block truncate font-mono text-xs text-foreground">
-					{stat.key}
+				<code
+					className="block truncate font-mono text-xs text-foreground"
+					title={stat.key}
+				>
+					{label}
 				</code>
 				<div
 					className="mt-1.5 h-1.5 rounded-full bg-primary/80"
