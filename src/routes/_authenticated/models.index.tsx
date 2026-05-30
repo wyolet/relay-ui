@@ -4,12 +4,19 @@ import { Suspense } from "react";
 import { z } from "zod";
 import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
 import { hostsListQueryOptions, useHosts } from "@/api/hooks/hosts";
-import { modelsListQueryOptions, useModels } from "@/api/hooks/models";
+import {
+	type ModelsListParams,
+	modelsListQuery,
+	modelsListQueryOptions,
+	useModelsList,
+} from "@/api/hooks/models";
 import { policiesListQueryOptions } from "@/api/hooks/policies";
 import { providersListQueryOptions, useProviders } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
 import { relayKeysListQueryOptions } from "@/api/hooks/relayKeys";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { FilterBar } from "@/filters/FilterBar";
+import type { FilterDef } from "@/filters/types";
 import {
 	applyHostFilter,
 	applyHostSort,
@@ -18,17 +25,17 @@ import {
 	HostsTable,
 } from "@/hosts/HostsTable";
 import {
-	applyModelFilter,
 	applyModelSort,
 	type ModelsSortDir,
 	type ModelsSortKey,
 	ModelsTable,
 } from "@/models/ModelsTable";
-import { FilterDropdown } from "@/shared/FilterDropdown";
 import { SearchBox } from "@/shared/SearchBox";
 import { TableToolbar } from "@/shared/TableToolbar";
 
 type Tab = "models" | "hosts";
+
+type ModelStatus = "active" | "deprecated" | "all";
 
 const searchSchema = z.object({
 	tab: z.enum(["models", "hosts"]).default("models"),
@@ -40,10 +47,50 @@ const searchSchema = z.object({
 	hdir: z.enum(["asc", "desc"]).default("asc"),
 });
 
+/** Filters rendered above the Models table (server-side). */
+const MODEL_FILTERS = [
+	{
+		key: "q",
+		type: "search",
+		label: "Search",
+		placeholder: "Search models",
+		default: "",
+	},
+	{
+		key: "deprecated",
+		type: "select",
+		label: "Status",
+		default: "active",
+		options: [
+			{ value: "active", label: "Active only" },
+			{ value: "deprecated", label: "Deprecated only" },
+			{ value: "all", label: "All" },
+		],
+	},
+] as const satisfies readonly FilterDef[];
+
+/** Generous page size: we sort client-side, so load the whole filtered set and
+ * warn (never silently truncate) if the relay reports more than we fetched. */
+const MODELS_PAGE_LIMIT = 500;
+
+/** Map the UI filter state to GET /models query params. */
+function toModelsParams(q: string, status: ModelStatus): ModelsListParams {
+	const params: ModelsListParams = { limit: MODELS_PAGE_LIMIT };
+	const trimmed = q.trim();
+	if (trimmed) params.q = trimmed;
+	if (status === "active") params.deprecated = false;
+	else if (status === "deprecated") params.deprecated = true;
+	return params;
+}
+
 export const Route = createFileRoute("/_authenticated/models/")({
 	validateSearch: searchSchema,
-	loader: ({ context }) =>
+	loaderDeps: ({ search }) => ({ q: search.q, deprecated: search.deprecated }),
+	loader: ({ context, deps }) =>
 		Promise.all([
+			context.queryClient.ensureQueryData(
+				modelsListQuery(toModelsParams(deps.q, deps.deprecated)),
+			),
 			context.queryClient.ensureQueryData(modelsListQueryOptions),
 			context.queryClient.ensureQueryData(hostsListQueryOptions),
 			context.queryClient.ensureQueryData(hostKeysListQueryOptions),
@@ -56,12 +103,13 @@ export const Route = createFileRoute("/_authenticated/models/")({
 });
 
 function ModelsList() {
-	const { data } = useModels();
+	const search = Route.useSearch();
+	const { data } = useModelsList(toModelsParams(search.q, search.deprecated));
 	const { data: hostsData } = useHosts();
 	const { data: providersData } = useProviders();
 	const navigate = useNavigate({ from: "/models" });
-	const search = Route.useSearch();
 	const items = data.items ?? [];
+	const truncated = data.total > items.length;
 	const hostsById = new Map(
 		(hostsData.items ?? [])
 			.filter((h) => h.metadata.id)
@@ -74,55 +122,29 @@ function ModelsList() {
 			.map((p) => [p.metadata.id as string, p.metadata.name] as const),
 	);
 
-	const filtered = applyModelFilter(
-		items,
-		search.q,
-		search.deprecated,
-		providerSlugById,
-	);
+	// Server already applied q + status; we only sort the returned set.
 	const visible = applyModelSort(
-		filtered,
+		items,
 		search.sort,
 		search.dir,
 		providerSlugById,
 	);
 
-	function setQ(q: string) {
-		void navigate({ search: (prev) => ({ ...prev, q }) });
-	}
-	function setDeprecated(deprecated: "active" | "deprecated" | "all") {
-		void navigate({ search: (prev) => ({ ...prev, deprecated }) });
-	}
+	const patch = (next: Record<string, string | boolean | undefined>) =>
+		void navigate({ search: (prev) => ({ ...prev, ...next }) });
 	function toggleSort(field: ModelsSortKey) {
 		const dir: ModelsSortDir =
 			search.sort === field ? (search.dir === "asc" ? "desc" : "asc") : "asc";
-		void navigate({ search: (prev) => ({ ...prev, sort: field, dir }) });
+		patch({ sort: field, dir });
 	}
 
 	return (
 		<div>
-			<TableToolbar
-				search={
-					<SearchBox
-						value={search.q}
-						onChange={setQ}
-						placeholder="Search models"
-					/>
-				}
-				filters={
-					<FilterDropdown
-						label="Status"
-						value={search.deprecated}
-						options={[
-							{ value: "active", label: "Active only" },
-							{ value: "deprecated", label: "Deprecated only" },
-							{ value: "all", label: "All" },
-						]}
-						onChange={(v) =>
-							setDeprecated(v as "active" | "deprecated" | "all")
-						}
-					/>
-				}
+			<FilterBar
+				defs={MODEL_FILTERS}
+				state={{ q: search.q, deprecated: search.deprecated }}
+				onChange={patch}
+				className="mb-3"
 				actions={
 					<Link
 						to="/models/new"
@@ -134,23 +156,35 @@ function ModelsList() {
 				}
 			/>
 
+			<div className="mb-2 text-[11px] text-muted-foreground">
+				{items.length} of {data.total} model{data.total === 1 ? "" : "s"}
+			</div>
+
 			{visible.length === 0 ? (
 				<div className="rounded-lg border border-dashed border-input bg-card px-6 py-14 text-center">
 					<Boxes className="w-6 h-6 mx-auto mb-3 text-muted-foreground/50" />
 					<p className="text-sm text-muted-foreground">
-						{items.length === 0
+						{data.total === 0
 							? "No models configured."
 							: "No models match the current filter."}
 					</p>
 				</div>
 			) : (
-				<ModelsTable
-					items={visible}
-					sort={search.sort}
-					dir={search.dir}
-					onSort={toggleSort}
-					hostsById={hostsById}
-				/>
+				<>
+					<ModelsTable
+						items={visible}
+						sort={search.sort}
+						dir={search.dir}
+						onSort={toggleSort}
+						hostsById={hostsById}
+					/>
+					{truncated && (
+						<p className="mt-2 text-[11px] text-muted-foreground">
+							Showing the first {items.length} of {data.total}. Refine your
+							search to narrow the list.
+						</p>
+					)}
+				</>
 			)}
 		</div>
 	);

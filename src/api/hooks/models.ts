@@ -12,9 +12,17 @@ import type {
 	ModelListResponse,
 	ModelUpdate,
 } from "@/api/types/model";
+import type { operations } from "@/api/types.gen";
 
 // --- Query options ---
 
+/** Server-side filter/sort/page params accepted by GET /models. */
+export type ModelsListParams = NonNullable<
+	operations["list_models"]["parameters"]["query"]
+>;
+
+/** Unfiltered full list — used by pickers, loaders, and the resource graph
+ * that need every model regardless of any page's active filters. */
 export const modelsListQueryOptions = queryOptions({
 	queryKey: ["models"] as const,
 	queryFn: async (): Promise<ModelListResponse> => {
@@ -25,6 +33,26 @@ export const modelsListQueryOptions = queryOptions({
 	staleTime: 30_000,
 	gcTime: 5 * 60_000,
 });
+
+/** Filtered list driven by a table page's filter state (server-side). */
+export function modelsListQuery(params: ModelsListParams) {
+	return queryOptions({
+		queryKey: ["models", "list", params] as const,
+		queryFn: async (): Promise<ModelListResponse> => {
+			const { data, error } = await apiClient.GET("/models", {
+				params: { query: params },
+			});
+			if (error) throw new ApiError(0, error.error);
+			return data;
+		},
+		staleTime: 30_000,
+		gcTime: 5 * 60_000,
+	});
+}
+
+export function useModelsList(params: ModelsListParams) {
+	return useSuspenseQuery(modelsListQuery(params));
+}
 
 export function modelDetailQueryOptions(name: string) {
 	return queryOptions({
