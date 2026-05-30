@@ -6,6 +6,11 @@ import { usePolicyDiagnostics } from "@/diagnostics/useDiagnostics";
 import { HostLogo } from "@/hosts/HostLogo";
 import { displayLabel } from "@/lib/displayLabel";
 import { usePolicyResolvedCatalog } from "@/policies/usePolicyResolvedCatalog";
+import { usePolicyUsage } from "@/policies/usePolicyUsage";
+import {
+	ResourceUsageCards,
+	UsageCardsSkeleton,
+} from "@/shared/ResourceUsageCards";
 
 interface Props {
 	policy: Policy;
@@ -28,12 +33,7 @@ function StatsGrid({ policy }: { policy: Policy }) {
 
 	return (
 		<section>
-			<div className="mb-2 flex items-baseline justify-between gap-2">
-				<SectionTitle>Overview</SectionTitle>
-				<span className="text-[10px] uppercase tracking-wide text-muted-foreground">
-					usage is mock data
-				</span>
-			</div>
+			<SectionTitle>Overview</SectionTitle>
 			<div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
 				<StatCard
 					label="Models"
@@ -58,36 +58,11 @@ function StatsGrid({ policy }: { policy: Policy }) {
 				) : (
 					<StatCard label="Relay keys" value="—" sub="unsaved" />
 				)}
-				<StatCard
-					label="Requests · 24h"
-					value={MOCK_USAGE.requests24h.toLocaleString()}
-					sub="mock"
-					mono
-				/>
-				<StatCard
-					label="Error rate"
-					value={`${(MOCK_USAGE.errorRate * 100).toFixed(2)}%`}
-					sub="mock"
-					mono
-				/>
-				<StatCard
-					label="p50 latency"
-					value={`${MOCK_USAGE.p50Ms} ms`}
-					sub="mock"
-					mono
-				/>
-				<StatCard
-					label="p95 latency"
-					value={`${MOCK_USAGE.p95Ms} ms`}
-					sub="mock"
-					mono
-				/>
-				<StatCard
-					label="Tokens in / out"
-					value={`${(MOCK_USAGE.tokensIn / 1000).toFixed(0)}K / ${(MOCK_USAGE.tokensOut / 1000).toFixed(0)}K`}
-					sub="mock"
-					mono
-				/>
+				{policy.metadata.id && (
+					<Suspense fallback={<UsageCardsSkeleton />}>
+						<PolicyUsageCards policyId={policy.metadata.id} />
+					</Suspense>
+				)}
 			</div>
 		</section>
 	);
@@ -135,7 +110,6 @@ function HostsPanel({ policy }: { policy: Policy }) {
 								{modelCount} model{modelCount === 1 ? "" : "s"}
 							</div>
 						</div>
-						<MockHostStats />
 					</li>
 				))}
 			</ul>
@@ -143,34 +117,10 @@ function HostsPanel({ policy }: { policy: Policy }) {
 	);
 }
 
-function MockHostStats() {
-	return (
-		<div className="hidden sm:flex items-center gap-4 text-[11px] text-muted-foreground tabular-nums">
-			<span>
-				<span className="text-foreground">
-					{Math.floor(Math.random() * 5000 + 100).toLocaleString()}
-				</span>{" "}
-				req
-			</span>
-			<span>
-				<span className="text-foreground">
-					{(Math.random() * 600 + 80).toFixed(0)}
-				</span>{" "}
-				ms p95
-			</span>
-			<span className="text-[10px] uppercase tracking-wide">mock</span>
-		</div>
-	);
+function PolicyUsageCards({ policyId }: { policyId: string }) {
+	const usage = usePolicyUsage(policyId);
+	return <ResourceUsageCards usage={usage} />;
 }
-
-const MOCK_USAGE = {
-	requests24h: 12_847,
-	errorRate: 0.012,
-	p50Ms: 184,
-	p95Ms: 612,
-	tokensIn: 1_240_000,
-	tokensOut: 412_000,
-};
 
 function IssuesPanel({ policyId }: { policyId: string | undefined }) {
 	const diagnostics = usePolicyDiagnostics(policyId);

@@ -37,6 +37,7 @@ import {
 	Wrench,
 	Zap,
 } from "lucide-react";
+import { Suspense } from "react";
 import type { Model, ModelCapabilities } from "@/api/types/model";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DiagnosticList } from "@/diagnostics/DiagnosticList";
@@ -48,7 +49,12 @@ import {
 	type ModelPolicyRow,
 	useModelReferences,
 } from "@/models/useModelReferences";
+import { useModelUsage } from "@/models/useModelUsage";
 import { ProviderLogo } from "@/providers/ProviderLogo";
+import {
+	ResourceUsageCards,
+	UsageCardsSkeleton,
+} from "@/shared/ResourceUsageCards";
 import { useAllowEdit } from "@/stores/permissions";
 
 export type ModelDetailTab =
@@ -328,12 +334,7 @@ function OverviewTab({
 			<IssuesPanel modelId={model.metadata.id} />
 
 			<section>
-				<div className="mb-2 flex items-baseline justify-between gap-2">
-					<SectionTitle>Overview</SectionTitle>
-					<span className="text-[10px] uppercase tracking-wide text-muted-foreground">
-						usage is mock data
-					</span>
-				</div>
+				<SectionTitle>Overview</SectionTitle>
 				<div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
 					<StatCard
 						label="Hosts"
@@ -367,30 +368,11 @@ function OverviewTab({
 								: `pointer → ${model.spec.pointer || "—"}`
 						}
 					/>
-					<StatCard
-						label="Requests · 24h"
-						value={MOCK.requests24h.toLocaleString()}
-						sub="mock"
-						mono
-					/>
-					<StatCard
-						label="p95 latency"
-						value={`${MOCK.p95Ms} ms`}
-						sub="mock"
-						mono
-					/>
-					<StatCard
-						label="Error rate"
-						value={`${(MOCK.errorRate * 100).toFixed(2)}%`}
-						sub="mock"
-						mono
-					/>
-					<StatCard
-						label="Tokens · 24h"
-						value={`${(MOCK.tokens / 1000).toFixed(0)}K`}
-						sub="mock"
-						mono
-					/>
+					{model.metadata.id && (
+						<Suspense fallback={<UsageCardsSkeleton />}>
+							<ModelUsageCards modelId={model.metadata.id} />
+						</Suspense>
+					)}
 				</div>
 			</section>
 
@@ -499,12 +481,10 @@ function SnapshotsList({
 	);
 }
 
-const MOCK = {
-	requests24h: 6_120,
-	p95Ms: 318,
-	errorRate: 0.006,
-	tokens: 480_000,
-};
+function ModelUsageCards({ modelId }: { modelId: string }) {
+	const usage = useModelUsage(modelId);
+	return <ResourceUsageCards usage={usage} />;
+}
 
 /* ---------------- Hosts ---------------- */
 

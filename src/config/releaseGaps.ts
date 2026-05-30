@@ -25,33 +25,6 @@ export interface ReleaseGap {
 
 export const RELEASE_GAPS: ReleaseGap[] = [
 	{
-		id: "host-overview-stats",
-		title: "Wire host Overview stats to /usage/summary",
-		whatsFake:
-			"Host detail Overview shows a hardcoded MOCK object (24,127 requests, 0.8% errors, 412ms p95, throttle rate) tagged 'mock'.",
-		fix: "Fetch /usage/summary grouped by host_id and select this host's row. Drop throttle rate — it isn't in the summary schema.",
-		owner: "frontend",
-		where: ["src/hosts/HostDetailView.tsx"],
-	},
-	{
-		id: "model-overview-stats",
-		title: "Wire model Overview stats to /usage/summary",
-		whatsFake:
-			"Model detail Overview shows a hardcoded MOCK object (6,120 requests, 318ms p95, 0.6% errors, 480k tokens) tagged 'mock'.",
-		fix: "Fetch /usage/summary grouped by model_id and select this model's row.",
-		owner: "frontend",
-		where: ["src/models/ModelDetailView.tsx"],
-	},
-	{
-		id: "policy-overview-stats",
-		title: "Wire policy Overview stats to /usage/summary",
-		whatsFake:
-			"Policy Overview shows MOCK_USAGE plus a MockHostStats() that renders Math.random() request counts and latencies per host row.",
-		fix: "Fetch /usage/summary grouped by policy_id for the totals; per-host numbers need server-side breakdown (see log/usage filters).",
-		owner: "frontend",
-		where: ["src/policies/PolicyOverviewTab.tsx"],
-	},
-	{
 		id: "dashboard-metrics",
 		title: "Replace dashboard 'Drop Counters' placeholder",
 		whatsFake:
@@ -65,8 +38,8 @@ export const RELEASE_GAPS: ReleaseGap[] = [
 		title: "Make per-resource Logs tabs real",
 		whatsFake:
 			"Host/Model/Policy detail 'Logs' tabs are inline ComingSoon stubs.",
-		fix: "Filter the /logs feed to this resource. Needs server-side log filters (?host_id/model_id/policy_id) on /logs — today it only takes limit/cursor.",
-		owner: "backend",
+		fix: "Now unblocked — /logs takes ?host_id/model_id/policy_id. Render a filtered Logs feed in each detail tab (reuse the Logs page table).",
+		owner: "frontend",
 		where: [
 			"src/hosts/HostDetailView.tsx",
 			"src/models/ModelDetailView.tsx",

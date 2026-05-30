@@ -11,7 +11,7 @@ import {
 	Sliders,
 	Users,
 } from "lucide-react";
-import { useMemo } from "react";
+import { Suspense, useMemo } from "react";
 import type { Host } from "@/api/types/host";
 import type { HostKey } from "@/api/types/hostkey";
 import type { Model } from "@/api/types/model";
@@ -21,7 +21,12 @@ import { DiagnosticList } from "@/diagnostics/DiagnosticList";
 import { useHostDiagnostics } from "@/diagnostics/useDiagnostics";
 import { HostLogo } from "@/hosts/HostLogo";
 import { useHostReferences } from "@/hosts/useHostReferences";
+import { useHostUsage } from "@/hosts/useHostUsage";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
+import {
+	ResourceUsageCards,
+	UsageCardsSkeleton,
+} from "@/shared/ResourceUsageCards";
 
 export type HostDetailTab =
 	| "overview"
@@ -234,12 +239,7 @@ function OverviewTab({
 		<div className="flex flex-col gap-6 pt-2">
 			<IssuesPanel hostId={host.metadata.id} />
 			<section>
-				<div className="mb-2 flex items-baseline justify-between gap-2">
-					<SectionTitle>Overview</SectionTitle>
-					<span className="text-[10px] uppercase tracking-wide text-muted-foreground">
-						usage is mock data
-					</span>
-				</div>
+				<SectionTitle>Overview</SectionTitle>
 				<div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
 					<StatCard
 						label="Models"
@@ -265,30 +265,11 @@ function OverviewTab({
 								: `${refs.totalRelayKeys} relay key${refs.totalRelayKeys === 1 ? "" : "s"}`
 						}
 					/>
-					<StatCard
-						label="Requests · 24h"
-						value={MOCK.requests24h.toLocaleString()}
-						sub="mock"
-						mono
-					/>
-					<StatCard
-						label="Error rate"
-						value={`${(MOCK.errorRate * 100).toFixed(2)}%`}
-						sub="mock"
-						mono
-					/>
-					<StatCard
-						label="p95 latency"
-						value={`${MOCK.p95Ms} ms`}
-						sub="mock"
-						mono
-					/>
-					<StatCard
-						label="Throttle rate"
-						value={`${(MOCK.throttleRate * 100).toFixed(2)}%`}
-						sub="mock"
-						mono
-					/>
+					{host.metadata.id && (
+						<Suspense fallback={<UsageCardsSkeleton />}>
+							<HostUsageCards hostId={host.metadata.id} />
+						</Suspense>
+					)}
 				</div>
 			</section>
 		</div>
@@ -323,12 +304,10 @@ function IssuesPanel({ hostId }: { hostId: string | undefined }) {
 	);
 }
 
-const MOCK = {
-	requests24h: 24_127,
-	errorRate: 0.008,
-	p95Ms: 412,
-	throttleRate: 0.012,
-};
+function HostUsageCards({ hostId }: { hostId: string }) {
+	const usage = useHostUsage(hostId);
+	return <ResourceUsageCards usage={usage} />;
+}
 
 /* ---------------- Configuration ---------------- */
 

@@ -1,7 +1,7 @@
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { apiClient } from "@/api/client";
 import { ApiError } from "@/api/types/errors";
-import type { components } from "@/api/types.gen";
+import type { components, operations } from "@/api/types.gen";
 
 // --- Schema-derived types ---
 
@@ -43,6 +43,65 @@ export function usageSummaryQueryOptions(groupBy: UsageGroupBy) {
 		staleTime: 15_000,
 		gcTime: 5 * 60_000,
 	});
+}
+
+// --- Per-resource usage (scoped /usage/summary) ---
+
+type UsageSummaryQuery = NonNullable<
+	operations["usage_summary"]["parameters"]["query"]
+>;
+
+/** A resource whose usage we can scope by id via the matching filter param. */
+export type ResourceUsageDimension = "host_id" | "model_id" | "policy_id";
+
+/** One resource's totals over the summary window (null when it has no traffic). */
+export interface ResourceUsageStats {
+	requests: number;
+	errorCount: number;
+	errorRate: number; // 0..1
+	duration: UsageDurationStats;
+	tokens: number;
+	from: string;
+	to: string;
+}
+
+export function resourceUsageQueryOptions(
+	dimension: ResourceUsageDimension,
+	id: string,
+) {
+	return queryOptions({
+		queryKey: ["usage", "resource", dimension, id] as const,
+		queryFn: async (): Promise<UsageSummaryResult> => {
+			const query: UsageSummaryQuery = { group_by: dimension };
+			query[dimension] = [id];
+			const { data, error } = await apiClient.GET("/usage/summary", {
+				params: { query },
+			});
+			if (error) throw new ApiError(0, error.error);
+			return data;
+		},
+		staleTime: 15_000,
+		gcTime: 5 * 60_000,
+	});
+}
+
+/** Real per-resource stats for host/model/policy Overview cards. */
+export function useResourceUsage(
+	dimension: ResourceUsageDimension,
+	id: string,
+): ResourceUsageStats | null {
+	const { data } = useSuspenseQuery(resourceUsageQueryOptions(dimension, id));
+	const row = (data.rows ?? [])[0];
+	if (!row) return null;
+	return {
+		requests: row.requests,
+		errorCount: row.error_count,
+		errorRate: row.requests > 0 ? row.error_count / row.requests : 0,
+		duration: row.duration_ms,
+		tokens: sumTokens(row.tokens),
+		from: data.from,
+		to: data.to,
+	};
 }
 
 export function usageTimeseriesQueryOptions(
