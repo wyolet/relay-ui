@@ -1,26 +1,21 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Activity, BarChart3, ListOrdered } from "lucide-react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { ScrollText } from "lucide-react";
 import { Suspense } from "react";
 import { z } from "zod";
 import {
 	USAGE_GROUP_BY,
 	USAGE_INTERVALS,
-	usageEventsInfiniteQueryOptions,
 	usageSummaryQueryOptions,
 	usageTimeseriesQueryOptions,
+	useUsageOverview,
 } from "@/api/hooks/usage";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { dimensionLabel } from "@/usage/format";
-import { UsageChart } from "@/usage/UsageChart";
-import { UsageEventsTable } from "@/usage/UsageEventsTable";
-import { UsageSummaryTable } from "@/usage/UsageSummaryTable";
-
-const TABS = ["summary", "timeline", "events"] as const;
-type UsageTab = (typeof TABS)[number];
+import { UsageStatCards } from "@/usage/UsageStatCards";
+import { UsageTimelineChart } from "@/usage/UsageTimelineChart";
+import { UsageTopGroups } from "@/usage/UsageTopGroups";
 
 const searchSchema = z.object({
-	tab: z.enum(TABS).default("summary"),
-	group_by: z.enum(USAGE_GROUP_BY).default("source"),
+	group_by: z.enum(USAGE_GROUP_BY).default("model_id"),
 	interval: z.enum(USAGE_INTERVALS).default("1h"),
 });
 
@@ -29,51 +24,60 @@ export const Route = createFileRoute("/_authenticated/usage")({
 	loaderDeps: ({ search }) => search,
 	loader: ({ context, deps }) => {
 		const { queryClient } = context;
-		// Warm the active tab's data so first paint isn't a spinner.
-		if (deps.tab === "summary")
-			void queryClient.ensureQueryData(usageSummaryQueryOptions(deps.group_by));
-		else if (deps.tab === "timeline")
-			void queryClient.ensureQueryData(
-				usageTimeseriesQueryOptions(deps.interval, deps.group_by),
-			);
-		else
-			void queryClient.ensureInfiniteQueryData(
-				usageEventsInfiniteQueryOptions(),
-			);
+		void queryClient.ensureQueryData(usageSummaryQueryOptions(deps.group_by));
+		void queryClient.ensureQueryData(
+			usageTimeseriesQueryOptions(deps.interval, "source"),
+		);
 	},
 	component: UsagePage,
 });
 
-const TAB_META: Record<UsageTab, { label: string; icon: typeof Activity }> = {
-	summary: { label: "Summary", icon: BarChart3 },
-	timeline: { label: "Timeline", icon: Activity },
-	events: { label: "Events", icon: ListOrdered },
-};
-
 function UsagePage() {
-	const { tab, group_by, interval } = Route.useSearch();
+	const { group_by, interval } = Route.useSearch();
 	const navigate = useNavigate();
 
 	const setSearch = (patch: Partial<z.infer<typeof searchSchema>>) =>
-		void navigate({
-			to: "/usage",
-			search: { tab, group_by, interval, ...patch },
-		});
+		void navigate({ to: "/usage", search: { group_by, interval, ...patch } });
 
 	return (
 		<div className="flex flex-col gap-4">
 			<div className="flex flex-wrap items-center justify-between gap-3">
-				<h1 className="text-xl font-semibold text-foreground">Usage</h1>
-				<div className="flex items-center gap-3">
-					{tab === "timeline" && (
+				<div>
+					<h1 className="text-xl font-semibold text-foreground">Usage</h1>
+					<p className="text-xs text-muted-foreground">
+						Traffic, errors, and latency across the relay.
+					</p>
+				</div>
+				<Link
+					to="/logs"
+					className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+				>
+					<ScrollText className="w-3.5 h-3.5" aria-hidden />
+					Inspect requests
+				</Link>
+			</div>
+
+			<Suspense fallback={<Loading />}>
+				<KpiHeader groupBy={group_by} />
+			</Suspense>
+
+			<div className="flex flex-col gap-4 xl:grid xl:grid-cols-[1.4fr_1fr]">
+				<section className="flex flex-col gap-2">
+					<SectionHeader title="Over time">
 						<Picker
 							label="Interval"
 							value={interval}
 							options={USAGE_INTERVALS}
 							onChange={(v) => setSearch({ interval: v })}
 						/>
-					)}
-					{tab !== "events" && (
+					</SectionHeader>
+					<Suspense fallback={<Loading />}>
+						<UsageTimelineChart interval={interval} />
+					</Suspense>
+				</section>
+
+				<section className="flex flex-col gap-2">
+					<SectionHeader title="Breakdown">
 						<Picker
 							label="Group by"
 							value={group_by}
@@ -81,52 +85,45 @@ function UsagePage() {
 							optionLabel={dimensionLabel}
 							onChange={(v) => setSearch({ group_by: v })}
 						/>
-					)}
-				</div>
+					</SectionHeader>
+					<Suspense fallback={<Loading />}>
+						<UsageTopGroups groupBy={group_by} />
+					</Suspense>
+				</section>
 			</div>
+		</div>
+	);
+}
 
-			<Tabs
-				value={tab}
-				onValueChange={(v) => {
-					const next = TABS.find((t) => t === v);
-					if (next) setSearch({ tab: next });
-				}}
-			>
-				<TabsList variant="underline">
-					{TABS.map((value) => {
-						const { label, icon: Icon } = TAB_META[value];
-						return (
-							<TabsTrigger key={value} value={value} className="px-3 h-9">
-								<Icon className="w-3.5 h-3.5" aria-hidden />
-								{label}
-							</TabsTrigger>
-						);
-					})}
-				</TabsList>
+/** KPI cards share the summary query with the breakdown; group_by doesn't
+ * change the aggregate totals, so the cards are stable across dimensions. */
+function KpiHeader({
+	groupBy,
+}: {
+	groupBy: z.infer<typeof searchSchema>["group_by"];
+}) {
+	const { kpis } = useUsageOverview(groupBy);
+	return <UsageStatCards kpis={kpis} />;
+}
 
-				<TabsContent value="summary">
-					<Suspense fallback={<Loading />}>
-						<UsageSummaryTable groupBy={group_by} />
-					</Suspense>
-				</TabsContent>
-				<TabsContent value="timeline">
-					<Suspense fallback={<Loading />}>
-						<UsageChart interval={interval} groupBy={group_by} />
-					</Suspense>
-				</TabsContent>
-				<TabsContent value="events">
-					<Suspense fallback={<Loading />}>
-						<UsageEventsTable />
-					</Suspense>
-				</TabsContent>
-			</Tabs>
+function SectionHeader({
+	title,
+	children,
+}: {
+	title: string;
+	children?: React.ReactNode;
+}) {
+	return (
+		<div className="flex items-center justify-between">
+			<h2 className="text-sm font-medium text-foreground">{title}</h2>
+			{children}
 		</div>
 	);
 }
 
 function Loading() {
 	return (
-		<div className="py-8 text-center text-sm text-muted-foreground">
+		<div className="rounded-lg border border-border bg-card py-8 text-center text-sm text-muted-foreground">
 			Loading…
 		</div>
 	);
@@ -151,7 +148,6 @@ function Picker<T extends string>({
 			<select
 				value={value}
 				onChange={(e) => {
-					// select value is the same string union as `options`
 					const next = options.find((o) => o === e.target.value);
 					if (next) onChange(next);
 				}}

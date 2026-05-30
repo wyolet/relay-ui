@@ -1,24 +1,40 @@
 import { ScrollText } from "lucide-react";
-import { useState } from "react";
 import type { LogEvent } from "@/api/hooks/logs";
 import { useLogs } from "@/api/hooks/logs";
 import { Button } from "@/components/ui/button";
-import { fmtInt, fmtMs, fmtTs, shortId, sumTokens } from "./format";
-import { LogInspector } from "./LogInspector";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { fmtInt, fmtMs, fmtTs, sumTokens } from "./format";
 import { LogsEmpty } from "./LogsEmpty";
+import { isErrorEvent, isSlowEvent } from "./predicates";
 
-export function LogsTable({ errorsOnly }: { errorsOnly: boolean }) {
+/**
+ * Left pane of the logs view: a scannable request feed. Selection and the
+ * client-side filters are owned by the route (search params); this renders
+ * the filtered rows and reports clicks.
+ */
+export function LogsTable({
+	selected,
+	onSelect,
+	errorsOnly,
+	slowOnly,
+}: {
+	selected: string | null;
+	onSelect: (requestId: string) => void;
+	errorsOnly: boolean;
+	slowOnly: boolean;
+}) {
 	const { events, fetchNextPage, hasNextPage, isFetchingNextPage } = useLogs();
-	const [selected, setSelected] = useState<string | null>(null);
 
-	const shown = errorsOnly ? events.filter(isErrorEvent) : events;
+	const shown = events.filter(
+		(e) => (!errorsOnly || isErrorEvent(e)) && (!slowOnly || isSlowEvent(e)),
+	);
 
 	if (events.length === 0) {
 		return (
 			<LogsEmpty
 				icon={ScrollText}
 				title="No logs yet"
-				body="Requests through the relay land here, newest first. Opt a policy or relay-key into payload logging to also capture request and response bodies — click any row to inspect."
+				body="Requests through the relay land here, newest first. Opt a policy or relay-key into payload logging to also capture request and response bodies."
 			/>
 		);
 	}
@@ -26,33 +42,23 @@ export function LogsTable({ errorsOnly }: { errorsOnly: boolean }) {
 	return (
 		<div className="flex flex-col gap-2">
 			<div className="text-[11px] text-muted-foreground">
-				{fmtInt(shown.length)} log{shown.length === 1 ? "" : "s"}
-				{errorsOnly ? " (errors)" : ""} loaded · click a row to inspect
+				{fmtInt(shown.length)}
+				{shown.length !== events.length ? ` of ${fmtInt(events.length)}` : ""}{" "}
+				log
+				{shown.length === 1 ? "" : "s"}
 			</div>
-			<div className="overflow-x-auto rounded-lg border border-border bg-card">
-				<table className="w-full border-collapse text-sm">
-					<thead className="bg-muted/40 text-[10px] uppercase tracking-wide text-muted-foreground">
-						<tr>
-							<Th>Time</Th>
-							<Th>Request</Th>
-							<Th>Source</Th>
-							<Th>Model</Th>
-							<Th className="text-right">Status</Th>
-							<Th className="text-right">Duration</Th>
-							<Th className="text-right">Tokens</Th>
-						</tr>
-					</thead>
-					<tbody>
-						{shown.map((e) => (
-							<LogRow
-								key={e.request_id}
-								event={e}
-								onSelect={() => setSelected(e.request_id)}
-							/>
-						))}
-					</tbody>
-				</table>
-			</div>
+			<ScrollArea className="max-h-[70vh] rounded-lg border border-border bg-card">
+				<ul className="divide-y divide-border">
+					{shown.map((e) => (
+						<LogRow
+							key={e.request_id}
+							event={e}
+							active={e.request_id === selected}
+							onSelect={() => onSelect(e.request_id)}
+						/>
+					))}
+				</ul>
+			</ScrollArea>
 			{hasNextPage && (
 				<div className="flex justify-center">
 					<Button
@@ -65,87 +71,56 @@ export function LogsTable({ errorsOnly }: { errorsOnly: boolean }) {
 					</Button>
 				</div>
 			)}
-
-			<LogInspector requestId={selected} onClose={() => setSelected(null)} />
 		</div>
 	);
 }
 
-function isErrorEvent(e: LogEvent): boolean {
-	return e.status >= 400 || Boolean(e.error_kind);
-}
-
 function LogRow({
 	event,
+	active,
 	onSelect,
 }: {
 	event: LogEvent;
+	active: boolean;
 	onSelect: () => void;
 }) {
 	const isError = isErrorEvent(event);
 
 	return (
-		<tr
-			onClick={onSelect}
-			className="cursor-pointer border-t border-border hover:bg-muted/30 align-middle"
-		>
-			<Td className="text-xs text-muted-foreground tabular-nums whitespace-nowrap">
-				{fmtTs(event.ts)}
-			</Td>
-			<Td>
-				<code className="font-mono text-xs text-muted-foreground">
-					{shortId(event.request_id)}
-				</code>
-			</Td>
-			<Td>
-				<code className="font-mono text-xs text-foreground">
-					{event.source}
-				</code>
-			</Td>
-			<Td>
-				<code className="font-mono text-xs text-muted-foreground">
-					{event.model_id || event.requested_model || "—"}
-				</code>
-			</Td>
-			<Td className="text-right tabular-nums">
-				<span className={isError ? "text-destructive" : "text-muted-foreground"}>
-					{event.status}
-					{event.error_kind ? ` ${event.error_kind}` : ""}
+		<li>
+			<button
+				type="button"
+				onClick={onSelect}
+				className={`flex w-full items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-muted/40 ${
+					active ? "bg-muted/60" : ""
+				}`}
+			>
+				<span
+					className={`h-1.5 w-1.5 shrink-0 rounded-full ${
+						isError ? "bg-destructive" : "bg-primary/70"
+					}`}
+					aria-hidden
+				/>
+				<span className="w-32 shrink-0 text-xs text-muted-foreground tabular-nums">
+					{fmtTs(event.ts)}
 				</span>
-			</Td>
-			<Td className="text-right tabular-nums text-muted-foreground">
-				{fmtMs(event.duration_ms)}
-			</Td>
-			<Td className="text-right tabular-nums">
-				{fmtInt(sumTokens(event.tokens))}
-			</Td>
-		</tr>
+				<code className="min-w-0 flex-1 truncate font-mono text-xs text-foreground">
+					{event.model_id || event.requested_model || event.source}
+				</code>
+				<span
+					className={`w-10 shrink-0 text-right text-xs tabular-nums ${
+						isError ? "text-destructive" : "text-muted-foreground"
+					}`}
+				>
+					{event.status}
+				</span>
+				<span className="w-16 shrink-0 text-right text-xs text-muted-foreground tabular-nums">
+					{fmtMs(event.duration_ms)}
+				</span>
+				<span className="w-14 shrink-0 text-right text-xs text-muted-foreground tabular-nums">
+					{fmtInt(sumTokens(event.tokens))}
+				</span>
+			</button>
+		</li>
 	);
-}
-
-function Th({
-	children,
-	className = "",
-}: {
-	children: React.ReactNode;
-	className?: string;
-}) {
-	return (
-		<th
-			scope="col"
-			className={`px-3 py-2 font-medium ${className || "text-left"}`}
-		>
-			{children}
-		</th>
-	);
-}
-
-function Td({
-	children,
-	className = "",
-}: {
-	children: React.ReactNode;
-	className?: string;
-}) {
-	return <td className={`px-3 py-2 ${className}`}>{children}</td>;
 }

@@ -26,6 +26,22 @@ export function fmtInt(n: number): string {
 	return n.toLocaleString();
 }
 
+/** Ratio 0..1 → "1.2%" (more precision under 10%, none above). */
+export function fmtPct(ratio: number): string {
+	const pct = ratio * 100;
+	const digits = pct > 0 && pct < 10 ? 1 : 0;
+	return `${pct.toLocaleString(undefined, { maximumFractionDigits: digits })}%`;
+}
+
+/** Large counts → "4.1M" / "12.4k". */
+export function fmtCompact(n: number): string {
+	if (n >= 1_000_000)
+		return `${(n / 1_000_000).toLocaleString(undefined, { maximumFractionDigits: 1 })}M`;
+	if (n >= 1_000)
+		return `${(n / 1_000).toLocaleString(undefined, { maximumFractionDigits: 1 })}k`;
+	return n.toLocaleString();
+}
+
 /** Latency in ms → "123 ms" / "1.2 s". */
 export function fmtMs(ms: number): string {
 	if (ms >= 1000)

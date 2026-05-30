@@ -1,18 +1,10 @@
-import {
-	type InfiniteData,
-	infiniteQueryOptions,
-	queryOptions,
-	useSuspenseInfiniteQuery,
-	useSuspenseQuery,
-} from "@tanstack/react-query";
+import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { apiClient } from "@/api/client";
 import { ApiError } from "@/api/types/errors";
 import type { components } from "@/api/types.gen";
 
 // --- Schema-derived types ---
 
-export type UsageEvent = components["schemas"]["Event"];
-export type UsageEventsPage = components["schemas"]["usageEventsOutputBody"];
 export type UsageSummaryResult = components["schemas"]["SummaryResult"];
 export type UsageSummaryRow = components["schemas"]["SummaryRow"];
 export type UsageTimeSeriesResult = components["schemas"]["TimeSeriesResult"];
@@ -37,8 +29,6 @@ export type UsageGroupBy = (typeof USAGE_GROUP_BY)[number];
 /** Bucket widths offered for the timeseries chart. */
 export const USAGE_INTERVALS = ["5m", "1h", "1d"] as const;
 export type UsageInterval = (typeof USAGE_INTERVALS)[number];
-
-const EVENTS_PAGE_SIZE = 100;
 
 // --- Query options ---
 
@@ -75,55 +65,127 @@ export function usageTimeseriesQueryOptions(
 	});
 }
 
-export function usageEventsInfiniteQueryOptions() {
-	return infiniteQueryOptions({
-		queryKey: ["usage", "events"] as const,
-		queryFn: async ({ pageParam }): Promise<UsageEventsPage> => {
-			const { data, error } = await apiClient.GET("/usage/events", {
-				params: {
-					query: {
-						limit: EVENTS_PAGE_SIZE,
-						cursor: pageParam || undefined,
-					},
-				},
-			});
-			if (error) throw new ApiError(0, error.error);
-			return data;
-		},
-		initialPageParam: "",
-		getNextPageParam: (last) => last.next_cursor || undefined,
-		staleTime: 15_000,
-		gcTime: 5 * 60_000,
-	});
+// --- Derived overview shapes ---
+
+/** Top-line KPIs for the selected window, aggregated across all groups. */
+export interface UsageKpis {
+	requests: number;
+	errors: number;
+	errorRate: number; // 0..1
+	avgMs: number; // request-weighted mean latency
+	tokens: number;
+}
+
+/** One leaderboard entry: a group's totals plus its share of peak volume. */
+export interface UsageGroupStat {
+	key: string;
+	requests: number;
+	errorCount: number;
+	errorRate: number; // 0..1
+	duration: UsageDurationStats;
+	tokens: number;
+	share: number; // requests / max(requests), 0..1
+}
+
+/** A single aggregated time bucket across every group. */
+export interface UsageTimelinePoint {
+	bucket: string;
+	requests: number;
+	errors: number;
+}
+
+function deriveKpis(rows: UsageSummaryRow[]): UsageKpis {
+	let requests = 0;
+	let errors = 0;
+	let tokens = 0;
+	let weightedMs = 0;
+	for (const r of rows) {
+		requests += r.requests;
+		errors += r.error_count;
+		tokens += sumTokens(r.tokens);
+		weightedMs += r.duration_ms.avg * r.requests;
+	}
+	return {
+		requests,
+		errors,
+		errorRate: requests > 0 ? errors / requests : 0,
+		avgMs: requests > 0 ? weightedMs / requests : 0,
+		tokens,
+	};
+}
+
+function deriveGroupStats(
+	rows: UsageSummaryRow[],
+	groupBy: UsageGroupBy,
+): UsageGroupStat[] {
+	const peak = rows.reduce((m, r) => Math.max(m, r.requests), 0);
+	return rows
+		.map((r) => ({
+			key: r.group?.[groupBy]?.trim() || "—",
+			requests: r.requests,
+			errorCount: r.error_count,
+			errorRate: r.requests > 0 ? r.error_count / r.requests : 0,
+			duration: r.duration_ms,
+			tokens: sumTokens(r.tokens),
+			share: peak > 0 ? r.requests / peak : 0,
+		}))
+		.sort((a, b) => b.requests - a.requests);
+}
+
+function deriveTimeline(
+	rows: UsageTimeSeriesResult["rows"],
+): UsageTimelinePoint[] {
+	const byBucket = new Map<string, UsageTimelinePoint>();
+	for (const series of rows ?? []) {
+		for (const p of series.points ?? []) {
+			const point = byBucket.get(p.bucket) ?? {
+				bucket: p.bucket,
+				requests: 0,
+				errors: 0,
+			};
+			point.requests += p.requests;
+			point.errors += p.error_count;
+			byBucket.set(p.bucket, point);
+		}
+	}
+	return [...byBucket.values()].sort((a, b) =>
+		a.bucket < b.bucket ? -1 : a.bucket > b.bucket ? 1 : 0,
+	);
+}
+
+function sumTokens(tokens: { [key: string]: number } | undefined): number {
+	if (!tokens) return 0;
+	let total = 0;
+	for (const v of Object.values(tokens)) total += v;
+	return total;
 }
 
 // --- Hooks ---
 
-export function useUsageSummary(groupBy: UsageGroupBy) {
-	return useSuspenseQuery(usageSummaryQueryOptions(groupBy));
-}
-
-export function useUsageTimeseries(
-	interval: UsageInterval,
-	groupBy: UsageGroupBy,
-) {
-	return useSuspenseQuery(usageTimeseriesQueryOptions(interval, groupBy));
-}
-
 /**
- * Paginated raw events. Flattens the infinite-query pages into a single
- * `events` array so components render strings, not query plumbing.
+ * Overview for the dashboard: KPIs + a ranked leaderboard for one dimension,
+ * derived from the same summary query the detail table uses.
  */
-export function useUsageEvents() {
-	const query = useSuspenseInfiniteQuery(usageEventsInfiniteQueryOptions());
+export function useUsageOverview(groupBy: UsageGroupBy) {
+	const { data } = useSuspenseQuery(usageSummaryQueryOptions(groupBy));
+	const rows = data.rows ?? [];
 	return {
-		events: flattenEvents(query.data),
-		fetchNextPage: query.fetchNextPage,
-		hasNextPage: query.hasNextPage,
-		isFetchingNextPage: query.isFetchingNextPage,
+		from: data.from,
+		to: data.to,
+		kpis: deriveKpis(rows),
+		groups: deriveGroupStats(rows, groupBy),
 	};
 }
 
-function flattenEvents(data: InfiniteData<UsageEventsPage>): UsageEvent[] {
-	return data.pages.flatMap((page) => page.events ?? []);
+/** Aggregate requests/errors per bucket across every group, for the overview chart. */
+export function useUsageTimeline(interval: UsageInterval) {
+	const { data } = useSuspenseQuery(
+		usageTimeseriesQueryOptions(interval, "source"),
+	);
+	return {
+		from: data.from,
+		to: data.to,
+		interval,
+		points: deriveTimeline(data.rows),
+	};
 }
