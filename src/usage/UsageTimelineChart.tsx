@@ -32,11 +32,14 @@ export function UsageTimelineChart({ interval }: { interval: UsageInterval }) {
 	}
 
 	return (
-		<div className="flex flex-col gap-2">
-			<div className="text-[11px] text-muted-foreground">
-				{fmtRange(from, to)} · {interval} buckets
+		<div className="rounded-lg border border-border bg-card">
+			<div className="flex items-center justify-between border-b border-border px-4 py-2.5">
+				<h2 className="text-sm font-medium text-foreground">Requests</h2>
+				<span className="text-[11px] text-muted-foreground">
+					{fmtRange(from, to)} · {interval} buckets
+				</span>
 			</div>
-			<div className="rounded-lg border border-border bg-card p-4">
+			<div className="p-4">
 				<ChartContainer config={CONFIG} className="h-[260px] w-full">
 					<AreaChart data={points} margin={{ left: 4, right: 8, top: 8 }}>
 						<CartesianGrid vertical={false} />
