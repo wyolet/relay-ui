@@ -374,6 +374,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/payloads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List captured request/response logs (newest first), filterable
+         * @description Lists the payload-logging captures for opted-in requests (per-policy or per-relay-key). Returns metadata only — the bodies are stripped; fetch them via GET /payloads/{request_id}. Filter by time, status, and the same dimensions as /usage/events.
+         */
+        get: operations["payloads_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/payloads/{request_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Fetch the captured request + response bodies for one request
+         * @description Returns the full captured Record — request and response bodies included — for a single request id. 404 when no capture exists (the request ran without payload logging opted in, or has aged out of the store).
+         */
+        get: operations["payloads_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/policies": {
         parameters: {
             query?: never;
@@ -1426,10 +1466,35 @@ export interface components {
             /** Format: int64 */
             start: number;
         };
+        Record: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Record.json
+             */
+            readonly $schema?: string;
+            error_kind?: string;
+            host_id?: string;
+            model_id?: string;
+            policy_id?: string;
+            relay_key_hash?: string;
+            request_body?: string;
+            request_id: string;
+            request_truncated?: boolean;
+            response_body?: string;
+            response_truncated?: boolean;
+            source: string;
+            /** Format: int64 */
+            status: number;
+            streamed?: boolean;
+            /** Format: date-time */
+            ts: string;
+        };
         Ref: {
             env?: string;
             id?: string;
             kind: string;
+            path?: string;
         };
         RelayKey: {
             /**
@@ -1689,6 +1754,16 @@ export interface components {
              * @description Number of stored-mode HostKey rows re-encrypted.
              */
             rotated: number;
+        };
+        payloadListOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/payloadListOutputBody.json
+             */
+            readonly $schema?: string;
+            next_cursor?: string;
+            records: components["schemas"]["Record"][] | null;
         };
         refResult: {
             bindings: components["schemas"]["resolveBindingRef"][] | null;
@@ -3113,6 +3188,126 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Model"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    payloads_list: {
+        parameters: {
+            query?: {
+                /** @description Cap on returned records (page size). Default 100, max 10000. */
+                limit?: number;
+                /** @description Opaque pagination cursor from a previous response's next_cursor. Returns the next (older) page. */
+                cursor?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["payloadListOutputBody"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    payloads_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The request id to fetch the captured bodies for. */
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Record"];
                 };
             };
             /** @description Unauthorized */
