@@ -141,23 +141,18 @@ export function useRelayKeyForm({
 							policyId: value.policyId,
 							enabled: value.enabled,
 							passthroughAllowed: value.passthroughAllowed,
+							payloadLoggingEnabled: value.payloadLoggingEnabled,
 						},
 					};
 					const { plaintext, relayKey: created } =
 						await createRelayKey.mutateAsync(payload);
-					// The create-input body can't carry description or
-					// payloadLoggingEnabled, so apply them in a follow-up update.
-					if (description || value.payloadLoggingEnabled) {
+					// The create-input body can't carry a description; apply it after.
+					if (description) {
 						await updateRelayKey.mutateAsync({
 							id: created.metadata.id ?? "",
 							body: {
-								metadata: description
-									? { ...created.metadata, description }
-									: created.metadata,
-								spec: {
-									...created.spec,
-									payloadLoggingEnabled: value.payloadLoggingEnabled,
-								},
+								metadata: { ...created.metadata, description },
+								spec: created.spec,
 							},
 						});
 					}

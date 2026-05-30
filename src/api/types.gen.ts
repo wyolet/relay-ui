@@ -1547,6 +1547,7 @@ export interface components {
         SpecStruct: {
             enabled?: boolean;
             passthroughAllowed?: boolean;
+            payloadLoggingEnabled?: boolean;
             policyId?: string;
         };
         SummaryResult: {
@@ -4774,7 +4775,30 @@ export interface operations {
     };
     "list_rate-limits": {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Match name exactly. */
+                name?: string;
+                /** @description Match enabled (true/false). */
+                enabled?: boolean;
+                /** @description created lower bound (RFC3339). */
+                created_from?: string;
+                /** @description created upper bound (RFC3339). */
+                created_to?: string;
+                /** @description updated lower bound (RFC3339). */
+                updated_from?: string;
+                /** @description updated upper bound (RFC3339). */
+                updated_to?: string;
+                /** @description Free-text search. */
+                q?: string;
+                /** @description Label selector key=value (repeatable, all must match). */
+                label?: string[];
+                /** @description Sort field; prefix with '-' for descending. */
+                sort?: "name" | "created" | "updated";
+                /** @description Max items to return (page size). */
+                limit?: number;
+                /** @description Items to skip before the page. */
+                offset?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -4788,6 +4812,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RateLimitList"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
                 };
             };
             /** @description Unauthorized */

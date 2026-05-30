@@ -109,13 +109,4 @@ export const RELEASE_GAPS: ReleaseGap[] = [
 		owner: "backend",
 		where: ["src/routes/_authenticated/settings.tsx"],
 	},
-	{
-		id: "relaykey-create-payload-flag",
-		title: "Accept payloadLoggingEnabled on relay-key create",
-		whatsFake:
-			"createRelayKeyInputBody omits payloadLoggingEnabled, so the create form can't send it directly — it's applied via a follow-up update (works, but an extra round-trip).",
-		fix: "Add payloadLoggingEnabled to createRelayKeyInputBody; then drop the follow-up update in useRelayKeyForm.",
-		owner: "backend",
-		where: ["src/relay-keys/useRelayKeyForm.ts"],
-	},
 ];
