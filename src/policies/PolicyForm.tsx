@@ -3,6 +3,7 @@ import {
 	Gauge,
 	KeyRound,
 	type LucideIcon,
+	ScrollText,
 	ShieldCheck,
 } from "lucide-react";
 import { useMemo } from "react";
@@ -30,6 +31,7 @@ import { policyFromFormValues, usePolicyForm } from "@/policies/usePolicyForm";
 import { usePolicyHostRequirements } from "@/policies/usePolicyHostRequirements";
 import { IdentitySection } from "@/shared/IdentitySection";
 import { IncludeDeprecatedSwitch } from "@/shared/IncludeDeprecatedSwitch";
+import { ToggleSwitch } from "@/shared/ToggleSwitch";
 
 interface PolicyFormProps {
 	policy?: Policy;
@@ -158,6 +160,19 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 							{KEY_SELECTION_OPTIONS[values.keySelection].hint}
 						</p>
 					</div>
+				</Section>
+
+				<Section
+					icon={ScrollText}
+					title="Logging"
+					description="Capture full request and response bodies for traffic under this policy."
+				>
+					<ToggleSwitch
+						value={values.payloadLoggingEnabled}
+						onChange={(v) => form.setFieldValue("payloadLoggingEnabled", v)}
+						label="Capture request & response payloads"
+						hint="Logs bodies for this policy's traffic (visible under Logs), overriding the per-relay-key setting. A global default can override this in turn."
+					/>
 				</Section>
 
 				<Section

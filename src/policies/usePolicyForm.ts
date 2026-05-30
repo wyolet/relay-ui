@@ -51,6 +51,7 @@ export function policyFromFormValues(
 					: null,
 			skipDefaultLimits: values.skipDefaultLimits,
 			includeDeprecated: values.includeDeprecated,
+			payloadLoggingEnabled: values.payloadLoggingEnabled,
 		},
 	};
 }
@@ -65,6 +66,7 @@ export interface PolicyFormValues {
 	skipDefaultLimits: boolean;
 	enabled: boolean;
 	includeDeprecated: boolean;
+	payloadLoggingEnabled: boolean;
 }
 
 const schema = z.object({
@@ -88,6 +90,7 @@ const schema = z.object({
 	skipDefaultLimits: z.boolean(),
 	enabled: z.boolean(),
 	includeDeprecated: z.boolean(),
+	payloadLoggingEnabled: z.boolean(),
 });
 
 function emptyValues(): PolicyFormValues {
@@ -101,6 +104,7 @@ function emptyValues(): PolicyFormValues {
 		skipDefaultLimits: false,
 		enabled: true,
 		includeDeprecated: false,
+		payloadLoggingEnabled: false,
 	};
 }
 
@@ -122,6 +126,7 @@ function policyToValues(policy: Policy): PolicyFormValues {
 		skipDefaultLimits: policy.spec.skipDefaultLimits ?? false,
 		enabled: policy.spec.enabled ?? true,
 		includeDeprecated: policy.spec.includeDeprecated ?? false,
+		payloadLoggingEnabled: policy.spec.payloadLoggingEnabled ?? false,
 	};
 }
 

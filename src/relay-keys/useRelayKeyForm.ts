@@ -15,6 +15,7 @@ export interface RelayKeyFormValues {
 	policyId: string;
 	enabled: boolean;
 	passthroughAllowed: boolean;
+	payloadLoggingEnabled: boolean;
 }
 
 function emptyValues(): RelayKeyFormValues {
@@ -24,6 +25,7 @@ function emptyValues(): RelayKeyFormValues {
 		policyId: "",
 		enabled: true,
 		passthroughAllowed: false,
+		payloadLoggingEnabled: false,
 	};
 }
 
@@ -34,6 +36,7 @@ function relayKeyToValues(rk: RelayKey): RelayKeyFormValues {
 		policyId: rk.spec.policyId ?? "",
 		enabled: rk.spec.enabled ?? true,
 		passthroughAllowed: rk.spec.passthroughAllowed ?? false,
+		payloadLoggingEnabled: rk.spec.payloadLoggingEnabled ?? false,
 	};
 }
 
@@ -47,6 +50,7 @@ const schema = z.object({
 	policyId: z.string().min(1, "Pick the policy this key authorizes against."),
 	enabled: z.boolean(),
 	passthroughAllowed: z.boolean(),
+	payloadLoggingEnabled: z.boolean(),
 });
 
 interface UseRelayKeyFormOptions {
@@ -120,6 +124,7 @@ export function useRelayKeyForm({
 							policyId: value.policyId,
 							enabled: value.enabled,
 							passthroughAllowed: value.passthroughAllowed,
+							payloadLoggingEnabled: value.payloadLoggingEnabled,
 						},
 					};
 					const saved = await updateRelayKey.mutateAsync({
@@ -140,12 +145,19 @@ export function useRelayKeyForm({
 					};
 					const { plaintext, relayKey: created } =
 						await createRelayKey.mutateAsync(payload);
-					if (description) {
+					// The create-input body can't carry description or
+					// payloadLoggingEnabled, so apply them in a follow-up update.
+					if (description || value.payloadLoggingEnabled) {
 						await updateRelayKey.mutateAsync({
 							id: created.metadata.id ?? "",
 							body: {
-								metadata: { ...created.metadata, description },
-								spec: created.spec,
+								metadata: description
+									? { ...created.metadata, description }
+									: created.metadata,
+								spec: {
+									...created.spec,
+									payloadLoggingEnabled: value.payloadLoggingEnabled,
+								},
 							},
 						});
 					}

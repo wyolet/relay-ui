@@ -100,4 +100,22 @@ export const RELEASE_GAPS: ReleaseGap[] = [
 		owner: "frontend",
 		where: ["src/stores/permissions.ts"],
 	},
+	{
+		id: "global-payload-logging",
+		title: "Global payload-logging default (settings)",
+		whatsFake:
+			"Payload logging is now toggleable per-policy and per-relay-key, but the global default (which overrides both) has no UI — there's no settings endpoint for it.",
+		fix: "BE needs a /settings/payload-logging endpoint mirroring /settings/proxy-mode; then add the settings toggle. Resolution order: global › policy › relay-key.",
+		owner: "backend",
+		where: ["src/routes/_authenticated/settings.tsx"],
+	},
+	{
+		id: "relaykey-create-payload-flag",
+		title: "Accept payloadLoggingEnabled on relay-key create",
+		whatsFake:
+			"createRelayKeyInputBody omits payloadLoggingEnabled, so the create form can't send it directly — it's applied via a follow-up update (works, but an extra round-trip).",
+		fix: "Add payloadLoggingEnabled to createRelayKeyInputBody; then drop the follow-up update in useRelayKeyForm.",
+		owner: "backend",
+		where: ["src/relay-keys/useRelayKeyForm.ts"],
+	},
 ];
