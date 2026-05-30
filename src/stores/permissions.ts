@@ -4,11 +4,8 @@ import { persist } from "zustand/middleware";
 /**
  * Per-resource edit/delete gates. Host-owned policies and upstream-synced
  * catalog resources (models/providers/hosts) are locked by default so users
- * don't clobber server-managed state. Flip the flag here (DevTools or future
- * settings UI) to unlock.
- *
- * TODO: surface these as toggles in a settings page so admins can opt-in to
- * editing without poking at localStorage.
+ * don't clobber server-managed state. Flip the flag from the
+ * Settings → Edit permissions page (or DevTools) to unlock.
  */
 export type AllowEditKey =
 	| "host-owned-policies"
@@ -54,4 +51,11 @@ export const usePermissionsStore = create<PermissionsState>()(
 
 export function useAllowEdit(key: AllowEditKey): boolean {
 	return usePermissionsStore((s) => s.allowEdit[key]);
+}
+
+/** All edit-permission flags + setter, for the settings page. */
+export function useEditPermissions() {
+	const flags = usePermissionsStore((s) => s.allowEdit);
+	const setAllowEdit = usePermissionsStore((s) => s.setAllowEdit);
+	return { flags, setAllowEdit };
 }

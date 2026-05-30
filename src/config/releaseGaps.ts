@@ -25,15 +25,6 @@ export interface ReleaseGap {
 
 export const RELEASE_GAPS: ReleaseGap[] = [
 	{
-		id: "model-pricing",
-		title: "Cut or back the model Pricing tab",
-		whatsFake:
-			"Model detail Pricing tab renders MOCK_PRICING (GPT-4-ish $2.50/$10 numbers + worked examples). Nothing in ModelSpec carries pricing.",
-		fix: "Either remove the tab for OSS, or expose pricing fields on ModelSpec and wire them.",
-		owner: "backend",
-		where: ["src/models/ModelDetailView.tsx"],
-	},
-	{
 		id: "delete-endpoints",
 		title: "Real delete for models / hosts / policies",
 		whatsFake:
@@ -41,14 +32,5 @@ export const RELEASE_GAPS: ReleaseGap[] = [
 		fix: "No DELETE endpoint exists for these resources (delete?: never on every path). BE must add them, then wire a real delete mutation + re-enable the action.",
 		owner: "backend",
 		where: ["src/models/ModelsTable.tsx"],
-	},
-	{
-		id: "permission-edit-toggles",
-		title: "Settings UI for edit-permission flags",
-		whatsFake:
-			"allowEdit flags (host-owned policies, models, providers, hosts) are hardcoded false and only togglable via localStorage in DevTools.",
-		fix: "Surface them as toggles on a settings page.",
-		owner: "frontend",
-		where: ["src/stores/permissions.ts"],
 	},
 ];

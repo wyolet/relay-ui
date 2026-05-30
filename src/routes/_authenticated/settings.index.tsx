@@ -1,5 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Forward, Gauge, type LucideIcon, ScrollText } from "lucide-react";
+import {
+	Forward,
+	Gauge,
+	type LucideIcon,
+	ScrollText,
+	ShieldCheck,
+} from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/settings/")({
 	component: SettingsPage,
@@ -9,7 +15,8 @@ interface SettingItem {
 	to:
 		| "/settings/rate-limits"
 		| "/settings/proxy-mode"
-		| "/settings/payload-logging";
+		| "/settings/payload-logging"
+		| "/settings/permissions";
 	label: string;
 	description: string;
 	icon: LucideIcon;
@@ -36,6 +43,13 @@ const ITEMS: SettingItem[] = [
 		description:
 			"Throttling for Relay's control and inference APIs. Configure RPS / RPM / RPH / RPD caps.",
 		icon: Gauge,
+	},
+	{
+		to: "/settings/permissions",
+		label: "Edit permissions",
+		description:
+			"Unlock editing of server-managed resources (synced models/providers/hosts, host-owned policies).",
+		icon: ShieldCheck,
 	},
 ];
 
