@@ -265,6 +265,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List full per-request log records (newest first), filterable
+         * @description The full lifecycle view: routing, status, timing, tokens, errors, identity — one record per request. Filter by the same dimensions as /usage/events. Captured bodies are attached only on the detail endpoint (GET /logs/{request_id}), not in the list.
+         */
+        get: operations["logs_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/logs/{request_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Fetch one request's full record + captured bodies
+         * @description Returns the full log record for a single request id, with the captured request/response bodies attached when payload logging was opted in (else payload is null). 404 when no log record exists for the id.
+         */
+        get: operations["logs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/master-key/generate": {
         parameters: {
             query?: never;
@@ -366,46 +406,6 @@ export interface paths {
         };
         /** Get model by slug or id */
         get: operations["get_model"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/payloads": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List captured request/response logs (newest first), filterable
-         * @description Lists the payload-logging captures for opted-in requests (per-policy or per-relay-key). Returns metadata only — the bodies are stripped; fetch them via GET /payloads/{request_id}. Filter by time, status, and the same dimensions as /usage/events.
-         */
-        get: operations["payloads_list"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/payloads/{request_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Fetch the captured request + response bodies for one request
-         * @description Returns the full captured Record — request and response bodies included — for a single request id. 404 when no capture exists (the request ran without payload logging opted in, or has aged out of the store).
-         */
-        get: operations["payloads_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1127,7 +1127,7 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            section: "inference" | "parsing" | "payload-logging" | "proxy-mode";
+            section: "inference" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
             value: components["schemas"]["Inference"];
         };
         Metadata: {
@@ -1268,8 +1268,13 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            section: "inference" | "parsing" | "payload-logging" | "proxy-mode";
+            section: "inference" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
             value: components["schemas"]["Parsing"];
+        };
+        PayloadClickHouse: {
+            /** Format: int64 */
+            retentionDays?: number;
+            walDir?: string;
         };
         PayloadFile: {
             path: string;
@@ -1282,6 +1287,7 @@ export interface components {
              */
             readonly $schema?: string;
             backend: string;
+            clickhouse: components["schemas"]["PayloadClickHouse"];
             enabled: boolean;
             file: components["schemas"]["PayloadFile"];
             /** Format: int64 */
@@ -1299,7 +1305,7 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            section: "inference" | "parsing" | "payload-logging" | "proxy-mode";
+            section: "inference" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
             value: components["schemas"]["PayloadLogging"];
         };
         PayloadS3: {
@@ -1426,7 +1432,7 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            section: "inference" | "parsing" | "payload-logging" | "proxy-mode";
+            section: "inference" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
             value: components["schemas"]["ProxyMode"];
         };
         RateLimit: {
@@ -1465,30 +1471,6 @@ export interface components {
             end: number;
             /** Format: int64 */
             start: number;
-        };
-        Record: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example https://example.com/schemas/Record.json
-             */
-            readonly $schema?: string;
-            error_kind?: string;
-            host_id?: string;
-            model_id?: string;
-            policy_id?: string;
-            relay_key_hash?: string;
-            request_body?: string;
-            request_id: string;
-            request_truncated?: boolean;
-            response_body?: string;
-            response_truncated?: boolean;
-            source: string;
-            /** Format: int64 */
-            status: number;
-            streamed?: boolean;
-            /** Format: date-time */
-            ts: string;
         };
         Ref: {
             env?: string;
@@ -1713,6 +1695,22 @@ export interface components {
             id: string;
             name: string;
         };
+        logGetOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/logGetOutputBody.json
+             */
+            readonly $schema?: string;
+            log: components["schemas"]["Event"];
+            payload?: components["schemas"]["logPayload"];
+        };
+        logPayload: {
+            request_body?: string;
+            request_truncated?: boolean;
+            response_body?: string;
+            response_truncated?: boolean;
+        };
         loginInputBody: {
             /**
              * Format: uri
@@ -1724,6 +1722,16 @@ export interface components {
             password: string;
             /** @description Username (matches identity YAML spec.username). */
             username: string;
+        };
+        logsListOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/logsListOutputBody.json
+             */
+            readonly $schema?: string;
+            logs: components["schemas"]["Event"][] | null;
+            next_cursor?: string;
         };
         masterKeyGenerateOutputBody: {
             /**
@@ -1754,16 +1762,6 @@ export interface components {
              * @description Number of stored-mode HostKey rows re-encrypted.
              */
             rotated: number;
-        };
-        payloadListOutputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example https://example.com/schemas/payloadListOutputBody.json
-             */
-            readonly $schema?: string;
-            next_cursor?: string;
-            records: components["schemas"]["Record"][] | null;
         };
         refResult: {
             bindings: components["schemas"]["resolveBindingRef"][] | null;
@@ -1841,7 +1839,7 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            name: "inference" | "parsing" | "payload-logging" | "proxy-mode";
+            name: "inference" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
             /** @description OpenAPI component name for this section's typed value. */
             schemaRef?: string;
         };
@@ -1859,7 +1857,7 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            section: "inference" | "parsing" | "payload-logging" | "proxy-mode";
+            section: "inference" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
             value: unknown;
         };
         settingsListOutputBody: {
@@ -2873,6 +2871,126 @@ export interface operations {
             };
         };
     };
+    logs_list: {
+        parameters: {
+            query?: {
+                /** @description Cap on returned records (page size). Default 100, max 10000. */
+                limit?: number;
+                /** @description Opaque pagination cursor from a previous response's next_cursor. Returns the next (older) page. */
+                cursor?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["logsListOutputBody"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    logs_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The request id to fetch the full record + bodies for. */
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["logGetOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
     master_key_generate: {
         parameters: {
             query?: never;
@@ -3188,126 +3306,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Model"];
-                };
-            };
-            /** @description Unauthorized */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OpenAIError"];
-                };
-            };
-            /** @description Not Found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OpenAIError"];
-                };
-            };
-            /** @description Unprocessable Entity */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OpenAIError"];
-                };
-            };
-            /** @description Internal Server Error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OpenAIError"];
-                };
-            };
-        };
-    };
-    payloads_list: {
-        parameters: {
-            query?: {
-                /** @description Cap on returned records (page size). Default 100, max 10000. */
-                limit?: number;
-                /** @description Opaque pagination cursor from a previous response's next_cursor. Returns the next (older) page. */
-                cursor?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["payloadListOutputBody"];
-                };
-            };
-            /** @description Bad Request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OpenAIError"];
-                };
-            };
-            /** @description Unauthorized */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OpenAIError"];
-                };
-            };
-            /** @description Unprocessable Entity */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OpenAIError"];
-                };
-            };
-            /** @description Internal Server Error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OpenAIError"];
-                };
-            };
-        };
-    };
-    payloads_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The request id to fetch the captured bodies for. */
-                request_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Record"];
                 };
             };
             /** @description Unauthorized */

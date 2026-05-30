@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { usePayloadRecord } from "@/api/hooks/payloads";
+import { useLogDetail } from "@/api/hooks/logs";
 import {
 	Dialog,
 	DialogContent,
@@ -8,11 +8,11 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { fmtTs, prettyBody } from "./format";
+import { fmtInt, fmtMs, fmtTs, prettyBody, sumTokens } from "./format";
 
 /**
  * Per-request inspector. Controlled by `requestId`: open when non-null,
- * fetches the full captured Record (bodies included) on demand.
+ * fetches the full capture (event + captured bodies) on demand.
  */
 export function LogInspector({
 	requestId,
@@ -41,50 +41,72 @@ export function LogInspector({
 }
 
 function InspectorBody({ requestId }: { requestId: string }) {
-	const { data: record } = usePayloadRecord(requestId);
-	const isError = record.status >= 400 || Boolean(record.error_kind);
+	const { data } = useLogDetail(requestId);
+	const { log, payload } = data;
+	const isError = log.status >= 400 || Boolean(log.error_kind);
 
 	return (
 		<div className="flex flex-col gap-4">
 			<dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-xs">
-				<Meta label="Time">{fmtTs(record.ts)}</Meta>
+				<Meta label="Time">{fmtTs(log.ts)}</Meta>
 				<Meta label="Source">
-					<code className="font-mono">{record.source}</code>
+					<code className="font-mono">{log.source}</code>
 				</Meta>
 				<Meta label="Status">
 					<span className={isError ? "text-destructive" : "text-foreground"}>
-						{record.status}
-						{record.error_kind ? ` · ${record.error_kind}` : ""}
+						{log.status}
+						{log.error_kind ? ` · ${log.error_kind}` : ""}
 					</span>
 				</Meta>
-				{record.model_id && (
+				{log.error_message && (
+					<Meta label="Error">{log.error_message}</Meta>
+				)}
+				{(log.model_id || log.requested_model) && (
 					<Meta label="Model">
-						<code className="font-mono">{record.model_id}</code>
+						<code className="font-mono">
+							{log.model_id || log.requested_model}
+						</code>
 					</Meta>
 				)}
-				{record.host_id && (
+				{log.host_id && (
 					<Meta label="Host">
-						<code className="font-mono">{record.host_id}</code>
+						<code className="font-mono">{log.host_id}</code>
 					</Meta>
 				)}
-				{record.policy_id && (
+				{log.policy_id && (
 					<Meta label="Policy">
-						<code className="font-mono">{record.policy_id}</code>
+						<code className="font-mono">{log.policy_id}</code>
 					</Meta>
 				)}
-				{record.streamed && <Meta label="Streamed">yes</Meta>}
+				<Meta label="Duration">{fmtMs(log.duration_ms)}</Meta>
+				{log.tokens && (
+					<Meta label="Tokens">{fmtInt(sumTokens(log.tokens))}</Meta>
+				)}
+				{log.finish_reason && (
+					<Meta label="Finish">{log.finish_reason}</Meta>
+				)}
+				{log.streamed && <Meta label="Streamed">yes</Meta>}
 			</dl>
 
-			<Body
-				title="Request"
-				body={record.request_body}
-				truncated={record.request_truncated}
-			/>
-			<Body
-				title="Response"
-				body={record.response_body}
-				truncated={record.response_truncated}
-			/>
+			{payload ? (
+				<>
+					<Body
+						title="Request"
+						body={payload.request_body}
+						truncated={payload.request_truncated}
+					/>
+					<Body
+						title="Response"
+						body={payload.response_body}
+						truncated={payload.response_truncated}
+					/>
+				</>
+			) : (
+				<div className="rounded-md border border-dashed border-border px-3 py-4 text-center text-xs text-muted-foreground">
+					No bodies captured — this request's policy or relay key isn't opted
+					into payload logging.
+				</div>
+			)}
 		</div>
 	);
 }

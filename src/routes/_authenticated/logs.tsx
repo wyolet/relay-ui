@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { z } from "zod";
-import { payloadsInfiniteQueryOptions } from "@/api/hooks/payloads";
+import { logsInfiniteQueryOptions } from "@/api/hooks/logs";
 import { Switch } from "@/components/ui/switch";
 import { LogsTable } from "@/logs/LogsTable";
 
@@ -13,7 +13,7 @@ export const Route = createFileRoute("/_authenticated/logs")({
 	validateSearch: searchSchema,
 	loader: ({ context }) =>
 		void context.queryClient.ensureInfiniteQueryData(
-			payloadsInfiniteQueryOptions(),
+			logsInfiniteQueryOptions(),
 		),
 	component: LogsPage,
 });

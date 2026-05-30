@@ -1,25 +1,24 @@
 import { ScrollText } from "lucide-react";
 import { useState } from "react";
-import type { PayloadRecord } from "@/api/hooks/payloads";
-import { usePayloads } from "@/api/hooks/payloads";
+import type { LogEvent } from "@/api/hooks/logs";
+import { useLogs } from "@/api/hooks/logs";
 import { Button } from "@/components/ui/button";
-import { fmtInt, fmtTs, shortId } from "./format";
+import { fmtInt, fmtMs, fmtTs, shortId, sumTokens } from "./format";
 import { LogInspector } from "./LogInspector";
 import { LogsEmpty } from "./LogsEmpty";
 
 export function LogsTable({ errorsOnly }: { errorsOnly: boolean }) {
-	const { records, fetchNextPage, hasNextPage, isFetchingNextPage } =
-		usePayloads();
+	const { events, fetchNextPage, hasNextPage, isFetchingNextPage } = useLogs();
 	const [selected, setSelected] = useState<string | null>(null);
 
-	const shown = errorsOnly ? records.filter(isErrorRecord) : records;
+	const shown = errorsOnly ? events.filter(isErrorEvent) : events;
 
-	if (records.length === 0) {
+	if (events.length === 0) {
 		return (
 			<LogsEmpty
 				icon={ScrollText}
-				title="No captures yet"
-				body="Opt a policy or relay-key into payload logging and its requests will be captured here — full request and response bodies, newest first."
+				title="No logs yet"
+				body="Requests through the relay land here, newest first. Opt a policy or relay-key into payload logging to also capture request and response bodies — click any row to inspect."
 			/>
 		);
 	}
@@ -27,7 +26,7 @@ export function LogsTable({ errorsOnly }: { errorsOnly: boolean }) {
 	return (
 		<div className="flex flex-col gap-2">
 			<div className="text-[11px] text-muted-foreground">
-				{fmtInt(shown.length)} capture{shown.length === 1 ? "" : "s"}
+				{fmtInt(shown.length)} log{shown.length === 1 ? "" : "s"}
 				{errorsOnly ? " (errors)" : ""} loaded · click a row to inspect
 			</div>
 			<div className="overflow-x-auto rounded-lg border border-border bg-card">
@@ -39,15 +38,16 @@ export function LogsTable({ errorsOnly }: { errorsOnly: boolean }) {
 							<Th>Source</Th>
 							<Th>Model</Th>
 							<Th className="text-right">Status</Th>
-							<Th>Flags</Th>
+							<Th className="text-right">Duration</Th>
+							<Th className="text-right">Tokens</Th>
 						</tr>
 					</thead>
 					<tbody>
-						{shown.map((r) => (
+						{shown.map((e) => (
 							<LogRow
-								key={r.request_id}
-								record={r}
-								onSelect={() => setSelected(r.request_id)}
+								key={e.request_id}
+								event={e}
+								onSelect={() => setSelected(e.request_id)}
 							/>
 						))}
 					</tbody>
@@ -71,18 +71,18 @@ export function LogsTable({ errorsOnly }: { errorsOnly: boolean }) {
 	);
 }
 
-function isErrorRecord(r: PayloadRecord): boolean {
-	return r.status >= 400 || Boolean(r.error_kind);
+function isErrorEvent(e: LogEvent): boolean {
+	return e.status >= 400 || Boolean(e.error_kind);
 }
 
 function LogRow({
-	record,
+	event,
 	onSelect,
 }: {
-	record: PayloadRecord;
+	event: LogEvent;
 	onSelect: () => void;
 }) {
-	const isError = isErrorRecord(record);
+	const isError = isErrorEvent(event);
 
 	return (
 		<tr
@@ -90,38 +90,34 @@ function LogRow({
 			className="cursor-pointer border-t border-border hover:bg-muted/30 align-middle"
 		>
 			<Td className="text-xs text-muted-foreground tabular-nums whitespace-nowrap">
-				{fmtTs(record.ts)}
+				{fmtTs(event.ts)}
 			</Td>
 			<Td>
 				<code className="font-mono text-xs text-muted-foreground">
-					{shortId(record.request_id)}
+					{shortId(event.request_id)}
 				</code>
 			</Td>
 			<Td>
 				<code className="font-mono text-xs text-foreground">
-					{record.source}
+					{event.source}
 				</code>
 			</Td>
 			<Td>
 				<code className="font-mono text-xs text-muted-foreground">
-					{record.model_id || "—"}
+					{event.model_id || event.requested_model || "—"}
 				</code>
 			</Td>
 			<Td className="text-right tabular-nums">
 				<span className={isError ? "text-destructive" : "text-muted-foreground"}>
-					{record.status}
-					{record.error_kind ? ` ${record.error_kind}` : ""}
+					{event.status}
+					{event.error_kind ? ` ${event.error_kind}` : ""}
 				</span>
 			</Td>
-			<Td className="text-xs text-muted-foreground">
-				{[
-					record.streamed ? "streamed" : "",
-					record.request_truncated || record.response_truncated
-						? "truncated"
-						: "",
-				]
-					.filter(Boolean)
-					.join(" · ") || "—"}
+			<Td className="text-right tabular-nums text-muted-foreground">
+				{fmtMs(event.duration_ms)}
+			</Td>
+			<Td className="text-right tabular-nums">
+				{fmtInt(sumTokens(event.tokens))}
 			</Td>
 		</tr>
 	);
