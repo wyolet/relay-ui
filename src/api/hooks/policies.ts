@@ -110,6 +110,7 @@ export function useDeletePolicy() {
 					if (!old) return old;
 					return {
 						items: (old.items ?? []).filter((p) => p.metadata.id !== id),
+						total: old.total,
 					};
 				},
 			);

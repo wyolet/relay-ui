@@ -72,7 +72,11 @@ export function useCreateModel() {
 						metadata: { name: newModel.metadata.name },
 						spec: { ...newModel.spec },
 					};
-					return { items: [...(old.items ?? []), optimistic] };
+					return {
+						...old,
+						items: [...(old.items ?? []), optimistic],
+						total: old.total + 1,
+					};
 				},
 			);
 			return { previous };

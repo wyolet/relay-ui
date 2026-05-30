@@ -95,7 +95,11 @@ export function useCreateRateLimit() {
 						metadata: { name: newRL.metadata.name },
 						spec: { ...newRL.spec },
 					};
-					return { items: [...(old.items ?? []), optimistic] };
+					return {
+						...old,
+						items: [...(old.items ?? []), optimistic],
+						total: old.total + 1,
+					};
 				},
 			);
 			return { previous };
@@ -151,6 +155,7 @@ export function useDeleteRateLimit() {
 					if (!old) return old;
 					return {
 						items: (old.items ?? []).filter((rl) => rl.metadata.id !== id),
+						total: old.total,
 					};
 				},
 			);

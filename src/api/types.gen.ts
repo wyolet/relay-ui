@@ -145,6 +145,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/host-keys/by-id/{id}/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read a HostKey's circuit-breaker state */
+        get: operations["get_host_key_health"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/host-keys/by-id/{id}/references": {
         parameters: {
             query?: never;
@@ -1064,6 +1081,8 @@ export interface components {
              */
             readonly $schema?: string;
             items: components["schemas"]["HostKey"][] | null;
+            /** Format: int64 */
+            total: number;
         };
         HostKeyPolicyRef: {
             id: string;
@@ -1089,6 +1108,8 @@ export interface components {
              */
             readonly $schema?: string;
             items: components["schemas"]["Host"][] | null;
+            /** Format: int64 */
+            total: number;
         };
         HostSpec: {
             backend?: {
@@ -1131,6 +1152,8 @@ export interface components {
             value: components["schemas"]["Inference"];
         };
         Metadata: {
+            /** Format: date-time */
+            createdAt?: string;
             description?: string;
             displayName?: string;
             id?: string;
@@ -1139,6 +1162,8 @@ export interface components {
             };
             name: string;
             owner?: components["schemas"]["Owner"];
+            /** Format: date-time */
+            updatedAt?: string;
         };
         MetadataStruct: {
             displayName?: string;
@@ -1194,6 +1219,8 @@ export interface components {
              */
             readonly $schema?: string;
             items: components["schemas"]["Model"][] | null;
+            /** Format: int64 */
+            total: number;
         };
         ModelModalities: {
             input?: string[] | null;
@@ -1335,6 +1362,8 @@ export interface components {
              */
             readonly $schema?: string;
             items: components["schemas"]["Policy"][] | null;
+            /** Format: int64 */
+            total: number;
         };
         PolicyRLBinding: {
             models: string[] | null;
@@ -1370,6 +1399,8 @@ export interface components {
              */
             readonly $schema?: string;
             items: components["schemas"]["Pricing"][] | null;
+            /** Format: int64 */
+            total: number;
         };
         PricingRate: {
             /** Format: int64 */
@@ -1403,6 +1434,8 @@ export interface components {
              */
             readonly $schema?: string;
             items: components["schemas"]["Provider"][] | null;
+            /** Format: int64 */
+            total: number;
         };
         ProviderSpec: {
             docsURL?: string;
@@ -1453,6 +1486,8 @@ export interface components {
              */
             readonly $schema?: string;
             items: components["schemas"]["RateLimit"][] | null;
+            /** Format: int64 */
+            total: number;
         };
         RateLimitRule: {
             /** Format: int64 */
@@ -1496,6 +1531,8 @@ export interface components {
              */
             readonly $schema?: string;
             items: components["schemas"]["RelayKey"][] | null;
+            /** Format: int64 */
+            total: number;
         };
         RelayKeySpec: {
             enabled?: boolean;
@@ -1694,6 +1731,42 @@ export interface components {
             displayName?: string;
             id: string;
             name: string;
+        };
+        hostKeyHealth: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/hostKeyHealth.json
+             */
+            readonly $schema?: string;
+            /**
+             * Format: int64
+             * @description Position on the server-error backoff ladder (0 = healthy).
+             */
+            backoff_step: number;
+            /**
+             * Format: int64
+             * @description Seconds until a timed cooldown expires; absent when closed, indefinite, or already elapsed.
+             */
+            cooldown_remaining_seconds?: number;
+            /** @description False when no breaker record exists yet — the key has never failed (assumed healthy). */
+            has_record: boolean;
+            /** @description Open with no expiry (auth failure) until the key heals or rotates. */
+            indefinite?: boolean;
+            /**
+             * Format: date-time
+             * @description Last state change; doubles as last-success time when state is closed.
+             */
+            last_transition?: string;
+            /**
+             * Format: date-time
+             * @description When a timed cooldown expires; absent when closed or indefinite.
+             */
+            open_until?: string;
+            /** @description Why the circuit opened (cooldown reason), when open. */
+            reason?: string;
+            /** @description closed | open | half_open | unknown. */
+            state: string;
         };
         logGetOutputBody: {
             /**
@@ -2186,7 +2259,38 @@ export interface operations {
     };
     "list_host-keys": {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Match name exactly. */
+                name?: string;
+                /** @description Match enabled (true/false). */
+                enabled?: boolean;
+                /** @description Match any of the given host_id values. */
+                host_id?: string[];
+                /** @description Match any of the given policy_id values. */
+                policy_id?: string[];
+                /** @description Match default_tier exactly. */
+                default_tier?: string;
+                /** @description Match value_kind exactly. */
+                value_kind?: "env" | "stored";
+                /** @description created lower bound (RFC3339). */
+                created_from?: string;
+                /** @description created upper bound (RFC3339). */
+                created_to?: string;
+                /** @description updated lower bound (RFC3339). */
+                updated_from?: string;
+                /** @description updated upper bound (RFC3339). */
+                updated_to?: string;
+                /** @description Free-text search. */
+                q?: string;
+                /** @description Label selector key=value (repeatable, all must match). */
+                label?: string[];
+                /** @description Sort field; prefix with '-' for descending. */
+                sort?: "name" | "created" | "updated";
+                /** @description Max items to return (page size). */
+                limit?: number;
+                /** @description Items to skip before the page. */
+                offset?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -2200,6 +2304,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HostKeyList"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
                 };
             };
             /** @description Unauthorized */
@@ -2372,6 +2485,65 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    get_host_key_health: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description HostKey id (UUIDv7). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["hostKeyHealth"];
+                };
             };
             /** @description Unauthorized */
             401: {
@@ -2594,7 +2766,36 @@ export interface operations {
     };
     list_hosts: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Match name exactly. */
+                name?: string;
+                /** @description Match enabled (true/false). */
+                enabled?: boolean;
+                /** @description Match has_default_policy (true/false). */
+                has_default_policy?: boolean;
+                /** @description Match default_policy exactly. */
+                default_policy?: string;
+                /** @description Match any of the given policy_id values. */
+                policy_id?: string[];
+                /** @description created lower bound (RFC3339). */
+                created_from?: string;
+                /** @description created upper bound (RFC3339). */
+                created_to?: string;
+                /** @description updated lower bound (RFC3339). */
+                updated_from?: string;
+                /** @description updated upper bound (RFC3339). */
+                updated_to?: string;
+                /** @description Free-text search. */
+                q?: string;
+                /** @description Label selector key=value (repeatable, all must match). */
+                label?: string[];
+                /** @description Sort field; prefix with '-' for descending. */
+                sort?: "name" | "created" | "updated";
+                /** @description Max items to return (page size). */
+                limit?: number;
+                /** @description Items to skip before the page. */
+                offset?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -2608,6 +2809,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HostList"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
                 };
             };
             /** @description Unauthorized */
@@ -3069,7 +3279,62 @@ export interface operations {
     };
     list_models: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Match name exactly. */
+                name?: string;
+                /** @description Match enabled (true/false). */
+                enabled?: boolean;
+                /** @description Match deprecated (true/false). */
+                deprecated?: boolean;
+                /** @description Match any of the given family values. */
+                family?: string[];
+                /** @description Match license exactly. */
+                license?: string;
+                /** @description Match any of the given provider_id values. */
+                provider_id?: string[];
+                /** @description Match any of the given host_id values. */
+                host_id?: string[];
+                /** @description Match any of the given tag values. */
+                tag?: string[];
+                /** @description Match capability (repeatable; item must have ALL given values). */
+                capability?: ("chat" | "embeddings" | "streaming" | "tools" | "parallelTools" | "vision" | "audio" | "promptCache" | "reasoning" | "jsonMode" | "structuredOutputs" | "batch")[];
+                /** @description Match any of the given modality values. */
+                modality?: string[];
+                /** @description Minimum context_window (inclusive). */
+                context_window_min?: number;
+                /** @description Maximum context_window (inclusive). */
+                context_window_max?: number;
+                /** @description Minimum max_output_tokens (inclusive). */
+                max_output_tokens_min?: number;
+                /** @description Maximum max_output_tokens (inclusive). */
+                max_output_tokens_max?: number;
+                /** @description released lower bound (RFC3339). */
+                released_from?: string;
+                /** @description released upper bound (RFC3339). */
+                released_to?: string;
+                /** @description deprecated_date lower bound (RFC3339). */
+                deprecated_date_from?: string;
+                /** @description deprecated_date upper bound (RFC3339). */
+                deprecated_date_to?: string;
+                /** @description created lower bound (RFC3339). */
+                created_from?: string;
+                /** @description created upper bound (RFC3339). */
+                created_to?: string;
+                /** @description updated lower bound (RFC3339). */
+                updated_from?: string;
+                /** @description updated upper bound (RFC3339). */
+                updated_to?: string;
+                /** @description Free-text search. */
+                q?: string;
+                /** @description Label selector key=value (repeatable, all must match). */
+                label?: string[];
+                /** @description Sort field; prefix with '-' for descending. */
+                sort?: "name" | "family" | "context_window" | "released" | "created" | "updated";
+                /** @description Max items to return (page size). */
+                limit?: number;
+                /** @description Items to skip before the page. */
+                offset?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -3083,6 +3348,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ModelList"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
                 };
             };
             /** @description Unauthorized */
@@ -3348,7 +3622,44 @@ export interface operations {
     };
     list_policies: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Match name exactly. */
+                name?: string;
+                /** @description Match enabled (true/false). */
+                enabled?: boolean;
+                /** @description Match payload_logging (true/false). */
+                payload_logging?: boolean;
+                /** @description Match include_deprecated (true/false). */
+                include_deprecated?: boolean;
+                /** @description Match rate_limit_id exactly. */
+                rate_limit_id?: string;
+                /** @description Match key_selection exactly. */
+                key_selection?: string;
+                /** @description Match owner exactly. */
+                owner?: string;
+                /** @description Match any of the given model_id values. */
+                model_id?: string[];
+                /** @description Match any of the given host_key_id values. */
+                host_key_id?: string[];
+                /** @description created lower bound (RFC3339). */
+                created_from?: string;
+                /** @description created upper bound (RFC3339). */
+                created_to?: string;
+                /** @description updated lower bound (RFC3339). */
+                updated_from?: string;
+                /** @description updated upper bound (RFC3339). */
+                updated_to?: string;
+                /** @description Free-text search. */
+                q?: string;
+                /** @description Label selector key=value (repeatable, all must match). */
+                label?: string[];
+                /** @description Sort field; prefix with '-' for descending. */
+                sort?: "name" | "created" | "updated";
+                /** @description Max items to return (page size). */
+                limit?: number;
+                /** @description Items to skip before the page. */
+                offset?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -3362,6 +3673,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PolicyList"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
                 };
             };
             /** @description Unauthorized */
@@ -3815,7 +4135,40 @@ export interface operations {
     };
     list_pricings: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Match name exactly. */
+                name?: string;
+                /** @description Match enabled (true/false). */
+                enabled?: boolean;
+                /** @description Match currency exactly. */
+                currency?: string;
+                /** @description Match any of the given target_model_id values. */
+                target_model_id?: string[];
+                /** @description Match any of the given meter values. */
+                meter?: string[];
+                /** @description Match any of the given unit values. */
+                unit?: string[];
+                /** @description Match has_tiers (true/false). */
+                has_tiers?: boolean;
+                /** @description created lower bound (RFC3339). */
+                created_from?: string;
+                /** @description created upper bound (RFC3339). */
+                created_to?: string;
+                /** @description updated lower bound (RFC3339). */
+                updated_from?: string;
+                /** @description updated upper bound (RFC3339). */
+                updated_to?: string;
+                /** @description Free-text search. */
+                q?: string;
+                /** @description Label selector key=value (repeatable, all must match). */
+                label?: string[];
+                /** @description Sort field; prefix with '-' for descending. */
+                sort?: "name" | "created" | "updated";
+                /** @description Max items to return (page size). */
+                limit?: number;
+                /** @description Items to skip before the page. */
+                offset?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -3829,6 +4182,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PricingList"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
                 };
             };
             /** @description Unauthorized */
@@ -4101,7 +4463,30 @@ export interface operations {
     };
     list_providers: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Match name exactly. */
+                name?: string;
+                /** @description Match enabled (true/false). */
+                enabled?: boolean;
+                /** @description created lower bound (RFC3339). */
+                created_from?: string;
+                /** @description created upper bound (RFC3339). */
+                created_to?: string;
+                /** @description updated lower bound (RFC3339). */
+                updated_from?: string;
+                /** @description updated upper bound (RFC3339). */
+                updated_to?: string;
+                /** @description Free-text search. */
+                q?: string;
+                /** @description Label selector key=value (repeatable, all must match). */
+                label?: string[];
+                /** @description Sort field; prefix with '-' for descending. */
+                sort?: "name" | "created" | "updated";
+                /** @description Max items to return (page size). */
+                limit?: number;
+                /** @description Items to skip before the page. */
+                offset?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -4115,6 +4500,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProviderList"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
                 };
             };
             /** @description Unauthorized */
@@ -4716,7 +5110,40 @@ export interface operations {
     };
     "list_relay-keys": {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Match name exactly. */
+                name?: string;
+                /** @description Match enabled (true/false). */
+                enabled?: boolean;
+                /** @description Match revoked (true/false). */
+                revoked?: boolean;
+                /** @description Match passthrough (true/false). */
+                passthrough?: boolean;
+                /** @description Match payload_logging (true/false). */
+                payload_logging?: boolean;
+                /** @description Match any of the given policy_id values. */
+                policy_id?: string[];
+                /** @description Match prefix exactly. */
+                prefix?: string;
+                /** @description created lower bound (RFC3339). */
+                created_from?: string;
+                /** @description created upper bound (RFC3339). */
+                created_to?: string;
+                /** @description updated lower bound (RFC3339). */
+                updated_from?: string;
+                /** @description updated upper bound (RFC3339). */
+                updated_to?: string;
+                /** @description Free-text search. */
+                q?: string;
+                /** @description Label selector key=value (repeatable, all must match). */
+                label?: string[];
+                /** @description Sort field; prefix with '-' for descending. */
+                sort?: "name" | "created" | "updated";
+                /** @description Max items to return (page size). */
+                limit?: number;
+                /** @description Items to skip before the page. */
+                offset?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -4730,6 +5157,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RelayKeyList"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
                 };
             };
             /** @description Unauthorized */
