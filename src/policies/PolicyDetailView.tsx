@@ -20,6 +20,7 @@ import { PolicyModelsTab } from "@/policies/PolicyModelsTab";
 import { PolicyOverviewTab } from "@/policies/PolicyOverviewTab";
 import { PolicyRateLimitsTab } from "@/policies/PolicyRateLimitsTab";
 import { useAllowEdit } from "@/stores/permissions";
+import { ResourceUsage } from "@/usage/ResourceUsage";
 
 export type PolicyDetailTab =
 	| "overview"
@@ -103,11 +104,15 @@ export function PolicyDetailView({
 					<PolicyRateLimitsTab policy={policy} />
 				</TabsContent>
 				<TabsContent value="usage">
-					<ComingSoon
-						icon={Activity}
-						title="Usage"
-						body="Aggregate token, request, and cost counters for this policy. Pending the /admin/metrics endpoint."
-					/>
+					{policy.metadata.id ? (
+						<ResourceUsage scope="policy_id" id={policy.metadata.id} />
+					) : (
+						<ComingSoon
+							icon={Activity}
+							title="Usage"
+							body="Save this policy to see its traffic."
+						/>
+					)}
 				</TabsContent>
 				<TabsContent value="logs">
 					{policy.metadata.id ? (

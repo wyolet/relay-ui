@@ -246,3 +246,45 @@ export function useUsageTimeline(interval: UsageInterval) {
 		points: deriveTimeline(data.rows),
 	};
 }
+
+type UsageTimeseriesQuery = NonNullable<
+	operations["usage_timeseries"]["parameters"]["query"]
+>;
+
+export function resourceTimelineQueryOptions(
+	dimension: ResourceUsageDimension,
+	id: string,
+	interval: UsageInterval,
+) {
+	return queryOptions({
+		queryKey: ["usage", "resource-timeline", dimension, id, interval] as const,
+		queryFn: async (): Promise<UsageTimeSeriesResult> => {
+			const query: UsageTimeseriesQuery = { interval, group_by: dimension };
+			query[dimension] = [id];
+			const { data, error } = await apiClient.GET("/usage/timeseries", {
+				params: { query },
+			});
+			if (error) throw new ApiError(0, error.error);
+			return data;
+		},
+		staleTime: 15_000,
+		gcTime: 5 * 60_000,
+	});
+}
+
+/** Requests/errors over time scoped to one resource. */
+export function useResourceTimeline(
+	dimension: ResourceUsageDimension,
+	id: string,
+	interval: UsageInterval,
+) {
+	const { data } = useSuspenseQuery(
+		resourceTimelineQueryOptions(dimension, id, interval),
+	);
+	return {
+		from: data.from,
+		to: data.to,
+		interval,
+		points: deriveTimeline(data.rows),
+	};
+}

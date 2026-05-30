@@ -28,6 +28,7 @@ import {
 	ResourceUsageCards,
 	UsageCardsSkeleton,
 } from "@/shared/ResourceUsageCards";
+import { ResourceUsage } from "@/usage/ResourceUsage";
 
 export type HostDetailTab =
 	| "overview"
@@ -118,11 +119,15 @@ export function HostDetailView({
 					<ModelsTable models={refs.models} />
 				</TabsContent>
 				<TabsContent value="usage">
-					<ComingSoon
-						icon={Activity}
-						title="Usage"
-						body="Per-host request volume, latency percentiles, and throttle rate. Pending the /admin/metrics endpoint."
-					/>
+					{host.metadata.id ? (
+						<ResourceUsage scope="host_id" id={host.metadata.id} />
+					) : (
+						<ComingSoon
+							icon={Activity}
+							title="Usage"
+							body="Save this host to see its traffic."
+						/>
+					)}
 				</TabsContent>
 				<TabsContent value="logs">
 					{host.metadata.id ? (

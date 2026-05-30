@@ -59,6 +59,7 @@ import {
 	UsageCardsSkeleton,
 } from "@/shared/ResourceUsageCards";
 import { useAllowEdit } from "@/stores/permissions";
+import { ResourceUsage } from "@/usage/ResourceUsage";
 
 export type ModelDetailTab =
 	| "overview"
@@ -144,11 +145,15 @@ export function ModelDetailView({
 					<PricingTab model={model} />
 				</TabsContent>
 				<TabsContent value="usage">
-					<ComingSoon
-						icon={Activity}
-						title="Usage"
-						body="Per-model request volume, latency, and error rate. Pending the /admin/metrics endpoint."
-					/>
+					{model.metadata.id ? (
+						<ResourceUsage scope="model_id" id={model.metadata.id} />
+					) : (
+						<ComingSoon
+							icon={Activity}
+							title="Usage"
+							body="Save this model to see its traffic."
+						/>
+					)}
 				</TabsContent>
 				<TabsContent value="logs">
 					{model.metadata.id ? (

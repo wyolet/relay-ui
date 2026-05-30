@@ -197,6 +197,7 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 						: null,
 				skipDefaultLimits: value.skipDefaultLimits,
 				includeDeprecated: value.includeDeprecated,
+				payloadLoggingEnabled: value.payloadLoggingEnabled,
 			};
 			try {
 				if (isEdit && policy) {
