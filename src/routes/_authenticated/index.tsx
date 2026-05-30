@@ -7,6 +7,7 @@ import { modelsListQueryOptions } from "@/api/hooks/models";
 import { policiesListQueryOptions } from "@/api/hooks/policies";
 import { providersListQueryOptions } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
+import { ReleaseReadiness } from "@/dashboard/ReleaseReadiness";
 import { ResourceGraphSVG } from "@/graph/ResourceGraphSVG";
 
 export const Route = createFileRoute("/_authenticated/")({
@@ -55,23 +56,6 @@ function WelcomePanel() {
 	);
 }
 
-// --- metrics placeholder ---
-
-function MetricsPending() {
-	return (
-		<section>
-			<h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-				Drop Counters
-			</h2>
-			{/* TODO: implement when backend exposes GET /admin/metrics */}
-			<div className="rounded-lg border border-dashed border-input bg-neutral-50 dark:bg-neutral-800 px-6 py-4 text-sm text-muted-foreground">
-				Metrics endpoint pending — drop counters will appear here once the relay
-				backend exposes <code className="font-mono">/admin/metrics</code>.
-			</div>
-		</section>
-	);
-}
-
 // --- dashboard inner (uses suspense queries) ---
 
 function DashboardInner() {
@@ -90,10 +74,7 @@ function DashboardInner() {
 		<div className="space-y-8">
 			{catalogEmpty && <WelcomePanel />}
 
-			{/* Health tiles pending — /healthz is not yet on the control plane. */}
-
-			{/* Metrics placeholder — /control/metrics does not exist yet */}
-			<MetricsPending />
+			<ReleaseReadiness />
 
 			<ResourceGraphSVG />
 
