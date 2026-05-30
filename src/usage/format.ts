@@ -14,14 +14,6 @@ export function dimensionLabel(groupBy: UsageGroupBy): string {
 	return DIMENSION_LABELS[groupBy];
 }
 
-/** Pull the grouped dimension value out of a row's `group` map. */
-export function groupValue(
-	group: { [key: string]: string } | undefined,
-	groupBy: UsageGroupBy,
-): string {
-	return group?.[groupBy]?.trim() || "—";
-}
-
 export function fmtInt(n: number): string {
 	return n.toLocaleString();
 }

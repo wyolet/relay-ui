@@ -8,8 +8,6 @@ import type { components } from "@/api/types.gen";
 export type UsageSummaryResult = components["schemas"]["SummaryResult"];
 export type UsageSummaryRow = components["schemas"]["SummaryRow"];
 export type UsageTimeSeriesResult = components["schemas"]["TimeSeriesResult"];
-export type UsageTimeSeriesRow = components["schemas"]["TimeSeriesRow"];
-export type UsageTimeSeriesPoint = components["schemas"]["TimeSeriesPoint"];
 export type UsageDurationStats = components["schemas"]["DurationStats"];
 
 /**
