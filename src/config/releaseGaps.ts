@@ -37,8 +37,8 @@ export const RELEASE_GAPS: ReleaseGap[] = [
 		id: "delete-endpoints",
 		title: "Real delete for models / hosts / policies",
 		whatsFake:
-			"The model row 'Delete' action fires a fake success toast ('Delete model — coming soon'). Hosts/policies have no delete at all.",
-		fix: "No DELETE endpoint exists for these resources (delete?: never on every path). BE must add them; until then the action shouldn't pretend to work.",
+			"The model row 'Delete' action is disabled (no longer a fake toast); models/hosts/policies have no way to delete.",
+		fix: "No DELETE endpoint exists for these resources (delete?: never on every path). BE must add them, then wire a real delete mutation + re-enable the action.",
 		owner: "backend",
 		where: ["src/models/ModelsTable.tsx"],
 	},

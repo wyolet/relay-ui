@@ -38,6 +38,7 @@ import {
 	Zap,
 } from "lucide-react";
 import { Suspense } from "react";
+import type { Pricing } from "@/api/hooks/pricings";
 import type { Model, ModelCapabilities } from "@/api/types/model";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DiagnosticList } from "@/diagnostics/DiagnosticList";
@@ -45,6 +46,7 @@ import { useModelDiagnostics } from "@/diagnostics/useDiagnostics";
 import { HostCell } from "@/hosts/HostCell";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { ResourceLogs } from "@/logs/ResourceLogs";
+import { useModelPricing } from "@/models/useModelPricing";
 import {
 	type ModelHostRow,
 	type ModelPolicyRow,
@@ -139,7 +141,7 @@ export function ModelDetailView({
 					<LimitsTab model={model} />
 				</TabsContent>
 				<TabsContent value="pricing">
-					<PricingTab model={model} refs={refs} />
+					<PricingTab model={model} />
 				</TabsContent>
 				<TabsContent value="usage">
 					<ComingSoon
@@ -729,129 +731,112 @@ function fmtTokens(n: number): string {
 
 /* ---------------- Pricing (mock) ---------------- */
 
-function PricingTab({
-	model,
-	refs,
-}: {
-	model: Model;
-	refs: ReturnType<typeof useModelReferences>;
-}) {
-	const ctxHint = model.spec.contextWindowTotal
-		? ` · ${fmtTokens(model.spec.contextWindowTotal)} ctx`
-		: "";
+function PricingTab({ model }: { model: Model }) {
+	if (!model.metadata.id) {
+		return (
+			<ComingSoon
+				icon={DollarSign}
+				title="Pricing"
+				body="Save this model to attach and view its pricing."
+			/>
+		);
+	}
+	return (
+		<Suspense fallback={<PricingSkeleton />}>
+			<ModelPricing modelId={model.metadata.id} />
+		</Suspense>
+	);
+}
+
+function ModelPricing({ modelId }: { modelId: string }) {
+	const pricings = useModelPricing(modelId);
+
+	if (pricings.length === 0) {
+		return (
+			<div className="mt-4 rounded-md border border-dashed border-border bg-muted/30 px-6 py-10 text-center">
+				<DollarSign
+					className="mx-auto w-6 h-6 text-muted-foreground/60 mb-2"
+					aria-hidden
+				/>
+				<div className="text-sm font-medium text-foreground">
+					No pricing configured
+				</div>
+				<div className="mt-1 text-xs text-muted-foreground max-w-md mx-auto">
+					This model has no pricing record. Add one targeting it to see
+					per-meter rates here.
+				</div>
+			</div>
+		);
+	}
 
 	return (
 		<div className="mt-2 flex flex-col gap-4">
-			<div className="flex items-baseline justify-between gap-2">
-				<span className="text-[10px] uppercase tracking-wide text-muted-foreground">
-					Per 1M tokens · {refs.providerSlug || "—"}
-					{ctxHint}
-				</span>
-				<span className="text-[10px] uppercase tracking-wide text-amber-700 dark:text-amber-300">
-					mock data
-				</span>
-			</div>
-
-			<div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-				<PriceCard label="Input" amount={MOCK_PRICING.input} />
-				<PriceCard label="Output" amount={MOCK_PRICING.output} />
-				<PriceCard
-					label="Cache read"
-					amount={MOCK_PRICING.cacheRead}
-					discount={discount(MOCK_PRICING.cacheRead, MOCK_PRICING.input)}
-				/>
-				<PriceCard
-					label="Cache write"
-					amount={MOCK_PRICING.cacheWrite}
-					discount={discount(MOCK_PRICING.cacheWrite, MOCK_PRICING.input)}
-				/>
-			</div>
-
-			<Card title="Worked examples" icon={DollarSign}>
-				<dl className="divide-y divide-border">
-					<Row label="1k chat msg · ~700 in / 300 out">
-						<Money
-							v={
-								(700 * MOCK_PRICING.input + 300 * MOCK_PRICING.output) /
-								1_000_000
-							}
-						/>
-					</Row>
-					<Row label="50-page PDF Q&A · ~25k in / 1k out">
-						<Money
-							v={
-								(25_000 * MOCK_PRICING.input + 1_000 * MOCK_PRICING.output) /
-								1_000_000
-							}
-						/>
-					</Row>
-					<Row label="1M-token agent run · 800k in / 200k out">
-						<Money
-							v={
-								(800_000 * MOCK_PRICING.input + 200_000 * MOCK_PRICING.output) /
-								1_000_000
-							}
-						/>
-					</Row>
-				</dl>
-			</Card>
-
-			<p className="text-[11px] text-muted-foreground">
-				Pricing is illustrative. Real per-meter rates land once the pricing
-				schema lands on the backend.
-			</p>
+			{pricings.map((p) => (
+				<PricingCard key={p.metadata.id ?? p.metadata.name} pricing={p} />
+			))}
 		</div>
 	);
 }
 
-const MOCK_PRICING = {
-	input: 2.5,
-	output: 10,
-	cacheRead: 0.25,
-	cacheWrite: 3.13,
-};
-
-function discount(rate: number, base: number): number {
-	return 1 - rate / base;
-}
-
-function PriceCard({
-	label,
-	amount,
-	discount,
-}: {
-	label: string;
-	amount: number;
-	discount?: number;
-}) {
+function PricingCard({ pricing }: { pricing: Pricing }) {
+	const rates = pricing.spec.rates ?? [];
+	const disabled = pricing.spec.enabled === false;
 	return (
-		<div className="rounded-md border border-border bg-card px-3 py-2">
-			<div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-				{label}
-			</div>
-			<div className="mt-0.5 text-lg font-semibold text-foreground tabular-nums font-mono">
-				${amount.toFixed(2)}
-			</div>
-			<div className="text-[11px] text-muted-foreground">
-				per 1M tokens
-				{discount !== undefined && discount > 0 && (
-					<>
-						{" · "}
-						<span className="text-emerald-700 dark:text-emerald-400">
-							−{Math.round(discount * 100)}%
-						</span>
-					</>
+		<Card title={displayLabel(pricing.metadata)} icon={DollarSign}>
+			<div className="mb-2 flex items-center gap-2 text-[11px] text-muted-foreground">
+				<span className="font-mono uppercase">{pricing.spec.currency}</span>
+				{disabled && (
+					<span className="rounded bg-muted px-1.5 py-0.5 text-muted-foreground">
+						disabled
+					</span>
 				)}
 			</div>
-		</div>
+			{rates.length === 0 ? (
+				<p className="text-xs text-muted-foreground">No rates defined.</p>
+			) : (
+				<table className="w-full text-sm">
+					<thead className="text-[10px] uppercase tracking-wide text-muted-foreground">
+						<tr>
+							<th className="py-1 text-left font-medium">Meter</th>
+							<th className="py-1 text-left font-medium">Tier</th>
+							<th className="py-1 text-right font-medium">Rate</th>
+							<th className="py-1 text-left font-medium pl-3">Unit</th>
+						</tr>
+					</thead>
+					<tbody>
+						{rates.map((r) => (
+							<tr
+								key={`${r.meter}-${r.unit}-${r.aboveTokens ?? 0}`}
+								className="border-t border-border"
+							>
+								<td className="py-1.5 text-foreground">{r.meter}</td>
+								<td className="py-1.5 text-muted-foreground">
+									{r.aboveTokens ? `≥ ${fmtTokens(r.aboveTokens)}` : "base"}
+								</td>
+								<td className="py-1.5 text-right font-mono tabular-nums text-foreground">
+									{fmtRate(r.amount, pricing.spec.currency)}
+								</td>
+								<td className="py-1.5 pl-3 text-muted-foreground">{r.unit}</td>
+							</tr>
+						))}
+					</tbody>
+				</table>
+			)}
+		</Card>
 	);
 }
 
-function Money({ v }: { v: number }) {
+function fmtRate(amount: number, currency: string): string {
+	const prefix = currency.toUpperCase() === "USD" ? "$" : "";
+	const digits = amount !== 0 && Math.abs(amount) < 1 ? 4 : 2;
+	return `${prefix}${amount.toFixed(digits)}`;
+}
+
+function PricingSkeleton() {
 	return (
-		<span className="font-mono tabular-nums text-foreground">
-			${v.toFixed(v < 1 ? 4 : 2)}
-		</span>
+		<div className="mt-4 rounded-md border border-border bg-card px-4 py-8 text-center text-sm text-muted-foreground">
+			Loading pricing…
+		</div>
 	);
 }
 

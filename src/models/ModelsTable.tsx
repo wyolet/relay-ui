@@ -178,7 +178,8 @@ function RowMenu({ name }: { name: string }) {
 				</DropdownMenuItem>
 				<DropdownMenuItem
 					variant="destructive"
-					onClick={() => toast("success", "Delete model — coming soon.")}
+					disabled
+					title="Deleting models isn't supported by the relay yet"
 				>
 					Delete
 				</DropdownMenuItem>
