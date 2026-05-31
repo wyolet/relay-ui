@@ -1,13 +1,23 @@
 import { queryOptions, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "./client";
 
+interface Whoami {
+	authenticated: boolean;
+	userId?: string;
+	username?: string;
+}
+
 /**
- * GET /auth/whoami — returns { authenticated: boolean } on 200.
+ * GET /auth/whoami — returns { user_id, username } on 200.
  * Any non-OK response means unauthenticated.
  */
-async function fetchWhoami(): Promise<{ authenticated: boolean }> {
+async function fetchWhoami(): Promise<Whoami> {
 	const { data } = await apiClient.GET("/auth/whoami");
-	return { authenticated: Boolean(data?.user_id) };
+	return {
+		authenticated: Boolean(data?.user_id),
+		userId: data?.user_id,
+		username: data?.username,
+	};
 }
 
 export const whoamiQueryOptions = queryOptions({
@@ -23,6 +33,8 @@ export function useAuth() {
 
 	const { data } = useQuery(whoamiQueryOptions);
 	const authenticated = data?.authenticated ?? false;
+	const username = data?.username;
+	const userId = data?.userId;
 
 	async function login(username: string, password: string): Promise<void> {
 		const { error } = await apiClient.POST("/auth/login", {
@@ -44,7 +56,7 @@ export function useAuth() {
 		});
 	}
 
-	return { authenticated, login, logout };
+	return { authenticated, username, userId, login, logout };
 }
 
 export class AuthError extends Error {
