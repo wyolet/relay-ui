@@ -27,6 +27,7 @@ import { useRelayKeyDiagnostics } from "@/diagnostics/useDiagnostics";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { useToggleRelayKeyEnabled } from "@/relay-keys/useToggleRelayKeyEnabled";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
+import { PageLoader } from "@/shared/Spinner";
 import { toast } from "@/shared/Toast";
 
 export const Route = createFileRoute("/_authenticated/relay-keys/$name")({
@@ -355,9 +356,7 @@ function StatusBadge({ enabled }: { enabled: boolean }) {
 
 function RelayKeyDetailPage() {
 	return (
-		<Suspense
-			fallback={<div className="text-muted-foreground text-sm">Loading…</div>}
-		>
+		<Suspense fallback={<PageLoader />}>
 			<RelayKeyDetailInner />
 		</Suspense>
 	);

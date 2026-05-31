@@ -16,6 +16,7 @@ import { HostLogo } from "@/hosts/HostLogo";
 import { displayLabel } from "@/lib/displayLabel";
 import type { FieldDef, FormValues } from "@/shared/ResourceForm";
 import { ResourceForm } from "@/shared/ResourceForm";
+import { PageLoader } from "@/shared/Spinner";
 import { toast } from "@/shared/Toast";
 
 export const Route = createFileRoute("/_authenticated/models/new")({
@@ -162,9 +163,7 @@ function NewModelInner() {
 
 function NewModelPage() {
 	return (
-		<Suspense
-			fallback={<div className="text-muted-foreground text-sm">Loading…</div>}
-		>
+		<Suspense fallback={<PageLoader />}>
 			<NewModelInner />
 		</Suspense>
 	);

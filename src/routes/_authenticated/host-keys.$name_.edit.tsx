@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { hostKeyDetailQueryOptions, useHostKey } from "@/api/hooks/hostkeys";
 import { HostKeyForm } from "@/host-keys/HostKeyForm";
 import { displayLabel } from "@/lib/displayLabel";
+import { PageLoader } from "@/shared/Spinner";
 
 export const Route = createFileRoute("/_authenticated/host-keys/$name_/edit")({
 	loader: ({ context, params }) =>
@@ -53,9 +54,7 @@ function EditHostKeyInner() {
 
 function EditHostKeyPage() {
 	return (
-		<Suspense
-			fallback={<div className="text-muted-foreground text-sm">Loading…</div>}
-		>
+		<Suspense fallback={<PageLoader />}>
 			<EditHostKeyInner />
 		</Suspense>
 	);

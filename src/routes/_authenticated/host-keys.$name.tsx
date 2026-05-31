@@ -29,6 +29,7 @@ import {
 } from "@/host-keys/useHostKeyDetail";
 import { HostLogo } from "@/hosts/HostLogo";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
+import { PageLoader } from "@/shared/Spinner";
 
 export const Route = createFileRoute("/_authenticated/host-keys/$name")({
 	loader: ({ context, params }) =>
@@ -451,9 +452,7 @@ function KindBadge({ stored }: { stored: boolean }) {
 
 function HostKeyDetailPage() {
 	return (
-		<Suspense
-			fallback={<div className="text-muted-foreground text-sm">Loading…</div>}
-		>
+		<Suspense fallback={<PageLoader />}>
 			<HostKeyDetailInner />
 		</Suspense>
 	);

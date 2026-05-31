@@ -45,6 +45,7 @@ import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { confirm } from "@/shared/ConfirmDialog";
 import { FilterDropdown } from "@/shared/FilterDropdown";
 import { SearchBox } from "@/shared/SearchBox";
+import { PageLoader } from "@/shared/Spinner";
 import { Switch } from "@/shared/Switch";
 import { TableToolbar } from "@/shared/TableToolbar";
 import { toast } from "@/shared/Toast";
@@ -682,9 +683,7 @@ function PoliciesPage() {
 	}
 
 	return (
-		<Suspense
-			fallback={<div className="text-muted-foreground text-sm">Loading…</div>}
-		>
+		<Suspense fallback={<PageLoader />}>
 			<div>
 				<div className="mb-4 flex items-start gap-2">
 					<KeyRound className="hidden" aria-hidden="true" />

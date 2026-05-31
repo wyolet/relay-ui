@@ -9,6 +9,7 @@ import {
 	usageTimeseriesQueryOptions,
 	useUsageOverview,
 } from "@/api/hooks/usage";
+import { PageLoader } from "@/shared/Spinner";
 import { dimensionLabel } from "@/usage/format";
 import { UsageStatCards } from "@/usage/UsageStatCards";
 import { UsageTimelineChart } from "@/usage/UsageTimelineChart";
@@ -123,8 +124,8 @@ function SectionHeader({
 
 function Loading() {
 	return (
-		<div className="rounded-lg border border-border bg-card py-8 text-center text-sm text-muted-foreground">
-			Loading…
+		<div className="rounded-lg border border-border bg-card">
+			<PageLoader />
 		</div>
 	);
 }

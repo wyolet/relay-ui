@@ -9,6 +9,7 @@ import {
 } from "@/api/hooks/settings";
 import { ApiError } from "@/api/types/errors";
 import { Switch } from "@/components/ui/switch";
+import { PageLoader } from "@/shared/Spinner";
 import { toast } from "@/shared/Toast";
 
 export const Route = createFileRoute(
@@ -164,9 +165,7 @@ function Section({ icon: Icon, title, description, children }: SectionProps) {
 
 function PayloadLoggingSettingsPage() {
 	return (
-		<Suspense
-			fallback={<div className="text-muted-foreground text-sm">Loading…</div>}
-		>
+		<Suspense fallback={<PageLoader />}>
 			<PayloadLoggingSettingsInner />
 		</Suspense>
 	);

@@ -16,6 +16,7 @@ import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
 import { relayKeysListQueryOptions } from "@/api/hooks/relayKeys";
 import { ApiError } from "@/api/types/errors";
 import { type HostDetailTab, HostDetailView } from "@/hosts/HostDetailView";
+import { PageLoader } from "@/shared/Spinner";
 import { toast } from "@/shared/Toast";
 
 const searchSchema = z.object({
@@ -98,9 +99,7 @@ function HostDetailInner() {
 
 function HostDetailPage() {
 	return (
-		<Suspense
-			fallback={<div className="text-muted-foreground text-sm">Loading…</div>}
-		>
+		<Suspense fallback={<PageLoader />}>
 			<HostDetailInner />
 		</Suspense>
 	);

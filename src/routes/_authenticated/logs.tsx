@@ -7,6 +7,7 @@ import type { FilterDef } from "@/filters/types";
 import { LogDetailPanel } from "@/logs/LogDetailPanel";
 import { LogsTable } from "@/logs/LogsTable";
 import { SLOW_MS } from "@/logs/predicates";
+import { PageLoader } from "@/shared/Spinner";
 
 const LOG_FILTERS = [
 	{
@@ -79,8 +80,8 @@ function LogsPage() {
 
 function Loading() {
 	return (
-		<div className="rounded-lg border border-border bg-card py-8 text-center text-sm text-muted-foreground">
-			Loading…
+		<div className="rounded-lg border border-border bg-card">
+			<PageLoader />
 		</div>
 	);
 }

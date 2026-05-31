@@ -9,6 +9,7 @@ import { providersListQueryOptions } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
 import { relayKeysListQueryOptions } from "@/api/hooks/relayKeys";
 import { PolicyForm } from "@/policies/PolicyForm";
+import { PageLoader } from "@/shared/Spinner";
 
 export const Route = createFileRoute("/_authenticated/policies/new")({
 	loader: ({ context }) =>
@@ -59,9 +60,7 @@ function NewPolicyInner() {
 
 function NewPolicyPage() {
 	return (
-		<Suspense
-			fallback={<div className="text-muted-foreground text-sm">Loading…</div>}
-		>
+		<Suspense fallback={<PageLoader />}>
 			<NewPolicyInner />
 		</Suspense>
 	);

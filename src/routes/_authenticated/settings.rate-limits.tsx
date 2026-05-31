@@ -1,3 +1,4 @@
+import { PageLoader } from "@/shared/Spinner";
 /**
  * System rate limits — flat form for the four backend-owned RLs.
  * Hidden from /policies and PolicyForm pickers (see lib/systemRateLimits).
@@ -719,9 +720,7 @@ function InferenceRuleRow({
 
 function SystemRateLimitsPage() {
 	return (
-		<Suspense
-			fallback={<div className="text-muted-foreground text-sm">Loading…</div>}
-		>
+		<Suspense fallback={<PageLoader />}>
 			<SystemRateLimitsInner />
 		</Suspense>
 	);

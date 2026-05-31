@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ChevronLeft } from "lucide-react";
 import { Suspense } from "react";
 import { HostKeyForm } from "@/host-keys/HostKeyForm";
+import { PageLoader } from "@/shared/Spinner";
 
 export const Route = createFileRoute("/_authenticated/host-keys/new")({
 	component: NewHostKeyPage,
@@ -45,9 +46,7 @@ function NewHostKeyInner() {
 
 function NewHostKeyPage() {
 	return (
-		<Suspense
-			fallback={<div className="text-muted-foreground text-sm">Loading…</div>}
-		>
+		<Suspense fallback={<PageLoader />}>
 			<NewHostKeyInner />
 		</Suspense>
 	);

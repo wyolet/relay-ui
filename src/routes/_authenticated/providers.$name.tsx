@@ -19,6 +19,7 @@ import {
 	type ProviderDetailTab,
 	ProviderDetailView,
 } from "@/providers/ProviderDetailView";
+import { PageLoader } from "@/shared/Spinner";
 import { toast } from "@/shared/Toast";
 
 const searchSchema = z.object({
@@ -92,9 +93,7 @@ function ProviderDetailInner() {
 
 function ProviderDetailPage() {
 	return (
-		<Suspense
-			fallback={<div className="text-muted-foreground text-sm">Loading…</div>}
-		>
+		<Suspense fallback={<PageLoader />}>
 			<ProviderDetailInner />
 		</Suspense>
 	);

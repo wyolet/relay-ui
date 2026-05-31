@@ -10,6 +10,7 @@ import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
 import { DashboardTraffic } from "@/dashboard/DashboardTraffic";
 import { ReleaseReadiness } from "@/dashboard/ReleaseReadiness";
 import { ResourceGraphSVG } from "@/graph/ResourceGraphSVG";
+import { PageLoader } from "@/shared/Spinner";
 
 export const Route = createFileRoute("/_authenticated/")({
 	component: DashboardPage,
@@ -132,9 +133,7 @@ function DashboardPage() {
 	return (
 		<div>
 			<h1 className="text-2xl font-bold text-foreground mb-6">Dashboard</h1>
-			<Suspense
-				fallback={<div className="text-muted-foreground text-sm">Loading…</div>}
-			>
+			<Suspense fallback={<PageLoader />}>
 				<DashboardInner />
 			</Suspense>
 		</div>

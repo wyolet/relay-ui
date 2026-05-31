@@ -4,6 +4,7 @@ import { Suspense, useState } from "react";
 import { policiesListQueryOptions } from "@/api/hooks/policies";
 import { Button } from "@/components/ui/button";
 import { RelayKeyForm } from "@/relay-keys/RelayKeyForm";
+import { PageLoader } from "@/shared/Spinner";
 import { toast } from "@/shared/Toast";
 
 export const Route = createFileRoute("/_authenticated/relay-keys/new")({
@@ -126,9 +127,7 @@ function CopyInline({ text }: { text: string }) {
 
 function NewRelayKeyPage() {
 	return (
-		<Suspense
-			fallback={<div className="text-muted-foreground text-sm">Loading…</div>}
-		>
+		<Suspense fallback={<PageLoader />}>
 			<NewRelayKeyInner />
 		</Suspense>
 	);

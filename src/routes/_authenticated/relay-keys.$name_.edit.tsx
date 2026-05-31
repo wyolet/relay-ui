@@ -5,6 +5,7 @@ import { policiesListQueryOptions } from "@/api/hooks/policies";
 import { relayKeyDetailQueryOptions, useRelayKey } from "@/api/hooks/relayKeys";
 import { displayLabel } from "@/lib/displayLabel";
 import { RelayKeyForm } from "@/relay-keys/RelayKeyForm";
+import { PageLoader } from "@/shared/Spinner";
 
 export const Route = createFileRoute("/_authenticated/relay-keys/$name_/edit")({
 	loader: ({ context, params }) =>
@@ -59,9 +60,7 @@ function EditRelayKeyInner() {
 
 function EditRelayKeyPage() {
 	return (
-		<Suspense
-			fallback={<div className="text-muted-foreground text-sm">Loading…</div>}
-		>
+		<Suspense fallback={<PageLoader />}>
 			<EditRelayKeyInner />
 		</Suspense>
 	);

@@ -16,6 +16,7 @@ import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
 import { relayKeysListQueryOptions } from "@/api/hooks/relayKeys";
 import { ApiError } from "@/api/types/errors";
 import { type ModelDetailTab, ModelDetailView } from "@/models/ModelDetailView";
+import { PageLoader } from "@/shared/Spinner";
 import { toast } from "@/shared/Toast";
 
 const searchSchema = z.object({
@@ -96,9 +97,7 @@ function ModelDetailInner() {
 
 function ModelDetailPage() {
 	return (
-		<Suspense
-			fallback={<div className="text-muted-foreground text-sm">Loading…</div>}
-		>
+		<Suspense fallback={<PageLoader />}>
 			<ModelDetailInner />
 		</Suspense>
 	);

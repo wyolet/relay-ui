@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
 import { proxyModeQueryOptions } from "@/api/hooks/settings";
 import { RateLimitForm } from "@/rate-limits/RateLimitForm";
+import { PageLoader } from "@/shared/Spinner";
 
 export const Route = createFileRoute(
 	"/_authenticated/policies/rate-limits/new",
@@ -45,9 +46,7 @@ function NewRateLimitInner() {
 
 function NewRateLimitPage() {
 	return (
-		<Suspense
-			fallback={<div className="text-muted-foreground text-sm">Loading…</div>}
-		>
+		<Suspense fallback={<PageLoader />}>
 			<NewRateLimitInner />
 		</Suspense>
 	);

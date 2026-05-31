@@ -10,6 +10,7 @@ import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
 import { relayKeysListQueryOptions } from "@/api/hooks/relayKeys";
 import { displayLabel } from "@/lib/displayLabel";
 import { PolicyForm } from "@/policies/PolicyForm";
+import { PageLoader } from "@/shared/Spinner";
 import { useAllowEdit } from "@/stores/permissions";
 
 export const Route = createFileRoute("/_authenticated/policies/$name_/edit")({
@@ -88,9 +89,7 @@ function EditPolicyInner() {
 
 function EditPolicyPage() {
 	return (
-		<Suspense
-			fallback={<div className="text-muted-foreground text-sm">Loading…</div>}
-		>
+		<Suspense fallback={<PageLoader />}>
 			<EditPolicyInner />
 		</Suspense>
 	);

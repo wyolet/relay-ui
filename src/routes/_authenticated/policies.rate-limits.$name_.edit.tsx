@@ -17,6 +17,7 @@ import { DiagnosticList } from "@/diagnostics/DiagnosticList";
 import { useRateLimitDiagnostics } from "@/diagnostics/useDiagnostics";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { RateLimitForm } from "@/rate-limits/RateLimitForm";
+import { PageLoader } from "@/shared/Spinner";
 
 export const Route = createFileRoute(
 	"/_authenticated/policies/rate-limits/$name_/edit",
@@ -82,9 +83,7 @@ function RateLimitEditInner() {
 
 function RateLimitEditPage() {
 	return (
-		<Suspense
-			fallback={<div className="text-muted-foreground text-sm">Loading…</div>}
-		>
+		<Suspense fallback={<PageLoader />}>
 			<RateLimitEditInner />
 		</Suspense>
 	);

@@ -19,6 +19,7 @@ import { ApiError } from "@/api/types/errors";
 import { displayLabel } from "@/lib/displayLabel";
 import { RateLimitDetailView } from "@/rate-limits/RateLimitDetailView";
 import { confirm } from "@/shared/ConfirmDialog";
+import { PageLoader } from "@/shared/Spinner";
 import { toast } from "@/shared/Toast";
 
 export const Route = createFileRoute(
@@ -114,9 +115,7 @@ function RateLimitDetailInner() {
 
 function RateLimitDetailPage() {
 	return (
-		<Suspense
-			fallback={<div className="text-muted-foreground text-sm">Loading…</div>}
-		>
+		<Suspense fallback={<PageLoader />}>
 			<RateLimitDetailInner />
 		</Suspense>
 	);

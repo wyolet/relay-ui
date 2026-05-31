@@ -31,6 +31,7 @@ import {
 	ModelsTable,
 } from "@/models/ModelsTable";
 import { SearchBox } from "@/shared/SearchBox";
+import { PageLoader } from "@/shared/Spinner";
 import { TableToolbar } from "@/shared/TableToolbar";
 
 type Tab = "models" | "hosts";
@@ -272,9 +273,7 @@ function ModelsPage() {
 				</TabsList>
 			</Tabs>
 
-			<Suspense
-				fallback={<div className="text-muted-foreground text-sm">Loading…</div>}
-			>
+			<Suspense fallback={<PageLoader />}>
 				{search.tab === "models" ? <ModelsList /> : <HostsList />}
 			</Suspense>
 		</div>
