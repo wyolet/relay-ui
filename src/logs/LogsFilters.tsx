@@ -1,4 +1,4 @@
-import { Check, ChevronDown, ListFilter, X } from "lucide-react";
+import { Check, ChevronDown, ListFilter, Search, X } from "lucide-react";
 import { useState } from "react";
 import {
 	Popover,
@@ -20,7 +20,7 @@ import {
 
 /** Shared trigger style for every filter control so they line up identically. */
 const TRIGGER =
-	"inline-flex h-8 items-center gap-1.5 rounded-md border border-border px-2.5 text-xs text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+	"inline-flex h-9 items-center gap-1.5 rounded-md border border-border bg-card px-2.5 text-xs text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
 export interface LogsFilterValues {
 	q: string;
@@ -35,10 +35,16 @@ export interface LogsFilterValues {
 
 type DimensionOptions = Record<LogDimensionKey, FilterOption[]>;
 
+interface ActiveChip {
+	key: string;
+	label: string;
+	onRemove: () => void;
+}
+
 /**
- * Logs filter bar: high-frequency Window/Status inline; everything else
- * (errors, slow, model/host/policy multi-selects) in a flat row that expands
- * under the bar from the Filters button. Active filters surface as chips below.
+ * Explorer filter bar: a query box holding active facet chips + a text
+ * refinement, with Window and a Filters panel on the right. Facets are added by
+ * clicking values in the table or via the Filters panel; both surface as chips.
  */
 export function LogsFilters({
 	values,
@@ -53,13 +59,6 @@ export function LogsFilters({
 }) {
 	const [open, setOpen] = useState(false);
 
-	const advancedCount =
-		(values.errors ? 1 : 0) +
-		(values.slow ? 1 : 0) +
-		values.model_id.length +
-		values.host_id.length +
-		values.policy_id.length;
-
 	const toggleDim = (key: LogDimensionKey, value: string) => {
 		const cur = values[key];
 		const next = cur.includes(value)
@@ -70,8 +69,40 @@ export function LogsFilters({
 		else onChange({ policy_id: next });
 	};
 
-	const resetAdvanced = () =>
+	const chips: ActiveChip[] = [];
+	if (values.status_class)
+		chips.push({
+			key: "status",
+			label: `status: ${values.status_class}`,
+			onRemove: () => onChange({ status_class: "" }),
+		});
+	if (values.errors)
+		chips.push({
+			key: "errors",
+			label: "errors",
+			onRemove: () => onChange({ errors: false }),
+		});
+	if (values.slow)
+		chips.push({
+			key: "slow",
+			label: slowLabel,
+			onRemove: () => onChange({ slow: false }),
+		});
+	for (const dim of LOG_DIMENSIONS) {
+		for (const v of values[dim.key]) {
+			chips.push({
+				key: `${dim.key}:${v}`,
+				label: `${dim.chip}: ${labelFor(options[dim.key], v)}`,
+				onRemove: () => toggleDim(dim.key, v),
+			});
+		}
+	}
+
+	const advancedCount = chips.length;
+
+	const resetAll = () =>
 		onChange({
+			status_class: "",
 			errors: false,
 			slow: false,
 			model_id: [],
@@ -81,50 +112,59 @@ export function LogsFilters({
 
 	return (
 		<div className="flex flex-col gap-2">
-			<div className="flex flex-wrap items-center justify-between gap-3">
-				<SearchBox
-					value={values.q}
-					onChange={(v) => onChange({ q: v })}
-					placeholder="filter loaded rows by model, source, id"
-					aria-label="Search"
+			<div className="flex flex-wrap items-center gap-2">
+				<div className="flex h-9 min-w-0 flex-1 flex-wrap items-center gap-1.5 rounded-md border border-border bg-card px-2.5">
+					<Search className="size-4 shrink-0 text-muted-foreground" />
+					{chips.map((c) => (
+						<Chip key={c.key} label={c.label} onRemove={c.onRemove} />
+					))}
+					<input
+						value={values.q}
+						onChange={(e) => onChange({ q: e.target.value })}
+						placeholder={
+							chips.length
+								? "filter loaded rows…"
+								: "filter loaded rows by model, source, id"
+						}
+						aria-label="Search loaded rows"
+						className="h-7 min-w-24 flex-1 bg-transparent text-xs text-foreground outline-none placeholder:text-muted-foreground"
+					/>
+				</div>
+
+				<FilterDropdown
+					label="Window"
+					value={values.since}
+					options={WINDOW_OPTIONS}
+					onChange={(v) => onChange({ since: v })}
 				/>
 
-				<div className="flex flex-wrap items-center gap-2">
-					<FilterDropdown
-						label="Window"
-						value={values.since}
-						options={WINDOW_OPTIONS}
-						onChange={(v) => onChange({ since: v })}
+				<button
+					type="button"
+					onClick={() => setOpen((o) => !o)}
+					aria-expanded={open}
+					className={cn(TRIGGER, open && "bg-muted")}
+				>
+					<ListFilter className="size-3.5" aria-hidden="true" />
+					Filters
+					{advancedCount > 0 && <CountBadge n={advancedCount} />}
+					<ChevronDown
+						className={cn(
+							"size-3.5 text-muted-foreground transition-transform",
+							open && "rotate-180",
+						)}
+						aria-hidden="true"
 					/>
+				</button>
+			</div>
+
+			{open && (
+				<div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card p-2.5">
 					<FilterDropdown
 						label="Status"
 						value={values.status_class}
 						options={STATUS_OPTIONS}
 						onChange={(v) => onChange({ status_class: v })}
 					/>
-
-					<button
-						type="button"
-						onClick={() => setOpen((o) => !o)}
-						aria-expanded={open}
-						className={cn(TRIGGER, open && "bg-muted")}
-					>
-						<ListFilter className="size-3.5" aria-hidden="true" />
-						Filters
-						{advancedCount > 0 && <CountBadge n={advancedCount} />}
-						<ChevronDown
-							className={cn(
-								"size-3.5 text-muted-foreground transition-transform",
-								open && "rotate-180",
-							)}
-							aria-hidden="true"
-						/>
-					</button>
-				</div>
-			</div>
-
-			{open && (
-				<div className="flex flex-wrap items-center gap-2">
 					<ToggleButton
 						label="Errors"
 						pressed={values.errors}
@@ -147,34 +187,11 @@ export function LogsFilters({
 					{advancedCount > 0 && (
 						<button
 							type="button"
-							onClick={resetAdvanced}
+							onClick={resetAll}
 							className="ml-auto text-xs text-muted-foreground hover:text-foreground"
 						>
 							Reset
 						</button>
-					)}
-				</div>
-			)}
-
-			{advancedCount > 0 && (
-				<div className="flex flex-wrap items-center gap-1.5">
-					{values.errors && (
-						<Chip label="Errors" onRemove={() => onChange({ errors: false })} />
-					)}
-					{values.slow && (
-						<Chip
-							label={slowLabel}
-							onRemove={() => onChange({ slow: false })}
-						/>
-					)}
-					{LOG_DIMENSIONS.flatMap((dim) =>
-						values[dim.key].map((v) => (
-							<Chip
-								key={`${dim.key}:${v}`}
-								label={`${dim.chip}: ${labelFor(options[dim.key], v)}`}
-								onRemove={() => toggleDim(dim.key, v)}
-							/>
-						)),
 					)}
 				</div>
 			)}
@@ -206,7 +223,8 @@ function ToggleButton({
 			onClick={onToggle}
 			className={cn(
 				TRIGGER,
-				pressed ? "border-primary/60 bg-primary/10 text-foreground" : "bg-card",
+				"h-8",
+				pressed && "border-primary/60 bg-primary/10 text-foreground",
 			)}
 		>
 			{label}
@@ -220,7 +238,7 @@ function labelFor(options: FilterOption[], value: string): string {
 
 function Chip({ label, onRemove }: { label: string; onRemove: () => void }) {
 	return (
-		<span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/50 py-0.5 pl-2.5 pr-1 text-[11px] text-foreground">
+		<span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/50 py-0.5 pl-2 pr-0.5 text-[11px] text-foreground">
 			<span className="max-w-44 truncate">{label}</span>
 			<button
 				type="button"
@@ -247,9 +265,7 @@ function MultiSelectPopover({
 }) {
 	return (
 		<Popover>
-			<PopoverTrigger
-				className={cn(TRIGGER, "bg-card data-[popup-open]:bg-muted")}
-			>
+			<PopoverTrigger className={cn(TRIGGER, "h-8 data-[popup-open]:bg-muted")}>
 				{label}
 				{selected.length > 0 && <CountBadge n={selected.length} />}
 				<ChevronDown

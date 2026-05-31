@@ -170,7 +170,7 @@ function LogRow({
 					</span>
 				</Filterable>
 			</td>
-			<td className="max-w-0 px-3 py-2">
+			<td className="px-3 py-2">
 				<Filterable
 					value={event.model_id ?? ""}
 					onFilter={
@@ -179,7 +179,7 @@ function LogRow({
 							: undefined
 					}
 				>
-					<span className="block truncate font-mono text-foreground">
+					<span className="block max-w-[14rem] truncate font-mono text-foreground">
 						{modelLabel}
 					</span>
 				</Filterable>
@@ -194,7 +194,9 @@ function LogRow({
 								: undefined
 						}
 					>
-						<span className="font-mono text-muted-foreground">{hostLabel}</span>
+						<span className="block max-w-[10rem] truncate font-mono text-muted-foreground">
+							{hostLabel}
+						</span>
 					</Filterable>
 				</td>
 			)}
