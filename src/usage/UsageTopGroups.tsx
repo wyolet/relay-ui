@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { BarChart3 } from "lucide-react";
 import {
 	type UsageGroupBy,
@@ -8,8 +9,17 @@ import { dimensionLabel, fmtCompact, fmtMs, fmtPct } from "./format";
 import { UsageEmpty } from "./UsageEmpty";
 import { useGroupLabeler } from "./useGroupLabeler";
 
-/** Ranked leaderboard for one dimension, with inline volume bars. */
-export function UsageTopGroups({ groupBy }: { groupBy: UsageGroupBy }) {
+/**
+ * Ranked leaderboard for one dimension, with inline volume bars. Pass `limit`
+ * to show only the top N rows with a "view all" footer (dashboard compact mode).
+ */
+export function UsageTopGroups({
+	groupBy,
+	limit,
+}: {
+	groupBy: UsageGroupBy;
+	limit?: number;
+}) {
 	const { groups } = useUsageOverview(groupBy);
 	const labelFor = useGroupLabeler(groupBy);
 
@@ -25,6 +35,9 @@ export function UsageTopGroups({ groupBy }: { groupBy: UsageGroupBy }) {
 		);
 	}
 
+	const shown = limit ? groups.slice(0, limit) : groups;
+	const hidden = groups.length - shown.length;
+
 	return (
 		<div className="rounded-lg border border-border bg-card">
 			<div className="flex items-center justify-between border-b border-border px-4 py-2.5">
@@ -36,10 +49,19 @@ export function UsageTopGroups({ groupBy }: { groupBy: UsageGroupBy }) {
 				</span>
 			</div>
 			<ul className="divide-y divide-border">
-				{groups.map((g) => (
+				{shown.map((g) => (
 					<GroupRow key={g.key} stat={g} label={labelFor(g.key)} />
 				))}
 			</ul>
+			{hidden > 0 && (
+				<Link
+					to="/usage"
+					search={{ group_by: groupBy }}
+					className="flex items-center justify-center border-t border-border px-4 py-2 text-[11px] text-muted-foreground hover:text-foreground"
+				>
+					View all {groups.length} →
+				</Link>
+			)}
 		</div>
 	);
 }
