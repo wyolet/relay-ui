@@ -1,13 +1,18 @@
 import { Check, ChevronDown, ListFilter, Search, X } from "lucide-react";
 import { useState } from "react";
 import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
 import type { FilterOption } from "@/filters/types";
 import { cn } from "@/lib/utils";
-import { FilterDropdown } from "@/shared/FilterDropdown";
 import { SearchBox } from "@/shared/SearchBox";
 import {
 	LOG_DIMENSIONS,
@@ -20,7 +25,7 @@ import {
 
 /** Shared trigger style for every filter control so they line up identically. */
 const TRIGGER =
-	"inline-flex h-9 items-center gap-1.5 rounded-md border border-border bg-card px-2.5 text-xs text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+	"inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-card px-2.5 text-xs text-foreground transition-colors hover:bg-muted data-[popup-open]:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
 export interface LogsFilterValues {
 	q: string;
@@ -113,7 +118,7 @@ export function LogsFilters({
 	return (
 		<div className="flex flex-col gap-2">
 			<div className="flex flex-wrap items-center gap-2">
-				<div className="flex h-9 min-w-0 flex-1 flex-wrap items-center gap-1.5 rounded-md border border-border bg-card px-2.5">
+				<div className="flex min-h-8 min-w-0 flex-1 flex-wrap items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1">
 					<Search className="size-4 shrink-0 text-muted-foreground" />
 					{chips.map((c) => (
 						<Chip key={c.key} label={c.label} onRemove={c.onRemove} />
@@ -131,7 +136,7 @@ export function LogsFilters({
 					/>
 				</div>
 
-				<FilterDropdown
+				<FilterSelect
 					label="Window"
 					value={values.since}
 					options={WINDOW_OPTIONS}
@@ -158,8 +163,8 @@ export function LogsFilters({
 			</div>
 
 			{open && (
-				<div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card p-2.5">
-					<FilterDropdown
+				<div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-card p-2.5">
+					<FilterSelect
 						label="Status"
 						value={values.status_class}
 						options={STATUS_OPTIONS}
@@ -207,6 +212,52 @@ function CountBadge({ n }: { n: number }) {
 	);
 }
 
+/** Single-select dropdown sharing the uniform TRIGGER style. */
+function FilterSelect<T extends string>({
+	label,
+	value,
+	options,
+	onChange,
+}: {
+	label: string;
+	value: T;
+	options: readonly { value: T; label: string }[];
+	onChange: (value: T) => void;
+}) {
+	const current = options.find((o) => o.value === value);
+	return (
+		<DropdownMenu>
+			<DropdownMenuTrigger className={TRIGGER}>
+				<span className="text-muted-foreground">{label}:</span>
+				<span>{current?.label ?? value}</span>
+				<ChevronDown
+					className="size-3.5 text-muted-foreground"
+					aria-hidden="true"
+				/>
+			</DropdownMenuTrigger>
+			<DropdownMenuContent align="start" className="min-w-36">
+				{options.map((o) => (
+					<DropdownMenuItem
+						key={o.value}
+						onClick={() => onChange(o.value)}
+						className={
+							o.value === value ? "bg-accent text-accent-foreground" : ""
+						}
+					>
+						<Check
+							className={cn(
+								"size-3.5",
+								o.value === value ? "opacity-100" : "opacity-0",
+							)}
+						/>
+						{o.label}
+					</DropdownMenuItem>
+				))}
+			</DropdownMenuContent>
+		</DropdownMenu>
+	);
+}
+
 function ToggleButton({
 	label,
 	pressed,
@@ -223,7 +274,6 @@ function ToggleButton({
 			onClick={onToggle}
 			className={cn(
 				TRIGGER,
-				"h-8",
 				pressed && "border-primary/60 bg-primary/10 text-foreground",
 			)}
 		>
@@ -265,7 +315,7 @@ function MultiSelectPopover({
 }) {
 	return (
 		<Popover>
-			<PopoverTrigger className={cn(TRIGGER, "h-8 data-[popup-open]:bg-muted")}>
+			<PopoverTrigger className={TRIGGER}>
 				{label}
 				{selected.length > 0 && <CountBadge n={selected.length} />}
 				<ChevronDown
