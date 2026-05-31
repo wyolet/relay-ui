@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { fmtInt, fmtMs, fmtTs, prettyBody, sumTokens } from "./format";
 import { type ChatMessage, parseTranscript } from "./generation";
 import { isErrorEvent } from "./predicates";
+import type { LogLabeler } from "./useLogsFilterOptions";
 
 /**
  * Right pane of the logs view: the selected request as a generation detail —
@@ -14,9 +15,11 @@ import { isErrorEvent } from "./predicates";
 export function LogDetailPanel({
 	requestId,
 	onClose,
+	labelFor,
 }: {
 	requestId: string | null;
 	onClose?: () => void;
+	labelFor?: LogLabeler;
 }) {
 	return (
 		<div className="overflow-hidden rounded-lg border border-border bg-card">
@@ -24,7 +27,11 @@ export function LogDetailPanel({
 				<Placeholder />
 			) : (
 				<Suspense key={requestId} fallback={<Loading />}>
-					<PanelBody requestId={requestId} onClose={onClose} />
+					<PanelBody
+						requestId={requestId}
+						onClose={onClose}
+						labelFor={labelFor}
+					/>
 				</Suspense>
 			)}
 		</div>
@@ -45,21 +52,26 @@ function statusDot(status: number, isError: boolean): string {
 function PanelBody({
 	requestId,
 	onClose,
+	labelFor,
 }: {
 	requestId: string;
 	onClose?: () => void;
+	labelFor?: LogLabeler;
 }) {
 	const { data } = useLogDetail(requestId);
 	const { log, payload } = data;
 	const isError = isErrorEvent(log);
 	const transcript = parseTranscript(payload);
 
-	const [tab, setTab] = useState<"messages" | "raw">(
-		transcript ? "messages" : "raw",
-	);
+	const [tab, setTab] = useState<"messages" | "raw">("messages");
+	const modelLabel =
+		labelFor?.("model", log.model_id) ??
+		log.model_id ??
+		log.requested_model ??
+		log.source;
 
 	return (
-		<div className="flex h-full flex-col">
+		<div className="flex flex-col">
 			<div className="border-b border-border p-3">
 				<div className="mb-2 flex items-center gap-2">
 					<span
@@ -78,7 +90,7 @@ function PanelBody({
 					</span>
 					<span className="text-xs text-muted-foreground">·</span>
 					<code className="truncate font-mono text-xs text-foreground">
-						{log.model_id || log.requested_model || log.source}
+						{modelLabel}
 					</code>
 					{log.error_kind && (
 						<span className="rounded bg-destructive/10 px-1.5 py-0.5 text-[11px] text-destructive">
@@ -105,8 +117,16 @@ function PanelBody({
 					{(log.model_id || log.requested_model) && (
 						<KV label="Requested">{log.requested_model || log.model_id}</KV>
 					)}
-					{log.host_id && <KV label="Host">{log.host_id}</KV>}
-					{log.policy_id && <KV label="Policy">{log.policy_id}</KV>}
+					{log.host_id && (
+						<KV label="Host">
+							{labelFor?.("host", log.host_id) ?? log.host_id}
+						</KV>
+					)}
+					{log.policy_id && (
+						<KV label="Policy">
+							{labelFor?.("policy", log.policy_id) ?? log.policy_id}
+						</KV>
+					)}
 					<KV label="Source">{log.source}</KV>
 					{log.attempts !== undefined && log.attempts > 1 && (
 						<KV label="Attempts">{String(log.attempts)}</KV>
@@ -124,22 +144,22 @@ function PanelBody({
 				</code>
 			</div>
 
-			<div className="flex gap-1 border-b border-border px-2">
-				{transcript && (
+			{transcript && (
+				<div className="flex gap-1 border-b border-border px-2">
 					<TabButton
 						active={tab === "messages"}
 						onClick={() => setTab("messages")}
 					>
 						Messages
 					</TabButton>
-				)}
-				<TabButton active={tab === "raw"} onClick={() => setTab("raw")}>
-					Raw
-				</TabButton>
-			</div>
+					<TabButton active={tab === "raw"} onClick={() => setTab("raw")}>
+						Raw
+					</TabButton>
+				</div>
+			)}
 
-			<div className="flex-1 overflow-auto">
-				{tab === "messages" && transcript ? (
+			<div className="max-h-[65vh] overflow-auto">
+				{transcript && tab === "messages" ? (
 					<Transcript messages={transcript} />
 				) : (
 					<RawBodies payload={payload} />

@@ -2,12 +2,17 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { z } from "zod";
 import { type LogsFilter, logsInfiniteQueryOptions } from "@/api/hooks/logs";
+import { cn } from "@/lib/utils";
 import { LogDetailPanel } from "@/logs/LogDetailPanel";
 import { LogsFilters } from "@/logs/LogsFilters";
-import { LogsTable } from "@/logs/LogsTable";
+import { LogsHistogram } from "@/logs/LogsHistogram";
+import { type LogFilterKey, LogsTable } from "@/logs/LogsTable";
 import { SINCE_VALUES, STATUS_CLASS_VALUES } from "@/logs/logFilterConfig";
 import { SLOW_MS } from "@/logs/predicates";
-import { useLogsFilterOptions } from "@/logs/useLogsFilterOptions";
+import {
+	useLogLabeler,
+	useLogsFilterOptions,
+} from "@/logs/useLogsFilterOptions";
 import { PageLoader } from "@/shared/Spinner";
 
 const SLOW_LABEL = `Slow >${SLOW_MS / 1000}s`;
@@ -54,9 +59,22 @@ function LogsPage() {
 	const { request } = search;
 	const navigate = useNavigate();
 	const options = useLogsFilterOptions();
+	const labelFor = useLogLabeler();
+	const filter = toLogsFilter(search);
 
 	const patch = (next: Partial<LogsSearch>) =>
 		void navigate({ to: "/logs", search: (prev) => ({ ...prev, ...next }) });
+
+	// Click-to-filter from a table cell: append to a dimension or set status.
+	const addFilter = (key: LogFilterKey, value: string) => {
+		if (key === "status_class") {
+			if (value === "2xx" || value === "4xx" || value === "5xx")
+				patch({ status_class: value });
+			return;
+		}
+		const cur = search[key];
+		if (!cur.includes(value)) patch({ [key]: [...cur, value] });
+	};
 
 	return (
 		<div className="flex flex-col gap-4">
@@ -68,6 +86,8 @@ function LogsPage() {
 				</p>
 			</div>
 
+			<LogsHistogram filter={filter} />
+
 			<LogsFilters
 				values={search}
 				options={options}
@@ -75,18 +95,32 @@ function LogsPage() {
 				onChange={patch}
 			/>
 
-			<div className="flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:items-start">
+			<div
+				className={cn(
+					"grid grid-cols-1 gap-4",
+					request && "lg:grid-cols-[1fr_minmax(360px,440px)] lg:items-start",
+				)}
+			>
 				<Suspense fallback={<Loading />}>
 					<LogsTable
 						selected={request ?? null}
 						onSelect={(id) => patch({ request: id })}
+						onFilter={addFilter}
+						labelFor={labelFor}
 						query={search.q}
-						filter={toLogsFilter(search)}
+						filter={filter}
+						compact={Boolean(request)}
 					/>
 				</Suspense>
-				<div className="lg:sticky lg:top-4">
-					<LogDetailPanel requestId={request ?? null} />
-				</div>
+				{request && (
+					<div className="lg:sticky lg:top-4">
+						<LogDetailPanel
+							requestId={request}
+							onClose={() => patch({ request: undefined })}
+							labelFor={labelFor}
+						/>
+					</div>
+				)}
 			</div>
 		</div>
 	);
