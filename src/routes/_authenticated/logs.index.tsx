@@ -2,8 +2,6 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { z } from "zod";
 import { type LogsFilter, logsInfiniteQueryOptions } from "@/api/hooks/logs";
-import { cn } from "@/lib/utils";
-import { LogDetailPanel } from "@/logs/LogDetailPanel";
 import { LogsFilters } from "@/logs/LogsFilters";
 import { LogsHistogram } from "@/logs/LogsHistogram";
 import { type LogFilterKey, LogsTable } from "@/logs/LogsTable";
@@ -26,7 +24,7 @@ const searchSchema = z.object({
 	model_id: z.array(z.string()).default([]),
 	host_id: z.array(z.string()).default([]),
 	policy_id: z.array(z.string()).default([]),
-	request: z.string().optional(),
+	expand: z.string().optional(),
 });
 
 type LogsSearch = z.infer<typeof searchSchema>;
@@ -44,7 +42,7 @@ function toLogsFilter(s: LogsSearch): LogsFilter {
 	return filter;
 }
 
-export const Route = createFileRoute("/_authenticated/logs")({
+export const Route = createFileRoute("/_authenticated/logs/")({
 	validateSearch: searchSchema,
 	loaderDeps: ({ search }) => search,
 	loader: ({ context, deps }) =>
@@ -56,7 +54,7 @@ export const Route = createFileRoute("/_authenticated/logs")({
 
 function LogsPage() {
 	const search = Route.useSearch();
-	const { request } = search;
+	const { expand } = search;
 	const navigate = useNavigate();
 	const options = useLogsFilterOptions();
 	const labelFor = useLogLabeler();
@@ -81,8 +79,8 @@ function LogsPage() {
 			<div>
 				<h1 className="text-xl font-semibold text-foreground">Logs</h1>
 				<p className="text-xs text-muted-foreground">
-					Requests through the relay, newest first. Click one to inspect
-					captured bodies.
+					Requests through the relay, newest first. Expand a row for its
+					summary; open the request page for captured bodies.
 				</p>
 			</div>
 
@@ -95,33 +93,22 @@ function LogsPage() {
 				onChange={patch}
 			/>
 
-			<div
-				className={cn(
-					"grid grid-cols-1 gap-4",
-					request && "lg:grid-cols-[1fr_minmax(360px,440px)] lg:items-start",
-				)}
-			>
-				<Suspense fallback={<Loading />}>
-					<LogsTable
-						selected={request ?? null}
-						onSelect={(id) => patch({ request: id })}
-						onFilter={addFilter}
-						labelFor={labelFor}
-						query={search.q}
-						filter={filter}
-						compact={Boolean(request)}
-					/>
-				</Suspense>
-				{request && (
-					<div className="lg:sticky lg:top-4">
-						<LogDetailPanel
-							requestId={request}
-							onClose={() => patch({ request: undefined })}
-							labelFor={labelFor}
-						/>
-					</div>
-				)}
-			</div>
+			<Suspense fallback={<Loading />}>
+				<LogsTable
+					expandedId={expand ?? null}
+					onToggle={(id) => patch({ expand: expand === id ? undefined : id })}
+					onOpenRequest={(id) =>
+						void navigate({
+							to: "/logs/$requestId",
+							params: { requestId: id },
+						})
+					}
+					onFilter={addFilter}
+					labelFor={labelFor}
+					query={search.q}
+					filter={filter}
+				/>
+			</Suspense>
 		</div>
 	);
 }

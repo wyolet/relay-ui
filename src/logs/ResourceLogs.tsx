@@ -1,14 +1,14 @@
+import { useNavigate } from "@tanstack/react-router";
 import { Suspense, useState } from "react";
 import type { LogsFilter } from "@/api/hooks/logs";
-import { LogDetailPanel } from "./LogDetailPanel";
 import { LogsTable } from "./LogsTable";
 
 /** Which /logs filter to scope by. */
 export type LogScope = "host_id" | "model_id" | "policy_id";
 
 /**
- * Per-resource Logs tab: the request feed filtered to one host/model/policy,
- * with the inspector beside it. Selection is local (no route search here).
+ * Per-resource Logs tab: the request feed filtered to one host/model/policy.
+ * Rows expand in place for a summary; captured requests open the full page.
  */
 export function ResourceLogs({
 	scope,
@@ -20,24 +20,28 @@ export function ResourceLogs({
 	/** Human noun for the empty state, e.g. "host". */
 	label: string;
 }) {
-	const [selected, setSelected] = useState<string | null>(null);
+	const [expanded, setExpanded] = useState<string | null>(null);
+	const navigate = useNavigate();
 	const filter: LogsFilter = {};
 	filter[scope] = [id];
 
 	return (
-		<div className="flex flex-col gap-4 pt-2 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:items-start">
+		<div className="pt-2">
 			<Suspense fallback={<Loading />}>
 				<LogsTable
-					selected={selected}
-					onSelect={setSelected}
+					expandedId={expanded}
+					onToggle={(rid) => setExpanded((p) => (p === rid ? null : rid))}
+					onOpenRequest={(rid) =>
+						void navigate({
+							to: "/logs/$requestId",
+							params: { requestId: rid },
+						})
+					}
 					query=""
 					filter={filter}
 					emptyBody={`No requests for this ${label} yet — they'll appear here newest-first once traffic flows.`}
 				/>
 			</Suspense>
-			<div className="lg:sticky lg:top-4">
-				<LogDetailPanel requestId={selected} />
-			</div>
 		</div>
 	);
 }
