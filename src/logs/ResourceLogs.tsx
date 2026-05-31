@@ -31,8 +31,6 @@ export function ResourceLogs({
 					selected={selected}
 					onSelect={setSelected}
 					query=""
-					errorsOnly={false}
-					slowOnly={false}
 					filter={filter}
 					emptyBody={`No requests for this ${label} yet — they'll appear here newest-first once traffic flows.`}
 				/>

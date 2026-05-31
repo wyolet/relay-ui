@@ -1,47 +1,61 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { z } from "zod";
-import { logsInfiniteQueryOptions } from "@/api/hooks/logs";
-import { FilterBar } from "@/filters/FilterBar";
-import type { FilterDef } from "@/filters/types";
+import { type LogsFilter, logsInfiniteQueryOptions } from "@/api/hooks/logs";
 import { LogDetailPanel } from "@/logs/LogDetailPanel";
+import { LogsFilters } from "@/logs/LogsFilters";
 import { LogsTable } from "@/logs/LogsTable";
+import { SINCE_VALUES, STATUS_CLASS_VALUES } from "@/logs/logFilterConfig";
 import { SLOW_MS } from "@/logs/predicates";
+import { useLogsFilterOptions } from "@/logs/useLogsFilterOptions";
 import { PageLoader } from "@/shared/Spinner";
 
-const LOG_FILTERS = [
-	{
-		key: "q",
-		type: "search",
-		label: "Search",
-		placeholder: "model, source, request id",
-		default: "",
-	},
-	{ key: "errors", type: "toggle", label: "Errors" },
-	{ key: "slow", type: "toggle", label: `Slow >${SLOW_MS / 1000}s` },
-] as const satisfies readonly FilterDef[];
+const SLOW_LABEL = `Slow >${SLOW_MS / 1000}s`;
 
 const searchSchema = z.object({
 	q: z.string().default(""),
+	since: z.enum(SINCE_VALUES).default("1h"),
+	status_class: z.enum(STATUS_CLASS_VALUES).default(""),
 	errors: z.boolean().default(false),
 	slow: z.boolean().default(false),
+	model_id: z.array(z.string()).default([]),
+	host_id: z.array(z.string()).default([]),
+	policy_id: z.array(z.string()).default([]),
 	request: z.string().optional(),
 });
 
+type LogsSearch = z.infer<typeof searchSchema>;
+
+/** Map URL search into the server-side /logs query. `q` is intentionally not
+ * here — the backend has no free-text field, so it stays a client refinement. */
+function toLogsFilter(s: LogsSearch): LogsFilter {
+	const filter: LogsFilter = { since: s.since };
+	if (s.status_class) filter.status_class = s.status_class;
+	if (s.errors) filter.error = "true";
+	if (s.slow) filter.duration_ms_min = SLOW_MS;
+	if (s.model_id.length) filter.model_id = s.model_id;
+	if (s.host_id.length) filter.host_id = s.host_id;
+	if (s.policy_id.length) filter.policy_id = s.policy_id;
+	return filter;
+}
+
 export const Route = createFileRoute("/_authenticated/logs")({
 	validateSearch: searchSchema,
-	loader: ({ context }) =>
+	loaderDeps: ({ search }) => search,
+	loader: ({ context, deps }) =>
 		void context.queryClient.ensureInfiniteQueryData(
-			logsInfiniteQueryOptions(),
+			logsInfiniteQueryOptions(toLogsFilter(deps)),
 		),
 	component: LogsPage,
 });
 
 function LogsPage() {
-	const { q, errors, slow, request } = Route.useSearch();
+	const search = Route.useSearch();
+	const { request } = search;
 	const navigate = useNavigate();
+	const options = useLogsFilterOptions();
 
-	const patch = (next: Record<string, string | boolean | undefined>) =>
+	const patch = (next: Partial<LogsSearch>) =>
 		void navigate({ to: "/logs", search: (prev) => ({ ...prev, ...next }) });
 
 	return (
@@ -54,9 +68,10 @@ function LogsPage() {
 				</p>
 			</div>
 
-			<FilterBar
-				defs={LOG_FILTERS}
-				state={{ q, errors, slow }}
+			<LogsFilters
+				values={search}
+				options={options}
+				slowLabel={SLOW_LABEL}
 				onChange={patch}
 			/>
 
@@ -65,9 +80,8 @@ function LogsPage() {
 					<LogsTable
 						selected={request ?? null}
 						onSelect={(id) => patch({ request: id })}
-						query={q}
-						errorsOnly={errors}
-						slowOnly={slow}
+						query={search.q}
+						filter={toLogsFilter(search)}
 					/>
 				</Suspense>
 				<div className="lg:sticky lg:top-4">

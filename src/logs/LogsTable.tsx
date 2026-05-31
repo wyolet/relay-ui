@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { fmtInt, fmtMs, fmtTs, sumTokens } from "./format";
 import { LogsEmpty } from "./LogsEmpty";
-import { isErrorEvent, isSlowEvent } from "./predicates";
+import { isErrorEvent } from "./predicates";
 
 /** Case-insensitive match across the fields a row exposes. */
 function matchesQuery(e: LogEvent, needle: string): boolean {
@@ -15,25 +15,22 @@ function matchesQuery(e: LogEvent, needle: string): boolean {
 }
 
 /**
- * Left pane of the logs view: a scannable request feed. Selection and the
- * client-side filters are owned by the route (search params); this renders
- * the filtered rows and reports clicks.
+ * Left pane of the logs view: a scannable request feed. Structured filters
+ * (window, status, dimensions) are applied server-side via `filter`; `query`
+ * is a client-side text refinement over the already-loaded rows.
  */
 export function LogsTable({
 	selected,
 	onSelect,
 	query,
-	errorsOnly,
-	slowOnly,
 	filter,
 	emptyBody,
 }: {
 	selected: string | null;
 	onSelect: (requestId: string) => void;
+	/** Client-side text refinement over loaded rows (server has no free-text). */
 	query: string;
-	errorsOnly: boolean;
-	slowOnly: boolean;
-	/** Server-side filter passed to GET /logs (e.g. scope to a host/model/policy). */
+	/** Server-side filter passed to GET /logs. */
 	filter?: LogsFilter;
 	/** Override the empty-state body copy. */
 	emptyBody?: string;
@@ -42,12 +39,8 @@ export function LogsTable({
 		useLogs(filter);
 
 	const needle = query.trim().toLowerCase();
-	const shown = events.filter(
-		(e) =>
-			(!errorsOnly || isErrorEvent(e)) &&
-			(!slowOnly || isSlowEvent(e)) &&
-			(needle === "" || matchesQuery(e, needle)),
-	);
+	const shown =
+		needle === "" ? events : events.filter((e) => matchesQuery(e, needle));
 
 	if (events.length === 0) {
 		return (
