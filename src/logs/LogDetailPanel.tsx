@@ -1,103 +1,225 @@
-import { MousePointerClick } from "lucide-react";
-import { Suspense } from "react";
-import { useLogDetail } from "@/api/hooks/logs";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { MousePointerClick, X } from "lucide-react";
+import { Suspense, useState } from "react";
+import { type LogDetail, useLogDetail } from "@/api/hooks/logs";
+import { cn } from "@/lib/utils";
 import { fmtInt, fmtMs, fmtTs, prettyBody, sumTokens } from "./format";
+import { type ChatMessage, parseTranscript } from "./generation";
 import { isErrorEvent } from "./predicates";
 
 /**
- * Right pane of the logs view: the selected request's metadata plus its
- * captured request/response bodies. Fetches the full capture on demand.
+ * Right pane of the logs view: the selected request as a generation detail —
+ * a summary header plus the chat transcript (when the bodies are chat/
+ * completions) or the raw captured payload. Fetches the full capture on demand.
  */
-export function LogDetailPanel({ requestId }: { requestId: string | null }) {
+export function LogDetailPanel({
+	requestId,
+	onClose,
+}: {
+	requestId: string | null;
+	onClose?: () => void;
+}) {
 	return (
-		<div className="rounded-lg border border-border bg-card">
+		<div className="overflow-hidden rounded-lg border border-border bg-card">
 			{requestId === null ? (
 				<Placeholder />
 			) : (
 				<Suspense key={requestId} fallback={<Loading />}>
-					<PanelBody requestId={requestId} />
+					<PanelBody requestId={requestId} onClose={onClose} />
 				</Suspense>
 			)}
 		</div>
 	);
 }
 
-function PanelBody({ requestId }: { requestId: string }) {
+function statusTone(status: number, isError: boolean): string {
+	if (isError && status >= 500) return "text-destructive";
+	if (isError) return "text-amber-600 dark:text-amber-400";
+	return "text-emerald-600 dark:text-emerald-400";
+}
+function statusDot(status: number, isError: boolean): string {
+	if (isError && status >= 500) return "bg-destructive";
+	if (isError) return "bg-amber-500 dark:bg-amber-400";
+	return "bg-emerald-500 dark:bg-emerald-400";
+}
+
+function PanelBody({
+	requestId,
+	onClose,
+}: {
+	requestId: string;
+	onClose?: () => void;
+}) {
 	const { data } = useLogDetail(requestId);
 	const { log, payload } = data;
 	const isError = isErrorEvent(log);
+	const transcript = parseTranscript(payload);
+
+	const [tab, setTab] = useState<"messages" | "raw">(
+		transcript ? "messages" : "raw",
+	);
 
 	return (
-		<div className="flex flex-col">
-			<div className="border-b border-border px-4 py-3">
-				<code className="block truncate font-mono text-xs text-muted-foreground">
+		<div className="flex h-full flex-col">
+			<div className="border-b border-border p-3">
+				<div className="mb-2 flex items-center gap-2">
+					<span
+						className={cn(
+							"size-2 rounded-full",
+							statusDot(log.status, isError),
+						)}
+					/>
+					<span
+						className={cn(
+							"text-sm font-semibold tabular-nums",
+							statusTone(log.status, isError),
+						)}
+					>
+						{log.status}
+					</span>
+					<span className="text-xs text-muted-foreground">·</span>
+					<code className="truncate font-mono text-xs text-foreground">
+						{log.model_id || log.requested_model || log.source}
+					</code>
+					{log.error_kind && (
+						<span className="rounded bg-destructive/10 px-1.5 py-0.5 text-[11px] text-destructive">
+							{log.error_kind}
+						</span>
+					)}
+					{onClose && (
+						<button
+							type="button"
+							onClick={onClose}
+							aria-label="Close inspector"
+							className="ml-auto rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+						>
+							<X className="size-4" />
+						</button>
+					)}
+				</div>
+
+				<div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs sm:grid-cols-4">
+					<KV label="Time">{fmtTs(log.ts)}</KV>
+					<KV label="Latency">{fmtMs(log.duration_ms)}</KV>
+					<KV label="Tokens">{fmtInt(sumTokens(log.tokens))}</KV>
+					<KV label="Finish">{log.finish_reason ?? "—"}</KV>
+					{(log.model_id || log.requested_model) && (
+						<KV label="Requested">{log.requested_model || log.model_id}</KV>
+					)}
+					{log.host_id && <KV label="Host">{log.host_id}</KV>}
+					{log.policy_id && <KV label="Policy">{log.policy_id}</KV>}
+					<KV label="Source">{log.source}</KV>
+					{log.attempts !== undefined && log.attempts > 1 && (
+						<KV label="Attempts">{String(log.attempts)}</KV>
+					)}
+					{log.streamed && <KV label="Streamed">yes</KV>}
+				</div>
+
+				{log.error_message && (
+					<p className="mt-2 text-[11px] text-destructive">
+						{log.error_message}
+					</p>
+				)}
+				<code className="mt-2 block truncate font-mono text-[11px] text-muted-foreground">
 					{log.request_id}
 				</code>
 			</div>
-			<div className="flex flex-col gap-4 p-4">
-				<dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-xs">
-					<Meta label="Time">{fmtTs(log.ts)}</Meta>
-					<Meta label="Source">
-						<code className="font-mono">{log.source}</code>
-					</Meta>
-					<Meta label="Status">
-						<span className={isError ? "text-destructive" : "text-foreground"}>
-							{log.status}
-							{log.error_kind ? ` · ${log.error_kind}` : ""}
-						</span>
-					</Meta>
-					{log.error_message && <Meta label="Error">{log.error_message}</Meta>}
-					{(log.model_id || log.requested_model) && (
-						<Meta label="Model">
-							<code className="font-mono">
-								{log.model_id || log.requested_model}
-							</code>
-						</Meta>
-					)}
-					{log.host_id && (
-						<Meta label="Host">
-							<code className="font-mono">{log.host_id}</code>
-						</Meta>
-					)}
-					{log.policy_id && (
-						<Meta label="Policy">
-							<code className="font-mono">{log.policy_id}</code>
-						</Meta>
-					)}
-					<Meta label="Duration">{fmtMs(log.duration_ms)}</Meta>
-					{log.tokens && (
-						<Meta label="Tokens">{fmtInt(sumTokens(log.tokens))}</Meta>
-					)}
-					{log.finish_reason && <Meta label="Finish">{log.finish_reason}</Meta>}
-					{log.streamed && <Meta label="Streamed">yes</Meta>}
-				</dl>
 
-				{payload ? (
-					<>
-						<Body
-							title="Request"
-							body={payload.request_body}
-							truncated={payload.request_truncated}
-						/>
-						<Body
-							title="Response"
-							body={payload.response_body}
-							truncated={payload.response_truncated}
-						/>
-					</>
+			<div className="flex gap-1 border-b border-border px-2">
+				{transcript && (
+					<TabButton
+						active={tab === "messages"}
+						onClick={() => setTab("messages")}
+					>
+						Messages
+					</TabButton>
+				)}
+				<TabButton active={tab === "raw"} onClick={() => setTab("raw")}>
+					Raw
+				</TabButton>
+			</div>
+
+			<div className="flex-1 overflow-auto">
+				{tab === "messages" && transcript ? (
+					<Transcript messages={transcript} />
 				) : (
-					<div className="rounded-md border border-dashed border-border px-3 py-4 text-center text-xs text-muted-foreground">
-						No bodies captured — this request's policy or relay key isn't opted
-						into payload logging.
-					</div>
+					<RawBodies payload={payload} />
 				)}
 			</div>
 		</div>
 	);
 }
 
-function Body({
+function TabButton({
+	active,
+	onClick,
+	children,
+}: {
+	active: boolean;
+	onClick: () => void;
+	children: string;
+}) {
+	return (
+		<button
+			type="button"
+			onClick={onClick}
+			className={cn(
+				"border-b-2 px-2.5 py-2 text-xs transition-colors",
+				active
+					? "border-primary text-foreground"
+					: "border-transparent text-muted-foreground hover:text-foreground",
+			)}
+		>
+			{children}
+		</button>
+	);
+}
+
+/** Compact transcript: role gutter + text, hairline-divided. */
+function Transcript({ messages }: { messages: ChatMessage[] }) {
+	return (
+		<ul className="divide-y divide-border">
+			{messages.map((m) => (
+				<li key={m.id} className="flex gap-3 px-3 py-2">
+					<span className="w-16 shrink-0 pt-px font-mono text-[10px] uppercase tracking-wide text-muted-foreground">
+						{m.role}
+					</span>
+					<span className="whitespace-pre-wrap break-words text-xs text-foreground">
+						{m.content || (
+							<span className="text-muted-foreground">(empty)</span>
+						)}
+					</span>
+				</li>
+			))}
+		</ul>
+	);
+}
+
+function RawBodies({ payload }: { payload: LogDetail["payload"] }) {
+	if (!payload) {
+		return (
+			<div className="m-3 rounded-md border border-dashed border-border px-3 py-4 text-center text-xs text-muted-foreground">
+				No bodies captured — this request's policy or relay key isn't opted into
+				payload logging.
+			</div>
+		);
+	}
+	return (
+		<div className="flex flex-col gap-3 p-3">
+			<RawBody
+				title="Request"
+				body={payload.request_body}
+				truncated={payload.request_truncated}
+			/>
+			<RawBody
+				title="Response"
+				body={payload.response_body}
+				truncated={payload.response_truncated}
+			/>
+		</div>
+	);
+}
+
+function RawBody({
 	title,
 	body,
 	truncated,
@@ -118,11 +240,9 @@ function Body({
 				)}
 			</div>
 			{text ? (
-				<ScrollArea className="max-h-80 rounded-md border border-border bg-muted/30">
-					<pre className="p-3 text-xs font-mono whitespace-pre-wrap break-words text-foreground">
-						{text}
-					</pre>
-				</ScrollArea>
+				<pre className="max-h-80 overflow-auto whitespace-pre-wrap break-words rounded-md border border-border bg-muted/30 p-3 font-mono text-xs text-foreground">
+					{text}
+				</pre>
 			) : (
 				<div className="rounded-md border border-dashed border-border px-3 py-4 text-center text-xs text-muted-foreground">
 					Not captured
@@ -132,18 +252,14 @@ function Body({
 	);
 }
 
-function Meta({
-	label,
-	children,
-}: {
-	label: string;
-	children: React.ReactNode;
-}) {
+function KV({ label, children }: { label: string; children: React.ReactNode }) {
 	return (
-		<>
-			<dt className="text-muted-foreground">{label}</dt>
-			<dd className="text-foreground">{children}</dd>
-		</>
+		<div className="min-w-0">
+			<dt className="text-[10px] uppercase tracking-wide text-muted-foreground">
+				{label}
+			</dt>
+			<dd className="truncate font-mono text-xs text-foreground">{children}</dd>
+		</div>
 	);
 }
 
@@ -158,8 +274,8 @@ function Placeholder() {
 				Select a request
 			</div>
 			<div className="mt-1 max-w-xs text-xs text-muted-foreground">
-				Pick a row to see its metadata and — when payload logging is on — the
-				captured request and response bodies.
+				Pick a row to see its generation detail — the chat transcript and, when
+				payload logging is on, the captured request and response bodies.
 			</div>
 		</div>
 	);
