@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ChevronLeft } from "lucide-react";
 import { Suspense } from "react";
 import { z } from "zod";
+import { governanceQueryOptions } from "@/api/hooks/governance";
 import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
 import { modelsListQueryOptions } from "@/api/hooks/models";
@@ -9,16 +10,19 @@ import { policiesListQueryOptions } from "@/api/hooks/policies";
 import {
 	providerDetailQueryOptions,
 	providersListQueryOptions,
+	useDeleteProvider,
 	useProvider,
 	useUpdateProvider,
 } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
 import { relayKeysListQueryOptions } from "@/api/hooks/relayKeys";
 import { ApiError } from "@/api/types/errors";
+import { displayLabel } from "@/lib/displayLabel";
 import {
 	type ProviderDetailTab,
 	ProviderDetailView,
 } from "@/providers/ProviderDetailView";
+import { confirm } from "@/shared/ConfirmDialog";
 import { PageLoader } from "@/shared/Spinner";
 import { toast } from "@/shared/Toast";
 
@@ -40,6 +44,7 @@ export const Route = createFileRoute("/_authenticated/providers/$name")({
 			context.queryClient.ensureQueryData(policiesListQueryOptions),
 			context.queryClient.ensureQueryData(rateLimitsListQueryOptions),
 			context.queryClient.ensureQueryData(relayKeysListQueryOptions),
+			context.queryClient.ensureQueryData(governanceQueryOptions("provider")),
 		]),
 	component: ProviderDetailPage,
 });
@@ -50,6 +55,33 @@ function ProviderDetailInner() {
 	const navigate = useNavigate({ from: "/providers/$name" });
 	const { data: provider } = useProvider(name);
 	const updateProvider = useUpdateProvider(provider.metadata.id ?? "");
+	const deleteProvider = useDeleteProvider();
+
+	async function handleDelete() {
+		const ok = await confirm({
+			title: `Delete provider ${name}?`,
+			description:
+				"Models and hosts synced from this provider will lose their origin reference.",
+			confirmLabel: "Delete",
+			danger: true,
+		});
+		if (!ok) return;
+		try {
+			await deleteProvider.mutateAsync(provider.metadata.id ?? "");
+			toast(
+				"success",
+				`Provider "${displayLabel(provider.metadata)}" deleted.`,
+			);
+			void navigate({ to: "/models" });
+		} catch (err) {
+			toast(
+				"error",
+				err instanceof ApiError
+					? err.body.message
+					: "Failed to delete provider.",
+			);
+		}
+	}
 
 	async function handleToggleEnabled() {
 		const next = !(provider.spec.enabled !== false);
@@ -86,6 +118,8 @@ function ProviderDetailInner() {
 				}
 				onToggleEnabled={() => void handleToggleEnabled()}
 				toggling={updateProvider.isPending}
+				onDelete={() => void handleDelete()}
+				deleting={deleteProvider.isPending}
 			/>
 		</div>
 	);

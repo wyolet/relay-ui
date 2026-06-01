@@ -139,3 +139,43 @@ export function useUpdateModel(id: string) {
 		},
 	});
 }
+
+export function useDeleteModel() {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: async (id: string): Promise<void> => {
+			const { error } = await apiClient.DELETE("/models/by-id/{id}", {
+				params: { path: { id } },
+			});
+			if (error) throw new ApiError(0, error.error);
+		},
+		onMutate: async (id) => {
+			await queryClient.cancelQueries({ queryKey: ["models"] });
+			const previous = queryClient.getQueryData(
+				modelsListQueryOptions.queryKey,
+			);
+			queryClient.setQueryData(
+				modelsListQueryOptions.queryKey,
+				(old: ModelListResponse | undefined) => {
+					if (!old) return old;
+					return {
+						items: (old.items ?? []).filter((m) => m.metadata.id !== id),
+						total: old.total,
+					};
+				},
+			);
+			return { previous };
+		},
+		onError: (_err, _vars, context) => {
+			if (context?.previous !== undefined) {
+				queryClient.setQueryData(
+					modelsListQueryOptions.queryKey,
+					context.previous,
+				);
+			}
+		},
+		onSuccess: () => {
+			void queryClient.invalidateQueries({ queryKey: ["models"] });
+		},
+	});
+}

@@ -10,16 +10,17 @@ import {
 	ScrollText,
 	Trash2,
 } from "lucide-react";
+import { useGovernance } from "@/api/hooks/governance";
 import type { Policy } from "@/api/types/policy";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
+import { resolveMutability } from "@/lib/ownership";
 import { ResourceLogs } from "@/logs/ResourceLogs";
 import { PolicyAttachedRelayKeys } from "@/policies/PolicyAttachedRelayKeys";
 import { PolicyKeysTab } from "@/policies/PolicyKeysTab";
 import { PolicyModelsTab } from "@/policies/PolicyModelsTab";
 import { PolicyOverviewTab } from "@/policies/PolicyOverviewTab";
 import { PolicyRateLimitsTab } from "@/policies/PolicyRateLimitsTab";
-import { useAllowEdit } from "@/stores/permissions";
 import { ResourceUsage } from "@/usage/ResourceUsage";
 
 export type PolicyDetailTab =
@@ -153,8 +154,11 @@ function Header({
 }: HeaderProps) {
 	const name = policy.metadata.name;
 	const isHostOwned = policy.metadata.owner?.kind === "host";
-	const allowHostOwnedEdits = useAllowEdit("host-owned-policies");
-	const canMutate = !isHostOwned || allowHostOwnedEdits;
+	const gov = useGovernance("policy");
+	const { canEdit, canDelete } = resolveMutability(
+		policy.metadata.owner?.kind,
+		gov,
+	);
 	return (
 		<div className="flex items-start justify-between gap-4">
 			<div className="min-w-0">
@@ -185,7 +189,7 @@ function Header({
 				)}
 			</div>
 			<div className="flex items-center gap-2 shrink-0">
-				{canMutate && (
+				{canEdit && (
 					<button
 						type="button"
 						onClick={onToggleEnabled}
@@ -196,26 +200,26 @@ function Header({
 						{enabled ? "Disable" : "Enable"}
 					</button>
 				)}
-				{canMutate && (
-					<>
-						<Link
-							to="/policies/$name/edit"
-							params={{ name }}
-							className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium text-foreground border border-border hover:bg-muted transition-colors"
-						>
-							<Pencil className="w-3.5 h-3.5" />
-							Edit
-						</Link>
-						<button
-							type="button"
-							onClick={onDelete}
-							disabled={deleting}
-							className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium text-destructive border border-border hover:bg-destructive/10 disabled:opacity-50 transition-colors"
-						>
-							<Trash2 className="w-3.5 h-3.5" />
-							Delete
-						</button>
-					</>
+				{canEdit && (
+					<Link
+						to="/policies/$name/edit"
+						params={{ name }}
+						className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium text-foreground border border-border hover:bg-muted transition-colors"
+					>
+						<Pencil className="w-3.5 h-3.5" />
+						Edit
+					</Link>
+				)}
+				{canDelete && (
+					<button
+						type="button"
+						onClick={onDelete}
+						disabled={deleting}
+						className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium text-destructive border border-border hover:bg-destructive/10 disabled:opacity-50 transition-colors"
+					>
+						<Trash2 className="w-3.5 h-3.5" />
+						Delete
+					</button>
 				)}
 			</div>
 		</div>

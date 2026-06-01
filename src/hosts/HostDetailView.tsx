@@ -9,9 +9,11 @@ import {
 	ScrollText,
 	ShieldCheck,
 	Sliders,
+	Trash2,
 	Users,
 } from "lucide-react";
 import { Suspense, useMemo } from "react";
+import { useGovernance } from "@/api/hooks/governance";
 import type { Host } from "@/api/types/host";
 import type { HostKey } from "@/api/types/hostkey";
 import type { Model } from "@/api/types/model";
@@ -23,6 +25,7 @@ import { HostLogo } from "@/hosts/HostLogo";
 import { useHostReferences } from "@/hosts/useHostReferences";
 import { useHostUsage } from "@/hosts/useHostUsage";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
+import { resolveMutability } from "@/lib/ownership";
 import { ResourceLogs } from "@/logs/ResourceLogs";
 import {
 	ResourceUsageCards,
@@ -46,6 +49,8 @@ interface Props {
 	onTabChange: (next: HostDetailTab) => void;
 	onToggleEnabled: () => void;
 	toggling?: boolean;
+	onDelete: () => void;
+	deleting?: boolean;
 }
 
 const TABS: {
@@ -69,6 +74,8 @@ export function HostDetailView({
 	onTabChange,
 	onToggleEnabled,
 	toggling,
+	onDelete,
+	deleting,
 }: Props) {
 	const refs = useHostReferences(host);
 
@@ -78,6 +85,8 @@ export function HostDetailView({
 				host={host}
 				onToggleEnabled={onToggleEnabled}
 				toggling={toggling}
+				onDelete={onDelete}
+				deleting={deleting}
 			/>
 
 			<Tabs
@@ -151,14 +160,22 @@ function Header({
 	host,
 	onToggleEnabled,
 	toggling,
+	onDelete,
+	deleting,
 }: {
 	host: Host;
 	onToggleEnabled: () => void;
 	toggling?: boolean;
+	onDelete: () => void;
+	deleting?: boolean;
 }) {
 	const enabled = host.spec.enabled !== false;
 	const system = host.metadata.owner?.kind === "system";
-	const canMutate = !system;
+	const gov = useGovernance("host");
+	const { canEdit, canDelete } = resolveMutability(
+		host.metadata.owner?.kind,
+		gov,
+	);
 
 	const links: { href: string | undefined; label: string }[] = [
 		{ href: host.spec.consoleURL, label: "Console" },
@@ -211,7 +228,7 @@ function Header({
 				</div>
 			</div>
 			<div className="flex items-center gap-2 shrink-0">
-				{canMutate && (
+				{canEdit && (
 					<button
 						type="button"
 						onClick={onToggleEnabled}
@@ -220,6 +237,17 @@ function Header({
 					>
 						<Power className="w-3.5 h-3.5" />
 						{enabled ? "Disable" : "Enable"}
+					</button>
+				)}
+				{canDelete && (
+					<button
+						type="button"
+						onClick={onDelete}
+						disabled={deleting}
+						className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium text-destructive border border-border hover:bg-destructive/10 disabled:opacity-50 transition-colors"
+					>
+						<Trash2 className="w-3.5 h-3.5" />
+						Delete
 					</button>
 				)}
 			</div>

@@ -23,14 +23,4 @@ export interface ReleaseGap {
 	where: string[];
 }
 
-export const RELEASE_GAPS: ReleaseGap[] = [
-	{
-		id: "delete-endpoints",
-		title: "Real delete for models / hosts / policies",
-		whatsFake:
-			"The model row 'Delete' action is disabled (no longer a fake toast); models/hosts/policies have no way to delete.",
-		fix: "No DELETE endpoint exists for these resources (delete?: never on every path). BE must add them, then wire a real delete mutation + re-enable the action.",
-		owner: "backend",
-		where: ["src/models/ModelsTable.tsx"],
-	},
-];
+export const RELEASE_GAPS: ReleaseGap[] = [];

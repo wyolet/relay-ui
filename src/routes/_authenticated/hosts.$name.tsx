@@ -2,10 +2,12 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ChevronLeft } from "lucide-react";
 import { Suspense } from "react";
 import { z } from "zod";
+import { governanceQueryOptions } from "@/api/hooks/governance";
 import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
 import {
 	hostDetailQueryOptions,
 	hostsListQueryOptions,
+	useDeleteHost,
 	useHost,
 	useUpdateHost,
 } from "@/api/hooks/hosts";
@@ -16,6 +18,8 @@ import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
 import { relayKeysListQueryOptions } from "@/api/hooks/relayKeys";
 import { ApiError } from "@/api/types/errors";
 import { type HostDetailTab, HostDetailView } from "@/hosts/HostDetailView";
+import { displayLabel } from "@/lib/displayLabel";
+import { confirm } from "@/shared/ConfirmDialog";
 import { PageLoader } from "@/shared/Spinner";
 import { toast } from "@/shared/Toast";
 
@@ -47,6 +51,7 @@ export const Route = createFileRoute("/_authenticated/hosts/$name")({
 			context.queryClient.ensureQueryData(rateLimitsListQueryOptions),
 			context.queryClient.ensureQueryData(relayKeysListQueryOptions),
 			context.queryClient.ensureQueryData(providersListQueryOptions),
+			context.queryClient.ensureQueryData(governanceQueryOptions("host")),
 		]),
 	component: HostDetailPage,
 });
@@ -57,6 +62,28 @@ function HostDetailInner() {
 	const navigate = useNavigate({ from: "/hosts/$name" });
 	const { data: host } = useHost(name);
 	const updateHost = useUpdateHost(host.metadata.id ?? "");
+	const deleteHost = useDeleteHost();
+
+	async function handleDelete() {
+		const ok = await confirm({
+			title: `Delete host ${name}?`,
+			description:
+				"Models and keys bound to this host will lose access until reattached.",
+			confirmLabel: "Delete",
+			danger: true,
+		});
+		if (!ok) return;
+		try {
+			await deleteHost.mutateAsync(host.metadata.id ?? "");
+			toast("success", `Host "${displayLabel(host.metadata)}" deleted.`);
+			void navigate({ to: "/models", search: { tab: "hosts" } });
+		} catch (err) {
+			toast(
+				"error",
+				err instanceof ApiError ? err.body.message : "Failed to delete host.",
+			);
+		}
+	}
 
 	async function handleToggleEnabled() {
 		const next = !(host.spec.enabled !== false);
@@ -92,6 +119,8 @@ function HostDetailInner() {
 				}
 				onToggleEnabled={() => void handleToggleEnabled()}
 				toggling={updateHost.isPending}
+				onDelete={() => void handleDelete()}
+				deleting={deleteHost.isPending}
 			/>
 		</div>
 	);

@@ -5,7 +5,8 @@ import {
 	ArrowUp,
 	MoreHorizontal,
 } from "lucide-react";
-import { useUpdateModel } from "@/api/hooks/models";
+import { useGovernance } from "@/api/hooks/governance";
+import { useDeleteModel, useUpdateModel } from "@/api/hooks/models";
 import { ApiError } from "@/api/types/errors";
 import type { Host } from "@/api/types/host";
 import type { Model } from "@/api/types/model";
@@ -19,6 +20,8 @@ import { DiagnosticDot } from "@/diagnostics/DiagnosticDot";
 import { useModelDiagnostics } from "@/diagnostics/useDiagnostics";
 import { HostLogo } from "@/hosts/HostLogo";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
+import { resolveMutability } from "@/lib/ownership";
+import { confirm } from "@/shared/ConfirmDialog";
 import { Switch } from "@/shared/Switch";
 import { toast } from "@/shared/Toast";
 
@@ -158,8 +161,28 @@ function SortHeader({
 	);
 }
 
-function RowMenu({ name }: { name: string }) {
+function RowMenu({
+	name,
+	canEdit,
+	canDelete,
+	onDelete,
+}: {
+	name: string;
+	canEdit: boolean;
+	canDelete: boolean;
+	onDelete: () => void;
+}) {
 	const navigate = useNavigate();
+	if (!canEdit && !canDelete) {
+		return (
+			<span
+				className="text-[10px] uppercase tracking-wide text-muted-foreground"
+				title="Provider-managed — synced from the catalog"
+			>
+				managed
+			</span>
+		);
+	}
 	return (
 		<DropdownMenu>
 			<DropdownMenuTrigger
@@ -169,20 +192,20 @@ function RowMenu({ name }: { name: string }) {
 				<MoreHorizontal className="w-3.5 h-3.5" />
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="end" className="min-w-[160px]">
-				<DropdownMenuItem
-					onClick={() =>
-						navigate({ to: "/models/$name/edit", params: { name } })
-					}
-				>
-					Edit
-				</DropdownMenuItem>
-				<DropdownMenuItem
-					variant="destructive"
-					disabled
-					title="Deleting models isn't supported by the relay yet"
-				>
-					Delete
-				</DropdownMenuItem>
+				{canEdit && (
+					<DropdownMenuItem
+						onClick={() =>
+							navigate({ to: "/models/$name/edit", params: { name } })
+						}
+					>
+						Edit
+					</DropdownMenuItem>
+				)}
+				{canDelete && (
+					<DropdownMenuItem variant="destructive" onClick={onDelete}>
+						Delete
+					</DropdownMenuItem>
+				)}
 			</DropdownMenuContent>
 		</DropdownMenu>
 	);
@@ -233,7 +256,10 @@ function ModelRow({
 }) {
 	const enabled = m.spec.enabled !== false;
 	const updateModel = useUpdateModel(m.metadata.id ?? "");
+	const deleteModel = useDeleteModel();
 	const diagnostics = useModelDiagnostics(m.metadata.id);
+	const gov = useGovernance("model");
+	const { canEdit, canDelete } = resolveMutability(m.metadata.owner?.kind, gov);
 	async function toggleEnabled(next: boolean) {
 		try {
 			await updateModel.mutateAsync({
@@ -244,6 +270,25 @@ function ModelRow({
 			toast(
 				"error",
 				err instanceof ApiError ? err.body.message : "Failed to update model.",
+			);
+		}
+	}
+	async function handleDelete() {
+		const ok = await confirm({
+			title: `Delete model ${m.metadata.name}?`,
+			description:
+				"Policies and keys referencing this model will lose access until reattached.",
+			confirmLabel: "Delete",
+			danger: true,
+		});
+		if (!ok) return;
+		try {
+			await deleteModel.mutateAsync(m.metadata.id ?? "");
+			toast("success", `Model "${displayLabel(m.metadata)}" deleted.`);
+		} catch (err) {
+			toast(
+				"error",
+				err instanceof ApiError ? err.body.message : "Failed to delete model.",
 			);
 		}
 	}
@@ -288,15 +333,34 @@ function ModelRow({
 				</td>
 			)}
 			<td className="px-3 py-2">
-				<Switch
-					checked={enabled}
-					onChange={(next) => void toggleEnabled(next)}
-					disabled={updateModel.isPending}
-					label={`Toggle ${m.metadata.name}`}
-				/>
+				{canEdit ? (
+					<Switch
+						checked={enabled}
+						onChange={(next) => void toggleEnabled(next)}
+						disabled={updateModel.isPending}
+						label={`Toggle ${m.metadata.name}`}
+					/>
+				) : (
+					<span
+						className={[
+							"inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border",
+							enabled
+								? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-200/60 dark:border-emerald-900/60"
+								: "bg-muted text-muted-foreground border-border",
+						].join(" ")}
+						title="Provider-managed — toggle from the provider instead"
+					>
+						{enabled ? "On" : "Off"}
+					</span>
+				)}
 			</td>
 			<td className="px-3 py-2 text-right">
-				<RowMenu name={m.metadata.name} />
+				<RowMenu
+					name={m.metadata.name}
+					canEdit={canEdit}
+					canDelete={canDelete}
+					onDelete={() => void handleDelete()}
+				/>
 			</td>
 		</tr>
 	);

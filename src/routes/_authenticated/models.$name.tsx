@@ -2,11 +2,13 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ChevronLeft } from "lucide-react";
 import { Suspense } from "react";
 import { z } from "zod";
+import { governanceQueryOptions } from "@/api/hooks/governance";
 import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
 import {
 	modelDetailQueryOptions,
 	modelsListQueryOptions,
+	useDeleteModel,
 	useModel,
 	useUpdateModel,
 } from "@/api/hooks/models";
@@ -15,7 +17,9 @@ import { providersListQueryOptions } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
 import { relayKeysListQueryOptions } from "@/api/hooks/relayKeys";
 import { ApiError } from "@/api/types/errors";
+import { displayLabel } from "@/lib/displayLabel";
 import { type ModelDetailTab, ModelDetailView } from "@/models/ModelDetailView";
+import { confirm } from "@/shared/ConfirmDialog";
 import { PageLoader } from "@/shared/Spinner";
 import { toast } from "@/shared/Toast";
 
@@ -46,6 +50,7 @@ export const Route = createFileRoute("/_authenticated/models/$name")({
 			context.queryClient.ensureQueryData(rateLimitsListQueryOptions),
 			context.queryClient.ensureQueryData(relayKeysListQueryOptions),
 			context.queryClient.ensureQueryData(providersListQueryOptions),
+			context.queryClient.ensureQueryData(governanceQueryOptions("model")),
 		]),
 	component: ModelDetailPage,
 });
@@ -56,6 +61,28 @@ function ModelDetailInner() {
 	const navigate = useNavigate({ from: "/models/$name" });
 	const { data: model } = useModel(name);
 	const updateModel = useUpdateModel(model.metadata.id ?? "");
+	const deleteModel = useDeleteModel();
+
+	async function handleDelete() {
+		const ok = await confirm({
+			title: `Delete model ${name}?`,
+			description:
+				"Policies and keys referencing this model will lose access until reattached.",
+			confirmLabel: "Delete",
+			danger: true,
+		});
+		if (!ok) return;
+		try {
+			await deleteModel.mutateAsync(model.metadata.id ?? "");
+			toast("success", `Model "${displayLabel(model.metadata)}" deleted.`);
+			void navigate({ to: "/models" });
+		} catch (err) {
+			toast(
+				"error",
+				err instanceof ApiError ? err.body.message : "Failed to delete model.",
+			);
+		}
+	}
 
 	async function handleToggleEnabled() {
 		const next = !(model.spec.enabled !== false);
@@ -90,6 +117,8 @@ function ModelDetailInner() {
 				}
 				onToggleEnabled={() => void handleToggleEnabled()}
 				toggling={updateModel.isPending}
+				onDelete={() => void handleDelete()}
+				deleting={deleteModel.isPending}
 			/>
 		</div>
 	);

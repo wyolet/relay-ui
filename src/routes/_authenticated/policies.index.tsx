@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { Suspense, useState } from "react";
 import { z } from "zod";
+import { governanceQueryOptions, useGovernance } from "@/api/hooks/governance";
 import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
 import { modelsListQueryOptions } from "@/api/hooks/models";
@@ -42,6 +43,7 @@ import {
 	useRateLimitDiagnostics,
 } from "@/diagnostics/useDiagnostics";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
+import { resolveMutability } from "@/lib/ownership";
 import { confirm } from "@/shared/ConfirmDialog";
 import { FilterDropdown } from "@/shared/FilterDropdown";
 import { SearchBox } from "@/shared/SearchBox";
@@ -49,7 +51,6 @@ import { PageLoader } from "@/shared/Spinner";
 import { Switch } from "@/shared/Switch";
 import { TableToolbar } from "@/shared/TableToolbar";
 import { toast } from "@/shared/Toast";
-import { useAllowEdit } from "@/stores/permissions";
 
 type Tab = "policies" | "ratelimits";
 
@@ -102,6 +103,7 @@ export const Route = createFileRoute("/_authenticated/policies/")({
 			context.queryClient.ensureQueryData(modelsListQueryOptions),
 			context.queryClient.ensureQueryData(relayKeysListQueryOptions),
 			context.queryClient.ensureQueryData(providersListQueryOptions),
+			context.queryClient.ensureQueryData(governanceQueryOptions("policy")),
 		]),
 	component: PoliciesPage,
 });
@@ -322,9 +324,11 @@ function PolicyRow({
 	const diagnostics = usePolicyDiagnostics(policy.metadata.id);
 	const catalog = describeCatalog(policy);
 	const enabled = policy.spec.enabled !== false;
-	const isHostOwned = policy.metadata.owner?.kind === "host";
-	const allowHostOwnedEdits = useAllowEdit("host-owned-policies");
-	const canMutate = !isHostOwned || allowHostOwnedEdits;
+	const gov = useGovernance("policy");
+	const { canEdit, canDelete } = resolveMutability(
+		policy.metadata.owner?.kind,
+		gov,
+	);
 
 	async function toggleEnabled(next: boolean) {
 		try {
@@ -397,7 +401,7 @@ function PolicyRow({
 				)}
 			</td>
 			<td className="px-3 py-2">
-				{canMutate ? (
+				{canEdit ? (
 					<Switch
 						checked={enabled}
 						onChange={(next) => void toggleEnabled(next)}
@@ -419,11 +423,13 @@ function PolicyRow({
 				)}
 			</td>
 			<td className="px-3 py-2 text-right">
-				{canMutate ? (
+				{canEdit || canDelete ? (
 					<RowMenu
 						actions={[
-							{ label: "Edit", onClick: onEdit },
-							{ label: "Delete", danger: true, onClick: onDelete },
+							...(canEdit ? [{ label: "Edit", onClick: onEdit }] : []),
+							...(canDelete
+								? [{ label: "Delete", danger: true, onClick: onDelete }]
+								: []),
 						]}
 					/>
 				) : (
