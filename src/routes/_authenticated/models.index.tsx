@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Boxes, Plus } from "lucide-react";
 import { Suspense } from "react";
 import { z } from "zod";
+import { governanceQueryOptions } from "@/api/hooks/governance";
 import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
 import { hostsListQueryOptions, useHosts } from "@/api/hooks/hosts";
 import {
@@ -99,6 +100,7 @@ export const Route = createFileRoute("/_authenticated/models/")({
 			context.queryClient.ensureQueryData(rateLimitsListQueryOptions),
 			context.queryClient.ensureQueryData(relayKeysListQueryOptions),
 			context.queryClient.ensureQueryData(providersListQueryOptions),
+			context.queryClient.ensureQueryData(governanceQueryOptions("model")),
 		]),
 	component: ModelsPage,
 });

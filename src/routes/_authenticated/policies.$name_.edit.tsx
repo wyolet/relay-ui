@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ChevronLeft } from "lucide-react";
 import { Suspense } from "react";
+import { governanceQueryOptions, useGovernance } from "@/api/hooks/governance";
 import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
 import { modelsListQueryOptions } from "@/api/hooks/models";
@@ -9,9 +10,9 @@ import { providersListQueryOptions } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
 import { relayKeysListQueryOptions } from "@/api/hooks/relayKeys";
 import { displayLabel } from "@/lib/displayLabel";
+import { resolveMutability } from "@/lib/ownership";
 import { PolicyForm } from "@/policies/PolicyForm";
 import { PageLoader } from "@/shared/Spinner";
-import { useAllowEdit } from "@/stores/permissions";
 
 export const Route = createFileRoute("/_authenticated/policies/$name_/edit")({
 	loader: ({ context, params }) =>
@@ -25,6 +26,7 @@ export const Route = createFileRoute("/_authenticated/policies/$name_/edit")({
 			context.queryClient.ensureQueryData(modelsListQueryOptions),
 			context.queryClient.ensureQueryData(rateLimitsListQueryOptions),
 			context.queryClient.ensureQueryData(relayKeysListQueryOptions),
+			context.queryClient.ensureQueryData(governanceQueryOptions("policy")),
 		]),
 	component: EditPolicyPage,
 });
@@ -33,10 +35,10 @@ function EditPolicyInner() {
 	const { name } = Route.useParams();
 	const { data: policy } = usePolicy(name);
 	const navigate = useNavigate();
-	const isHostOwned = policy.metadata.owner?.kind === "host";
-	const allowHostOwnedEdits = useAllowEdit("host-owned-policies");
+	const gov = useGovernance("policy");
+	const { canEdit } = resolveMutability(policy.metadata.owner?.kind, gov);
 
-	if (isHostOwned && !allowHostOwnedEdits) {
+	if (!canEdit) {
 		return (
 			<div className="flex flex-col gap-3 max-w-xl">
 				<Link
@@ -51,9 +53,15 @@ function EditPolicyInner() {
 					Host-owned policy
 				</h1>
 				<p className="text-sm text-muted-foreground">
-					This policy is managed by Relay and can't be edited from the UI. Flip{" "}
-					<code className="font-mono">allowEdit.host-owned-policies</code> in
-					localStorage to override.
+					This policy is managed by Relay and can't be edited from the UI.
+					Unlock editing for host-owned policies under{" "}
+					<Link
+						to="/settings/permissions"
+						className="text-foreground underline hover:no-underline"
+					>
+						Settings → Edit permissions
+					</Link>
+					.
 				</p>
 			</div>
 		);

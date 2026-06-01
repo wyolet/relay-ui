@@ -1,10 +1,19 @@
 import { Link } from "@tanstack/react-router";
-import { Boxes, ExternalLink, LayoutGrid, Power, Server } from "lucide-react";
+import {
+	Boxes,
+	ExternalLink,
+	LayoutGrid,
+	Power,
+	Server,
+	Trash2,
+} from "lucide-react";
+import { useGovernance } from "@/api/hooks/governance";
 import type { Model } from "@/api/types/model";
 import type { Provider } from "@/api/types/provider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { HostCell } from "@/hosts/HostCell";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
+import { resolveMutability } from "@/lib/ownership";
 import { ProviderLogo } from "@/providers/ProviderLogo";
 import {
 	type ProviderReferences,
@@ -19,6 +28,8 @@ interface Props {
 	onTabChange: (next: ProviderDetailTab) => void;
 	onToggleEnabled: () => void;
 	toggling?: boolean;
+	onDelete: () => void;
+	deleting?: boolean;
 }
 
 const TABS: {
@@ -37,6 +48,8 @@ export function ProviderDetailView({
 	onTabChange,
 	onToggleEnabled,
 	toggling,
+	onDelete,
+	deleting,
 }: Props) {
 	const refs = useProviderReferences(provider);
 
@@ -47,6 +60,8 @@ export function ProviderDetailView({
 				refs={refs}
 				onToggleEnabled={onToggleEnabled}
 				toggling={toggling}
+				onDelete={onDelete}
+				deleting={deleting}
 			/>
 
 			<Tabs
@@ -85,15 +100,23 @@ function Header({
 	refs,
 	onToggleEnabled,
 	toggling,
+	onDelete,
+	deleting,
 }: {
 	provider: Provider;
 	refs: ProviderReferences;
 	onToggleEnabled: () => void;
 	toggling?: boolean;
+	onDelete: () => void;
+	deleting?: boolean;
 }) {
 	const enabled = provider.spec.enabled !== false;
 	const system = provider.metadata.owner?.kind === "system";
-	const canMutate = !system;
+	const gov = useGovernance("provider");
+	const { canEdit, canDelete } = resolveMutability(
+		provider.metadata.owner?.kind,
+		gov,
+	);
 
 	const links: { href: string | undefined; label: string }[] = [
 		{ href: provider.spec.docsURL, label: "Docs" },
@@ -156,7 +179,7 @@ function Header({
 				</div>
 			</div>
 			<div className="flex items-center gap-2 shrink-0">
-				{canMutate && (
+				{canEdit && (
 					<button
 						type="button"
 						onClick={onToggleEnabled}
@@ -165,6 +188,17 @@ function Header({
 					>
 						<Power className="w-3.5 h-3.5" />
 						{enabled ? "Disable" : "Enable"}
+					</button>
+				)}
+				{canDelete && (
+					<button
+						type="button"
+						onClick={onDelete}
+						disabled={deleting}
+						className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium text-destructive border border-border hover:bg-destructive/10 disabled:opacity-50 transition-colors"
+					>
+						<Trash2 className="w-3.5 h-3.5" />
+						Delete
 					</button>
 				)}
 			</div>

@@ -4,11 +4,7 @@ import { DashboardKpis } from "@/dashboard/DashboardKpis";
 import { ErrorHotspots } from "@/dashboard/ErrorHotspots";
 import { HealthStrip } from "@/dashboard/HealthStrip";
 import { ReleaseReadiness } from "@/dashboard/ReleaseReadiness";
-import {
-	type CatalogCount,
-	useCatalogCounts,
-} from "@/dashboard/useCatalogCounts";
-import { ResourceGraphSVG } from "@/graph/ResourceGraphSVG";
+import { useCatalogCounts } from "@/dashboard/useCatalogCounts";
 import { PageLoader } from "@/shared/Spinner";
 import { UsageTimelineChart } from "@/usage/UsageTimelineChart";
 import { UsageTopGroups } from "@/usage/UsageTopGroups";
@@ -16,27 +12,6 @@ import { UsageTopGroups } from "@/usage/UsageTopGroups";
 export const Route = createFileRoute("/_authenticated/")({
 	component: DashboardPage,
 });
-
-function SectionLabel({ children }: { children: string }) {
-	return (
-		<h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-			{children}
-		</h2>
-	);
-}
-
-function CountCard({ label, count }: CatalogCount) {
-	return (
-		<div className="flex flex-col gap-1 rounded-lg border border-border bg-card p-4">
-			<span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-				{label}
-			</span>
-			<span className="text-2xl font-bold tabular-nums text-foreground">
-				{count ?? "—"}
-			</span>
-		</div>
-	);
-}
 
 function WelcomePanel() {
 	return (
@@ -115,27 +90,13 @@ function DashboardInner() {
 			<ReleaseReadiness />
 			{catalogEmpty && <WelcomePanel />}
 
-			<HealthStrip />
+			<HealthStrip counts={counts} />
 
 			{!catalogEmpty && (
 				<Suspense fallback={<TrafficSkeleton />}>
 					<TrafficBand />
 				</Suspense>
 			)}
-
-			<section>
-				<SectionLabel>Catalog</SectionLabel>
-				<div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-					{counts.map((c) => (
-						<CountCard key={c.label} label={c.label} count={c.count} />
-					))}
-				</div>
-			</section>
-
-			<section>
-				<SectionLabel>Topology</SectionLabel>
-				<ResourceGraphSVG />
-			</section>
 		</div>
 	);
 }

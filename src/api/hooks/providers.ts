@@ -58,3 +58,43 @@ export function useUpdateProvider(id: string) {
 		},
 	});
 }
+
+export function useDeleteProvider() {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: async (id: string): Promise<void> => {
+			const { error } = await apiClient.DELETE("/providers/by-id/{id}", {
+				params: { path: { id } },
+			});
+			if (error) throw new ApiError(0, error.error);
+		},
+		onMutate: async (id) => {
+			await queryClient.cancelQueries({ queryKey: ["providers"] });
+			const previous = queryClient.getQueryData(
+				providersListQueryOptions.queryKey,
+			);
+			queryClient.setQueryData(
+				providersListQueryOptions.queryKey,
+				(old: ProviderListResponse | undefined) => {
+					if (!old) return old;
+					return {
+						items: (old.items ?? []).filter((p) => p.metadata.id !== id),
+						total: old.total,
+					};
+				},
+			);
+			return { previous };
+		},
+		onError: (_err, _vars, context) => {
+			if (context?.previous !== undefined) {
+				queryClient.setQueryData(
+					providersListQueryOptions.queryKey,
+					context.previous,
+				);
+			}
+		},
+		onSuccess: () => {
+			void queryClient.invalidateQueries({ queryKey: ["providers"] });
+		},
+	});
+}

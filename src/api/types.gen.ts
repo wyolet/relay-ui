@@ -242,7 +242,8 @@ export interface paths {
         /** Update host by id */
         put: operations["update_host"];
         post?: never;
-        delete?: never;
+        /** Delete host by id */
+        delete: operations["delete_host"];
         options?: never;
         head?: never;
         patch?: never;
@@ -391,7 +392,8 @@ export interface paths {
         /** Update model by id */
         put: operations["update_model"];
         post?: never;
-        delete?: never;
+        /** Delete model by id */
+        delete: operations["delete_model"];
         options?: never;
         head?: never;
         patch?: never;
@@ -607,7 +609,8 @@ export interface paths {
         /** Update provider by id */
         put: operations["update_provider"];
         post?: never;
-        delete?: never;
+        /** Delete provider by id */
+        delete: operations["delete_provider"];
         options?: never;
         head?: never;
         patch?: never;
@@ -806,6 +809,102 @@ export interface paths {
          */
         get: operations["list_settings"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/settings/governance:host": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get settings section: governance:host
+         * @description Mutation guardrail for catalog-managed host rows. allowEdit/allowDelete gate generic-CRUD edit/delete; editing defaults on (rare but safe), deleting off (the accidental-click guard). System-owned rows are protected in code regardless; user-owned rows bypass this. Not per-user authz — that arrives with multi-tenant RBAC. Hot-reloaded.
+         */
+        get: operations["get_settings_governance_host"];
+        /**
+         * Update settings section: governance:host
+         * @description Mutation guardrail for catalog-managed host rows. allowEdit/allowDelete gate generic-CRUD edit/delete; editing defaults on (rare but safe), deleting off (the accidental-click guard). System-owned rows are protected in code regardless; user-owned rows bypass this. Not per-user authz — that arrives with multi-tenant RBAC. Hot-reloaded.
+         */
+        put: operations["update_settings_governance_host"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/settings/governance:model": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get settings section: governance:model
+         * @description Mutation guardrail for catalog-managed model rows. allowEdit/allowDelete gate generic-CRUD edit/delete; editing defaults on (rare but safe), deleting off (the accidental-click guard). System-owned rows are protected in code regardless; user-owned rows bypass this. Not per-user authz — that arrives with multi-tenant RBAC. Hot-reloaded.
+         */
+        get: operations["get_settings_governance_model"];
+        /**
+         * Update settings section: governance:model
+         * @description Mutation guardrail for catalog-managed model rows. allowEdit/allowDelete gate generic-CRUD edit/delete; editing defaults on (rare but safe), deleting off (the accidental-click guard). System-owned rows are protected in code regardless; user-owned rows bypass this. Not per-user authz — that arrives with multi-tenant RBAC. Hot-reloaded.
+         */
+        put: operations["update_settings_governance_model"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/settings/governance:policy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get settings section: governance:policy
+         * @description Mutation guardrail for catalog-managed policy rows. allowEdit/allowDelete gate generic-CRUD edit/delete; editing defaults on (rare but safe), deleting off (the accidental-click guard). System-owned rows are protected in code regardless; user-owned rows bypass this. Not per-user authz — that arrives with multi-tenant RBAC. Hot-reloaded.
+         */
+        get: operations["get_settings_governance_policy"];
+        /**
+         * Update settings section: governance:policy
+         * @description Mutation guardrail for catalog-managed policy rows. allowEdit/allowDelete gate generic-CRUD edit/delete; editing defaults on (rare but safe), deleting off (the accidental-click guard). System-owned rows are protected in code regardless; user-owned rows bypass this. Not per-user authz — that arrives with multi-tenant RBAC. Hot-reloaded.
+         */
+        put: operations["update_settings_governance_policy"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/settings/governance:provider": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get settings section: governance:provider
+         * @description Mutation guardrail for catalog-managed provider rows. allowEdit/allowDelete gate generic-CRUD edit/delete; editing defaults on (rare but safe), deleting off (the accidental-click guard). System-owned rows are protected in code regardless; user-owned rows bypass this. Not per-user authz — that arrives with multi-tenant RBAC. Hot-reloaded.
+         */
+        get: operations["get_settings_governance_provider"];
+        /**
+         * Update settings section: governance:provider
+         * @description Mutation guardrail for catalog-managed provider rows. allowEdit/allowDelete gate generic-CRUD edit/delete; editing defaults on (rare but safe), deleting off (the accidental-click guard). System-owned rows are protected in code regardless; user-owned rows bypass this. Not per-user authz — that arrives with multi-tenant RBAC. Hot-reloaded.
+         */
+        put: operations["update_settings_governance_provider"];
         post?: never;
         delete?: never;
         options?: never;
@@ -1052,6 +1151,30 @@ export interface components {
             ts: string;
             upstream?: components["schemas"]["UpstreamTiming"];
         };
+        Governance: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Governance.json
+             */
+            readonly $schema?: string;
+            allowDelete: boolean;
+            allowEdit: boolean;
+        };
+        GovernanceEnvelope: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/GovernanceEnvelope.json
+             */
+            readonly $schema?: string;
+            /**
+             * @description One of the relay's registered settings section keys.
+             * @enum {string}
+             */
+            section: "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            value: components["schemas"]["Governance"];
+        };
         Host: {
             /**
              * Format: uri
@@ -1148,7 +1271,7 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            section: "inference" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            section: "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
             value: components["schemas"]["Inference"];
         };
         Metadata: {
@@ -1295,7 +1418,7 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            section: "inference" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            section: "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
             value: components["schemas"]["Parsing"];
         };
         PayloadClickHouse: {
@@ -1332,7 +1455,7 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            section: "inference" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            section: "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
             value: components["schemas"]["PayloadLogging"];
         };
         PayloadS3: {
@@ -1465,7 +1588,7 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            section: "inference" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            section: "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
             value: components["schemas"]["ProxyMode"];
         };
         RateLimit: {
@@ -1913,7 +2036,7 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            name: "inference" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            name: "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
             /** @description OpenAPI component name for this section's typed value. */
             schemaRef?: string;
         };
@@ -1931,7 +2054,7 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            section: "inference" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            section: "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
             value: unknown;
         };
         settingsListOutputBody: {
@@ -2496,6 +2619,15 @@ export interface operations {
                     "application/json": components["schemas"]["OpenAIError"];
                 };
             };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
             /** @description Not Found */
             404: {
                 headers: {
@@ -2937,6 +3069,72 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    delete_host: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource id (UUIDv7). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3562,6 +3760,72 @@ export interface operations {
             };
         };
     };
+    delete_model: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource id (UUIDv7). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
     list_model_references: {
         parameters: {
             query?: never;
@@ -3908,6 +4172,15 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4424,6 +4697,15 @@ export interface operations {
                     "application/json": components["schemas"]["OpenAIError"];
                 };
             };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
             /** @description Not Found */
             404: {
                 headers: {
@@ -4678,6 +4960,72 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    delete_provider: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource id (UUIDv7). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5046,6 +5394,15 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5431,6 +5788,15 @@ export interface operations {
                     "application/json": components["schemas"]["OpenAIError"];
                 };
             };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
             /** @description Not Found */
             404: {
                 headers: {
@@ -5577,6 +5943,398 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    get_settings_governance_host: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GovernanceEnvelope"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    update_settings_governance_host: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Governance"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GovernanceEnvelope"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    get_settings_governance_model: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GovernanceEnvelope"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    update_settings_governance_model: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Governance"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GovernanceEnvelope"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    get_settings_governance_policy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GovernanceEnvelope"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    update_settings_governance_policy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Governance"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GovernanceEnvelope"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    get_settings_governance_provider: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GovernanceEnvelope"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    update_settings_governance_provider: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Governance"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GovernanceEnvelope"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

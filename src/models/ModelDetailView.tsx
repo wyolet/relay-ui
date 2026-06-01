@@ -38,6 +38,7 @@ import {
 	Zap,
 } from "lucide-react";
 import { Suspense } from "react";
+import { useGovernance } from "@/api/hooks/governance";
 import type { Pricing } from "@/api/hooks/pricings";
 import type { Model, ModelCapabilities } from "@/api/types/model";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -45,6 +46,7 @@ import { DiagnosticList } from "@/diagnostics/DiagnosticList";
 import { useModelDiagnostics } from "@/diagnostics/useDiagnostics";
 import { HostCell } from "@/hosts/HostCell";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
+import { resolveMutability } from "@/lib/ownership";
 import { ResourceLogs } from "@/logs/ResourceLogs";
 import { useModelPricing } from "@/models/useModelPricing";
 import {
@@ -58,7 +60,6 @@ import {
 	ResourceUsageCards,
 	UsageCardsSkeleton,
 } from "@/shared/ResourceUsageCards";
-import { useAllowEdit } from "@/stores/permissions";
 import { ResourceUsage } from "@/usage/ResourceUsage";
 
 export type ModelDetailTab =
@@ -194,8 +195,11 @@ function Header({
 }) {
 	const enabled = model.spec.enabled !== false;
 	const isProviderOwned = model.metadata.owner?.kind === "provider";
-	const allowEdit = useAllowEdit("models");
-	const canMutate = !isProviderOwned || allowEdit;
+	const gov = useGovernance("model");
+	const { canEdit, canDelete } = resolveMutability(
+		model.metadata.owner?.kind,
+		gov,
+	);
 	const dep = deprecationNote(model);
 
 	return (
@@ -272,37 +276,37 @@ function Header({
 					</div>
 				</div>
 				<div className="flex items-center gap-2 shrink-0">
-					{canMutate && (
-						<>
-							<button
-								type="button"
-								onClick={onToggleEnabled}
-								disabled={toggling}
-								className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium text-foreground border border-border hover:bg-muted disabled:opacity-50 transition-colors"
-							>
-								<Power className="w-3.5 h-3.5" />
-								{enabled ? "Disable" : "Enable"}
-							</button>
-							<Link
-								to="/models/$name/edit"
-								params={{ name: model.metadata.name }}
-								className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium text-foreground border border-border hover:bg-muted transition-colors"
-							>
-								<Pencil className="w-3.5 h-3.5" />
-								Edit
-							</Link>
-							{onDelete && (
-								<button
-									type="button"
-									onClick={onDelete}
-									disabled={deleting}
-									className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium text-destructive border border-border hover:bg-destructive/10 disabled:opacity-50 transition-colors"
-								>
-									<Trash2 className="w-3.5 h-3.5" />
-									Delete
-								</button>
-							)}
-						</>
+					{canEdit && (
+						<button
+							type="button"
+							onClick={onToggleEnabled}
+							disabled={toggling}
+							className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium text-foreground border border-border hover:bg-muted disabled:opacity-50 transition-colors"
+						>
+							<Power className="w-3.5 h-3.5" />
+							{enabled ? "Disable" : "Enable"}
+						</button>
+					)}
+					{canEdit && (
+						<Link
+							to="/models/$name/edit"
+							params={{ name: model.metadata.name }}
+							className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium text-foreground border border-border hover:bg-muted transition-colors"
+						>
+							<Pencil className="w-3.5 h-3.5" />
+							Edit
+						</Link>
+					)}
+					{canDelete && onDelete && (
+						<button
+							type="button"
+							onClick={onDelete}
+							disabled={deleting}
+							className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium text-destructive border border-border hover:bg-destructive/10 disabled:opacity-50 transition-colors"
+						>
+							<Trash2 className="w-3.5 h-3.5" />
+							Delete
+						</button>
 					)}
 				</div>
 			</div>
