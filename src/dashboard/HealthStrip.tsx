@@ -1,6 +1,7 @@
 import { KeyRound, ShieldAlert } from "lucide-react";
 import type { HealthStatusLevel } from "@/api/dashboard-types";
 import { cn } from "@/lib/utils";
+import type { CatalogCount } from "./useCatalogCounts";
 import { type HealthPill, useDashboardHealth } from "./useDashboardHealth";
 
 const DOT: Record<HealthStatusLevel, string> = {
@@ -27,7 +28,7 @@ const OVERALL_LABEL: Record<HealthStatusLevel, string> = {
 	error: "Service disruption",
 };
 
-export function HealthStrip() {
+export function HealthStrip({ counts }: { counts: CatalogCount[] }) {
 	const { subsystems, overall, phase, masterKeyConfigured, version } =
 		useDashboardHealth();
 
@@ -96,6 +97,17 @@ export function HealthStrip() {
 						: subsystems.map((s) => <SubsystemCell key={s.key} pill={s} />)}
 				</div>
 			)}
+
+			<dl className="flex flex-wrap items-center gap-x-5 gap-y-1.5 border-t border-border px-4 py-2.5 text-[11px]">
+				{counts.map((c) => (
+					<div key={c.label} className="inline-flex items-baseline gap-1.5">
+						<dd className="font-medium tabular-nums text-foreground">
+							{c.count ?? "—"}
+						</dd>
+						<dt className="text-muted-foreground">{c.label}</dt>
+					</div>
+				))}
+			</dl>
 		</section>
 	);
 }

@@ -50,7 +50,7 @@ export function ErrorHotspots() {
 								{labelFor(g.key)}
 							</code>
 							<div className="flex shrink-0 items-center gap-3 text-right tabular-nums">
-								<span className="text-sm text-destructive">
+								<span className="text-sm font-medium text-amber-600 dark:text-amber-400">
 									{fmtPct(g.errorRate)}
 								</span>
 								<span className="w-14 text-[11px] text-muted-foreground">
