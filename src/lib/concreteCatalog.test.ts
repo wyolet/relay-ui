@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+import type { Binding } from "@/api/hooks/bindings";
 import type { Host } from "@/api/types/host";
 import type { Model } from "@/api/types/model";
 import type { Provider } from "@/api/types/provider";
@@ -28,14 +29,7 @@ const models: Model[] = [
 			name: "claude-opus-4-7",
 			owner: { kind: "provider", id: "p-anthropic" },
 		},
-		spec: {
-			pointer: "",
-			snapshots: null,
-			hosts: [
-				{ hostId: "h-anthropic", adapter: "anthropic" },
-				{ hostId: "h-bedrock", adapter: "anthropic" },
-			],
-		},
+		spec: { pointer: "", snapshots: null },
 	} as Model,
 	{
 		metadata: {
@@ -43,11 +37,7 @@ const models: Model[] = [
 			name: "gpt-4o",
 			owner: { kind: "provider", id: "p-openai" },
 		},
-		spec: {
-			pointer: "",
-			snapshots: null,
-			hosts: [{ hostId: "h-openai", adapter: "openai" }],
-		},
+		spec: { pointer: "", snapshots: null },
 	} as Model,
 	{
 		metadata: {
@@ -58,15 +48,24 @@ const models: Model[] = [
 		spec: {
 			pointer: "",
 			snapshots: null,
-			hosts: [{ hostId: "h-anthropic", adapter: "anthropic" }],
 			deprecation: "Use claude-opus-4-7 instead.",
 		},
 	} as Model,
 ];
 
+const bind = (modelId: string, hostId: string, adapter: string): Binding =>
+	({ metadata: {}, spec: { modelId, hostId, adapter } }) as Binding;
+
+const bindings: Binding[] = [
+	bind("m-claude-opus", "h-anthropic", "anthropic"),
+	bind("m-claude-opus", "h-bedrock", "anthropic"),
+	bind("m-gpt-4o", "h-openai", "openai"),
+	bind("m-old", "h-anthropic", "anthropic"),
+];
+
 describe("buildConcreteCatalog", () => {
 	it("flattens provider × model × host into bindings", () => {
-		const cat = buildConcreteCatalog({ providers, models, hosts });
+		const cat = buildConcreteCatalog({ providers, models, hosts, bindings });
 		expect(cat).toEqual([
 			{ provider: "anthropic", model: "claude-opus-4-7", host: "anthropic" },
 			{ provider: "anthropic", model: "claude-opus-4-7", host: "bedrock" },
@@ -75,7 +74,7 @@ describe("buildConcreteCatalog", () => {
 	});
 
 	it("drops deprecated models by default", () => {
-		const cat = buildConcreteCatalog({ providers, models, hosts });
+		const cat = buildConcreteCatalog({ providers, models, hosts, bindings });
 		expect(cat.find((b) => b.model === "claude-2")).toBeUndefined();
 	});
 
@@ -84,6 +83,7 @@ describe("buildConcreteCatalog", () => {
 			providers,
 			models,
 			hosts,
+			bindings,
 			includeDeprecated: true,
 		});
 		expect(cat.find((b) => b.model === "claude-2")).toBeDefined();
@@ -97,15 +97,14 @@ describe("buildConcreteCatalog", () => {
 					name: "ghost",
 					owner: { kind: "provider", id: "does-not-exist" },
 				},
-				spec: {
-					hosts: [{ hostId: "h-anthropic", adapter: "x" }],
-				},
+				spec: { pointer: "", snapshots: null },
 			} as Model,
 		];
 		const cat = buildConcreteCatalog({
 			providers,
 			models: orphans,
 			hosts,
+			bindings: [bind("m-orphan", "h-anthropic", "x")],
 		});
 		expect(cat).toHaveLength(0);
 	});

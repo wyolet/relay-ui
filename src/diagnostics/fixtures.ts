@@ -1,3 +1,4 @@
+import type { Binding } from "@/api/hooks/bindings";
 import type { Host } from "@/api/types/host";
 import type { HostKey } from "@/api/types/hostkey";
 import type { Model } from "@/api/types/model";
@@ -92,7 +93,6 @@ interface ModelOpts {
 	providerId?: string;
 	enabled?: boolean;
 	deprecated?: boolean;
-	bindings?: { hostId: string; enabled?: boolean }[];
 }
 export function makeModel(o: ModelOpts): Model {
 	return {
@@ -106,11 +106,25 @@ export function makeModel(o: ModelOpts): Model {
 			snapshots: null,
 			enabled: o.enabled ?? true,
 			deprecation: o.deprecated ? { status: "deprecated" } : undefined,
-			hosts: (o.bindings ?? []).map((b) => ({
-				hostId: b.hostId,
-				adapter: "openai",
-				enabled: b.enabled ?? true,
-			})),
+		},
+	};
+}
+
+/** A host-binding for `model` on `hostId`. Bindings are now standalone resources. */
+export function bindingTo(
+	model: Model,
+	hostId: string,
+	o: { enabled?: boolean; adapter?: string; pricingId?: string } = {},
+): Binding {
+	const id = `bind-${model.metadata.id}-${hostId}`;
+	return {
+		metadata: { id, name: id },
+		spec: {
+			modelId: model.metadata.id ?? "",
+			hostId,
+			adapter: o.adapter ?? "openai",
+			enabled: o.enabled ?? true,
+			pricingId: o.pricingId,
 		},
 	};
 }
@@ -181,6 +195,7 @@ interface GraphOpts {
 	rateLimits?: RateLimit[];
 	relayKeys?: RelayKey[];
 	providers?: Provider[];
+	bindings?: Binding[];
 }
 export function graph(o: GraphOpts = {}): DiagnosticGraph {
 	return buildDiagnosticGraph({
@@ -191,5 +206,6 @@ export function graph(o: GraphOpts = {}): DiagnosticGraph {
 		rateLimits: o.rateLimits ?? [],
 		relayKeys: o.relayKeys ?? [],
 		providers: o.providers ?? [],
+		bindings: o.bindings ?? [],
 	});
 }

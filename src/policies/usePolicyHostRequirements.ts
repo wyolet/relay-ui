@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useBindings } from "@/api/hooks/bindings";
 import { useHostKeys } from "@/api/hooks/hostkeys";
 import { useHosts } from "@/api/hooks/hosts";
 import { useModels } from "@/api/hooks/models";
@@ -57,6 +58,7 @@ export function usePolicyHostRequirements(
 	const { data: models } = useModels();
 	const { data: hostsData } = useHosts();
 	const { data: hostKeysData } = useHostKeys();
+	const { data: bindingsData } = useBindings();
 
 	return useMemo(
 		() =>
@@ -67,6 +69,7 @@ export function usePolicyHostRequirements(
 				models: models.items ?? [],
 				hosts: hostsData.items ?? [],
 				hostKeys: hostKeysData.items ?? [],
+				bindings: bindingsData.items ?? [],
 				includeDeprecated,
 			}),
 		[
@@ -76,6 +79,7 @@ export function usePolicyHostRequirements(
 			models,
 			hostsData,
 			hostKeysData,
+			bindingsData,
 			includeDeprecated,
 		],
 	);
@@ -88,12 +92,14 @@ function derive(input: {
 	models: Parameters<typeof buildConcreteCatalog>[0]["models"];
 	hosts: readonly Host[];
 	hostKeys: readonly HostKey[];
+	bindings: Parameters<typeof buildConcreteCatalog>[0]["bindings"];
 	includeDeprecated: boolean;
 }): PolicyHostRequirements {
 	const catalog: ConcreteBinding[] = buildConcreteCatalog({
 		providers: input.providers,
 		models: input.models,
 		hosts: input.hosts,
+		bindings: input.bindings,
 		includeDeprecated: input.includeDeprecated,
 	});
 

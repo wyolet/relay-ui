@@ -54,9 +54,10 @@ export function hostIdsInPolicyCatalog(
 	for (const m of graph.models.values()) {
 		if (m.spec.enabled === false) continue;
 		const provider = providerSlugOf(m, graph);
-		for (const binding of m.spec.hosts ?? []) {
-			if (binding.enabled === false) continue;
-			const host = graph.hosts.get(binding.hostId);
+		for (const binding of graph.bindingsByModel.get(m.metadata.id ?? "") ??
+			[]) {
+			if (binding.spec.enabled === false) continue;
+			const host = graph.hosts.get(binding.spec.hostId);
 			if (!host) continue;
 			const hostSlug = host.metadata.name;
 			const matches = refs.some((r) => {
@@ -65,7 +66,7 @@ export function hostIdsInPolicyCatalog(
 				if (r.host && r.host !== hostSlug) return false;
 				return true;
 			});
-			if (matches) out.add(binding.hostId);
+			if (matches) out.add(binding.spec.hostId);
 		}
 	}
 	return out;
@@ -106,11 +107,13 @@ export function modelsForRefViaPolicy(
 			if (providerSlugOf(m, graph) !== parsed.provider) continue;
 		}
 		if (parsed.model && m.metadata.name !== parsed.model) continue;
-		const reachable = (m.spec.hosts ?? []).some((b) => {
-			if (b.enabled === false) return false;
-			if (!reachableHostIds.has(b.hostId)) return false;
+		const reachable = (
+			graph.bindingsByModel.get(m.metadata.id ?? "") ?? []
+		).some((b) => {
+			if (b.spec.enabled === false) return false;
+			if (!reachableHostIds.has(b.spec.hostId)) return false;
 			if (parsed.host) {
-				const host = graph.hosts.get(b.hostId);
+				const host = graph.hosts.get(b.spec.hostId);
 				if (!host || host.metadata.name !== parsed.host) return false;
 			}
 			return true;

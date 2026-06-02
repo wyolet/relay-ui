@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { analyzePolicy } from "@/diagnostics/analyzers/policy";
 import {
+	bindingTo,
 	graph,
 	makeHost,
 	makeHostKey,
@@ -169,7 +170,6 @@ describe("analyzePolicy", () => {
 			const model = makeModel({
 				name: "gpt-4o",
 				providerId: PROV,
-				bindings: [{ hostId: "h1" }],
 			});
 			const p = makePolicy({
 				id: "p1",
@@ -184,6 +184,7 @@ describe("analyzePolicy", () => {
 					hosts: [host],
 					models: [model],
 					providers: [provider],
+					bindings: [bindingTo(model, "h1")],
 				}),
 			);
 			expect(codes(ds)).not.toContain("policy.catalog-resolves-empty");
@@ -198,7 +199,6 @@ describe("analyzePolicy", () => {
 			const model = makeModel({
 				name: "gpt-4o",
 				providerId: PROV,
-				bindings: [{ hostId: "h2" }],
 			});
 			const p = makePolicy({
 				id: "p1",
@@ -213,6 +213,7 @@ describe("analyzePolicy", () => {
 					hosts: [host, otherHost],
 					models: [model],
 					providers: [provider],
+					bindings: [bindingTo(model, "h2")],
 				}),
 			);
 			const cat = ds.find((d) => d.code === "policy.catalog-resolves-empty");
@@ -226,7 +227,6 @@ describe("analyzePolicy", () => {
 			const live = makeModel({
 				name: "gpt-4o",
 				providerId: PROV,
-				bindings: [{ hostId: "h1" }],
 			});
 			const p = makePolicy({
 				id: "p1",
@@ -241,6 +241,7 @@ describe("analyzePolicy", () => {
 					hosts: [host],
 					models: [live],
 					providers: [provider],
+					bindings: [bindingTo(live, "h1")],
 				}),
 			);
 			const cat = ds.find((d) => d.code === "policy.catalog-resolves-empty");
@@ -255,7 +256,6 @@ describe("analyzePolicy", () => {
 				name: "gpt-4o",
 				providerId: PROV,
 				enabled: false,
-				bindings: [{ hostId: "h1" }],
 			});
 			const p = makePolicy({
 				id: "p1",
@@ -270,6 +270,7 @@ describe("analyzePolicy", () => {
 					hosts: [host],
 					models: [model],
 					providers: [provider],
+					bindings: [bindingTo(model, "h1")],
 				}),
 			);
 			expect(codes(ds)).toContain("policy.catalog-resolves-empty");

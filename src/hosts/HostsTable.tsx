@@ -84,11 +84,7 @@ function HostRow({ h }: { h: Host }) {
 	const update = useUpdateHost(h.metadata.id ?? "");
 	const diagnostics = useHostDiagnostics(h.metadata.id);
 	const refs = useHostReferences(h);
-	const enabledModels = refs.models.filter((m) =>
-		(m.spec.hosts ?? []).some(
-			(b) => b.hostId === h.metadata.id && b.enabled !== false,
-		),
-	).length;
+	const enabledModels = refs.enabledModels.length;
 	const enabledKeys = refs.hostKeys.filter(
 		(hk) => hk.spec.enabled !== false,
 	).length;

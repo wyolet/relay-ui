@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useBindings } from "@/api/hooks/bindings";
 import { useHosts } from "@/api/hooks/hosts";
 import { useModels } from "@/api/hooks/models";
 import { useProviders } from "@/api/hooks/providers";
@@ -31,6 +32,7 @@ export function usePolicyRLResolution(
 	const { data: providersData } = useProviders();
 	const { data: modelsData } = useModels();
 	const { data: hostsData } = useHosts();
+	const { data: hostBindingsData } = useBindings();
 	const { data: rateLimitsData } = useRateLimits();
 
 	const concreteCatalog = useMemo(
@@ -39,9 +41,10 @@ export function usePolicyRLResolution(
 				providers: providersData.items ?? [],
 				models: modelsData.items ?? [],
 				hosts: hostsData.items ?? [],
+				bindings: hostBindingsData.items ?? [],
 				includeDeprecated,
 			}),
-		[providersData, modelsData, hostsData, includeDeprecated],
+		[providersData, modelsData, hostsData, hostBindingsData, includeDeprecated],
 	);
 
 	const labels = useMemo<LabelLookups>(() => {

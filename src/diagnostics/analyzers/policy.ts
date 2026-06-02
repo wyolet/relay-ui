@@ -203,6 +203,7 @@ export function analyzePolicy(
 			providers: [...graph.providers.values()],
 			models: [...graph.models.values()],
 			hosts: [...graph.hosts.values()],
+			bindings: [...graph.bindingsByModel.values()].flat(),
 			includeDeprecated: policy.spec.includeDeprecated ?? false,
 		});
 		const uncovered = new Set<string>();

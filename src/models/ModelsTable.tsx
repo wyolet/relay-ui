@@ -5,6 +5,8 @@ import {
 	ArrowUp,
 	MoreHorizontal,
 } from "lucide-react";
+import { useMemo } from "react";
+import { bindingsByModel, useBindings } from "@/api/hooks/bindings";
 import { useGovernance } from "@/api/hooks/governance";
 import { useDeleteModel, useUpdateModel } from "@/api/hooks/models";
 import { ApiError } from "@/api/types/errors";
@@ -212,21 +214,20 @@ function RowMenu({
 }
 
 function HostBadges({
-	m,
+	hostIds,
 	hostsById,
 }: {
-	m: Model;
+	hostIds: readonly string[];
 	hostsById?: Map<string, Host>;
 }) {
-	const bindings = m.spec.hosts ?? [];
-	if (bindings.length === 0 || !hostsById) return null;
+	if (hostIds.length === 0 || !hostsById) return null;
 	const seen = new Set<string>();
 	const hosts: Host[] = [];
-	for (const b of bindings) {
-		if (seen.has(b.hostId)) continue;
-		const h = hostsById.get(b.hostId);
+	for (const hostId of hostIds) {
+		if (seen.has(hostId)) continue;
+		const h = hostsById.get(hostId);
 		if (!h) continue;
-		seen.add(b.hostId);
+		seen.add(hostId);
 		hosts.push(h);
 	}
 	if (hosts.length === 0) return null;
@@ -249,10 +250,12 @@ function ModelRow({
 	m,
 	hideProvider,
 	hostsById,
+	hostIds,
 }: {
 	m: Model;
 	hideProvider?: boolean;
 	hostsById?: Map<string, Host>;
+	hostIds: readonly string[];
 }) {
 	const enabled = m.spec.enabled !== false;
 	const updateModel = useUpdateModel(m.metadata.id ?? "");
@@ -329,7 +332,7 @@ function ModelRow({
 			</td>
 			{!hideProvider && (
 				<td className="px-3 py-2 text-sm text-foreground">
-					<HostBadges m={m} hostsById={hostsById} />
+					<HostBadges hostIds={hostIds} hostsById={hostsById} />
 				</td>
 			)}
 			<td className="px-3 py-2">
@@ -383,6 +386,18 @@ export function ModelsTable({
 	hideProvider,
 	hostsById,
 }: ModelsTableProps) {
+	const { data: bindingsData } = useBindings();
+	const hostIdsByModel = useMemo(() => {
+		const byModel = bindingsByModel(bindingsData.items ?? []);
+		const out = new Map<string, string[]>();
+		for (const [modelId, list] of byModel) {
+			out.set(
+				modelId,
+				list.map((b) => b.spec.hostId),
+			);
+		}
+		return out;
+	}, [bindingsData]);
 	return (
 		<div className="overflow-x-auto rounded-lg border border-border bg-card">
 			<table className="w-full border-collapse">
@@ -419,6 +434,7 @@ export function ModelsTable({
 							m={m}
 							hideProvider={hideProvider}
 							hostsById={hostsById}
+							hostIds={hostIdsByModel.get(m.metadata.id ?? "") ?? []}
 						/>
 					))}
 				</tbody>

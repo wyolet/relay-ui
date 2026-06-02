@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { bindingsByModel, useBindings } from "@/api/hooks/bindings";
 import { useHosts } from "@/api/hooks/hosts";
 import { usePolicies } from "@/api/hooks/policies";
 import { useProviders } from "@/api/hooks/providers";
@@ -20,6 +21,10 @@ export interface ModelHostRow {
 	snapshots: readonly string[] | null;
 	adapter: string;
 	enabled: boolean;
+	/** Pricing record id attached to this binding, if any. */
+	pricingId: string | undefined;
+	/** Upstream model name this binding maps to on the host. */
+	upstreamName: string | undefined;
 }
 
 export interface ModelPolicyRow {
@@ -48,6 +53,7 @@ export function useModelReferences(model: Model): ModelReferences {
 	const { data: hostsData } = useHosts();
 	const { data: policiesData } = usePolicies();
 	const { data: relayKeysData } = useRelayKeys();
+	const { data: bindingsData } = useBindings();
 
 	return useMemo(() => {
 		const ownerId =
@@ -66,12 +72,17 @@ export function useModelReferences(model: Model): ModelReferences {
 			if (h.metadata.id) hostById.set(h.metadata.id, h);
 		}
 
-		const hosts: ModelHostRow[] = (model.spec.hosts ?? []).map((b) => ({
-			host: hostById.get(b.hostId),
-			hostId: b.hostId,
-			snapshots: b.snapshots ?? null,
-			adapter: b.adapter,
-			enabled: b.enabled !== false,
+		const modelBindings =
+			bindingsByModel(bindingsData.items ?? []).get(model.metadata.id ?? "") ??
+			[];
+		const hosts: ModelHostRow[] = modelBindings.map((b) => ({
+			host: hostById.get(b.spec.hostId),
+			hostId: b.spec.hostId,
+			snapshots: b.spec.snapshots ?? null,
+			adapter: b.spec.adapter,
+			enabled: b.spec.enabled !== false,
+			pricingId: b.spec.pricingId,
+			upstreamName: b.spec.upstreamName,
 		}));
 
 		const relayKeyCountByPolicy = new Map<string, number>();
@@ -89,8 +100,8 @@ export function useModelReferences(model: Model): ModelReferences {
 				if (validateCatalogRef(raw)) continue;
 				const parsed = parseCatalogRef(raw);
 				// Check whether the ref covers ANY of this model's host bindings.
-				const matches = (model.spec.hosts ?? []).some((b) => {
-					const h = hostById.get(b.hostId);
+				const matches = modelBindings.some((b) => {
+					const h = hostById.get(b.spec.hostId);
 					if (!h) return false;
 					return refCovers(parsed, {
 						provider: providerSlug,
@@ -112,5 +123,12 @@ export function useModelReferences(model: Model): ModelReferences {
 		}
 
 		return { provider, providerSlug, hosts, policies };
-	}, [model, providersData, hostsData, policiesData, relayKeysData]);
+	}, [
+		model,
+		providersData,
+		hostsData,
+		policiesData,
+		relayKeysData,
+		bindingsData,
+	]);
 }

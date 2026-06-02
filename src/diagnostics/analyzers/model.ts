@@ -19,12 +19,13 @@ export function analyzeModel(
 ): Diagnostic[] {
 	const out: Diagnostic[] = [];
 	const enabled = model.spec.enabled !== false;
-	const bindings = model.spec.hosts ?? [];
+	const bindings = graph.bindingsByModel.get(model.metadata.id ?? "") ?? [];
 
-	const livingBindings = bindings.filter((b) => graph.hosts.has(b.hostId));
+	const livingBindings = bindings.filter((b) => graph.hosts.has(b.spec.hostId));
 	const enabledBindings = livingBindings.filter(
 		(b) =>
-			b.enabled !== false && graph.hosts.get(b.hostId)?.spec.enabled !== false,
+			b.spec.enabled !== false &&
+			graph.hosts.get(b.spec.hostId)?.spec.enabled !== false,
 	);
 
 	if (bindings.length > 0 && enabledBindings.length === 0) {
@@ -36,7 +37,7 @@ export function analyzeModel(
 		});
 	} else if (
 		bindings.length > 0 &&
-		livingBindings.every((b) => b.enabled === false)
+		livingBindings.every((b) => b.spec.enabled === false)
 	) {
 		out.push({
 			severity: "warn",

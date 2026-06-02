@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { bindingsByHost, useBindings } from "@/api/hooks/bindings";
 import { useHostKeys } from "@/api/hooks/hostkeys";
 import { useModels } from "@/api/hooks/models";
 import { usePolicies } from "@/api/hooks/policies";
@@ -11,6 +12,8 @@ import type { Policy } from "@/api/types/policy";
 export interface HostReferences {
 	/** Models with at least one binding to this host. */
 	models: Model[];
+	/** Models whose binding to this host is enabled. */
+	enabledModels: Model[];
 	/** Host keys whose `spec.hostId` matches this host. */
 	hostKeys: HostKey[];
 	/** Policies owned by this host (host policies / tiers). */
@@ -35,12 +38,25 @@ export function useHostReferences(host: Host): HostReferences {
 	const { data: hostKeysData } = useHostKeys();
 	const { data: policiesData } = usePolicies();
 	const { data: relayKeysData } = useRelayKeys();
+	const { data: bindingsData } = useBindings();
 
 	return useMemo(() => {
 		const hostId = host.metadata.id ?? "";
 
+		// Bindings to this host, indexed by the model they serve.
+		const hostBindings =
+			bindingsByHost(bindingsData.items ?? []).get(hostId) ?? [];
+		const enabledModelIds = new Set(
+			hostBindings
+				.filter((b) => b.spec.enabled !== false)
+				.map((b) => b.spec.modelId),
+		);
+		const boundModelIds = new Set(hostBindings.map((b) => b.spec.modelId));
 		const models = (modelsData.items ?? []).filter((m) =>
-			(m.spec.hosts ?? []).some((b) => b.hostId === hostId),
+			boundModelIds.has(m.metadata.id ?? ""),
+		);
+		const enabledModels = models.filter((m) =>
+			enabledModelIds.has(m.metadata.id ?? ""),
 		);
 
 		const hostKeys = (hostKeysData.items ?? []).filter(
@@ -82,10 +98,18 @@ export function useHostReferences(host: Host): HostReferences {
 
 		return {
 			models,
+			enabledModels,
 			hostKeys,
 			hostPolicies,
 			userPolicies,
 			totalRelayKeys,
 		};
-	}, [host, modelsData, hostKeysData, policiesData, relayKeysData]);
+	}, [
+		host,
+		modelsData,
+		hostKeysData,
+		policiesData,
+		relayKeysData,
+		bindingsData,
+	]);
 }
