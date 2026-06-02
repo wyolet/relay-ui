@@ -8,6 +8,8 @@ import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
 import {
 	modelDetailQueryOptions,
+	modelHostsQueryOptions,
+	modelPoliciesQueryOptions,
 	modelsListQueryOptions,
 	useDeleteModel,
 	useModel,
@@ -44,6 +46,10 @@ export const Route = createFileRoute("/_authenticated/models/$name")({
 	loader: ({ context, params }) =>
 		Promise.all([
 			context.queryClient.ensureQueryData(modelDetailQueryOptions(params.name)),
+			context.queryClient.ensureQueryData(modelHostsQueryOptions(params.name)),
+			context.queryClient.ensureQueryData(
+				modelPoliciesQueryOptions(params.name),
+			),
 			context.queryClient.ensureQueryData(modelsListQueryOptions),
 			context.queryClient.ensureQueryData(hostsListQueryOptions),
 			context.queryClient.ensureQueryData(hostKeysListQueryOptions),

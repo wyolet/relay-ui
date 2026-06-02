@@ -37,9 +37,11 @@ import {
 	Wrench,
 	Zap,
 } from "lucide-react";
-import { Suspense } from "react";
+import { Suspense, useMemo } from "react";
 import { useGovernance } from "@/api/hooks/governance";
-import type { Pricing, PricingRate } from "@/api/hooks/pricings";
+import { useHosts } from "@/api/hooks/hosts";
+import type { ModelHostView, ModelPolicyView } from "@/api/hooks/models";
+import type { Host } from "@/api/types/host";
 import type { Model, ModelCapabilities } from "@/api/types/model";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DiagnosticList } from "@/diagnostics/DiagnosticList";
@@ -51,12 +53,12 @@ import { cn } from "@/lib/utils";
 import { ResourceLogs } from "@/logs/ResourceLogs";
 import type { BindingUsage } from "@/models/useModelHostSpend";
 import { useModelHostSpend } from "@/models/useModelHostSpend";
-import { useModelPricing } from "@/models/useModelPricing";
+import { useModelHosts } from "@/models/useModelHosts";
+import { useModelPolicies } from "@/models/useModelPolicies";
 import {
-	type ModelHostRow,
-	type ModelPolicyRow,
-	useModelReferences,
-} from "@/models/useModelReferences";
+	type ModelProvider,
+	useModelProvider,
+} from "@/models/useModelProvider";
 import { useModelUsage } from "@/models/useModelUsage";
 import { ProviderLogo } from "@/providers/ProviderLogo";
 import {
@@ -107,13 +109,23 @@ export function ModelDetailView({
 	toggling,
 	deleting,
 }: Props) {
-	const refs = useModelReferences(model);
+	const provider = useModelProvider(model);
+	const hostRows = useModelHosts(model.metadata.name);
+	const policyRows = useModelPolicies(model.metadata.name);
+	const { data: hostsData } = useHosts();
+	const hostById = useMemo(() => {
+		const m = new Map<string, Host>();
+		for (const h of hostsData.items ?? []) {
+			if (h.metadata.id) m.set(h.metadata.id, h);
+		}
+		return m;
+	}, [hostsData]);
 
 	return (
 		<div className="flex flex-col gap-5">
 			<Header
 				model={model}
-				refs={refs}
+				provider={provider}
 				onToggleEnabled={onToggleEnabled}
 				onDelete={onDelete}
 				toggling={toggling}
@@ -134,19 +146,23 @@ export function ModelDetailView({
 				</TabsList>
 
 				<TabsContent value="overview">
-					<OverviewTab model={model} refs={refs} />
+					<OverviewTab
+						model={model}
+						hostRows={hostRows}
+						policyRows={policyRows}
+					/>
 				</TabsContent>
 				<TabsContent value="hosts">
-					<HostsTab rows={refs.hosts} />
+					<HostsTab rows={hostRows} hostById={hostById} />
 				</TabsContent>
 				<TabsContent value="policies">
-					<PoliciesTab rows={refs.policies} />
+					<PoliciesTab rows={policyRows} />
 				</TabsContent>
 				<TabsContent value="limits">
 					<LimitsTab model={model} />
 				</TabsContent>
 				<TabsContent value="pricing">
-					<PricingTab model={model} hosts={refs.hosts} />
+					<PricingTab model={model} hostRows={hostRows} hostById={hostById} />
 				</TabsContent>
 				<TabsContent value="usage">
 					{model.metadata.id ? (
@@ -183,14 +199,14 @@ export function ModelDetailView({
 
 function Header({
 	model,
-	refs,
+	provider,
 	onToggleEnabled,
 	onDelete,
 	toggling,
 	deleting,
 }: {
 	model: Model;
-	refs: ReturnType<typeof useModelReferences>;
+	provider: ModelProvider;
 	onToggleEnabled: () => void;
 	onDelete?: () => void;
 	toggling?: boolean;
@@ -209,9 +225,9 @@ function Header({
 		<div className="flex flex-col gap-3">
 			<div className="flex items-start justify-between gap-4">
 				<div className="min-w-0 flex items-start gap-3">
-					{refs.provider ? (
+					{provider.provider ? (
 						<ProviderLogo
-							provider={refs.provider}
+							provider={provider.provider}
 							size={36}
 							className="mt-0.5 shrink-0"
 						/>
@@ -241,23 +257,23 @@ function Header({
 							{model.metadata.name}
 						</p>
 						<p className="mt-0.5 text-[11px] text-muted-foreground">
-							{refs.providerSlug && (
+							{provider.providerSlug && (
 								<>
 									by{" "}
 									<Link
 										to="/providers/$name"
-										params={{ name: refs.providerSlug }}
+										params={{ name: provider.providerSlug }}
 										className="text-foreground hover:underline"
 									>
-										{refs.provider
-											? displayLabel(refs.provider.metadata)
-											: refs.providerSlug}
+										{provider.provider
+											? displayLabel(provider.provider.metadata)
+											: provider.providerSlug}
 									</Link>
 								</>
 							)}
 							{model.spec.family && (
 								<>
-									{refs.providerSlug && (
+									{provider.providerSlug && (
 										<span className="text-muted-foreground/50"> · </span>
 									)}
 									family{" "}
@@ -329,18 +345,19 @@ function deprecationNote(m: Model): string | null {
 
 function OverviewTab({
 	model,
-	refs,
+	hostRows,
+	policyRows,
 }: {
 	model: Model;
-	refs: ReturnType<typeof useModelReferences>;
+	hostRows: ModelHostView[];
+	policyRows: ModelPolicyView[];
 }) {
 	const caps = activeCapabilities(model.spec.capabilities);
 	const tags = model.spec.tags ?? [];
-	const enabledHosts = refs.hosts.filter((h) => h.enabled).length;
-	const totalRelayKeys = refs.policies.reduce(
-		(acc, p) => acc + p.relayKeyCount,
-		0,
-	);
+	const enabledHosts = hostRows.filter((h) => h.binding.enabled).length;
+	const throttled = policyRows.filter(
+		(p) => (p.limits?.length ?? 0) > 0,
+	).length;
 
 	return (
 		<div className="flex flex-col gap-6 pt-2">
@@ -351,21 +368,15 @@ function OverviewTab({
 				<div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
 					<StatCard
 						label="Hosts"
-						value={refs.hosts.length}
+						value={hostRows.length}
 						sub={
-							refs.hosts.length === 0
-								? "not deployed"
-								: `${enabledHosts} enabled`
+							hostRows.length === 0 ? "not deployed" : `${enabledHosts} enabled`
 						}
 					/>
 					<StatCard
 						label="Policies"
-						value={refs.policies.length}
-						sub={
-							refs.policies.length === 0
-								? "unused"
-								: `${totalRelayKeys} relay key${totalRelayKeys === 1 ? "" : "s"}`
-						}
+						value={policyRows.length}
+						sub={policyRows.length === 0 ? "unused" : `${throttled} throttled`}
 					/>
 					<StatCard
 						label="Capabilities"
@@ -501,7 +512,13 @@ function ModelUsageCards({ modelId }: { modelId: string }) {
 
 /* ---------------- Hosts ---------------- */
 
-function HostsTab({ rows }: { rows: ModelHostRow[] }) {
+function HostsTab({
+	rows,
+	hostById,
+}: {
+	rows: ModelHostView[];
+	hostById: Map<string, Host>;
+}) {
 	if (rows.length === 0) {
 		return (
 			<EmptyState
@@ -517,60 +534,72 @@ function HostsTab({ rows }: { rows: ModelHostRow[] }) {
 				<thead className="bg-muted/30 text-[10px] uppercase tracking-wide text-muted-foreground">
 					<tr>
 						<Th>Host</Th>
+						<Th>Upstream</Th>
 						<Th>Snapshots</Th>
 						<Th>Adapter</Th>
 						<Th className="text-right">Status</Th>
 					</tr>
 				</thead>
 				<tbody className="divide-y divide-border">
-					{rows.map((row) => (
-						<tr
-							key={row.hostId}
-							className="hover:bg-muted/30 transition-colors"
-						>
-							<Td>
-								{row.host ? (
+					{rows.map((row) => {
+						const host = hostById.get(row.host.id);
+						const snapshots = row.binding.snapshots ?? [];
+						return (
+							<tr
+								key={row.binding.id}
+								className="hover:bg-muted/30 transition-colors"
+							>
+								<Td>
 									<Link
 										to="/hosts/$name"
-										params={{ name: row.host.metadata.name }}
+										params={{ name: row.host.name }}
 										className="block"
 									>
-										<HostCell host={row.host} size="sm" />
+										<HostCell
+											host={host}
+											size="sm"
+											fallbackLabel={displayLabel(row.host)}
+										/>
 									</Link>
-								) : (
-									<HostCell
-										host={undefined}
-										size="sm"
-										fallbackLabel={`Unknown (${row.hostId.slice(0, 6)}…)`}
-									/>
-								)}
-							</Td>
-							<Td>
-								{row.snapshots && row.snapshots.length > 0 ? (
-									<ul className="flex flex-wrap gap-1">
-										{row.snapshots.map((s) => (
-											<li
-												key={s}
-												className="inline-flex items-center px-1.5 py-0.5 rounded bg-muted border border-border font-mono text-[10px] text-foreground"
-											>
-												{s}
-											</li>
-										))}
-									</ul>
-								) : (
-									<span className="text-[11px] text-muted-foreground">
-										All snapshots
+								</Td>
+								<Td>
+									{row.binding.upstreamName ? (
+										<code className="font-mono text-[11px] text-foreground">
+											{row.binding.upstreamName}
+										</code>
+									) : (
+										<span className="text-[11px] text-muted-foreground">—</span>
+									)}
+								</Td>
+								<Td>
+									{snapshots.length > 0 ? (
+										<ul className="flex flex-wrap gap-1">
+											{snapshots.map((s) => (
+												<li
+													key={s}
+													className="inline-flex items-center px-1.5 py-0.5 rounded bg-muted border border-border font-mono text-[10px] text-foreground"
+												>
+													{s}
+												</li>
+											))}
+										</ul>
+									) : (
+										<span className="text-[11px] text-muted-foreground">
+											All snapshots
+										</span>
+									)}
+								</Td>
+								<Td>
+									<span className="text-xs text-foreground">
+										{row.binding.adapter}
 									</span>
-								)}
-							</Td>
-							<Td>
-								<span className="text-xs text-foreground">{row.adapter}</span>
-							</Td>
-							<Td className="text-right">
-								<StatusInline enabled={row.enabled} />
-							</Td>
-						</tr>
-					))}
+								</Td>
+								<Td className="text-right">
+									<StatusInline enabled={row.binding.enabled} />
+								</Td>
+							</tr>
+						);
+					})}
 				</tbody>
 			</table>
 		</div>
@@ -579,7 +608,7 @@ function HostsTab({ rows }: { rows: ModelHostRow[] }) {
 
 /* ---------------- Policies ---------------- */
 
-function PoliciesTab({ rows }: { rows: ModelPolicyRow[] }) {
+function PoliciesTab({ rows }: { rows: ModelPolicyView[] }) {
 	if (rows.length === 0) {
 		return (
 			<EmptyState
@@ -595,65 +624,56 @@ function PoliciesTab({ rows }: { rows: ModelPolicyRow[] }) {
 				<thead className="bg-muted/30 text-[10px] uppercase tracking-wide text-muted-foreground">
 					<tr>
 						<Th>Policy</Th>
-						<Th>Granted via</Th>
-						<Th className="text-right">Relay keys</Th>
-						<Th className="text-right">Status</Th>
+						<Th>Owner</Th>
+						<Th>Limits applied</Th>
 					</tr>
 				</thead>
 				<tbody className="divide-y divide-border">
-					{rows.map((row) => (
-						<tr
-							key={row.policy.metadata.name}
-							className="hover:bg-muted/30 transition-colors"
-						>
-							<Td>
-								<div className="min-w-0">
-									<div className="flex items-center gap-2 min-w-0">
-										<Link
-											to="/policies/$name"
-											params={{ name: row.policy.metadata.name }}
-											className="text-foreground hover:underline truncate font-medium"
-										>
-											{displayLabel(row.policy.metadata)}
-										</Link>
-										{row.hostOwned && (
-											<span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium uppercase tracking-wide bg-muted text-muted-foreground border border-border">
-												Host-owned
-											</span>
+					{rows.map((row) => {
+						const limits = row.limits ?? [];
+						return (
+							<tr key={row.id} className="hover:bg-muted/30 transition-colors">
+								<Td>
+									<Link
+										to="/policies/$name"
+										params={{ name: row.name }}
+										className="font-mono text-[12px] text-foreground hover:underline"
+									>
+										{row.name}
+									</Link>
+								</Td>
+								<Td>
+									<span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+										<span className="rounded bg-muted px-1.5 py-0.5 font-medium uppercase tracking-wide text-[9px] text-muted-foreground border border-border">
+											{row.owner.kind}
+										</span>
+										{row.owner.name && (
+											<span className="text-foreground">{row.owner.name}</span>
 										)}
-									</div>
-									<div className="text-[11px] text-muted-foreground font-mono truncate">
-										{row.policy.metadata.name}
-									</div>
-								</div>
-							</Td>
-							<Td>
-								<ul className="flex flex-wrap gap-1">
-									{row.matchingRefs.map((r) => (
-										<li key={r}>
-											<code className="inline-flex items-center px-1.5 py-0.5 rounded bg-muted border border-border font-mono text-[10px] text-foreground">
-												{r}
-											</code>
-										</li>
-									))}
-								</ul>
-							</Td>
-							<Td className="text-right tabular-nums">
-								<span
-									className={
-										row.relayKeyCount === 0
-											? "text-muted-foreground"
-											: "text-foreground"
-									}
-								>
-									{row.relayKeyCount}
-								</span>
-							</Td>
-							<Td className="text-right">
-								<StatusInline enabled={row.enabled} />
-							</Td>
-						</tr>
-					))}
+									</span>
+								</Td>
+								<Td>
+									{limits.length === 0 ? (
+										<span className="text-[11px] text-muted-foreground">
+											no limit
+										</span>
+									) : (
+										<ul className="flex flex-wrap gap-1">
+											{limits.map((l) => (
+												<li
+													key={`${l.meter}-${l.window}-${l.amount}`}
+													className="inline-flex items-center px-1.5 py-0.5 rounded bg-muted border border-border font-mono text-[10px] text-foreground"
+													title={l.strategy}
+												>
+													{l.amount.toLocaleString()} {l.meter} / {l.window}
+												</li>
+											))}
+										</ul>
+									)}
+								</Td>
+							</tr>
+						);
+					})}
 				</tbody>
 			</table>
 		</div>
@@ -733,7 +753,15 @@ function fmtTokens(n: number): string {
 
 /* ---------------- Pricing (per host binding) ---------------- */
 
-function PricingTab({ model, hosts }: { model: Model; hosts: ModelHostRow[] }) {
+function PricingTab({
+	model,
+	hostRows,
+	hostById,
+}: {
+	model: Model;
+	hostRows: ModelHostView[];
+	hostById: Map<string, Host>;
+}) {
 	if (!model.metadata.id) {
 		return (
 			<ComingSoon
@@ -745,49 +773,42 @@ function PricingTab({ model, hosts }: { model: Model; hosts: ModelHostRow[] }) {
 	}
 	return (
 		<Suspense fallback={<PricingSkeleton />}>
-			<ModelPricing modelId={model.metadata.id} hosts={hosts} />
+			<ModelPricing
+				modelId={model.metadata.id}
+				hostRows={hostRows}
+				hostById={hostById}
+			/>
 		</Suspense>
 	);
 }
 
 /**
- * Pricing grouped under each host: a model is served on a host via a binding,
- * and each binding may attach a pricing record (`binding.pricingId`). Records
- * not referenced by any binding are listed under "Unassigned" so nothing hides.
+ * Pricing grouped under each host — the model_hosts view returns the binding +
+ * its attached pricing together, so each card is one host with its rates plus
+ * billing context and (when traffic exists) estimated spend over the window.
  */
 function ModelPricing({
 	modelId,
-	hosts,
+	hostRows,
+	hostById,
 }: {
 	modelId: string;
-	hosts: ModelHostRow[];
+	hostRows: ModelHostView[];
+	hostById: Map<string, Host>;
 }) {
-	const pricings = useModelPricing(modelId);
 	const spend = useModelHostSpend(modelId);
-
-	const pricingById = new Map<string, Pricing>();
-	for (const p of pricings) {
-		if (p.metadata.id) pricingById.set(p.metadata.id, p);
-	}
-	const usedIds = new Set(
-		hosts.map((h) => h.pricingId).filter((x): x is string => !!x),
-	);
-	const unassigned = pricings.filter(
-		(p) => !p.metadata.id || !usedIds.has(p.metadata.id),
-	);
 
 	// Cheapest host by example-request cost — only meaningful with ≥2 priced hosts.
 	const costByHost = new Map<string, number>();
-	for (const row of hosts) {
-		const p = row.pricingId ? pricingById.get(row.pricingId) : undefined;
-		const c = p ? blendedRequestCost(p) : null;
-		if (c != null && c > 0) costByHost.set(row.hostId, c);
+	for (const row of hostRows) {
+		const c = blendedRequestCost(row.pricing.rates ?? []);
+		if (c != null && c > 0) costByHost.set(row.host.id, c);
 	}
 	const cheapest =
 		costByHost.size >= 2 ? Math.min(...costByHost.values()) : null;
 	const windowText = windowLabel(spend.from, spend.to);
 
-	if (hosts.length === 0 && pricings.length === 0) {
+	if (hostRows.length === 0) {
 		return (
 			<div className="mt-4 rounded-md border border-dashed border-border bg-muted/30 px-6 py-10 text-center">
 				<DollarSign
@@ -798,8 +819,8 @@ function ModelPricing({
 					No pricing configured
 				</div>
 				<div className="mt-1 text-xs text-muted-foreground max-w-md mx-auto">
-					This model isn't bound to a host and has no pricing record. Pricing
-					appears per host once a binding attaches a rate.
+					This model isn't bound to a host yet. Pricing appears per host once a
+					binding is in place.
 				</div>
 			</div>
 		);
@@ -807,72 +828,62 @@ function ModelPricing({
 
 	return (
 		<div className="mt-2 flex flex-col gap-4">
-			{hosts.map((row) => (
+			{hostRows.map((row) => (
 				<HostPricingCard
-					key={row.hostId}
+					key={row.binding.id}
 					row={row}
-					pricing={row.pricingId ? pricingById.get(row.pricingId) : undefined}
-					usage={spend.byHost.get(row.hostId)}
+					host={hostById.get(row.host.id)}
+					usage={spend.byHost.get(row.host.id)}
 					windowText={windowText}
 					isCheapest={
-						cheapest != null && costByHost.get(row.hostId) === cheapest
+						cheapest != null && costByHost.get(row.host.id) === cheapest
 					}
 				/>
 			))}
-			{unassigned.length > 0 && (
-				<div className="flex flex-col gap-2">
-					<SectionTitle>Unassigned pricing</SectionTitle>
-					{unassigned.map((p) => (
-						<PricingCard key={p.metadata.id ?? p.metadata.name} pricing={p} />
-					))}
-				</div>
-			)}
 		</div>
 	);
 }
 
-/** A host binding with its resolved pricing, billing context, and cost figures. */
+/** One host's pricing card: rates, billing context, and cost figures. */
 function HostPricingCard({
 	row,
-	pricing,
+	host,
 	usage,
 	windowText,
 	isCheapest,
 }: {
-	row: ModelHostRow;
-	pricing: Pricing | undefined;
+	row: ModelHostView;
+	host: Host | undefined;
 	usage: BindingUsage | undefined;
 	windowText: string;
 	isCheapest?: boolean;
 }) {
-	const currency = pricing?.spec.currency ?? "USD";
-	const example = pricing ? blendedRequestCost(pricing) : null;
+	const rates = row.pricing.rates ?? [];
+	const hasPricing = rates.length > 0;
+	const currency = row.pricing.currency || "USD";
+	const example = hasPricing ? blendedRequestCost(rates) : null;
 	const estSpend =
-		pricing && usage && usage.requests > 0
-			? estimatedSpend(pricing, usage.tokens)
+		hasPricing && usage && usage.requests > 0
+			? estimatedSpend(rates, usage.tokens)
 			: null;
-	const hasBillingContext =
-		!!row.upstreamName || (row.snapshots?.length ?? 0) > 0;
+	const snapshots = row.binding.snapshots ?? [];
+	const hasBillingContext = !!row.binding.upstreamName || snapshots.length > 0;
 
 	return (
 		<section className="rounded-md border border-border bg-card">
 			<header className="flex items-center justify-between gap-2 border-b border-border px-4 py-2.5">
 				<div className="flex min-w-0 items-center gap-2">
-					{row.host ? (
-						<Link to="/hosts/$name" params={{ name: row.host.metadata.name }}>
-							<HostCell host={row.host} size="sm" />
-						</Link>
-					) : (
+					<Link to="/hosts/$name" params={{ name: row.host.name }}>
 						<HostCell
-							host={undefined}
+							host={host}
 							size="sm"
-							fallbackLabel={`Unknown (${row.hostId.slice(0, 6)}…)`}
+							fallbackLabel={displayLabel(row.host)}
 						/>
-					)}
+					</Link>
 					<span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] uppercase text-muted-foreground">
-						{row.adapter}
+						{row.binding.adapter}
 					</span>
-					{!row.enabled && (
+					{!row.binding.enabled && (
 						<span className="rounded bg-destructive/10 px-1.5 py-0.5 text-[10px] font-medium text-destructive">
 							disabled
 						</span>
@@ -885,7 +896,7 @@ function HostPricingCard({
 							Cheapest
 						</span>
 					)}
-					{pricing && (
+					{hasPricing && (
 						<span className="font-mono text-[11px] uppercase text-muted-foreground">
 							{currency}
 						</span>
@@ -893,8 +904,8 @@ function HostPricingCard({
 				</div>
 			</header>
 			<div className="flex flex-col gap-3 px-4 py-3">
-				{pricing ? (
-					<MeterGrid pricing={pricing} />
+				{hasPricing ? (
+					<MeterGrid rates={rates} currency={currency} />
 				) : (
 					<div className="flex items-center gap-2 text-xs text-muted-foreground">
 						<DollarSign
@@ -907,19 +918,19 @@ function HostPricingCard({
 
 				{(hasBillingContext || example != null || estSpend != null) && (
 					<dl className="flex flex-col gap-1.5 border-t border-border/60 pt-2.5 text-[11px]">
-						{row.upstreamName && (
+						{row.binding.upstreamName && (
 							<div className="flex items-center justify-between gap-3">
 								<dt className="text-muted-foreground">Billed as</dt>
 								<dd className="truncate font-mono text-foreground">
-									{row.upstreamName}
+									{row.binding.upstreamName}
 								</dd>
 							</div>
 						)}
-						{row.snapshots && row.snapshots.length > 0 && (
+						{snapshots.length > 0 && (
 							<div className="flex items-center justify-between gap-3">
 								<dt className="text-muted-foreground">Snapshots</dt>
 								<dd className="flex flex-wrap justify-end gap-1">
-									{row.snapshots.map((s) => (
+									{snapshots.map((s) => (
 										<span
 											key={s}
 											className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px] text-foreground"
@@ -964,30 +975,39 @@ function HostPricingCard({
 	);
 }
 
-/** The meter-tile grid for one pricing record. */
-function MeterGrid({ pricing }: { pricing: Pricing }) {
-	const meters = groupByMeter(pricing.spec.rates ?? []);
+/** The meter-tile grid for a set of rates. */
+function MeterGrid({
+	rates,
+	currency,
+}: {
+	rates: readonly Rate[];
+	currency: string;
+}) {
+	const meters = groupByMeter(rates);
 	if (meters.length === 0) {
 		return <p className="text-xs text-muted-foreground">No rates defined.</p>;
 	}
 	return (
 		<div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
 			{meters.map((g) => (
-				<MeterTile key={g.meter} group={g} currency={pricing.spec.currency} />
+				<MeterTile key={g.meter} group={g} currency={currency} />
 			))}
 		</div>
 	);
 }
 
+/** A single pricing rate from the model_hosts view. */
+type Rate = NonNullable<ModelHostView["pricing"]["rates"]>[number];
+
 /** One meter's rates, base first then ascending tiers. */
 interface MeterGroup {
 	meter: string;
 	unit: string;
-	rates: PricingRate[];
+	rates: Rate[];
 }
 
 /** Group rates by meter (preserving first-seen order), tiers sorted ascending. */
-function groupByMeter(rates: readonly PricingRate[]): MeterGroup[] {
+function groupByMeter(rates: readonly Rate[]): MeterGroup[] {
 	const order: string[] = [];
 	const byMeter = new Map<string, MeterGroup>();
 	for (const r of rates) {
@@ -1018,25 +1038,6 @@ const METER_ACCENT: Record<string, string> = {
 
 function meterAccent(meter: string): string {
 	return METER_ACCENT[meter.toLowerCase()] ?? "bg-muted-foreground/40";
-}
-
-function PricingCard({ pricing }: { pricing: Pricing }) {
-	const disabled = pricing.spec.enabled === false;
-	return (
-		<Card title={displayLabel(pricing.metadata)} icon={DollarSign}>
-			<div className="mb-3 flex items-center gap-2 text-[11px]">
-				<span className="rounded bg-muted px-1.5 py-0.5 font-mono uppercase text-muted-foreground">
-					{pricing.spec.currency}
-				</span>
-				{disabled && (
-					<span className="rounded bg-destructive/10 px-1.5 py-0.5 font-medium text-destructive">
-						disabled
-					</span>
-				)}
-			</div>
-			<MeterGrid pricing={pricing} />
-		</Card>
-	);
 }
 
 function MeterTile({
@@ -1134,9 +1135,9 @@ function unitTokens(unit: string): number {
 }
 
 /** $ per single token, per meter, using each meter's base (lowest-tier) rate. */
-function costPerTokenByMeter(pricing: Pricing): Map<string, number> {
+function costPerTokenByMeter(rates: readonly Rate[]): Map<string, number> {
 	const out = new Map<string, number>();
-	for (const g of groupByMeter(pricing.spec.rates ?? [])) {
+	for (const g of groupByMeter(rates)) {
 		const base = g.rates[0];
 		if (!base) continue;
 		const per = unitTokens(g.unit);
@@ -1146,8 +1147,8 @@ function costPerTokenByMeter(pricing: Pricing): Map<string, number> {
 }
 
 /** Cost of an example 1K-token request, or null when there's no input rate. */
-function blendedRequestCost(pricing: Pricing): number | null {
-	const cpt = costPerTokenByMeter(pricing);
+function blendedRequestCost(rates: readonly Rate[]): number | null {
+	const cpt = costPerTokenByMeter(rates);
 	const input = cpt.get("input");
 	if (input == null) return null;
 	const output = cpt.get("output") ?? input;
@@ -1156,11 +1157,11 @@ function blendedRequestCost(pricing: Pricing): number | null {
 
 /** Recorded tokens × per-token rates, summed across meters. */
 function estimatedSpend(
-	pricing: Pricing,
+	rates: readonly Rate[],
 	tokens: Record<string, number>,
 ): number {
 	let total = 0;
-	for (const [meter, perToken] of costPerTokenByMeter(pricing)) {
+	for (const [meter, perToken] of costPerTokenByMeter(rates)) {
 		const key = METER_TOKEN_KEY[meter] ?? meter;
 		total += (tokens[key] ?? 0) * perToken;
 	}
