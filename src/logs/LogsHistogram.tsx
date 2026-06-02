@@ -112,7 +112,10 @@ export function LogsHistogram({ filter }: { filter: LogsFilter }) {
 							content={
 								<ChartTooltipContent
 									labelFormatter={(_, payload) =>
-										bucketLabel(String(payload?.[0]?.payload?.bucket), dayBuckets)
+										bucketLabel(
+											String(payload?.[0]?.payload?.bucket),
+											dayBuckets,
+										)
 									}
 									formatter={(value, name) => (
 										<span className="text-muted-foreground">
