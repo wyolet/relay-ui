@@ -39,7 +39,7 @@ import {
 } from "lucide-react";
 import { Suspense } from "react";
 import { useGovernance } from "@/api/hooks/governance";
-import type { Pricing } from "@/api/hooks/pricings";
+import type { Pricing, PricingRate } from "@/api/hooks/pricings";
 import type { Model, ModelCapabilities } from "@/api/types/model";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DiagnosticList } from "@/diagnostics/DiagnosticList";
@@ -47,6 +47,7 @@ import { useModelDiagnostics } from "@/diagnostics/useDiagnostics";
 import { HostCell } from "@/hosts/HostCell";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { resolveMutability } from "@/lib/ownership";
+import { cn } from "@/lib/utils";
 import { ResourceLogs } from "@/logs/ResourceLogs";
 import { useModelPricing } from "@/models/useModelPricing";
 import {
@@ -787,52 +788,134 @@ function ModelPricing({ modelId }: { modelId: string }) {
 	);
 }
 
+/** One meter's rates, base first then ascending tiers. */
+interface MeterGroup {
+	meter: string;
+	unit: string;
+	rates: PricingRate[];
+}
+
+/** Group rates by meter (preserving first-seen order), tiers sorted ascending. */
+function groupByMeter(rates: readonly PricingRate[]): MeterGroup[] {
+	const order: string[] = [];
+	const byMeter = new Map<string, MeterGroup>();
+	for (const r of rates) {
+		let g = byMeter.get(r.meter);
+		if (!g) {
+			g = { meter: r.meter, unit: r.unit, rates: [] };
+			byMeter.set(r.meter, g);
+			order.push(r.meter);
+		}
+		g.rates.push(r);
+	}
+	for (const g of byMeter.values())
+		g.rates.sort((a, b) => (a.aboveTokens ?? 0) - (b.aboveTokens ?? 0));
+	return order.map((m) => {
+		const g = byMeter.get(m);
+		if (!g) throw new Error("unreachable");
+		return g;
+	});
+}
+
+/** Accent dot per common meter, so input/output read at a glance. */
+const METER_ACCENT: Record<string, string> = {
+	input: "bg-[var(--chart-1)]",
+	output: "bg-[var(--chart-2)]",
+	cache_read: "bg-[var(--chart-3)]",
+	cache_write: "bg-[var(--chart-4)]",
+};
+
+function meterAccent(meter: string): string {
+	return METER_ACCENT[meter.toLowerCase()] ?? "bg-muted-foreground/40";
+}
+
 function PricingCard({ pricing }: { pricing: Pricing }) {
 	const rates = pricing.spec.rates ?? [];
 	const disabled = pricing.spec.enabled === false;
+	const currency = pricing.spec.currency;
+	const meters = groupByMeter(rates);
 	return (
 		<Card title={displayLabel(pricing.metadata)} icon={DollarSign}>
-			<div className="mb-2 flex items-center gap-2 text-[11px] text-muted-foreground">
-				<span className="font-mono uppercase">{pricing.spec.currency}</span>
+			<div className="mb-3 flex items-center gap-2 text-[11px]">
+				<span className="rounded bg-muted px-1.5 py-0.5 font-mono uppercase text-muted-foreground">
+					{currency}
+				</span>
 				{disabled && (
-					<span className="rounded bg-muted px-1.5 py-0.5 text-muted-foreground">
+					<span className="rounded bg-destructive/10 px-1.5 py-0.5 font-medium text-destructive">
 						disabled
 					</span>
 				)}
 			</div>
-			{rates.length === 0 ? (
+			{meters.length === 0 ? (
 				<p className="text-xs text-muted-foreground">No rates defined.</p>
 			) : (
-				<table className="w-full text-sm">
-					<thead className="text-[10px] uppercase tracking-wide text-muted-foreground">
-						<tr>
-							<th className="py-1 text-left font-medium">Meter</th>
-							<th className="py-1 text-left font-medium">Tier</th>
-							<th className="py-1 text-right font-medium">Rate</th>
-							<th className="py-1 text-left font-medium pl-3">Unit</th>
-						</tr>
-					</thead>
-					<tbody>
-						{rates.map((r) => (
-							<tr
-								key={`${r.meter}-${r.unit}-${r.aboveTokens ?? 0}`}
-								className="border-t border-border"
-							>
-								<td className="py-1.5 text-foreground">{r.meter}</td>
-								<td className="py-1.5 text-muted-foreground">
-									{r.aboveTokens ? `≥ ${fmtTokens(r.aboveTokens)}` : "base"}
-								</td>
-								<td className="py-1.5 text-right font-mono tabular-nums text-foreground">
-									{fmtRate(r.amount, pricing.spec.currency)}
-								</td>
-								<td className="py-1.5 pl-3 text-muted-foreground">{r.unit}</td>
-							</tr>
-						))}
-					</tbody>
-				</table>
+				<div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+					{meters.map((g) => (
+						<MeterTile key={g.meter} group={g} currency={currency} />
+					))}
+				</div>
 			)}
 		</Card>
 	);
+}
+
+function MeterTile({
+	group,
+	currency,
+}: {
+	group: MeterGroup;
+	currency: string;
+}) {
+	const [base, ...tiers] = group.rates;
+	return (
+		<div className="flex flex-col rounded-lg border border-border bg-muted/30 px-3.5 py-3">
+			<div className="mb-1.5 flex items-center gap-1.5">
+				<span
+					className={cn("size-2 rounded-full", meterAccent(group.meter))}
+					aria-hidden
+				/>
+				<span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+					{prettyMeter(group.meter)}
+				</span>
+			</div>
+			<div className="flex items-baseline gap-1">
+				<span className="text-2xl font-semibold tabular-nums text-foreground">
+					{fmtRate(base.amount, currency)}
+				</span>
+				<span className="text-[11px] text-muted-foreground">
+					/ {prettyUnit(group.unit)}
+				</span>
+			</div>
+			{tiers.length > 0 && (
+				<dl className="mt-2 space-y-1 border-t border-border/60 pt-2">
+					{tiers.map((t) => (
+						<div
+							key={t.aboveTokens ?? 0}
+							className="flex items-center justify-between text-[10px]"
+						>
+							<dt className="text-muted-foreground">
+								≥ {fmtTokens(t.aboveTokens ?? 0)} tokens
+							</dt>
+							<dd className="font-mono tabular-nums text-foreground">
+								{fmtRate(t.amount, currency)}
+							</dd>
+						</div>
+					))}
+				</dl>
+			)}
+		</div>
+	);
+}
+
+/** "cache_read" → "Cache read"; leaves unknown meters readable. */
+function prettyMeter(meter: string): string {
+	const s = meter.replace(/[_-]+/g, " ").trim();
+	return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+/** "1M_tokens" → "1M tokens", "token" → "token". */
+function prettyUnit(unit: string): string {
+	return unit.replace(/[_-]+/g, " ").trim();
 }
 
 function fmtRate(amount: number, currency: string): string {
