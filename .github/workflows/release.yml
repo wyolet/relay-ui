@@ -8,6 +8,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -21,19 +25,60 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      # Gate the release on the same checks CI runs — a broken build can never be tagged.
+      - name: Typecheck
+        run: bun run typecheck
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Test
+        run: bun run test
+
       - name: Build
         run: bun run build
+        env:
+          RELAY_UI_VERSION: ${{ github.ref_name }}
 
-      - name: Create tarball
+      # The tarball is the prebuilt SPA only — contents of dist/, nothing else.
+      # The relay backend extracts this into its //go:embed dir at the pinned tag.
+      - name: Package + checksum
         run: |
           VERSION="${GITHUB_REF_NAME}"
-          tar -czf "relay-ui-${VERSION}.tar.gz" -C dist .
-          echo "TARBALL=relay-ui-${VERSION}.tar.gz" >> $GITHUB_ENV
-          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          TARBALL="relay-ui-${VERSION}.tar.gz"
+          tar -czf "${TARBALL}" -C dist .
+          sha256sum "${TARBALL}" > "${TARBALL}.sha256"
+          # Stable, version-agnostic aliases for consumers that always want the tip.
+          cp "${TARBALL}" relay-ui-latest.tar.gz
+          sha256sum relay-ui-latest.tar.gz > relay-ui-latest.tar.gz.sha256
+          echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
+          echo "TARBALL=${TARBALL}" >> "$GITHUB_ENV"
+          {
+            echo "## relay-ui ${VERSION}"
+            echo
+            echo '```'
+            cat "${TARBALL}.sha256"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: ${{ env.TARBALL }}
           name: "relay-ui ${{ env.VERSION }}"
           generate_release_notes: true
+          files: |
+            ${{ env.TARBALL }}
+            ${{ env.TARBALL }}.sha256
+
+      # Moving "latest" release that always points at the most recent tag.
+      # Backend pins exact tags; this is a convenience alias only.
+      - name: Update latest alias release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete latest --yes --cleanup-tag 2>/dev/null || true
+          gh release create latest \
+            --title "relay-ui (latest → ${VERSION})" \
+            --notes "Moving alias for the most recent release: ${VERSION}." \
+            --latest=false \
+            relay-ui-latest.tar.gz relay-ui-latest.tar.gz.sha256

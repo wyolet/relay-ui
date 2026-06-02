@@ -5,7 +5,11 @@ node_modules
 dist
 dist-ssr
 *.local
+# All real env files are local-only — they leak baked-in values into builds.
+# Commit .env.development.example as the documented template instead.
 .env
+.env.*
+!.env.*.example
 .nitro
 .tanstack
 test-results/

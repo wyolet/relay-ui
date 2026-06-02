@@ -5,6 +5,11 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { applyTheme, useThemeStore } from "@/stores/theme";
 import { getRouter } from "./router";
 
+// Surface the built version for debugging which relay-ui a pinned deploy is serving.
+const UI_VERSION = import.meta.env.VITE_UI_VERSION;
+console.info(`relay-ui ${UI_VERSION}`);
+document.documentElement.dataset.uiVersion = UI_VERSION;
+
 // Apply theme before React mounts to avoid flash
 applyTheme(useThemeStore.getState().theme);
 
