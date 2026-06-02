@@ -85,6 +85,29 @@ export function resourceUsageQueryOptions(
 	});
 }
 
+/**
+ * One model's usage split by host (`group_by=host_id`, filtered to the model).
+ * Feeds the per-host pricing tab's estimated-spend figures.
+ */
+export function modelHostUsageQueryOptions(modelId: string) {
+	return queryOptions({
+		queryKey: ["usage", "summary", "model-host", modelId] as const,
+		queryFn: async (): Promise<UsageSummaryResult> => {
+			const query: UsageSummaryQuery = {
+				group_by: "host_id",
+				model_id: [modelId],
+			};
+			const { data, error } = await apiClient.GET("/usage/summary", {
+				params: { query },
+			});
+			if (error) throw new ApiError(0, error.error);
+			return data;
+		},
+		staleTime: 30_000,
+		gcTime: 5 * 60_000,
+	});
+}
+
 /** Real per-resource stats for host/model/policy Overview cards. */
 export function useResourceUsage(
 	dimension: ResourceUsageDimension,

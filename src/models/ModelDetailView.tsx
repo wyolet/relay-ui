@@ -24,7 +24,6 @@ import {
 	Mic,
 	Monitor,
 	Paperclip,
-	Pencil,
 	Power,
 	Radio,
 	Scale,
@@ -33,6 +32,7 @@ import {
 	Settings2,
 	ShieldCheck,
 	Trash2,
+	TrendingDown,
 	Volume2,
 	Wrench,
 	Zap,
@@ -49,6 +49,8 @@ import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { resolveMutability } from "@/lib/ownership";
 import { cn } from "@/lib/utils";
 import { ResourceLogs } from "@/logs/ResourceLogs";
+import type { BindingUsage } from "@/models/useModelHostSpend";
+import { useModelHostSpend } from "@/models/useModelHostSpend";
 import { useModelPricing } from "@/models/useModelPricing";
 import {
 	type ModelHostRow,
@@ -144,7 +146,7 @@ export function ModelDetailView({
 					<LimitsTab model={model} />
 				</TabsContent>
 				<TabsContent value="pricing">
-					<PricingTab model={model} />
+					<PricingTab model={model} hosts={refs.hosts} />
 				</TabsContent>
 				<TabsContent value="usage">
 					{model.metadata.id ? (
@@ -287,16 +289,6 @@ function Header({
 							<Power className="w-3.5 h-3.5" />
 							{enabled ? "Disable" : "Enable"}
 						</button>
-					)}
-					{canEdit && (
-						<Link
-							to="/models/$name/edit"
-							params={{ name: model.metadata.name }}
-							className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium text-foreground border border-border hover:bg-muted transition-colors"
-						>
-							<Pencil className="w-3.5 h-3.5" />
-							Edit
-						</Link>
 					)}
 					{canDelete && onDelete && (
 						<button
@@ -739,9 +731,9 @@ function fmtTokens(n: number): string {
 	return String(n);
 }
 
-/* ---------------- Pricing (mock) ---------------- */
+/* ---------------- Pricing (per host binding) ---------------- */
 
-function PricingTab({ model }: { model: Model }) {
+function PricingTab({ model, hosts }: { model: Model; hosts: ModelHostRow[] }) {
 	if (!model.metadata.id) {
 		return (
 			<ComingSoon
@@ -753,15 +745,49 @@ function PricingTab({ model }: { model: Model }) {
 	}
 	return (
 		<Suspense fallback={<PricingSkeleton />}>
-			<ModelPricing modelId={model.metadata.id} />
+			<ModelPricing modelId={model.metadata.id} hosts={hosts} />
 		</Suspense>
 	);
 }
 
-function ModelPricing({ modelId }: { modelId: string }) {
+/**
+ * Pricing grouped under each host: a model is served on a host via a binding,
+ * and each binding may attach a pricing record (`binding.pricingId`). Records
+ * not referenced by any binding are listed under "Unassigned" so nothing hides.
+ */
+function ModelPricing({
+	modelId,
+	hosts,
+}: {
+	modelId: string;
+	hosts: ModelHostRow[];
+}) {
 	const pricings = useModelPricing(modelId);
+	const spend = useModelHostSpend(modelId);
 
-	if (pricings.length === 0) {
+	const pricingById = new Map<string, Pricing>();
+	for (const p of pricings) {
+		if (p.metadata.id) pricingById.set(p.metadata.id, p);
+	}
+	const usedIds = new Set(
+		hosts.map((h) => h.pricingId).filter((x): x is string => !!x),
+	);
+	const unassigned = pricings.filter(
+		(p) => !p.metadata.id || !usedIds.has(p.metadata.id),
+	);
+
+	// Cheapest host by example-request cost — only meaningful with ≥2 priced hosts.
+	const costByHost = new Map<string, number>();
+	for (const row of hosts) {
+		const p = row.pricingId ? pricingById.get(row.pricingId) : undefined;
+		const c = p ? blendedRequestCost(p) : null;
+		if (c != null && c > 0) costByHost.set(row.hostId, c);
+	}
+	const cheapest =
+		costByHost.size >= 2 ? Math.min(...costByHost.values()) : null;
+	const windowText = windowLabel(spend.from, spend.to);
+
+	if (hosts.length === 0 && pricings.length === 0) {
 		return (
 			<div className="mt-4 rounded-md border border-dashed border-border bg-muted/30 px-6 py-10 text-center">
 				<DollarSign
@@ -772,8 +798,8 @@ function ModelPricing({ modelId }: { modelId: string }) {
 					No pricing configured
 				</div>
 				<div className="mt-1 text-xs text-muted-foreground max-w-md mx-auto">
-					This model has no pricing record. Add one targeting it to see
-					per-meter rates here.
+					This model isn't bound to a host and has no pricing record. Pricing
+					appears per host once a binding attaches a rate.
 				</div>
 			</div>
 		);
@@ -781,8 +807,173 @@ function ModelPricing({ modelId }: { modelId: string }) {
 
 	return (
 		<div className="mt-2 flex flex-col gap-4">
-			{pricings.map((p) => (
-				<PricingCard key={p.metadata.id ?? p.metadata.name} pricing={p} />
+			{hosts.map((row) => (
+				<HostPricingCard
+					key={row.hostId}
+					row={row}
+					pricing={row.pricingId ? pricingById.get(row.pricingId) : undefined}
+					usage={spend.byHost.get(row.hostId)}
+					windowText={windowText}
+					isCheapest={
+						cheapest != null && costByHost.get(row.hostId) === cheapest
+					}
+				/>
+			))}
+			{unassigned.length > 0 && (
+				<div className="flex flex-col gap-2">
+					<SectionTitle>Unassigned pricing</SectionTitle>
+					{unassigned.map((p) => (
+						<PricingCard key={p.metadata.id ?? p.metadata.name} pricing={p} />
+					))}
+				</div>
+			)}
+		</div>
+	);
+}
+
+/** A host binding with its resolved pricing, billing context, and cost figures. */
+function HostPricingCard({
+	row,
+	pricing,
+	usage,
+	windowText,
+	isCheapest,
+}: {
+	row: ModelHostRow;
+	pricing: Pricing | undefined;
+	usage: BindingUsage | undefined;
+	windowText: string;
+	isCheapest?: boolean;
+}) {
+	const currency = pricing?.spec.currency ?? "USD";
+	const example = pricing ? blendedRequestCost(pricing) : null;
+	const estSpend =
+		pricing && usage && usage.requests > 0
+			? estimatedSpend(pricing, usage.tokens)
+			: null;
+	const hasBillingContext =
+		!!row.upstreamName || (row.snapshots?.length ?? 0) > 0;
+
+	return (
+		<section className="rounded-md border border-border bg-card">
+			<header className="flex items-center justify-between gap-2 border-b border-border px-4 py-2.5">
+				<div className="flex min-w-0 items-center gap-2">
+					{row.host ? (
+						<Link to="/hosts/$name" params={{ name: row.host.metadata.name }}>
+							<HostCell host={row.host} size="sm" />
+						</Link>
+					) : (
+						<HostCell
+							host={undefined}
+							size="sm"
+							fallbackLabel={`Unknown (${row.hostId.slice(0, 6)}…)`}
+						/>
+					)}
+					<span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] uppercase text-muted-foreground">
+						{row.adapter}
+					</span>
+					{!row.enabled && (
+						<span className="rounded bg-destructive/10 px-1.5 py-0.5 text-[10px] font-medium text-destructive">
+							disabled
+						</span>
+					)}
+				</div>
+				<div className="flex shrink-0 items-center gap-2">
+					{isCheapest && (
+						<span className="inline-flex items-center gap-1 rounded bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
+							<TrendingDown className="size-3" aria-hidden />
+							Cheapest
+						</span>
+					)}
+					{pricing && (
+						<span className="font-mono text-[11px] uppercase text-muted-foreground">
+							{currency}
+						</span>
+					)}
+				</div>
+			</header>
+			<div className="flex flex-col gap-3 px-4 py-3">
+				{pricing ? (
+					<MeterGrid pricing={pricing} />
+				) : (
+					<div className="flex items-center gap-2 text-xs text-muted-foreground">
+						<DollarSign
+							className="size-3.5 text-muted-foreground/60"
+							aria-hidden
+						/>
+						No pricing attached to this host binding.
+					</div>
+				)}
+
+				{(hasBillingContext || example != null || estSpend != null) && (
+					<dl className="flex flex-col gap-1.5 border-t border-border/60 pt-2.5 text-[11px]">
+						{row.upstreamName && (
+							<div className="flex items-center justify-between gap-3">
+								<dt className="text-muted-foreground">Billed as</dt>
+								<dd className="truncate font-mono text-foreground">
+									{row.upstreamName}
+								</dd>
+							</div>
+						)}
+						{row.snapshots && row.snapshots.length > 0 && (
+							<div className="flex items-center justify-between gap-3">
+								<dt className="text-muted-foreground">Snapshots</dt>
+								<dd className="flex flex-wrap justify-end gap-1">
+									{row.snapshots.map((s) => (
+										<span
+											key={s}
+											className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px] text-foreground"
+										>
+											{s}
+										</span>
+									))}
+								</dd>
+							</div>
+						)}
+						{example != null && (
+							<div className="flex items-center justify-between gap-3">
+								<dt className="text-muted-foreground">
+									Example request{" "}
+									<span className="text-muted-foreground/60">
+										(800 in / 200 out)
+									</span>
+								</dt>
+								<dd className="font-mono tabular-nums text-foreground">
+									≈ {fmtCost(example, currency)}{" "}
+									<span className="text-muted-foreground">/ 1K</span>
+								</dd>
+							</div>
+						)}
+						{estSpend != null && usage && (
+							<div className="flex items-center justify-between gap-3">
+								<dt className="text-muted-foreground">
+									Est. spend · last {windowText}{" "}
+									<span className="text-muted-foreground/60">
+										({usage.requests.toLocaleString()} req)
+									</span>
+								</dt>
+								<dd className="font-mono tabular-nums text-foreground">
+									≈ {fmtCost(estSpend, currency)}
+								</dd>
+							</div>
+						)}
+					</dl>
+				)}
+			</div>
+		</section>
+	);
+}
+
+/** The meter-tile grid for one pricing record. */
+function MeterGrid({ pricing }: { pricing: Pricing }) {
+	const meters = groupByMeter(pricing.spec.rates ?? []);
+	if (meters.length === 0) {
+		return <p className="text-xs text-muted-foreground">No rates defined.</p>;
+	}
+	return (
+		<div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+			{meters.map((g) => (
+				<MeterTile key={g.meter} group={g} currency={pricing.spec.currency} />
 			))}
 		</div>
 	);
@@ -830,15 +1021,12 @@ function meterAccent(meter: string): string {
 }
 
 function PricingCard({ pricing }: { pricing: Pricing }) {
-	const rates = pricing.spec.rates ?? [];
 	const disabled = pricing.spec.enabled === false;
-	const currency = pricing.spec.currency;
-	const meters = groupByMeter(rates);
 	return (
 		<Card title={displayLabel(pricing.metadata)} icon={DollarSign}>
 			<div className="mb-3 flex items-center gap-2 text-[11px]">
 				<span className="rounded bg-muted px-1.5 py-0.5 font-mono uppercase text-muted-foreground">
-					{currency}
+					{pricing.spec.currency}
 				</span>
 				{disabled && (
 					<span className="rounded bg-destructive/10 px-1.5 py-0.5 font-medium text-destructive">
@@ -846,15 +1034,7 @@ function PricingCard({ pricing }: { pricing: Pricing }) {
 					</span>
 				)}
 			</div>
-			{meters.length === 0 ? (
-				<p className="text-xs text-muted-foreground">No rates defined.</p>
-			) : (
-				<div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-					{meters.map((g) => (
-						<MeterTile key={g.meter} group={g} currency={currency} />
-					))}
-				</div>
-			)}
+			<MeterGrid pricing={pricing} />
 		</Card>
 	);
 }
@@ -922,6 +1102,78 @@ function fmtRate(amount: number, currency: string): string {
 	const prefix = currency.toUpperCase() === "USD" ? "$" : "";
 	const digits = amount !== 0 && Math.abs(amount) < 1 ? 4 : 2;
 	return `${prefix}${amount.toFixed(digits)}`;
+}
+
+/** Total cost with adaptive precision (small example costs need more digits). */
+function fmtCost(amount: number, currency: string): string {
+	const prefix = currency.toUpperCase() === "USD" ? "$" : "";
+	if (amount === 0) return `${prefix}0`;
+	const digits = amount < 0.01 ? 4 : amount < 1 ? 3 : 2;
+	return `${prefix}${amount.toFixed(digits)}`;
+}
+
+// --- Cost math (estimates; clearly labelled "≈" in the UI) ---
+
+/** A representative 1K-token request, split like the recorded prompt:completion mix. */
+const EXAMPLE_PROMPT_TOKENS = 800;
+const EXAMPLE_COMPLETION_TOKENS = 200;
+
+/** Pricing meter → usage token-sum key (usage records `prompt`/`completion`). */
+const METER_TOKEN_KEY: Record<string, string> = {
+	input: "prompt",
+	output: "completion",
+};
+
+/** Tokens represented by a rate's unit: "1M_tokens" → 1e6, "1K_tokens" → 1e3, else 1. */
+function unitTokens(unit: string): number {
+	const m = /^(\d+)\s*([km])?/i.exec(unit.trim());
+	if (!m) return 1;
+	const suffix = (m[2] ?? "").toLowerCase();
+	const mult = suffix === "m" ? 1_000_000 : suffix === "k" ? 1_000 : 1;
+	return Number(m[1]) * mult;
+}
+
+/** $ per single token, per meter, using each meter's base (lowest-tier) rate. */
+function costPerTokenByMeter(pricing: Pricing): Map<string, number> {
+	const out = new Map<string, number>();
+	for (const g of groupByMeter(pricing.spec.rates ?? [])) {
+		const base = g.rates[0];
+		if (!base) continue;
+		const per = unitTokens(g.unit);
+		if (per > 0) out.set(g.meter, base.amount / per);
+	}
+	return out;
+}
+
+/** Cost of an example 1K-token request, or null when there's no input rate. */
+function blendedRequestCost(pricing: Pricing): number | null {
+	const cpt = costPerTokenByMeter(pricing);
+	const input = cpt.get("input");
+	if (input == null) return null;
+	const output = cpt.get("output") ?? input;
+	return EXAMPLE_PROMPT_TOKENS * input + EXAMPLE_COMPLETION_TOKENS * output;
+}
+
+/** Recorded tokens × per-token rates, summed across meters. */
+function estimatedSpend(
+	pricing: Pricing,
+	tokens: Record<string, number>,
+): number {
+	let total = 0;
+	for (const [meter, perToken] of costPerTokenByMeter(pricing)) {
+		const key = METER_TOKEN_KEY[meter] ?? meter;
+		total += (tokens[key] ?? 0) * perToken;
+	}
+	return total;
+}
+
+/** Round a [from,to] window to a friendly "30d" / "12h" label. */
+function windowLabel(from: string, to: string): string {
+	const ms = Date.parse(to) - Date.parse(from);
+	if (!Number.isFinite(ms) || ms <= 0) return "window";
+	const days = Math.round(ms / 86_400_000);
+	if (days >= 1) return `${days}d`;
+	return `${Math.max(1, Math.round(ms / 3_600_000))}h`;
 }
 
 function PricingSkeleton() {
