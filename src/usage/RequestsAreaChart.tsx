@@ -86,6 +86,7 @@ export function RequestsAreaChart({
 							stroke="var(--color-requests)"
 							fill="var(--color-requests)"
 							fillOpacity={0.2}
+							isAnimationActive={false}
 						/>
 						<Area
 							dataKey="errors"
@@ -93,6 +94,7 @@ export function RequestsAreaChart({
 							stroke="var(--color-errors)"
 							fill="var(--color-errors)"
 							fillOpacity={0.25}
+							isAnimationActive={false}
 						/>
 					</AreaChart>
 				</ChartContainer>

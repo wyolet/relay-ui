@@ -32,9 +32,14 @@ export function useCatalogCounts() {
 		{ label: "Rate Limits", count: rateLimits?.items?.length },
 	];
 
+	// Only "empty" once the gating queries have actually loaded and report zero.
+	// While they're undefined (loading or relay unreachable), treat as not-empty
+	// so the dashboard doesn't flicker to the welcome panel on every failed poll.
 	const catalogEmpty =
-		(providers?.items ?? []).length === 0 &&
-		(hostKeys?.items ?? []).length === 0;
+		providers !== undefined &&
+		hostKeys !== undefined &&
+		(providers.items ?? []).length === 0 &&
+		(hostKeys.items ?? []).length === 0;
 
 	return { counts, catalogEmpty };
 }
