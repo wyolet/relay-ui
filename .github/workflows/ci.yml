@@ -34,14 +34,17 @@ jobs:
       - name: Build
         run: bun run build
 
-      - name: Bundle size check (warn-only, hardens in PER-281)
+      - name: Bundle size check (warn-only sanity ceiling)
         run: |
-          BUDGET_KB=500
+          # Loose guardrail so the bundle can't balloon unnoticed. This is an
+          # operator UI embedded in the relay binary (LAN/localhost, cached) —
+          # not a public SPA, so the budget is generous on purpose.
+          BUDGET_KB=1024
           TOTAL_GZ=$(find dist/assets -name '*.js' -o -name '*.css' | xargs gzip -c | wc -c)
           TOTAL_KB=$((TOTAL_GZ / 1024))
           echo "Gzipped bundle size: ${TOTAL_KB} KB (budget: ${BUDGET_KB} KB)"
           if [ "$TOTAL_KB" -gt "$BUDGET_KB" ]; then
-            echo "::warning::Bundle size ${TOTAL_KB}KB exceeds ${BUDGET_KB}KB budget. This will become a hard failure in PER-281."
+            echo "::warning::Bundle size ${TOTAL_KB}KB exceeds ${BUDGET_KB}KB budget — consider code-splitting."
           else
             echo "Bundle size OK: ${TOTAL_KB}KB < ${BUDGET_KB}KB"
           fi
