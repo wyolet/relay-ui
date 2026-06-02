@@ -1440,8 +1440,11 @@ export interface components {
             name: string;
         };
         HostKeyRef: {
+            enabled: boolean;
             id: string;
             name: string;
+            /** Format: int64 */
+            sharedWithPolicyCount: number;
         };
         HostKeySpec: {
             defaultTier?: string;
@@ -1487,6 +1490,8 @@ export interface components {
         HostRef: {
             baseURL?: string;
             displayName?: string;
+            enabled: boolean;
+            icon?: components["schemas"]["IconView"];
             id: string;
             name: string;
         };
@@ -1505,6 +1510,9 @@ export interface components {
             statusPageURL?: string;
         };
         Icon: {
+            path?: string;
+        };
+        IconView: {
             path?: string;
         };
         Inference: {
@@ -1778,6 +1786,7 @@ export interface components {
         PolicyHostRow: {
             host: components["schemas"]["HostRef"];
             hostKeys: components["schemas"]["HostKeyRef"][] | null;
+            requirement: string;
         };
         PolicyList: {
             /**
@@ -1951,6 +1960,13 @@ export interface components {
             /** Format: int64 */
             total: number;
         };
+        RateLimitOverlap: {
+            host: string;
+            losers: string[] | null;
+            model: string;
+            provider: string;
+            winner: string;
+        };
         RateLimitRule: {
             /** Format: int64 */
             amount: number;
@@ -2081,6 +2097,9 @@ export interface components {
                 [key: string]: string;
             };
             points: components["schemas"]["TimeSeriesPoint"][] | null;
+        };
+        UnthrottledModel: {
+            model: components["schemas"]["ModelRef"];
         };
         UpstreamTiming: {
             /** Format: int64 */
@@ -2407,8 +2426,10 @@ export interface components {
              * @example https://example.com/schemas/policyRateLimitsOutBody.json
              */
             readonly $schema?: string;
+            overlaps: components["schemas"]["RateLimitOverlap"][] | null;
             policy: components["schemas"]["PolicyRef"];
             rateLimits: components["schemas"]["PolicyRateLimitRow"][] | null;
+            unthrottled: components["schemas"]["UnthrottledModel"][] | null;
         };
         refResult: {
             bindings: components["schemas"]["resolveBindingRef"][] | null;

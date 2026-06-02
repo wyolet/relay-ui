@@ -7,11 +7,11 @@ import {
 	Eye,
 	type LucideIcon,
 	Network,
-	Server,
 	Wrench,
 } from "lucide-react";
 import { useState } from "react";
 import type { Policy } from "@/api/types/policy";
+import { HostLogo, hostRefLogo } from "@/hosts/HostLogo";
 import {
 	type PolicyModelView,
 	usePolicyExcludedModels,
@@ -175,10 +175,11 @@ function HostGroup({ rows }: { rows: PolicyModelView[] }) {
 	return (
 		<section className="rounded-md border border-border bg-card overflow-hidden">
 			<header className="flex items-center gap-3 px-3 py-2 border-b border-border bg-muted/30">
-				<Server
-					className="w-5 h-5 text-muted-foreground shrink-0 p-0.5"
-					aria-hidden
-				/>
+				{host ? (
+					<HostLogo host={hostRefLogo(host)} size={20} />
+				) : (
+					<div className="w-5 h-5 rounded bg-muted" aria-hidden />
+				)}
 				<div className="min-w-0 flex-1">
 					<div className="text-sm font-medium text-foreground truncate">
 						{hostLabel(rows[0])}
@@ -187,6 +188,11 @@ function HostGroup({ rows }: { rows: PolicyModelView[] }) {
 						{host?.name}
 					</div>
 				</div>
+				{host && host.enabled === false && (
+					<span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground border border-border">
+						Host off
+					</span>
+				)}
 				<span className="text-[11px] text-muted-foreground tabular-nums whitespace-nowrap">
 					{rows.length} model{rows.length === 1 ? "" : "s"}
 				</span>

@@ -56,6 +56,10 @@ export type PolicyModelExclusion =
 export type PolicyHostView = components["schemas"]["PolicyHostRow"];
 /** One rate-limit rule set this policy references, with its limits + models. */
 export type PolicyRateLimitView = components["schemas"]["PolicyRateLimitRow"];
+/** A granted model that no rate-limit covers — passes without throttling. */
+export type UnthrottledModel = components["schemas"]["UnthrottledModel"];
+/** A binding claimed by >1 rate-limit, and which one won (specificity-wins). */
+export type RateLimitOverlap = components["schemas"]["RateLimitOverlap"];
 
 /** Models the policy grants (resolved server-side), with effective limits. */
 export function policyModelsQueryOptions(ref: string) {

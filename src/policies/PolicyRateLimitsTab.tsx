@@ -1,7 +1,12 @@
 import { Link } from "@tanstack/react-router";
 import { Gauge } from "lucide-react";
 import type { Policy } from "@/api/types/policy";
-import { usePolicyRateLimits } from "@/policies/usePolicyRateLimits";
+import {
+	type RateLimitOverlap,
+	type UnthrottledModel,
+	usePolicyRateLimits,
+} from "@/policies/usePolicyRateLimits";
+import { AlertBanner } from "@/shared/AlertBanner";
 
 interface Props {
 	policy: Policy;
@@ -10,13 +15,15 @@ interface Props {
 /**
  * Rate-limit rule sets this policy references, resolved server-side via
  * `GET /policies/{ref}/rate-limits`. Each panel is one rule set with its
- * effective limits and the models it covers within this policy — no
- * client-side catalog join or overlap analysis.
+ * effective limits and the models it covers. The unthrottled-model and
+ * overlap analyses are server-computed — no client-side catalog join.
  */
 export function PolicyRateLimitsTab({ policy }: Props) {
-	const rows = usePolicyRateLimits(policy.metadata.name);
+	const { rateLimits, unthrottled, overlaps } = usePolicyRateLimits(
+		policy.metadata.name,
+	);
 
-	if (rows.length === 0) {
+	if (rateLimits.length === 0) {
 		return (
 			<div className="rounded-md border border-dashed border-border bg-muted/30 px-4 py-6 text-center mt-2">
 				<div className="text-sm font-medium text-foreground">
@@ -32,7 +39,9 @@ export function PolicyRateLimitsTab({ policy }: Props) {
 
 	return (
 		<div className="flex flex-col gap-4 pt-2">
-			{rows.map((row) => {
+			<OverlapBanner overlaps={overlaps} />
+			<UnthrottledBanner unthrottled={unthrottled} />
+			{rateLimits.map((row) => {
 				const limits = row.limits ?? [];
 				const models = row.models ?? [];
 				return (
@@ -85,9 +94,7 @@ export function PolicyRateLimitsTab({ policy }: Props) {
 
 							<div>
 								<div className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground mb-1">
-									{row.default
-										? "Applies to"
-										: `Models (${models.length})`}
+									{row.default ? "Applies to" : `Models (${models.length})`}
 								</div>
 								{row.default ? (
 									<span className="text-[11px] text-muted-foreground">
@@ -115,5 +122,74 @@ export function PolicyRateLimitsTab({ policy }: Props) {
 				);
 			})}
 		</div>
+	);
+}
+
+function UnthrottledBanner({
+	unthrottled,
+}: {
+	unthrottled: UnthrottledModel[];
+}) {
+	if (unthrottled.length === 0) return null;
+	return (
+		<AlertBanner
+			severity="info"
+			title={`${unthrottled.length} model${unthrottled.length === 1 ? "" : "s"} pass without rate limits`}
+			body={
+				<ul className="flex flex-wrap gap-1 px-3 py-2">
+					{unthrottled.map((u) => (
+						<li
+							key={u.model.id}
+							className="inline-flex items-center gap-1.5 px-1.5 py-0.5 rounded bg-sky-500/10 border border-sky-500/20 text-[11px] text-foreground"
+						>
+							{u.model.displayName?.trim() && (
+								<span>{u.model.displayName.trim()}</span>
+							)}
+							<code className="font-mono text-[10px] text-muted-foreground">
+								{u.model.name}
+							</code>
+						</li>
+					))}
+				</ul>
+			}
+		>
+			These models are granted by the policy but no rate-limit binding covers
+			them. Requests pass without throttling — fine if intentional, otherwise
+			scope a rate limit at them.
+		</AlertBanner>
+	);
+}
+
+function OverlapBanner({ overlaps }: { overlaps: RateLimitOverlap[] }) {
+	if (overlaps.length === 0) return null;
+	return (
+		<AlertBanner
+			severity="warn"
+			title={`${overlaps.length} binding${overlaps.length === 1 ? "" : "s"} matched by more than one rate limit`}
+			body={
+				<ul className="divide-y divide-amber-500/20">
+					{overlaps.map((o) => (
+						<li
+							key={`${o.provider}/${o.model}@${o.host}`}
+							className="px-3 py-1.5 text-[11px]"
+						>
+							<code className="font-mono text-foreground">
+								{o.provider}/{o.model}@{o.host}
+							</code>
+							<span className="text-muted-foreground">
+								{" — "}
+								<span className="text-foreground">{o.winner}</span> applies
+								{(o.losers?.length ?? 0) > 0 && (
+									<> · shadows {o.losers?.join(", ")}</>
+								)}
+							</span>
+						</li>
+					))}
+				</ul>
+			}
+		>
+			More than one attached rate limit targets the same binding. The most
+			specific one wins; the others don't apply to that binding.
+		</AlertBanner>
 	);
 }

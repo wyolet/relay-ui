@@ -1,9 +1,9 @@
-import { Server } from "lucide-react";
 import { Suspense } from "react";
 import { usePolicyReferences } from "@/api/hooks/policies";
 import type { Policy } from "@/api/types/policy";
 import { DiagnosticList } from "@/diagnostics/DiagnosticList";
 import { usePolicyDiagnostics } from "@/diagnostics/useDiagnostics";
+import { HostLogo, hostRefLogo } from "@/hosts/HostLogo";
 import { usePolicyHosts } from "@/policies/usePolicyHosts";
 import { usePolicyModels } from "@/policies/usePolicyModels";
 import { usePolicyUsage } from "@/policies/usePolicyUsage";
@@ -97,10 +97,7 @@ function HostsPanel({ policy }: { policy: Policy }) {
 					const keyCount = hostKeys?.length ?? 0;
 					return (
 						<li key={host.id} className="flex items-center gap-3 px-3 py-2">
-							<Server
-								className="w-[22px] h-[22px] text-muted-foreground shrink-0 p-0.5"
-								aria-hidden
-							/>
+							<HostLogo host={hostRefLogo(host)} size={22} />
 							<div className="flex-1 min-w-0">
 								<div className="text-sm text-foreground truncate">
 									{host.displayName?.trim() || host.name}

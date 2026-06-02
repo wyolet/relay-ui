@@ -8,6 +8,18 @@ export interface HostLogoLike {
 	spec: { icon?: { path?: string } };
 }
 
+/** Adapt a flat `HostRef` (the shape sub-endpoints return) to {@link HostLogoLike}. */
+export function hostRefLogo(host: {
+	name: string;
+	displayName?: string;
+	icon?: { path?: string };
+}): HostLogoLike {
+	return {
+		metadata: { name: host.name, displayName: host.displayName },
+		spec: { icon: host.icon },
+	};
+}
+
 interface HostLogoProps {
 	host: HostLogoLike;
 	size?: number;

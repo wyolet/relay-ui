@@ -1,7 +1,8 @@
 import { Link } from "@tanstack/react-router";
-import { AlertTriangle, KeyRound, Plus, Server } from "lucide-react";
+import { AlertTriangle, KeyRound, Plus } from "lucide-react";
 import type { Policy } from "@/api/types/policy";
-import { usePolicyHosts } from "@/policies/usePolicyHosts";
+import { HostLogo, hostRefLogo } from "@/hosts/HostLogo";
+import { type PolicyHostView, usePolicyHosts } from "@/policies/usePolicyHosts";
 
 interface Props {
 	policy: Policy;
@@ -10,8 +11,9 @@ interface Props {
 /**
  * Host keys reaching the hosts this policy can serve, resolved server-side via
  * `GET /policies/{ref}/hosts`. Each row is a host the policy's catalog reaches,
- * with the host-keys (if any) attached to it. Hosts with no key are flagged —
- * requests routed there will fail until a key is attached.
+ * with the host-keys attached to it. A host with no key is flagged — `required`
+ * means requests there will fail; `optional` means a sibling host can cover the
+ * same models. All state (host/key enabled, sharing, requirement) is server-fed.
  */
 export function PolicyKeysTab({ policy }: Props) {
 	const hosts = usePolicyHosts(policy.metadata.name);
@@ -30,12 +32,13 @@ export function PolicyKeysTab({ policy }: Props) {
 		);
 	}
 
-	// Hosts missing a key surface first — they're the actionable items.
+	// Hosts missing a key surface first — they're the actionable items —
+	// then required before optional, then by label.
 	const rows = [...hosts].sort((a, b) => {
-		const am = (a.hostKeys?.length ?? 0) === 0 ? 0 : 1;
-		const bm = (b.hostKeys?.length ?? 0) === 0 ? 0 : 1;
+		const am = missingScore(a);
+		const bm = missingScore(b);
 		if (am !== bm) return am - bm;
-		return hostLabel(a.host).localeCompare(hostLabel(b.host));
+		return hostLabel(a).localeCompare(hostLabel(b));
 	});
 
 	return (
@@ -56,75 +59,9 @@ export function PolicyKeysTab({ policy }: Props) {
 						</tr>
 					</thead>
 					<tbody className="divide-y divide-border">
-						{rows.map((row) => {
-							const keys = row.hostKeys ?? [];
-							const missing = keys.length === 0;
-							return (
-								<tr
-									key={row.host.id}
-									className={
-										missing
-											? "bg-amber-500/5 hover:bg-amber-500/10"
-											: "hover:bg-muted/40"
-									}
-								>
-									<td className="px-3 py-2">
-										<div className="flex items-center gap-2 min-w-0">
-											<Server
-												className="w-3.5 h-3.5 text-muted-foreground shrink-0"
-												aria-hidden
-											/>
-											<span className="text-foreground truncate">
-												{hostLabel(row.host)}
-											</span>
-											<span className="text-[11px] text-muted-foreground font-mono truncate">
-												{row.host.name}
-											</span>
-										</div>
-									</td>
-									<td className="px-3 py-2">
-										{missing ? (
-											<span className="inline-flex items-center gap-1.5 text-[11px] text-amber-700 dark:text-amber-300">
-												<AlertTriangle className="w-3.5 h-3.5" aria-hidden />
-												No key — requests here will fail
-											</span>
-										) : (
-											<ul className="flex flex-wrap gap-x-3 gap-y-1">
-												{keys.map((k) => (
-													<li key={k.id}>
-														<Link
-															to="/host-keys/$name"
-															params={{ name: k.name }}
-															className="inline-flex items-center gap-1.5 text-foreground hover:underline"
-														>
-															<KeyRound
-																className="w-3.5 h-3.5 text-muted-foreground shrink-0"
-																aria-hidden
-															/>
-															{k.name}
-														</Link>
-													</li>
-												))}
-											</ul>
-										)}
-									</td>
-									<td className="px-3 py-2 text-right">
-										{missing ? (
-											<Link
-												to="/policies/$name/edit"
-												params={{ name: policyName }}
-												className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline"
-											>
-												<Plus className="w-3 h-3" />
-												Attach key
-											</Link>
-										) : (
-											<StatusPill tone="ok">reachable</StatusPill>
-										)}
-									</td>
-								</tr>
-							);
-						})}
+						{rows.map((row) => (
+							<HostRow key={row.host.id} row={row} policyName={policyName} />
+						))}
 					</tbody>
 				</table>
 			</div>
@@ -132,15 +69,124 @@ export function PolicyKeysTab({ policy }: Props) {
 	);
 }
 
-function hostLabel(host: { name: string; displayName?: string }): string {
-	return host.displayName?.trim() || host.name;
+function HostRow({
+	row,
+	policyName,
+}: {
+	row: PolicyHostView;
+	policyName: string;
+}) {
+	const keys = row.hostKeys ?? [];
+	const missing = keys.length === 0;
+	const required = row.requirement === "required";
+	const hostOff = row.host.enabled === false;
+	// A missing key only truly breaks routing when the host is required.
+	const showAsBreaking = missing && required;
+
+	return (
+		<tr
+			className={
+				showAsBreaking
+					? "bg-amber-500/5 hover:bg-amber-500/10"
+					: "hover:bg-muted/40"
+			}
+		>
+			<td className="px-3 py-2">
+				<div className="flex items-center gap-2 min-w-0">
+					<HostLogo host={hostRefLogo(row.host)} size={20} />
+					<span className="text-foreground truncate">{hostLabel(row)}</span>
+					<span className="text-[11px] text-muted-foreground font-mono truncate">
+						{row.host.name}
+					</span>
+					{hostOff && <StatusPill tone="warn">host off</StatusPill>}
+				</div>
+			</td>
+			<td className="px-3 py-2">
+				{missing ? (
+					<span
+						className={`inline-flex items-center gap-1.5 text-[11px] ${
+							showAsBreaking
+								? "text-amber-700 dark:text-amber-300"
+								: "text-muted-foreground"
+						}`}
+					>
+						<AlertTriangle className="w-3.5 h-3.5" aria-hidden />
+						{showAsBreaking
+							? "No key — requests here will fail"
+							: "No key — a sibling host can cover these models"}
+					</span>
+				) : (
+					<ul className="flex flex-wrap gap-x-3 gap-y-1">
+						{keys.map((k) => (
+							<li key={k.id} className="flex items-center gap-1.5">
+								<Link
+									to="/host-keys/$name"
+									params={{ name: k.name }}
+									className="inline-flex items-center gap-1.5 text-foreground hover:underline"
+								>
+									<KeyRound
+										className="w-3.5 h-3.5 text-muted-foreground shrink-0"
+										aria-hidden
+									/>
+									{k.name}
+								</Link>
+								{k.enabled === false && (
+									<StatusPill tone="warn">key off</StatusPill>
+								)}
+								{k.sharedWithPolicyCount > 0 && (
+									<span
+										className="text-[10px] text-muted-foreground tabular-nums"
+										title="Other policies using this key"
+									>
+										+{k.sharedWithPolicyCount} other polic
+										{k.sharedWithPolicyCount === 1 ? "y" : "ies"}
+									</span>
+								)}
+							</li>
+						))}
+					</ul>
+				)}
+			</td>
+			<td className="px-3 py-2 text-right">
+				{missing ? (
+					showAsBreaking ? (
+						<Link
+							to="/policies/$name/edit"
+							params={{ name: policyName }}
+							className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline"
+						>
+							<Plus className="w-3 h-3" />
+							Attach key
+						</Link>
+					) : (
+						<StatusPill tone="muted">optional</StatusPill>
+					)
+				) : (
+					<StatusPill tone="ok">reachable</StatusPill>
+				)}
+			</td>
+		</tr>
+	);
+}
+
+/** Sort weight: breaking (required+missing) first, then optional-missing, then keyed. */
+function missingScore(row: PolicyHostView): number {
+	const missing = (row.hostKeys?.length ?? 0) === 0;
+	if (!missing) return 2;
+	return row.requirement === "required" ? 0 : 1;
+}
+
+function hostLabel(row: PolicyHostView): string {
+	return row.host.displayName?.trim() || row.host.name;
 }
 
 function StatusPill({
 	tone,
+	title,
 	children,
 }: {
 	tone: "ok" | "warn" | "muted";
+	title?: string;
 	children: React.ReactNode;
 }) {
 	const className =
@@ -151,6 +197,7 @@ function StatusPill({
 				: "bg-muted text-muted-foreground border-border";
 	return (
 		<span
+			title={title}
 			className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border whitespace-nowrap ${className}`}
 		>
 			{children}
