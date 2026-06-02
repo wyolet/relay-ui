@@ -1,5 +1,14 @@
+import { useMemo, useState } from "react";
+import { Bar, BarChart, XAxis } from "recharts";
 import { type LogsFilter, useLogsHistogram } from "@/api/hooks/logs";
+import {
+	type ChartConfig,
+	ChartContainer,
+	ChartTooltip,
+	ChartTooltipContent,
+} from "@/components/ui/chart";
 import { cn } from "@/lib/utils";
+import { fmtInt } from "./format";
 
 const WINDOW_LABEL: Record<string, string> = {
 	"1h": "last 1h",
@@ -9,61 +18,160 @@ const WINDOW_LABEL: Record<string, string> = {
 	"30d": "last 30d",
 };
 
+type Metric = "requests" | "tokens";
+
+const CONFIG: ChartConfig = {
+	ok: { label: "ok", color: "var(--chart-1)" },
+	errors: { label: "error", color: "var(--destructive)" },
+	tokens: { label: "Tokens", color: "var(--chart-1)" },
+};
+
+/** Bucket start as a compact local label — time of day, or date for day buckets. */
+function bucketLabel(ts: string, dayBuckets: boolean): string {
+	const d = new Date(ts);
+	if (Number.isNaN(d.getTime())) return ts;
+	return dayBuckets
+		? d.toLocaleDateString(undefined, { month: "short", day: "numeric" })
+		: d.toLocaleString(undefined, {
+				month: "short",
+				day: "numeric",
+				hour: "numeric",
+				minute: "2-digit",
+			});
+}
+
 /**
- * Request-volume histogram over the window (errors stacked), scoped by the
- * feed's dimension filters. Non-blocking — renders a quiet placeholder while
- * loading or when the window is empty.
+ * Volume histogram over the window, scoped by the feed's dimension filters.
+ * Toggles between request count (errors stacked) and token throughput.
+ * Non-blocking — renders a quiet placeholder while loading or when empty.
  */
 export function LogsHistogram({ filter }: { filter: LogsFilter }) {
 	const { points, isLoading } = useLogsHistogram(filter);
-	const max = points.reduce((m, p) => Math.max(m, p.requests), 0);
+	const [metric, setMetric] = useState<Metric>("requests");
 	const windowLabel = WINDOW_LABEL[filter.since ?? "1h"] ?? "window";
+	const dayBuckets = filter.since === "7d" || filter.since === "30d";
+	const hasData = points.some((p) => p.requests > 0 || p.tokens > 0);
+
+	// Split ok/error so the request bars stack; carry tokens for the other mode.
+	const data = useMemo(
+		() =>
+			points.map((p) => ({
+				bucket: p.bucket,
+				ok: Math.max(p.requests - p.errors, 0),
+				errors: p.errors,
+				tokens: p.tokens,
+			})),
+		[points],
+	);
 
 	return (
 		<div className="rounded-lg border border-border bg-card p-3">
 			<div className="mb-2 flex items-center justify-between text-[11px] text-muted-foreground">
-				<span>Requests over time · {windowLabel}</span>
+				<span>
+					{metric === "tokens" ? "Tokens" : "Requests"} over time ·{" "}
+					{windowLabel}
+				</span>
 				<span className="inline-flex items-center gap-3">
-					<span className="inline-flex items-center gap-1">
-						<span className="size-2 rounded-sm bg-primary/70" /> ok
-					</span>
-					<span className="inline-flex items-center gap-1">
-						<span className="size-2 rounded-sm bg-destructive" /> error
+					{metric === "requests" && (
+						<span className="inline-flex items-center gap-3">
+							<span className="inline-flex items-center gap-1">
+								<span className="size-2 rounded-sm bg-[var(--chart-1)]" /> ok
+							</span>
+							<span className="inline-flex items-center gap-1">
+								<span className="size-2 rounded-sm bg-destructive" /> error
+							</span>
+						</span>
+					)}
+					<span className="inline-flex overflow-hidden rounded-md border border-border">
+						<MetricButton
+							active={metric === "requests"}
+							onClick={() => setMetric("requests")}
+						>
+							Requests
+						</MetricButton>
+						<MetricButton
+							active={metric === "tokens"}
+							onClick={() => setMetric("tokens")}
+						>
+							Tokens
+						</MetricButton>
 					</span>
 				</span>
 			</div>
 
-			{isLoading || max === 0 ? (
+			{isLoading || !hasData ? (
 				<div className="flex h-20 items-center justify-center text-xs text-muted-foreground">
 					{isLoading ? "Loading…" : "No traffic in this window."}
 				</div>
 			) : (
-				<div className="flex h-20 items-end gap-0.5">
-					{points.map((p) => (
-						<div
-							key={p.bucket}
-							className="flex h-full flex-1 flex-col justify-end"
-							title={`${p.requests} req${p.errors ? ` · ${p.errors} err` : ""}`}
-						>
-							{p.errors > 0 && (
-								<div
-									className="rounded-t-sm bg-destructive"
-									style={{ height: `${(p.errors / max) * 100}%` }}
+				<ChartContainer config={CONFIG} className="h-20 w-full">
+					<BarChart data={data} margin={{ top: 4 }} barCategoryGap="20%">
+						<XAxis dataKey="bucket" hide />
+						<ChartTooltip
+							cursor={{ fill: "var(--muted)", opacity: 0.4 }}
+							content={
+								<ChartTooltipContent
+									labelFormatter={(_, payload) =>
+										bucketLabel(String(payload?.[0]?.payload?.bucket), dayBuckets)
+									}
+									formatter={(value, name) => (
+										<span className="text-muted-foreground">
+											{fmtInt(Number(value))}{" "}
+											{name === "tokens"
+												? "tokens"
+												: name === "errors"
+													? "err"
+													: "ok"}
+										</span>
+									)}
 								/>
-							)}
-							<div
-								className={cn(
-									"bg-primary/60",
-									p.errors > 0 ? "" : "rounded-t-sm",
-								)}
-								style={{
-									height: `${((p.requests - p.errors) / max) * 100}%`,
-								}}
+							}
+						/>
+						{metric === "tokens" ? (
+							<Bar
+								dataKey="tokens"
+								fill="var(--color-tokens)"
+								radius={[2, 2, 0, 0]}
 							/>
-						</div>
-					))}
-				</div>
+						) : (
+							<>
+								<Bar dataKey="ok" stackId="r" fill="var(--color-ok)" />
+								<Bar
+									dataKey="errors"
+									stackId="r"
+									fill="var(--color-errors)"
+									radius={[2, 2, 0, 0]}
+								/>
+							</>
+						)}
+					</BarChart>
+				</ChartContainer>
 			)}
 		</div>
+	);
+}
+
+function MetricButton({
+	active,
+	onClick,
+	children,
+}: {
+	active: boolean;
+	onClick: () => void;
+	children: string;
+}) {
+	return (
+		<button
+			type="button"
+			onClick={onClick}
+			className={cn(
+				"px-2 py-0.5 text-[10px] font-medium transition-colors",
+				active
+					? "bg-primary/10 text-foreground"
+					: "text-muted-foreground hover:text-foreground",
+			)}
+		>
+			{children}
+		</button>
 	);
 }
