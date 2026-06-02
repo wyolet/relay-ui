@@ -16,6 +16,7 @@ import type {
 	PolicyListResponse,
 	PolicyUpdate,
 } from "@/api/types/policy";
+import type { components } from "@/api/types.gen";
 
 export const policiesListQueryOptions = queryOptions({
 	queryKey: ["policies"] as const,
@@ -34,6 +35,65 @@ export function policyDetailQueryOptions(name: string) {
 		queryFn: async (): Promise<Policy> => {
 			const { data, error } = await apiClient.GET("/policies/{ref}", {
 				params: { path: { ref: name } },
+			});
+			if (error) throw new ApiError(0, error.error);
+			return data;
+		},
+		staleTime: 30_000,
+		gcTime: 5 * 60_000,
+	});
+}
+
+// --- Composed sub-resource views (server-side joins) ---
+
+/** One model this policy grants, with the limits the policy applies to it. */
+export type PolicyModelView = components["schemas"]["PolicyModelRow"];
+/** One host this policy can reach, with the host-keys that reach it. */
+export type PolicyHostView = components["schemas"]["PolicyHostRow"];
+/** One rate-limit rule set this policy references, with its limits + models. */
+export type PolicyRateLimitView = components["schemas"]["PolicyRateLimitRow"];
+
+/** Models the policy grants (resolved server-side), with effective limits. */
+export function policyModelsQueryOptions(ref: string) {
+	return queryOptions({
+		queryKey: ["policies", ref, "models"] as const,
+		queryFn: async (): Promise<components["schemas"]["policyModelsOutBody"]> => {
+			const { data, error } = await apiClient.GET("/policies/{ref}/models", {
+				params: { path: { ref } },
+			});
+			if (error) throw new ApiError(0, error.error);
+			return data;
+		},
+		staleTime: 30_000,
+		gcTime: 5 * 60_000,
+	});
+}
+
+/** Hosts the policy can reach, each with the host-keys that reach it. */
+export function policyHostsQueryOptions(ref: string) {
+	return queryOptions({
+		queryKey: ["policies", ref, "hosts"] as const,
+		queryFn: async (): Promise<components["schemas"]["policyHostsOutBody"]> => {
+			const { data, error } = await apiClient.GET("/policies/{ref}/hosts", {
+				params: { path: { ref } },
+			});
+			if (error) throw new ApiError(0, error.error);
+			return data;
+		},
+		staleTime: 30_000,
+		gcTime: 5 * 60_000,
+	});
+}
+
+/** Rate-limit rule sets the policy references, resolved server-side. */
+export function policyRateLimitsQueryOptions(ref: string) {
+	return queryOptions({
+		queryKey: ["policies", ref, "rate-limits"] as const,
+		queryFn: async (): Promise<
+			components["schemas"]["policyRateLimitsOutBody"]
+		> => {
+			const { data, error } = await apiClient.GET("/policies/{ref}/rate-limits", {
+				params: { path: { ref } },
 			});
 			if (error) throw new ApiError(0, error.error);
 			return data;

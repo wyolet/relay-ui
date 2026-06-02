@@ -648,6 +648,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/policies/{ref}/hosts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the hosts this policy can reach, with the host-keys that reach each */
+        get: operations["policy_hosts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/policies/{ref}/models": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the models this policy grants, with the limits it applies to each */
+        get: operations["policy_models"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/policies/{ref}/rate-limits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the rate-limit rule sets this policy references */
+        get: operations["policy_rate_limits"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/pricings": {
         parameters: {
             query?: never;
@@ -1349,6 +1400,10 @@ export interface components {
             id: string;
             name: string;
         };
+        HostKeyRef: {
+            id: string;
+            name: string;
+        };
         HostKeySpec: {
             defaultTier?: string;
             enabled?: boolean;
@@ -1654,6 +1709,10 @@ export interface components {
             metadata: components["schemas"]["Metadata"];
             spec: components["schemas"]["PolicySpec"];
         };
+        PolicyHostRow: {
+            host: components["schemas"]["HostRef"];
+            hostKeys: components["schemas"]["HostKeyRef"][] | null;
+        };
         PolicyList: {
             /**
              * Format: uri
@@ -1665,9 +1724,27 @@ export interface components {
             /** Format: int64 */
             total: number;
         };
+        PolicyModelRow: {
+            limits: components["schemas"]["Limit"][] | null;
+            model: components["schemas"]["ModelRef"];
+        };
         PolicyRLBinding: {
             models: string[] | null;
             rateLimitId: string;
+        };
+        PolicyRateLimitRow: {
+            default: boolean;
+            id: string;
+            limits: components["schemas"]["Limit"][] | null;
+            models?: string[] | null;
+            name: string;
+        };
+        PolicyRef: {
+            displayName?: string;
+            enabled: boolean;
+            id: string;
+            name: string;
+            owner: components["schemas"]["OwnerRef"];
         };
         PolicySpec: {
             enabled?: boolean;
@@ -2210,6 +2287,36 @@ export interface components {
             readonly $schema?: string;
             model: components["schemas"]["ModelRef"];
             pricing: components["schemas"]["ModelPriceRow"][] | null;
+        };
+        policyHostsOutBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/policyHostsOutBody.json
+             */
+            readonly $schema?: string;
+            hosts: components["schemas"]["PolicyHostRow"][] | null;
+            policy: components["schemas"]["PolicyRef"];
+        };
+        policyModelsOutBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/policyModelsOutBody.json
+             */
+            readonly $schema?: string;
+            models: components["schemas"]["PolicyModelRow"][] | null;
+            policy: components["schemas"]["PolicyRef"];
+        };
+        policyRateLimitsOutBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/policyRateLimitsOutBody.json
+             */
+            readonly $schema?: string;
+            policy: components["schemas"]["PolicyRef"];
+            rateLimits: components["schemas"]["PolicyRateLimitRow"][] | null;
         };
         refResult: {
             bindings: components["schemas"]["resolveBindingRef"][] | null;
@@ -5237,6 +5344,183 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Policy"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    policy_hosts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource slug or UUIDv7 id. */
+                ref: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["policyHostsOutBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    policy_models: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource slug or UUIDv7 id. */
+                ref: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["policyModelsOutBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    policy_rate_limits: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource slug or UUIDv7 id. */
+                ref: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["policyRateLimitsOutBody"];
                 };
             };
             /** @description Unauthorized */

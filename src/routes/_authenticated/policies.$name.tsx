@@ -8,6 +8,9 @@ import { hostsListQueryOptions } from "@/api/hooks/hosts";
 import { modelsListQueryOptions } from "@/api/hooks/models";
 import {
 	policyDetailQueryOptions,
+	policyHostsQueryOptions,
+	policyModelsQueryOptions,
+	policyRateLimitsQueryOptions,
 	useDeletePolicy,
 	usePolicy,
 	useUpdatePolicy,
@@ -38,6 +41,15 @@ export const Route = createFileRoute("/_authenticated/policies/$name")({
 		Promise.all([
 			context.queryClient.ensureQueryData(
 				policyDetailQueryOptions(params.name),
+			),
+			context.queryClient.ensureQueryData(
+				policyModelsQueryOptions(params.name),
+			),
+			context.queryClient.ensureQueryData(
+				policyHostsQueryOptions(params.name),
+			),
+			context.queryClient.ensureQueryData(
+				policyRateLimitsQueryOptions(params.name),
 			),
 			context.queryClient.ensureQueryData(hostKeysListQueryOptions),
 			context.queryClient.ensureQueryData(hostsListQueryOptions),

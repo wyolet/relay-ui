@@ -1,11 +1,11 @@
+import { Server } from "lucide-react";
 import { Suspense } from "react";
 import { usePolicyReferences } from "@/api/hooks/policies";
 import type { Policy } from "@/api/types/policy";
 import { DiagnosticList } from "@/diagnostics/DiagnosticList";
 import { usePolicyDiagnostics } from "@/diagnostics/useDiagnostics";
-import { HostLogo } from "@/hosts/HostLogo";
-import { displayLabel } from "@/lib/displayLabel";
-import { usePolicyResolvedCatalog } from "@/policies/usePolicyResolvedCatalog";
+import { usePolicyHosts } from "@/policies/usePolicyHosts";
+import { usePolicyModels } from "@/policies/usePolicyModels";
 import { usePolicyUsage } from "@/policies/usePolicyUsage";
 import {
 	ResourceUsageCards,
@@ -29,7 +29,8 @@ export function PolicyOverviewTab({ policy }: Props) {
 }
 
 function StatsGrid({ policy }: { policy: Policy }) {
-	const resolved = usePolicyResolvedCatalog(policy);
+	const models = usePolicyModels(policy.metadata.name);
+	const hosts = usePolicyHosts(policy.metadata.name);
 
 	return (
 		<section>
@@ -37,17 +38,13 @@ function StatsGrid({ policy }: { policy: Policy }) {
 			<div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
 				<StatCard
 					label="Models"
-					value={resolved.modelCount}
-					sub={`across ${resolved.providerCount} provider${resolved.providerCount === 1 ? "" : "s"}`}
+					value={models.length}
+					sub="granted by this policy"
 				/>
 				<StatCard
 					label="Hosts"
-					value={resolved.hosts.length}
-					sub={
-						resolved.hosts.length === 0
-							? "no host resolved"
-							: "serving requests"
-					}
+					value={hosts.length}
+					sub={hosts.length === 0 ? "no host resolved" : "serving requests"}
 				/>
 				{policy.metadata.id ? (
 					<Suspense
@@ -81,7 +78,7 @@ function RelayKeyStatCard({ policyId }: { policyId: string }) {
 }
 
 function HostsPanel({ policy }: { policy: Policy }) {
-	const { hosts } = usePolicyResolvedCatalog(policy);
+	const hosts = usePolicyHosts(policy.metadata.name);
 	if (hosts.length === 0) {
 		return (
 			<section>
@@ -96,22 +93,27 @@ function HostsPanel({ policy }: { policy: Policy }) {
 		<section>
 			<SectionTitle>Hosts in this policy</SectionTitle>
 			<ul className="divide-y divide-border rounded-md border border-border">
-				{hosts.map(({ host, modelCount }) => (
-					<li
-						key={host.metadata.id ?? host.metadata.name}
-						className="flex items-center gap-3 px-3 py-2"
-					>
-						<HostLogo host={host} size={22} />
-						<div className="flex-1 min-w-0">
-							<div className="text-sm text-foreground truncate">
-								{displayLabel(host.metadata)}
+				{hosts.map(({ host, hostKeys }) => {
+					const keyCount = hostKeys?.length ?? 0;
+					return (
+						<li key={host.id} className="flex items-center gap-3 px-3 py-2">
+							<Server
+								className="w-[22px] h-[22px] text-muted-foreground shrink-0 p-0.5"
+								aria-hidden
+							/>
+							<div className="flex-1 min-w-0">
+								<div className="text-sm text-foreground truncate">
+									{host.displayName?.trim() || host.name}
+								</div>
+								<div className="text-[11px] text-muted-foreground truncate">
+									{keyCount === 0
+										? "no host key — requests will fail"
+										: `${keyCount} host key${keyCount === 1 ? "" : "s"}`}
+								</div>
 							</div>
-							<div className="text-[11px] text-muted-foreground truncate">
-								{modelCount} model{modelCount === 1 ? "" : "s"}
-							</div>
-						</div>
-					</li>
-				))}
+						</li>
+					);
+				})}
 			</ul>
 		</section>
 	);
