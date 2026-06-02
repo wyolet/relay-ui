@@ -1,7 +1,8 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Boxes, Plus } from "lucide-react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Boxes } from "lucide-react";
 import { Suspense } from "react";
 import { z } from "zod";
+import { bindingsListQueryOptions } from "@/api/hooks/bindings";
 import { governanceQueryOptions } from "@/api/hooks/governance";
 import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
 import { hostsListQueryOptions, useHosts } from "@/api/hooks/hosts";
@@ -95,6 +96,7 @@ export const Route = createFileRoute("/_authenticated/models/")({
 			),
 			context.queryClient.ensureQueryData(modelsListQueryOptions),
 			context.queryClient.ensureQueryData(hostsListQueryOptions),
+			context.queryClient.ensureQueryData(bindingsListQueryOptions),
 			context.queryClient.ensureQueryData(hostKeysListQueryOptions),
 			context.queryClient.ensureQueryData(policiesListQueryOptions),
 			context.queryClient.ensureQueryData(rateLimitsListQueryOptions),
@@ -148,15 +150,6 @@ function ModelsList() {
 				state={{ q: search.q, deprecated: search.deprecated }}
 				onChange={patch}
 				className="mb-3"
-				actions={
-					<Link
-						to="/models/new"
-						className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-xs font-semibold text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-					>
-						<Plus className="w-3.5 h-3.5" />
-						New model
-					</Link>
-				}
 			/>
 
 			<div className="mb-2 text-[11px] text-muted-foreground">
