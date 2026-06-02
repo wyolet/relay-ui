@@ -336,6 +336,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/hosts/{ref}/keys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the upstream credentials this host owns (secret-free) */
+        get: operations["host_keys"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/hosts/{ref}/models": {
         parameters: {
             query?: never;
@@ -345,6 +362,23 @@ export interface paths {
         };
         /** List the models this host serves, with binding + pricing */
         get: operations["host_models"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hosts/{ref}/policies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the host-tier serving policies this host owns, with limits */
+        get: operations["host_policies"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1298,6 +1332,11 @@ export interface components {
             snapshots?: string[] | null;
             upstreamName?: string;
         };
+        DeprecationView: {
+            replacement?: string;
+            status: string;
+            sunsetDate?: string;
+        };
         DurationStats: {
             /** Format: int64 */
             avg: number;
@@ -1416,6 +1455,13 @@ export interface components {
             env?: string;
             kind: string;
         };
+        HostKeyView: {
+            defaultTier?: string;
+            enabled: boolean;
+            id: string;
+            kind: string;
+            name: string;
+        };
         HostList: {
             /**
              * Format: uri
@@ -1431,6 +1477,12 @@ export interface components {
             binding: components["schemas"]["BindingView"];
             model: components["schemas"]["ModelRef"];
             pricing: components["schemas"]["PricingView"];
+        };
+        HostPolicyRow: {
+            enabled: boolean;
+            id: string;
+            name: string;
+            rateLimits: components["schemas"]["PolicyRateLimitRow"][] | null;
         };
         HostRef: {
             baseURL?: string;
@@ -1573,6 +1625,12 @@ export interface components {
             rates: components["schemas"]["Rate"][] | null;
         };
         ModelRef: {
+            capabilities?: string[] | null;
+            /** Format: int64 */
+            contextWindowInput?: number;
+            /** Format: int64 */
+            contextWindowTotal?: number;
+            deprecation?: components["schemas"]["DeprecationView"];
             displayName?: string;
             id: string;
             name: string;
@@ -1709,6 +1767,14 @@ export interface components {
             metadata: components["schemas"]["Metadata"];
             spec: components["schemas"]["PolicySpec"];
         };
+        PolicyBindingRow: {
+            binding: components["schemas"]["BindingView"];
+            host: components["schemas"]["HostRef"];
+            limits: components["schemas"]["Limit"][] | null;
+            matchedBy: string[] | null;
+            model: components["schemas"]["ModelRef"];
+            provider: components["schemas"]["ProviderRef"];
+        };
         PolicyHostRow: {
             host: components["schemas"]["HostRef"];
             hostKeys: components["schemas"]["HostKeyRef"][] | null;
@@ -1724,9 +1790,9 @@ export interface components {
             /** Format: int64 */
             total: number;
         };
-        PolicyModelRow: {
-            limits: components["schemas"]["Limit"][] | null;
+        PolicyModelExclusion: {
             model: components["schemas"]["ModelRef"];
+            reason: string;
         };
         PolicyRLBinding: {
             models: string[] | null;
@@ -1819,6 +1885,11 @@ export interface components {
             items: components["schemas"]["Provider"][] | null;
             /** Format: int64 */
             total: number;
+        };
+        ProviderRef: {
+            displayName?: string;
+            id: string;
+            name: string;
         };
         ProviderSpec: {
             docsURL?: string;
@@ -2169,6 +2240,16 @@ export interface components {
             /** @description closed | open | half_open | unknown. */
             state: string;
         };
+        hostKeysOutBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/hostKeysOutBody.json
+             */
+            readonly $schema?: string;
+            host: components["schemas"]["HostRef"];
+            keys: components["schemas"]["HostKeyView"][] | null;
+        };
         hostModelsOutBody: {
             /**
              * Format: uri
@@ -2178,6 +2259,16 @@ export interface components {
             readonly $schema?: string;
             host: components["schemas"]["HostRef"];
             models: components["schemas"]["HostModelRow"][] | null;
+        };
+        hostPoliciesOutBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/hostPoliciesOutBody.json
+             */
+            readonly $schema?: string;
+            host: components["schemas"]["HostRef"];
+            policies: components["schemas"]["HostPolicyRow"][] | null;
         };
         listBody_github_com_wyolet_relay_app_binding_Binding_: {
             /**
@@ -2305,7 +2396,8 @@ export interface components {
              * @example https://example.com/schemas/policyModelsOutBody.json
              */
             readonly $schema?: string;
-            models: components["schemas"]["PolicyModelRow"][] | null;
+            excluded?: components["schemas"]["PolicyModelExclusion"][] | null;
+            models: components["schemas"]["PolicyBindingRow"][] | null;
             policy: components["schemas"]["PolicyRef"];
         };
         policyRateLimitsOutBody: {
@@ -3973,6 +4065,65 @@ export interface operations {
             };
         };
     };
+    host_keys: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource slug or UUIDv7 id. */
+                ref: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["hostKeysOutBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
     host_models: {
         parameters: {
             query?: never;
@@ -3992,6 +4143,65 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["hostModelsOutBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    host_policies: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource slug or UUIDv7 id. */
+                ref: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["hostPoliciesOutBody"];
                 };
             };
             /** @description Unauthorized */
@@ -5445,10 +5655,13 @@ export interface operations {
     };
     policy_models: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Also return the models this policy does NOT grant, each with the reason. */
+                debug?: boolean;
+            };
             header?: never;
             path: {
-                /** @description Resource slug or UUIDv7 id. */
+                /** @description Policy slug or UUIDv7 id. */
                 ref: string;
             };
             cookie?: never;

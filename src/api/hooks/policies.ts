@@ -46,8 +46,12 @@ export function policyDetailQueryOptions(name: string) {
 
 // --- Composed sub-resource views (server-side joins) ---
 
-/** One model this policy grants, with the limits the policy applies to it. */
-export type PolicyModelView = components["schemas"]["PolicyModelRow"];
+/** One concrete (provider, model, host) binding this policy grants, with the
+ * grant ref(s) that matched it and the limits the policy applies to it. */
+export type PolicyModelView = components["schemas"]["PolicyBindingRow"];
+/** A model the policy does NOT grant, with the reason (debug view only). */
+export type PolicyModelExclusion =
+	components["schemas"]["PolicyModelExclusion"];
 /** One host this policy can reach, with the host-keys that reach it. */
 export type PolicyHostView = components["schemas"]["PolicyHostRow"];
 /** One rate-limit rule set this policy references, with its limits + models. */
