@@ -107,12 +107,13 @@ export function useResourceUsage(
 export function usageTimeseriesQueryOptions(
 	interval: UsageInterval,
 	groupBy: UsageGroupBy,
+	since: string,
 ) {
 	return queryOptions({
-		queryKey: ["usage", "timeseries", interval, groupBy] as const,
+		queryKey: ["usage", "timeseries", interval, groupBy, since] as const,
 		queryFn: async (): Promise<UsageTimeSeriesResult> => {
 			const { data, error } = await apiClient.GET("/usage/timeseries", {
-				params: { query: { interval, group_by: groupBy } },
+				params: { query: { interval, group_by: groupBy, since } },
 			});
 			if (error) throw new ApiError(0, error.error);
 			return data;
@@ -189,25 +190,56 @@ function deriveGroupStats(
 		.sort((a, b) => b.requests - a.requests);
 }
 
+const INTERVAL_SECONDS: Record<UsageInterval, number> = {
+	"5m": 5 * 60,
+	"1h": 60 * 60,
+	"1d": 24 * 60 * 60,
+};
+
+/**
+ * Aggregate per-bucket requests/errors across every series, then zero-fill the
+ * full [from, to] window. The server omits empty buckets (see /usage/timeseries
+ * docs), so without this the chart's axis only spans buckets that had traffic —
+ * making the range look random and the plot sparse.
+ */
 function deriveTimeline(
 	rows: UsageTimeSeriesResult["rows"],
+	from: string,
+	to: string,
+	interval: UsageInterval,
 ): UsageTimelinePoint[] {
-	const byBucket = new Map<string, UsageTimelinePoint>();
+	const byEpoch = new Map<number, { requests: number; errors: number }>();
 	for (const series of rows ?? []) {
 		for (const p of series.points ?? []) {
-			const point = byBucket.get(p.bucket) ?? {
-				bucket: p.bucket,
-				requests: 0,
-				errors: 0,
-			};
+			const epoch = Date.parse(p.bucket);
+			if (Number.isNaN(epoch)) continue;
+			const point = byEpoch.get(epoch) ?? { requests: 0, errors: 0 };
 			point.requests += p.requests;
 			point.errors += p.error_count;
-			byBucket.set(p.bucket, point);
+			byEpoch.set(epoch, point);
 		}
 	}
-	return [...byBucket.values()].sort((a, b) =>
-		a.bucket < b.bucket ? -1 : a.bucket > b.bucket ? 1 : 0,
-	);
+
+	const stepMs = INTERVAL_SECONDS[interval] * 1000;
+	const fromMs = Date.parse(from);
+	const toMs = Date.parse(to);
+	if (Number.isNaN(fromMs) || Number.isNaN(toMs) || stepMs <= 0) {
+		// Fall back to whatever buckets exist, sorted, if the window is unusable.
+		return [...byEpoch.entries()]
+			.sort(([a], [b]) => a - b)
+			.map(([epoch, v]) => ({
+				bucket: new Date(epoch).toISOString(),
+				...v,
+			}));
+	}
+
+	const start = Math.floor(fromMs / stepMs) * stepMs;
+	const out: UsageTimelinePoint[] = [];
+	for (let t = start; t <= toMs; t += stepMs) {
+		const v = byEpoch.get(t) ?? { requests: 0, errors: 0 };
+		out.push({ bucket: new Date(t).toISOString(), ...v });
+	}
+	return out;
 }
 
 function sumTokens(tokens: { [key: string]: number } | undefined): number {
@@ -234,16 +266,69 @@ export function useUsageOverview(groupBy: UsageGroupBy) {
 	};
 }
 
+/**
+ * Default relative window per bucket width, so the chart spans a clean, stable
+ * range instead of the server's data-derived min/max. Picked to yield a
+ * reasonable bucket count: 24 × 5m, 24 × 1h, 30 × 1d.
+ */
+export const DEFAULT_WINDOW: Record<UsageInterval, string> = {
+	"5m": "2h",
+	"1h": "24h",
+	"1d": "30d",
+};
+
+const DURATION_UNIT_MS: Record<string, number> = {
+	s: 1000,
+	m: 60_000,
+	h: 60 * 60_000,
+	d: 24 * 60 * 60_000,
+	w: 7 * 24 * 60 * 60_000,
+};
+
+/** Parse a relative window like "24h" / "30d" into milliseconds. */
+function parseDurationMs(since: string): number | null {
+	const match = /^(\d+)([smhdw])$/.exec(since.trim());
+	if (!match) return null;
+	return Number(match[1]) * DURATION_UNIT_MS[match[2]];
+}
+
+/**
+ * Clock-aligned axis window for the chart: [now - since, now], snapped down to
+ * the bucket boundary. We anchor the axis client-side rather than to the
+ * server's from/to — the relay clamps `from` up to the earliest record, so a
+ * data-pinned axis starts at a ragged timestamp (e.g. 4:35:12) instead of a
+ * clean clock window.
+ */
+function clockWindow(
+	interval: UsageInterval,
+	since: string,
+): { from: string; to: string } | null {
+	const spanMs = parseDurationMs(since);
+	if (spanMs == null) return null;
+	const stepMs = INTERVAL_SECONDS[interval] * 1000;
+	const now = Date.now();
+	const from = Math.floor((now - spanMs) / stepMs) * stepMs;
+	const to = Math.floor(now / stepMs) * stepMs;
+	return { from: new Date(from).toISOString(), to: new Date(to).toISOString() };
+}
+
 /** Aggregate requests/errors per bucket across every group, for the overview chart. */
-export function useUsageTimeline(interval: UsageInterval) {
+export function useUsageTimeline(
+	interval: UsageInterval,
+	since: string = DEFAULT_WINDOW[interval],
+) {
 	const { data } = useSuspenseQuery(
-		usageTimeseriesQueryOptions(interval, "source"),
+		usageTimeseriesQueryOptions(interval, "source", since),
 	);
+	// Prefer a clean client clock window; fall back to the server's range.
+	const window = clockWindow(interval, since);
+	const from = window?.from ?? data.from;
+	const to = window?.to ?? data.to;
 	return {
-		from: data.from,
-		to: data.to,
+		from,
+		to,
 		interval,
-		points: deriveTimeline(data.rows),
+		points: deriveTimeline(data.rows, from, to, interval),
 	};
 }
 
@@ -285,6 +370,6 @@ export function useResourceTimeline(
 		from: data.from,
 		to: data.to,
 		interval,
-		points: deriveTimeline(data.rows),
+		points: deriveTimeline(data.rows, data.from, data.to, interval),
 	};
 }

@@ -3,6 +3,7 @@ import { ScrollText } from "lucide-react";
 import { Suspense } from "react";
 import { z } from "zod";
 import {
+	DEFAULT_WINDOW,
 	USAGE_GROUP_BY,
 	USAGE_INTERVALS,
 	usageSummaryQueryOptions,
@@ -27,7 +28,11 @@ export const Route = createFileRoute("/_authenticated/usage")({
 		const { queryClient } = context;
 		void queryClient.ensureQueryData(usageSummaryQueryOptions(deps.group_by));
 		void queryClient.ensureQueryData(
-			usageTimeseriesQueryOptions(deps.interval, "source"),
+			usageTimeseriesQueryOptions(
+				deps.interval,
+				"source",
+				DEFAULT_WINDOW[deps.interval],
+			),
 		);
 	},
 	component: UsagePage,
