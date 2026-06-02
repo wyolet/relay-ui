@@ -14,6 +14,7 @@ import { useState } from "react";
 import type { Policy } from "@/api/types/policy";
 import {
 	type PolicyModelView,
+	usePolicyExcludedModels,
 	usePolicyModels,
 } from "@/policies/usePolicyModels";
 
@@ -42,10 +43,13 @@ export function PolicyModelsTab({ policy }: Props) {
 
 	if (rows.length === 0) {
 		return (
-			<EmptyState
-				title="No reachable models"
-				message="The catalog refs on this policy don't match any model currently in the catalog. They may match models added later, or you may need to revisit them."
-			/>
+			<div className="flex flex-col gap-3">
+				<EmptyState
+					title="No reachable models"
+					message="The catalog refs on this policy don't match any model currently in the catalog. They may match models added later, or you may need to revisit them."
+				/>
+				<ExcludedModelsPanel policyName={policy.metadata.name} />
+			</div>
 		);
 	}
 
@@ -87,6 +91,74 @@ export function PolicyModelsTab({ policy }: Props) {
 				const list = byHost.get(hostId) ?? [];
 				return <HostGroup key={hostId} rows={list} />;
 			})}
+
+			<ExcludedModelsPanel policyName={policy.metadata.name} />
+		</div>
+	);
+}
+
+/**
+ * Lazily reveals the models this policy does NOT grant, with the reason, via
+ * `GET /policies/{ref}/models?debug=true`. Useful when the catalog looks
+ * emptier than expected — distinguishes a data/seed gap from a UI bug.
+ */
+function ExcludedModelsPanel({ policyName }: { policyName: string }) {
+	const [open, setOpen] = useState(false);
+	const { excluded, isLoading } = usePolicyExcludedModels(policyName, open);
+
+	return (
+		<div className="mt-1">
+			<button
+				type="button"
+				onClick={() => setOpen((v) => !v)}
+				aria-expanded={open}
+				className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
+			>
+				{open ? (
+					<ChevronDown className="w-3 h-3" />
+				) : (
+					<ChevronRight className="w-3 h-3" />
+				)}
+				Why are some models missing?
+			</button>
+
+			{open && (
+				<div className="mt-2 rounded-md border border-border bg-card overflow-hidden">
+					{isLoading ? (
+						<div className="px-3 py-3 text-[11px] text-muted-foreground">
+							Loading…
+						</div>
+					) : excluded.length === 0 ? (
+						<div className="px-3 py-3 text-[11px] text-muted-foreground">
+							Nothing excluded — every model in the catalog is granted by this
+							policy.
+						</div>
+					) : (
+						<ul className="divide-y divide-border">
+							{excluded.map((x) => (
+								<li
+									key={x.model.id}
+									className="flex items-baseline gap-3 px-3 py-1.5 text-sm"
+								>
+									<div className="flex items-baseline gap-2 min-w-0 flex-1 flex-wrap">
+										{x.model.displayName?.trim() && (
+											<span className="text-foreground text-[13px] truncate">
+												{x.model.displayName.trim()}
+											</span>
+										)}
+										<code className="font-mono text-foreground text-[11px] truncate">
+											{x.model.name}
+										</code>
+									</div>
+									<span className="text-[11px] text-muted-foreground text-right">
+										{x.reason}
+									</span>
+								</li>
+							))}
+						</ul>
+					)}
+				</div>
+			)}
 		</div>
 	);
 }

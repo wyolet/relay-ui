@@ -73,6 +73,24 @@ export function policyModelsQueryOptions(ref: string) {
 	});
 }
 
+/** Debug variant: also returns `excluded` — every model the policy does NOT
+ * grant, with the reason. Separate query key so the default view never pays
+ * for it; fetched lazily when the user opens the "why excluded" panel. */
+export function policyModelsDebugQueryOptions(ref: string) {
+	return queryOptions({
+		queryKey: ["policies", ref, "models", "debug"] as const,
+		queryFn: async (): Promise<components["schemas"]["policyModelsOutBody"]> => {
+			const { data, error } = await apiClient.GET("/policies/{ref}/models", {
+				params: { path: { ref }, query: { debug: true } },
+			});
+			if (error) throw new ApiError(0, error.error);
+			return data;
+		},
+		staleTime: 30_000,
+		gcTime: 5 * 60_000,
+	});
+}
+
 /** Hosts the policy can reach, each with the host-keys that reach it. */
 export function policyHostsQueryOptions(ref: string) {
 	return queryOptions({
