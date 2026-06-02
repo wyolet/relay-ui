@@ -264,11 +264,7 @@ function OverviewTab({
 	host: Host;
 	refs: ReturnType<typeof useHostReferences>;
 }) {
-	const enabledModels = refs.models.filter((m) =>
-		(m.spec.hosts ?? []).some(
-			(b) => b.hostId === host.metadata.id && b.enabled !== false,
-		),
-	).length;
+	const enabledModels = refs.enabledModels.length;
 	const enabledHostKeys = refs.hostKeys.filter(
 		(hk) => hk.spec.enabled !== false,
 	).length;

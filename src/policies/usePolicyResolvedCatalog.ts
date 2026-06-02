@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useBindings } from "@/api/hooks/bindings";
 import { useHosts } from "@/api/hooks/hosts";
 import { useModels } from "@/api/hooks/models";
 import { useProviders } from "@/api/hooks/providers";
@@ -27,12 +28,14 @@ export function usePolicyResolvedCatalog(
 	const { data: providers } = useProviders();
 	const { data: models } = useModels();
 	const { data: hostsData } = useHosts();
+	const { data: bindingsData } = useBindings();
 
 	return useMemo(() => {
 		const catalog: ConcreteBinding[] = buildConcreteCatalog({
 			providers: providers.items ?? [],
 			models: models.items ?? [],
 			hosts: hostsData.items ?? [],
+			bindings: bindingsData.items ?? [],
 			includeDeprecated: policy.spec.includeDeprecated ?? false,
 		});
 		const hostBySlug = new Map<string, Host>();
@@ -79,6 +82,7 @@ export function usePolicyResolvedCatalog(
 		providers,
 		models,
 		hostsData,
+		bindingsData,
 		policy.spec.models,
 		policy.spec.includeDeprecated,
 	]);

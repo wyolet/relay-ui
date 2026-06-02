@@ -24,7 +24,6 @@ import {
 	Mic,
 	Monitor,
 	Paperclip,
-	Pencil,
 	Power,
 	Radio,
 	Scale,
@@ -33,13 +32,16 @@ import {
 	Settings2,
 	ShieldCheck,
 	Trash2,
+	TrendingDown,
 	Volume2,
 	Wrench,
 	Zap,
 } from "lucide-react";
-import { Suspense } from "react";
+import { Suspense, useMemo } from "react";
 import { useGovernance } from "@/api/hooks/governance";
-import type { Pricing } from "@/api/hooks/pricings";
+import { useHosts } from "@/api/hooks/hosts";
+import type { ModelHostView, ModelPolicyView } from "@/api/hooks/models";
+import type { Host } from "@/api/types/host";
 import type { Model, ModelCapabilities } from "@/api/types/model";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DiagnosticList } from "@/diagnostics/DiagnosticList";
@@ -47,13 +49,16 @@ import { useModelDiagnostics } from "@/diagnostics/useDiagnostics";
 import { HostCell } from "@/hosts/HostCell";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { resolveMutability } from "@/lib/ownership";
+import { cn } from "@/lib/utils";
 import { ResourceLogs } from "@/logs/ResourceLogs";
-import { useModelPricing } from "@/models/useModelPricing";
+import type { BindingUsage } from "@/models/useModelHostSpend";
+import { useModelHostSpend } from "@/models/useModelHostSpend";
+import { useModelHosts } from "@/models/useModelHosts";
+import { useModelPolicies } from "@/models/useModelPolicies";
 import {
-	type ModelHostRow,
-	type ModelPolicyRow,
-	useModelReferences,
-} from "@/models/useModelReferences";
+	type ModelProvider,
+	useModelProvider,
+} from "@/models/useModelProvider";
 import { useModelUsage } from "@/models/useModelUsage";
 import { ProviderLogo } from "@/providers/ProviderLogo";
 import {
@@ -104,13 +109,23 @@ export function ModelDetailView({
 	toggling,
 	deleting,
 }: Props) {
-	const refs = useModelReferences(model);
+	const provider = useModelProvider(model);
+	const hostRows = useModelHosts(model.metadata.name);
+	const policyRows = useModelPolicies(model.metadata.name);
+	const { data: hostsData } = useHosts();
+	const hostById = useMemo(() => {
+		const m = new Map<string, Host>();
+		for (const h of hostsData.items ?? []) {
+			if (h.metadata.id) m.set(h.metadata.id, h);
+		}
+		return m;
+	}, [hostsData]);
 
 	return (
 		<div className="flex flex-col gap-5">
 			<Header
 				model={model}
-				refs={refs}
+				provider={provider}
 				onToggleEnabled={onToggleEnabled}
 				onDelete={onDelete}
 				toggling={toggling}
@@ -131,19 +146,23 @@ export function ModelDetailView({
 				</TabsList>
 
 				<TabsContent value="overview">
-					<OverviewTab model={model} refs={refs} />
+					<OverviewTab
+						model={model}
+						hostRows={hostRows}
+						policyRows={policyRows}
+					/>
 				</TabsContent>
 				<TabsContent value="hosts">
-					<HostsTab rows={refs.hosts} />
+					<HostsTab rows={hostRows} hostById={hostById} />
 				</TabsContent>
 				<TabsContent value="policies">
-					<PoliciesTab rows={refs.policies} />
+					<PoliciesTab rows={policyRows} />
 				</TabsContent>
 				<TabsContent value="limits">
 					<LimitsTab model={model} />
 				</TabsContent>
 				<TabsContent value="pricing">
-					<PricingTab model={model} />
+					<PricingTab model={model} hostRows={hostRows} hostById={hostById} />
 				</TabsContent>
 				<TabsContent value="usage">
 					{model.metadata.id ? (
@@ -180,14 +199,14 @@ export function ModelDetailView({
 
 function Header({
 	model,
-	refs,
+	provider,
 	onToggleEnabled,
 	onDelete,
 	toggling,
 	deleting,
 }: {
 	model: Model;
-	refs: ReturnType<typeof useModelReferences>;
+	provider: ModelProvider;
 	onToggleEnabled: () => void;
 	onDelete?: () => void;
 	toggling?: boolean;
@@ -206,9 +225,9 @@ function Header({
 		<div className="flex flex-col gap-3">
 			<div className="flex items-start justify-between gap-4">
 				<div className="min-w-0 flex items-start gap-3">
-					{refs.provider ? (
+					{provider.provider ? (
 						<ProviderLogo
-							provider={refs.provider}
+							provider={provider.provider}
 							size={36}
 							className="mt-0.5 shrink-0"
 						/>
@@ -238,23 +257,23 @@ function Header({
 							{model.metadata.name}
 						</p>
 						<p className="mt-0.5 text-[11px] text-muted-foreground">
-							{refs.providerSlug && (
+							{provider.providerSlug && (
 								<>
 									by{" "}
 									<Link
 										to="/providers/$name"
-										params={{ name: refs.providerSlug }}
+										params={{ name: provider.providerSlug }}
 										className="text-foreground hover:underline"
 									>
-										{refs.provider
-											? displayLabel(refs.provider.metadata)
-											: refs.providerSlug}
+										{provider.provider
+											? displayLabel(provider.provider.metadata)
+											: provider.providerSlug}
 									</Link>
 								</>
 							)}
 							{model.spec.family && (
 								<>
-									{refs.providerSlug && (
+									{provider.providerSlug && (
 										<span className="text-muted-foreground/50"> · </span>
 									)}
 									family{" "}
@@ -286,16 +305,6 @@ function Header({
 							<Power className="w-3.5 h-3.5" />
 							{enabled ? "Disable" : "Enable"}
 						</button>
-					)}
-					{canEdit && (
-						<Link
-							to="/models/$name/edit"
-							params={{ name: model.metadata.name }}
-							className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium text-foreground border border-border hover:bg-muted transition-colors"
-						>
-							<Pencil className="w-3.5 h-3.5" />
-							Edit
-						</Link>
 					)}
 					{canDelete && onDelete && (
 						<button
@@ -336,18 +345,19 @@ function deprecationNote(m: Model): string | null {
 
 function OverviewTab({
 	model,
-	refs,
+	hostRows,
+	policyRows,
 }: {
 	model: Model;
-	refs: ReturnType<typeof useModelReferences>;
+	hostRows: ModelHostView[];
+	policyRows: ModelPolicyView[];
 }) {
 	const caps = activeCapabilities(model.spec.capabilities);
 	const tags = model.spec.tags ?? [];
-	const enabledHosts = refs.hosts.filter((h) => h.enabled).length;
-	const totalRelayKeys = refs.policies.reduce(
-		(acc, p) => acc + p.relayKeyCount,
-		0,
-	);
+	const enabledHosts = hostRows.filter((h) => h.binding.enabled).length;
+	const throttled = policyRows.filter(
+		(p) => (p.limits?.length ?? 0) > 0,
+	).length;
 
 	return (
 		<div className="flex flex-col gap-6 pt-2">
@@ -358,21 +368,15 @@ function OverviewTab({
 				<div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
 					<StatCard
 						label="Hosts"
-						value={refs.hosts.length}
+						value={hostRows.length}
 						sub={
-							refs.hosts.length === 0
-								? "not deployed"
-								: `${enabledHosts} enabled`
+							hostRows.length === 0 ? "not deployed" : `${enabledHosts} enabled`
 						}
 					/>
 					<StatCard
 						label="Policies"
-						value={refs.policies.length}
-						sub={
-							refs.policies.length === 0
-								? "unused"
-								: `${totalRelayKeys} relay key${totalRelayKeys === 1 ? "" : "s"}`
-						}
+						value={policyRows.length}
+						sub={policyRows.length === 0 ? "unused" : `${throttled} throttled`}
 					/>
 					<StatCard
 						label="Capabilities"
@@ -508,7 +512,13 @@ function ModelUsageCards({ modelId }: { modelId: string }) {
 
 /* ---------------- Hosts ---------------- */
 
-function HostsTab({ rows }: { rows: ModelHostRow[] }) {
+function HostsTab({
+	rows,
+	hostById,
+}: {
+	rows: ModelHostView[];
+	hostById: Map<string, Host>;
+}) {
 	if (rows.length === 0) {
 		return (
 			<EmptyState
@@ -524,60 +534,72 @@ function HostsTab({ rows }: { rows: ModelHostRow[] }) {
 				<thead className="bg-muted/30 text-[10px] uppercase tracking-wide text-muted-foreground">
 					<tr>
 						<Th>Host</Th>
+						<Th>Upstream</Th>
 						<Th>Snapshots</Th>
 						<Th>Adapter</Th>
 						<Th className="text-right">Status</Th>
 					</tr>
 				</thead>
 				<tbody className="divide-y divide-border">
-					{rows.map((row) => (
-						<tr
-							key={row.hostId}
-							className="hover:bg-muted/30 transition-colors"
-						>
-							<Td>
-								{row.host ? (
+					{rows.map((row) => {
+						const host = hostById.get(row.host.id);
+						const snapshots = row.binding.snapshots ?? [];
+						return (
+							<tr
+								key={row.binding.id}
+								className="hover:bg-muted/30 transition-colors"
+							>
+								<Td>
 									<Link
 										to="/hosts/$name"
-										params={{ name: row.host.metadata.name }}
+										params={{ name: row.host.name }}
 										className="block"
 									>
-										<HostCell host={row.host} size="sm" />
+										<HostCell
+											host={host}
+											size="sm"
+											fallbackLabel={displayLabel(row.host)}
+										/>
 									</Link>
-								) : (
-									<HostCell
-										host={undefined}
-										size="sm"
-										fallbackLabel={`Unknown (${row.hostId.slice(0, 6)}…)`}
-									/>
-								)}
-							</Td>
-							<Td>
-								{row.snapshots && row.snapshots.length > 0 ? (
-									<ul className="flex flex-wrap gap-1">
-										{row.snapshots.map((s) => (
-											<li
-												key={s}
-												className="inline-flex items-center px-1.5 py-0.5 rounded bg-muted border border-border font-mono text-[10px] text-foreground"
-											>
-												{s}
-											</li>
-										))}
-									</ul>
-								) : (
-									<span className="text-[11px] text-muted-foreground">
-										All snapshots
+								</Td>
+								<Td>
+									{row.binding.upstreamName ? (
+										<code className="font-mono text-[11px] text-foreground">
+											{row.binding.upstreamName}
+										</code>
+									) : (
+										<span className="text-[11px] text-muted-foreground">—</span>
+									)}
+								</Td>
+								<Td>
+									{snapshots.length > 0 ? (
+										<ul className="flex flex-wrap gap-1">
+											{snapshots.map((s) => (
+												<li
+													key={s}
+													className="inline-flex items-center px-1.5 py-0.5 rounded bg-muted border border-border font-mono text-[10px] text-foreground"
+												>
+													{s}
+												</li>
+											))}
+										</ul>
+									) : (
+										<span className="text-[11px] text-muted-foreground">
+											All snapshots
+										</span>
+									)}
+								</Td>
+								<Td>
+									<span className="text-xs text-foreground">
+										{row.binding.adapter}
 									</span>
-								)}
-							</Td>
-							<Td>
-								<span className="text-xs text-foreground">{row.adapter}</span>
-							</Td>
-							<Td className="text-right">
-								<StatusInline enabled={row.enabled} />
-							</Td>
-						</tr>
-					))}
+								</Td>
+								<Td className="text-right">
+									<StatusInline enabled={row.binding.enabled} />
+								</Td>
+							</tr>
+						);
+					})}
 				</tbody>
 			</table>
 		</div>
@@ -586,7 +608,7 @@ function HostsTab({ rows }: { rows: ModelHostRow[] }) {
 
 /* ---------------- Policies ---------------- */
 
-function PoliciesTab({ rows }: { rows: ModelPolicyRow[] }) {
+function PoliciesTab({ rows }: { rows: ModelPolicyView[] }) {
 	if (rows.length === 0) {
 		return (
 			<EmptyState
@@ -602,65 +624,56 @@ function PoliciesTab({ rows }: { rows: ModelPolicyRow[] }) {
 				<thead className="bg-muted/30 text-[10px] uppercase tracking-wide text-muted-foreground">
 					<tr>
 						<Th>Policy</Th>
-						<Th>Granted via</Th>
-						<Th className="text-right">Relay keys</Th>
-						<Th className="text-right">Status</Th>
+						<Th>Owner</Th>
+						<Th>Limits applied</Th>
 					</tr>
 				</thead>
 				<tbody className="divide-y divide-border">
-					{rows.map((row) => (
-						<tr
-							key={row.policy.metadata.name}
-							className="hover:bg-muted/30 transition-colors"
-						>
-							<Td>
-								<div className="min-w-0">
-									<div className="flex items-center gap-2 min-w-0">
-										<Link
-											to="/policies/$name"
-											params={{ name: row.policy.metadata.name }}
-											className="text-foreground hover:underline truncate font-medium"
-										>
-											{displayLabel(row.policy.metadata)}
-										</Link>
-										{row.hostOwned && (
-											<span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium uppercase tracking-wide bg-muted text-muted-foreground border border-border">
-												Host-owned
-											</span>
+					{rows.map((row) => {
+						const limits = row.limits ?? [];
+						return (
+							<tr key={row.id} className="hover:bg-muted/30 transition-colors">
+								<Td>
+									<Link
+										to="/policies/$name"
+										params={{ name: row.name }}
+										className="font-mono text-[12px] text-foreground hover:underline"
+									>
+										{row.name}
+									</Link>
+								</Td>
+								<Td>
+									<span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+										<span className="rounded bg-muted px-1.5 py-0.5 font-medium uppercase tracking-wide text-[9px] text-muted-foreground border border-border">
+											{row.owner.kind}
+										</span>
+										{row.owner.name && (
+											<span className="text-foreground">{row.owner.name}</span>
 										)}
-									</div>
-									<div className="text-[11px] text-muted-foreground font-mono truncate">
-										{row.policy.metadata.name}
-									</div>
-								</div>
-							</Td>
-							<Td>
-								<ul className="flex flex-wrap gap-1">
-									{row.matchingRefs.map((r) => (
-										<li key={r}>
-											<code className="inline-flex items-center px-1.5 py-0.5 rounded bg-muted border border-border font-mono text-[10px] text-foreground">
-												{r}
-											</code>
-										</li>
-									))}
-								</ul>
-							</Td>
-							<Td className="text-right tabular-nums">
-								<span
-									className={
-										row.relayKeyCount === 0
-											? "text-muted-foreground"
-											: "text-foreground"
-									}
-								>
-									{row.relayKeyCount}
-								</span>
-							</Td>
-							<Td className="text-right">
-								<StatusInline enabled={row.enabled} />
-							</Td>
-						</tr>
-					))}
+									</span>
+								</Td>
+								<Td>
+									{limits.length === 0 ? (
+										<span className="text-[11px] text-muted-foreground">
+											no limit
+										</span>
+									) : (
+										<ul className="flex flex-wrap gap-1">
+											{limits.map((l) => (
+												<li
+													key={`${l.meter}-${l.window}-${l.amount}`}
+													className="inline-flex items-center px-1.5 py-0.5 rounded bg-muted border border-border font-mono text-[10px] text-foreground"
+													title={l.strategy}
+												>
+													{l.amount.toLocaleString()} {l.meter} / {l.window}
+												</li>
+											))}
+										</ul>
+									)}
+								</Td>
+							</tr>
+						);
+					})}
 				</tbody>
 			</table>
 		</div>
@@ -738,9 +751,17 @@ function fmtTokens(n: number): string {
 	return String(n);
 }
 
-/* ---------------- Pricing (mock) ---------------- */
+/* ---------------- Pricing (per host binding) ---------------- */
 
-function PricingTab({ model }: { model: Model }) {
+function PricingTab({
+	model,
+	hostRows,
+	hostById,
+}: {
+	model: Model;
+	hostRows: ModelHostView[];
+	hostById: Map<string, Host>;
+}) {
 	if (!model.metadata.id) {
 		return (
 			<ComingSoon
@@ -752,15 +773,42 @@ function PricingTab({ model }: { model: Model }) {
 	}
 	return (
 		<Suspense fallback={<PricingSkeleton />}>
-			<ModelPricing modelId={model.metadata.id} />
+			<ModelPricing
+				modelId={model.metadata.id}
+				hostRows={hostRows}
+				hostById={hostById}
+			/>
 		</Suspense>
 	);
 }
 
-function ModelPricing({ modelId }: { modelId: string }) {
-	const pricings = useModelPricing(modelId);
+/**
+ * Pricing grouped under each host — the model_hosts view returns the binding +
+ * its attached pricing together, so each card is one host with its rates plus
+ * billing context and (when traffic exists) estimated spend over the window.
+ */
+function ModelPricing({
+	modelId,
+	hostRows,
+	hostById,
+}: {
+	modelId: string;
+	hostRows: ModelHostView[];
+	hostById: Map<string, Host>;
+}) {
+	const spend = useModelHostSpend(modelId);
 
-	if (pricings.length === 0) {
+	// Cheapest host by example-request cost — only meaningful with ≥2 priced hosts.
+	const costByHost = new Map<string, number>();
+	for (const row of hostRows) {
+		const c = blendedRequestCost(row.pricing.rates ?? []);
+		if (c != null && c > 0) costByHost.set(row.host.id, c);
+	}
+	const cheapest =
+		costByHost.size >= 2 ? Math.min(...costByHost.values()) : null;
+	const windowText = windowLabel(spend.from, spend.to);
+
+	if (hostRows.length === 0) {
 		return (
 			<div className="mt-4 rounded-md border border-dashed border-border bg-muted/30 px-6 py-10 text-center">
 				<DollarSign
@@ -771,8 +819,8 @@ function ModelPricing({ modelId }: { modelId: string }) {
 					No pricing configured
 				</div>
 				<div className="mt-1 text-xs text-muted-foreground max-w-md mx-auto">
-					This model has no pricing record. Add one targeting it to see
-					per-meter rates here.
+					This model isn't bound to a host yet. Pricing appears per host once a
+					binding is in place.
 				</div>
 			</div>
 		);
@@ -780,65 +828,353 @@ function ModelPricing({ modelId }: { modelId: string }) {
 
 	return (
 		<div className="mt-2 flex flex-col gap-4">
-			{pricings.map((p) => (
-				<PricingCard key={p.metadata.id ?? p.metadata.name} pricing={p} />
+			{hostRows.map((row) => (
+				<HostPricingCard
+					key={row.binding.id}
+					row={row}
+					host={hostById.get(row.host.id)}
+					usage={spend.byHost.get(row.host.id)}
+					windowText={windowText}
+					isCheapest={
+						cheapest != null && costByHost.get(row.host.id) === cheapest
+					}
+				/>
 			))}
 		</div>
 	);
 }
 
-function PricingCard({ pricing }: { pricing: Pricing }) {
-	const rates = pricing.spec.rates ?? [];
-	const disabled = pricing.spec.enabled === false;
+/** One host's pricing card: rates, billing context, and cost figures. */
+function HostPricingCard({
+	row,
+	host,
+	usage,
+	windowText,
+	isCheapest,
+}: {
+	row: ModelHostView;
+	host: Host | undefined;
+	usage: BindingUsage | undefined;
+	windowText: string;
+	isCheapest?: boolean;
+}) {
+	const rates = row.pricing.rates ?? [];
+	const hasPricing = rates.length > 0;
+	const currency = row.pricing.currency || "USD";
+	const example = hasPricing ? blendedRequestCost(rates) : null;
+	const estSpend =
+		hasPricing && usage && usage.requests > 0
+			? estimatedSpend(rates, usage.tokens)
+			: null;
+	const snapshots = row.binding.snapshots ?? [];
+	const hasBillingContext = !!row.binding.upstreamName || snapshots.length > 0;
+
 	return (
-		<Card title={displayLabel(pricing.metadata)} icon={DollarSign}>
-			<div className="mb-2 flex items-center gap-2 text-[11px] text-muted-foreground">
-				<span className="font-mono uppercase">{pricing.spec.currency}</span>
-				{disabled && (
-					<span className="rounded bg-muted px-1.5 py-0.5 text-muted-foreground">
-						disabled
+		<section className="rounded-md border border-border bg-card">
+			<header className="flex items-center justify-between gap-2 border-b border-border px-4 py-2.5">
+				<div className="flex min-w-0 items-center gap-2">
+					<Link to="/hosts/$name" params={{ name: row.host.name }}>
+						<HostCell
+							host={host}
+							size="sm"
+							fallbackLabel={displayLabel(row.host)}
+						/>
+					</Link>
+					<span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] uppercase text-muted-foreground">
+						{row.binding.adapter}
 					</span>
+					{!row.binding.enabled && (
+						<span className="rounded bg-destructive/10 px-1.5 py-0.5 text-[10px] font-medium text-destructive">
+							disabled
+						</span>
+					)}
+				</div>
+				<div className="flex shrink-0 items-center gap-2">
+					{isCheapest && (
+						<span className="inline-flex items-center gap-1 rounded bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
+							<TrendingDown className="size-3" aria-hidden />
+							Cheapest
+						</span>
+					)}
+					{hasPricing && (
+						<span className="font-mono text-[11px] uppercase text-muted-foreground">
+							{currency}
+						</span>
+					)}
+				</div>
+			</header>
+			<div className="flex flex-col gap-3 px-4 py-3">
+				{hasPricing ? (
+					<MeterGrid rates={rates} currency={currency} />
+				) : (
+					<div className="flex items-center gap-2 text-xs text-muted-foreground">
+						<DollarSign
+							className="size-3.5 text-muted-foreground/60"
+							aria-hidden
+						/>
+						No pricing attached to this host binding.
+					</div>
+				)}
+
+				{(hasBillingContext || example != null || estSpend != null) && (
+					<dl className="flex flex-col gap-1.5 border-t border-border/60 pt-2.5 text-[11px]">
+						{row.binding.upstreamName && (
+							<div className="flex items-center justify-between gap-3">
+								<dt className="text-muted-foreground">Billed as</dt>
+								<dd className="truncate font-mono text-foreground">
+									{row.binding.upstreamName}
+								</dd>
+							</div>
+						)}
+						{snapshots.length > 0 && (
+							<div className="flex items-center justify-between gap-3">
+								<dt className="text-muted-foreground">Snapshots</dt>
+								<dd className="flex flex-wrap justify-end gap-1">
+									{snapshots.map((s) => (
+										<span
+											key={s}
+											className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px] text-foreground"
+										>
+											{s}
+										</span>
+									))}
+								</dd>
+							</div>
+						)}
+						{example != null && (
+							<div className="flex items-center justify-between gap-3">
+								<dt className="text-muted-foreground">
+									Example request{" "}
+									<span className="text-muted-foreground/60">
+										(800 in / 200 out)
+									</span>
+								</dt>
+								<dd className="font-mono tabular-nums text-foreground">
+									≈ {fmtCost(example, currency)}{" "}
+									<span className="text-muted-foreground">/ 1K</span>
+								</dd>
+							</div>
+						)}
+						{estSpend != null && usage && (
+							<div className="flex items-center justify-between gap-3">
+								<dt className="text-muted-foreground">
+									Est. spend · last {windowText}{" "}
+									<span className="text-muted-foreground/60">
+										({usage.requests.toLocaleString()} req)
+									</span>
+								</dt>
+								<dd className="font-mono tabular-nums text-foreground">
+									≈ {fmtCost(estSpend, currency)}
+								</dd>
+							</div>
+						)}
+					</dl>
 				)}
 			</div>
-			{rates.length === 0 ? (
-				<p className="text-xs text-muted-foreground">No rates defined.</p>
-			) : (
-				<table className="w-full text-sm">
-					<thead className="text-[10px] uppercase tracking-wide text-muted-foreground">
-						<tr>
-							<th className="py-1 text-left font-medium">Meter</th>
-							<th className="py-1 text-left font-medium">Tier</th>
-							<th className="py-1 text-right font-medium">Rate</th>
-							<th className="py-1 text-left font-medium pl-3">Unit</th>
-						</tr>
-					</thead>
-					<tbody>
-						{rates.map((r) => (
-							<tr
-								key={`${r.meter}-${r.unit}-${r.aboveTokens ?? 0}`}
-								className="border-t border-border"
-							>
-								<td className="py-1.5 text-foreground">{r.meter}</td>
-								<td className="py-1.5 text-muted-foreground">
-									{r.aboveTokens ? `≥ ${fmtTokens(r.aboveTokens)}` : "base"}
-								</td>
-								<td className="py-1.5 text-right font-mono tabular-nums text-foreground">
-									{fmtRate(r.amount, pricing.spec.currency)}
-								</td>
-								<td className="py-1.5 pl-3 text-muted-foreground">{r.unit}</td>
-							</tr>
-						))}
-					</tbody>
-				</table>
-			)}
-		</Card>
+		</section>
 	);
+}
+
+/** The meter-tile grid for a set of rates. */
+function MeterGrid({
+	rates,
+	currency,
+}: {
+	rates: readonly Rate[];
+	currency: string;
+}) {
+	const meters = groupByMeter(rates);
+	if (meters.length === 0) {
+		return <p className="text-xs text-muted-foreground">No rates defined.</p>;
+	}
+	return (
+		<div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+			{meters.map((g) => (
+				<MeterTile key={g.meter} group={g} currency={currency} />
+			))}
+		</div>
+	);
+}
+
+/** A single pricing rate from the model_hosts view. */
+type Rate = NonNullable<ModelHostView["pricing"]["rates"]>[number];
+
+/** One meter's rates, base first then ascending tiers. */
+interface MeterGroup {
+	meter: string;
+	unit: string;
+	rates: Rate[];
+}
+
+/** Group rates by meter (preserving first-seen order), tiers sorted ascending. */
+function groupByMeter(rates: readonly Rate[]): MeterGroup[] {
+	const order: string[] = [];
+	const byMeter = new Map<string, MeterGroup>();
+	for (const r of rates) {
+		let g = byMeter.get(r.meter);
+		if (!g) {
+			g = { meter: r.meter, unit: r.unit, rates: [] };
+			byMeter.set(r.meter, g);
+			order.push(r.meter);
+		}
+		g.rates.push(r);
+	}
+	for (const g of byMeter.values())
+		g.rates.sort((a, b) => (a.aboveTokens ?? 0) - (b.aboveTokens ?? 0));
+	return order.map((m) => {
+		const g = byMeter.get(m);
+		if (!g) throw new Error("unreachable");
+		return g;
+	});
+}
+
+/** Accent dot per common meter, so input/output read at a glance. */
+const METER_ACCENT: Record<string, string> = {
+	input: "bg-[var(--chart-1)]",
+	output: "bg-[var(--chart-2)]",
+	cache_read: "bg-[var(--chart-3)]",
+	cache_write: "bg-[var(--chart-4)]",
+};
+
+function meterAccent(meter: string): string {
+	return METER_ACCENT[meter.toLowerCase()] ?? "bg-muted-foreground/40";
+}
+
+function MeterTile({
+	group,
+	currency,
+}: {
+	group: MeterGroup;
+	currency: string;
+}) {
+	const [base, ...tiers] = group.rates;
+	return (
+		<div className="flex flex-col rounded-lg border border-border bg-muted/30 px-3.5 py-3">
+			<div className="mb-1.5 flex items-center gap-1.5">
+				<span
+					className={cn("size-2 rounded-full", meterAccent(group.meter))}
+					aria-hidden
+				/>
+				<span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+					{prettyMeter(group.meter)}
+				</span>
+			</div>
+			<div className="flex items-baseline gap-1">
+				<span className="text-2xl font-semibold tabular-nums text-foreground">
+					{fmtRate(base.amount, currency)}
+				</span>
+				<span className="text-[11px] text-muted-foreground">
+					/ {prettyUnit(group.unit)}
+				</span>
+			</div>
+			{tiers.length > 0 && (
+				<dl className="mt-2 space-y-1 border-t border-border/60 pt-2">
+					{tiers.map((t) => (
+						<div
+							key={t.aboveTokens ?? 0}
+							className="flex items-center justify-between text-[10px]"
+						>
+							<dt className="text-muted-foreground">
+								≥ {fmtTokens(t.aboveTokens ?? 0)} tokens
+							</dt>
+							<dd className="font-mono tabular-nums text-foreground">
+								{fmtRate(t.amount, currency)}
+							</dd>
+						</div>
+					))}
+				</dl>
+			)}
+		</div>
+	);
+}
+
+/** "cache_read" → "Cache read"; leaves unknown meters readable. */
+function prettyMeter(meter: string): string {
+	const s = meter.replace(/[_-]+/g, " ").trim();
+	return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+/** "1M_tokens" → "1M tokens", "token" → "token". */
+function prettyUnit(unit: string): string {
+	return unit.replace(/[_-]+/g, " ").trim();
 }
 
 function fmtRate(amount: number, currency: string): string {
 	const prefix = currency.toUpperCase() === "USD" ? "$" : "";
 	const digits = amount !== 0 && Math.abs(amount) < 1 ? 4 : 2;
 	return `${prefix}${amount.toFixed(digits)}`;
+}
+
+/** Total cost with adaptive precision (small example costs need more digits). */
+function fmtCost(amount: number, currency: string): string {
+	const prefix = currency.toUpperCase() === "USD" ? "$" : "";
+	if (amount === 0) return `${prefix}0`;
+	const digits = amount < 0.01 ? 4 : amount < 1 ? 3 : 2;
+	return `${prefix}${amount.toFixed(digits)}`;
+}
+
+// --- Cost math (estimates; clearly labelled "≈" in the UI) ---
+
+/** A representative 1K-token request, split like the recorded prompt:completion mix. */
+const EXAMPLE_PROMPT_TOKENS = 800;
+const EXAMPLE_COMPLETION_TOKENS = 200;
+
+/** Pricing meter → usage token-sum key (usage records `prompt`/`completion`). */
+const METER_TOKEN_KEY: Record<string, string> = {
+	input: "prompt",
+	output: "completion",
+};
+
+/** Tokens represented by a rate's unit: "1M_tokens" → 1e6, "1K_tokens" → 1e3, else 1. */
+function unitTokens(unit: string): number {
+	const m = /^(\d+)\s*([km])?/i.exec(unit.trim());
+	if (!m) return 1;
+	const suffix = (m[2] ?? "").toLowerCase();
+	const mult = suffix === "m" ? 1_000_000 : suffix === "k" ? 1_000 : 1;
+	return Number(m[1]) * mult;
+}
+
+/** $ per single token, per meter, using each meter's base (lowest-tier) rate. */
+function costPerTokenByMeter(rates: readonly Rate[]): Map<string, number> {
+	const out = new Map<string, number>();
+	for (const g of groupByMeter(rates)) {
+		const base = g.rates[0];
+		if (!base) continue;
+		const per = unitTokens(g.unit);
+		if (per > 0) out.set(g.meter, base.amount / per);
+	}
+	return out;
+}
+
+/** Cost of an example 1K-token request, or null when there's no input rate. */
+function blendedRequestCost(rates: readonly Rate[]): number | null {
+	const cpt = costPerTokenByMeter(rates);
+	const input = cpt.get("input");
+	if (input == null) return null;
+	const output = cpt.get("output") ?? input;
+	return EXAMPLE_PROMPT_TOKENS * input + EXAMPLE_COMPLETION_TOKENS * output;
+}
+
+/** Recorded tokens × per-token rates, summed across meters. */
+function estimatedSpend(
+	rates: readonly Rate[],
+	tokens: Record<string, number>,
+): number {
+	let total = 0;
+	for (const [meter, perToken] of costPerTokenByMeter(rates)) {
+		const key = METER_TOKEN_KEY[meter] ?? meter;
+		total += (tokens[key] ?? 0) * perToken;
+	}
+	return total;
+}
+
+/** Round a [from,to] window to a friendly "30d" / "12h" label. */
+function windowLabel(from: string, to: string): string {
+	const ms = Date.parse(to) - Date.parse(from);
+	if (!Number.isFinite(ms) || ms <= 0) return "window";
+	const days = Math.round(ms / 86_400_000);
+	if (days >= 1) return `${days}d`;
+	return `${Math.max(1, Math.round(ms / 3_600_000))}h`;
 }
 
 function PricingSkeleton() {

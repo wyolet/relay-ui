@@ -10,6 +10,7 @@ import {
 	Wrench,
 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useBindings } from "@/api/hooks/bindings";
 import { useHosts } from "@/api/hooks/hosts";
 import { useModels } from "@/api/hooks/models";
 import { useProviders } from "@/api/hooks/providers";
@@ -40,6 +41,7 @@ export function PolicyModelsTab({ policy }: Props) {
 	const { data: providers } = useProviders();
 	const { data: models } = useModels();
 	const { data: hostsData } = useHosts();
+	const { data: bindingsData } = useBindings();
 
 	const catalog = useMemo(
 		() =>
@@ -47,9 +49,10 @@ export function PolicyModelsTab({ policy }: Props) {
 				providers: providers.items ?? [],
 				models: models.items ?? [],
 				hosts: hostsData.items ?? [],
+				bindings: bindingsData.items ?? [],
 				includeDeprecated: policy.spec.includeDeprecated ?? false,
 			}),
-		[providers, models, hostsData, policy.spec.includeDeprecated],
+		[providers, models, hostsData, bindingsData, policy.spec.includeDeprecated],
 	);
 
 	const hostBySlug = useMemo(() => {

@@ -1,5 +1,6 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
+import { bindingsListQueryOptions } from "@/api/hooks/bindings";
 import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
 import { modelsListQueryOptions } from "@/api/hooks/models";
@@ -24,6 +25,7 @@ export function useDiagnosticGraph(): DiagnosticGraph {
 	const { data: rateLimits } = useSuspenseQuery(rateLimitsListQueryOptions);
 	const { data: relayKeys } = useSuspenseQuery(relayKeysListQueryOptions);
 	const { data: providers } = useSuspenseQuery(providersListQueryOptions);
+	const { data: bindings } = useSuspenseQuery(bindingsListQueryOptions);
 
 	return useMemo(
 		() =>
@@ -35,6 +37,7 @@ export function useDiagnosticGraph(): DiagnosticGraph {
 				rateLimits: rateLimits.items ?? [],
 				relayKeys: relayKeys.items ?? [],
 				providers: providers.items ?? [],
+				bindings: bindings.items ?? [],
 			}),
 		[
 			policies.items,
@@ -44,6 +47,7 @@ export function useDiagnosticGraph(): DiagnosticGraph {
 			rateLimits.items,
 			relayKeys.items,
 			providers.items,
+			bindings.items,
 		],
 	);
 }

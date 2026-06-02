@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { bindingsByModel, useBindings } from "@/api/hooks/bindings";
 import { useHosts } from "@/api/hooks/hosts";
 import { useModels } from "@/api/hooks/models";
 import type { Host } from "@/api/types/host";
@@ -16,6 +17,7 @@ export interface ProviderReferences {
 export function useProviderReferences(provider: Provider): ProviderReferences {
 	const { data: modelsData } = useModels();
 	const { data: hostsData } = useHosts();
+	const { data: bindingsData } = useBindings();
 
 	return useMemo(() => {
 		const providerId = provider.metadata.id ?? "";
@@ -31,14 +33,15 @@ export function useProviderReferences(provider: Provider): ProviderReferences {
 			if (h.metadata.id) hostById.set(h.metadata.id, h);
 		}
 
+		const byModel = bindingsByModel(bindingsData.items ?? []);
 		const modelCountByHost = new Map<string, number>();
 		const hostIdsUsed = new Set<string>();
 		for (const m of models) {
-			for (const b of m.spec.hosts ?? []) {
-				hostIdsUsed.add(b.hostId);
+			for (const b of byModel.get(m.metadata.id ?? "") ?? []) {
+				hostIdsUsed.add(b.spec.hostId);
 				modelCountByHost.set(
-					b.hostId,
-					(modelCountByHost.get(b.hostId) ?? 0) + 1,
+					b.spec.hostId,
+					(modelCountByHost.get(b.spec.hostId) ?? 0) + 1,
 				);
 			}
 		}
@@ -49,5 +52,5 @@ export function useProviderReferences(provider: Provider): ProviderReferences {
 		}
 
 		return { models, hosts, modelCountByHost };
-	}, [provider, modelsData, hostsData]);
+	}, [provider, modelsData, hostsData, bindingsData]);
 }

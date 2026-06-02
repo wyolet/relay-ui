@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useBindings } from "@/api/hooks/bindings";
 import { useHosts } from "@/api/hooks/hosts";
 import { useModels } from "@/api/hooks/models";
 import { useProviders } from "@/api/hooks/providers";
@@ -38,6 +39,7 @@ export function usePolicyUnthrottledModels(
 	const { data: providers } = useProviders();
 	const { data: models } = useModels();
 	const { data: hostsData } = useHosts();
+	const { data: bindingsData } = useBindings();
 
 	return useMemo(() => {
 		const hasDefaultRateLimit = !!policy.spec.rateLimitId;
@@ -60,6 +62,7 @@ export function usePolicyUnthrottledModels(
 			providers: providers.items ?? [],
 			models: models.items ?? [],
 			hosts: hostsData.items ?? [],
+			bindings: bindingsData.items ?? [],
 			includeDeprecated: policy.spec.includeDeprecated ?? false,
 		});
 
@@ -101,5 +104,5 @@ export function usePolicyUnthrottledModels(
 				a.provider.localeCompare(b.provider) || a.model.localeCompare(b.model),
 		);
 		return { hasDefaultRateLimit, rows };
-	}, [providers, models, hostsData, policy]);
+	}, [providers, models, hostsData, bindingsData, policy]);
 }

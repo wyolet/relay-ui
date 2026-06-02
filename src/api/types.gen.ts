@@ -109,6 +109,59 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/host-bindings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List host-bindings */
+        get: operations["list_host-bindings"];
+        put?: never;
+        /** Create host-binding */
+        post: operations["create_host-binding"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/host-bindings/by-id/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update host-binding by id */
+        put: operations["update_host-binding"];
+        post?: never;
+        /** Delete host-binding by id */
+        delete: operations["delete_host-binding"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/host-bindings/{ref}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get host-binding by slug or id */
+        get: operations["get_host-binding"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/host-keys": {
         parameters: {
             query?: never;
@@ -283,6 +336,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/hosts/{ref}/models": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the models this host serves, with binding + pricing */
+        get: operations["host_models"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/logs": {
         parameters: {
             query?: never;
@@ -425,6 +495,57 @@ export interface paths {
         };
         /** Get model by slug or id */
         get: operations["get_model"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/models/{ref}/hosts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the hosts that serve this model, with binding + pricing */
+        get: operations["model_hosts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/models/{ref}/policies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the policies that grant this model, with the limits each applies to it */
+        get: operations["model_policies"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/models/{ref}/pricing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List this model's pricing per host */
+        get: operations["model_pricing"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1109,6 +1230,23 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        Binding: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Binding.json
+             */
+            readonly $schema?: string;
+            metadata: components["schemas"]["Metadata"];
+            spec: components["schemas"]["Spec"];
+        };
+        BindingView: {
+            adapter: string;
+            enabled: boolean;
+            id: string;
+            snapshots?: string[] | null;
+            upstreamName?: string;
+        };
         DurationStats: {
             /** Format: int64 */
             avg: number;
@@ -1234,6 +1372,17 @@ export interface components {
             /** Format: int64 */
             total: number;
         };
+        HostModelRow: {
+            binding: components["schemas"]["BindingView"];
+            model: components["schemas"]["ModelRef"];
+            pricing: components["schemas"]["PricingView"];
+        };
+        HostRef: {
+            baseURL?: string;
+            displayName?: string;
+            id: string;
+            name: string;
+        };
         HostSpec: {
             backend?: {
                 [key: string]: string;
@@ -1273,6 +1422,13 @@ export interface components {
              */
             section: "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
             value: components["schemas"]["Inference"];
+        };
+        Limit: {
+            /** Format: int64 */
+            amount: number;
+            meter: string;
+            strategy: string;
+            window: string;
         };
         Metadata: {
             /** Format: date-time */
@@ -1328,11 +1484,10 @@ export interface components {
             status?: string;
             sunsetDate?: string;
         };
-        ModelHostBinding: {
-            adapter: string;
-            enabled?: boolean;
-            hostId: string;
-            snapshots?: string[] | null;
+        ModelHostRow: {
+            binding: components["schemas"]["BindingView"];
+            host: components["schemas"]["HostRef"];
+            pricing: components["schemas"]["PricingView"];
         };
         ModelList: {
             /**
@@ -1348,6 +1503,24 @@ export interface components {
         ModelModalities: {
             input?: string[] | null;
             output?: string[] | null;
+        };
+        ModelPolicyRow: {
+            id: string;
+            limits: components["schemas"]["Limit"][] | null;
+            name: string;
+            owner: components["schemas"]["OwnerRef"];
+        };
+        ModelPriceRow: {
+            currency: string;
+            host: components["schemas"]["HostRef"];
+            id: string;
+            name: string;
+            rates: components["schemas"]["Rate"][] | null;
+        };
+        ModelRef: {
+            displayName?: string;
+            id: string;
+            name: string;
         };
         ModelSnapshot: {
             name: string;
@@ -1367,7 +1540,6 @@ export interface components {
             documentation?: string;
             enabled?: boolean;
             family?: string;
-            hosts: components["schemas"]["ModelHostBinding"][] | null;
             knowledgeCutoff?: string;
             license?: string;
             /** Format: int64 */
@@ -1397,6 +1569,11 @@ export interface components {
         Owner: {
             id?: string;
             kind?: string;
+        };
+        OwnerRef: {
+            id?: string;
+            kind: string;
+            name?: string;
         };
         Parsing: {
             /**
@@ -1539,6 +1716,12 @@ export interface components {
             rates: components["schemas"]["PricingRate"][] | null;
             targetModels: string[] | null;
         };
+        PricingView: {
+            currency: string;
+            id: string;
+            name: string;
+            rates: components["schemas"]["Rate"][] | null;
+        };
         Provider: {
             /**
              * Format: uri
@@ -1590,6 +1773,14 @@ export interface components {
              */
             section: "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
             value: components["schemas"]["ProxyMode"];
+        };
+        Rate: {
+            /** Format: int64 */
+            aboveTokens?: number;
+            /** Format: double */
+            amount: number;
+            meter: string;
+            unit: string;
         };
         RateLimit: {
             /**
@@ -1666,6 +1857,15 @@ export interface components {
             prefix?: string;
             /** Format: date-time */
             revokedAt?: string;
+        };
+        Spec: {
+            adapter: string;
+            enabled?: boolean;
+            hostId: string;
+            modelId: string;
+            pricingId?: string;
+            snapshots?: string[] | null;
+            upstreamName?: string;
         };
         SpecStruct: {
             enabled?: boolean;
@@ -1892,6 +2092,27 @@ export interface components {
             /** @description closed | open | half_open | unknown. */
             state: string;
         };
+        hostModelsOutBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/hostModelsOutBody.json
+             */
+            readonly $schema?: string;
+            host: components["schemas"]["HostRef"];
+            models: components["schemas"]["HostModelRow"][] | null;
+        };
+        listBody_github_com_wyolet_relay_app_binding_Binding_: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/listBody_github_com_wyolet_relay_app_binding_Binding_.json
+             */
+            readonly $schema?: string;
+            items: components["schemas"]["Binding"][] | null;
+            /** Format: int64 */
+            total: number;
+        };
         logGetOutputBody: {
             /**
              * Format: uri
@@ -1959,6 +2180,36 @@ export interface components {
              * @description Number of stored-mode HostKey rows re-encrypted.
              */
             rotated: number;
+        };
+        modelHostsOutBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/modelHostsOutBody.json
+             */
+            readonly $schema?: string;
+            hosts: components["schemas"]["ModelHostRow"][] | null;
+            model: components["schemas"]["ModelRef"];
+        };
+        modelPoliciesOutBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/modelPoliciesOutBody.json
+             */
+            readonly $schema?: string;
+            model: components["schemas"]["ModelRef"];
+            policies: components["schemas"]["ModelPolicyRow"][] | null;
+        };
+        modelPricingOutBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/modelPricingOutBody.json
+             */
+            readonly $schema?: string;
+            model: components["schemas"]["ModelRef"];
+            pricing: components["schemas"]["ModelPriceRow"][] | null;
         };
         refResult: {
             bindings: components["schemas"]["resolveBindingRef"][] | null;
@@ -2354,6 +2605,341 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    "list_host-bindings": {
+        parameters: {
+            query?: {
+                /** @description Match name exactly. */
+                name?: string;
+                /** @description Match enabled (true/false). */
+                enabled?: boolean;
+                /** @description Match model_id exactly. */
+                model_id?: string;
+                /** @description Match host_id exactly. */
+                host_id?: string;
+                /** @description Match pricing_id exactly. */
+                pricing_id?: string;
+                /** @description Match adapter exactly. */
+                adapter?: string;
+                /** @description created lower bound (RFC3339). */
+                created_from?: string;
+                /** @description created upper bound (RFC3339). */
+                created_to?: string;
+                /** @description updated lower bound (RFC3339). */
+                updated_from?: string;
+                /** @description updated upper bound (RFC3339). */
+                updated_to?: string;
+                /** @description Free-text search. */
+                q?: string;
+                /** @description Label selector key=value (repeatable, all must match). */
+                label?: string[];
+                /** @description Sort field; prefix with '-' for descending. */
+                sort?: "name" | "created" | "updated";
+                /** @description Max items to return (page size). */
+                limit?: number;
+                /** @description Items to skip before the page. */
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["listBody_github_com_wyolet_relay_app_binding_Binding_"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    "create_host-binding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Binding"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Binding"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    "update_host-binding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource id (UUIDv7). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Binding"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Binding"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    "delete_host-binding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource id (UUIDv7). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    "get_host-binding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource slug or UUIDv7 id. */
+                ref: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Binding"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3280,6 +3866,65 @@ export interface operations {
             };
         };
     };
+    host_models: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource slug or UUIDv7 id. */
+                ref: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["hostModelsOutBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
     logs_list: {
         parameters: {
             query?: {
@@ -3541,8 +4186,6 @@ export interface operations {
                 license?: string;
                 /** @description Match any of the given provider_id values. */
                 provider_id?: string[];
-                /** @description Match any of the given host_id values. */
-                host_id?: string[];
                 /** @description Match any of the given tag values. */
                 tag?: string[];
                 /** @description Match capability (repeatable; item must have ALL given values). */
@@ -3895,6 +4538,183 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Model"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    model_hosts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource slug or UUIDv7 id. */
+                ref: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["modelHostsOutBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    model_policies: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource slug or UUIDv7 id. */
+                ref: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["modelPoliciesOutBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    model_pricing: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource slug or UUIDv7 id. */
+                ref: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["modelPricingOutBody"];
                 };
             };
             /** @description Unauthorized */

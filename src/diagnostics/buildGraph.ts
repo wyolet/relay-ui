@@ -1,3 +1,5 @@
+import type { Binding } from "@/api/hooks/bindings";
+import { bindingsByHost, bindingsByModel } from "@/api/hooks/bindings";
 import type { Host } from "@/api/types/host";
 import type { HostKey } from "@/api/types/hostkey";
 import type { Model } from "@/api/types/model";
@@ -15,6 +17,7 @@ interface GraphInput {
 	rateLimits: RateLimit[];
 	relayKeys: RelayKey[];
 	providers: Provider[];
+	bindings: Binding[];
 }
 
 function byId<T extends { metadata: { id?: string } }>(
@@ -65,6 +68,8 @@ export function buildDiagnosticGraph(input: GraphInput): DiagnosticGraph {
 		rateLimits: byId(input.rateLimits),
 		relayKeys: byId(input.relayKeys),
 		providers: byId(input.providers),
+		bindingsByModel: bindingsByModel(input.bindings),
+		bindingsByHost: bindingsByHost(input.bindings),
 		relayKeysByPolicyId,
 		policiesByHostKeyId,
 		policiesByRateLimitId,

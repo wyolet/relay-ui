@@ -57,6 +57,7 @@ export interface LogHistogramPoint {
 	bucket: string;
 	requests: number;
 	errors: number;
+	tokens: number;
 }
 
 /** Bucket width to use for a given relative window. */
@@ -64,6 +65,27 @@ function intervalForSince(since: string | undefined): "5m" | "1h" | "1d" {
 	if (since === "24h") return "1h";
 	if (since === "7d" || since === "30d") return "1d";
 	return "5m"; // 1h / 6h
+}
+
+const INTERVAL_MS: Record<"5m" | "1h" | "1d", number> = {
+	"5m": 5 * 60_000,
+	"1h": 60 * 60_000,
+	"1d": 24 * 60 * 60_000,
+};
+
+const SINCE_MS: Record<string, number> = {
+	"1h": 60 * 60_000,
+	"6h": 6 * 60 * 60_000,
+	"24h": 24 * 60 * 60_000,
+	"7d": 7 * 24 * 60 * 60_000,
+	"30d": 30 * 24 * 60 * 60_000,
+};
+
+function sumTokenMap(tokens: { [key: string]: number } | undefined): number {
+	if (!tokens) return 0;
+	let total = 0;
+	for (const v of Object.values(tokens)) total += v;
+	return total;
 }
 
 /**
@@ -88,22 +110,40 @@ export function logsHistogramQueryOptions(filter: LogsFilter) {
 				},
 			});
 			if (error) throw new ApiError(0, error.error);
-			const byBucket = new Map<string, LogHistogramPoint>();
+			const byEpoch = new Map<
+				number,
+				{ requests: number; errors: number; tokens: number }
+			>();
 			for (const series of data.rows ?? []) {
 				for (const p of series.points ?? []) {
-					const cur = byBucket.get(p.bucket) ?? {
-						bucket: p.bucket,
+					const epoch = Date.parse(p.bucket);
+					if (Number.isNaN(epoch)) continue;
+					const cur = byEpoch.get(epoch) ?? {
 						requests: 0,
 						errors: 0,
+						tokens: 0,
 					};
 					cur.requests += p.requests;
 					cur.errors += p.error_count;
-					byBucket.set(p.bucket, cur);
+					cur.tokens += sumTokenMap(p.tokens);
+					byEpoch.set(epoch, cur);
 				}
 			}
-			return [...byBucket.values()].sort((a, b) =>
-				a.bucket < b.bucket ? -1 : a.bucket > b.bucket ? 1 : 0,
-			);
+
+			// Zero-fill the full window — the timeseries endpoint omits empty
+			// buckets, which otherwise collapses the histogram into a few fat bars.
+			const interval = intervalForSince(filter.since);
+			const stepMs = INTERVAL_MS[interval];
+			const spanMs = SINCE_MS[filter.since ?? "1h"] ?? SINCE_MS["1h"];
+			const now = Date.now();
+			const start = Math.floor((now - spanMs) / stepMs) * stepMs;
+			const end = Math.floor(now / stepMs) * stepMs;
+			const out: LogHistogramPoint[] = [];
+			for (let t = start; t <= end; t += stepMs) {
+				const v = byEpoch.get(t) ?? { requests: 0, errors: 0, tokens: 0 };
+				out.push({ bucket: new Date(t).toISOString(), ...v });
+			}
+			return out;
 		},
 		staleTime: 15_000,
 		gcTime: 5 * 60_000,

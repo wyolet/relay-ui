@@ -1,119 +1,36 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Suspense, useState } from "react";
-import {
-	modelDetailQueryOptions,
-	useModel,
-	useUpdateModel,
-} from "@/api/hooks/models";
-import type { ApiErrorBody } from "@/api/types/errors";
-import { ApiError } from "@/api/types/errors";
-import type { ModelUpdate } from "@/api/types/model";
-import type { FieldDef, FormValues } from "@/shared/ResourceForm";
-import { ResourceForm } from "@/shared/ResourceForm";
-import { PageLoader } from "@/shared/Spinner";
-import { toast } from "@/shared/Toast";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { Boxes } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/models/$name/edit")({
-	loader: ({ context, params }) =>
-		context.queryClient.ensureQueryData(modelDetailQueryOptions(params.name)),
 	component: EditModelPage,
 });
 
-const FIELDS: FieldDef[] = [
-	{
-		name: "displayName",
-		label: "Display name",
-		type: "text",
-		placeholder: "GPT-4o",
-	},
-	{
-		name: "family",
-		label: "Family",
-		type: "text",
-		placeholder: "gpt-4",
-	},
-	{
-		name: "version",
-		label: "Version",
-		type: "text",
-		placeholder: "2024-08",
-	},
-	{
-		name: "tags",
-		label: "Tags (comma-separated)",
-		type: "text",
-		placeholder: "preview, recommended",
-	},
-];
-
-function splitCsv(v: string | undefined): string[] | null {
-	const parts = (v ?? "")
-		.split(",")
-		.map((s) => s.trim())
-		.filter(Boolean);
-	return parts.length > 0 ? parts : null;
-}
-
-function EditModelInner() {
-	const { name } = Route.useParams();
-	const { data: model } = useModel(name);
-	const updateModel = useUpdateModel(model.metadata.id ?? "");
-	const navigate = useNavigate();
-	const [serverError, setServerError] = useState<ApiErrorBody | undefined>();
-
-	async function handleSubmit(values: FormValues) {
-		setServerError(undefined);
-		const payload: ModelUpdate = {
-			metadata: {
-				...model.metadata,
-				displayName: String(values.displayName ?? "").trim() || undefined,
-			},
-			spec: {
-				...model.spec,
-				family: String(values.family ?? "").trim() || undefined,
-				version: String(values.version ?? "").trim() || undefined,
-				tags: splitCsv(String(values.tags ?? "")),
-			},
-		};
-		try {
-			await updateModel.mutateAsync(payload);
-			toast("success", `Model "${name}" updated.`);
-			void navigate({ to: "/models/$name", params: { name } });
-		} catch (err) {
-			if (err instanceof ApiError) {
-				setServerError(err.body);
-			} else {
-				toast("error", "Failed to update model.");
-			}
-		}
-	}
-
-	return (
-		<div>
-			<ResourceForm
-				title={`Edit Model: ${name}`}
-				fields={FIELDS}
-				initialValues={{
-					displayName: model.metadata.displayName ?? "",
-					family: model.spec.family ?? "",
-					version: model.spec.version ?? "",
-					tags: (model.spec.tags ?? []).join(", "),
-				}}
-				onSubmit={handleSubmit}
-				onCancel={() =>
-					void navigate({ to: "/models/$name", params: { name } })
-				}
-				isPending={updateModel.isPending}
-				serverError={serverError}
-			/>
-		</div>
-	);
-}
-
+/**
+ * Models are synced from providers — they aren't edited by hand in the UI.
+ * The route is kept so old links resolve to an explanation rather than a 404.
+ */
 function EditModelPage() {
+	const { name } = Route.useParams();
 	return (
-		<Suspense fallback={<PageLoader />}>
-			<EditModelInner />
-		</Suspense>
+		<div className="mx-auto mt-10 max-w-lg rounded-xl border border-border bg-card p-8 text-center">
+			<Boxes
+				className="mx-auto mb-3 size-7 text-muted-foreground/60"
+				aria-hidden
+			/>
+			<h1 className="text-lg font-semibold text-foreground">
+				Models are synced, not edited
+			</h1>
+			<p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">
+				Model metadata and host bindings are provisioned from your providers and
+				kept in sync automatically. There's nothing to edit here.
+			</p>
+			<Link
+				to="/models/$name"
+				params={{ name }}
+				className="mt-6 inline-flex items-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+			>
+				Back to model
+			</Link>
+		</div>
 	);
 }

@@ -1,170 +1,34 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Suspense, useState } from "react";
-import { hostsListQueryOptions, useHosts } from "@/api/hooks/hosts";
-import { useCreateModel } from "@/api/hooks/models";
-import type { ApiErrorBody } from "@/api/types/errors";
-import { ApiError } from "@/api/types/errors";
-import type { ModelCreate } from "@/api/types/model";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
-import { HostLogo } from "@/hosts/HostLogo";
-import { displayLabel } from "@/lib/displayLabel";
-import type { FieldDef, FormValues } from "@/shared/ResourceForm";
-import { ResourceForm } from "@/shared/ResourceForm";
-import { PageLoader } from "@/shared/Spinner";
-import { toast } from "@/shared/Toast";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { Boxes } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/models/new")({
-	loader: ({ context }) =>
-		context.queryClient.ensureQueryData(hostsListQueryOptions),
 	component: NewModelPage,
 });
 
-const FIELDS: FieldDef[] = [
-	{
-		name: "name",
-		label: "Name",
-		type: "text",
-		required: true,
-		placeholder: "gpt-4o",
-	},
-	{
-		name: "displayName",
-		label: "Display name",
-		type: "text",
-		placeholder: "GPT-4o",
-	},
-	{
-		name: "upstreamName",
-		label: "Upstream model name (leave blank to match name)",
-		type: "text",
-		placeholder: "gpt-4o-2024-08-06",
-	},
-];
-
-function NewModelInner() {
-	const navigate = useNavigate();
-	const createModel = useCreateModel();
-	const { data: hostsData } = useHosts();
-	const [serverError, setServerError] = useState<ApiErrorBody | undefined>();
-	const [hostId, setHostId] = useState<string>("");
-	const [adapter, setAdapter] = useState<string>("openai");
-
-	const hosts = hostsData.items ?? [];
-
-	async function handleSubmit(values: FormValues) {
-		setServerError(undefined);
-		const name = String(values.name ?? "");
-		const displayName = String(values.displayName ?? "").trim();
-		const upstreamName = String(values.upstreamName ?? "").trim();
-
-		if (!hostId) {
-			toast("error", "Pick a host first.");
-			return;
-		}
-
-		const payload: ModelCreate = {
-			metadata: { name, displayName: displayName || undefined },
-			spec: {
-				pointer: name,
-				snapshots: [
-					upstreamName && upstreamName !== name
-						? { name, originalName: upstreamName }
-						: { name },
-				],
-				hosts: [{ hostId, adapter }],
-			},
-		};
-		try {
-			await createModel.mutateAsync(payload);
-			toast("success", `Model "${name}" created.`);
-			void navigate({ to: "/models/$name", params: { name } });
-		} catch (err) {
-			if (err instanceof ApiError) {
-				setServerError(err.body);
-			} else {
-				toast("error", "Failed to create model.");
-			}
-		}
-	}
-
-	return (
-		<ResourceForm
-			title="New Model"
-			fields={FIELDS}
-			onSubmit={handleSubmit}
-			onCancel={() => void navigate({ to: "/models" })}
-			isPending={createModel.isPending}
-			serverError={serverError}
-			extraContent={
-				<div className="space-y-3">
-					<div>
-						<div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
-							Host
-						</div>
-						<Select
-							value={hostId}
-							items={hosts.map((h) => ({
-								value: h.metadata.id ?? "",
-								label: displayLabel(h.metadata),
-							}))}
-							onValueChange={(v) => setHostId(v ?? "")}
-						>
-							<SelectTrigger className="w-full">
-								<SelectValue placeholder="Pick a host" />
-							</SelectTrigger>
-							<SelectContent>
-								{hosts.length === 0 ? (
-									<div className="px-3 py-4 text-center text-[11px] text-muted-foreground">
-										No hosts configured.
-									</div>
-								) : (
-									hosts.map((h) => (
-										<SelectItem key={h.metadata.id} value={h.metadata.id ?? ""}>
-											<span className="inline-flex items-center gap-2">
-												<HostLogo host={h} size={14} />
-												{displayLabel(h.metadata)}
-											</span>
-										</SelectItem>
-									))
-								)}
-							</SelectContent>
-						</Select>
-					</div>
-					<div>
-						<div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
-							Adapter
-						</div>
-						<Select
-							value={adapter}
-							onValueChange={(v) => setAdapter(v ?? "openai")}
-						>
-							<SelectTrigger className="w-full">
-								<SelectValue />
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value="openai">openai</SelectItem>
-								<SelectItem value="anthropic">anthropic</SelectItem>
-								<SelectItem value="gemini">gemini</SelectItem>
-								<SelectItem value="bedrock">bedrock</SelectItem>
-							</SelectContent>
-						</Select>
-					</div>
-				</div>
-			}
-		/>
-	);
-}
-
+/**
+ * Models are synced from providers — they aren't created by hand in the UI.
+ * The route is kept so old links resolve to an explanation rather than a 404.
+ */
 function NewModelPage() {
 	return (
-		<Suspense fallback={<PageLoader />}>
-			<NewModelInner />
-		</Suspense>
+		<div className="mx-auto mt-10 max-w-lg rounded-xl border border-border bg-card p-8 text-center">
+			<Boxes
+				className="mx-auto mb-3 size-7 text-muted-foreground/60"
+				aria-hidden
+			/>
+			<h1 className="text-lg font-semibold text-foreground">
+				Models are synced, not created
+			</h1>
+			<p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">
+				Models and their host bindings are provisioned from your providers and
+				kept in sync automatically. There's nothing to create here.
+			</p>
+			<Link
+				to="/models"
+				className="mt-6 inline-flex items-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+			>
+				Back to models
+			</Link>
+		</div>
 	);
 }

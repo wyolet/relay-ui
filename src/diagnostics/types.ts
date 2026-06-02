@@ -1,3 +1,4 @@
+import type { Binding } from "@/api/hooks/bindings";
 import type { Host } from "@/api/types/host";
 import type { HostKey } from "@/api/types/hostkey";
 import type { Model } from "@/api/types/model";
@@ -68,6 +69,9 @@ export interface DiagnosticGraph {
 	rateLimits: ReadonlyMap<string, RateLimit>;
 	relayKeys: ReadonlyMap<string, RelayKey>;
 	providers: ReadonlyMap<string, Provider>;
+	// Host-bindings, indexed both ways (a model is served on a host via a binding).
+	bindingsByModel: ReadonlyMap<string, Binding[]>;
+	bindingsByHost: ReadonlyMap<string, Binding[]>;
 	// Reverse indexes
 	relayKeysByPolicyId: ReadonlyMap<string, RelayKey[]>;
 	policiesByHostKeyId: ReadonlyMap<string, Policy[]>;

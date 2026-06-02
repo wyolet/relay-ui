@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { analyzeHost } from "@/diagnostics/analyzers/host";
 import {
+	bindingTo,
 	graph,
 	makeHost,
 	makeHostKey,
@@ -54,13 +55,15 @@ describe("analyzeHost", () => {
 	it("clean: a host with keys and bindings has no diagnostics", () => {
 		const host = makeHost({ id: "h1", name: "openai" });
 		const hk = makeHostKey({ id: "k1", hostId: "h1", policyId: "p1" });
-		const model = makeModel({
-			name: "gpt-4o",
-			bindings: [{ hostId: "h1" }],
-		});
+		const model = makeModel({ name: "gpt-4o" });
 		const ds = analyzeHost(
 			host,
-			graph({ hosts: [host], hostKeys: [hk], models: [model] }),
+			graph({
+				hosts: [host],
+				hostKeys: [hk],
+				models: [model],
+				bindings: [bindingTo(model, "h1")],
+			}),
 		);
 		expect(ds).toEqual([]);
 	});

@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { ChevronDown, ChevronRight, Gauge } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useBindings } from "@/api/hooks/bindings";
 import { useHosts } from "@/api/hooks/hosts";
 import { useModels } from "@/api/hooks/models";
 import { useProviders } from "@/api/hooks/providers";
@@ -40,6 +41,7 @@ export function PolicyRateLimitsTab({ policy }: Props) {
 	const { data: providers } = useProviders();
 	const { data: models } = useModels();
 	const { data: hosts } = useHosts();
+	const { data: hostBindings } = useBindings();
 
 	const rlById = useMemo(() => {
 		const m = new Map<string, RateLimit>();
@@ -55,9 +57,10 @@ export function PolicyRateLimitsTab({ policy }: Props) {
 				providers: providers.items ?? [],
 				models: models.items ?? [],
 				hosts: hosts.items ?? [],
+				bindings: hostBindings.items ?? [],
 				includeDeprecated: policy.spec.includeDeprecated ?? false,
 			}),
-		[providers, models, hosts, policy.spec.includeDeprecated],
+		[providers, models, hosts, hostBindings, policy.spec.includeDeprecated],
 	);
 
 	const modelBySlug = useMemo(() => {

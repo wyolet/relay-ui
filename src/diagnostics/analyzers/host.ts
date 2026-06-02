@@ -11,11 +11,15 @@ export function analyzeHost(host: Host, graph: DiagnosticGraph): Diagnostic[] {
 				(k) => k.spec.hostId === hostId,
 			)
 		: [];
-	const bindings = hostId
-		? Array.from(graph.models.values()).filter((m) =>
-				(m.spec.hosts ?? []).some((b) => b.hostId === hostId),
-			)
-		: [];
+	// Models served on this host, resolved through the host-bindings index.
+	const boundModelIds = new Set(
+		(hostId ? (graph.bindingsByHost.get(hostId) ?? []) : []).map(
+			(b) => b.spec.modelId,
+		),
+	);
+	const bindings = Array.from(boundModelIds)
+		.map((id) => graph.models.get(id))
+		.filter((m): m is NonNullable<typeof m> => m !== undefined);
 
 	if (!enabled) {
 		const enabledKeys = keys.filter((k) => k.spec.enabled !== false);

@@ -12,7 +12,7 @@ import type {
 	ModelListResponse,
 	ModelUpdate,
 } from "@/api/types/model";
-import type { operations } from "@/api/types.gen";
+import type { components, operations } from "@/api/types.gen";
 
 // --- Query options ---
 
@@ -60,6 +60,47 @@ export function modelDetailQueryOptions(name: string) {
 		queryFn: async (): Promise<Model> => {
 			const { data, error } = await apiClient.GET("/models/{ref}", {
 				params: { path: { ref: name } },
+			});
+			if (error) throw new ApiError(0, error.error);
+			return data;
+		},
+		staleTime: 30_000,
+		gcTime: 5 * 60_000,
+	});
+}
+
+// --- Composed sub-resource views (server-side joins) ---
+
+/** One host that serves a model: its binding + the host + attached pricing. */
+export type ModelHostView = components["schemas"]["ModelHostRow"];
+/** One policy that grants a model, with the limits it applies to it. */
+export type ModelPolicyView = components["schemas"]["ModelPolicyRow"];
+
+/** Hosts serving a model (binding + pricing per host), joined server-side. */
+export function modelHostsQueryOptions(ref: string) {
+	return queryOptions({
+		queryKey: ["models", ref, "hosts"] as const,
+		queryFn: async (): Promise<components["schemas"]["modelHostsOutBody"]> => {
+			const { data, error } = await apiClient.GET("/models/{ref}/hosts", {
+				params: { path: { ref } },
+			});
+			if (error) throw new ApiError(0, error.error);
+			return data;
+		},
+		staleTime: 30_000,
+		gcTime: 5 * 60_000,
+	});
+}
+
+/** Policies that grant a model, with the limits each applies. */
+export function modelPoliciesQueryOptions(ref: string) {
+	return queryOptions({
+		queryKey: ["models", ref, "policies"] as const,
+		queryFn: async (): Promise<
+			components["schemas"]["modelPoliciesOutBody"]
+		> => {
+			const { data, error } = await apiClient.GET("/models/{ref}/policies", {
+				params: { path: { ref } },
 			});
 			if (error) throw new ApiError(0, error.error);
 			return data;

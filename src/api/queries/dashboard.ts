@@ -30,5 +30,9 @@ export const healthzQueryOptions = queryOptions({
 	queryFn: () => fetchJson<HealthzResponse>("/healthz"),
 	staleTime: 0,
 	gcTime: 60_000,
-	refetchInterval: 5_000,
+	// Poll every 5s while healthy; back off to 60s once it fails. A
+	// control-plane-only deployment (no /healthz) otherwise hammers a 404 every
+	// 5s, and each failed poll re-renders the dashboard (the "flicker"). The
+	// slow poll still lets an embedded relay recover after a restart.
+	refetchInterval: (query) => (query.state.status === "error" ? 60_000 : 5_000),
 });

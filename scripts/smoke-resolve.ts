@@ -18,6 +18,7 @@ import {
 	parseCatalogRef,
 	refCovers,
 } from "../src/lib/catalogRef";
+import type { Binding } from "../src/api/hooks/bindings";
 import { buildConcreteCatalog } from "../src/lib/concreteCatalog";
 import type { Host } from "../src/api/types/host";
 import type { Model } from "../src/api/types/model";
@@ -56,20 +57,23 @@ async function main() {
 	}
 	console.log(`Base URL: ${BASE}\n`);
 
-	const [providers, models, hosts] = await Promise.all([
+	const [providers, models, hosts, bindings] = await Promise.all([
 		api<ListResponse<Provider>>("/providers"),
 		api<ListResponse<Model>>("/models"),
 		api<ListResponse<Host>>("/hosts"),
+		api<ListResponse<Binding>>("/host-bindings"),
 	]);
 
 	const providerList = providers.items ?? [];
 	const modelList = models.items ?? [];
 	const hostList = hosts.items ?? [];
+	const bindingList = bindings.items ?? [];
 
 	const catalog = buildConcreteCatalog({
 		providers: providerList,
 		models: modelList,
 		hosts: hostList,
+		bindings: bindingList,
 		includeDeprecated: true,
 	});
 	console.log(
