@@ -15,8 +15,10 @@ import type { Host } from "@/api/types/host";
 import type { Policy, PolicyCreate } from "@/api/types/policy";
 import { displayLabel } from "@/lib/displayLabel";
 import { slugWithSuffix } from "@/lib/slug";
-import { secToNs } from "@/lib/timeWindow";
-import type { RateLimitStrategy } from "@/rate-limits/useRateLimitForm";
+import type {
+	RateLimitMeter as CanonicalMeter,
+	RateLimitStrategy,
+} from "@/rate-limits/useRateLimitForm";
 import { toast } from "@/shared/Toast";
 import { useSetupStore } from "@/stores/setup";
 import {
@@ -31,10 +33,9 @@ export type SetupStep = "provider" | "credentials" | "limits" | "done";
 export type RateLimitPer = "minute" | "hour" | "day";
 
 // The meters surfaced in the easy form are a deliberate subset of the canonical
-// rate-limit enum. The schema types `meter` as a loose `string`, so there's no
-// literal type to derive from — the source of truth is the runtime `METER_VALUES`
-// in rate-limits/useRateLimitForm; "requests" and "tokens" must stay members of it.
-export type RateLimitMeter = "requests" | "tokens";
+// rate-limit meter enum. Deriving via Extract keeps us in sync and fails the
+// build if either literal ever leaves the source enum.
+export type RateLimitMeter = Extract<CanonicalMeter, "requests" | "tokens">;
 
 export interface EasyRateLimitRule {
 	amount: number;
@@ -259,8 +260,8 @@ export function useSetupWizard() {
 								amount: rule.amount,
 								meter,
 								strategy,
-								// `window` is nanoseconds on the wire (see timeWindow.ts).
-								window: secToNs(PER_SECONDS[rule.per]),
+								// `window` is whole seconds on the wire (see timeWindow.ts).
+								window: PER_SECONDS[rule.per],
 							},
 						]
 					: [];

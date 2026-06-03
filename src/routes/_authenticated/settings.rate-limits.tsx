@@ -42,7 +42,7 @@ import {
 	SYSTEM_RL_INFERENCE_PROXY_ANON,
 	type SystemRateLimitName,
 } from "@/lib/systemRateLimits";
-import { nsToSec, secToNs, WINDOW_PRESETS } from "@/lib/timeWindow";
+import { WINDOW_PRESETS } from "@/lib/timeWindow";
 import { Switch } from "@/shared/Switch";
 import { toast } from "@/shared/Toast";
 
@@ -75,7 +75,7 @@ interface FormState {
 }
 
 function ruleToDraft(r: RateLimitRule): RuleDraft {
-	const w = r.window && r.window > 0 ? nsToSec(r.window) : 60;
+	const w = r.window && r.window > 0 ? r.window : 60;
 	return { amount: String(r.amount), windowSec: w };
 }
 
@@ -87,7 +87,7 @@ function buildControlState(rl: RateLimit | undefined): SectionState {
 	if (!rl) return { enabled: false, rules: defaults };
 	const existing = rl.spec.rules ?? [];
 	const rules: RuleDraft[] = CONTROL_WINDOWS.map((w, i) => {
-		const match = existing.find((r) => nsToSec(r.window) === w.value);
+		const match = existing.find((r) => r.window === w.value);
 		return match ? ruleToDraft(match) : defaults[i];
 	});
 	return { enabled: rl.spec.enabled !== false, rules };
@@ -225,13 +225,12 @@ function SystemRateLimitsInner() {
 			existingRules[0]?.strategy ?? "token-bucket";
 		return section.rules
 			.map((r) => {
-				const windowNs = secToNs(r.windowSec);
-				const match = existingRules.find((er) => er.window === windowNs);
+				const match = existingRules.find((er) => er.window === r.windowSec);
 				return {
 					amount: Number(r.amount),
 					meter: "requests" as const,
 					strategy: match?.strategy ?? fallbackStrategy,
-					window: windowNs,
+					window: r.windowSec,
 				};
 			})
 			.filter((r) => Number.isFinite(r.amount) && r.amount > 0);
