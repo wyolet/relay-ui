@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SetupRouteImport } from './routes/setup'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
@@ -47,6 +48,11 @@ import { Route as AuthenticatedModelsNameEditRouteImport } from './routes/_authe
 import { Route as AuthenticatedHostKeysNameEditRouteImport } from './routes/_authenticated/host-keys.$name_.edit'
 import { Route as AuthenticatedPoliciesRateLimitsNameEditRouteImport } from './routes/_authenticated/policies.rate-limits.$name_.edit'
 
+const SetupRoute = SetupRouteImport.update({
+  id: '/setup',
+  path: '/setup',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -258,6 +264,7 @@ const AuthenticatedPoliciesRateLimitsNameEditRoute =
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/login': typeof LoginRoute
+  '/setup': typeof SetupRoute
   '/bootstrap': typeof AuthenticatedBootstrapRoute
   '/host-keys': typeof AuthenticatedHostKeysRouteWithChildren
   '/keys': typeof AuthenticatedKeysRoute
@@ -295,6 +302,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
+  '/setup': typeof SetupRoute
   '/bootstrap': typeof AuthenticatedBootstrapRoute
   '/keys': typeof AuthenticatedKeysRoute
   '/usage': typeof AuthenticatedUsageRoute
@@ -331,6 +339,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
+  '/setup': typeof SetupRoute
   '/_authenticated/bootstrap': typeof AuthenticatedBootstrapRoute
   '/_authenticated/host-keys': typeof AuthenticatedHostKeysRouteWithChildren
   '/_authenticated/keys': typeof AuthenticatedKeysRoute
@@ -372,6 +381,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
+    | '/setup'
     | '/bootstrap'
     | '/host-keys'
     | '/keys'
@@ -409,6 +419,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
+    | '/setup'
     | '/bootstrap'
     | '/keys'
     | '/usage'
@@ -444,6 +455,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_authenticated'
     | '/login'
+    | '/setup'
     | '/_authenticated/bootstrap'
     | '/_authenticated/host-keys'
     | '/_authenticated/keys'
@@ -484,10 +496,18 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   LoginRoute: typeof LoginRoute
+  SetupRoute: typeof SetupRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/setup': {
+      id: '/setup'
+      path: '/setup'
+      fullPath: '/setup'
+      preLoaderRoute: typeof SetupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -891,6 +911,7 @@ const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   LoginRoute: LoginRoute,
+  SetupRoute: SetupRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
