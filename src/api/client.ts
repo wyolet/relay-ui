@@ -1,20 +1,22 @@
 import createClient from "openapi-fetch";
+import { controlApiUrl, inferenceApiUrl } from "./runtimeConfig";
 import type { paths } from "./types.gen";
 
 /**
- * Base URL for the relay control API (admin/management plane).
+ * API base URLs, resolved from the runtime config (see {@link controlApiUrl}).
+ * Config is loaded once at boot *before* this module is imported (the app is
+ * dynamically imported after `loadRuntimeConfig()` in `main.tsx`), so these
+ * read the live values. They never change during a session.
  *
- * - When VITE_CONTROL_API_URL is set, calls go cross-origin to that host
- *   (e.g. https://relay-control-api.wyolet.dev). Requires the backend to
- *   send permissive CORS + SameSite=None cookies.
- * - Otherwise calls go same-origin — covers OSS users running relay locally
- *   with the UI embedded in the binary.
+ * - **Control/admin plane** — `apiClient` points here.
+ * - **Data plane / inference** — only used to build the copy-paste client
+ *   snippets shown after setup (`${INFERENCE_API_URL}/{adapter}/v1`).
+ *
+ * In a split deployment these are cross-origin; the backend must then send
+ * permissive CORS + `SameSite=None` cookies for the credentialed control calls.
  */
-export const CONTROL_API_URL: string =
-	import.meta.env.VITE_CONTROL_API_URL ??
-	(typeof window !== "undefined"
-		? window.location.origin
-		: "http://localhost:8080");
+export const CONTROL_API_URL: string = controlApiUrl();
+export const INFERENCE_API_URL: string = inferenceApiUrl();
 
 export const apiClient = createClient<paths>({
 	baseUrl: CONTROL_API_URL,
