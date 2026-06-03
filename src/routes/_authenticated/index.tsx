@@ -1,15 +1,29 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { Suspense } from "react";
+import { relayKeysListQueryOptions } from "@/api/hooks/relayKeys";
 import { DashboardKpis } from "@/dashboard/DashboardKpis";
 import { ErrorHotspots } from "@/dashboard/ErrorHotspots";
 import { HealthStrip } from "@/dashboard/HealthStrip";
 import { ReleaseReadiness } from "@/dashboard/ReleaseReadiness";
 import { useCatalogCounts } from "@/dashboard/useCatalogCounts";
 import { PageLoader } from "@/shared/Spinner";
+import { useSetupStore } from "@/stores/setup";
 import { UsageTimelineChart } from "@/usage/UsageTimelineChart";
 import { UsageTopGroups } from "@/usage/UsageTopGroups";
 
 export const Route = createFileRoute("/_authenticated/")({
+	// First-run: a relay with no issued keys can't route anything yet, so steer
+	// the operator into the guided wizard — once. Bailing out (or finishing)
+	// sets `dismissed`, after which the WelcomePanel is the opt-in entry point.
+	async beforeLoad({ context }) {
+		if (useSetupStore.getState().dismissed) return;
+		const relayKeys = await context.queryClient.ensureQueryData(
+			relayKeysListQueryOptions,
+		);
+		if ((relayKeys.items ?? []).length === 0) {
+			throw redirect({ to: "/setup" });
+		}
+	},
 	component: DashboardPage,
 });
 
@@ -20,11 +34,11 @@ function WelcomePanel() {
 				Welcome to Relay
 			</h2>
 			<p className="mb-6 text-sm text-muted-foreground">
-				Your catalog is empty. Run the bootstrap wizard to add your first
-				provider and secret.
+				Your catalog is empty. Run the setup wizard to connect your first
+				provider and issue a key.
 			</p>
 			<Link
-				to="/bootstrap"
+				to="/setup"
 				className="inline-flex items-center rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-700"
 			>
 				Get started →
