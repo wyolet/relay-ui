@@ -14,6 +14,7 @@ import {
 	InputGroupInput,
 } from "@/components/ui/input-group";
 import { Label } from "@/components/ui/label";
+import { BrandMark } from "@/shared/BrandMark";
 import { wizardPrimary } from "@/setup/ui";
 
 export const Route = createFileRoute("/login")({
@@ -38,28 +39,6 @@ const loginSchema = z.object({
 });
 
 type LoginValues = z.infer<typeof loginSchema>;
-
-function BrandMark({ className }: { className?: string }) {
-	return (
-		<svg
-			viewBox="0 0 32 32"
-			fill="none"
-			xmlns="http://www.w3.org/2000/svg"
-			className={className}
-			role="img"
-			aria-label="Wyolet"
-		>
-			<title>Wyolet</title>
-			<path
-				d="M4 26 L12 6 L16 16 L20 6 L28 26"
-				stroke="currentColor"
-				strokeWidth="2.5"
-				strokeLinecap="round"
-				strokeLinejoin="round"
-			/>
-		</svg>
-	);
-}
 
 function LiveStatus() {
 	const { data, isError, isLoading } = useQuery({
@@ -228,9 +207,7 @@ function LoginPage() {
 					className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand-500/40 to-transparent"
 				/>
 				<div className="mb-8 flex flex-col items-center text-center">
-					<div className="mb-4 flex size-12 items-center justify-center rounded-2xl bg-gradient-to-b from-brand-500/15 to-brand-500/5 ring-1 ring-inset ring-brand-500/20">
-						<BrandMark className="size-7 text-brand-600 dark:text-brand-400" />
-					</div>
+					<BrandMark className="mb-5 h-9 w-auto" />
 					<div className="flex items-baseline gap-2">
 						<span className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
 							Wyolet
