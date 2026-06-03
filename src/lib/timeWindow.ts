@@ -1,9 +1,4 @@
-/** Rate-limit windows are stored as nanoseconds on the wire; the UI works in seconds. */
-export const NS_PER_SEC = 1_000_000_000;
-
-export const nsToSec = (ns: number): number => Math.round(ns / NS_PER_SEC);
-export const secToNs = (s: number): number => Math.round(s * NS_PER_SEC);
-
+/** Rate-limit windows are whole seconds, both on the wire and in the UI. */
 export interface WindowPreset {
 	/** Window length in seconds. */
 	value: number;

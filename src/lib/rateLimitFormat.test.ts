@@ -1,6 +1,5 @@
 import { describe, expect, it } from "bun:test";
 import type { components } from "@/api/types.gen";
-import { secToNs } from "@/lib/timeWindow";
 import {
 	compactNumber,
 	formatRuleShort,
@@ -14,7 +13,7 @@ const r = (
 	meter: Rule["meter"],
 	windowSec: number,
 	strategy: Rule["strategy"] = "token-bucket",
-): Rule => ({ amount, meter, strategy, window: secToNs(windowSec) });
+): Rule => ({ amount, meter, strategy, window: windowSec });
 
 describe("compactNumber", () => {
 	it("leaves sub-thousand untouched", () => {

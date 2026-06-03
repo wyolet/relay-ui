@@ -4,7 +4,6 @@ import {
 	SYSTEM_RL_INFERENCE_PROXY,
 	SYSTEM_RL_INFERENCE_PROXY_ANON,
 } from "@/lib/systemRateLimits";
-import { nsToSec } from "@/lib/timeWindow";
 
 export interface SystemReqCap {
 	amount: number;
@@ -43,7 +42,7 @@ export function tightestRequestCap(
 		if (rl.spec.enabled === false) continue;
 		for (const r of rl.spec.rules ?? []) {
 			if (r.meter !== "requests") continue;
-			const windowSec = nsToSec(r.window);
+			const windowSec = r.window;
 			if (windowSec <= 0 || r.amount <= 0) continue;
 			if (!tightest) {
 				tightest = { amount: r.amount, windowSec };

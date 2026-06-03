@@ -8,7 +8,7 @@ import { useRateLimitDiagnostics } from "@/diagnostics/useDiagnostics";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { compactNumber } from "@/lib/rateLimitFormat";
 import { isProviderOwned, isSystemOwned } from "@/lib/systemRateLimits";
-import { nsToSec, windowLabel } from "@/lib/timeWindow";
+import { windowLabel } from "@/lib/timeWindow";
 import { useRateLimitReferences } from "@/rate-limits/useRateLimitReferences";
 
 interface Props {
@@ -157,7 +157,7 @@ function RulesPanel({ rules }: { rules: readonly RateLimitRule[] }) {
 												</span>
 											</div>
 											<div className="text-[10px] text-muted-foreground">
-												{windowLabel(nsToSec(rule.window))} ·{" "}
+												{windowLabel(rule.window)} ·{" "}
 												<span className="font-mono">{rule.strategy}</span>
 											</div>
 										</div>

@@ -1,5 +1,5 @@
 import type { components } from "@/api/types.gen";
-import { findWindowPreset, nsToSec } from "@/lib/timeWindow";
+import { findWindowPreset } from "@/lib/timeWindow";
 
 type RateLimitRule = components["schemas"]["RateLimitRule"];
 
@@ -84,7 +84,7 @@ function meterShort(meter: string): string {
 export function formatRuleShort(rule: RateLimitRule): string {
 	const amount = compactNumber(rule.amount);
 	const meter = meterShort(rule.meter);
-	const seconds = nsToSec(rule.window);
+	const seconds = rule.window;
 	const preset = findWindowPreset(seconds);
 	if (preset) {
 		const w = WINDOW_LETTER[preset.value] ?? "?";

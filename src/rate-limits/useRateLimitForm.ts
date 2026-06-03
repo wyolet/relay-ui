@@ -22,7 +22,6 @@ import {
 	validateRequestRate,
 } from "@/lib/rateLimitValidation";
 import { randomSuffix, slugify } from "@/lib/slug";
-import { nsToSec, secToNs } from "@/lib/timeWindow";
 import { toast } from "@/shared/Toast";
 
 export type RateLimitStrategy = NonNullable<RateLimitRule["strategy"]>;
@@ -134,7 +133,7 @@ function rlToValues(rl: RateLimit): RateLimitFormValues {
 					amount: String(r.amount),
 					meter: r.meter,
 					strategy: r.strategy,
-					window: String(nsToSec(r.window)),
+					window: String(r.window),
 				}))
 			: [emptyRule()];
 	return {
@@ -213,7 +212,7 @@ export function useRateLimitForm({
 				amount: Number(r.amount),
 				meter: r.meter,
 				strategy: r.strategy,
-				window: secToNs(Number(r.window)),
+				window: Number(r.window),
 			}));
 			const displayName = value.displayName.trim();
 			const description = value.description.trim();
