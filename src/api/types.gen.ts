@@ -89,6 +89,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/config.json": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public runtime config for the embedded admin UI */
+        get: operations["runtime_config"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/debug/snapshot": {
         parameters: {
             query?: never;
@@ -1549,6 +1566,7 @@ export interface components {
             /** Format: date-time */
             createdAt?: string;
             description?: string;
+            dirty?: boolean;
             displayName?: string;
             id?: string;
             labels?: {
@@ -2026,6 +2044,24 @@ export interface components {
             /** Format: date-time */
             revokedAt?: string;
         };
+        RuntimeConfig: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/RuntimeConfig.json
+             */
+            readonly $schema?: string;
+            controlApiUrl?: string;
+            docsUrl?: string;
+            features?: {
+                [key: string]: boolean;
+            };
+            inferenceApiUrl?: string;
+            mode?: string;
+            supportUrl?: string;
+            telemetry?: components["schemas"]["Telemetry"];
+            version?: string;
+        };
         Spec: {
             adapter: string;
             enabled?: boolean;
@@ -2070,6 +2106,10 @@ export interface components {
             tokens: {
                 [key: string]: number;
             };
+        };
+        Telemetry: {
+            environment?: string;
+            sentryDsn?: string;
         };
         TimeSeriesPoint: {
             /** Format: date-time */
@@ -2207,8 +2247,10 @@ export interface components {
             contextWindowTotal?: number;
             deprecated?: string;
             displayName?: string;
+            featured?: boolean;
             id: string;
             name: string;
+            pointer?: string;
             providerId: string;
         };
         graphOutputBody: {
@@ -2700,6 +2742,8 @@ export interface operations {
             query?: {
                 /** @description Include deprecated models (still flagged via 'deprecated'). Default false drops them server-side. */
                 includeDeprecated?: boolean;
+                /** @description Label selector key=value (repeatable, all must match). e.g. label=featured=true. */
+                label?: string[] | null;
             };
             header?: never;
             path?: never;
@@ -2797,6 +2841,36 @@ export interface operations {
             };
             /** @description Internal Server Error */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    runtime_config: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuntimeConfig"];
+                };
+            };
+            /** @description Error */
+            default: {
                 headers: {
                     [name: string]: unknown;
                 };
