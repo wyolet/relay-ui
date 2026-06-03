@@ -60,11 +60,24 @@ export interface CreatedRelayKey {
 	displayName: string;
 }
 
+/** A model the freshly-connected host serves, shaped for the snippet picker. */
+export interface SampleModel {
+	/** Stable model name (alias/pointer); used as the picker's key. */
+	name: string;
+	/** Human label shown in the picker. */
+	displayName: string;
+	/** Value sent in the request body — the model `pointer`, else `name`. */
+	value: string;
+}
+
 const PER_SECONDS: Record<RateLimitPer, number> = {
 	minute: 60,
 	hour: 3600,
 	day: 86400,
 };
+
+/** How many of a host's models to surface in the snippet picker. */
+const MAX_SAMPLE_MODELS = 6;
 
 function errMessage(err: unknown, fallback: string): string {
 	return err instanceof ApiError ? err.body.message : fallback;
@@ -77,6 +90,9 @@ export function useSetupWizard() {
 	const { data: hostsData } = useHosts();
 	const { data: policiesData } = usePolicies();
 	const { data: graph } = useCatalogGraph();
+	// Separate, server-filtered graph of just the curated models for the snippet
+	// picker. Kept apart from the full graph (used for provider cards / counts).
+	const { data: featuredGraph } = useCatalogGraph({ label: ["featured=true"] });
 
 	const [step, setStep] = useState<SetupStep>("provider");
 	const [providerId, setProviderId] = useState<ProviderId | null>(null);
@@ -85,7 +101,7 @@ export function useSetupWizard() {
 	// policy and reuse the already-issued relay key.
 	const [policy, setPolicy] = useState<Policy | null>(null);
 	const [relayKey, setRelayKey] = useState<CreatedRelayKey | null>(null);
-	const [sampleModel, setSampleModel] = useState<string>("");
+	const [sampleModels, setSampleModels] = useState<SampleModel[]>([]);
 	const [busy, setBusy] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
@@ -106,6 +122,27 @@ export function useSetupWizard() {
 					)
 				: [];
 	}, [graph.models]);
+
+	// A curated handful of the host's models for the snippet picker: human label
+	// from `displayName`, request value from the model `pointer` (the pinned id
+	// clients should send), falling back to `name`. Drawn from the server-side
+	// `featured` graph; falls back to the full graph (first N) when a host flags
+	// no featured models.
+	const sampleModelsForHost = useMemo(() => {
+		const featuredModels = featuredGraph.models ?? [];
+		return (hostId: string | undefined): SampleModel[] => {
+			if (!hostId) return [];
+			const featured = featuredModels.filter((m) =>
+				(m.bindings ?? []).some((b) => b.hostId === hostId),
+			);
+			const source = featured.length > 0 ? featured : modelsForHost(hostId);
+			return source.slice(0, MAX_SAMPLE_MODELS).map((m) => ({
+				name: m.name,
+				displayName: m.displayName ?? m.name,
+				value: m.pointer ?? m.name,
+			}));
+		};
+	}, [featuredGraph.models, modelsForHost]);
 
 	const providers = useMemo<ProviderCard[]>(
 		() =>
@@ -211,8 +248,7 @@ export function useSetupWizard() {
 			const newHostKeyId = hk.metadata.id ?? "";
 			setHostKeyId(newHostKeyId);
 
-			const firstModel = modelsForHost(selectedHost.metadata.id)[0];
-			setSampleModel(firstModel?.name ?? "");
+			setSampleModels(sampleModelsForHost(selectedHost.metadata.id));
 
 			// "Add another provider" path: a policy + relay key already exist, so
 			// just widen the policy to include this host key and jump to the key.
@@ -330,7 +366,7 @@ export function useSetupWizard() {
 		selectedProvider,
 		selectedHost,
 		selectedModelCount,
-		sampleModel,
+		sampleModels,
 		relayKey,
 		// derived: have we already issued a key (reuse mode)?
 		hasIssuedKey: relayKey !== null,

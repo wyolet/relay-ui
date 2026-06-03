@@ -89,7 +89,7 @@ export function SetupWizard() {
 							{wiz.step === "done" && wiz.relayKey && (
 								<SuccessStep
 									relayKey={wiz.relayKey}
-									sampleModel={wiz.sampleModel}
+									models={wiz.sampleModels}
 									onAddAnother={wiz.addAnotherProvider}
 									onFinish={wiz.leave}
 								/>

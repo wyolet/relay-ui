@@ -10,26 +10,52 @@ import type { components } from "@/api/types.gen";
 export type CatalogResolveResponse = components["schemas"]["resolveOutputBody"];
 export type CatalogGraphResponse = components["schemas"]["graphOutputBody"];
 
+/** Optional server-side filters for `/catalog/graph`. */
+export interface CatalogGraphParams {
+	/** Label selectors, `key=value` (all must match), e.g. `["featured=true"]`. */
+	label?: readonly string[];
+	/** Include deprecated models (default false drops them server-side). */
+	includeDeprecated?: boolean;
+}
+
 /**
  * Query options for `/catalog/graph` — the compact, server-built catalog
  * (providers + hosts w/ `iconPath` + models w/ `providerId`/`bindings`) used to
  * populate the model picker. The server filters to enabled rows and dedups, so
  * the UI never re-derives resolution from the heavyweight `/models` etc. lists.
+ *
+ * Pass `label`/`includeDeprecated` to filter server-side (e.g.
+ * `{ label: ["featured=true"] }`). Filters are part of the query key, so each
+ * filter combination caches independently.
  */
-export const catalogGraphQueryOptions = queryOptions({
-	queryKey: ["catalog", "graph"] as const,
-	queryFn: async (): Promise<CatalogGraphResponse> => {
-		const { data, error } = await apiClient.GET("/catalog/graph");
-		if (error) throw new ApiError(0, error.error);
-		return data;
-	},
-	staleTime: 30_000,
-	gcTime: 5 * 60_000,
-});
+export function catalogGraphQueryOptions(params: CatalogGraphParams = {}) {
+	const label =
+		params.label && params.label.length > 0
+			? [...params.label].sort()
+			: undefined;
+	const includeDeprecated = params.includeDeprecated ? true : undefined;
+	return queryOptions({
+		queryKey: ["catalog", "graph", { label, includeDeprecated }] as const,
+		queryFn: async (): Promise<CatalogGraphResponse> => {
+			const { data, error } = await apiClient.GET("/catalog/graph", {
+				params: {
+					query: {
+						...(label ? { label: [...label] } : {}),
+						...(includeDeprecated ? { includeDeprecated } : {}),
+					},
+				},
+			});
+			if (error) throw new ApiError(0, error.error);
+			return data;
+		},
+		staleTime: 30_000,
+		gcTime: 5 * 60_000,
+	});
+}
 
 /** Compact catalog graph for the picker. See {@link catalogGraphQueryOptions}. */
-export function useCatalogGraph() {
-	return useSuspenseQuery(catalogGraphQueryOptions);
+export function useCatalogGraph(params?: CatalogGraphParams) {
+	return useSuspenseQuery(catalogGraphQueryOptions(params));
 }
 
 /**
