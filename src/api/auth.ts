@@ -1,4 +1,5 @@
 import { queryOptions, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
 import { apiClient } from "./client";
 
 interface Whoami {
@@ -30,6 +31,7 @@ export const whoamiQueryOptions = queryOptions({
 
 export function useAuth() {
 	const queryClient = useQueryClient();
+	const navigate = useNavigate();
 
 	const { data } = useQuery(whoamiQueryOptions);
 	const authenticated = data?.authenticated ?? false;
@@ -51,9 +53,14 @@ export function useAuth() {
 
 	async function logout(): Promise<void> {
 		await apiClient.POST("/auth/logout");
-		await queryClient.invalidateQueries({
-			queryKey: whoamiQueryOptions.queryKey,
+		// Reflect the signed-out state immediately so the root auth guard sees it,
+		// then drop all cached account-scoped data and route to /login. Without the
+		// navigate, beforeLoad never re-runs and the user stays on the page.
+		queryClient.setQueryData<Whoami>(whoamiQueryOptions.queryKey, {
+			authenticated: false,
 		});
+		await navigate({ to: "/login" });
+		queryClient.clear();
 	}
 
 	return { authenticated, username, userId, login, logout };
