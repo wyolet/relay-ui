@@ -1,9 +1,20 @@
 import { useForm } from "@tanstack/react-form";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
+import { Eye, EyeOff, Lock, User } from "lucide-react";
+import { motion } from "motion/react";
 import { useState } from "react";
 import { z } from "zod";
 import { AuthError, useAuth, whoamiQueryOptions } from "@/api/auth";
+import { Button } from "@/components/ui/button";
+import {
+	InputGroup,
+	InputGroupAddon,
+	InputGroupButton,
+	InputGroupInput,
+} from "@/components/ui/input-group";
+import { Label } from "@/components/ui/label";
+import { wizardPrimary } from "@/setup/ui";
 
 export const Route = createFileRoute("/login")({
 	async beforeLoad({ context }) {
@@ -57,18 +68,30 @@ function LiveStatus() {
 		refetchInterval: 5_000,
 	});
 	const reachable = !isLoading && !isError && data !== undefined;
-	const tone = reachable
-		? "text-brand-600 dark:text-brand-400"
-		: isError
-			? "text-destructive"
-			: "text-muted-foreground/70";
-	const label = reachable ? "alive" : isError ? "unreachable" : "checking…";
+	const state = reachable ? "alive" : isError ? "unreachable" : "checking";
+	const tone =
+		state === "alive"
+			? "text-brand-600 dark:text-brand-400"
+			: state === "unreachable"
+				? "text-destructive"
+				: "text-muted-foreground";
+	const label =
+		state === "alive"
+			? "Relay online"
+			: state === "unreachable"
+				? "Relay unreachable"
+				: "Connecting…";
 	return (
-		<div className="flex items-center justify-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-500 tabular-nums">
-			<span className={`w-1.5 h-1.5 rounded-full bg-current ${tone}`} />
-			<span>relay</span>
-			<span aria-hidden="true">·</span>
-			<span className={tone}>{label}</span>
+		<div className="flex items-center justify-center">
+			<div className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-muted/40 py-1 pl-2 pr-3 text-xs font-medium text-muted-foreground">
+				<span className="relative flex size-2 items-center justify-center">
+					{state === "alive" && (
+						<span className="absolute inline-flex size-2 animate-ping rounded-full bg-current opacity-60" />
+					)}
+					<span className={`relative size-2 rounded-full bg-current ${tone}`} />
+				</span>
+				<span className={tone}>{label}</span>
+			</div>
 		</div>
 	);
 }
@@ -78,6 +101,7 @@ interface FieldRowProps {
 	label: string;
 	type: "text" | "password";
 	autoComplete: string;
+	icon: typeof User;
 	value: string;
 	onChange: (value: string) => void;
 	onBlur: () => void;
@@ -90,6 +114,7 @@ function FieldRow({
 	label,
 	type,
 	autoComplete,
+	icon: Icon,
 	value,
 	onChange,
 	onBlur,
@@ -97,41 +122,48 @@ function FieldRow({
 	disabled,
 }: FieldRowProps) {
 	const hasError = errors.length > 0;
+	const isPassword = type === "password";
+	const [reveal, setReveal] = useState(false);
+	const inputType = isPassword && reveal ? "text" : type;
 	return (
-		<div>
-			<label
-				htmlFor={id}
-				className="block text-xs font-medium text-muted-foreground mb-1.5"
-			>
-				{label}
-			</label>
-			<input
-				id={id}
-				type={type}
-				autoComplete={autoComplete}
-				required
-				disabled={disabled}
-				value={value}
-				onChange={(e) => onChange(e.currentTarget.value)}
-				onBlur={onBlur}
-				aria-invalid={hasError || undefined}
-				aria-describedby={hasError ? `${id}-error` : undefined}
-				className={[
-					"w-full rounded-md px-3 py-2.5 text-sm transition-shadow",
-					"text-foreground bg-card",
-					"placeholder:text-muted-foreground",
-					"border focus:outline-none focus:ring-2 focus:border-transparent",
-					hasError
-						? "border-destructive focus:ring-red-500"
-						: "border-input focus-visible:ring-ring",
-					disabled ? "opacity-60 cursor-not-allowed" : "",
-				].join(" ")}
-			/>
+		<div className="flex flex-col gap-1.5">
+			<Label htmlFor={id}>{label}</Label>
+			<InputGroup className="h-11">
+				<InputGroupAddon>
+					<Icon className="text-muted-foreground/70" />
+				</InputGroupAddon>
+				<InputGroupInput
+					id={id}
+					type={inputType}
+					autoComplete={autoComplete}
+					required
+					disabled={disabled}
+					value={value}
+					onChange={(e) => onChange(e.currentTarget.value)}
+					onBlur={onBlur}
+					aria-invalid={hasError || undefined}
+					aria-describedby={hasError ? `${id}-error` : undefined}
+					className="text-sm"
+				/>
+				{isPassword && (
+					<InputGroupAddon align="inline-end">
+						<InputGroupButton
+							size="icon-sm"
+							tabIndex={-1}
+							onClick={() => setReveal((v) => !v)}
+							disabled={disabled}
+							aria-label={reveal ? "Hide password" : "Show password"}
+						>
+							{reveal ? <EyeOff /> : <Eye />}
+						</InputGroupButton>
+					</InputGroupAddon>
+				)}
+			</InputGroup>
 			{hasError && (
 				<p
 					id={`${id}-error`}
 					role="alert"
-					className="text-xs text-destructive mt-1.5"
+					className="text-xs text-destructive"
 				>
 					{errors[0]}
 				</p>
@@ -177,18 +209,39 @@ function LoginPage() {
 	});
 
 	return (
-		<div className="min-h-screen bg-muted/30 flex flex-col items-center justify-center px-4">
-			<div className="w-full max-w-sm">
-				<div className="flex flex-col items-center mb-10">
-					<BrandMark className="w-9 h-9 text-brand-600 dark:text-brand-400 mb-4" />
+		<div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-4 py-10">
+			{/* ambient brand glows behind the card */}
+			<div aria-hidden className="pointer-events-none absolute inset-0">
+				<div className="absolute left-1/2 top-0 size-[42rem] -translate-x-1/2 -translate-y-1/3 rounded-full bg-brand-500/10 blur-[120px]" />
+				<div className="absolute bottom-0 right-0 size-[32rem] translate-x-1/4 translate-y-1/4 rounded-full bg-accent-500/10 blur-[120px]" />
+			</div>
+
+			<motion.div
+				initial={{ opacity: 0, y: 16 }}
+				animate={{ opacity: 1, y: 0 }}
+				transition={{ duration: 0.3, ease: "easeOut" }}
+				className="relative w-full max-w-sm overflow-hidden rounded-3xl border border-border/70 bg-card/95 p-8 shadow-2xl shadow-black/10 ring-1 ring-black/5 backdrop-blur-sm dark:shadow-black/40 dark:ring-white/5"
+			>
+				{/* top edge highlight */}
+				<div
+					aria-hidden
+					className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand-500/40 to-transparent"
+				/>
+				<div className="mb-8 flex flex-col items-center text-center">
+					<div className="mb-4 flex size-12 items-center justify-center rounded-2xl bg-gradient-to-b from-brand-500/15 to-brand-500/5 ring-1 ring-inset ring-brand-500/20">
+						<BrandMark className="size-7 text-brand-600 dark:text-brand-400" />
+					</div>
 					<div className="flex items-baseline gap-2">
-						<span className="text-sm font-medium tracking-[0.2em] text-muted-foreground uppercase">
+						<span className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
 							Wyolet
 						</span>
-						<span className="text-sm font-semibold tracking-[0.2em] text-foreground uppercase">
+						<span className="text-sm font-semibold uppercase tracking-[0.2em] text-foreground">
 							Relay
 						</span>
 					</div>
+					<p className="mt-2 text-xs text-muted-foreground">
+						Sign in to the operator console
+					</p>
 				</div>
 
 				<form
@@ -197,17 +250,16 @@ function LoginPage() {
 						e.stopPropagation();
 						void form.handleSubmit();
 					}}
-					className="space-y-4"
+					className="flex flex-col gap-4"
 					aria-label="Sign in"
 				>
-					<h1 className="text-base font-semibold text-foreground">Sign in</h1>
-
 					<form.Field name="username">
 						{(field) => (
 							<FieldRow
 								id="username"
 								label="Username"
 								type="text"
+								icon={User}
 								autoComplete="username"
 								value={field.state.value}
 								onChange={field.handleChange}
@@ -226,6 +278,7 @@ function LoginPage() {
 								id="password"
 								label="Password"
 								type="password"
+								icon={Lock}
 								autoComplete="current-password"
 								value={field.state.value}
 								onChange={field.handleChange}
@@ -248,21 +301,21 @@ function LoginPage() {
 						selector={(s) => [s.isSubmitting, s.canSubmit] as const}
 					>
 						{([isSubmitting, canSubmit]) => (
-							<button
+							<Button
 								type="submit"
 								disabled={isSubmitting || !canSubmit}
-								className="w-full rounded-md bg-brand-600 hover:bg-brand-700 active:bg-brand-800 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus:outline-none focus:ring-2 focus-visible:ring-ring focus:ring-offset-2 focus:ring-offset-neutral-50 dark:focus:ring-offset-neutral-950"
+								className={`${wizardPrimary} mt-2 w-full`}
 							>
 								{isSubmitting ? "Signing in…" : "Sign in"}
-							</button>
+							</Button>
 						)}
 					</form.Subscribe>
 				</form>
 
-				<div className="mt-10">
+				<div className="mt-8 border-t border-border/50 pt-6">
 					<LiveStatus />
 				</div>
-			</div>
+			</motion.div>
 		</div>
 	);
 }
