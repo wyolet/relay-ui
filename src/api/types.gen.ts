@@ -1970,9 +1970,13 @@ export interface components {
         RateLimitRule: {
             /** Format: int64 */
             amount: number;
-            meter: string;
+            /** @enum {string} */
+            meter: "requests" | "concurrency" | "tokens" | "tokens.input" | "tokens.output" | "tokens.cache_read" | "tokens.cache_creation" | "tokens.reasoning" | "tokens.server_tool_use_input" | "tokens.server_tool_use_output";
             strategy: string;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Measurement period, in whole seconds.
+             */
             window: number;
         };
         RateLimitSpec: {

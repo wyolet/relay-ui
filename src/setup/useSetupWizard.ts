@@ -15,6 +15,7 @@ import type { Host } from "@/api/types/host";
 import type { Policy, PolicyCreate } from "@/api/types/policy";
 import { displayLabel } from "@/lib/displayLabel";
 import { slugWithSuffix } from "@/lib/slug";
+import { secToNs } from "@/lib/timeWindow";
 import type { RateLimitStrategy } from "@/rate-limits/useRateLimitForm";
 import { toast } from "@/shared/Toast";
 import { useSetupStore } from "@/stores/setup";
@@ -258,7 +259,8 @@ export function useSetupWizard() {
 								amount: rule.amount,
 								meter,
 								strategy,
-								window: PER_SECONDS[rule.per],
+								// `window` is nanoseconds on the wire (see timeWindow.ts).
+								window: secToNs(PER_SECONDS[rule.per]),
 							},
 						]
 					: [];
