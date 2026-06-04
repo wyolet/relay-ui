@@ -9,7 +9,6 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SetupPreviewRouteImport } from './routes/setup-preview'
 import { Route as SetupRouteImport } from './routes/setup'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
@@ -49,11 +48,6 @@ import { Route as AuthenticatedModelsNameEditRouteImport } from './routes/_authe
 import { Route as AuthenticatedHostKeysNameEditRouteImport } from './routes/_authenticated/host-keys.$name_.edit'
 import { Route as AuthenticatedPoliciesRateLimitsNameEditRouteImport } from './routes/_authenticated/policies.rate-limits.$name_.edit'
 
-const SetupPreviewRoute = SetupPreviewRouteImport.update({
-  id: '/setup-preview',
-  path: '/setup-preview',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const SetupRoute = SetupRouteImport.update({
   id: '/setup',
   path: '/setup',
@@ -271,7 +265,6 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/login': typeof LoginRoute
   '/setup': typeof SetupRoute
-  '/setup-preview': typeof SetupPreviewRoute
   '/bootstrap': typeof AuthenticatedBootstrapRoute
   '/host-keys': typeof AuthenticatedHostKeysRouteWithChildren
   '/keys': typeof AuthenticatedKeysRoute
@@ -310,7 +303,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/setup': typeof SetupRoute
-  '/setup-preview': typeof SetupPreviewRoute
   '/bootstrap': typeof AuthenticatedBootstrapRoute
   '/keys': typeof AuthenticatedKeysRoute
   '/usage': typeof AuthenticatedUsageRoute
@@ -348,7 +340,6 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
   '/setup': typeof SetupRoute
-  '/setup-preview': typeof SetupPreviewRoute
   '/_authenticated/bootstrap': typeof AuthenticatedBootstrapRoute
   '/_authenticated/host-keys': typeof AuthenticatedHostKeysRouteWithChildren
   '/_authenticated/keys': typeof AuthenticatedKeysRoute
@@ -391,7 +382,6 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/setup'
-    | '/setup-preview'
     | '/bootstrap'
     | '/host-keys'
     | '/keys'
@@ -430,7 +420,6 @@ export interface FileRouteTypes {
   to:
     | '/login'
     | '/setup'
-    | '/setup-preview'
     | '/bootstrap'
     | '/keys'
     | '/usage'
@@ -467,7 +456,6 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/login'
     | '/setup'
-    | '/setup-preview'
     | '/_authenticated/bootstrap'
     | '/_authenticated/host-keys'
     | '/_authenticated/keys'
@@ -509,18 +497,10 @@ export interface RootRouteChildren {
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   LoginRoute: typeof LoginRoute
   SetupRoute: typeof SetupRoute
-  SetupPreviewRoute: typeof SetupPreviewRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/setup-preview': {
-      id: '/setup-preview'
-      path: '/setup-preview'
-      fullPath: '/setup-preview'
-      preLoaderRoute: typeof SetupPreviewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/setup': {
       id: '/setup'
       path: '/setup'
@@ -932,7 +912,6 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   LoginRoute: LoginRoute,
   SetupRoute: SetupRoute,
-  SetupPreviewRoute: SetupPreviewRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
