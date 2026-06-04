@@ -1,6 +1,6 @@
 import { motion } from "motion/react";
-import { highlight } from "sugar-high";
 import { useMemo, useState } from "react";
+import { highlight } from "sugar-high";
 import { Button } from "@/components/ui/button";
 import { MODEL_PLACEHOLDER, MSG_PLACEHOLDER } from "./snippets";
 

@@ -14,8 +14,8 @@ import {
 	InputGroupInput,
 } from "@/components/ui/input-group";
 import { Label } from "@/components/ui/label";
-import { BrandMark } from "@/shared/BrandMark";
 import { wizardPrimary } from "@/setup/ui";
+import { BrandMark } from "@/shared/BrandMark";
 
 export const Route = createFileRoute("/login")({
 	async beforeLoad({ context }) {
@@ -139,11 +139,7 @@ function FieldRow({
 				)}
 			</InputGroup>
 			{hasError && (
-				<p
-					id={`${id}-error`}
-					role="alert"
-					className="text-xs text-destructive"
-				>
+				<p id={`${id}-error`} role="alert" className="text-xs text-destructive">
 					{errors[0]}
 				</p>
 			)}

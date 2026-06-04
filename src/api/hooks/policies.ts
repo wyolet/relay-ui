@@ -65,7 +65,9 @@ export type RateLimitOverlap = components["schemas"]["RateLimitOverlap"];
 export function policyModelsQueryOptions(ref: string) {
 	return queryOptions({
 		queryKey: ["policies", ref, "models"] as const,
-		queryFn: async (): Promise<components["schemas"]["policyModelsOutBody"]> => {
+		queryFn: async (): Promise<
+			components["schemas"]["policyModelsOutBody"]
+		> => {
 			const { data, error } = await apiClient.GET("/policies/{ref}/models", {
 				params: { path: { ref } },
 			});
@@ -83,7 +85,9 @@ export function policyModelsQueryOptions(ref: string) {
 export function policyModelsDebugQueryOptions(ref: string) {
 	return queryOptions({
 		queryKey: ["policies", ref, "models", "debug"] as const,
-		queryFn: async (): Promise<components["schemas"]["policyModelsOutBody"]> => {
+		queryFn: async (): Promise<
+			components["schemas"]["policyModelsOutBody"]
+		> => {
 			const { data, error } = await apiClient.GET("/policies/{ref}/models", {
 				params: { path: { ref }, query: { debug: true } },
 			});
@@ -118,9 +122,12 @@ export function policyRateLimitsQueryOptions(ref: string) {
 		queryFn: async (): Promise<
 			components["schemas"]["policyRateLimitsOutBody"]
 		> => {
-			const { data, error } = await apiClient.GET("/policies/{ref}/rate-limits", {
-				params: { path: { ref } },
-			});
+			const { data, error } = await apiClient.GET(
+				"/policies/{ref}/rate-limits",
+				{
+					params: { path: { ref } },
+				},
+			);
 			if (error) throw new ApiError(0, error.error);
 			return data;
 		},
