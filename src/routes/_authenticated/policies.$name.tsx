@@ -45,9 +45,7 @@ export const Route = createFileRoute("/_authenticated/policies/$name")({
 			context.queryClient.ensureQueryData(
 				policyModelsQueryOptions(params.name),
 			),
-			context.queryClient.ensureQueryData(
-				policyHostsQueryOptions(params.name),
-			),
+			context.queryClient.ensureQueryData(policyHostsQueryOptions(params.name)),
 			context.queryClient.ensureQueryData(
 				policyRateLimitsQueryOptions(params.name),
 			),

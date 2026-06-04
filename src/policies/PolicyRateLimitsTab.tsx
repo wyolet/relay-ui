@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Gauge } from "lucide-react";
 import type { Policy } from "@/api/types/policy";
+import { parseDurationSeconds, windowShort } from "@/lib/timeWindow";
 import {
 	type RateLimitOverlap,
 	type UnthrottledModel,
@@ -85,7 +86,8 @@ export function PolicyRateLimitsTab({ policy }: Props) {
 												className="inline-flex items-center px-1.5 py-0.5 rounded bg-muted border border-border font-mono text-[10px] text-foreground"
 												title={l.strategy}
 											>
-												{l.amount.toLocaleString()} {l.meter} / {l.window}
+												{l.amount.toLocaleString()} {l.meter} /{" "}
+												{windowShort(parseDurationSeconds(l.window))}
 											</li>
 										))}
 									</ul>

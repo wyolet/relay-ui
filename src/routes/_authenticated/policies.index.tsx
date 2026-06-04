@@ -45,6 +45,7 @@ import {
 } from "@/diagnostics/useDiagnostics";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { resolveMutability } from "@/lib/ownership";
+import { windowShort } from "@/lib/timeWindow";
 import { confirm } from "@/shared/ConfirmDialog";
 import { FilterDropdown } from "@/shared/FilterDropdown";
 import { SearchBox } from "@/shared/SearchBox";
@@ -447,14 +448,6 @@ function PolicyRow({
 	);
 }
 
-function fmtWindow(ns: number): string {
-	const seconds = Math.round(ns / 1_000_000_000);
-	if (seconds < 60) return `${seconds}s`;
-	if (seconds < 3600) return `${Math.round(seconds / 60)}m`;
-	if (seconds < 86_400) return `${Math.round(seconds / 3600)}h`;
-	return `${Math.round(seconds / 86_400)}d`;
-}
-
 function fmtAmount(n: number): string {
 	if (n >= 1_000_000)
 		return `${(n / 1_000_000).toFixed(n % 1_000_000 ? 1 : 0)}M`;
@@ -643,7 +636,7 @@ function RateLimitRow({
 				</span>
 			</td>
 			<td className="px-3 py-2 text-right text-sm text-foreground tabular-nums">
-				{rl.spec.rules?.[0] ? fmtWindow(rl.spec.rules[0].window) : "—"}
+				{rl.spec.rules?.[0] ? windowShort(rl.spec.rules[0].window) : "—"}
 			</td>
 			<td className="px-3 py-2 text-sm text-muted-foreground">
 				{summarizeRules(rl)}
