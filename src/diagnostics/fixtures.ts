@@ -72,6 +72,7 @@ interface HostOpts {
 	name: string;
 	enabled?: boolean;
 	defaultPolicy?: string;
+	noAuth?: boolean;
 }
 export function makeHost(o: HostOpts): Host {
 	return {
@@ -83,6 +84,7 @@ export function makeHost(o: HostOpts): Host {
 			baseURL: `https://${o.name}.example`,
 			enabled: o.enabled ?? true,
 			defaultPolicy: o.defaultPolicy,
+			noAuth: o.noAuth,
 		},
 	};
 }

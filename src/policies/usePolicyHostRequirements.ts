@@ -22,6 +22,8 @@ export interface HostRequirement {
 	selectedKeyIds: string[];
 	/** Refs (raw strings) that this host is a candidate for. */
 	contributingRefs: string[];
+	/** Host routes without a credential (`spec.noAuth`) — no key required. */
+	noAuth: boolean;
 }
 
 export interface HostRequirementGroup {
@@ -167,6 +169,7 @@ function derive(input: {
 						input.selectedHostKeyIds,
 					),
 					contributingRefs: [],
+					noAuth: host.spec.noAuth === true,
 				});
 			}
 			hosts.get(id)?.contributingRefs.push(raw);
@@ -205,6 +208,7 @@ function derive(input: {
 				hostKeys: keysByHostId.get(key.spec.hostId) ?? [],
 				selectedKeyIds: [keyId],
 				contributingRefs: [],
+				noAuth: host.spec.noAuth === true,
 			});
 		}
 	}

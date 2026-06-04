@@ -21,6 +21,29 @@ describe("analyzePolicy", () => {
 		expect(codes(ds)).toContain("policy.no-host-keys");
 	});
 
+	it("does not flag no-host-keys when a grant reaches a noAuth host", () => {
+		const host = makeHost({ id: "h1", name: "ollama-self", noAuth: true });
+		const provider = makeProvider({ id: "pr1", name: "ollama" });
+		const model = makeModel({ id: "m1", name: "llama3", providerId: "pr1" });
+		const p = makePolicy({
+			id: "p1",
+			hostKeyIds: [],
+			models: ["@ollama-self"],
+		});
+		const ds = analyzePolicy(
+			p,
+			graph({
+				policies: [p],
+				hosts: [host],
+				providers: [provider],
+				models: [model],
+				bindings: [bindingTo(model, "h1")],
+			}),
+		);
+		expect(codes(ds)).not.toContain("policy.no-host-keys");
+		expect(codes(ds)).not.toContain("policy.catalog-resolves-empty");
+	});
+
 	it("flags all-host-keys-disabled when every attached key is off", () => {
 		const host = makeHost({ id: "h1", name: "openai" });
 		const hk = makeHostKey({

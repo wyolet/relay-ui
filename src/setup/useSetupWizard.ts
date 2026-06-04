@@ -80,7 +80,9 @@ const PER_SECONDS: Record<RateLimitPer, number> = {
 const MAX_SAMPLE_MODELS = 6;
 
 function errMessage(err: unknown, fallback: string): string {
-	return err instanceof ApiError ? err.body.message : fallback;
+	if (err instanceof ApiError) return err.body.message || fallback;
+	if (err instanceof Error && err.message) return err.message;
+	return fallback;
 }
 
 export function useSetupWizard() {
@@ -234,31 +236,43 @@ export function useSetupWizard() {
 				});
 			}
 
-			const label = `${selectedProvider.label} key`;
-			const hk = await createHostKey.mutateAsync({
-				metadata: { name: slugWithSuffix(label), displayName: label },
-				spec: {
-					hostId,
-					policyId,
-					enabled: true,
-					value: input.apiKey.trim(),
-					valueFrom: { kind: "stored" },
-				},
-			});
-			const newHostKeyId = hk.metadata.id ?? "";
+			// Unauthenticated local provider (e.g. Ollama with no key): nothing to
+			// store — the base-URL update above is enough, and the policy grants the
+			// host directly via `@host`. Only create a host key when a key is given.
+			const apiKey = input.apiKey.trim();
+			let newHostKeyId = "";
+			if (apiKey) {
+				const label = `${selectedProvider.label} key`;
+				const hk = await createHostKey.mutateAsync({
+					metadata: { name: slugWithSuffix(label), displayName: label },
+					spec: {
+						hostId,
+						policyId,
+						enabled: true,
+						value: apiKey,
+						valueFrom: { kind: "stored" },
+					},
+				});
+				newHostKeyId = hk.metadata.id ?? "";
+			}
 			setHostKeyId(newHostKeyId);
 
 			setSampleModels(sampleModelsForHost(selectedHost.metadata.id));
 
 			// "Add another provider" path: a policy + relay key already exist, so
-			// just widen the policy to include this host key and jump to the key.
+			// just widen the policy — by host key when keyed, by host grant when not.
 			if (policy) {
+				const grant = newHostKeyId
+					? { hostKeyIds: [...(policy.spec.hostKeyIds ?? []), newHostKeyId] }
+					: {
+							models: [
+								...(policy.spec.models ?? []),
+								`@${selectedHost.metadata.name}`,
+							],
+						};
 				const updated: Policy = {
 					...policy,
-					spec: {
-						...policy.spec,
-						hostKeyIds: [...(policy.spec.hostKeyIds ?? []), newHostKeyId],
-					},
+					spec: { ...policy.spec, ...grant },
 				};
 				const saved = await updatePolicy.mutateAsync({
 					id: policy.metadata.id ?? "",
@@ -281,7 +295,7 @@ export function useSetupWizard() {
 	}
 
 	async function finish(limit: EasyRateLimit | null) {
-		if (!selectedProvider || !hostKeyId) return;
+		if (!selectedProvider || !selectedHost) return;
 		setBusy(true);
 		setError(null);
 		try {
@@ -312,11 +326,16 @@ export function useSetupWizard() {
 			}
 
 			const polLabel = `${selectedProvider.label} default`;
+			// Keyed providers scope by host key; keyless (unauthenticated Ollama)
+			// grant the host's bindings directly via `@host`.
+			const grant = hostKeyId
+				? { hostKeyIds: [hostKeyId] }
+				: { models: [`@${selectedHost.metadata.name}`] };
 			const body: PolicyCreate = {
 				metadata: { name: slugWithSuffix(polLabel), displayName: polLabel },
 				spec: {
 					enabled: true,
-					hostKeyIds: [hostKeyId],
+					...grant,
 					// Legacy single rateLimitId = "applies to the whole policy / all
 					// models". We deliberately avoid rlBindings here: each binding
 					// requires a non-empty Models list, which we don't have (and don't

@@ -33,14 +33,20 @@ export function analyzePolicy(
 	const resolvedKeys = hostKeyIds.map((id) => graph.hostKeys.get(id));
 	const livingKeys = resolvedKeys.filter((k) => k !== undefined);
 	const enabledKeys = livingKeys.filter((k) => k.spec.enabled !== false);
-	if (hostKeyIds.length === 0) {
+	// A grant on a `noAuth` host (e.g. local Ollama) reaches models with no
+	// credential — so an empty key pool isn't necessarily a misconfiguration.
+	const grants = policy.spec.models ?? [];
+	const reachesWithoutKeys = grants.some(
+		(g) => modelsForRefViaPolicy(g, policy, graph).length > 0,
+	);
+	if (hostKeyIds.length === 0 && !reachesWithoutKeys) {
 		out.push({
 			severity: "error",
 			code: "policy.no-host-keys",
 			message:
 				"No host keys attached — this policy can't authenticate any upstream request.",
 		});
-	} else if (enabledKeys.length === 0) {
+	} else if (hostKeyIds.length > 0 && enabledKeys.length === 0) {
 		out.push({
 			severity: "error",
 			code: "policy.host-keys-all-disabled",
@@ -100,7 +106,6 @@ export function analyzePolicy(
 	// Catalog coverage: if every grant resolves to zero reachable models, the
 	// policy can't serve anything. Pickers emit canonical refs so we trust
 	// the DSL syntax and just check usability against the graph.
-	const grants = policy.spec.models ?? [];
 	if (grants.length > 0) {
 		const deadGrants = grants.filter(
 			(g) => modelsForRefViaPolicy(g, policy, graph).length === 0,

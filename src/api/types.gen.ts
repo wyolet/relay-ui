@@ -1523,6 +1523,7 @@ export interface components {
             enabled?: boolean;
             homepageURL?: string;
             icon?: components["schemas"]["Icon"];
+            noAuth?: boolean;
             policies?: string[] | null;
             statusPageURL?: string;
         };

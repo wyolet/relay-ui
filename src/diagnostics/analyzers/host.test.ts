@@ -46,6 +46,12 @@ describe("analyzeHost", () => {
 		expect(codes(ds)).toContain("host.no-keys");
 	});
 
+	it("does not flag no-keys for a noAuth host", () => {
+		const host = makeHost({ id: "h1", name: "ollama-self", noAuth: true });
+		const ds = analyzeHost(host, graph({ hosts: [host] }));
+		expect(codes(ds)).not.toContain("host.no-keys");
+	});
+
 	it("info: no model bindings", () => {
 		const host = makeHost({ id: "h1", name: "openai" });
 		const ds = analyzeHost(host, graph({ hosts: [host] }));

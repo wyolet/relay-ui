@@ -75,8 +75,8 @@ export function hostIdsInPolicyCatalog(
 /**
  * Models reachable through the policy via the ref. A model counts if:
  *   - it matches the ref (provider / model / @host segments), AND
- *   - one of the policy's enabled host keys points at an enabled host that
- *     has an enabled binding for this model.
+ *   - the binding's host is reachable: either an enabled host key points at it,
+ *     or the host is `noAuth` (needs no credential — e.g. a local Ollama).
  *
  * Empty result = the grant unlocks nothing through this policy.
  */
@@ -89,7 +89,8 @@ export function modelsForRefViaPolicy(
 	if (!parsed) return [];
 
 	// Hosts this policy can actually authenticate against: each enabled host
-	// key contributes its host (if the host itself is enabled).
+	// key contributes its host (if the host itself is enabled). `noAuth` hosts
+	// need no key, so any enabled noAuth host is reachable unconditionally.
 	const reachableHostIds = new Set<string>();
 	for (const hkId of policy.spec.hostKeyIds ?? []) {
 		const hk = graph.hostKeys.get(hkId);
@@ -97,6 +98,12 @@ export function modelsForRefViaPolicy(
 		const host = graph.hosts.get(hk.spec.hostId);
 		if (!host || host.spec.enabled === false) continue;
 		reachableHostIds.add(hk.spec.hostId);
+	}
+	for (const host of graph.hosts.values()) {
+		if (host.spec.noAuth !== true) continue;
+		if (host.spec.enabled === false) continue;
+		const id = host.metadata.id;
+		if (id) reachableHostIds.add(id);
 	}
 	if (reachableHostIds.size === 0) return [];
 

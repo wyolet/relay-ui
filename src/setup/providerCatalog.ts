@@ -74,7 +74,10 @@ export const PROVIDERS: ProviderDef[] = [
 		// Containers can't reach the host's loopback; host.docker.internal is the
 		// Docker Desktop bridge. Native-Linux users swap in their host IP.
 		defaultBaseURL: "http://host.docker.internal:11434",
-		match: (n) => n.includes("ollama"),
+		// Target the self-hosted Ollama host specifically — the catalog can also
+		// carry an Ollama Cloud host, and a bare "ollama" match grabs whichever
+		// comes first (which may lack a seeded policy).
+		match: (n) => n.includes("ollama-self"),
 	},
 ];
 

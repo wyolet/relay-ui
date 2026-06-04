@@ -65,9 +65,12 @@ export function PolicyHostRequirements({
 		new Set(requiredGroups.flatMap((g) => g.candidateHostIds)),
 	);
 
-	const missingRequired = requiredHostIds.filter(
-		(id) => (hosts.get(id)?.selectedKeyIds.length ?? 0) === 0,
-	);
+	const missingRequired = requiredHostIds.filter((id) => {
+		const req = hosts.get(id);
+		// noAuth hosts route with no credential — never "missing".
+		if (!req || req.noAuth) return false;
+		return req.selectedKeyIds.length === 0;
+	});
 
 	return (
 		<div className="flex flex-col gap-4">
@@ -189,7 +192,7 @@ interface HostCardProps {
 }
 
 function HostCard({ req, onToggle, required, dangling }: HostCardProps) {
-	const { host, hostKeys, selectedKeyIds } = req;
+	const { host, hostKeys, selectedKeyIds, noAuth } = req;
 	const satisfied = selectedKeyIds.length > 0;
 	const hasAnyKey = hostKeys.length > 0;
 	const selectedSet = new Set(selectedKeyIds);
@@ -206,16 +209,24 @@ function HostCard({ req, onToggle, required, dangling }: HostCardProps) {
 						{displayLabel(host.metadata)}
 					</div>
 					<div className="text-[11px] text-muted-foreground truncate">
-						{hostKeys.length} key{hostKeys.length === 1 ? "" : "s"} available
-						{selectedKeyIds.length > 0
-							? ` · ${selectedKeyIds.length} attached`
-							: ""}
+						{noAuth ? (
+							"Routes without a credential"
+						) : (
+							<>
+								{hostKeys.length} key{hostKeys.length === 1 ? "" : "s"}{" "}
+								available
+								{selectedKeyIds.length > 0
+									? ` · ${selectedKeyIds.length} attached`
+									: ""}
+							</>
+						)}
 					</div>
 				</div>
 				<StatusBadge
 					satisfied={satisfied}
 					required={required}
 					dangling={dangling}
+					noAuth={noAuth}
 				/>
 			</div>
 
@@ -246,27 +257,30 @@ function HostCard({ req, onToggle, required, dangling }: HostCardProps) {
 				</ul>
 			)}
 
-			<div className="border-t border-border px-3 py-1.5 flex items-center justify-between">
-				{hasAnyKey ? (
-					<AddKeyPopover
-						available={available}
-						onPick={(id) => onToggle(id, true)}
-						disabled={available.length === 0}
-					/>
-				) : (
-					<div className="flex items-center gap-1.5 text-[11px] text-amber-600 dark:text-amber-400">
-						<AlertTriangle className="h-3.5 w-3.5" aria-hidden />
-						No keys exist for this host.
-					</div>
-				)}
-				<Link
-					to="/host-keys/new"
-					className="text-[11px] text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
-				>
-					<Plus className="h-3 w-3" aria-hidden />
-					Create new key
-				</Link>
-			</div>
+			{/* noAuth hosts need no credential — the key-picker bar is irrelevant. */}
+			{!noAuth && (
+				<div className="border-t border-border px-3 py-1.5 flex items-center justify-between">
+					{hasAnyKey ? (
+						<AddKeyPopover
+							available={available}
+							onPick={(id) => onToggle(id, true)}
+							disabled={available.length === 0}
+						/>
+					) : (
+						<div className="flex items-center gap-1.5 text-[11px] text-amber-600 dark:text-amber-400">
+							<AlertTriangle className="h-3.5 w-3.5" aria-hidden />
+							No keys exist for this host.
+						</div>
+					)}
+					<Link
+						to="/host-keys/new"
+						className="text-[11px] text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
+					>
+						<Plus className="h-3 w-3" aria-hidden />
+						Create new key
+					</Link>
+				</div>
+			)}
 		</div>
 	);
 }
@@ -275,9 +289,15 @@ interface StatusBadgeProps {
 	satisfied: boolean;
 	required?: boolean;
 	dangling?: boolean;
+	noAuth?: boolean;
 }
 
-function StatusBadge({ satisfied, required, dangling }: StatusBadgeProps) {
+function StatusBadge({
+	satisfied,
+	required,
+	dangling,
+	noAuth,
+}: StatusBadgeProps) {
 	if (dangling) {
 		return (
 			<span className="inline-flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
@@ -291,6 +311,14 @@ function StatusBadge({ satisfied, required, dangling }: StatusBadgeProps) {
 			<span className="inline-flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400">
 				<CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
 				attached
+			</span>
+		);
+	}
+	if (noAuth) {
+		return (
+			<span className="inline-flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400">
+				<CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
+				no key needed
 			</span>
 		);
 	}

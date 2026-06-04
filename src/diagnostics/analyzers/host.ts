@@ -45,7 +45,9 @@ export function analyzeHost(host: Host, graph: DiagnosticGraph): Diagnostic[] {
 		}
 	}
 
-	if (keys.length === 0) {
+	// `noAuth` hosts (e.g. local Ollama) route without a credential, so an
+	// empty key list is expected — not worth surfacing.
+	if (keys.length === 0 && host.spec.noAuth !== true) {
 		out.push({
 			severity: "info",
 			code: "host.no-keys",
