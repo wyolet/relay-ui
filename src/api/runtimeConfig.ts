@@ -33,6 +33,21 @@ function configUrl(): string {
 }
 
 /**
+ * Origin the config document is served from. Since the control API serves its
+ * own `/config.json`, this *is* the control origin — so it's the right default
+ * for `controlApiUrl`/`inferenceApiUrl` when the config omits them (the embedded
+ * case where they equal the serving origin, and the dev case where config is
+ * fetched cross-origin from the control host).
+ */
+function configOrigin(): string {
+	try {
+		return new URL(configUrl(), pageOrigin()).origin;
+	} catch {
+		return pageOrigin();
+	}
+}
+
+/**
  * Fetch the runtime config once, at boot, before the app (and thus the API
  * client) is imported. Never throws — failures leave the defaults in place.
  */
@@ -51,14 +66,14 @@ export async function loadRuntimeConfig(): Promise<void> {
 
 const trimSlash = (u: string): string => u.replace(/\/$/, "");
 
-/** Control/admin API base. Falls back to the page origin. */
+/** Control/admin API base. Defaults to the config doc's origin. */
 export function controlApiUrl(): string {
-	return trimSlash(loaded.controlApiUrl ?? pageOrigin());
+	return trimSlash(loaded.controlApiUrl ?? configOrigin());
 }
 
-/** Data-plane / inference base (serves `/{adapter}/v1`). Falls back to origin. */
+/** Data-plane / inference base (serves `/{adapter}/v1`). Defaults to config origin. */
 export function inferenceApiUrl(): string {
-	return trimSlash(loaded.inferenceApiUrl ?? pageOrigin());
+	return trimSlash(loaded.inferenceApiUrl ?? configOrigin());
 }
 
 /** Deployment mode; unknown/absent values are treated as "oss". */

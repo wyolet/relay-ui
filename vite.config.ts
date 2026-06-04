@@ -42,7 +42,6 @@ const config = defineConfig({
     allowedHosts: ['relay.wyolet.dev', '.wyolet.dev', 'localhost'],
     hmr: { host: 'relay.wyolet.dev', clientPort: 443, protocol: 'wss' },
     proxy: {
-      '/config.json': proxy,
       '/control': proxy,
       '/healthz': proxy,
       '/openapi.json': proxy,
