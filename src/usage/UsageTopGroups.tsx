@@ -1,13 +1,16 @@
 import { Link } from "@tanstack/react-router";
 import { BarChart3 } from "lucide-react";
+import type { ReactNode } from "react";
 import {
 	type UsageGroupBy,
 	type UsageGroupStat,
 	useUsageOverview,
 } from "@/api/hooks/usage";
 import { dimensionLabel, fmtCompact, fmtMs, fmtPct } from "./format";
+import { rankColor } from "./palette";
 import { UsageEmpty } from "./UsageEmpty";
 import { useGroupLabeler } from "./useGroupLabeler";
+import { useGroupLogo } from "./useGroupLogo";
 
 /**
  * Ranked leaderboard for one dimension, with inline volume bars. Pass `limit`
@@ -22,6 +25,7 @@ export function UsageTopGroups({
 }) {
 	const { groups } = useUsageOverview(groupBy);
 	const labelFor = useGroupLabeler(groupBy);
+	const logoFor = useGroupLogo(groupBy, 24);
 
 	if (groups.length === 0) {
 		return (
@@ -48,9 +52,15 @@ export function UsageTopGroups({
 					{groups.length} group{groups.length === 1 ? "" : "s"}
 				</span>
 			</div>
-			<ul className="divide-y divide-border">
-				{shown.map((g) => (
-					<GroupRow key={g.key} stat={g} label={labelFor(g.key)} />
+			<ul className="flex flex-col gap-1 p-2">
+				{shown.map((g, i) => (
+					<GroupRow
+						key={g.key}
+						stat={g}
+						label={labelFor(g.key)}
+						logo={logoFor(g.key)}
+						color={rankColor(i)}
+					/>
 				))}
 			</ul>
 			{hidden > 0 && (
@@ -66,56 +76,106 @@ export function UsageTopGroups({
 	);
 }
 
-function GroupRow({ stat, label }: { stat: UsageGroupStat; label: string }) {
-	const hasErrors = stat.errorCount > 0;
+function GroupRow({
+	stat,
+	label,
+	logo,
+	color,
+}: {
+	stat: UsageGroupStat;
+	label: string;
+	logo: ReactNode;
+	color: string;
+}) {
+	const errTone =
+		stat.errorCount > 0 && stat.errorRate >= 0.05
+			? "text-destructive"
+			: stat.errorCount > 0
+				? "text-foreground"
+				: "text-muted-foreground";
+
 	return (
-		<li className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 px-4 py-2.5">
-			<div className="min-w-0">
-				<code
-					className="block truncate font-mono text-xs text-foreground"
-					title={stat.key}
-				>
-					{label}
-				</code>
-				<div
-					className="mt-1.5 h-1.5 rounded-full bg-primary/80"
-					style={{ width: `${Math.max(stat.share * 100, 2)}%` }}
-					aria-hidden
-				/>
+		<li
+			className="relative overflow-hidden rounded-md px-2.5 py-2"
+			style={{ backgroundImage: tintWash(color) }}
+		>
+			<div className="flex items-center gap-2.5">
+				{/* Leading avatar, vertically centered against the text stack */}
+				<span className="shrink-0">{logo ?? <Swatch color={color} />}</span>
+
+				<div className="min-w-0 flex-1">
+					<span
+						className="block truncate text-sm font-medium text-foreground"
+						title={stat.key}
+					>
+						{label}
+					</span>
+					<dl className="mt-0.5 flex items-center gap-2 text-[11px] tabular-nums text-muted-foreground">
+						<SubStat label="err" value={fmtPct(stat.errorRate)} tone={errTone} />
+						<span className="text-border">·</span>
+						<SubStat label="p95" value={fmtMs(stat.duration.p95)} />
+						<span className="text-border">·</span>
+						<SubStat label="tok" value={fmtCompact(stat.tokens)} />
+					</dl>
+				</div>
+
+				{/* Volume on the right, balances the row */}
+				<div className="shrink-0 pl-2 text-right tabular-nums">
+					<div className="text-sm font-semibold text-foreground">
+						{fmtCompact(stat.requests)}
+					</div>
+					<div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+						req
+					</div>
+				</div>
 			</div>
-			<dl className="flex items-center gap-4 text-right tabular-nums">
-				<Stat label="req" value={fmtCompact(stat.requests)} />
-				<Stat
-					label="err"
-					value={fmtPct(stat.errorRate)}
-					tone={
-						hasErrors && stat.errorRate >= 0.05
-							? "text-destructive"
-							: hasErrors
-								? "text-foreground"
-								: "text-muted-foreground"
-					}
-				/>
-				<Stat label="p95" value={fmtMs(stat.duration.p95)} />
-				<Stat label="tok" value={fmtCompact(stat.tokens)} />
-			</dl>
+
+			{/* Thin share bar, pinned to the bottom edge */}
+			<div
+				className="absolute bottom-0 left-0 h-0.5 rounded-full"
+				style={{
+					width: `${Math.max(stat.share * 100, 3)}%`,
+					backgroundColor: color,
+				}}
+				aria-hidden
+			/>
 		</li>
 	);
 }
 
-function Stat({
+/** A quiet per-row color wash — left tint fading to transparent. */
+function tintWash(color: string): string {
+	return `linear-gradient(90deg, color-mix(in oklch, ${color} 15%, transparent), color-mix(in oklch, ${color} 5%, transparent) 55%, transparent)`;
+}
+
+/** Fallback identity anchor for dimensions without a logo: a tinted dot. */
+function Swatch({ color }: { color: string }) {
+	return (
+		<span
+			className="inline-flex size-6 items-center justify-center rounded-sm bg-muted"
+			aria-hidden
+		>
+			<span
+				className="size-2.5 rounded-full"
+				style={{ backgroundColor: color }}
+			/>
+		</span>
+	);
+}
+
+function SubStat({
 	label,
 	value,
-	tone = "text-foreground",
+	tone = "text-muted-foreground",
 }: {
 	label: string;
 	value: string;
 	tone?: string;
 }) {
 	return (
-		<div className="w-16">
-			<dd className={`text-sm ${tone}`}>{value}</dd>
-			<dt className="text-[10px] uppercase tracking-wide text-muted-foreground">
+		<div className="inline-flex items-baseline gap-1">
+			<dd className={tone}>{value}</dd>
+			<dt className="text-[10px] uppercase tracking-wide text-muted-foreground/60">
 				{label}
 			</dt>
 		</div>
