@@ -1,25 +1,53 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ScrollText } from "lucide-react";
+import { CalendarDays, ScrollText } from "lucide-react";
 import { Suspense } from "react";
+import type { DateRange } from "react-day-picker";
 import { z } from "zod";
+import { Calendar } from "@/components/ui/calendar";
 import {
-	DEFAULT_WINDOW,
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+import {
+	ToggleGroup,
+	ToggleGroupItem,
+} from "@/components/ui/toggle-group";
+import {
+	stackedTimeseriesQueryOptions,
 	USAGE_GROUP_BY,
-	USAGE_INTERVALS,
+	USAGE_METRICS,
+	USAGE_RANGE_LABELS,
+	USAGE_RANGES,
+	type UsageGroupBy,
+	type UsageRange,
+	resolveWindow,
 	usageSummaryQueryOptions,
-	usageTimeseriesQueryOptions,
+	useStackedTimeline,
 	useUsageOverview,
 } from "@/api/hooks/usage";
 import { PageLoader } from "@/shared/Spinner";
 import { dimensionLabel } from "@/usage/format";
+import { StackedUsageChart } from "@/usage/StackedUsageChart";
 import { UsageStatCards } from "@/usage/UsageStatCards";
-import { UsageTimelineChart } from "@/usage/UsageTimelineChart";
 import { UsageTopGroups } from "@/usage/UsageTopGroups";
 
 const searchSchema = z.object({
 	group_by: z.enum(USAGE_GROUP_BY).default("model_id"),
-	interval: z.enum(USAGE_INTERVALS).default("1h"),
+	range: z.enum(USAGE_RANGES).default("week"),
+	metric: z.enum(USAGE_METRICS).default("requests"),
+	from: z.string().optional(),
+	to: z.string().optional(),
 });
+
+type UsageSearch = z.infer<typeof searchSchema>;
 
 export const Route = createFileRoute("/_authenticated/usage")({
 	validateSearch: searchSchema,
@@ -27,23 +55,21 @@ export const Route = createFileRoute("/_authenticated/usage")({
 	loader: ({ context, deps }) => {
 		const { queryClient } = context;
 		void queryClient.ensureQueryData(usageSummaryQueryOptions(deps.group_by));
+		const win = resolveWindow(deps.range, deps.from, deps.to);
 		void queryClient.ensureQueryData(
-			usageTimeseriesQueryOptions(
-				deps.interval,
-				"source",
-				DEFAULT_WINDOW[deps.interval],
-			),
+			stackedTimeseriesQueryOptions(deps.group_by, win),
 		);
 	},
 	component: UsagePage,
 });
 
 function UsagePage() {
-	const { group_by, interval } = Route.useSearch();
+	const search = Route.useSearch();
+	const { group_by, range, metric } = search;
 	const navigate = useNavigate();
 
-	const setSearch = (patch: Partial<z.infer<typeof searchSchema>>) =>
-		void navigate({ to: "/usage", search: { group_by, interval, ...patch } });
+	const setSearch = (patch: Partial<UsageSearch>) =>
+		void navigate({ to: "/usage", search: { ...search, ...patch } });
 
 	return (
 		<div className="flex flex-col gap-4">
@@ -63,67 +89,211 @@ function UsagePage() {
 				</Link>
 			</div>
 
+			<div className="flex flex-wrap items-center justify-between gap-3">
+				<RangePicker
+					range={range}
+					from={search.from}
+					to={search.to}
+					onRange={(r) => setSearch({ range: r })}
+					onCustom={(from, to) => setSearch({ range: "custom", from, to })}
+				/>
+				<div className="flex flex-wrap items-center gap-3">
+					<Segmented
+						value={metric}
+						options={USAGE_METRICS}
+						optionLabel={(m) => (m === "tokens" ? "Tokens" : "Requests")}
+						onChange={(m) => setSearch({ metric: m })}
+					/>
+					<div className="h-5 w-px bg-border" aria-hidden />
+					<span className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+						Split by
+						<DimensionSelect
+							value={group_by}
+							onChange={(v) => setSearch({ group_by: v })}
+						/>
+					</span>
+				</div>
+			</div>
+
 			<Suspense fallback={<Loading />}>
 				<KpiHeader groupBy={group_by} />
 			</Suspense>
 
-			<div className="flex flex-col gap-4 xl:grid xl:grid-cols-[1.4fr_1fr]">
-				<section className="flex flex-col gap-2">
-					<SectionHeader title="Over time">
-						<Picker
-							label="Interval"
-							value={interval}
-							options={USAGE_INTERVALS}
-							onChange={(v) => setSearch({ interval: v })}
-						/>
-					</SectionHeader>
-					<Suspense fallback={<Loading />}>
-						<UsageTimelineChart interval={interval} />
-					</Suspense>
-				</section>
-
-				<section className="flex flex-col gap-2">
-					<SectionHeader title="Breakdown">
-						<Picker
-							label="Group by"
-							value={group_by}
-							options={USAGE_GROUP_BY}
-							optionLabel={dimensionLabel}
-							onChange={(v) => setSearch({ group_by: v })}
-						/>
-					</SectionHeader>
-					<Suspense fallback={<Loading />}>
-						<UsageTopGroups groupBy={group_by} />
-					</Suspense>
-				</section>
+			<div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.6fr_1fr]">
+				<Suspense fallback={<Loading />}>
+					<Chart search={search} />
+				</Suspense>
+				<Suspense fallback={<Loading />}>
+					<UsageTopGroups groupBy={group_by} />
+				</Suspense>
 			</div>
 		</div>
 	);
 }
 
+/** Group-by dimension chooser (shadcn Select for consistent chrome). */
+function DimensionSelect({
+	value,
+	onChange,
+}: {
+	value: UsageGroupBy;
+	onChange: (v: UsageGroupBy) => void;
+}) {
+	const items = USAGE_GROUP_BY.map((o) => ({
+		label: dimensionLabel(o),
+		value: o,
+	}));
+	return (
+		<Select
+			items={items}
+			value={value}
+			onValueChange={(v) => onChange(v as UsageGroupBy)}
+		>
+			<SelectTrigger size="sm" className="text-xs">
+				<SelectValue />
+			</SelectTrigger>
+			<SelectContent>
+				{items.map((o) => (
+					<SelectItem key={o.value} value={o.value} className="text-xs">
+						{o.label}
+					</SelectItem>
+				))}
+			</SelectContent>
+		</Select>
+	);
+}
+
+function Chart({ search }: { search: UsageSearch }) {
+	const data = useStackedTimeline(
+		search.group_by,
+		search.range,
+		search.metric,
+		search.from,
+		search.to,
+	);
+	return (
+		<StackedUsageChart
+			data={data}
+			groupBy={search.group_by}
+			metric={search.metric}
+		/>
+	);
+}
+
 /** KPI cards share the summary query with the breakdown; group_by doesn't
  * change the aggregate totals, so the cards are stable across dimensions. */
-function KpiHeader({
-	groupBy,
-}: {
-	groupBy: z.infer<typeof searchSchema>["group_by"];
-}) {
+function KpiHeader({ groupBy }: { groupBy: UsageGroupBy }) {
 	const { kpis } = useUsageOverview(groupBy);
 	return <UsageStatCards kpis={kpis} />;
 }
 
-function SectionHeader({
-	title,
-	children,
+/** Preset range buttons + a custom date-range expander. */
+function RangePicker({
+	range,
+	from,
+	to,
+	onRange,
+	onCustom,
 }: {
-	title: string;
-	children?: React.ReactNode;
+	range: UsageRange;
+	from?: string;
+	to?: string;
+	onRange: (r: UsageRange) => void;
+	onCustom: (from: string, to: string) => void;
 }) {
 	return (
-		<div className="flex items-center justify-between">
-			<h2 className="text-sm font-medium text-foreground">{title}</h2>
-			{children}
+		<div className="flex flex-wrap items-center gap-2">
+			<Segmented
+				value={range}
+				options={USAGE_RANGES}
+				optionLabel={(r) => USAGE_RANGE_LABELS[r]}
+				onChange={onRange}
+			/>
+			{range === "custom" && (
+				<CustomRangePopover from={from} to={to} onCustom={onCustom} />
+			)}
 		</div>
+	);
+}
+
+/** Calendar range picker (shadcn) behind a popover; emits ISO from/to. */
+function CustomRangePopover({
+	from,
+	to,
+	onCustom,
+}: {
+	from?: string;
+	to?: string;
+	onCustom: (from: string, to: string) => void;
+}) {
+	const selected: DateRange | undefined = from
+		? { from: new Date(from), to: to ? new Date(to) : undefined }
+		: undefined;
+
+	const label = selected?.from
+		? `${selected.from.toLocaleDateString()} – ${
+				selected.to?.toLocaleDateString() ?? "…"
+			}`
+		: "Pick dates";
+
+	function handleSelect(next: DateRange | undefined) {
+		if (!next?.from) return;
+		// Span the full days: start of `from` to end of `to` (or `from`).
+		const start = new Date(next.from);
+		start.setHours(0, 0, 0, 0);
+		const end = new Date(next.to ?? next.from);
+		end.setHours(23, 59, 59, 999);
+		onCustom(start.toISOString(), end.toISOString());
+	}
+
+	return (
+		<Popover>
+			<PopoverTrigger className="inline-flex h-7 items-center gap-1.5 rounded-md border border-border bg-card px-2.5 text-xs font-medium text-foreground hover:bg-muted">
+				<CalendarDays className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />
+				{label}
+			</PopoverTrigger>
+			<PopoverContent align="end" className="w-auto p-0">
+				<Calendar
+					mode="range"
+					numberOfMonths={2}
+					defaultMonth={selected?.from}
+					selected={selected}
+					onSelect={handleSelect}
+					autoFocus
+				/>
+			</PopoverContent>
+		</Popover>
+	);
+}
+
+/** Single-select segmented control on shadcn ToggleGroup (base-ui). */
+function Segmented<T extends string>({
+	value,
+	options,
+	optionLabel,
+	onChange,
+}: {
+	value: T;
+	options: readonly T[];
+	optionLabel: (v: T) => string;
+	onChange: (v: T) => void;
+}) {
+	return (
+		<ToggleGroup
+			variant="outline"
+			size="default"
+			value={[value]}
+			onValueChange={(next: string[]) => {
+				const picked = next.find((v) => v !== value) ?? next[0];
+				if (picked) onChange(picked as T);
+			}}
+		>
+			{options.map((o) => (
+				<ToggleGroupItem key={o} value={o} className="px-2.5 text-xs">
+					{optionLabel(o)}
+				</ToggleGroupItem>
+			))}
+		</ToggleGroup>
 	);
 }
 
@@ -132,39 +302,5 @@ function Loading() {
 		<div className="rounded-lg border border-border bg-card">
 			<PageLoader />
 		</div>
-	);
-}
-
-function Picker<T extends string>({
-	label,
-	value,
-	options,
-	optionLabel,
-	onChange,
-}: {
-	label: string;
-	value: T;
-	options: readonly T[];
-	optionLabel?: (v: T) => string;
-	onChange: (v: T) => void;
-}) {
-	return (
-		<label className="inline-flex items-center gap-2 text-xs text-muted-foreground">
-			{label}
-			<select
-				value={value}
-				onChange={(e) => {
-					const next = options.find((o) => o === e.target.value);
-					if (next) onChange(next);
-				}}
-				className="h-7 rounded-md border border-border bg-card px-2 text-xs text-foreground"
-			>
-				{options.map((o) => (
-					<option key={o} value={o}>
-						{optionLabel ? optionLabel(o) : o}
-					</option>
-				))}
-			</select>
-		</label>
 	);
 }

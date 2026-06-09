@@ -146,6 +146,255 @@ export function usageTimeseriesQueryOptions(
 	});
 }
 
+// --- Time range presets ---
+
+/** Range presets offered by the usage page. `custom` reads explicit from/to. */
+export const USAGE_RANGES = ["today", "week", "month", "custom"] as const;
+export type UsageRange = (typeof USAGE_RANGES)[number];
+
+export const USAGE_RANGE_LABELS: Record<UsageRange, string> = {
+	today: "Today",
+	week: "This week",
+	month: "This month",
+	custom: "Custom",
+};
+
+/** A concrete [from, to] window plus the bucket width to chart it at. */
+export interface ResolvedWindow {
+	from: string;
+	to: string;
+	interval: UsageInterval;
+}
+
+/** Pick a bucket width that yields a readable bar count for a span. */
+function intervalForSpan(spanMs: number): UsageInterval {
+	if (spanMs <= 3 * 60 * 60_000) return "5m";
+	if (spanMs <= 2 * 24 * 60 * 60_000) return "1h";
+	return "1d";
+}
+
+/**
+ * "Now", floored to a 5-minute step. Quantizing keeps `to` (and therefore the
+ * query key) byte-stable across renders, so the chart doesn't re-key — and
+ * therefore re-fetch — on every render. It also caps refresh churn: the window
+ * only advances once per 5 minutes.
+ */
+const NOW_QUANTUM_MS = 5 * 60_000;
+function quantizedNow(): Date {
+	return new Date(Math.floor(Date.now() / NOW_QUANTUM_MS) * NOW_QUANTUM_MS);
+}
+
+/**
+ * Resolve a preset (or explicit custom from/to) into an absolute window with a
+ * sensible interval. Anchored to the local clock so "Today"/"This week"/"This
+ * month" mean calendar boundaries, not rolling spans.
+ */
+export function resolveWindow(
+	range: UsageRange,
+	customFrom?: string,
+	customTo?: string,
+): ResolvedWindow {
+	if (range === "custom" && customFrom) {
+		const fromMs = Date.parse(customFrom);
+		const toMs = customTo ? Date.parse(customTo) : quantizedNow().getTime();
+		const safeTo = Number.isNaN(toMs) ? quantizedNow().getTime() : toMs;
+		return {
+			from: new Date(fromMs).toISOString(),
+			to: new Date(safeTo).toISOString(),
+			interval: intervalForSpan(Math.max(safeTo - fromMs, 0)),
+		};
+	}
+
+	// `start` = first slot of the period, `end` = first slot *after* it, so the
+	// grid spans the whole period (e.g. all 30 days of the month), not just the
+	// elapsed part. Future buckets simply come back empty from the server.
+	const start = new Date();
+	start.setHours(0, 0, 0, 0);
+	const end = new Date(start);
+	let interval: UsageInterval;
+	if (range === "today") {
+		end.setDate(end.getDate() + 1);
+		interval = "1h";
+	} else if (range === "week") {
+		// Back up to Monday (treat Sunday=0 as the 7th day); span 7 days.
+		const dow = (start.getDay() + 6) % 7;
+		start.setDate(start.getDate() - dow);
+		end.setTime(start.getTime());
+		end.setDate(end.getDate() + 7);
+		interval = "1d";
+	} else {
+		start.setDate(1);
+		end.setTime(start.getTime());
+		end.setMonth(end.getMonth() + 1);
+		interval = "1d";
+	}
+	return { from: start.toISOString(), to: end.toISOString(), interval };
+}
+
+// --- Stacked-by-dimension timeline ---
+
+/** Which metric the stacked chart plots per bucket. */
+export const USAGE_METRICS = ["requests", "tokens"] as const;
+export type UsageMetric = (typeof USAGE_METRICS)[number];
+
+/** Series with less than this share of total volume fold into "Others". */
+const OTHER_SHARE = 0.05;
+/** Hard cap on distinct series before the rest fold into "Others". */
+const MAX_SERIES = 6;
+export const OTHER_KEY = "__other";
+
+/** One stacked bucket: epoch label plus a value per series key. */
+export type StackedPoint = { bucket: string } & Record<string, number | string>;
+
+export interface StackedTimeline {
+	from: string;
+	to: string;
+	interval: UsageInterval;
+	points: StackedPoint[];
+	/** Ordered series keys present in the data (largest first, OTHER_KEY last). */
+	series: string[];
+}
+
+export function stackedTimeseriesQueryOptions(
+	groupBy: UsageGroupBy,
+	win: ResolvedWindow,
+) {
+	return queryOptions({
+		queryKey: ["usage", "stacked", groupBy, win.from, win.to, win.interval],
+		queryFn: async (): Promise<UsageTimeSeriesResult> => {
+			const { data, error } = await apiClient.GET("/usage/timeseries", {
+				params: {
+					query: {
+						group_by: groupBy,
+						from: win.from,
+						to: win.to,
+						interval: win.interval,
+					},
+				},
+			});
+			if (error) throw new ApiError(0, error.error);
+			return data;
+		},
+		staleTime: 15_000,
+		gcTime: 5 * 60_000,
+	});
+}
+
+type TimeSeriesPoint = components["schemas"]["TimeSeriesPoint"];
+
+function metricValue(p: TimeSeriesPoint, metric: UsageMetric): number {
+	return metric === "tokens" ? sumTokens(p.tokens) : p.requests;
+}
+
+function deriveStacked(
+	rows: UsageTimeSeriesResult["rows"],
+	groupBy: UsageGroupBy,
+	metric: UsageMetric,
+	from: string,
+	to: string,
+	interval: UsageInterval,
+): { points: StackedPoint[]; series: string[] } {
+	// Total per series across the window → decide who survives vs folds to Others.
+	const totals = new Map<string, number>();
+	let grand = 0;
+	for (const row of rows ?? []) {
+		const key = row.group?.[groupBy]?.trim() || "—";
+		let sum = 0;
+		for (const p of row.points ?? []) sum += metricValue(p, metric);
+		totals.set(key, (totals.get(key) ?? 0) + sum);
+		grand += sum;
+	}
+
+	const ranked = [...totals.entries()].sort(([, a], [, b]) => b - a);
+	const keep = new Set<string>();
+	for (const [key, total] of ranked) {
+		if (keep.size >= MAX_SERIES) break;
+		if (grand > 0 && total / grand < OTHER_SHARE) break;
+		keep.add(key);
+	}
+	const hasOther = keep.size < totals.size;
+
+	// Zero-filled bucket grid over the FULL window, aligned to local calendar
+	// units (so daily bars sit on local midnights, hourly on the hour — DST-safe,
+	// since setDate/setHours respect the local offset). Empty buckets render as
+	// gaps instead of collapsing the axis to only the buckets that had traffic.
+	const toMs = Date.parse(to);
+	const byEpoch = new Map<number, StackedPoint>();
+	const order: number[] = [];
+	let t = floorToInterval(Date.parse(from), interval);
+	for (let guard = 0; t <= toMs && guard < 5000; guard++) {
+		const seed: StackedPoint = { bucket: new Date(t).toISOString() };
+		for (const k of keep) seed[k] = 0;
+		if (hasOther) seed[OTHER_KEY] = 0;
+		byEpoch.set(t, seed);
+		order.push(t);
+		t = advanceInterval(t, interval);
+	}
+
+	for (const row of rows ?? []) {
+		const rawKey = row.group?.[groupBy]?.trim() || "—";
+		const key = keep.has(rawKey) ? rawKey : OTHER_KEY;
+		for (const p of row.points ?? []) {
+			const epoch = floorToInterval(Date.parse(p.bucket), interval);
+			const bucket = byEpoch.get(epoch);
+			if (!bucket) continue;
+			bucket[key] = (Number(bucket[key]) || 0) + metricValue(p, metric);
+		}
+	}
+
+	const series = ranked
+		.filter(([k]) => keep.has(k))
+		.map(([k]) => k);
+	if (hasOther) series.push(OTHER_KEY);
+	const points = order.map((epoch) => byEpoch.get(epoch) as StackedPoint);
+	return { points, series };
+}
+
+/** Floor a timestamp to the start of its local bucket (5m / hour / day). */
+function floorToInterval(ms: number, interval: UsageInterval): number {
+	const d = new Date(ms);
+	if (interval === "1d") {
+		d.setHours(0, 0, 0, 0);
+	} else if (interval === "1h") {
+		d.setMinutes(0, 0, 0);
+	} else {
+		d.setSeconds(0, 0);
+		d.setMinutes(Math.floor(d.getMinutes() / 5) * 5);
+	}
+	return d.getTime();
+}
+
+/** Advance a timestamp by one local bucket (DST-safe via Date mutators). */
+function advanceInterval(ms: number, interval: UsageInterval): number {
+	const d = new Date(ms);
+	if (interval === "1d") d.setDate(d.getDate() + 1);
+	else if (interval === "1h") d.setHours(d.getHours() + 1);
+	else d.setMinutes(d.getMinutes() + 5);
+	return d.getTime();
+}
+
+/** Stacked requests/tokens over time, split by `groupBy`, small series merged. */
+export function useStackedTimeline(
+	groupBy: UsageGroupBy,
+	range: UsageRange,
+	metric: UsageMetric,
+	customFrom?: string,
+	customTo?: string,
+): StackedTimeline {
+	// Window resolution (quantized → stable key) lives here, not in the route.
+	const win = resolveWindow(range, customFrom, customTo);
+	const { data } = useSuspenseQuery(stackedTimeseriesQueryOptions(groupBy, win));
+	const { points, series } = deriveStacked(
+		data.rows,
+		groupBy,
+		metric,
+		win.from,
+		win.to,
+		win.interval,
+	);
+	return { from: win.from, to: win.to, interval: win.interval, points, series };
+}
+
 // --- Derived overview shapes ---
 
 /** Top-line KPIs for the selected window, aggregated across all groups. */
