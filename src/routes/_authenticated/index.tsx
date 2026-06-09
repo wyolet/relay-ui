@@ -8,7 +8,8 @@ import { ReleaseReadiness } from "@/dashboard/ReleaseReadiness";
 import { useCatalogCounts } from "@/dashboard/useCatalogCounts";
 import { PageLoader } from "@/shared/Spinner";
 import { useSetupStore } from "@/stores/setup";
-import { UsageTimelineChart } from "@/usage/UsageTimelineChart";
+import { StackedUsageChart } from "@/usage/StackedUsageChart";
+import { useStackedTimeline } from "@/api/hooks/usage";
 import { UsageTopGroups } from "@/usage/UsageTopGroups";
 
 export const Route = createFileRoute("/_authenticated/")({
@@ -75,7 +76,7 @@ function TrafficBand() {
 				<div className="rounded-lg border border-border bg-card p-4">
 					<div className="mb-3 flex items-center justify-between">
 						<h2 className="text-sm font-medium text-foreground">
-							Requests over time
+							Requests by model · this week
 						</h2>
 						<Link
 							to="/usage"
@@ -84,7 +85,7 @@ function TrafficBand() {
 							View usage →
 						</Link>
 					</div>
-					<UsageTimelineChart interval="1h" />
+					<DashboardTraffic />
 				</div>
 			</div>
 			<aside className="flex flex-col gap-4">
@@ -93,6 +94,19 @@ function TrafficBand() {
 				<ErrorHotspots />
 			</aside>
 		</section>
+	);
+}
+
+function DashboardTraffic() {
+	const data = useStackedTimeline("model_id", "week", "requests");
+	return (
+		<StackedUsageChart
+			data={data}
+			groupBy="model_id"
+			metric="requests"
+			bare
+			height="h-[240px]"
+		/>
 	);
 }
 
