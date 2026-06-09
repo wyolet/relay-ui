@@ -982,6 +982,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/relay-keys/by-id/{id}/rotate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rotate a relay-key (server generates a new plaintext)
+         * @description Generates a fresh bearer token server-side, replaces the stored hash + display prefix, and returns the new plaintext once. The old token stops authenticating within ~1s fleet-wide. Revoked keys cannot be rotated — create a new key instead.
+         */
+        post: operations["rotate_relay_key"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/relay-keys/{ref}": {
         parameters: {
             query?: never;
@@ -1429,6 +1449,7 @@ export interface components {
             readonly $schema?: string;
             metadata: components["schemas"]["Metadata"];
             spec: components["schemas"]["HostSpec"];
+            status?: components["schemas"]["HostStatus"];
         };
         HostKey: {
             /**
@@ -1468,6 +1489,7 @@ export interface components {
             enabled?: boolean;
             hostId: string;
             policyId: string;
+            pricingStrategy?: string;
             value?: string;
             valueFrom: components["schemas"]["HostKeyValueFrom"];
         };
@@ -1525,7 +1547,29 @@ export interface components {
             icon?: components["schemas"]["Icon"];
             noAuth?: boolean;
             policies?: string[] | null;
+            pricingStrategies?: string[] | null;
             statusPageURL?: string;
+        };
+        HostStatus: {
+            /**
+             * Format: int64
+             * @description Consecutive dial failures; 0 when healthy.
+             */
+            consecutiveFailures?: number;
+            /** @description unknown | healthy | unreachable. */
+            health: string;
+            /** @description Last dial-failure error excerpt; set while unreachable. */
+            lastError?: string;
+            /**
+             * Format: date-time
+             * @description When the host was last reachable.
+             */
+            lastSuccess?: string;
+            /**
+             * Format: date-time
+             * @description When health was last recorded.
+             */
+            lastTransition?: string;
         };
         Icon: {
             path?: string;
@@ -2547,6 +2591,16 @@ export interface components {
             readonly $schema?: string;
             /** @description New cleartext credential. */
             value: string;
+        };
+        rotateRelayKeyResponseBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/rotateRelayKeyResponseBody.json
+             */
+            readonly $schema?: string;
+            plaintext: string;
+            relayKey: components["schemas"]["RelayKey"];
         };
         settingsCatalogItem: {
             description?: string;
@@ -7207,6 +7261,74 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    rotate_relay_key: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description RelayKey id (UUIDv7). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["rotateRelayKeyResponseBody"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

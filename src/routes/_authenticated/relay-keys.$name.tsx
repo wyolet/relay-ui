@@ -4,6 +4,7 @@ import {
 	KeyRound,
 	Pencil,
 	Power,
+	RotateCw,
 	ShieldCheck,
 	Trash2,
 } from "lucide-react";
@@ -25,6 +26,7 @@ import type { Policy } from "@/api/types/policy";
 import { DiagnosticList } from "@/diagnostics/DiagnosticList";
 import { useRelayKeyDiagnostics } from "@/diagnostics/useDiagnostics";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
+import { RelayKeyRotateDialog } from "@/relay-keys/RelayKeyRotateDialog";
 import { useToggleRelayKeyEnabled } from "@/relay-keys/useToggleRelayKeyEnabled";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { PageLoader } from "@/shared/Spinner";
@@ -56,6 +58,7 @@ function RelayKeyDetailInner() {
 	const navigate = useNavigate();
 
 	const [confirming, setConfirming] = useState(false);
+	const [rotating, setRotating] = useState(false);
 
 	const rkId = rk.metadata.id ?? "";
 	const diagnostics = useRelayKeyDiagnostics(rk.metadata.id);
@@ -145,6 +148,14 @@ function RelayKeyDetailInner() {
 						<Power className="w-3.5 h-3.5" />
 						{enabled ? "Disable" : "Enable"}
 					</button>
+					<button
+						type="button"
+						onClick={() => setRotating(true)}
+						className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium text-foreground border border-border hover:bg-muted transition-colors"
+					>
+						<RotateCw className="w-3.5 h-3.5" />
+						Rotate
+					</button>
 					<Link
 						to="/relay-keys/$name/edit"
 						params={{ name }}
@@ -198,6 +209,10 @@ function RelayKeyDetailInner() {
 					</Row>
 				</dl>
 			</Card>
+
+			{rotating && (
+				<RelayKeyRotateDialog rk={rk} onClose={() => setRotating(false)} />
+			)}
 
 			{confirming && (
 				<DeleteConfirm
