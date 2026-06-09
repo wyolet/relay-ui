@@ -6,6 +6,13 @@ import {
 	useResourceTimeline,
 	useResourceUsage,
 } from "@/api/hooks/usage";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import { ResourceUsageCards } from "@/shared/ResourceUsageCards";
 import { RequestsAreaChart } from "./RequestsAreaChart";
 
@@ -30,23 +37,28 @@ export function ResourceUsage({
 
 			<div className="flex items-center justify-between">
 				<h2 className="text-sm font-medium text-foreground">Over time</h2>
-				<label className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+				<span className="inline-flex items-center gap-2 text-xs text-muted-foreground">
 					Interval
-					<select
+					<Select
+						items={USAGE_INTERVALS.map((i) => ({ label: i, value: i }))}
 						value={interval}
-						onChange={(e) => {
-							const next = USAGE_INTERVALS.find((i) => i === e.target.value);
+						onValueChange={(v) => {
+							const next = USAGE_INTERVALS.find((i) => i === v);
 							if (next) setInterval(next);
 						}}
-						className="h-7 rounded-md border border-border bg-card px-2 text-xs text-foreground"
 					>
-						{USAGE_INTERVALS.map((i) => (
-							<option key={i} value={i}>
-								{i}
-							</option>
-						))}
-					</select>
-				</label>
+						<SelectTrigger className="h-7 w-[88px] text-xs">
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent>
+							{USAGE_INTERVALS.map((i) => (
+								<SelectItem key={i} value={i} className="text-xs">
+									{i}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+				</span>
 			</div>
 
 			<Suspense fallback={<ChartSkeleton />}>

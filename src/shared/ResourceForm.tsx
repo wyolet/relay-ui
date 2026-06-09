@@ -1,6 +1,13 @@
 import type { ReactNode } from "react";
 import { useState } from "react";
 import type { ApiErrorBody } from "@/api/types/errors";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 
 // ---------------------------------------------------------------------------
 // Field descriptors
@@ -229,20 +236,22 @@ function FieldInput({ field, value, onChange }: FieldInputProps) {
 
 	if (field.type === "select") {
 		return (
-			<select
-				id={field.name}
-				name={field.name}
-				value={typeof value === "string" ? value : ""}
-				onChange={(e) => onChange(e.target.value)}
-				className={inputClass}
+			<Select
+				items={field.options}
+				value={typeof value === "string" && value ? value : undefined}
+				onValueChange={(v) => onChange(v ?? "")}
 			>
-				<option value="">— select —</option>
-				{field.options.map((opt) => (
-					<option key={opt.value} value={opt.value}>
-						{opt.label}
-					</option>
-				))}
-			</select>
+				<SelectTrigger id={field.name} className="w-full">
+					<SelectValue placeholder={field.placeholder ?? "— select —"} />
+				</SelectTrigger>
+				<SelectContent>
+					{field.options.map((opt) => (
+						<SelectItem key={opt.value} value={opt.value}>
+							{opt.label}
+						</SelectItem>
+					))}
+				</SelectContent>
+			</Select>
 		);
 	}
 
