@@ -9,6 +9,33 @@ export interface IsoWindow {
 	to: string;
 }
 
+/** Bucket widths the relay's /usage/timeseries endpoint accepts. */
+export const USAGE_INTERVALS = ["5m", "1h", "1d"] as const;
+export type UsageInterval = (typeof USAGE_INTERVALS)[number];
+
+/** Floor a timestamp to the start of its local bucket (5m / hour / day). */
+export function floorToInterval(ms: number, interval: UsageInterval): number {
+	const d = new Date(ms);
+	if (interval === "1d") {
+		d.setHours(0, 0, 0, 0);
+	} else if (interval === "1h") {
+		d.setMinutes(0, 0, 0);
+	} else {
+		d.setSeconds(0, 0);
+		d.setMinutes(Math.floor(d.getMinutes() / 5) * 5);
+	}
+	return d.getTime();
+}
+
+/** Advance a timestamp by one local bucket (DST-safe via Date mutators). */
+export function advanceInterval(ms: number, interval: UsageInterval): number {
+	const d = new Date(ms);
+	if (interval === "1d") d.setDate(d.getDate() + 1);
+	else if (interval === "1h") d.setHours(d.getHours() + 1);
+	else d.setMinutes(d.getMinutes() + 5);
+	return d.getTime();
+}
+
 export interface ComparisonWindows {
 	current: IsoWindow;
 	previous: IsoWindow;
@@ -21,6 +48,22 @@ export interface ComparisonWindows {
  * period would understate every partial period — Wednesday-of-this-week is
  * compared against Monday→Wednesday of last week, not all seven days.
  */
+/**
+ * The trailing `[now − hours, now)` window. Callers pass a quantized "now" so
+ * the resulting window (and any query key built from it) stays byte-stable
+ * across renders.
+ */
+export function rollingWindow(nowIso: string, hours: number): IsoWindow {
+	const nowMs = Date.parse(nowIso);
+	if (!Number.isFinite(nowMs) || !(hours > 0)) {
+		return { from: nowIso, to: nowIso };
+	}
+	return {
+		from: new Date(nowMs - hours * 60 * 60 * 1000).toISOString(),
+		to: new Date(nowMs).toISOString(),
+	};
+}
+
 export function comparisonWindows(
 	win: IsoWindow,
 	nowIso: string,

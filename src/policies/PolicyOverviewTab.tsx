@@ -11,6 +11,10 @@ import {
 	ResourceUsageCards,
 	UsageCardsSkeleton,
 } from "@/shared/ResourceUsageCards";
+import {
+	ResourceSpendCard,
+	ResourceSpendCardSkeleton,
+} from "@/usage/ResourceSpendCard";
 
 interface Props {
 	policy: Policy;
@@ -56,9 +60,17 @@ function StatsGrid({ policy }: { policy: Policy }) {
 					<StatCard label="Relay keys" value="—" sub="unsaved" />
 				)}
 				{policy.metadata.id && (
-					<Suspense fallback={<UsageCardsSkeleton />}>
-						<PolicyUsageCards policyId={policy.metadata.id} />
-					</Suspense>
+					<>
+						<Suspense fallback={<UsageCardsSkeleton />}>
+							<PolicyUsageCards policyId={policy.metadata.id} />
+						</Suspense>
+						<Suspense fallback={<ResourceSpendCardSkeleton />}>
+							<ResourceSpendCard
+								dimension="policy_id"
+								id={policy.metadata.id}
+							/>
+						</Suspense>
+					</>
 				)}
 			</div>
 		</section>

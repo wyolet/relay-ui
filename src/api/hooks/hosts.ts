@@ -7,6 +7,11 @@ import {
 import { apiClient } from "@/api/client";
 import { ApiError } from "@/api/types/errors";
 import type { Host, HostListResponse, HostUpdate } from "@/api/types/host";
+import type { components } from "@/api/types.gen";
+
+/** One model this host serves: binding + the pricing attached to it. */
+export type HostModelRow = components["schemas"]["HostModelRow"];
+type HostModelsResponse = components["schemas"]["hostModelsOutBody"];
 
 export const hostsListQueryOptions = queryOptions({
 	queryKey: ["hosts"] as const,
@@ -24,6 +29,26 @@ export function hostDetailQueryOptions(ref: string) {
 		queryKey: ["hosts", ref] as const,
 		queryFn: async (): Promise<Host> => {
 			const { data, error } = await apiClient.GET("/hosts/{ref}", {
+				params: { path: { ref } },
+			});
+			if (error) throw new ApiError(0, error.error);
+			return data;
+		},
+		staleTime: 30_000,
+		gcTime: 5 * 60_000,
+	});
+}
+
+/**
+ * The models a host serves, each with its binding and attached pricing — the
+ * authoritative rate source for exact (model, host) cost attribution.
+ * `ref` accepts a slug or UUIDv7 id.
+ */
+export function hostModelsQueryOptions(ref: string) {
+	return queryOptions({
+		queryKey: ["hosts", ref, "models"] as const,
+		queryFn: async (): Promise<HostModelsResponse> => {
+			const { data, error } = await apiClient.GET("/hosts/{ref}/models", {
 				params: { path: { ref } },
 			});
 			if (error) throw new ApiError(0, error.error);

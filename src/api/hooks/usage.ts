@@ -9,11 +9,27 @@ import type { components, operations } from "@/api/types.gen";
 import { compareValue, type DeltaResult } from "@/lib/usage-math/delta";
 import { type LatencyRung, latencyLadder } from "@/lib/usage-math/latency";
 import {
+	OTHER_KEY,
+	type SeriesSample,
+	type StackedPoint,
+	stackSamples,
+} from "@/lib/usage-math/stack";
+import {
 	mergeMeters,
 	splitTokens,
 	type TokenSplit,
 } from "@/lib/usage-math/tokens";
-import { comparisonWindows, type IsoWindow } from "@/lib/usage-math/window";
+import {
+	comparisonWindows,
+	type IsoWindow,
+	rollingWindow,
+	USAGE_INTERVALS,
+	type UsageInterval,
+} from "@/lib/usage-math/window";
+
+// Re-exported so chart components keep a single import site for usage shapes.
+export { OTHER_KEY, USAGE_INTERVALS };
+export type { StackedPoint, UsageInterval };
 
 // --- Schema-derived types ---
 
@@ -36,10 +52,6 @@ export const USAGE_GROUP_BY = [
 ] as const;
 export type UsageGroupBy = (typeof USAGE_GROUP_BY)[number];
 
-/** Bucket widths offered for the timeseries chart. */
-export const USAGE_INTERVALS = ["5m", "1h", "1d"] as const;
-export type UsageInterval = (typeof USAGE_INTERVALS)[number];
-
 // --- Query options ---
 
 /** Absolute [from, to) window scoping a usage query. Omit for the server
@@ -50,9 +62,25 @@ type UsageSummaryQuery = NonNullable<
 	operations["usage_summary"]["parameters"]["query"]
 >;
 
+/** Event-level filters the summary endpoint accepts on top of the window —
+ * lets callers aggregate a slice (e.g. only 429s, only errors, or one
+ * resource's traffic by id). */
+export type UsageSummaryFilter = Pick<
+	UsageSummaryQuery,
+	| "status"
+	| "status_class"
+	| "error"
+	| "model_id"
+	| "host_id"
+	| "policy_id"
+	| "relay_key_hash"
+	| "host_key_id"
+>;
+
 export function usageSummaryQueryOptions(
 	groupBy: UsageGroupBy,
 	win?: UsageWindow,
+	filter?: UsageSummaryFilter,
 ) {
 	return queryOptions({
 		queryKey: [
@@ -61,9 +89,10 @@ export function usageSummaryQueryOptions(
 			groupBy,
 			win?.from ?? "default",
 			win?.to ?? "default",
+			filter ?? {},
 		] as const,
 		queryFn: async (): Promise<UsageSummaryResult> => {
-			const query: UsageSummaryQuery = { group_by: groupBy };
+			const query: UsageSummaryQuery = { ...filter, group_by: groupBy };
 			if (win) {
 				query.from = win.from;
 				query.to = win.to;
@@ -81,8 +110,13 @@ export function usageSummaryQueryOptions(
 
 // --- Per-resource usage (scoped /usage/summary) ---
 
-/** A resource whose usage we can scope by id via the matching filter param. */
-export type ResourceUsageDimension = "host_id" | "model_id" | "policy_id";
+/** A resource whose usage we can scope by id via the matching filter param.
+ * relay_key_hash scopes by the key's hash (RelayKeySpec.keyHash). */
+export type ResourceUsageDimension =
+	| "host_id"
+	| "model_id"
+	| "policy_id"
+	| "relay_key_hash";
 
 /** One resource's totals over the summary window (null when it has no traffic). */
 export interface ResourceUsageStats {
@@ -261,20 +295,28 @@ export function resolveWindow(
 	return { from: start.toISOString(), to: end.toISOString(), interval };
 }
 
+/**
+ * The trailing N hours, ending at the quantized "now" (stable query keys).
+ * Rolling rather than calendar-aligned, unlike resolveWindow's presets —
+ * for "right now"-flavored widgets like the ops block and resource cards.
+ */
+export function rollingUsageWindow(hours: number): UsageWindow {
+	return rollingWindow(quantizedNow().toISOString(), hours);
+}
+
+/** The ops block's trailing-24h window. */
+export function rolling24hWindow(): UsageWindow {
+	return rollingUsageWindow(24);
+}
+
 // --- Stacked-by-dimension timeline ---
 
-/** Which metric the stacked chart plots per bucket. */
-export const USAGE_METRICS = ["requests", "tokens"] as const;
+/** Metrics the usage page offers. "cost" never flows through the token
+ * stacker — it has its own fan-out pipeline (see api/hooks/cost.ts). */
+export const USAGE_METRICS = ["requests", "tokens", "cost"] as const;
 export type UsageMetric = (typeof USAGE_METRICS)[number];
-
-/** Series with less than this share of total volume fold into "Others". */
-const OTHER_SHARE = 0.05;
-/** Hard cap on distinct series before the rest fold into "Others". */
-const MAX_SERIES = 6;
-export const OTHER_KEY = "__other";
-
-/** One stacked bucket: epoch label plus a value per series key. */
-export type StackedPoint = { bucket: string } & Record<string, number | string>;
+/** The metrics deriveStacked/useStackedTimeline can chart directly. */
+export type StackableMetric = Exclude<UsageMetric, "cost">;
 
 export interface StackedTimeline {
 	from: string;
@@ -312,100 +354,34 @@ export function stackedTimeseriesQueryOptions(
 
 type TimeSeriesPoint = components["schemas"]["TimeSeriesPoint"];
 
-function metricValue(p: TimeSeriesPoint, metric: UsageMetric): number {
+function metricValue(p: TimeSeriesPoint, metric: StackableMetric): number {
 	return metric === "tokens" ? sumTokens(p.tokens) : p.requests;
 }
 
+/** Flatten grouped timeseries rows into samples and stack them (see usage-math/stack). */
 function deriveStacked(
 	rows: UsageTimeSeriesResult["rows"],
 	groupBy: UsageGroupBy,
-	metric: UsageMetric,
+	metric: StackableMetric,
 	from: string,
 	to: string,
 	interval: UsageInterval,
 ): { points: StackedPoint[]; series: string[] } {
-	// Total per series across the window → decide who survives vs folds to Others.
-	const totals = new Map<string, number>();
-	let grand = 0;
+	const samples: SeriesSample[] = [];
 	for (const row of rows ?? []) {
 		const key = row.group?.[groupBy]?.trim() || "—";
-		let sum = 0;
-		for (const p of row.points ?? []) sum += metricValue(p, metric);
-		totals.set(key, (totals.get(key) ?? 0) + sum);
-		grand += sum;
-	}
-
-	const ranked = [...totals.entries()].sort(([, a], [, b]) => b - a);
-	const keep = new Set<string>();
-	for (const [key, total] of ranked) {
-		if (keep.size >= MAX_SERIES) break;
-		if (grand > 0 && total / grand < OTHER_SHARE) break;
-		keep.add(key);
-	}
-	const hasOther = keep.size < totals.size;
-
-	// Zero-filled bucket grid over the FULL window, aligned to local calendar
-	// units (so daily bars sit on local midnights, hourly on the hour — DST-safe,
-	// since setDate/setHours respect the local offset). Empty buckets render as
-	// gaps instead of collapsing the axis to only the buckets that had traffic.
-	const toMs = Date.parse(to);
-	const byEpoch = new Map<number, StackedPoint>();
-	const order: number[] = [];
-	let t = floorToInterval(Date.parse(from), interval);
-	for (let guard = 0; t <= toMs && guard < 5000; guard++) {
-		const seed: StackedPoint = { bucket: new Date(t).toISOString() };
-		for (const k of keep) seed[k] = 0;
-		if (hasOther) seed[OTHER_KEY] = 0;
-		byEpoch.set(t, seed);
-		order.push(t);
-		t = advanceInterval(t, interval);
-	}
-
-	for (const row of rows ?? []) {
-		const rawKey = row.group?.[groupBy]?.trim() || "—";
-		const key = keep.has(rawKey) ? rawKey : OTHER_KEY;
 		for (const p of row.points ?? []) {
-			const epoch = floorToInterval(Date.parse(p.bucket), interval);
-			const bucket = byEpoch.get(epoch);
-			if (!bucket) continue;
-			bucket[key] = (Number(bucket[key]) || 0) + metricValue(p, metric);
+			samples.push({ key, bucket: p.bucket, value: metricValue(p, metric) });
 		}
 	}
-
-	const series = ranked.filter(([k]) => keep.has(k)).map(([k]) => k);
-	if (hasOther) series.push(OTHER_KEY);
-	const points = order.map((epoch) => byEpoch.get(epoch) as StackedPoint);
-	return { points, series };
-}
-
-/** Floor a timestamp to the start of its local bucket (5m / hour / day). */
-function floorToInterval(ms: number, interval: UsageInterval): number {
-	const d = new Date(ms);
-	if (interval === "1d") {
-		d.setHours(0, 0, 0, 0);
-	} else if (interval === "1h") {
-		d.setMinutes(0, 0, 0);
-	} else {
-		d.setSeconds(0, 0);
-		d.setMinutes(Math.floor(d.getMinutes() / 5) * 5);
-	}
-	return d.getTime();
-}
-
-/** Advance a timestamp by one local bucket (DST-safe via Date mutators). */
-function advanceInterval(ms: number, interval: UsageInterval): number {
-	const d = new Date(ms);
-	if (interval === "1d") d.setDate(d.getDate() + 1);
-	else if (interval === "1h") d.setHours(d.getHours() + 1);
-	else d.setMinutes(d.getMinutes() + 5);
-	return d.getTime();
+	return stackSamples(samples, from, to, interval);
 }
 
 /** Stacked requests/tokens over time, split by `groupBy`, small series merged. */
 export function useStackedTimeline(
 	groupBy: UsageGroupBy,
 	range: UsageRange,
-	metric: UsageMetric,
+	metric: StackableMetric,
 	customFrom?: string,
 	customTo?: string,
 ): StackedTimeline {

@@ -19,6 +19,9 @@ const searchSchema = z.object({
 	q: z.string().default(""),
 	since: z.enum(SINCE_VALUES).default("1h"),
 	status_class: z.enum(STATUS_CLASS_VALUES).default(""),
+	/** Exact HTTP status codes (e.g. [429]) — deep-link only for now; the
+	 * filter bar exposes status_class bands instead. */
+	status: z.array(z.number()).default([]),
 	errors: z.boolean().default(false),
 	slow: z.boolean().default(false),
 	model_id: z.array(z.string()).default([]),
@@ -34,6 +37,7 @@ type LogsSearch = z.infer<typeof searchSchema>;
 function toLogsFilter(s: LogsSearch): LogsFilter {
 	const filter: LogsFilter = { since: s.since };
 	if (s.status_class) filter.status_class = s.status_class;
+	if (s.status.length) filter.status = s.status;
 	if (s.errors) filter.error = "true";
 	if (s.slow) filter.duration_ms_min = SLOW_MS;
 	if (s.model_id.length) filter.model_id = s.model_id;

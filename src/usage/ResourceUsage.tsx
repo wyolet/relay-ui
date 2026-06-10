@@ -15,6 +15,10 @@ import {
 } from "@/components/ui/select";
 import { ResourceUsageCards } from "@/shared/ResourceUsageCards";
 import { RequestsAreaChart } from "./RequestsAreaChart";
+import {
+	ResourceSpendCard,
+	ResourceSpendCardSkeleton,
+} from "./ResourceSpendCard";
 
 /**
  * Per-resource Usage tab: scoped KPI cards + a requests/errors timeline for one
@@ -71,8 +75,11 @@ export function ResourceUsage({
 function Cards({ scope, id }: { scope: ResourceUsageDimension; id: string }) {
 	const usage = useResourceUsage(scope, id);
 	return (
-		<div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+		<div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
 			<ResourceUsageCards usage={usage} />
+			<Suspense fallback={<ResourceSpendCardSkeleton />}>
+				<ResourceSpendCard dimension={scope} id={id} />
+			</Suspense>
 		</div>
 	);
 }
@@ -100,20 +107,27 @@ function Chart({
 
 function CardsSkeleton() {
 	return (
-		<div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-			{["Requests", "Error rate", "p95 latency", "Tokens"].map((l) => (
-				<div
-					key={l}
-					className="rounded-md border border-border bg-card px-3 py-2"
-				>
-					<div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-						{l}
+		<div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+			{[
+				"Requests · 1h",
+				"Error rate",
+				"p95 latency",
+				"Tokens",
+				"Est. spend · 1h",
+			].map((l) => (
+					<div
+						key={l}
+						className="rounded-md border border-border bg-card px-3 py-2"
+					>
+						<div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+							{l}
+						</div>
+						<div className="mt-0.5 text-lg font-semibold text-muted-foreground tabular-nums">
+							…
+						</div>
 					</div>
-					<div className="mt-0.5 text-lg font-semibold text-muted-foreground tabular-nums">
-						…
-					</div>
-				</div>
-			))}
+				),
+			)}
 		</div>
 	);
 }

@@ -31,6 +31,10 @@ import {
 	ResourceUsageCards,
 	UsageCardsSkeleton,
 } from "@/shared/ResourceUsageCards";
+import {
+	ResourceSpendCard,
+	ResourceSpendCardSkeleton,
+} from "@/usage/ResourceSpendCard";
 import { ResourceUsage } from "@/usage/ResourceUsage";
 
 export type HostDetailTab =
@@ -300,9 +304,14 @@ function OverviewTab({
 						}
 					/>
 					{host.metadata.id && (
-						<Suspense fallback={<UsageCardsSkeleton />}>
-							<HostUsageCards hostId={host.metadata.id} />
-						</Suspense>
+						<>
+							<Suspense fallback={<UsageCardsSkeleton />}>
+								<HostUsageCards hostId={host.metadata.id} />
+							</Suspense>
+							<Suspense fallback={<ResourceSpendCardSkeleton />}>
+								<ResourceSpendCard dimension="host_id" id={host.metadata.id} />
+							</Suspense>
+						</>
 					)}
 				</div>
 			</section>

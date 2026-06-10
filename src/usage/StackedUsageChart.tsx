@@ -15,7 +15,14 @@ import {
 	ChartTooltip,
 	ChartTooltipContent,
 } from "@/components/ui/chart";
-import { dimensionLabel, fmtBucket, fmtCompact, fmtRange } from "./format";
+import {
+	dimensionLabel,
+	fmtBucket,
+	fmtCompact,
+	fmtMoney,
+	fmtMoneyCompact,
+	fmtRange,
+} from "./format";
 import { OTHER_COLOR, USAGE_PALETTE } from "./palette";
 import { UsageEmpty } from "./UsageEmpty";
 import { useGroupLabeler } from "./useGroupLabeler";
@@ -34,12 +41,15 @@ export function StackedUsageChart({
 	data,
 	groupBy,
 	metric,
+	currency = "USD",
 	bare = false,
 	height = "h-[280px]",
 }: {
 	data: StackedTimeline;
 	groupBy: UsageGroupBy;
 	metric: UsageMetric;
+	/** Formats axis/tooltip values when metric is "cost". */
+	currency?: string;
 	/** Render only the plot (no card/header) — for embedding in another card. */
 	bare?: boolean;
 	height?: string;
@@ -67,7 +77,15 @@ export function StackedUsageChart({
 		data.series.some((k) => Number(p[k]) > 0),
 	);
 
-	const metricLabel = metric === "tokens" ? "Tokens" : "Requests";
+	const isCost = metric === "cost";
+	const metricLabel = isCost
+		? "Est. spend"
+		: metric === "tokens"
+			? "Tokens"
+			: "Requests";
+	const tickFormatter = isCost
+		? (n: number) => fmtMoneyCompact(n, currency)
+		: fmtCompact;
 
 	if (!hasTraffic) {
 		return (
@@ -94,12 +112,34 @@ export function StackedUsageChart({
 				<YAxis
 					tickLine={false}
 					axisLine={false}
-					width={44}
-					tickFormatter={fmtCompact}
+					width={isCost ? 56 : 44}
+					tickFormatter={tickFormatter}
 				/>
 				<ChartTooltip
 					content={
-						<ChartTooltipContent labelFormatter={(v) => fmtBucket(String(v))} />
+						<ChartTooltipContent
+							labelFormatter={(v) => fmtBucket(String(v))}
+							formatter={
+								isCost
+									? (value, name, item) => (
+											<div className="flex w-full items-center justify-between gap-4">
+												<span className="flex items-center gap-1.5">
+													<span
+														className="size-2.5 shrink-0 rounded-[2px]"
+														style={{ backgroundColor: item.color }}
+													/>
+													<span className="text-muted-foreground">
+														{config[String(name)]?.label ?? name}
+													</span>
+												</span>
+												<span className="font-mono font-medium tabular-nums text-foreground">
+													≈{fmtMoney(Number(value), currency)}
+												</span>
+											</div>
+										)
+									: undefined
+							}
+						/>
 					}
 				/>
 				<ChartLegend content={<ChartLegendContent />} />

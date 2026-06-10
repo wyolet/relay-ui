@@ -1,4 +1,6 @@
+import { Suspense } from "react";
 import { resolveWindow, useUsageOverviewWithDeltas } from "@/api/hooks/usage";
+import { CostKpiCard } from "@/usage/CostKpiCard";
 import { RANGE_COMPARE_LABELS } from "@/usage/format";
 import { UsageStatCards } from "@/usage/UsageStatCards";
 
@@ -12,6 +14,12 @@ export function DashboardKpis() {
 			kpis={kpis}
 			deltas={deltas}
 			compareLabel={RANGE_COMPARE_LABELS.week}
+			cost={
+				// Streams in behind the instant cards (cost needs a host fan-out).
+				<Suspense fallback={null}>
+					<CostKpiCard win={win} compareLabel={RANGE_COMPARE_LABELS.week} />
+				</Suspense>
+			}
 		/>
 	);
 }

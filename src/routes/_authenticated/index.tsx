@@ -4,7 +4,7 @@ import { relayKeysListQueryOptions } from "@/api/hooks/relayKeys";
 import { resolveWindow, useStackedTimeline } from "@/api/hooks/usage";
 import { DashboardKpis } from "@/dashboard/DashboardKpis";
 import { ErrorHotspots } from "@/dashboard/ErrorHotspots";
-import { HealthStrip } from "@/dashboard/HealthStrip";
+import { OpsAttention } from "@/dashboard/OpsAttention";
 import { ReleaseReadiness } from "@/dashboard/ReleaseReadiness";
 import { useCatalogCounts } from "@/dashboard/useCatalogCounts";
 import { PageLoader } from "@/shared/Spinner";
@@ -114,14 +114,14 @@ function DashboardTraffic() {
 }
 
 function DashboardInner() {
-	const { counts, catalogEmpty } = useCatalogCounts();
+	const { catalogEmpty } = useCatalogCounts();
 
 	return (
 		<div className="flex flex-col gap-6">
 			<ReleaseReadiness />
 			{catalogEmpty && <WelcomePanel />}
 
-			<HealthStrip counts={counts} />
+			{!catalogEmpty && <OpsAttention />}
 
 			{!catalogEmpty && (
 				<Suspense fallback={<TrafficSkeleton />}>

@@ -12,6 +12,10 @@ import type {
 	HostKeyListResponse,
 	HostKeyUpdate,
 } from "@/api/types/hostkey";
+import type { components } from "@/api/types.gen";
+
+/** Circuit-breaker status for one host key (see /host-keys/by-id/{id}/health). */
+export type HostKeyHealth = components["schemas"]["hostKeyHealth"];
 
 export const hostKeysListQueryOptions = queryOptions({
 	queryKey: ["host-keys"] as const,
@@ -35,6 +39,24 @@ export function hostKeyDetailQueryOptions(ref: string) {
 			return data;
 		},
 		staleTime: 30_000,
+		gcTime: 5 * 60_000,
+	});
+}
+
+export function hostKeyHealthQueryOptions(id: string) {
+	return queryOptions({
+		queryKey: ["host-keys", id, "health"] as const,
+		queryFn: async (): Promise<HostKeyHealth> => {
+			const { data, error } = await apiClient.GET(
+				"/host-keys/by-id/{id}/health",
+				{ params: { path: { id } } },
+			);
+			if (error) throw new ApiError(0, error.error);
+			return data;
+		},
+		// Breaker state is live operational data — keep it fresh on the dashboard.
+		staleTime: 15_000,
+		refetchInterval: 30_000,
 		gcTime: 5 * 60_000,
 	});
 }

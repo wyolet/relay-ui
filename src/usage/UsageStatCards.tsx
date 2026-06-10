@@ -5,15 +5,19 @@ import type { DeltaResult } from "@/lib/usage-math/delta";
 import { fmtCompact, fmtMs, fmtPct, fmtSignedPct, fmtSignedPp } from "./format";
 
 /** Top-line KPI cards for the usage overview. Pass `deltas` (+ `compareLabel`)
- * to annotate each card with its period-over-period movement. */
+ * to annotate each card with its period-over-period movement. `cost` is a
+ * pre-built fifth card (its data comes from a slower fan-out, so callers mount
+ * it behind its own Suspense to keep these four instant). */
 export function UsageStatCards({
 	kpis,
 	deltas,
 	compareLabel,
+	cost,
 }: {
 	kpis: UsageKpis;
 	deltas?: UsageKpiDeltas;
 	compareLabel?: string;
+	cost?: ReactNode;
 }) {
 	const errorTone =
 		kpis.errorRate >= 0.05
@@ -26,14 +30,16 @@ export function UsageStatCards({
 	const d = deltas?.hasBaseline ? deltas : undefined;
 
 	return (
-		<div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-			<Card
+		<div
+			className={`grid grid-cols-2 gap-3 ${cost ? "lg:grid-cols-5" : "lg:grid-cols-4"}`}
+		>
+			<StatCard
 				icon={Activity}
 				label="Requests"
 				value={fmtCompact(kpis.requests)}
 				delta={d && deltaChip(d.requests, "pct", "neutral", compareLabel)}
 			/>
-			<Card
+			<StatCard
 				icon={TriangleAlert}
 				label="Error rate"
 				value={fmtPct(kpis.errorRate)}
@@ -41,18 +47,19 @@ export function UsageStatCards({
 				hint={`${fmtCompact(kpis.errors)} errors`}
 				delta={d && deltaChip(d.errorRate, "pp", "down", compareLabel)}
 			/>
-			<Card
+			<StatCard
 				icon={Gauge}
 				label="Avg latency"
 				value={fmtMs(kpis.avgMs)}
 				delta={d && deltaChip(d.avgMs, "pct", "down", compareLabel)}
 			/>
-			<Card
+			<StatCard
 				icon={Coins}
 				label="Tokens"
 				value={fmtCompact(kpis.tokens)}
 				delta={d && deltaChip(d.tokens, "pct", "neutral", compareLabel)}
 			/>
+			{cost}
 		</div>
 	);
 }
@@ -62,7 +69,7 @@ export function UsageStatCards({
  * good or bad (`goodWhen`); volume metrics stay neutral. Returns null when the
  * metric has no relative baseline (e.g. previous avg latency of 0).
  */
-function deltaChip(
+export function deltaChip(
 	delta: DeltaResult,
 	unit: "pct" | "pp",
 	goodWhen: "down" | "neutral",
@@ -85,7 +92,7 @@ function deltaChip(
 	);
 }
 
-function Card({
+export function StatCard({
 	icon: Icon,
 	label,
 	value,

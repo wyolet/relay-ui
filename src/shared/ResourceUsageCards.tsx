@@ -4,7 +4,8 @@ import type { ResourceUsageStats } from "@/api/hooks/usage";
  * The four real usage cards (Requests / Error rate / p95 / Tokens) shared by
  * the host, model, and policy Overview tabs. Purely presentational — pass in
  * `usage` from the per-resource hook; `null` means the resource has no traffic
- * in the window yet.
+ * in the window. The window is the relay's default trailing hour (the
+ * per-resource queries send no from/to), hence the "· 1h" labels.
  */
 export function ResourceUsageCards({
 	usage,
@@ -14,26 +15,26 @@ export function ResourceUsageCards({
 	if (!usage || usage.requests === 0) {
 		return (
 			<>
-				<Card label="Requests" value="0" sub="no traffic yet" />
-				<Card label="Error rate" value="—" />
-				<Card label="p95 latency" value="—" />
-				<Card label="Tokens" value="—" />
+				<UsageCard label="Requests · 1h" value="0" sub="no traffic yet" />
+				<UsageCard label="Error rate" value="—" />
+				<UsageCard label="p95 latency" value="—" />
+				<UsageCard label="Tokens" value="—" />
 			</>
 		);
 	}
 	const errorTone = usage.errorRate >= 0.05 ? "text-destructive" : undefined;
 	return (
 		<>
-			<Card label="Requests" value={fmtInt(usage.requests)} mono />
-			<Card
+			<UsageCard label="Requests · 1h" value={fmtInt(usage.requests)} mono />
+			<UsageCard
 				label="Error rate"
 				value={fmtPct(usage.errorRate)}
 				sub={`${fmtInt(usage.errorCount)} errors`}
 				valueClassName={errorTone}
 				mono
 			/>
-			<Card label="p95 latency" value={fmtMs(usage.duration.p95)} mono />
-			<Card label="Tokens" value={fmtCompact(usage.tokens)} mono />
+			<UsageCard label="p95 latency" value={fmtMs(usage.duration.p95)} mono />
+			<UsageCard label="Tokens" value={fmtCompact(usage.tokens)} mono />
 		</>
 	);
 }
@@ -42,14 +43,18 @@ export function ResourceUsageCards({
 export function UsageCardsSkeleton() {
 	return (
 		<>
-			{["Requests", "Error rate", "p95 latency", "Tokens"].map((label) => (
-				<Card key={label} label={label} value="…" />
-			))}
+			{["Requests · 1h", "Error rate", "p95 latency", "Tokens"].map(
+				(label) => (
+					<UsageCard key={label} label={label} value="…" />
+				),
+			)}
 		</>
 	);
 }
 
-function Card({
+/** One compact resource stat tile — exported so domain cards (e.g. the
+ * Est. spend card) can match the row exactly. */
+export function UsageCard({
 	label,
 	value,
 	sub,

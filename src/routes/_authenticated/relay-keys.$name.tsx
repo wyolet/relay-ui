@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
+	Activity,
 	ChevronLeft,
 	KeyRound,
 	Pencil,
@@ -31,6 +32,7 @@ import { useToggleRelayKeyEnabled } from "@/relay-keys/useToggleRelayKeyEnabled"
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { PageLoader } from "@/shared/Spinner";
 import { toast } from "@/shared/Toast";
+import { ResourceUsage } from "@/usage/ResourceUsage";
 
 export const Route = createFileRoute("/_authenticated/relay-keys/$name")({
 	loader: ({ context, params }) =>
@@ -209,6 +211,12 @@ function RelayKeyDetailInner() {
 					</Row>
 				</dl>
 			</Card>
+
+			{rk.spec.keyHash && (
+				<Card title="Usage" icon={Activity}>
+					<ResourceUsage scope="relay_key_hash" id={rk.spec.keyHash} />
+				</Card>
+			)}
 
 			{rotating && (
 				<RelayKeyRotateDialog rk={rk} onClose={() => setRotating(false)} />
