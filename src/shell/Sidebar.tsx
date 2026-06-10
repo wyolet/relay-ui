@@ -1,6 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
 	Activity,
+	Banknote,
 	BarChart3,
 	Boxes,
 	KeyRound,
@@ -22,7 +23,7 @@ import {
 import { BrandMark } from "@/shared/BrandMark";
 
 interface NavItem {
-	to: "/" | "/usage" | "/logs" | "/models" | "/keys" | "/policies";
+	to: "/" | "/usage" | "/logs" | "/models" | "/keys" | "/policies" | "/pricing";
 	label: string;
 	icon: ComponentType<{ className?: string }>;
 	prefix: string;
@@ -52,6 +53,12 @@ const NAV_GROUPS: NavGroup[] = [
 				label: "Policies",
 				icon: ShieldCheck,
 				prefix: "/policies",
+			},
+			{
+				to: "/pricing",
+				label: "Pricing",
+				icon: Banknote,
+				prefix: "/pricing",
 			},
 		],
 	},

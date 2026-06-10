@@ -15,12 +15,14 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedUsageRouteImport } from './routes/_authenticated/usage'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedPricingRouteImport } from './routes/_authenticated/pricing'
 import { Route as AuthenticatedPoliciesRouteImport } from './routes/_authenticated/policies'
 import { Route as AuthenticatedModelsRouteImport } from './routes/_authenticated/models'
 import { Route as AuthenticatedKeysRouteImport } from './routes/_authenticated/keys'
 import { Route as AuthenticatedHostKeysRouteImport } from './routes/_authenticated/host-keys'
 import { Route as AuthenticatedBootstrapRouteImport } from './routes/_authenticated/bootstrap'
 import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated/settings.index'
+import { Route as AuthenticatedPricingIndexRouteImport } from './routes/_authenticated/pricing.index'
 import { Route as AuthenticatedPoliciesIndexRouteImport } from './routes/_authenticated/policies.index'
 import { Route as AuthenticatedModelsIndexRouteImport } from './routes/_authenticated/models.index'
 import { Route as AuthenticatedLogsIndexRouteImport } from './routes/_authenticated/logs.index'
@@ -32,6 +34,8 @@ import { Route as AuthenticatedSettingsPayloadLoggingRouteImport } from './route
 import { Route as AuthenticatedRelayKeysNewRouteImport } from './routes/_authenticated/relay-keys.new'
 import { Route as AuthenticatedRelayKeysNameRouteImport } from './routes/_authenticated/relay-keys.$name'
 import { Route as AuthenticatedProvidersNameRouteImport } from './routes/_authenticated/providers.$name'
+import { Route as AuthenticatedPricingNewRouteImport } from './routes/_authenticated/pricing.new'
+import { Route as AuthenticatedPricingNameRouteImport } from './routes/_authenticated/pricing.$name'
 import { Route as AuthenticatedPoliciesNewRouteImport } from './routes/_authenticated/policies.new'
 import { Route as AuthenticatedPoliciesNameRouteImport } from './routes/_authenticated/policies.$name'
 import { Route as AuthenticatedModelsNewRouteImport } from './routes/_authenticated/models.new'
@@ -41,6 +45,7 @@ import { Route as AuthenticatedHostsNameRouteImport } from './routes/_authentica
 import { Route as AuthenticatedHostKeysNewRouteImport } from './routes/_authenticated/host-keys.new'
 import { Route as AuthenticatedHostKeysNameRouteImport } from './routes/_authenticated/host-keys.$name'
 import { Route as AuthenticatedRelayKeysNameEditRouteImport } from './routes/_authenticated/relay-keys.$name_.edit'
+import { Route as AuthenticatedPricingNameEditRouteImport } from './routes/_authenticated/pricing.$name_.edit'
 import { Route as AuthenticatedPoliciesRateLimitsNewRouteImport } from './routes/_authenticated/policies.rate-limits.new'
 import { Route as AuthenticatedPoliciesRateLimitsNameRouteImport } from './routes/_authenticated/policies.rate-limits.$name'
 import { Route as AuthenticatedPoliciesNameEditRouteImport } from './routes/_authenticated/policies.$name_.edit'
@@ -77,6 +82,11 @@ const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedPricingRoute = AuthenticatedPricingRouteImport.update({
+  id: '/pricing',
+  path: '/pricing',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedPoliciesRoute = AuthenticatedPoliciesRouteImport.update({
   id: '/policies',
   path: '/policies',
@@ -107,6 +117,12 @@ const AuthenticatedSettingsIndexRoute =
     id: '/',
     path: '/',
     getParentRoute: () => AuthenticatedSettingsRoute,
+  } as any)
+const AuthenticatedPricingIndexRoute =
+  AuthenticatedPricingIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedPricingRoute,
   } as any)
 const AuthenticatedPoliciesIndexRoute =
   AuthenticatedPoliciesIndexRouteImport.update({
@@ -173,6 +189,17 @@ const AuthenticatedProvidersNameRoute =
     path: '/providers/$name',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedPricingNewRoute = AuthenticatedPricingNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => AuthenticatedPricingRoute,
+} as any)
+const AuthenticatedPricingNameRoute =
+  AuthenticatedPricingNameRouteImport.update({
+    id: '/$name',
+    path: '/$name',
+    getParentRoute: () => AuthenticatedPricingRoute,
+  } as any)
 const AuthenticatedPoliciesNewRoute =
   AuthenticatedPoliciesNewRouteImport.update({
     id: '/new',
@@ -224,6 +251,12 @@ const AuthenticatedRelayKeysNameEditRoute =
     path: '/relay-keys/$name/edit',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedPricingNameEditRoute =
+  AuthenticatedPricingNameEditRouteImport.update({
+    id: '/$name_/edit',
+    path: '/$name/edit',
+    getParentRoute: () => AuthenticatedPricingRoute,
+  } as any)
 const AuthenticatedPoliciesRateLimitsNewRoute =
   AuthenticatedPoliciesRateLimitsNewRouteImport.update({
     id: '/rate-limits/new',
@@ -270,6 +303,7 @@ export interface FileRoutesByFullPath {
   '/keys': typeof AuthenticatedKeysRoute
   '/models': typeof AuthenticatedModelsRouteWithChildren
   '/policies': typeof AuthenticatedPoliciesRouteWithChildren
+  '/pricing': typeof AuthenticatedPricingRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRouteWithChildren
   '/usage': typeof AuthenticatedUsageRoute
   '/host-keys/$name': typeof AuthenticatedHostKeysNameRoute
@@ -280,6 +314,8 @@ export interface FileRoutesByFullPath {
   '/models/new': typeof AuthenticatedModelsNewRoute
   '/policies/$name': typeof AuthenticatedPoliciesNameRoute
   '/policies/new': typeof AuthenticatedPoliciesNewRoute
+  '/pricing/$name': typeof AuthenticatedPricingNameRoute
+  '/pricing/new': typeof AuthenticatedPricingNewRoute
   '/providers/$name': typeof AuthenticatedProvidersNameRoute
   '/relay-keys/$name': typeof AuthenticatedRelayKeysNameRoute
   '/relay-keys/new': typeof AuthenticatedRelayKeysNewRoute
@@ -291,12 +327,14 @@ export interface FileRoutesByFullPath {
   '/logs/': typeof AuthenticatedLogsIndexRoute
   '/models/': typeof AuthenticatedModelsIndexRoute
   '/policies/': typeof AuthenticatedPoliciesIndexRoute
+  '/pricing/': typeof AuthenticatedPricingIndexRoute
   '/settings/': typeof AuthenticatedSettingsIndexRoute
   '/host-keys/$name/edit': typeof AuthenticatedHostKeysNameEditRoute
   '/models/$name/edit': typeof AuthenticatedModelsNameEditRoute
   '/policies/$name/edit': typeof AuthenticatedPoliciesNameEditRoute
   '/policies/rate-limits/$name': typeof AuthenticatedPoliciesRateLimitsNameRoute
   '/policies/rate-limits/new': typeof AuthenticatedPoliciesRateLimitsNewRoute
+  '/pricing/$name/edit': typeof AuthenticatedPricingNameEditRoute
   '/relay-keys/$name/edit': typeof AuthenticatedRelayKeysNameEditRoute
   '/policies/rate-limits/$name/edit': typeof AuthenticatedPoliciesRateLimitsNameEditRoute
 }
@@ -315,6 +353,8 @@ export interface FileRoutesByTo {
   '/models/new': typeof AuthenticatedModelsNewRoute
   '/policies/$name': typeof AuthenticatedPoliciesNameRoute
   '/policies/new': typeof AuthenticatedPoliciesNewRoute
+  '/pricing/$name': typeof AuthenticatedPricingNameRoute
+  '/pricing/new': typeof AuthenticatedPricingNewRoute
   '/providers/$name': typeof AuthenticatedProvidersNameRoute
   '/relay-keys/$name': typeof AuthenticatedRelayKeysNameRoute
   '/relay-keys/new': typeof AuthenticatedRelayKeysNewRoute
@@ -326,12 +366,14 @@ export interface FileRoutesByTo {
   '/logs': typeof AuthenticatedLogsIndexRoute
   '/models': typeof AuthenticatedModelsIndexRoute
   '/policies': typeof AuthenticatedPoliciesIndexRoute
+  '/pricing': typeof AuthenticatedPricingIndexRoute
   '/settings': typeof AuthenticatedSettingsIndexRoute
   '/host-keys/$name/edit': typeof AuthenticatedHostKeysNameEditRoute
   '/models/$name/edit': typeof AuthenticatedModelsNameEditRoute
   '/policies/$name/edit': typeof AuthenticatedPoliciesNameEditRoute
   '/policies/rate-limits/$name': typeof AuthenticatedPoliciesRateLimitsNameRoute
   '/policies/rate-limits/new': typeof AuthenticatedPoliciesRateLimitsNewRoute
+  '/pricing/$name/edit': typeof AuthenticatedPricingNameEditRoute
   '/relay-keys/$name/edit': typeof AuthenticatedRelayKeysNameEditRoute
   '/policies/rate-limits/$name/edit': typeof AuthenticatedPoliciesRateLimitsNameEditRoute
 }
@@ -345,6 +387,7 @@ export interface FileRoutesById {
   '/_authenticated/keys': typeof AuthenticatedKeysRoute
   '/_authenticated/models': typeof AuthenticatedModelsRouteWithChildren
   '/_authenticated/policies': typeof AuthenticatedPoliciesRouteWithChildren
+  '/_authenticated/pricing': typeof AuthenticatedPricingRouteWithChildren
   '/_authenticated/settings': typeof AuthenticatedSettingsRouteWithChildren
   '/_authenticated/usage': typeof AuthenticatedUsageRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
@@ -356,6 +399,8 @@ export interface FileRoutesById {
   '/_authenticated/models/new': typeof AuthenticatedModelsNewRoute
   '/_authenticated/policies/$name': typeof AuthenticatedPoliciesNameRoute
   '/_authenticated/policies/new': typeof AuthenticatedPoliciesNewRoute
+  '/_authenticated/pricing/$name': typeof AuthenticatedPricingNameRoute
+  '/_authenticated/pricing/new': typeof AuthenticatedPricingNewRoute
   '/_authenticated/providers/$name': typeof AuthenticatedProvidersNameRoute
   '/_authenticated/relay-keys/$name': typeof AuthenticatedRelayKeysNameRoute
   '/_authenticated/relay-keys/new': typeof AuthenticatedRelayKeysNewRoute
@@ -367,12 +412,14 @@ export interface FileRoutesById {
   '/_authenticated/logs/': typeof AuthenticatedLogsIndexRoute
   '/_authenticated/models/': typeof AuthenticatedModelsIndexRoute
   '/_authenticated/policies/': typeof AuthenticatedPoliciesIndexRoute
+  '/_authenticated/pricing/': typeof AuthenticatedPricingIndexRoute
   '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
   '/_authenticated/host-keys/$name_/edit': typeof AuthenticatedHostKeysNameEditRoute
   '/_authenticated/models/$name/edit': typeof AuthenticatedModelsNameEditRoute
   '/_authenticated/policies/$name_/edit': typeof AuthenticatedPoliciesNameEditRoute
   '/_authenticated/policies/rate-limits/$name': typeof AuthenticatedPoliciesRateLimitsNameRoute
   '/_authenticated/policies/rate-limits/new': typeof AuthenticatedPoliciesRateLimitsNewRoute
+  '/_authenticated/pricing/$name_/edit': typeof AuthenticatedPricingNameEditRoute
   '/_authenticated/relay-keys/$name_/edit': typeof AuthenticatedRelayKeysNameEditRoute
   '/_authenticated/policies/rate-limits/$name_/edit': typeof AuthenticatedPoliciesRateLimitsNameEditRoute
 }
@@ -387,6 +434,7 @@ export interface FileRouteTypes {
     | '/keys'
     | '/models'
     | '/policies'
+    | '/pricing'
     | '/settings'
     | '/usage'
     | '/host-keys/$name'
@@ -397,6 +445,8 @@ export interface FileRouteTypes {
     | '/models/new'
     | '/policies/$name'
     | '/policies/new'
+    | '/pricing/$name'
+    | '/pricing/new'
     | '/providers/$name'
     | '/relay-keys/$name'
     | '/relay-keys/new'
@@ -408,12 +458,14 @@ export interface FileRouteTypes {
     | '/logs/'
     | '/models/'
     | '/policies/'
+    | '/pricing/'
     | '/settings/'
     | '/host-keys/$name/edit'
     | '/models/$name/edit'
     | '/policies/$name/edit'
     | '/policies/rate-limits/$name'
     | '/policies/rate-limits/new'
+    | '/pricing/$name/edit'
     | '/relay-keys/$name/edit'
     | '/policies/rate-limits/$name/edit'
   fileRoutesByTo: FileRoutesByTo
@@ -432,6 +484,8 @@ export interface FileRouteTypes {
     | '/models/new'
     | '/policies/$name'
     | '/policies/new'
+    | '/pricing/$name'
+    | '/pricing/new'
     | '/providers/$name'
     | '/relay-keys/$name'
     | '/relay-keys/new'
@@ -443,12 +497,14 @@ export interface FileRouteTypes {
     | '/logs'
     | '/models'
     | '/policies'
+    | '/pricing'
     | '/settings'
     | '/host-keys/$name/edit'
     | '/models/$name/edit'
     | '/policies/$name/edit'
     | '/policies/rate-limits/$name'
     | '/policies/rate-limits/new'
+    | '/pricing/$name/edit'
     | '/relay-keys/$name/edit'
     | '/policies/rate-limits/$name/edit'
   id:
@@ -461,6 +517,7 @@ export interface FileRouteTypes {
     | '/_authenticated/keys'
     | '/_authenticated/models'
     | '/_authenticated/policies'
+    | '/_authenticated/pricing'
     | '/_authenticated/settings'
     | '/_authenticated/usage'
     | '/_authenticated/'
@@ -472,6 +529,8 @@ export interface FileRouteTypes {
     | '/_authenticated/models/new'
     | '/_authenticated/policies/$name'
     | '/_authenticated/policies/new'
+    | '/_authenticated/pricing/$name'
+    | '/_authenticated/pricing/new'
     | '/_authenticated/providers/$name'
     | '/_authenticated/relay-keys/$name'
     | '/_authenticated/relay-keys/new'
@@ -483,12 +542,14 @@ export interface FileRouteTypes {
     | '/_authenticated/logs/'
     | '/_authenticated/models/'
     | '/_authenticated/policies/'
+    | '/_authenticated/pricing/'
     | '/_authenticated/settings/'
     | '/_authenticated/host-keys/$name_/edit'
     | '/_authenticated/models/$name/edit'
     | '/_authenticated/policies/$name_/edit'
     | '/_authenticated/policies/rate-limits/$name'
     | '/_authenticated/policies/rate-limits/new'
+    | '/_authenticated/pricing/$name_/edit'
     | '/_authenticated/relay-keys/$name_/edit'
     | '/_authenticated/policies/rate-limits/$name_/edit'
   fileRoutesById: FileRoutesById
@@ -543,6 +604,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/pricing': {
+      id: '/_authenticated/pricing'
+      path: '/pricing'
+      fullPath: '/pricing'
+      preLoaderRoute: typeof AuthenticatedPricingRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/policies': {
       id: '/_authenticated/policies'
       path: '/policies'
@@ -584,6 +652,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/settings/'
       preLoaderRoute: typeof AuthenticatedSettingsIndexRouteImport
       parentRoute: typeof AuthenticatedSettingsRoute
+    }
+    '/_authenticated/pricing/': {
+      id: '/_authenticated/pricing/'
+      path: '/'
+      fullPath: '/pricing/'
+      preLoaderRoute: typeof AuthenticatedPricingIndexRouteImport
+      parentRoute: typeof AuthenticatedPricingRoute
     }
     '/_authenticated/policies/': {
       id: '/_authenticated/policies/'
@@ -662,6 +737,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProvidersNameRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/pricing/new': {
+      id: '/_authenticated/pricing/new'
+      path: '/new'
+      fullPath: '/pricing/new'
+      preLoaderRoute: typeof AuthenticatedPricingNewRouteImport
+      parentRoute: typeof AuthenticatedPricingRoute
+    }
+    '/_authenticated/pricing/$name': {
+      id: '/_authenticated/pricing/$name'
+      path: '/$name'
+      fullPath: '/pricing/$name'
+      preLoaderRoute: typeof AuthenticatedPricingNameRouteImport
+      parentRoute: typeof AuthenticatedPricingRoute
+    }
     '/_authenticated/policies/new': {
       id: '/_authenticated/policies/new'
       path: '/new'
@@ -724,6 +813,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/relay-keys/$name/edit'
       preLoaderRoute: typeof AuthenticatedRelayKeysNameEditRouteImport
       parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/pricing/$name_/edit': {
+      id: '/_authenticated/pricing/$name_/edit'
+      path: '/$name/edit'
+      fullPath: '/pricing/$name/edit'
+      preLoaderRoute: typeof AuthenticatedPricingNameEditRouteImport
+      parentRoute: typeof AuthenticatedPricingRoute
     }
     '/_authenticated/policies/rate-limits/new': {
       id: '/_authenticated/policies/rate-limits/new'
@@ -846,6 +942,23 @@ const AuthenticatedPoliciesRouteWithChildren =
     AuthenticatedPoliciesRouteChildren,
   )
 
+interface AuthenticatedPricingRouteChildren {
+  AuthenticatedPricingNameRoute: typeof AuthenticatedPricingNameRoute
+  AuthenticatedPricingNewRoute: typeof AuthenticatedPricingNewRoute
+  AuthenticatedPricingIndexRoute: typeof AuthenticatedPricingIndexRoute
+  AuthenticatedPricingNameEditRoute: typeof AuthenticatedPricingNameEditRoute
+}
+
+const AuthenticatedPricingRouteChildren: AuthenticatedPricingRouteChildren = {
+  AuthenticatedPricingNameRoute: AuthenticatedPricingNameRoute,
+  AuthenticatedPricingNewRoute: AuthenticatedPricingNewRoute,
+  AuthenticatedPricingIndexRoute: AuthenticatedPricingIndexRoute,
+  AuthenticatedPricingNameEditRoute: AuthenticatedPricingNameEditRoute,
+}
+
+const AuthenticatedPricingRouteWithChildren =
+  AuthenticatedPricingRoute._addFileChildren(AuthenticatedPricingRouteChildren)
+
 interface AuthenticatedSettingsRouteChildren {
   AuthenticatedSettingsPayloadLoggingRoute: typeof AuthenticatedSettingsPayloadLoggingRoute
   AuthenticatedSettingsPermissionsRoute: typeof AuthenticatedSettingsPermissionsRoute
@@ -874,6 +987,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedKeysRoute: typeof AuthenticatedKeysRoute
   AuthenticatedModelsRoute: typeof AuthenticatedModelsRouteWithChildren
   AuthenticatedPoliciesRoute: typeof AuthenticatedPoliciesRouteWithChildren
+  AuthenticatedPricingRoute: typeof AuthenticatedPricingRouteWithChildren
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRouteWithChildren
   AuthenticatedUsageRoute: typeof AuthenticatedUsageRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
@@ -892,6 +1006,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedKeysRoute: AuthenticatedKeysRoute,
   AuthenticatedModelsRoute: AuthenticatedModelsRouteWithChildren,
   AuthenticatedPoliciesRoute: AuthenticatedPoliciesRouteWithChildren,
+  AuthenticatedPricingRoute: AuthenticatedPricingRouteWithChildren,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRouteWithChildren,
   AuthenticatedUsageRoute: AuthenticatedUsageRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
