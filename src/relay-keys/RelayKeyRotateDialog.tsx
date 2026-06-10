@@ -20,7 +20,10 @@ interface RelayKeyRotateDialogProps {
 	onClose: () => void;
 }
 
-export function RelayKeyRotateDialog({ rk, onClose }: RelayKeyRotateDialogProps) {
+export function RelayKeyRotateDialog({
+	rk,
+	onClose,
+}: RelayKeyRotateDialogProps) {
 	const [plaintext, setPlaintext] = useState<string | null>(null);
 	const [inlineError, setInlineError] = useState<string | undefined>();
 	const rotateRelayKey = useRotateRelayKey();
