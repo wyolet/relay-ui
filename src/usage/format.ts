@@ -1,4 +1,4 @@
-import type { UsageGroupBy } from "@/api/hooks/usage";
+import type { UsageGroupBy, UsageRange } from "@/api/hooks/usage";
 
 /** Human-readable column header / label for a group-by dimension. */
 const DIMENSION_LABELS: Record<UsageGroupBy, string> = {
@@ -39,6 +39,32 @@ export function fmtMs(ms: number): string {
 	if (ms >= 1000)
 		return `${(ms / 1000).toLocaleString(undefined, { maximumFractionDigits: 1 })} s`;
 	return `${Math.round(ms)} ms`;
+}
+
+/** What a period-over-period delta is measured against, per range preset. */
+export const RANGE_COMPARE_LABELS: Record<UsageRange, string> = {
+	today: "vs yesterday",
+	week: "vs last week",
+	month: "vs last month",
+	custom: "vs previous period",
+};
+
+/** Signed relative change, ratio → "+12%" / "−8%" / "±0%". */
+export function fmtSignedPct(ratio: number): string {
+	const pct = ratio * 100;
+	const abs = Math.abs(pct);
+	const digits = abs > 0 && abs < 10 ? 1 : 0;
+	const sign = pct > 0 ? "+" : pct < 0 ? "−" : "±";
+	return `${sign}${abs.toLocaleString(undefined, { maximumFractionDigits: digits })}%`;
+}
+
+/** Signed rate change in percentage points, fraction → "+1.2 pp". */
+export function fmtSignedPp(delta: number): string {
+	const pp = delta * 100;
+	const abs = Math.abs(pp);
+	const digits = abs > 0 && abs < 10 ? 1 : 0;
+	const sign = pp > 0 ? "+" : pp < 0 ? "−" : "±";
+	return `${sign}${abs.toLocaleString(undefined, { maximumFractionDigits: digits })} pp`;
 }
 
 export function sumTokens(

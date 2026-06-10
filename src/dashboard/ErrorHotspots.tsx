@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { ShieldCheck } from "lucide-react";
-import { useUsageOverview } from "@/api/hooks/usage";
+import { resolveWindow, useUsageOverview } from "@/api/hooks/usage";
 import { fmtCompact, fmtPct } from "@/usage/format";
 import { useGroupLabeler } from "@/usage/useGroupLabeler";
 
@@ -13,7 +13,8 @@ const LIMIT = 5;
  * leaderboards, which rank by request count.
  */
 export function ErrorHotspots() {
-	const { groups } = useUsageOverview(DIMENSION);
+	// Week-scoped like the rest of the dashboard's traffic band.
+	const { groups } = useUsageOverview(DIMENSION, resolveWindow("week"));
 	const labelFor = useGroupLabeler(DIMENSION);
 
 	const hotspots = groups
@@ -25,7 +26,9 @@ export function ErrorHotspots() {
 		<div className="rounded-lg border border-border bg-card">
 			<div className="flex items-center justify-between border-b border-border px-4 py-2.5">
 				<h2 className="text-sm font-medium text-foreground">Error hotspots</h2>
-				<span className="text-[11px] text-muted-foreground">by model</span>
+				<span className="text-[11px] text-muted-foreground">
+					by model · this week
+				</span>
 			</div>
 
 			{hotspots.length === 0 ? (

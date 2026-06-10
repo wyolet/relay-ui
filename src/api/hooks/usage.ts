@@ -1,7 +1,19 @@
-import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
+import {
+	queryOptions,
+	useSuspenseQueries,
+	useSuspenseQuery,
+} from "@tanstack/react-query";
 import { apiClient } from "@/api/client";
 import { ApiError } from "@/api/types/errors";
 import type { components, operations } from "@/api/types.gen";
+import { compareValue, type DeltaResult } from "@/lib/usage-math/delta";
+import { type LatencyRung, latencyLadder } from "@/lib/usage-math/latency";
+import {
+	mergeMeters,
+	splitTokens,
+	type TokenSplit,
+} from "@/lib/usage-math/tokens";
+import { comparisonWindows, type IsoWindow } from "@/lib/usage-math/window";
 
 // --- Schema-derived types ---
 
@@ -30,12 +42,34 @@ export type UsageInterval = (typeof USAGE_INTERVALS)[number];
 
 // --- Query options ---
 
-export function usageSummaryQueryOptions(groupBy: UsageGroupBy) {
+/** Absolute [from, to) window scoping a usage query. Omit for the server
+ * default (`since=1h`) — always pass one for anything user-facing. */
+export type UsageWindow = IsoWindow;
+
+type UsageSummaryQuery = NonNullable<
+	operations["usage_summary"]["parameters"]["query"]
+>;
+
+export function usageSummaryQueryOptions(
+	groupBy: UsageGroupBy,
+	win?: UsageWindow,
+) {
 	return queryOptions({
-		queryKey: ["usage", "summary", groupBy] as const,
+		queryKey: [
+			"usage",
+			"summary",
+			groupBy,
+			win?.from ?? "default",
+			win?.to ?? "default",
+		] as const,
 		queryFn: async (): Promise<UsageSummaryResult> => {
+			const query: UsageSummaryQuery = { group_by: groupBy };
+			if (win) {
+				query.from = win.from;
+				query.to = win.to;
+			}
 			const { data, error } = await apiClient.GET("/usage/summary", {
-				params: { query: { group_by: groupBy } },
+				params: { query },
 			});
 			if (error) throw new ApiError(0, error.error);
 			return data;
@@ -46,10 +80,6 @@ export function usageSummaryQueryOptions(groupBy: UsageGroupBy) {
 }
 
 // --- Per-resource usage (scoped /usage/summary) ---
-
-type UsageSummaryQuery = NonNullable<
-	operations["usage_summary"]["parameters"]["query"]
->;
 
 /** A resource whose usage we can scope by id via the matching filter param. */
 export type ResourceUsageDimension = "host_id" | "model_id" | "policy_id";
@@ -342,9 +372,7 @@ function deriveStacked(
 		}
 	}
 
-	const series = ranked
-		.filter(([k]) => keep.has(k))
-		.map(([k]) => k);
+	const series = ranked.filter(([k]) => keep.has(k)).map(([k]) => k);
 	if (hasOther) series.push(OTHER_KEY);
 	const points = order.map((epoch) => byEpoch.get(epoch) as StackedPoint);
 	return { points, series };
@@ -383,7 +411,9 @@ export function useStackedTimeline(
 ): StackedTimeline {
 	// Window resolution (quantized → stable key) lives here, not in the route.
 	const win = resolveWindow(range, customFrom, customTo);
-	const { data } = useSuspenseQuery(stackedTimeseriesQueryOptions(groupBy, win));
+	const { data } = useSuspenseQuery(
+		stackedTimeseriesQueryOptions(groupBy, win),
+	);
 	const { points, series } = deriveStacked(
 		data.rows,
 		groupBy,
@@ -527,8 +557,8 @@ function sumTokens(tokens: { [key: string]: number } | undefined): number {
  * Overview for the dashboard: KPIs + a ranked leaderboard for one dimension,
  * derived from the same summary query the detail table uses.
  */
-export function useUsageOverview(groupBy: UsageGroupBy) {
-	const { data } = useSuspenseQuery(usageSummaryQueryOptions(groupBy));
+export function useUsageOverview(groupBy: UsageGroupBy, win?: UsageWindow) {
+	const { data } = useSuspenseQuery(usageSummaryQueryOptions(groupBy, win));
 	const rows = data.rows ?? [];
 	return {
 		from: data.from,
@@ -536,6 +566,119 @@ export function useUsageOverview(groupBy: UsageGroupBy) {
 		kpis: deriveKpis(rows),
 		groups: deriveGroupStats(rows, groupBy),
 	};
+}
+
+/**
+ * Current + previous comparison windows for a usage window, with "now"
+ * quantized so query keys stay byte-stable across renders (see quantizedNow).
+ * Shared by the deltas hook and route loaders so both hit the same cache entry.
+ */
+export function usageComparisonWindows(win: UsageWindow) {
+	return comparisonWindows(win, quantizedNow().toISOString());
+}
+
+/** Period-over-period movement for each KPI, plus whether a baseline exists. */
+export interface UsageKpiDeltas {
+	/** False when the previous window saw no traffic — hide deltas, don't show "+∞". */
+	hasBaseline: boolean;
+	requests: DeltaResult;
+	errors: DeltaResult;
+	errorRate: DeltaResult;
+	avgMs: DeltaResult;
+	tokens: DeltaResult;
+	/** The window the comparison ran against (elapsed-matched, see usage-math). */
+	previous: UsageWindow;
+}
+
+/**
+ * useUsageOverview plus KPI deltas vs the preceding period. Fetches the two
+ * windows in parallel; the current-window query is the same cache entry the
+ * leaderboard uses, so the second fetch is the only added cost.
+ */
+export function useUsageOverviewWithDeltas(
+	groupBy: UsageGroupBy,
+	win: UsageWindow,
+) {
+	const { previous } = usageComparisonWindows(win);
+	const [current, prior] = useSuspenseQueries({
+		queries: [
+			usageSummaryQueryOptions(groupBy, win),
+			usageSummaryQueryOptions(groupBy, previous),
+		],
+	});
+	const rows = current.data.rows ?? [];
+	const kpis = deriveKpis(rows);
+	const prevKpis = deriveKpis(prior.data.rows ?? []);
+	const deltas: UsageKpiDeltas = {
+		hasBaseline: prevKpis.requests > 0,
+		requests: compareValue(kpis.requests, prevKpis.requests),
+		errors: compareValue(kpis.errors, prevKpis.errors),
+		errorRate: compareValue(kpis.errorRate, prevKpis.errorRate),
+		avgMs: compareValue(kpis.avgMs, prevKpis.avgMs),
+		tokens: compareValue(kpis.tokens, prevKpis.tokens),
+		previous,
+	};
+	return {
+		from: current.data.from,
+		to: current.data.to,
+		kpis,
+		groups: deriveGroupStats(rows, groupBy),
+		deltas,
+	};
+}
+
+// --- Ungrouped totals (overall latency percentiles, token meters) ---
+
+/**
+ * Summary with no group_by: the server returns a single ungrouped totals row.
+ * This is the only honest source for whole-relay latency percentiles —
+ * per-group percentiles cannot be merged after the fact.
+ */
+export function usageTotalsQueryOptions(win: UsageWindow) {
+	return queryOptions({
+		queryKey: ["usage", "totals", win.from, win.to] as const,
+		queryFn: async (): Promise<UsageSummaryResult> => {
+			const { data, error } = await apiClient.GET("/usage/summary", {
+				params: { query: { from: win.from, to: win.to } },
+			});
+			if (error) throw new ApiError(0, error.error);
+			return data;
+		},
+		staleTime: 15_000,
+		gcTime: 5 * 60_000,
+	});
+}
+
+/** Whole-relay latency distribution over a window; null when no traffic. */
+export interface LatencyProfile {
+	/** p50 → max, each with its share of the largest rung (see usage-math). */
+	ladder: LatencyRung[];
+	avgMs: number;
+	requests: number;
+}
+
+export function useLatencyProfile(win: UsageWindow): LatencyProfile | null {
+	const { data } = useSuspenseQuery(usageTotalsQueryOptions(win));
+	const row = (data.rows ?? [])[0];
+	if (!row || row.requests === 0) return null;
+	return {
+		ladder: latencyLadder(row.duration_ms),
+		avgMs: row.duration_ms.avg,
+		requests: row.requests,
+	};
+}
+
+/**
+ * Input/output token split for the window, summed across the same grouped
+ * summary the KPI cards and leaderboard read — shared cache entry, no extra
+ * request (meter sums are group-independent).
+ */
+export function useTokenSplit(
+	groupBy: UsageGroupBy,
+	win: UsageWindow,
+): TokenSplit {
+	const { data } = useSuspenseQuery(usageSummaryQueryOptions(groupBy, win));
+	return splitTokens(mergeMeters((data.rows ?? []).map((r) => r.tokens)));
 }
 
 /**

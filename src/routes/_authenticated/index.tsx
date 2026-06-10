@@ -1,6 +1,7 @@
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { relayKeysListQueryOptions } from "@/api/hooks/relayKeys";
+import { resolveWindow, useStackedTimeline } from "@/api/hooks/usage";
 import { DashboardKpis } from "@/dashboard/DashboardKpis";
 import { ErrorHotspots } from "@/dashboard/ErrorHotspots";
 import { HealthStrip } from "@/dashboard/HealthStrip";
@@ -9,7 +10,6 @@ import { useCatalogCounts } from "@/dashboard/useCatalogCounts";
 import { PageLoader } from "@/shared/Spinner";
 import { useSetupStore } from "@/stores/setup";
 import { StackedUsageChart } from "@/usage/StackedUsageChart";
-import { useStackedTimeline } from "@/api/hooks/usage";
 import { UsageTopGroups } from "@/usage/UsageTopGroups";
 
 export const Route = createFileRoute("/_authenticated/")({
@@ -69,6 +69,9 @@ function TrafficSkeleton() {
 }
 
 function TrafficBand() {
+	// The whole traffic band reads "this week" — KPIs, chart, leaderboards,
+	// hotspots — so the numbers agree with each other at a glance.
+	const win = resolveWindow("week");
 	return (
 		<section className="grid gap-4 xl:grid-cols-[2fr_1fr]">
 			<div className="flex flex-col gap-4">
@@ -89,8 +92,8 @@ function TrafficBand() {
 				</div>
 			</div>
 			<aside className="flex flex-col gap-4">
-				<UsageTopGroups groupBy="model_id" limit={5} />
-				<UsageTopGroups groupBy="host_id" limit={5} />
+				<UsageTopGroups groupBy="model_id" limit={5} win={win} />
+				<UsageTopGroups groupBy="host_id" limit={5} win={win} />
 				<ErrorHotspots />
 			</aside>
 		</section>

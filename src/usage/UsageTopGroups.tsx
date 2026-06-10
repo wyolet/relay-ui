@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import {
 	type UsageGroupBy,
 	type UsageGroupStat,
+	type UsageWindow,
 	useUsageOverview,
 } from "@/api/hooks/usage";
 import { dimensionLabel, fmtCompact, fmtMs, fmtPct } from "./format";
@@ -19,11 +20,14 @@ import { useGroupLogo } from "./useGroupLogo";
 export function UsageTopGroups({
 	groupBy,
 	limit,
+	win,
 }: {
 	groupBy: UsageGroupBy;
 	limit?: number;
+	/** Window to rank within; omit for the server's default window. */
+	win?: UsageWindow;
 }) {
-	const { groups } = useUsageOverview(groupBy);
+	const { groups } = useUsageOverview(groupBy, win);
 	const labelFor = useGroupLabeler(groupBy);
 	const logoFor = useGroupLogo(groupBy, 24);
 
@@ -111,7 +115,11 @@ function GroupRow({
 						{label}
 					</span>
 					<dl className="mt-0.5 flex items-center gap-2 text-[11px] tabular-nums text-muted-foreground">
-						<SubStat label="err" value={fmtPct(stat.errorRate)} tone={errTone} />
+						<SubStat
+							label="err"
+							value={fmtPct(stat.errorRate)}
+							tone={errTone}
+						/>
 						<span className="text-border">·</span>
 						<SubStat label="p95" value={fmtMs(stat.duration.p95)} />
 						<span className="text-border">·</span>
