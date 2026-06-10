@@ -3,6 +3,22 @@ import { CalendarDays, ScrollText } from "lucide-react";
 import { Suspense } from "react";
 import type { DateRange } from "react-day-picker";
 import { z } from "zod";
+import {
+	resolveWindow,
+	stackedTimeseriesQueryOptions,
+	USAGE_GROUP_BY,
+	USAGE_METRICS,
+	USAGE_RANGE_LABELS,
+	USAGE_RANGES,
+	type UsageGroupBy,
+	type UsageRange,
+	type UsageWindow,
+	usageComparisonWindows,
+	usageSummaryQueryOptions,
+	usageTotalsQueryOptions,
+	useStackedTimeline,
+	useUsageOverviewWithDeltas,
+} from "@/api/hooks/usage";
 import { Calendar } from "@/components/ui/calendar";
 import {
 	Popover,
@@ -16,26 +32,12 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import {
-	ToggleGroup,
-	ToggleGroupItem,
-} from "@/components/ui/toggle-group";
-import {
-	stackedTimeseriesQueryOptions,
-	USAGE_GROUP_BY,
-	USAGE_METRICS,
-	USAGE_RANGE_LABELS,
-	USAGE_RANGES,
-	type UsageGroupBy,
-	type UsageRange,
-	resolveWindow,
-	usageSummaryQueryOptions,
-	useStackedTimeline,
-	useUsageOverview,
-} from "@/api/hooks/usage";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { PageLoader } from "@/shared/Spinner";
-import { dimensionLabel } from "@/usage/format";
+import { dimensionLabel, RANGE_COMPARE_LABELS } from "@/usage/format";
+import { LatencyProfileCard } from "@/usage/LatencyProfileCard";
 import { StackedUsageChart } from "@/usage/StackedUsageChart";
+import { TokenSplitCard } from "@/usage/TokenSplitCard";
 import { UsageStatCards } from "@/usage/UsageStatCards";
 import { UsageTopGroups } from "@/usage/UsageTopGroups";
 
@@ -54,11 +56,19 @@ export const Route = createFileRoute("/_authenticated/usage")({
 	loaderDeps: ({ search }) => search,
 	loader: ({ context, deps }) => {
 		const { queryClient } = context;
-		void queryClient.ensureQueryData(usageSummaryQueryOptions(deps.group_by));
 		const win = resolveWindow(deps.range, deps.from, deps.to);
+		// Same windows the KPI/leaderboard hooks derive → same cache entries.
+		const { previous } = usageComparisonWindows(win);
+		void queryClient.ensureQueryData(
+			usageSummaryQueryOptions(deps.group_by, win),
+		);
+		void queryClient.ensureQueryData(
+			usageSummaryQueryOptions(deps.group_by, previous),
+		);
 		void queryClient.ensureQueryData(
 			stackedTimeseriesQueryOptions(deps.group_by, win),
 		);
+		void queryClient.ensureQueryData(usageTotalsQueryOptions(win));
 	},
 	component: UsagePage,
 });
@@ -70,6 +80,10 @@ function UsagePage() {
 
 	const setSearch = (patch: Partial<UsageSearch>) =>
 		void navigate({ to: "/usage", search: { ...search, ...patch } });
+
+	// One window for KPIs + leaderboard, matching the chart's (which resolves
+	// the same inputs inside useStackedTimeline).
+	const win: UsageWindow = resolveWindow(range, search.from, search.to);
 
 	return (
 		<div className="flex flex-col gap-4">
@@ -116,15 +130,27 @@ function UsagePage() {
 			</div>
 
 			<Suspense fallback={<Loading />}>
-				<KpiHeader groupBy={group_by} />
+				<KpiHeader groupBy={group_by} win={win} range={range} />
 			</Suspense>
 
-			<div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.6fr_1fr]">
+			{/* items-start: without it the grid stretches the chart card to the
+			    leaderboard's height, so the chart appears to resize as the
+			    leaderboard grows/shrinks. */}
+			<div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[1.6fr_1fr]">
 				<Suspense fallback={<Loading />}>
 					<Chart search={search} />
 				</Suspense>
 				<Suspense fallback={<Loading />}>
-					<UsageTopGroups groupBy={group_by} />
+					<UsageTopGroups groupBy={group_by} win={win} />
+				</Suspense>
+			</div>
+
+			<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+				<Suspense fallback={<Loading />}>
+					<LatencyProfileCard win={win} />
+				</Suspense>
+				<Suspense fallback={<Loading />}>
+					<TokenSplitCard groupBy={group_by} win={win} />
 				</Suspense>
 			</div>
 		</div>
@@ -182,9 +208,23 @@ function Chart({ search }: { search: UsageSearch }) {
 
 /** KPI cards share the summary query with the breakdown; group_by doesn't
  * change the aggregate totals, so the cards are stable across dimensions. */
-function KpiHeader({ groupBy }: { groupBy: UsageGroupBy }) {
-	const { kpis } = useUsageOverview(groupBy);
-	return <UsageStatCards kpis={kpis} />;
+function KpiHeader({
+	groupBy,
+	win,
+	range,
+}: {
+	groupBy: UsageGroupBy;
+	win: UsageWindow;
+	range: UsageRange;
+}) {
+	const { kpis, deltas } = useUsageOverviewWithDeltas(groupBy, win);
+	return (
+		<UsageStatCards
+			kpis={kpis}
+			deltas={deltas}
+			compareLabel={RANGE_COMPARE_LABELS[range]}
+		/>
+	);
 }
 
 /** Preset range buttons + a custom date-range expander. */
@@ -249,7 +289,10 @@ function CustomRangePopover({
 	return (
 		<Popover>
 			<PopoverTrigger className="inline-flex h-7 items-center gap-1.5 rounded-md border border-border bg-card px-2.5 text-xs font-medium text-foreground hover:bg-muted">
-				<CalendarDays className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />
+				<CalendarDays
+					className="h-3.5 w-3.5 text-muted-foreground"
+					aria-hidden
+				/>
 				{label}
 			</PopoverTrigger>
 			<PopoverContent align="end" className="w-auto p-0">
