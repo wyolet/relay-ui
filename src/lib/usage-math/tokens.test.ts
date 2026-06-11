@@ -62,6 +62,21 @@ describe("splitTokens", () => {
 	test("empty map → all zeroes", () => {
 		const split = splitTokens({});
 		expect(split.total).toBe(0);
+		expect(split.cached).toBe(0);
 		expect(split.meters).toEqual([]);
+	});
+
+	test("cache meters count inside input and are tracked separately", () => {
+		const split = splitTokens({
+			input: 200,
+			cache_read: 5000,
+			cache_creation: 300,
+			output: 50,
+		});
+		expect(split.input).toBe(5500);
+		expect(split.cached).toBe(5300);
+		// Raw prompt volume = input minus cache.
+		expect(split.input - split.cached).toBe(200);
+		expect(split.output).toBe(50);
 	});
 });

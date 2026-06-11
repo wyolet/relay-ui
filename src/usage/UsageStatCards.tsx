@@ -57,6 +57,7 @@ export function UsageStatCards({
 				icon={Coins}
 				label="Tokens"
 				value={fmtCompact(kpis.tokens)}
+				hint={`raw ${fmtCompact(kpis.rawInput)} in · ${fmtCompact(kpis.rawOutput)} out`}
 				delta={d && deltaChip(d.tokens, "pct", "neutral", compareLabel)}
 			/>
 			{cost}

@@ -411,7 +411,12 @@ export interface UsageKpis {
 	errors: number;
 	errorRate: number; // 0..1
 	avgMs: number; // request-weighted mean latency
+	/** All meters summed — the billable volume (cache reads included). */
 	tokens: number;
+	/** Freshly processed prompt tokens (input minus cache meters). */
+	rawInput: number;
+	/** Generated tokens (completion/output/reasoning meters). */
+	rawOutput: number;
 }
 
 /** One leaderboard entry: a group's totals plus its share of peak volume. */
@@ -437,20 +442,21 @@ export interface UsageTimelinePoint {
 function deriveKpis(rows: UsageSummaryRow[]): UsageKpis {
 	let requests = 0;
 	let errors = 0;
-	let tokens = 0;
 	let weightedMs = 0;
 	for (const r of rows) {
 		requests += r.requests;
 		errors += r.error_count;
-		tokens += sumTokens(r.tokens);
 		weightedMs += r.duration_ms.avg * r.requests;
 	}
+	const split = splitTokens(mergeMeters(rows.map((r) => r.tokens)));
 	return {
 		requests,
 		errors,
 		errorRate: requests > 0 ? errors / requests : 0,
 		avgMs: requests > 0 ? weightedMs / requests : 0,
-		tokens,
+		tokens: split.total,
+		rawInput: split.input - split.cached,
+		rawOutput: split.output,
 	};
 }
 

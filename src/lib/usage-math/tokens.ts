@@ -19,6 +19,10 @@ export interface TokenSplit {
 	output: number;
 	other: number;
 	total: number;
+	/** Cache meters (cache_read, cache_creation, …), already counted inside
+	 * `input` — they bill on the input side but aren't freshly processed
+	 * text. `input - cached` is the raw prompt volume. */
+	cached: number;
 	/** Per-meter totals, largest first. */
 	meters: MeterTotal[];
 }
@@ -59,10 +63,13 @@ export function splitTokens(tokens: Record<string, number>): TokenSplit {
 	let input = 0;
 	let output = 0;
 	let other = 0;
+	let cached = 0;
 	for (const m of meters) {
-		if (m.kind === "input") input += m.count;
-		else if (m.kind === "output") output += m.count;
+		if (m.kind === "input") {
+			input += m.count;
+			if (/cache/i.test(m.meter)) cached += m.count;
+		} else if (m.kind === "output") output += m.count;
 		else other += m.count;
 	}
-	return { input, output, other, total: input + output + other, meters };
+	return { input, output, other, total: input + output + other, cached, meters };
 }

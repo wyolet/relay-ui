@@ -25,8 +25,10 @@ export function fmtPct(ratio: number): string {
 	return `${pct.toLocaleString(undefined, { maximumFractionDigits: digits })}%`;
 }
 
-/** Large counts → "4.1M" / "12.4k". */
+/** Large counts → "1.3B" / "4.1M" / "12.4k". */
 export function fmtCompact(n: number): string {
+	if (n >= 1_000_000_000)
+		return `${(n / 1_000_000_000).toLocaleString(undefined, { maximumFractionDigits: 1 })}B`;
 	if (n >= 1_000_000)
 		return `${(n / 1_000_000).toLocaleString(undefined, { maximumFractionDigits: 1 })}M`;
 	if (n >= 1_000)
