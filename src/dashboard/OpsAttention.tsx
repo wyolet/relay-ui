@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { CircleCheck, KeyRound, ShieldAlert } from "lucide-react";
+import { CircleCheck, ShieldAlert } from "lucide-react";
 import { type ReactNode, Suspense } from "react";
 import { cn } from "@/lib/utils";
 import { fmtCompact, fmtPct } from "@/usage/format";
@@ -38,8 +38,9 @@ export function OpsAttention() {
 	);
 }
 
-/** Title row plus the useful remnants of the old health strip: master-key
- * state, version, and subsystem pills — the latter only when not OK. */
+/** Title row plus the useful remnants of the old health strip. Quiet when
+ * fine: subsystem pills and the master-key warning only appear degraded —
+ * a healthy system shows just the title and the relay version. */
 function OpsHeader() {
 	const { subsystems, masterKeyConfigured, version } = useDashboardHealth();
 	const unhealthy = subsystems.filter((s) => s.status !== "ok");
@@ -48,7 +49,7 @@ function OpsHeader() {
 		<div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5">
 			<div className="flex items-baseline gap-2">
 				<h2 className="text-sm font-medium text-foreground">Operations</h2>
-				<span className="text-[11px] text-muted-foreground">last 24 h</span>
+				<span className="text-[11px] text-muted-foreground">last 24h</span>
 			</div>
 			<div className="flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
 				{unhealthy.map((s) => (
@@ -72,18 +73,20 @@ function OpsHeader() {
 						{s.label} {s.status === "error" ? "down" : "degraded"}
 					</span>
 				))}
-				{masterKeyConfigured === false ? (
-					<span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400">
+				{masterKeyConfigured === false && (
+					<span className="inline-flex items-center gap-1 font-medium text-amber-600 dark:text-amber-400">
 						<ShieldAlert className="size-3.5" aria-hidden="true" />
 						No master key
 					</span>
-				) : masterKeyConfigured ? (
-					<span className="inline-flex items-center gap-1">
-						<KeyRound className="size-3.5" aria-hidden="true" />
-						Master key set
+				)}
+				{version && (
+					<span
+						className="font-mono tabular-nums text-muted-foreground/70"
+						title="Relay version"
+					>
+						v{version.replace(/^v/, "")}
 					</span>
-				) : null}
-				{version && <span className="font-mono tabular-nums">{version}</span>}
+				)}
 			</div>
 		</div>
 	);
@@ -97,6 +100,7 @@ function RejectionsPanel() {
 		<PanelShell
 			title="Client errors"
 			count={buckets.total}
+			tone="warn"
 			footer={
 				buckets.total > 0 && (
 					<Link
@@ -110,7 +114,7 @@ function RejectionsPanel() {
 			}
 		>
 			{buckets.total === 0 ? (
-				<AllClear>No rejected requests in the last 24 h.</AllClear>
+				<AllClear>No rejected requests in the last 24h.</AllClear>
 			) : (
 				<>
 					<div className="flex flex-wrap items-center gap-1.5 px-4 pb-1.5">
@@ -160,7 +164,7 @@ function RejectionsPanel() {
 }
 
 /** One rejection-kind count, linking to exactly those statuses in logs.
- * Muted at zero so the eye lands on the bucket that's actually firing. */
+ * Buckets at zero render nothing — the eye should land only on what fired. */
 function RejectionChip({
 	label,
 	hint,
@@ -172,13 +176,7 @@ function RejectionChip({
 	count: number;
 	statuses: number[];
 }) {
-	if (count === 0) {
-		return (
-			<span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground/60">
-				{label} <span className="tabular-nums">0</span>
-			</span>
-		);
-	}
+	if (count === 0) return null;
 	return (
 		<Link
 			to="/logs"
@@ -253,7 +251,7 @@ function DegradedHostsPanel() {
 	return (
 		<PanelShell title="Degraded hosts" count={hosts.length}>
 			{hosts.length === 0 ? (
-				<AllClear>No degraded hosts in the last 24 h.</AllClear>
+				<AllClear>No degraded hosts in the last 24h.</AllClear>
 			) : (
 				<ul className="divide-y divide-border/60">
 					{hosts.map((h) => (
@@ -292,12 +290,17 @@ function DegradedHostsPanel() {
 function PanelShell({
 	title,
 	count,
+	tone = "alert",
 	pending,
 	footer,
 	children,
 }: {
 	title: string;
 	count?: number;
+	/** Badge color when count > 0 — match the panel's severity (4xx
+	 * rejections are warnings; tripped breakers and degraded hosts are
+	 * incidents). */
+	tone?: "warn" | "alert";
 	pending?: boolean;
 	footer?: ReactNode;
 	children?: ReactNode;
@@ -310,13 +313,14 @@ function PanelShell({
 				</h3>
 				{pending ? (
 					<span className="text-[11px] text-muted-foreground">checking…</span>
-				) : count !== undefined ? (
+				) : count !== undefined && count > 0 ? (
+					// Zero needs no badge — the all-clear line below already says it.
 					<span
 						className={cn(
 							"rounded-full px-1.5 py-0.5 text-[11px] font-semibold tabular-nums",
-							count > 0
-								? "bg-destructive/10 text-destructive"
-								: "bg-muted text-muted-foreground",
+							tone === "warn"
+								? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+								: "bg-destructive/10 text-destructive",
 						)}
 					>
 						{fmtCompact(count)}
