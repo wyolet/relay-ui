@@ -982,26 +982,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/relay-keys/by-id/{id}/rotate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Rotate a relay-key (server generates a new plaintext)
-         * @description Generates a fresh bearer token server-side, replaces the stored hash + display prefix, and returns the new plaintext once. The old token stops authenticating within ~1s fleet-wide. Revoked keys cannot be rotated — create a new key instead.
-         */
-        post: operations["rotate_relay_key"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/relay-keys/{ref}": {
         parameters: {
             query?: never;
@@ -1300,7 +1280,7 @@ export interface paths {
         };
         /**
          * Aggregated usage rows grouped by a chosen dimension
-         * @description Filters the post-flight stream, groups by group_by, and returns per-group totals (requests, tokens, latency percentiles, error count). Rows sorted by request count descending.
+         * @description Filters the post-flight stream, groups by group_by, and returns per-group totals (requests, tokens, latency percentiles, TTFT percentiles when available, error count). Rows sorted by request count descending. Requests rejected before reaching an upstream (status 0 with an error kind) are excluded — see /usage/events or /logs for those.
          */
         get: operations["usage_summary"];
         put?: never;
@@ -1320,7 +1300,7 @@ export interface paths {
         };
         /**
          * Time-bucketed usage aggregates for charting
-         * @description Buckets the filtered stream by `interval` (epoch-aligned) and returns per-bucket requests, error_count, and token sums. With `group_by` set, returns one series per dimension value for stacked charts; empty returns a single series. Empty buckets are omitted — zero-fill against the returned from/to range.
+         * @description Buckets the filtered stream by `interval` (epoch-aligned) and returns per-bucket requests, error_count (with a 4xx/5xx split), token sums, duration_ms percentiles, and ttft_ms percentiles (omitted when no event in the bucket has upstream timing). With `group_by` set, returns one series per dimension value for stacked charts; empty returns a single series. Empty buckets are omitted — zero-fill against the returned from/to range.
          */
         get: operations["usage_timeseries"];
         put?: never;
@@ -1389,6 +1369,11 @@ export interface components {
         Event: {
             /** Format: int64 */
             attempts?: number;
+            cost_breakdown?: {
+                [key: string]: number;
+            };
+            /** Format: int64 */
+            cost_nanos?: number;
             /** Format: int64 */
             duration_ms: number;
             error_kind?: string;
@@ -1397,10 +1382,15 @@ export interface components {
                 [key: string]: string;
             };
             finish_reason?: string;
+            host?: string;
             host_id?: string;
             host_key_id?: string;
+            model?: string;
             model_id?: string;
+            policy?: string;
             policy_id?: string;
+            pricing?: string;
+            provider?: string;
             reasoning?: components["schemas"]["ReasoningTiming"];
             relay_key_hash?: string;
             request_id: string;
@@ -1409,6 +1399,9 @@ export interface components {
             /** Format: int64 */
             status: number;
             streamed?: boolean;
+            tags?: {
+                [key: string]: string;
+            };
             tokens?: {
                 [key: string]: number;
             };
@@ -2136,6 +2129,8 @@ export interface components {
             to: string;
         };
         SummaryRow: {
+            /** Format: int64 */
+            cost_nanos: number;
             duration_ms: components["schemas"]["DurationStats"];
             /** Format: int64 */
             error_count: number;
@@ -2151,6 +2146,9 @@ export interface components {
             tokens: {
                 [key: string]: number;
             };
+            ttft_ms?: components["schemas"]["DurationStats"];
+            /** Format: int64 */
+            unpriced: number;
         };
         Telemetry: {
             environment?: string;
@@ -2160,12 +2158,22 @@ export interface components {
             /** Format: date-time */
             bucket: string;
             /** Format: int64 */
+            cost_nanos: number;
+            duration_ms: components["schemas"]["DurationStats"];
+            /** Format: int64 */
             error_count: number;
+            /** Format: int64 */
+            errors_4xx: number;
+            /** Format: int64 */
+            errors_5xx: number;
             /** Format: int64 */
             requests: number;
             tokens: {
                 [key: string]: number;
             };
+            ttft_ms?: components["schemas"]["DurationStats"];
+            /** Format: int64 */
+            unpriced: number;
         };
         TimeSeriesResult: {
             /**
@@ -2591,16 +2599,6 @@ export interface components {
             readonly $schema?: string;
             /** @description New cleartext credential. */
             value: string;
-        };
-        rotateRelayKeyResponseBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example https://example.com/schemas/rotateRelayKeyResponseBody.json
-             */
-            readonly $schema?: string;
-            plaintext: string;
-            relayKey: components["schemas"]["RelayKey"];
         };
         settingsCatalogItem: {
             description?: string;
@@ -4429,6 +4427,14 @@ export interface operations {
                 host_key_id?: string[] | null;
                 /** @description Match any of the model strings as the caller sent them. */
                 requested_model?: string[] | null;
+                /** @description Match any of the given model slugs (event-time metadata.name, denormalized). */
+                model?: string[] | null;
+                /** @description Match any of the given host slugs (event-time metadata.name, denormalized). */
+                host?: string[] | null;
+                /** @description Match any of the given policy slugs (event-time metadata.name, denormalized). */
+                policy?: string[] | null;
+                /** @description Match any of the given provider slugs (event-time, denormalized). */
+                provider?: string[] | null;
                 /** @description Match any of these exact HTTP status codes. */
                 status?: number[] | null;
                 /** @description Convenience status band: "2xx" | "4xx" | "5xx". Sets status_min/max. */
@@ -4449,6 +4455,8 @@ export interface operations {
                 ttft_ms_max?: number;
                 /** @description Free-text substring across request_id, model_id, requested_model, source. */
                 q?: string;
+                /** @description Caller-tag filter as "key:value" (repeatable). Same key repeated matches any of its values; different keys must all match. */
+                tag?: string[] | null;
                 /** @description Cap on returned records (page size). Default 100, max 10000. */
                 limit?: number;
                 /** @description Opaque pagination cursor from a previous response's next_cursor. Returns the next (older) page. */
@@ -7297,74 +7305,6 @@ export interface operations {
             };
         };
     };
-    rotate_relay_key: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description RelayKey id (UUIDv7). */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["rotateRelayKeyResponseBody"];
-                };
-            };
-            /** @description Bad Request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OpenAIError"];
-                };
-            };
-            /** @description Unauthorized */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OpenAIError"];
-                };
-            };
-            /** @description Not Found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OpenAIError"];
-                };
-            };
-            /** @description Unprocessable Entity */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OpenAIError"];
-                };
-            };
-            /** @description Internal Server Error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OpenAIError"];
-                };
-            };
-        };
-    };
     "get_relay-key": {
         parameters: {
             query?: never;
@@ -8355,6 +8295,14 @@ export interface operations {
                 host_key_id?: string[] | null;
                 /** @description Match any of the model strings as the caller sent them. */
                 requested_model?: string[] | null;
+                /** @description Match any of the given model slugs (event-time metadata.name, denormalized). */
+                model?: string[] | null;
+                /** @description Match any of the given host slugs (event-time metadata.name, denormalized). */
+                host?: string[] | null;
+                /** @description Match any of the given policy slugs (event-time metadata.name, denormalized). */
+                policy?: string[] | null;
+                /** @description Match any of the given provider slugs (event-time, denormalized). */
+                provider?: string[] | null;
                 /** @description Match any of these exact HTTP status codes. */
                 status?: number[] | null;
                 /** @description Convenience status band: "2xx" | "4xx" | "5xx". Sets status_min/max. */
@@ -8375,6 +8323,8 @@ export interface operations {
                 ttft_ms_max?: number;
                 /** @description Free-text substring across request_id, model_id, requested_model, source. */
                 q?: string;
+                /** @description Caller-tag filter as "key:value" (repeatable). Same key repeated matches any of its values; different keys must all match. */
+                tag?: string[] | null;
                 /** @description Cap on returned events (page size). Default 100, max 10000. */
                 limit?: number;
                 /** @description Opaque pagination cursor from a previous response's next_cursor. Returns the next (older) page. */
@@ -8466,6 +8416,14 @@ export interface operations {
                 host_key_id?: string[] | null;
                 /** @description Match any of the model strings as the caller sent them. */
                 requested_model?: string[] | null;
+                /** @description Match any of the given model slugs (event-time metadata.name, denormalized). */
+                model?: string[] | null;
+                /** @description Match any of the given host slugs (event-time metadata.name, denormalized). */
+                host?: string[] | null;
+                /** @description Match any of the given policy slugs (event-time metadata.name, denormalized). */
+                policy?: string[] | null;
+                /** @description Match any of the given provider slugs (event-time, denormalized). */
+                provider?: string[] | null;
                 /** @description Match any of these exact HTTP status codes. */
                 status?: number[] | null;
                 /** @description Convenience status band: "2xx" | "4xx" | "5xx". Sets status_min/max. */
@@ -8486,7 +8444,9 @@ export interface operations {
                 ttft_ms_max?: number;
                 /** @description Free-text substring across request_id, model_id, requested_model, source. */
                 q?: string;
-                /** @description "source" (default) | "model_id" | "host_id" | "policy_id" | "relay_key_hash" | "host_key_id". */
+                /** @description Caller-tag filter as "key:value" (repeatable). Same key repeated matches any of its values; different keys must all match. */
+                tag?: string[] | null;
+                /** @description "source" (default) | "model" | "host" | "policy" | "provider" (event-time slugs) | "model_id" | "host_id" | "policy_id" | "relay_key_hash" | "host_key_id" | "finish_reason" | "error_kind" | "tags.<key>" (group by a caller tag's value). */
                 group_by?: string;
             };
             header?: never;
@@ -8575,6 +8535,14 @@ export interface operations {
                 host_key_id?: string[] | null;
                 /** @description Match any of the model strings as the caller sent them. */
                 requested_model?: string[] | null;
+                /** @description Match any of the given model slugs (event-time metadata.name, denormalized). */
+                model?: string[] | null;
+                /** @description Match any of the given host slugs (event-time metadata.name, denormalized). */
+                host?: string[] | null;
+                /** @description Match any of the given policy slugs (event-time metadata.name, denormalized). */
+                policy?: string[] | null;
+                /** @description Match any of the given provider slugs (event-time, denormalized). */
+                provider?: string[] | null;
                 /** @description Match any of these exact HTTP status codes. */
                 status?: number[] | null;
                 /** @description Convenience status band: "2xx" | "4xx" | "5xx". Sets status_min/max. */
@@ -8595,9 +8563,11 @@ export interface operations {
                 ttft_ms_max?: number;
                 /** @description Free-text substring across request_id, model_id, requested_model, source. */
                 q?: string;
+                /** @description Caller-tag filter as "key:value" (repeatable). Same key repeated matches any of its values; different keys must all match. */
+                tag?: string[] | null;
                 /** @description Bucket width (e.g. "5m", "1h", "1d"). Required. */
                 interval?: string;
-                /** @description Optional dimension to split series by: "source" | "model_id" | "host_id" | "policy_id" | "relay_key_hash" | "host_key_id". Empty returns a single series. */
+                /** @description Optional dimension to split series by: "source" | "model" | "host" | "policy" | "provider" (event-time slugs) | "model_id" | "host_id" | "policy_id" | "relay_key_hash" | "host_key_id" | "finish_reason" | "error_kind" | "tags.<key>". Empty returns a single series. */
                 group_by?: string;
             };
             header?: never;

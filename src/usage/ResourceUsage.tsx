@@ -115,19 +115,18 @@ function CardsSkeleton() {
 				"Tokens",
 				"Est. spend · 1h",
 			].map((l) => (
-					<div
-						key={l}
-						className="rounded-md border border-border bg-card px-3 py-2"
-					>
-						<div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-							{l}
-						</div>
-						<div className="mt-0.5 text-lg font-semibold text-muted-foreground tabular-nums">
-							…
-						</div>
+				<div
+					key={l}
+					className="rounded-md border border-border bg-card px-3 py-2"
+				>
+					<div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+						{l}
 					</div>
-				),
-			)}
+					<div className="mt-0.5 text-lg font-semibold text-muted-foreground tabular-nums">
+						…
+					</div>
+				</div>
+			))}
 		</div>
 	);
 }

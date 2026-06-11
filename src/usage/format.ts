@@ -41,10 +41,6 @@ export function fmtMs(ms: number): string {
 	return `${Math.round(ms)} ms`;
 }
 
-/** Why the cost metric is unavailable for key/policy/source dimensions. */
-export const COST_DIMENSION_HINT =
-	"Cost needs Model or Host grouping — the relay doesn't record which host served each key or policy request.";
-
 /** Money with adaptive precision; falls back when the code isn't ISO-valid. */
 export function fmtMoney(amount: number, currency: string): string {
 	const digits = amount !== 0 && Math.abs(amount) < 1 ? 4 : 2;

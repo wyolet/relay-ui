@@ -34,20 +34,15 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import type { CostStackDimension } from "@/lib/usage-math/pricing";
 import { PageLoader } from "@/shared/Spinner";
 import { CostChart } from "@/usage/CostChart";
 import { CostKpiCard } from "@/usage/CostKpiCard";
-import {
-	COST_DIMENSION_HINT,
-	dimensionLabel,
-	RANGE_COMPARE_LABELS,
-} from "@/usage/format";
+import { dimensionLabel, RANGE_COMPARE_LABELS } from "@/usage/format";
 import { LatencyProfileCard } from "@/usage/LatencyProfileCard";
 import { StackedUsageChart } from "@/usage/StackedUsageChart";
 import { TokenSplitCard } from "@/usage/TokenSplitCard";
 import { UsageStatCards } from "@/usage/UsageStatCards";
-import { UsageTopGroups, UsageTopGroupsWithCost } from "@/usage/UsageTopGroups";
+import { UsageTopGroups } from "@/usage/UsageTopGroups";
 
 const searchSchema = z.object({
 	group_by: z.enum(USAGE_GROUP_BY).default("model_id"),
@@ -77,18 +72,9 @@ export const Route = createFileRoute("/_authenticated/usage")({
 			stackedTimeseriesQueryOptions(deps.group_by, win),
 		);
 		void queryClient.ensureQueryData(usageTotalsQueryOptions(win));
-		// Warms step one of the cost fan-out (active hosts); the per-host
-		// queries can't be prefetched here — the host list isn't known yet.
-		void queryClient.ensureQueryData(usageSummaryQueryOptions("host_id", win));
 	},
 	component: UsagePage,
 });
-
-/** Cost is only exact when every token bucket joins one binding's rates —
- * which needs a model or host grouping (see api/hooks/cost.ts). */
-function costDimension(groupBy: UsageGroupBy): CostStackDimension | null {
-	return groupBy === "model_id" || groupBy === "host_id" ? groupBy : null;
-}
 
 function UsagePage() {
 	const search = Route.useSearch();
@@ -101,13 +87,7 @@ function UsagePage() {
 	// One window for KPIs + leaderboard, matching the chart's (which resolves
 	// the same inputs inside useStackedTimeline).
 	const win: UsageWindow = resolveWindow(range, search.from, search.to);
-
-	// Cost isn't attributable for key/policy/source groupings — render as
-	// requests there (URL keeps metric=cost so flipping the dimension back
-	// restores it) and disable the toggle option with a hint.
-	const costDim = costDimension(group_by);
-	const metric: UsageSearch["metric"] =
-		search.metric === "cost" && !costDim ? "requests" : search.metric;
+	const metric = search.metric;
 
 	return (
 		<div className="flex flex-col gap-4">
@@ -142,8 +122,6 @@ function UsagePage() {
 						optionLabel={(m) =>
 							m === "tokens" ? "Tokens" : m === "cost" ? "Cost" : "Requests"
 						}
-						disabledOptions={costDim ? undefined : ["cost"]}
-						disabledTitle={COST_DIMENSION_HINT}
 						onChange={(m) => setSearch({ metric: m })}
 					/>
 					<div className="h-5 w-px bg-border" aria-hidden />
@@ -166,26 +144,19 @@ function UsagePage() {
 			    leaderboard grows/shrinks. */}
 			<div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[1.6fr_1fr]">
 				<Suspense fallback={<Loading />}>
-					{metric === "cost" && costDim ? (
+					{metric === "cost" ? (
 						<CostChart
-							groupBy={costDim}
+							groupBy={group_by}
 							range={range}
 							from={search.from}
 							to={search.to}
 						/>
 					) : (
-						<Chart
-							search={search}
-							metric={metric === "cost" ? "requests" : metric}
-						/>
+						<Chart search={search} metric={metric} />
 					)}
 				</Suspense>
 				<Suspense fallback={<Loading />}>
-					{costDim ? (
-						<UsageTopGroupsWithCost groupBy={costDim} win={win} />
-					) : (
-						<UsageTopGroups groupBy={group_by} win={win} />
-					)}
+					<UsageTopGroups groupBy={group_by} win={win} />
 				</Suspense>
 			</div>
 
@@ -368,16 +339,11 @@ function Segmented<T extends string>({
 	options,
 	optionLabel,
 	onChange,
-	disabledOptions,
-	disabledTitle,
 }: {
 	value: T;
 	options: readonly T[];
 	optionLabel: (v: T) => string;
 	onChange: (v: T) => void;
-	/** Options rendered but not selectable, with `disabledTitle` as tooltip. */
-	disabledOptions?: readonly T[];
-	disabledTitle?: string;
 }) {
 	return (
 		<ToggleGroup
@@ -389,20 +355,11 @@ function Segmented<T extends string>({
 				if (picked) onChange(picked as T);
 			}}
 		>
-			{options.map((o) => {
-				const disabled = disabledOptions?.includes(o) ?? false;
-				return (
-					<ToggleGroupItem
-						key={o}
-						value={o}
-						disabled={disabled}
-						title={disabled ? disabledTitle : undefined}
-						className="px-2.5 text-xs"
-					>
-						{optionLabel(o)}
-					</ToggleGroupItem>
-				);
-			})}
+			{options.map((o) => (
+				<ToggleGroupItem key={o} value={o} className="px-2.5 text-xs">
+					{optionLabel(o)}
+				</ToggleGroupItem>
+			))}
 		</ToggleGroup>
 	);
 }

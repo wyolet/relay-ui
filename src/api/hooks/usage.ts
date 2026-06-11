@@ -6,6 +6,7 @@ import {
 import { apiClient } from "@/api/client";
 import { ApiError } from "@/api/types/errors";
 import type { components, operations } from "@/api/types.gen";
+import { type CostTotal, costTotal } from "@/lib/usage-math/cost";
 import { compareValue, type DeltaResult } from "@/lib/usage-math/delta";
 import { type LatencyRung, latencyLadder } from "@/lib/usage-math/latency";
 import {
@@ -311,8 +312,9 @@ export function rolling24hWindow(): UsageWindow {
 
 // --- Stacked-by-dimension timeline ---
 
-/** Metrics the usage page offers. "cost" never flows through the token
- * stacker — it has its own fan-out pipeline (see api/hooks/cost.ts). */
+/** Metrics the usage page offers. "cost" is charted by useCostTimeline
+ * (api/hooks/cost.ts), which reads the server-stamped cost_nanos off the
+ * same timeseries cache entry this stacker uses. */
 export const USAGE_METRICS = ["requests", "tokens", "cost"] as const;
 export type UsageMetric = (typeof USAGE_METRICS)[number];
 /** The metrics deriveStacked/useStackedTimeline can chart directly. */
@@ -421,6 +423,8 @@ export interface UsageGroupStat {
 	duration: UsageDurationStats;
 	tokens: number;
 	share: number; // requests / max(requests), 0..1
+	/** Server-stamped spend for the group (exact for every dimension). */
+	cost: CostTotal;
 }
 
 /** A single aggregated time bucket across every group. */
@@ -464,6 +468,7 @@ function deriveGroupStats(
 			duration: r.duration_ms,
 			tokens: sumTokens(r.tokens),
 			share: peak > 0 ? r.requests / peak : 0,
+			cost: costTotal(r.cost_nanos, r.unpriced, r.requests),
 		}))
 		.sort((a, b) => b.requests - a.requests);
 }

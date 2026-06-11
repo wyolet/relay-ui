@@ -1,7 +1,6 @@
 import { Banknote } from "lucide-react";
 import { useCostTimeline } from "@/api/hooks/cost";
-import type { UsageRange } from "@/api/hooks/usage";
-import type { CostStackDimension } from "@/lib/usage-math/pricing";
+import type { UsageGroupBy, UsageRange } from "@/api/hooks/usage";
 import { dimensionLabel, fmtCompact, fmtRange } from "./format";
 import { StackedUsageChart } from "./StackedUsageChart";
 import { UsageEmpty } from "./UsageEmpty";
@@ -9,8 +8,8 @@ import { useGroupLabeler } from "./useGroupLabeler";
 
 /**
  * Stacked estimated-spend chart. Wraps the shared stacked chart in its own
- * card so it can badge what the $ series deliberately leaves out: unpriced
- * models and mixed-currency stacking.
+ * card so it can badge what the $ series deliberately leaves out: traffic
+ * with no cost stamp (unpriced at event time).
  */
 export function CostChart({
 	groupBy,
@@ -18,13 +17,13 @@ export function CostChart({
 	from,
 	to,
 }: {
-	groupBy: CostStackDimension;
+	groupBy: UsageGroupBy;
 	range: UsageRange;
 	from?: string;
 	to?: string;
 }) {
 	const data = useCostTimeline(groupBy, range, from, to);
-	const labelFor = useGroupLabeler("model_id");
+	const labelFor = useGroupLabeler(groupBy);
 
 	if (data.series.length === 0) {
 		return (
@@ -32,15 +31,15 @@ export function CostChart({
 				icon={Banknote}
 				title="No priced usage in this range"
 				body={
-					data.unpriced.tokens > 0
-						? "Traffic exists, but none of its model↔host bindings have pricing attached. Add rates under Configure → Pricing."
+					data.unpriced.events > 0
+						? "Traffic exists, but none of it carried a cost stamp — attach rates under Configure → Pricing. Past traffic stays unpriced; new requests are costed from then on."
 						: "Estimated spend stacks here once priced traffic flows in the selected window."
 				}
 			/>
 		);
 	}
 
-	const unpricedTitle = data.unpriced.modelIds.map(labelFor).join(", ");
+	const unpricedTitle = data.unpriced.groups.map(labelFor).join(", ");
 
 	return (
 		<div className="rounded-lg border border-border bg-card">
@@ -49,21 +48,9 @@ export function CostChart({
 					<h2 className="text-sm font-medium text-foreground">
 						Est. spend by {dimensionLabel(groupBy).toLowerCase()}
 					</h2>
-					{data.mixed && (
-						<Badge title="Bars sum across currencies — totals per currency stay separate in the KPI.">
-							mixed currencies
-						</Badge>
-					)}
-					{data.unpriced.modelIds.length > 0 && (
-						<Badge title={`Unpriced, excluded: ${unpricedTitle}`}>
-							{data.unpriced.modelIds.length} model
-							{data.unpriced.modelIds.length === 1 ? "" : "s"} unpriced ·{" "}
-							{fmtCompact(data.unpriced.tokens)} tok excluded
-						</Badge>
-					)}
-					{data.hostsTruncated && (
-						<Badge title="Too many active hosts for exact attribution — figures cover the busiest only.">
-							partial
+					{data.unpriced.events > 0 && (
+						<Badge title={`Unpriced traffic seen on: ${unpricedTitle}`}>
+							{fmtCompact(data.unpriced.events)} req unpriced
 						</Badge>
 					)}
 				</div>
@@ -72,13 +59,7 @@ export function CostChart({
 				</span>
 			</div>
 			<div className="p-4">
-				<StackedUsageChart
-					data={data}
-					groupBy={groupBy}
-					metric="cost"
-					currency={data.currency ?? "USD"}
-					bare
-				/>
+				<StackedUsageChart data={data} groupBy={groupBy} metric="cost" bare />
 			</div>
 		</div>
 	);

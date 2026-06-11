@@ -1,14 +1,12 @@
 import { Link } from "@tanstack/react-router";
 import { BarChart3 } from "lucide-react";
 import type { ReactNode } from "react";
-import { useCostByGroup } from "@/api/hooks/cost";
 import {
 	type UsageGroupBy,
 	type UsageGroupStat,
 	type UsageWindow,
 	useUsageOverview,
 } from "@/api/hooks/usage";
-import type { CostStackDimension, CostSum } from "@/lib/usage-math/pricing";
 import {
 	dimensionLabel,
 	fmtCompact,
@@ -29,15 +27,11 @@ export function UsageTopGroups({
 	groupBy,
 	limit,
 	win,
-	costByKey,
 }: {
 	groupBy: UsageGroupBy;
 	limit?: number;
 	/** Window to rank within; omit for the server's default window. */
 	win?: UsageWindow;
-	/** Per-group estimated spend (model/host dimensions only) — adds a cost
-	 * sub-stat per row. Supply via UsageTopGroupsWithCost. */
-	costByKey?: Map<string, CostSum>;
 }) {
 	const { groups } = useUsageOverview(groupBy, win);
 	const labelFor = useGroupLabeler(groupBy);
@@ -76,7 +70,6 @@ export function UsageTopGroups({
 						label={labelFor(g.key)}
 						logo={logoFor(g.key)}
 						color={rankColor(i)}
-						cost={costByKey?.get(g.key)}
 					/>
 				))}
 			</ul>
@@ -93,41 +86,16 @@ export function UsageTopGroups({
 	);
 }
 
-/** Wrapper that joins each row with its estimated spend. Separate component so
- * the base leaderboard never calls the cost fan-out hooks (hooks can't be
- * conditional; the route mounts this only for cost-capable dimensions). */
-export function UsageTopGroupsWithCost({
-	groupBy,
-	limit,
-	win,
-}: {
-	groupBy: CostStackDimension;
-	limit?: number;
-	win: UsageWindow;
-}) {
-	const costByKey = useCostByGroup(groupBy, win);
-	return (
-		<UsageTopGroups
-			groupBy={groupBy}
-			limit={limit}
-			win={win}
-			costByKey={costByKey}
-		/>
-	);
-}
-
 function GroupRow({
 	stat,
 	label,
 	logo,
 	color,
-	cost,
 }: {
 	stat: UsageGroupStat;
 	label: string;
 	logo: ReactNode;
 	color: string;
-	cost?: CostSum;
 }) {
 	const errTone =
 		stat.errorCount > 0 && stat.errorRate >= 0.05
@@ -162,20 +130,16 @@ function GroupRow({
 						<SubStat label="p95" value={fmtMs(stat.duration.p95)} />
 						<span className="text-border">·</span>
 						<SubStat label="tok" value={fmtCompact(stat.tokens)} />
-						{cost && (
-							<>
-								<span className="text-border">·</span>
-								<SubStat
-									label="cost"
-									value={
-										cost.dominant
-											? `≈${fmtMoneyCompact(cost.dominant.amount, cost.dominant.currency)}`
-											: "—"
-									}
-									tone={cost.dominant ? "text-foreground" : undefined}
-								/>
-							</>
-						)}
+						<span className="text-border">·</span>
+						<SubStat
+							label="cost"
+							value={
+								stat.cost.usd != null
+									? `≈${fmtMoneyCompact(stat.cost.usd, "USD")}`
+									: "—"
+							}
+							tone={stat.cost.usd != null ? "text-foreground" : undefined}
+						/>
 					</dl>
 				</div>
 

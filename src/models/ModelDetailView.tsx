@@ -49,7 +49,7 @@ import { useModelDiagnostics } from "@/diagnostics/useDiagnostics";
 import { HostCell } from "@/hosts/HostCell";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { resolveMutability } from "@/lib/ownership";
-import { blendedRequestCost, estimatedSpend } from "@/lib/usage-math/pricing";
+import { blendedRequestCost } from "@/lib/usage-math/pricing";
 import { ResourceLogs } from "@/logs/ResourceLogs";
 import type { BindingUsage } from "@/models/useModelHostSpend";
 import { useModelHostSpend } from "@/models/useModelHostSpend";
@@ -876,10 +876,9 @@ function HostPricingCard({
 	const hasPricing = rates.length > 0;
 	const currency = pricing?.currency || "USD";
 	const example = hasPricing ? blendedRequestCost(rates) : null;
-	const estSpend =
-		hasPricing && usage && usage.requests > 0
-			? estimatedSpend(rates, usage.tokens)
-			: null;
+	// Server-stamped over the window; null when none of the pair's events
+	// were priced (must show as absent, never $0).
+	const estSpend = usage?.cost.usd ?? null;
 	const snapshots = row.binding.snapshots ?? [];
 	const hasBillingContext = !!row.binding.upstreamName || snapshots.length > 0;
 
@@ -988,7 +987,7 @@ function HostPricingCard({
 									</span>
 								</dt>
 								<dd className="font-mono tabular-nums text-foreground">
-									≈ {fmtCost(estSpend, currency)}
+									≈ {fmtCost(estSpend, "USD")}
 								</dd>
 							</div>
 						)}

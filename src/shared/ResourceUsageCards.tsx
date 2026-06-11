@@ -43,11 +43,9 @@ export function ResourceUsageCards({
 export function UsageCardsSkeleton() {
 	return (
 		<>
-			{["Requests · 1h", "Error rate", "p95 latency", "Tokens"].map(
-				(label) => (
-					<UsageCard key={label} label={label} value="…" />
-				),
-			)}
+			{["Requests · 1h", "Error rate", "p95 latency", "Tokens"].map((label) => (
+				<UsageCard key={label} label={label} value="…" />
+			))}
 		</>
 	);
 }

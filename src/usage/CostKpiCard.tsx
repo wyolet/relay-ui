@@ -5,9 +5,10 @@ import { fmtMoneyCompact, fmtPct } from "./format";
 import { deltaChip, StatCard } from "./UsageStatCards";
 
 /**
- * Estimated spend over the window, with a period-over-period delta. Data comes
- * from the per-host cost fan-out (see api/hooks/cost.ts), so mount this behind
- * its own Suspense — it must never block the instant KPI cards.
+ * Estimated spend over the window, with a period-over-period delta. Reads the
+ * server-stamped cost off the ungrouped totals row plus one extra query for
+ * the comparison window — mount behind its own Suspense so the instant KPI
+ * cards never wait on it.
  */
 export function CostKpiCard({
 	win,
@@ -17,28 +18,20 @@ export function CostKpiCard({
 	compareLabel?: string;
 }) {
 	const kpi = useCostKpi(win);
-	const dominant = kpi.current.dominant;
+	const { usd, unpricedEvents, unpricedShare } = kpi.current;
 
 	let hint: string | undefined;
-	if (dominant == null) {
-		hint = kpi.current.unpricedTokens > 0 ? "No pricing configured" : undefined;
-	} else if (kpi.current.mixed) {
-		hint = "+ other currencies";
-	} else if (kpi.unpricedShare > 0) {
-		hint = `${fmtPct(kpi.unpricedShare)} of tokens unpriced`;
-	} else if (kpi.hostsTruncated) {
-		hint = "partial — too many hosts";
+	if (usd == null) {
+		hint = unpricedEvents > 0 ? "No pricing configured" : undefined;
+	} else if (unpricedShare > 0) {
+		hint = `${fmtPct(unpricedShare)} of requests unpriced`;
 	}
 
 	return (
 		<StatCard
 			icon={Banknote}
 			label="Est. spend"
-			value={
-				dominant
-					? `≈${fmtMoneyCompact(dominant.amount, dominant.currency)}`
-					: "—"
-			}
+			value={usd != null ? `≈${fmtMoneyCompact(usd, "USD")}` : "—"}
 			hint={hint}
 			delta={
 				kpi.delta && kpi.hasBaseline

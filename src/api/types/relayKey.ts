@@ -7,5 +7,3 @@ export type CreateRelayKeyInput =
 	components["schemas"]["createRelayKeyInputBody"];
 export type CreateRelayKeyResponse =
 	components["schemas"]["createRelayKeyResponseBody"];
-export type RotateRelayKeyResponse =
-	components["schemas"]["rotateRelayKeyResponseBody"];

@@ -11,7 +11,6 @@ import type {
 	CreateRelayKeyResponse,
 	RelayKey,
 	RelayKeyList,
-	RotateRelayKeyResponse,
 } from "@/api/types/relayKey";
 
 export const relayKeysListQueryOptions = queryOptions({
@@ -78,23 +77,6 @@ export function useUpdateRelayKey() {
 				params: { path: { id } },
 				body,
 			});
-			if (error) throw new ApiError(0, error.error);
-			return data;
-		},
-		onSuccess: () => {
-			void queryClient.invalidateQueries({ queryKey: ["relay-keys"] });
-		},
-	});
-}
-
-export function useRotateRelayKey() {
-	const queryClient = useQueryClient();
-	return useMutation({
-		mutationFn: async (id: string): Promise<RotateRelayKeyResponse> => {
-			const { data, error } = await apiClient.POST(
-				"/relay-keys/by-id/{id}/rotate",
-				{ params: { path: { id } } },
-			);
 			if (error) throw new ApiError(0, error.error);
 			return data;
 		},

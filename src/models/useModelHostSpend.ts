@@ -1,11 +1,12 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { modelHostUsageQueryOptions } from "@/api/hooks/usage";
+import { type CostTotal, costTotal } from "@/lib/usage-math/cost";
 
 /** Recorded usage for one (model, host) pair over the summary window. */
 export interface BindingUsage {
-	/** Token sums by meter key (e.g. `prompt`, `completion`). */
-	tokens: Record<string, number>;
 	requests: number;
+	/** Server-stamped spend for the pair (see lib/usage-math/cost). */
+	cost: CostTotal;
 }
 
 export interface ModelHostSpend {
@@ -15,8 +16,8 @@ export interface ModelHostSpend {
 }
 
 /**
- * One model's recorded usage, split by host. Lets the pricing tab multiply
- * real tokens by the per-host rates to estimate spend over the window.
+ * One model's recorded usage, split by host. Feeds the pricing tab's
+ * per-host spend figures, read straight off the summary rows' cost fields.
  */
 export function useModelHostSpend(modelId: string): ModelHostSpend {
 	const { data } = useSuspenseQuery(modelHostUsageQueryOptions(modelId));
@@ -24,7 +25,10 @@ export function useModelHostSpend(modelId: string): ModelHostSpend {
 	for (const row of data.rows ?? []) {
 		const hostId = row.group?.host_id;
 		if (!hostId) continue;
-		byHost.set(hostId, { tokens: row.tokens ?? {}, requests: row.requests });
+		byHost.set(hostId, {
+			requests: row.requests,
+			cost: costTotal(row.cost_nanos, row.unpriced, row.requests),
+		});
 	}
 	return { from: data.from, to: data.to, byHost };
 }

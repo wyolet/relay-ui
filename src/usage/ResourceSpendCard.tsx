@@ -4,9 +4,9 @@ import { fmtCompact, fmtMoneyCompact } from "./format";
 
 /**
  * One resource's estimated spend, matching the ResourceUsageCards tile row.
- * Mount behind its own Suspense — the cost fan-out must never block the
- * instant cards beside it. Exact attribution even for policy/key scopes,
- * since the resource filter combines with the per-host fan-out.
+ * Mount behind its own Suspense so it never blocks the instant cards beside
+ * it. Cost is server-stamped per event, so the figure is exact for every
+ * dimension — including policy and key scopes.
  */
 export function ResourceSpendCard({
 	dimension,
@@ -15,34 +15,21 @@ export function ResourceSpendCard({
 	dimension: CostResourceDimension;
 	id: string;
 }) {
-	const { sum, hostsTruncated } = useResourceSpend(dimension, id);
-	const dominant = sum.dominant;
+	const { sum } = useResourceSpend(dimension, id);
+	const unpricedSub =
+		sum.unpricedEvents > 0
+			? `${fmtCompact(sum.unpricedEvents)} req unpriced`
+			: undefined;
 
-	if (!dominant) {
-		return (
-			<UsageCard
-				label="Est. spend · 1h"
-				value="—"
-				sub={
-					sum.unpricedTokens > 0
-						? `${fmtCompact(sum.unpricedTokens)} tok unpriced`
-						: undefined
-				}
-			/>
-		);
+	if (sum.usd == null) {
+		return <UsageCard label="Est. spend · 1h" value="—" sub={unpricedSub} />;
 	}
-
-	let sub: string | undefined;
-	if (sum.mixed) sub = "+ other currencies";
-	else if (sum.unpricedTokens > 0)
-		sub = `${fmtCompact(sum.unpricedTokens)} tok unpriced`;
-	else if (hostsTruncated) sub = "partial — too many hosts";
 
 	return (
 		<UsageCard
 			label="Est. spend · 1h"
-			value={`≈${fmtMoneyCompact(dominant.amount, dominant.currency)}`}
-			sub={sub}
+			value={`≈${fmtMoneyCompact(sum.usd, "USD")}`}
+			sub={unpricedSub}
 			mono
 		/>
 	);
