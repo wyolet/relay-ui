@@ -9,18 +9,22 @@ Path alias: `@/*` → `src/*` (configured in `tsconfig.json` paths and `vite.con
 
 ## Dev workflow
 
-This project follows the **wyolet dev workflow**. Read these before non-trivial changes — file layout, ports, infra split, build/deploy pipeline live there, not duplicated here:
+- **Dev server:** `bun run dev` on `:5140`. It proxies API calls (`/control`,
+  `/openapi.json`, …) to a running Relay **control plane** — default
+  `http://localhost:8080`, override with `RELAY_CONTROL_TARGET`. Spin up a
+  backend with `docker run -p 8080:8080 -p 8081:8081 wyolet/relay:standalone`.
+- **API types:** generated from Relay's OpenAPI spec — never hand-edit
+  `src/api/types.gen.ts`. `make gen` (or `RELAY_URL=… make gen`) regenerates it.
+- **Ship pipeline:** relay-ui has no compose/Dockerfile of its own. It builds to
+  a static `dist/`, gets packaged as a `relay-ui-vX.Y.Z.tar.gz` release asset
+  (`make release VERSION=…`), and the `wyolet/relay` repo pins that tarball and
+  embeds it into the Go binary via `//go:embed`, serving it at `/ui/`.
 
-- `~/Documents/Obsidian Vault/Dev Workflow/Development.md` — Mac + dev-stack split, ports rule, Caddy, centralized Postgres
-- `~/Documents/Obsidian Vault/Dev Workflow/ProjectSetup.md` — required files (Makefile, compose, Dockerfile, bake, .env), stack rules
-- `~/Documents/Obsidian Vault/Dev Workflow/BuildDeploy.md` — Harbor + ghcr.io, `kube` buildx context, ArgoCD reconcile
-- `~/Documents/Obsidian Vault/Dev Workflow/PORTS.md` — LAN port allocations
-
-Note: relay-ui ships as a tarball release embedded into the relay Go binary via `//go:embed` — no per-project compose/Dockerfile needed, but the dev-stack rules still apply.
+See `README.md` and `CONTRIBUTING.md` for the full build/release walkthrough.
 
 ## Frontend layering (non-negotiable)
 
-Mirrors the wyolet workspace project. The point: redesigning a page should be **swapping components, not rebuilding logic**. That only works if logic lives outside.
+The point: redesigning a page should be **swapping components, not rebuilding logic**. That only works if logic lives outside.
 
 - **Components render strings.** No fetching, no mutation calls, no derived business state inside a component file. If a component imports `@tanstack/react-query` or `zustand` directly, that's a smell — the logic belongs in a hook.
 - **Custom hooks own business logic.** Hooks compose TanStack Query + Zustand. Components call `useFooThing()`, never `useSuspenseQuery(fooQueryOptions)` or `useFooStore` directly.
@@ -40,19 +44,19 @@ Never `useEffect` for fetching, and never store query results in `useState`.
 
 - **shadcn (luma) is the primitive layer.** `src/components/ui/*` is owned, not vendored — `bun x shadcn@latest add <component>` adds them; customize freely. Built on `@base-ui/react`. Biome ignores `src/components/ui/**` (vendor-generated lint warnings aren't ours to fix).
 - **Use semantic tokens, not raw colors.** `bg-card`, `text-foreground`, `border-border`, `bg-muted`, `text-muted-foreground`, `bg-primary`, `text-primary-foreground`, `bg-popover`, `text-destructive`, `ring-ring`, etc. Never `bg-white dark:bg-neutral-900`, `text-neutral-500`, `border-neutral-200 dark:border-neutral-800`, `focus-visible:ring-brand-500`. The `colorsweep.sh`-style fix is a sign you should be writing semantic tokens up front.
-- **Brand scales (`brand-*`, `accent-*`, `neutral-*`, `danger-*`)** still come from `@wyolet/design/theme.css` and are available as Tailwind utilities, but reach for them only when a semantic token doesn't fit (e.g. illustration accents). Never hard-code Tailwind palette names (`gray-*`, `blue-*`, etc.).
-- **Token plumbing.** `src/styles.css` imports `tailwindcss` → `@wyolet/design/theme.css` (brand scales + initial semantic tokens) → `src/styles/globals.css` (shadcn-luma overrides + sidebar/chart tokens + `@theme inline` bridges so `border-border`, `bg-background` etc. resolve in Tailwind v4). globals.css **wins** for the semantic palette — that's intentional.
+- **Brand scales (`brand-*`, `accent-*`, `neutral-*`, `danger-*`)** are declared in `src/styles/theme.css` (the vendored design tokens) and are available as Tailwind utilities, but reach for them only when a semantic token doesn't fit (e.g. illustration accents). Never hard-code Tailwind palette names (`gray-*`, `blue-*`, etc.).
+- **Token plumbing.** `src/styles.css` imports `tailwindcss` → `src/styles/theme.css` (brand scales + initial semantic tokens) → `src/styles/globals.css` (shadcn-luma overrides + sidebar/chart tokens + `@theme inline` bridges so `border-border`, `bg-background` etc. resolve in Tailwind v4). globals.css **wins** for the semantic palette — that's intentional.
 - **Don't override sizing on shadcn primitives** unless asked. `Input` is `h-9`, `Select` is `h-7`, etc. Mismatch is the system. If a row needs uniform heights, override deliberately and consistently.
 - **Never reach for native `<select>` / toggle buttons.** Use shadcn `Select` and `ToggleGroup` so chrome stays consistent (the macOS native picker breaks the design). For a segmented single-select, use `ToggleGroup` (value is a `string[]` in base-ui — pass `[value]`, guard the empty case). **base-ui `Select` gotcha:** `SelectValue` renders the raw *value*, not the label — pass `items={[{label,value}]}` to `Select.Root` or the trigger shows the id. Heights: `SelectTrigger` defaults to `data-[size=default]:h-9`; pass `size="sm"` for `h-7` (a `h-7` className won't win over the data-attr variant).
 - **Number inputs:** native spinners stripped globally in `globals.css`. shadcn doesn't ship that fix; we add it.
 
 ## Commands
 
-- `bun run dev` — vite dev server on :5140 (matches Caddy reverse_proxy)
+- `bun run dev` — vite dev server on :5140 (proxies to the control plane at `RELAY_CONTROL_TARGET`, default `http://localhost:8080`)
 - `bun run typecheck` — `tsc --noEmit` (must pass; see TypeScript rules)
 - `bun run check` — biome check
 - `bun run ci` — typecheck + lint (run before declaring work done)
-- `make gen` — regenerate `src/api/types.gen.ts` from `RELAY_URL` (default `https://relay.wyolet.dev`). Uses `curl -sk` to avoid TLS issues. `bun run gen:api` also works against `http://localhost:8080`.
+- `make gen` — regenerate `src/api/types.gen.ts` from `RELAY_URL` (default `http://localhost:8080`). Uses `curl -sk` to avoid TLS issues. `bun run gen:api` works the same way.
 
 ## TypeScript rules (non-negotiable)
 

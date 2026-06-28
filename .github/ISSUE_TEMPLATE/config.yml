@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/wyolet/relay-ui/security/advisories/new
+    about: Please report security issues privately — do not open a public issue. See SECURITY.md.
+  - name: Relay (backend) issues
+    url: https://github.com/wyolet/relay/issues
+    about: This repo is the admin UI only. For API, routing, or server behavior, open an issue on wyolet/relay.

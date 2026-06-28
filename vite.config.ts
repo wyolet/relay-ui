@@ -11,8 +11,16 @@ const pkg = JSON.parse(readFileSync('./package.json', 'utf-8')) as { version?: s
 // Locally we fall back to package.json's version, then to "dev".
 const UI_VERSION = process.env.RELAY_UI_VERSION ?? pkg.version ?? 'dev'
 
+// Where the dev server proxies API calls (/control, /openapi.json, …).
+// Point this at a running Relay control plane — the standalone image serves
+// it on http://localhost:8080. Override with RELAY_CONTROL_TARGET.
 const CONTROL_TARGET =
-  process.env.RELAY_CONTROL_TARGET ?? 'https://relay-control-api.wyolet.dev'
+  process.env.RELAY_CONTROL_TARGET ?? 'http://localhost:8080'
+
+// Optional: serve the dev server behind an HTTPS tunnel (e.g. to test the UI
+// on a phone). Set RELAY_DEV_HOST to the public hostname; HMR then runs over
+// wss on 443. Unset, the dev server is plain localhost.
+const DEV_HOST = process.env.RELAY_DEV_HOST
 
 const proxy = {
   target: CONTROL_TARGET,
@@ -39,8 +47,10 @@ const config = defineConfig({
     host: true,
     port: 5140,
     strictPort: true,
-    allowedHosts: ['relay.wyolet.dev', '.wyolet.dev', 'localhost'],
-    hmr: { host: 'relay.wyolet.dev', clientPort: 443, protocol: 'wss' },
+    allowedHosts: DEV_HOST ? [DEV_HOST, 'localhost'] : ['localhost'],
+    ...(DEV_HOST
+      ? { hmr: { host: DEV_HOST, clientPort: 443, protocol: 'wss' } }
+      : {}),
     proxy: {
       '/control': proxy,
       '/healthz': proxy,

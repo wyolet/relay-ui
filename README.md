@@ -1,8 +1,50 @@
-# relay-ui
+<div align="center">
+  <img src=".github/assets/logo.png" alt="Wyolet Relay" width="104">
 
-Operator admin UI for [Wyolet Relay](https://github.com/wyolet/relay) — a high-throughput LLM router.
+  <h1>relay-ui</h1>
 
-This repo produces a static SPA (`dist/`) that is embedded into the Relay Go binary via `//go:embed` and served at `/ui/`.
+  <p>
+    <strong>The operator admin UI for Wyolet Relay.</strong><br>
+    Manage providers, keys, policies, and usage from one console.
+  </p>
+
+  <p>
+    <a href="https://docs.wyolet.com"><img src="https://img.shields.io/badge/docs-docs.wyolet.com-7c3aed" alt="Docs"></a>
+    <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-7c3aed" alt="License: Apache-2.0"></a>
+    <a href="https://github.com/wyolet/relay"><img src="https://img.shields.io/badge/backend-wyolet%2Frelay-24292e?logo=github&logoColor=white" alt="Backend: wyolet/relay"></a>
+    <a href="https://discord.gg/KUhJ8X3w"><img src="https://img.shields.io/badge/discord-join-5865F2?logo=discord&logoColor=white" alt="Discord"></a>
+    <a href="https://x.com/wyolethq"><img src="https://img.shields.io/badge/follow-%40wyolethq-000000?logo=x&logoColor=white" alt="Follow on X"></a>
+  </p>
+
+  <p>
+    <a href="https://docs.wyolet.com">Docs</a> ·
+    <a href="https://github.com/wyolet/relay">Relay (backend)</a> ·
+    <a href="https://discord.gg/KUhJ8X3w">Discord</a> ·
+    <a href="https://x.com/wyolethq">X</a> ·
+    <a href="https://www.linkedin.com/company/wyolet">LinkedIn</a> ·
+    <a href="https://bsky.app/profile/wyolet.bsky.social">Bluesky</a> ·
+    <a href="https://www.reddit.com/r/wyolet">Reddit</a>
+  </p>
+</div>
+
+---
+
+relay-ui is the admin console for [Wyolet Relay](https://github.com/wyolet/relay) —
+the high-throughput, self-hostable LLM router. It's a static SPA that gets
+**embedded into the Relay Go binary** via `//go:embed` and served at `/ui/`, so
+operators get a full management console without running a separate service. Add
+provider keys, mint rate-limited relay keys, define access policies, and watch
+per-key usage and cost — all from the browser.
+
+You don't need to build this repo to use Relay: the official images already
+ship the UI. Pull one and open the console:
+
+```bash
+docker run -p 8080:8080 -p 8081:8081 wyolet/relay:standalone
+# admin UI → http://localhost:8081
+```
+
+This repository is for **developing the UI itself**.
 
 ## Tech stack
 
@@ -12,7 +54,7 @@ This repo produces a static SPA (`dist/`) that is embedded into the Relay Go bin
 - Tailwind CSS v4 + shadcn (luma) on `@base-ui/react`
 - openapi-typescript + openapi-fetch (typed API client from `/openapi.json`)
 - Biome (lint + format — replaces eslint/prettier)
-- bun
+- [Bun](https://bun.sh)
 
 ## Local development
 
@@ -21,11 +63,11 @@ bun install
 bun run dev          # Vite dev server on http://localhost:5140
 ```
 
-Point the dev server at a running Relay instance for live API calls:
+The dev server proxies API calls to a Relay control plane at
+`http://localhost:8080`. Point it elsewhere with `RELAY_CONTROL_TARGET`:
 
 ```bash
-RELAY_URL=http://localhost:8080 make gen   # regenerate types
-bun run dev
+RELAY_CONTROL_TARGET=http://localhost:8080 bun run dev
 ```
 
 ## Building
@@ -36,26 +78,28 @@ bun run build        # outputs to dist/
 
 ## Type generation
 
-API types are generated from the Relay OpenAPI spec via the Makefile:
+API types are generated from the Relay OpenAPI spec via the Makefile — never
+edit `src/api/types.gen.ts` by hand:
 
 ```bash
-make gen                                  # fetches from https://relay.wyolet.dev/openapi.json
-RELAY_URL=http://localhost:8080 make gen  # custom URL (uses curl -sk to avoid TLS issues)
+make gen                                  # default: http://localhost:8080/openapi.json
+RELAY_URL=http://localhost:8080 make gen  # custom control-plane URL
 ```
 
-Generated file: `src/api/types.gen.ts` — commit after regenerating. Do not edit by hand.
+Commit the regenerated file after running it.
 
 ## CI
 
 ```bash
-bun run ci           # typecheck + lint (runs in GitHub Actions on every push/PR)
+bun run ci           # typecheck + lint + test (runs in GitHub Actions on every push/PR)
 ```
 
 ## Releasing
 
-1. Tag the commit: `git tag v1.2.3 && git push origin v1.2.3`
-2. GitHub Actions builds the project and uploads `relay-ui-v1.2.3.tar.gz` as a GitHub Release asset.
-3. The main `wyolet/relay` repo pins this tarball in its build.
+1. `make release VERSION=v1.2.3` — bumps `package.json`, tags, and pushes.
+2. GitHub Actions builds the project and uploads `relay-ui-v1.2.3.tar.gz` as a
+   GitHub Release asset.
+3. The main `wyolet/relay` repo pins this tarball and embeds it at build time.
 
 ## Directory layout
 
@@ -66,18 +110,29 @@ src/
     client.ts         # openapi-fetch typed client
     hooks/            # per-domain TanStack Query hooks (queryOptions + mutations)
     types/            # domain type aliases over the OpenAPI schema
-  components/
-    ui/               # shadcn (luma) primitives — vendored, biome-ignored
-    *.tsx             # feature components + useXForm() hooks
+  <domain>/           # policies/, host-keys/, relay-keys/, models/, … — components + useXForm() hooks
+  components/ui/       # shadcn (luma) primitives — vendored, biome-ignored
   routes/             # file-based TanStack Router; routeTree.gen.ts is generated
   stores/             # zustand stores
-  styles/             # globals.css (semantic-token bridges) — biome-ignored
+  lib/                # pure utilities
+  styles/             # globals.css + theme.css (semantic-token bridges) — biome-ignored
   styles.css
   main.tsx
 .github/workflows/
-  ci.yml              # lint + typecheck on every push
+  ci.yml              # lint + typecheck + test + build on every push
   release.yml         # build + tarball → GitHub Release on tag push
-  drift.yml           # nightly API drift check vs live Relay container
+  drift.yml           # nightly API drift check vs the live Relay image
 ```
 
-See `CLAUDE.md` for the layering rules (state management, form pattern, styling conventions).
+See [`CLAUDE.md`](CLAUDE.md) for the full layering rules (state management, form
+pattern, styling conventions).
+
+## Contributing
+
+Issues and pull requests are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md).
+For security reports, see [SECURITY.md](SECURITY.md).
+
+## License
+
+[Apache-2.0](LICENSE). Backend issues belong on
+[wyolet/relay](https://github.com/wyolet/relay).

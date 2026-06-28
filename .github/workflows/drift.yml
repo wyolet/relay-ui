@@ -36,7 +36,7 @@ jobs:
       - name: Skip if relay image unavailable
         if: steps.relay.outcome == 'failure' || steps.relay.outputs.relay_up != 'true'
         run: |
-          echo "::warning::wyolet/relay Docker image not reachable — skipping drift check (expected until PER-273 ships)."
+          echo "::warning::wyolet/relay Docker image not reachable — skipping drift check."
           exit 0
 
       - name: Regenerate types
