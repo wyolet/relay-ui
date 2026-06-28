@@ -3,6 +3,16 @@
   "version": "0.2.3",
   "private": true,
   "type": "module",
+  "description": "Operator admin UI for Wyolet Relay — embedded into the Relay binary and served at /ui/.",
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/wyolet/relay-ui",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wyolet/relay-ui.git"
+  },
+  "bugs": {
+    "url": "https://github.com/wyolet/relay-ui/issues"
+  },
   "scripts": {
     "dev": "bun --bun vite dev",
     "build": "bun --bun vite build",
@@ -14,8 +24,7 @@
     "test": "bun test src/",
     "test:e2e": "playwright test",
     "ci": "bun run typecheck && bun run lint && bun run test",
-    "gen:api": "openapi-typescript ${OPENAPI_URL:-http://localhost:8080/openapi.json} -o src/api/types.gen.ts",
-    "gen:api:live": "curl -sk https://relay-control-api.wyolet.dev/openapi.json | bun x openapi-typescript /dev/stdin -o src/api/types.gen.ts"
+    "gen:api": "openapi-typescript ${OPENAPI_URL:-http://localhost:8080/openapi.json} -o src/api/types.gen.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",

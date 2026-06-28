@@ -1,5 +1,5 @@
 /**
- * Hook for generating the Relay master key (PER-280).
+ * Hook for generating the Relay master key.
  *
  * GET /admin/master-key/generate returns MasterKeyResponse: { key: string }.
  * This is the ONLY endpoint that ever returns a master key in cleartext.
