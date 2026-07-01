@@ -1,32 +1,145 @@
-import { Search } from "lucide-react";
+import { Search, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 interface SearchBoxProps {
 	value: string;
 	onChange: (next: string) => void;
+	/**
+	 * Delay before a keystroke is emitted via onChange. Consumers that persist
+	 * to URL search params (and re-run loaders/queries) rely on this; pass 0
+	 * only for cheap local-state filtering.
+	 */
+	debounceMs?: number;
 	placeholder?: string;
 	"aria-label"?: string;
+	/** Focus this box when "/" is pressed outside another editable element. */
+	hotkey?: boolean;
+	className?: string;
 }
 
 export function SearchBox({
 	value,
 	onChange,
+	debounceMs = 250,
 	placeholder = "Search",
 	"aria-label": ariaLabel,
+	hotkey = true,
+	className = "",
 }: SearchBoxProps) {
+	// The input is driven by a local draft so typing stays instant; the parent
+	// value (URL state) only updates after the debounce settles.
+	const [draft, setDraft] = useState(value);
+	const [focused, setFocused] = useState(false);
+	const inputRef = useRef<HTMLInputElement>(null);
+	const timer = useRef<number | undefined>(undefined);
+	const lastEmitted = useRef(value);
+
+	// Adopt external changes (Clear button, back/forward nav) — but not the
+	// echo of our own emission coming back down as a prop.
+	useEffect(() => {
+		if (value !== lastEmitted.current) {
+			lastEmitted.current = value;
+			setDraft(value);
+			window.clearTimeout(timer.current);
+		}
+	}, [value]);
+
+	useEffect(() => () => window.clearTimeout(timer.current), []);
+
+	useEffect(() => {
+		if (!hotkey) return;
+		const onKey = (e: KeyboardEvent) => {
+			if (e.key !== "/" || e.defaultPrevented) return;
+			if (e.metaKey || e.ctrlKey || e.altKey) return;
+			const t = e.target;
+			if (
+				t instanceof HTMLElement &&
+				(t.tagName === "INPUT" ||
+					t.tagName === "TEXTAREA" ||
+					t.tagName === "SELECT" ||
+					t.isContentEditable)
+			)
+				return;
+			e.preventDefault();
+			inputRef.current?.focus();
+		};
+		document.addEventListener("keydown", onKey);
+		return () => document.removeEventListener("keydown", onKey);
+	}, [hotkey]);
+
+	const emit = (next: string) => {
+		window.clearTimeout(timer.current);
+		lastEmitted.current = next;
+		onChange(next);
+	};
+
+	const handleInput = (next: string) => {
+		setDraft(next);
+		if (debounceMs <= 0) {
+			emit(next);
+			return;
+		}
+		window.clearTimeout(timer.current);
+		timer.current = window.setTimeout(() => {
+			lastEmitted.current = next;
+			onChange(next);
+		}, debounceMs);
+	};
+
+	const clear = () => {
+		setDraft("");
+		emit("");
+		inputRef.current?.focus();
+	};
+
 	return (
-		<div className="relative w-56">
+		<div className={`relative w-56 ${className}`}>
 			<Search
 				className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none"
 				aria-hidden="true"
 			/>
 			<input
+				ref={inputRef}
 				type="search"
-				value={value}
-				onChange={(e) => onChange(e.currentTarget.value)}
+				value={draft}
+				onChange={(e) => handleInput(e.currentTarget.value)}
+				onFocus={() => setFocused(true)}
+				onBlur={() => setFocused(false)}
+				onKeyDown={(e) => {
+					if (e.key === "Enter") emit(draft);
+					else if (e.key === "Escape") {
+						if (draft) {
+							e.preventDefault();
+							clear();
+						} else {
+							inputRef.current?.blur();
+						}
+					}
+				}}
 				placeholder={placeholder}
 				aria-label={ariaLabel ?? placeholder}
-				className="w-full h-8 pl-8 pr-3 rounded-md text-xs text-foreground bg-card border border-border placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus-visible:ring-ring focus:border-transparent transition-shadow"
+				className="w-full h-8 pl-8 pr-8 rounded-md text-xs text-foreground bg-background border border-input placeholder:text-muted-foreground hover:border-ring/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus:border-transparent transition-[box-shadow,border-color] [&::-webkit-search-cancel-button]:hidden"
 			/>
+			{draft ? (
+				<button
+					type="button"
+					onClick={clear}
+					aria-label="Clear search"
+					className="absolute right-1.5 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-5 h-5 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+				>
+					<X className="w-3.5 h-3.5" aria-hidden />
+				</button>
+			) : (
+				hotkey &&
+				!focused && (
+					<kbd
+						aria-hidden
+						className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none rounded border border-border bg-muted px-1 py-px font-mono text-[10px] leading-4 text-muted-foreground"
+					>
+						/
+					</kbd>
+				)
+			)}
 		</div>
 	);
 }

@@ -59,7 +59,13 @@ export function TargetModelsField({ value, onChange }: TargetModelsFieldProps) {
 					))}
 				</div>
 			)}
-			<SearchBox value={q} onChange={setQ} placeholder="Search models" />
+			<SearchBox
+				value={q}
+				onChange={setQ}
+				debounceMs={0}
+				hotkey={false}
+				placeholder="Search models"
+			/>
 			<div className="max-h-56 overflow-y-auto rounded-md border border-border bg-card">
 				{visible.length === 0 ? (
 					<p className="px-3 py-4 text-center text-xs text-muted-foreground">

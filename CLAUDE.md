@@ -9,10 +9,12 @@ Path alias: `@/*` → `src/*` (configured in `tsconfig.json` paths and `vite.con
 
 ## Dev workflow
 
-- **Dev server:** `bun run dev` on `:5140`. It proxies API calls (`/control`,
-  `/openapi.json`, …) to a running Relay **control plane** — default
-  `http://localhost:8080`, override with `RELAY_CONTROL_TARGET`. Spin up a
-  backend with `docker run -p 8080:8080 -p 8081:8081 wyolet/relay:standalone`.
+- **Dev server:** `bun run dev` on `:5140`. It proxies `/api` (the control
+  API mount; `/openapi.json` lives inside it) and `/config.json` (the runtime
+  config document) to a running Relay **control plane** — default
+  `http://localhost:8081` (`:8080` is the data plane), override with
+  `RELAY_CONTROL_TARGET`. Spin up a backend with
+  `docker run -p 8080:8080 -p 8081:8081 wyolet/relay:standalone`.
 - **API types:** generated from Relay's OpenAPI spec — never hand-edit
   `src/api/types.gen.ts`. `make gen` (or `RELAY_URL=… make gen`) regenerates it.
 - **Ship pipeline:** relay-ui has no compose/Dockerfile of its own. It builds to

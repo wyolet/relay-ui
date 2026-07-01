@@ -7,24 +7,20 @@ import {
 } from "@/lib/usage-math/window";
 
 describe("floorToInterval / advanceInterval", () => {
-	test("floors to local bucket starts", () => {
-		const ts = new Date(2026, 5, 10, 14, 37, 42).getTime();
-		expect(floorToInterval(ts, "5m")).toBe(
-			new Date(2026, 5, 10, 14, 35).getTime(),
-		);
-		expect(floorToInterval(ts, "1h")).toBe(new Date(2026, 5, 10, 14).getTime());
-		expect(floorToInterval(ts, "1d")).toBe(new Date(2026, 5, 10).getTime());
+	test("floors to epoch-aligned bucket starts (UTC midnight for 1d)", () => {
+		// Matches the relay's Bucketize: bucketStart = floor(unix/interval),
+		// regardless of the viewer's timezone.
+		const ts = Date.UTC(2026, 5, 10, 14, 37, 42);
+		expect(floorToInterval(ts, "5m")).toBe(Date.UTC(2026, 5, 10, 14, 35));
+		expect(floorToInterval(ts, "1h")).toBe(Date.UTC(2026, 5, 10, 14));
+		expect(floorToInterval(ts, "1d")).toBe(Date.UTC(2026, 5, 10));
 	});
 
 	test("advances one bucket per call", () => {
-		const start = new Date(2026, 5, 10).getTime();
-		expect(advanceInterval(start, "1d")).toBe(new Date(2026, 5, 11).getTime());
-		expect(advanceInterval(start, "1h")).toBe(
-			new Date(2026, 5, 10, 1).getTime(),
-		);
-		expect(advanceInterval(start, "5m")).toBe(
-			new Date(2026, 5, 10, 0, 5).getTime(),
-		);
+		const start = Date.UTC(2026, 5, 10);
+		expect(advanceInterval(start, "1d")).toBe(Date.UTC(2026, 5, 11));
+		expect(advanceInterval(start, "1h")).toBe(Date.UTC(2026, 5, 10, 1));
+		expect(advanceInterval(start, "5m")).toBe(Date.UTC(2026, 5, 10, 0, 5));
 	});
 });
 

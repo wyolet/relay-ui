@@ -246,7 +246,7 @@ function RelayKeysPanel() {
 		: allItems;
 
 	function setQ(q: string) {
-		void navigate({ search: (prev) => ({ ...prev, q }) });
+		void navigate({ search: (prev) => ({ ...prev, q }), replace: true });
 	}
 
 	async function handleToggleEnabled(rk: RelayKey, nextEnabled: boolean) {

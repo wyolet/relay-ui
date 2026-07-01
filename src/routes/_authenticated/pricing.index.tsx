@@ -76,7 +76,7 @@ function PricingsList() {
 	const truncated = data.total > items.length;
 
 	const patch = (next: Record<string, string | boolean | undefined>) =>
-		void navigate({ search: (prev) => ({ ...prev, ...next }) });
+		void navigate({ search: (prev) => ({ ...prev, ...next }), replace: true });
 
 	return (
 		<div>

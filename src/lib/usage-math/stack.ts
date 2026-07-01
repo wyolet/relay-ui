@@ -1,7 +1,7 @@
 /**
  * Generic stacked-series shaping shared by the usage and cost charts: rank
- * series by total volume, fold the long tail into "Others", and zero-fill a
- * local-calendar bucket grid over the whole window. Callers flatten their
+ * series by total volume, fold the long tail into "Others", and zero-fill an
+ * epoch-aligned bucket grid over the whole window. Callers flatten their
  * rows into (key, bucket, value) samples; this module owns the rest.
  */
 
@@ -52,10 +52,10 @@ export function stackSamples(
 	}
 	const hasOther = keep.size < totals.size;
 
-	// Zero-filled bucket grid over the FULL window, aligned to local calendar
-	// units (so daily bars sit on local midnights, hourly on the hour — DST-safe,
-	// since setDate/setHours respect the local offset). Empty buckets render as
-	// gaps instead of collapsing the axis to only the buckets that had traffic.
+	// Zero-filled bucket grid over the FULL window, epoch-aligned so it matches
+	// the relay's bucket boundaries exactly (same alignment deriveTimeline
+	// uses). Empty buckets render as gaps instead of collapsing the axis to
+	// only the buckets that had traffic.
 	const toMs = Date.parse(to);
 	const byEpoch = new Map<number, StackedPoint>();
 	const points: StackedPoint[] = [];

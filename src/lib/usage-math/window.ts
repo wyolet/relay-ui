@@ -13,27 +13,28 @@ export interface IsoWindow {
 export const USAGE_INTERVALS = ["5m", "1h", "1d"] as const;
 export type UsageInterval = (typeof USAGE_INTERVALS)[number];
 
-/** Floor a timestamp to the start of its local bucket (5m / hour / day). */
+/** Bucket width in milliseconds, matching the relay's epoch-aligned buckets. */
+export const INTERVAL_MS: Record<UsageInterval, number> = {
+	"5m": 5 * 60_000,
+	"1h": 3_600_000,
+	"1d": 86_400_000,
+};
+
+/**
+ * Floor a timestamp to the start of its bucket. Buckets align to the Unix
+ * epoch — the relay's Bucketize computes bucketStart = floor(unix/interval),
+ * so daily buckets start at UTC midnight. Flooring to *local* calendar units
+ * here would shift each sample onto the wrong bar (or off the grid entirely)
+ * for any non-UTC viewer.
+ */
 export function floorToInterval(ms: number, interval: UsageInterval): number {
-	const d = new Date(ms);
-	if (interval === "1d") {
-		d.setHours(0, 0, 0, 0);
-	} else if (interval === "1h") {
-		d.setMinutes(0, 0, 0);
-	} else {
-		d.setSeconds(0, 0);
-		d.setMinutes(Math.floor(d.getMinutes() / 5) * 5);
-	}
-	return d.getTime();
+	const step = INTERVAL_MS[interval];
+	return Math.floor(ms / step) * step;
 }
 
-/** Advance a timestamp by one local bucket (DST-safe via Date mutators). */
+/** Advance a timestamp by one bucket. */
 export function advanceInterval(ms: number, interval: UsageInterval): number {
-	const d = new Date(ms);
-	if (interval === "1d") d.setDate(d.getDate() + 1);
-	else if (interval === "1h") d.setHours(d.getHours() + 1);
-	else d.setMinutes(d.getMinutes() + 5);
-	return d.getTime();
+	return ms + INTERVAL_MS[interval];
 }
 
 export interface ComparisonWindows {

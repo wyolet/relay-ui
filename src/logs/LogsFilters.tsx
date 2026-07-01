@@ -368,6 +368,8 @@ function MultiCheckList({
 				<SearchBox
 					value={needle}
 					onChange={setNeedle}
+					debounceMs={0}
+					hotkey={false}
 					placeholder="Filter…"
 					aria-label={`Filter ${emptyLabel}`}
 				/>
