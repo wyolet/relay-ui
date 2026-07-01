@@ -26,7 +26,11 @@ export type ModelsListParams = NonNullable<
 export const modelsListQueryOptions = queryOptions({
 	queryKey: ["models"] as const,
 	queryFn: async (): Promise<ModelListResponse> => {
-		const { data, error } = await apiClient.GET("/models");
+		// limit=0 explicitly opts out of the server's default page window
+		// (relay >= 0.6 returns 100 models when no limit is given).
+		const { data, error } = await apiClient.GET("/models", {
+			params: { query: { limit: 0 } },
+		});
 		if (error) throw new ApiError(0, error.error);
 		return data;
 	},
