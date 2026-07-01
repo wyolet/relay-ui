@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Boxes } from "lucide-react";
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import { z } from "zod";
 import { bindingsListQueryOptions } from "@/api/hooks/bindings";
 import { governanceQueryOptions } from "@/api/hooks/governance";
@@ -13,7 +13,7 @@ import {
 	useModelsList,
 } from "@/api/hooks/models";
 import { policiesListQueryOptions } from "@/api/hooks/policies";
-import { providersListQueryOptions, useProviders } from "@/api/hooks/providers";
+import { providersListQueryOptions } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
 import { relayKeysListQueryOptions } from "@/api/hooks/relayKeys";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -27,13 +27,13 @@ import {
 	HostsTable,
 } from "@/hosts/HostsTable";
 import {
-	applyModelSort,
 	type ModelsSortDir,
 	type ModelsSortKey,
 	ModelsTable,
 } from "@/models/ModelsTable";
 import { SearchBox } from "@/shared/SearchBox";
 import { PageLoader } from "@/shared/Spinner";
+import { TablePager } from "@/shared/TablePager";
 import { TableToolbar } from "@/shared/TableToolbar";
 
 type Tab = "models" | "hosts";
@@ -44,8 +44,12 @@ const searchSchema = z.object({
 	tab: z.enum(["models", "hosts"]).default("models"),
 	q: z.string().default(""),
 	deprecated: z.enum(["active", "deprecated", "all"]).default("active"),
-	sort: z.enum(["name", "provider"]).default("name"),
-	dir: z.enum(["asc", "desc"]).default("asc"),
+	// Sorting is server-side now (the page window depends on it); "provider"
+	// was accepted here but no column ever triggered it. catch() absorbs
+	// stale bookmarked URLs instead of failing validation.
+	sort: z.enum(["name"]).catch("name").default("name"),
+	dir: z.enum(["asc", "desc"]).catch("asc").default("asc"),
+	page: z.number().int().min(1).catch(1).default(1),
 	hsort: z.enum(["name"]).default("name"),
 	hdir: z.enum(["asc", "desc"]).default("asc"),
 });
@@ -72,13 +76,25 @@ const MODEL_FILTERS = [
 	},
 ] as const satisfies readonly FilterDef[];
 
-/** Generous page size: we sort client-side, so load the whole filtered set and
- * warn (never silently truncate) if the relay reports more than we fetched. */
-const MODELS_PAGE_LIMIT = 500;
+const MODELS_PAGE_SIZE = 50;
 
-/** Map the UI filter state to GET /models query params. */
-function toModelsParams(q: string, status: ModelStatus): ModelsListParams {
-	const params: ModelsListParams = { limit: MODELS_PAGE_LIMIT };
+/** Map the UI filter/sort/page state to GET /models query params. Filtering,
+ * sorting, and windowing all happen server-side; the response's `total` is
+ * the pre-window match count the pager renders from. */
+function toModelsParams(
+	q: string,
+	status: ModelStatus,
+	dir: ModelsSortDir,
+	page: number,
+): ModelsListParams {
+	const params: ModelsListParams = {
+		limit: MODELS_PAGE_SIZE,
+		offset: (page - 1) * MODELS_PAGE_SIZE,
+		// The engine accepts a "-" prefix for descending on every sortable
+		// field; the generated enum only lists the ascending names (relay
+		// OpenAPI gap), hence the cast.
+		sort: (dir === "desc" ? "-name" : "name") as ModelsListParams["sort"],
+	};
 	const trimmed = q.trim();
 	if (trimmed) params.q = trimmed;
 	if (status === "active") params.deprecated = false;
@@ -88,11 +104,18 @@ function toModelsParams(q: string, status: ModelStatus): ModelsListParams {
 
 export const Route = createFileRoute("/_authenticated/models/")({
 	validateSearch: searchSchema,
-	loaderDeps: ({ search }) => ({ q: search.q, deprecated: search.deprecated }),
+	loaderDeps: ({ search }) => ({
+		q: search.q,
+		deprecated: search.deprecated,
+		dir: search.dir,
+		page: search.page,
+	}),
 	loader: ({ context, deps }) =>
 		Promise.all([
 			context.queryClient.ensureQueryData(
-				modelsListQuery(toModelsParams(deps.q, deps.deprecated)),
+				modelsListQuery(
+					toModelsParams(deps.q, deps.deprecated, deps.dir, deps.page),
+				),
 			),
 			context.queryClient.ensureQueryData(modelsListQueryOptions),
 			context.queryClient.ensureQueryData(hostsListQueryOptions),
@@ -109,54 +132,46 @@ export const Route = createFileRoute("/_authenticated/models/")({
 
 function ModelsList() {
 	const search = Route.useSearch();
-	const { data } = useModelsList(toModelsParams(search.q, search.deprecated));
+	const { data } = useModelsList(
+		toModelsParams(search.q, search.deprecated, search.dir, search.page),
+	);
 	const { data: hostsData } = useHosts();
-	const { data: providersData } = useProviders();
 	const navigate = useNavigate({ from: "/models" });
+	// Server-filtered, -sorted, and -windowed: render as-is.
 	const items = data.items ?? [];
-	const truncated = data.total > items.length;
 	const hostsById = new Map(
 		(hostsData.items ?? [])
 			.filter((h) => h.metadata.id)
 			.map((h) => [h.metadata.id as string, h] as const),
 	);
 
-	const providerSlugById = new Map(
-		(providersData.items ?? [])
-			.filter((p) => p.metadata.id)
-			.map((p) => [p.metadata.id as string, p.metadata.name] as const),
-	);
-
-	// Server already applied q + status; we only sort the returned set.
-	const visible = applyModelSort(
-		items,
-		search.sort,
-		search.dir,
-		providerSlugById,
-	);
-
-	const patch = (next: Record<string, string | boolean | undefined>) =>
+	const patch = (next: Record<string, string | number | boolean | undefined>) =>
 		void navigate({ search: (prev) => ({ ...prev, ...next }), replace: true });
-	function toggleSort(field: ModelsSortKey) {
-		const dir: ModelsSortDir =
-			search.sort === field ? (search.dir === "asc" ? "desc" : "asc") : "asc";
-		patch({ sort: field, dir });
+	function toggleSort(_field: ModelsSortKey) {
+		const dir: ModelsSortDir = search.dir === "asc" ? "desc" : "asc";
+		patch({ dir, page: 1 });
 	}
+
+	// A filter change can strand the page past the last one — snap back.
+	const pageCount = Math.max(1, Math.ceil(data.total / MODELS_PAGE_SIZE));
+	useEffect(() => {
+		if (search.page > pageCount) patch({ page: pageCount });
+	});
 
 	return (
 		<div>
 			<FilterBar
 				defs={MODEL_FILTERS}
 				state={{ q: search.q, deprecated: search.deprecated }}
-				onChange={patch}
+				onChange={(next) => patch({ ...next, page: 1 })}
 				className="mb-3"
 			/>
 
 			<div className="mb-2 text-[11px] text-muted-foreground">
-				{items.length} of {data.total} model{data.total === 1 ? "" : "s"}
+				{data.total} model{data.total === 1 ? "" : "s"}
 			</div>
 
-			{visible.length === 0 ? (
+			{items.length === 0 ? (
 				<div className="rounded-lg border border-dashed border-input bg-card px-6 py-14 text-center">
 					<Boxes className="w-6 h-6 mx-auto mb-3 text-muted-foreground/50" />
 					<p className="text-sm text-muted-foreground">
@@ -168,18 +183,18 @@ function ModelsList() {
 			) : (
 				<>
 					<ModelsTable
-						items={visible}
+						items={items}
 						sort={search.sort}
 						dir={search.dir}
 						onSort={toggleSort}
 						hostsById={hostsById}
 					/>
-					{truncated && (
-						<p className="mt-2 text-[11px] text-muted-foreground">
-							Showing the first {items.length} of {data.total}. Refine your
-							search to narrow the list.
-						</p>
-					)}
+					<TablePager
+						page={search.page}
+						pageSize={MODELS_PAGE_SIZE}
+						total={data.total}
+						onPage={(page) => patch({ page })}
+					/>
 				</>
 			)}
 		</div>

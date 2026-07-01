@@ -27,10 +27,11 @@ import { confirm } from "@/shared/ConfirmDialog";
 import { Switch } from "@/shared/Switch";
 import { toast } from "@/shared/Toast";
 
-export type ModelsSortKey = "name" | "provider";
+// Sorting happens server-side (GET /models?sort=) since pagination landed:
+// the page window depends on order, so client-side sorting stopped being
+// coherent. Only name is server-sortable today.
+export type ModelsSortKey = "name";
 export type ModelsSortDir = "asc" | "desc";
-
-export const MODEL_SORT_KEYS = ["name", "provider"] as const;
 
 function deprecationNote(m: Model): string | null {
 	const d = m.spec.deprecation;
@@ -54,19 +55,6 @@ function providerOf(m: Model, slugById?: Map<string, string>): string {
 	const id = providerIdOf(m);
 	if (!id) return "";
 	return slugById?.get(id) ?? id;
-}
-
-function sortValue(
-	m: Model,
-	key: ModelsSortKey,
-	slugById?: Map<string, string>,
-): string | number {
-	switch (key) {
-		case "name":
-			return displayLabel(m.metadata).toLowerCase();
-		case "provider":
-			return providerOf(m, slugById).toLowerCase();
-	}
 }
 
 export type ModelDeprecatedFilter = "active" | "deprecated" | "all";
@@ -103,21 +91,6 @@ export function applyModelFilter(
 			.toLowerCase();
 		return hay.includes(ql);
 	});
-}
-
-export function applyModelSort(
-	items: Model[],
-	key: ModelsSortKey,
-	dir: ModelsSortDir,
-	slugById?: Map<string, string>,
-): Model[] {
-	const sorted = [...items].sort((a, b) => {
-		const av = sortValue(a, key, slugById);
-		const bv = sortValue(b, key, slugById);
-		if (typeof av === "number" && typeof bv === "number") return av - bv;
-		return String(av).localeCompare(String(bv), undefined, { numeric: true });
-	});
-	return dir === "asc" ? sorted : sorted.reverse();
 }
 
 interface SortHeaderProps {
