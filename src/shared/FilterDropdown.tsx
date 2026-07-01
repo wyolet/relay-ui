@@ -17,6 +17,8 @@ interface FilterDropdownProps<T extends string> {
 	options: readonly FilterDropdownOption<T>[];
 	onChange: (value: T) => void;
 	align?: "start" | "end" | "center";
+	/** Highlight the chip when the filter is narrowing (not at its default). */
+	active?: boolean;
 	className?: string;
 }
 
@@ -26,6 +28,7 @@ export function FilterDropdown<T extends string>({
 	options,
 	onChange,
 	align = "end",
+	active = false,
 	className,
 }: FilterDropdownProps<T>) {
 	const current = options.find((o) => o.value === value);
@@ -33,7 +36,10 @@ export function FilterDropdown<T extends string>({
 		<DropdownMenu>
 			<DropdownMenuTrigger
 				className={[
-					"inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md border border-input bg-background text-xs font-medium text-foreground hover:bg-muted transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+					"inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md border text-xs font-medium text-foreground hover:bg-muted transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+					active
+						? "border-primary/40 bg-primary/5"
+						: "border-input bg-background",
 					className ?? "",
 				].join(" ")}
 			>

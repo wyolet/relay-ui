@@ -71,6 +71,9 @@ export function FilterBar({
 					>
 						<X className="w-3.5 h-3.5" aria-hidden />
 						Clear
+						<span className="inline-flex items-center justify-center min-w-4 h-4 px-1 rounded-full bg-border/60 text-[10px] font-medium tabular-nums">
+							{active}
+						</span>
 					</button>
 				)}
 				{actions}
@@ -97,6 +100,7 @@ function Control({
 				value={value}
 				options={def.options}
 				onChange={set}
+				active={value !== (def.default ?? "")}
 			/>
 		);
 	}

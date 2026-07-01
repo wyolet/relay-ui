@@ -136,7 +136,7 @@ function ModelsList() {
 	);
 
 	const patch = (next: Record<string, string | boolean | undefined>) =>
-		void navigate({ search: (prev) => ({ ...prev, ...next }) });
+		void navigate({ search: (prev) => ({ ...prev, ...next }), replace: true });
 	function toggleSort(field: ModelsSortKey) {
 		const dir: ModelsSortDir =
 			search.sort === field ? (search.dir === "asc" ? "desc" : "asc") : "asc";
@@ -196,12 +196,15 @@ function HostsList() {
 	const visible = applyHostSort(filtered, search.hsort, search.hdir);
 
 	function setQ(q: string) {
-		void navigate({ search: (prev) => ({ ...prev, q }) });
+		void navigate({ search: (prev) => ({ ...prev, q }), replace: true });
 	}
 	function toggleSort(field: HostsSortKey) {
 		const dir: HostsSortDir =
 			search.hsort === field ? (search.hdir === "asc" ? "desc" : "asc") : "asc";
-		void navigate({ search: (prev) => ({ ...prev, hsort: field, hdir: dir }) });
+		void navigate({
+			search: (prev) => ({ ...prev, hsort: field, hdir: dir }),
+			replace: true,
+		});
 	}
 
 	return (
