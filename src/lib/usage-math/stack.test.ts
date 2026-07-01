@@ -6,8 +6,8 @@ import {
 	stackSamples,
 } from "@/lib/usage-math/stack";
 
-// Local-time buckets so the grid aligns with floorToInterval's local calendar.
-const day = (d: number) => new Date(2026, 5, d).toISOString();
+// UTC-midnight buckets, exactly as the relay emits them (epoch-aligned).
+const day = (d: number) => new Date(Date.UTC(2026, 5, d)).toISOString();
 
 describe("stackSamples", () => {
 	test("zero-fills the full window and orders series by volume", () => {
@@ -43,6 +43,25 @@ describe("stackSamples", () => {
 		const { series } = stackSamples(samples, day(1), day(1), "1d");
 		expect(series).toHaveLength(MAX_SERIES + 1);
 		expect(series[series.length - 1]).toBe(OTHER_KEY);
+	});
+
+	test("keeps server buckets when the window edges aren't bucket-aligned", () => {
+		// Regression: a "week" window starts at *local* midnight (e.g. Sunday
+		// 19:00Z for UTC+5), but the relay's 1d buckets start at UTC midnight.
+		// The old local-calendar grid floored this sample off the grid and
+		// silently dropped it.
+		const from = "2026-06-30T19:00:00.000Z";
+		const to = "2026-07-03T19:00:00.000Z";
+		const samples: SeriesSample[] = [
+			{ key: "a", bucket: "2026-07-01T00:00:00.000Z", value: 7 },
+		];
+		const { points } = stackSamples(samples, from, to, "1d");
+		const total = points.reduce((acc, p) => acc + (Number(p.a) || 0), 0);
+		expect(total).toBe(7);
+		// Grid itself is epoch-aligned: every bucket sits on a UTC midnight.
+		for (const p of points) {
+			expect(Date.parse(String(p.bucket)) % 86_400_000).toBe(0);
+		}
 	});
 
 	test("no samples → bare zero grid, no series", () => {

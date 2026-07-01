@@ -263,11 +263,16 @@ export function resolveWindow(
 		const fromMs = Date.parse(customFrom);
 		const toMs = customTo ? Date.parse(customTo) : quantizedNow().getTime();
 		const safeTo = Number.isNaN(toMs) ? quantizedNow().getTime() : toMs;
-		return {
-			from: new Date(fromMs).toISOString(),
-			to: new Date(safeTo).toISOString(),
-			interval: intervalForSpan(Math.max(safeTo - fromMs, 0)),
-		};
+		// Malformed `from` (hand-edited or truncated URL) falls through to the
+		// preset default below — new Date(NaN).toISOString() would throw and
+		// take down the whole route loader.
+		if (!Number.isNaN(fromMs)) {
+			return {
+				from: new Date(fromMs).toISOString(),
+				to: new Date(safeTo).toISOString(),
+				interval: intervalForSpan(Math.max(safeTo - fromMs, 0)),
+			};
+		}
 	}
 
 	// `start` = first slot of the period, `end` = first slot *after* it, so the

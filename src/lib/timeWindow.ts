@@ -24,12 +24,29 @@ export function windowLabel(seconds: number): string {
 	return findWindowPreset(seconds)?.label ?? `Every ${seconds}s`;
 }
 
-/** Compact window: "1s" / "5m" / "1h" / "2d". */
+/**
+ * Compact window: "1s" / "5m" / "1h" / "2d". Non-preset values keep their two
+ * most significant units ("1m30s", "1h30m") — rounding 90s up to "2m" would
+ * overstate the limit an operator reads off the badge.
+ */
 export function windowShort(seconds: number): string {
-	if (seconds < 60) return `${seconds}s`;
-	if (seconds < 3600) return `${Math.round(seconds / 60)}m`;
-	if (seconds < 86_400) return `${Math.round(seconds / 3600)}h`;
-	return `${Math.round(seconds / 86_400)}d`;
+	const units = [
+		{ size: 86_400, suffix: "d" },
+		{ size: 3600, suffix: "h" },
+		{ size: 60, suffix: "m" },
+		{ size: 1, suffix: "s" },
+	] as const;
+	const parts: string[] = [];
+	let rest = Math.max(0, Math.floor(seconds));
+	for (const { size, suffix } of units) {
+		const n = Math.floor(rest / size);
+		if (n > 0) {
+			parts.push(`${n}${suffix}`);
+			rest -= n * size;
+		}
+		if (parts.length === 2) break;
+	}
+	return parts.length > 0 ? parts.join("") : "0s";
 }
 
 /**
