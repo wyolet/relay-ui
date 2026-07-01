@@ -66,8 +66,16 @@ export async function loadRuntimeConfig(): Promise<void> {
 
 const trimSlash = (u: string): string => u.replace(/\/$/, "");
 
-/** Control/admin API base. Defaults to the config doc's origin. */
+/**
+ * Control/admin API base. Defaults to the config doc's origin. The dev-only
+ * `VITE_CONTROL_API_URL` override wins over the config document — the escape
+ * hatch (documented in .env.development.example) for a backend whose config
+ * doc advertises a stale base, e.g. routes moved under /api while the doc
+ * still returns the bare origin.
+ */
 export function controlApiUrl(): string {
+	const override = import.meta.env.VITE_CONTROL_API_URL;
+	if (override) return trimSlash(override);
 	return trimSlash(loaded.controlApiUrl ?? configOrigin());
 }
 
