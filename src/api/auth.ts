@@ -6,18 +6,22 @@ interface Whoami {
 	authenticated: boolean;
 	userId?: string;
 	username?: string;
+	roles: string[];
 }
 
 /**
- * GET /auth/whoami — returns { user_id, username } on 200.
+ * GET /auth/whoami — returns { user_id, username, roles } on 200.
  * Any non-OK response means unauthenticated.
  */
 async function fetchWhoami(): Promise<Whoami> {
 	const { data } = await apiClient.GET("/auth/whoami");
+	// `roles` isn't in types.gen.ts yet — cast goes away on the next types.gen regen.
+	const roles = (data as { roles?: string[] } | undefined)?.roles;
 	return {
 		authenticated: Boolean(data?.user_id),
 		userId: data?.user_id,
 		username: data?.username,
+		roles: roles ?? [],
 	};
 }
 
@@ -37,6 +41,8 @@ export function useAuth() {
 	const authenticated = data?.authenticated ?? false;
 	const username = data?.username;
 	const userId = data?.userId;
+	const roles = data?.roles ?? [];
+	const isAdmin = roles.includes("admin");
 
 	async function login(username: string, password: string): Promise<void> {
 		const { error } = await apiClient.POST("/auth/login", {
@@ -58,12 +64,13 @@ export function useAuth() {
 		// navigate, beforeLoad never re-runs and the user stays on the page.
 		queryClient.setQueryData<Whoami>(whoamiQueryOptions.queryKey, {
 			authenticated: false,
+			roles: [],
 		});
 		await navigate({ to: "/login" });
 		queryClient.clear();
 	}
 
-	return { authenticated, username, userId, login, logout };
+	return { authenticated, username, userId, roles, isAdmin, login, logout };
 }
 
 export class AuthError extends Error {

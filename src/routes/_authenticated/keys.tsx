@@ -320,17 +320,21 @@ function RelayKeysPanel() {
 					{allItems.length === 0 ? (
 						<>
 							<p className="text-sm font-medium text-foreground mb-1">
-								No keys yet
+								Create your first API key
 							</p>
-							<p className="text-sm text-muted-foreground mb-5">
-								Create a key for the first app that calls this relay.
+							<p className="text-sm text-muted-foreground mb-5 max-w-sm mx-auto">
+								Requests to the relay authenticate with this key — send it as{" "}
+								<code className="font-mono text-[11px] text-foreground bg-muted px-1 py-0.5 rounded">
+									Authorization: Bearer {"<key>"}
+								</code>
+								.
 							</p>
 							<Link
 								to="/relay-keys/new"
 								className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-sm font-semibold text-white transition-colors"
 							>
 								<Plus className="w-4 h-4" />
-								Create your first key
+								Create API key
 							</Link>
 						</>
 					) : (

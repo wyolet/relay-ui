@@ -6,6 +6,8 @@ import { motion } from "motion/react";
 import { useState } from "react";
 import { z } from "zod";
 import { AuthError, useAuth, whoamiQueryOptions } from "@/api/auth";
+import { CONTROL_API_URL } from "@/api/client";
+import { feature } from "@/api/runtimeConfig";
 import { Button } from "@/components/ui/button";
 import {
 	InputGroup,
@@ -284,6 +286,26 @@ function LoginPage() {
 						)}
 					</form.Subscribe>
 				</form>
+
+				{feature("oidc") && (
+					<div className="mt-4 flex flex-col gap-4">
+						<div className="flex items-center gap-3">
+							<div className="h-px flex-1 bg-border/50" />
+							<span className="text-xs text-muted-foreground">or</span>
+							<div className="h-px flex-1 bg-border/50" />
+						</div>
+						<Button
+							type="button"
+							variant="outline"
+							className="w-full"
+							onClick={() => {
+								window.location.assign(`${CONTROL_API_URL}/auth/oidc/start`);
+							}}
+						>
+							Continue with SSO
+						</Button>
+					</div>
+				)}
 
 				<div className="mt-8 border-t border-border/50 pt-6">
 					<LiveStatus />
