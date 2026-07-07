@@ -33,6 +33,7 @@ import {
 	usePickerCatalog,
 } from "@/models/usePickerCatalog";
 import { Chip } from "@/shared/Chip";
+import { OptionRow } from "@/shared/OptionRow";
 
 type Tab = "summary" | "providers" | "models" | "hosts" | "raw";
 
@@ -332,10 +333,9 @@ function ProviderList({
 				const modelCount = (index.modelsByProvider.get(name) ?? []).length;
 				return (
 					<li key={p.id}>
-						<button
-							type="button"
+						<OptionRow
 							onClick={() => onToggle(p)}
-							className="w-full flex items-center justify-between gap-3 px-3 py-2 text-left hover:bg-muted/40 transition-colors"
+							className="justify-between"
 						>
 							<span className="flex items-center gap-2.5 min-w-0">
 								<RowCheckbox state={selected ? "on" : "off"} />
@@ -349,7 +349,7 @@ function ProviderList({
 							<span className="text-[11px] text-muted-foreground tabular-nums">
 								{modelCount} model{modelCount === 1 ? "" : "s"}
 							</span>
-						</button>
+						</OptionRow>
 					</li>
 				);
 			})}
@@ -388,11 +388,10 @@ function ModelList({
 						: "off";
 				return (
 					<li key={m.id}>
-						<button
-							type="button"
+						<OptionRow
 							onClick={() => onToggleModel(m)}
 							disabled={coveredByProvider}
-							className="w-full flex items-center justify-between gap-3 px-3 py-2 text-left hover:bg-muted/40 transition-colors disabled:cursor-not-allowed"
+							className="justify-between"
 						>
 							<span className="flex items-center gap-2.5 min-w-0">
 								<RowCheckbox state={state} />
@@ -430,7 +429,7 @@ function ModelList({
 									);
 								})}
 							</span>
-						</button>
+						</OptionRow>
 					</li>
 				);
 			})}
@@ -475,10 +474,9 @@ function HostList({
 				const finalState: CheckState = hostGranted ? "on" : state;
 				return (
 					<li key={h.id}>
-						<button
-							type="button"
+						<OptionRow
 							onClick={() => onToggle(h)}
-							className="w-full flex items-center justify-between gap-3 px-3 py-2 text-left hover:bg-muted/40 transition-colors"
+							className="justify-between"
 						>
 							<span className="flex items-center gap-2.5 min-w-0">
 								<RowCheckbox state={finalState} />
@@ -495,7 +493,7 @@ function HostList({
 							<span className="text-[11px] text-muted-foreground tabular-nums">
 								{total === 0 ? "0 models" : `${covered}/${total}`}
 							</span>
-						</button>
+						</OptionRow>
 					</li>
 				);
 			})}

@@ -21,6 +21,7 @@ import type {
 	PolicyHostRequirements as Requirements,
 } from "@/policies/usePolicyHostRequirements";
 import { AlertBanner } from "@/shared/AlertBanner";
+import { OptionRow } from "@/shared/OptionRow";
 
 interface Props {
 	requirements: Requirements;
@@ -366,13 +367,12 @@ function AddKeyPopover({ available, onPick, disabled }: AddKeyPopoverProps) {
 				<ul className="flex flex-col">
 					{available.map((k) => (
 						<li key={k.metadata.id}>
-							<button
-								type="button"
+							<OptionRow
 								onClick={() => k.metadata.id && onPick(k.metadata.id)}
-								className="w-full text-left px-2 py-1.5 rounded text-xs hover:bg-muted text-foreground"
+								className="rounded px-2 py-1.5 text-xs text-foreground hover:bg-muted"
 							>
 								{displayLabel(k.metadata)}
-							</button>
+							</OptionRow>
 						</li>
 					))}
 				</ul>

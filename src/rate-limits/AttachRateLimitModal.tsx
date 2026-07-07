@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { ModelPicker } from "@/models/ModelPicker";
+import { OptionRow } from "@/shared/OptionRow";
 
 export interface RLMeta {
 	id: string;
@@ -161,12 +162,10 @@ function Step1RateLimit({ value, onChange, options }: Step1Props) {
 					const selected = opt.id === value;
 					return (
 						<li key={opt.id}>
-							<button
-								type="button"
+							<OptionRow
 								onClick={() => onChange(opt.id)}
-								className={`w-full flex items-start gap-2 px-2 py-2 text-left hover:bg-muted/50 ${
-									selected ? "bg-primary/10" : ""
-								}`}
+								selected={selected}
+								className="items-start gap-2 px-2 hover:bg-muted/50"
 							>
 								<span
 									className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${
@@ -187,7 +186,7 @@ function Step1RateLimit({ value, onChange, options }: Step1Props) {
 										</span>
 									)}
 								</span>
-							</button>
+							</OptionRow>
 						</li>
 					);
 				})}

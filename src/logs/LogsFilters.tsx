@@ -18,6 +18,7 @@ import {
 import type { FilterOption } from "@/filters/types";
 import { cn } from "@/lib/utils";
 import { Chip } from "@/shared/Chip";
+import { OptionRow } from "@/shared/OptionRow";
 import { SearchBox } from "@/shared/SearchBox";
 import {
 	LOG_DIMENSIONS,
@@ -379,11 +380,10 @@ function MultiCheckList({
 					const checked = selected.includes(o.value);
 					return (
 						<li key={o.value}>
-							<button
-								type="button"
+							<OptionRow
 								aria-pressed={checked}
 								onClick={() => onToggle(o.value)}
-								className="flex w-full items-center gap-2 rounded-md px-1 py-1.5 text-left text-xs text-foreground hover:bg-muted/50"
+								className="gap-2 rounded-md px-1 py-1.5 text-xs text-foreground hover:bg-muted/50"
 							>
 								<span
 									className={cn(
@@ -397,7 +397,7 @@ function MultiCheckList({
 									{checked && <Check className="size-3" />}
 								</span>
 								<span className="min-w-0 truncate">{o.label}</span>
-							</button>
+							</OptionRow>
 						</li>
 					);
 				})}
