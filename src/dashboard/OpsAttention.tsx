@@ -60,13 +60,13 @@ function OpsHeader() {
 							"inline-flex items-center gap-1.5 font-medium",
 							s.status === "error"
 								? "text-destructive"
-								: "text-amber-600 dark:text-amber-400",
+								: "text-warning",
 						)}
 					>
 						<span
 							className={cn(
 								"size-2 rounded-full",
-								s.status === "error" ? "bg-destructive" : "bg-amber-500",
+								s.status === "error" ? "bg-destructive" : "bg-warning",
 							)}
 							aria-hidden="true"
 						/>
@@ -74,7 +74,7 @@ function OpsHeader() {
 					</span>
 				))}
 				{masterKeyConfigured === false && (
-					<span className="inline-flex items-center gap-1 font-medium text-amber-600 dark:text-amber-400">
+					<span className="inline-flex items-center gap-1 font-medium text-warning">
 						<ShieldAlert className="size-3.5" aria-hidden="true" />
 						No master key
 					</span>
@@ -151,7 +151,7 @@ function RejectionsPanel() {
 								>
 									{labelFor(g.key)}
 								</code>
-								<span className="shrink-0 text-sm font-medium tabular-nums text-amber-600 dark:text-amber-400">
+								<span className="shrink-0 text-sm font-medium tabular-nums text-warning">
 									{fmtCompact(g.count)}
 								</span>
 							</li>
@@ -182,7 +182,7 @@ function RejectionChip({
 			to="/logs"
 			search={{ status: statuses, since: "24h" }}
 			title={hint}
-			className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] text-amber-600 hover:bg-amber-500/20 dark:text-amber-400"
+			className="inline-flex items-center gap-1 rounded-full bg-warning/10 px-2 py-0.5 text-[11px] text-warning hover:bg-warning/20"
 		>
 			{label}
 			<span className="font-semibold tabular-nums">{fmtCompact(count)}</span>
@@ -221,7 +221,7 @@ function BreakerPanel() {
 											"shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
 											k.state === "open"
 												? "bg-destructive/15 text-destructive"
-												: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
+												: "bg-warning/15 text-warning",
 										)}
 									>
 										{k.state === "open" ? "Open" : "Half-open"}
@@ -319,7 +319,7 @@ function PanelShell({
 						className={cn(
 							"rounded-full px-1.5 py-0.5 text-[11px] font-semibold tabular-nums",
 							tone === "warn"
-								? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+								? "bg-warning/10 text-warning"
 								: "bg-destructive/10 text-destructive",
 						)}
 					>
@@ -337,7 +337,7 @@ function AllClear({ children }: { children: ReactNode }) {
 	return (
 		<div className="flex items-center gap-2 px-4 py-3 text-xs text-muted-foreground">
 			<CircleCheck
-				className="size-4 text-emerald-600 dark:text-emerald-400"
+				className="size-4 text-success"
 				aria-hidden="true"
 			/>
 			{children}

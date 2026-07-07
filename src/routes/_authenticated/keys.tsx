@@ -164,11 +164,11 @@ type StatusTone = "active" | "muted" | "danger" | "warn";
 function StatusDot({ tone, label }: { tone: StatusTone; label: string }) {
 	const cls = {
 		active:
-			"bg-emerald-500 shadow-[0_0_6px_rgb(16_185_129_/_0.7)] dark:shadow-[0_0_8px_rgb(16_185_129_/_0.5)]",
+			"bg-success shadow-[0_0_6px_color-mix(in_oklab,var(--success)_70%,transparent)]",
 		muted: "bg-neutral-400 dark:bg-neutral-600",
 		danger:
-			"bg-red-500 shadow-[0_0_6px_rgb(239_68_68_/_0.7)] dark:shadow-[0_0_8px_rgb(239_68_68_/_0.5)]",
-		warn: "bg-amber-500 shadow-[0_0_6px_rgb(245_158_11_/_0.7)] dark:shadow-[0_0_8px_rgb(245_158_11_/_0.5)]",
+			"bg-destructive shadow-[0_0_6px_color-mix(in_oklab,var(--destructive)_70%,transparent)]",
+		warn: "bg-warning shadow-[0_0_6px_color-mix(in_oklab,var(--warning)_70%,transparent)]",
 	}[tone];
 	return (
 		<span
@@ -317,7 +317,7 @@ function RelayKeysPanel() {
 				actions={
 					<Link
 						to="/relay-keys/new"
-						className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-xs font-semibold text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+						className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md bg-primary hover:bg-primary/90 active:bg-primary/80 text-xs font-semibold text-primary-foreground transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 					>
 						<Plus className="w-3.5 h-3.5" />
 						New key
@@ -342,7 +342,7 @@ function RelayKeysPanel() {
 							</p>
 							<Link
 								to="/relay-keys/new"
-								className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-sm font-semibold text-white transition-colors"
+								className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-primary hover:bg-primary/90 active:bg-primary/80 text-sm font-semibold text-primary-foreground transition-colors"
 							>
 								<Plus className="w-4 h-4" />
 								Create API key
@@ -557,7 +557,7 @@ function HostKeysPanel() {
 				actions={
 					<Link
 						to="/host-keys/new"
-						className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-xs font-semibold text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+						className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md bg-primary hover:bg-primary/90 active:bg-primary/80 text-xs font-semibold text-primary-foreground transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 					>
 						<Plus className="w-3.5 h-3.5" />
 						New credential
@@ -579,7 +579,7 @@ function HostKeysPanel() {
 							</p>
 							<Link
 								to="/host-keys/new"
-								className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-sm font-semibold text-white transition-colors"
+								className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-primary hover:bg-primary/90 active:bg-primary/80 text-sm font-semibold text-primary-foreground transition-colors"
 							>
 								<Plus className="w-4 h-4" />
 								Create your first credential

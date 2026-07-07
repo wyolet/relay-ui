@@ -312,7 +312,7 @@ function pickContextWindow(
 function DeprecationBadge({ status }: { status: string }) {
 	const label = status.toLowerCase() === "sunset" ? "Sunset" : "Deprecated";
 	return (
-		<span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium uppercase tracking-wide bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/30 whitespace-nowrap">
+		<span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium uppercase tracking-wide bg-warning/10 text-warning border border-warning/30 whitespace-nowrap">
 			{label}
 		</span>
 	);

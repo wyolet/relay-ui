@@ -195,7 +195,7 @@ function MetadataFooter({ pricing }: { pricing: Pricing }) {
 
 function StatusBadge({ enabled }: { enabled: boolean }) {
 	return enabled ? (
-		<span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-900/60">
+		<span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-success-soft text-success border border-success/30">
 			Enabled
 		</span>
 	) : (

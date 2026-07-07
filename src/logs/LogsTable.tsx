@@ -25,14 +25,14 @@ function statusBand(status: number): string {
 	return `${Math.floor(status / 100)}xx`;
 }
 function statusTone(e: LogEvent): string {
-	if (!isErrorEvent(e)) return "text-emerald-600 dark:text-emerald-400";
+	if (!isErrorEvent(e)) return "text-success";
 	return e.status >= 500
 		? "text-destructive"
-		: "text-amber-600 dark:text-amber-400";
+		: "text-warning";
 }
 function statusDot(e: LogEvent): string {
-	if (!isErrorEvent(e)) return "bg-emerald-500 dark:bg-emerald-400";
-	return e.status >= 500 ? "bg-destructive" : "bg-amber-500 dark:bg-amber-400";
+	if (!isErrorEvent(e)) return "bg-success";
+	return e.status >= 500 ? "bg-destructive" : "bg-warning";
 }
 
 /**

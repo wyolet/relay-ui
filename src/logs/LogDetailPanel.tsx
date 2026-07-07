@@ -40,13 +40,13 @@ export function LogDetailPanel({
 
 function statusTone(status: number, isError: boolean): string {
 	if (isError && status >= 500) return "text-destructive";
-	if (isError) return "text-amber-600 dark:text-amber-400";
-	return "text-emerald-600 dark:text-emerald-400";
+	if (isError) return "text-warning";
+	return "text-success";
 }
 function statusDot(status: number, isError: boolean): string {
 	if (isError && status >= 500) return "bg-destructive";
-	if (isError) return "bg-amber-500 dark:bg-amber-400";
-	return "bg-emerald-500 dark:bg-emerald-400";
+	if (isError) return "bg-warning";
+	return "bg-success";
 }
 
 function PanelBody({

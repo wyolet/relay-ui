@@ -231,7 +231,7 @@ function PoliciesPanel() {
 				actions={
 					<Link
 						to="/policies/new"
-						className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-xs font-semibold text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+						className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md bg-primary hover:bg-primary/90 active:bg-primary/80 text-xs font-semibold text-primary-foreground transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 					>
 						<Plus className="w-3.5 h-3.5" />
 						New policy
@@ -253,7 +253,7 @@ function PoliciesPanel() {
 							</p>
 							<Link
 								to="/policies/new"
-								className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-sm font-semibold text-white transition-colors"
+								className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-primary hover:bg-primary/90 active:bg-primary/80 text-sm font-semibold text-primary-foreground transition-colors"
 							>
 								<Plus className="w-4 h-4" />
 								Create your first policy
@@ -421,7 +421,7 @@ function PolicyRow({
 						className={[
 							"inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border",
 							enabled
-								? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-200/60 dark:border-emerald-900/60"
+								? "bg-success-soft text-success border-success/30"
 								: "bg-muted text-muted-foreground border-border",
 						].join(" ")}
 						title="Host-owned — toggle the host or model instead"
@@ -512,7 +512,7 @@ function RateLimitsPanel() {
 				actions={
 					<Link
 						to="/policies/rate-limits/new"
-						className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-xs font-semibold text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+						className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md bg-primary hover:bg-primary/90 active:bg-primary/80 text-xs font-semibold text-primary-foreground transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 					>
 						<Plus className="w-3.5 h-3.5" />
 						New rate limit
@@ -533,7 +533,7 @@ function RateLimitsPanel() {
 							</p>
 							<Link
 								to="/policies/rate-limits/new"
-								className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-sm font-semibold text-white transition-colors"
+								className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-primary hover:bg-primary/90 active:bg-primary/80 text-sm font-semibold text-primary-foreground transition-colors"
 							>
 								<Plus className="w-4 h-4" />
 								Create your first rate limit

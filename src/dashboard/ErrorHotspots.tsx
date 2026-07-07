@@ -34,7 +34,7 @@ export function ErrorHotspots() {
 			{hotspots.length === 0 ? (
 				<div className="flex items-center gap-2 px-4 py-4 text-xs text-muted-foreground">
 					<ShieldCheck
-						className="size-4 text-emerald-600 dark:text-emerald-400"
+						className="size-4 text-success"
 						aria-hidden="true"
 					/>
 					No errors in the current window.
@@ -53,7 +53,7 @@ export function ErrorHotspots() {
 								{labelFor(g.key)}
 							</code>
 							<div className="flex shrink-0 items-center gap-3 text-right tabular-nums">
-								<span className="text-sm font-medium text-amber-600 dark:text-amber-400">
+								<span className="text-sm font-medium text-warning">
 									{fmtPct(g.errorRate)}
 								</span>
 								<span className="w-14 text-[11px] text-muted-foreground">

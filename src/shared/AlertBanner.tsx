@@ -22,13 +22,13 @@ const TONE: Record<AlertSeverity, Tone> = {
 	},
 	warn: {
 		Icon: AlertTriangle,
-		iconClass: "text-amber-600 dark:text-amber-400",
-		wrapClass: "border-amber-500/30 bg-amber-500/5",
+		iconClass: "text-warning",
+		wrapClass: "border-warning/30 bg-warning/5",
 	},
 	info: {
 		Icon: Info,
-		iconClass: "text-sky-600 dark:text-sky-400",
-		wrapClass: "border-sky-500/30 bg-sky-500/5",
+		iconClass: "text-info",
+		wrapClass: "border-info/30 bg-info/5",
 	},
 };
 
@@ -43,7 +43,7 @@ interface AlertBannerProps {
 
 /**
  * The one warning/error/info banner. Use this anywhere we'd otherwise
- * hand-roll an amber/destructive/sky-tinted card. Optional `body` slot lets
+ * hand-roll a warning/destructive/info-tinted card. Optional `body` slot lets
  * callers attach a table or list beneath the header inside the same frame.
  */
 export function AlertBanner({
@@ -80,10 +80,10 @@ export function AlertBanner({
 				<div
 					className={`border-t ${
 						severity === "warn"
-							? "border-amber-500/30"
+							? "border-warning/30"
 							: severity === "error"
 								? "border-destructive/30"
-								: "border-sky-500/30"
+								: "border-info/30"
 					}`}
 				>
 					{body}

@@ -83,7 +83,7 @@ export function deltaChip(
 	let tone = "text-muted-foreground";
 	if (goodWhen !== "neutral" && delta.direction !== "flat") {
 		const good = delta.direction === goodWhen;
-		tone = good ? "text-emerald-600 dark:text-emerald-400" : "text-destructive";
+		tone = good ? "text-success" : "text-destructive";
 	}
 
 	return (

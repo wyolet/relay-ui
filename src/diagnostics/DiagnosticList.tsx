@@ -19,14 +19,14 @@ const TONE: Record<
 	},
 	warn: {
 		Icon: AlertTriangle,
-		iconClass: "text-amber-600 dark:text-amber-400",
-		rowClass: "bg-amber-500/5 border-amber-500/30",
+		iconClass: "text-warning",
+		rowClass: "bg-warning/5 border-warning/30",
 		label: "Warning",
 	},
 	info: {
 		Icon: Info,
-		iconClass: "text-sky-600 dark:text-sky-400",
-		rowClass: "bg-sky-500/5 border-sky-500/30",
+		iconClass: "text-info",
+		rowClass: "bg-info/5 border-info/30",
 		label: "Info",
 	},
 };

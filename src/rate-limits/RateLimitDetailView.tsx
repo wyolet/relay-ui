@@ -273,7 +273,7 @@ function PoliciesPanel({ rateLimit }: { rateLimit: RateLimit }) {
 												all ({scopeCount})
 											</span>
 										) : inactive ? (
-											<span className="text-amber-600 dark:text-amber-400 text-[11px]">
+											<span className="text-warning text-[11px]">
 												inactive
 											</span>
 										) : (
@@ -295,7 +295,7 @@ function PoliciesPanel({ rateLimit }: { rateLimit: RateLimit }) {
 									</Td>
 									<Td className="text-right">
 										{enabled ? (
-											<span className="text-[11px] text-emerald-700 dark:text-emerald-400">
+											<span className="text-[11px] text-success">
 												Enabled
 											</span>
 										) : (
@@ -371,7 +371,7 @@ function groupRules(rules: readonly RateLimitRule[]): RuleGroup[] {
 
 function StatusBadge({ enabled }: { enabled: boolean }) {
 	return enabled ? (
-		<span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-900/60">
+		<span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-success-soft text-success border border-success/30">
 			Enabled
 		</span>
 	) : (
@@ -401,7 +401,7 @@ function Badge({
 }) {
 	const styles =
 		tone === "default"
-			? "bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/30"
+			? "bg-info/10 text-info border-info/30"
 			: tone === "scoped"
 				? "bg-violet-500/10 text-violet-700 dark:text-violet-300 border-violet-500/30"
 				: "bg-muted text-muted-foreground border-border";

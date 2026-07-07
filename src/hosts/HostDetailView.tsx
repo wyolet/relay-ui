@@ -563,7 +563,7 @@ function HostPoliciesTable({
 								</Td>
 								<Td className="text-right">
 									{isDefault ? (
-										<span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium uppercase tracking-wide bg-sky-500/10 text-sky-700 dark:text-sky-300 border border-sky-500/30">
+										<span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium uppercase tracking-wide bg-info/10 text-info border border-info/30">
 											Default
 										</span>
 									) : (
@@ -917,7 +917,7 @@ function Td({
 
 function StatusInline({ enabled }: { enabled: boolean }) {
 	return enabled ? (
-		<span className="text-[11px] text-emerald-700 dark:text-emerald-400">
+		<span className="text-[11px] text-success">
 			Enabled
 		</span>
 	) : (
@@ -927,7 +927,7 @@ function StatusInline({ enabled }: { enabled: boolean }) {
 
 function StatusBadge({ enabled }: { enabled: boolean }) {
 	return enabled ? (
-		<span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-900/60">
+		<span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-success-soft text-success border border-success/30">
 			Enabled
 		</span>
 	) : (

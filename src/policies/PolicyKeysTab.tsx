@@ -88,7 +88,7 @@ function HostRow({
 		<tr
 			className={
 				showAsBreaking
-					? "bg-amber-500/5 hover:bg-amber-500/10"
+					? "bg-warning/5 hover:bg-warning/10"
 					: "hover:bg-muted/40"
 			}
 		>
@@ -107,7 +107,7 @@ function HostRow({
 					<span
 						className={`inline-flex items-center gap-1.5 text-[11px] ${
 							showAsBreaking
-								? "text-amber-700 dark:text-amber-300"
+								? "text-warning"
 								: "text-muted-foreground"
 						}`}
 					>
@@ -192,9 +192,9 @@ function StatusPill({
 }) {
 	const className =
 		tone === "ok"
-			? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-200/60 dark:border-emerald-900/60"
+			? "bg-success-soft text-success border-success/30"
 			: tone === "warn"
-				? "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30"
+				? "bg-warning/10 text-warning border-warning/30"
 				: "bg-muted text-muted-foreground border-border";
 	return (
 		<span

@@ -252,7 +252,7 @@ function Header({
 							<StatusBadge enabled={enabled} />
 							{isProviderOwned && <OwnerBadge label="Provider" />}
 							{dep && (
-								<span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium uppercase tracking-wide bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+								<span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium uppercase tracking-wide bg-warning/10 text-warning border border-warning/30">
 									<AlertTriangle className="w-3 h-3" />
 									Deprecated
 								</span>
@@ -325,7 +325,7 @@ function Header({
 				</div>
 			</div>
 			{dep && (
-				<div className="flex items-start gap-2 px-3 py-2 rounded-md border border-amber-500/30 bg-amber-500/10 text-xs text-amber-700 dark:text-amber-300">
+				<div className="flex items-start gap-2 px-3 py-2 rounded-md border border-warning/30 bg-warning/10 text-xs text-warning">
 					<AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
 					<span>{dep}</span>
 				</div>
@@ -904,7 +904,7 @@ function HostPricingCard({
 				</div>
 				<div className="flex shrink-0 items-center gap-2">
 					{isCheapest && (
-						<span className="inline-flex items-center gap-1 rounded bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
+						<span className="inline-flex items-center gap-1 rounded bg-success/10 px-1.5 py-0.5 text-[10px] font-medium text-success">
 							<TrendingDown className="size-3" aria-hidden />
 							Cheapest
 						</span>
@@ -1177,7 +1177,7 @@ function Td({
 
 function StatusInline({ enabled }: { enabled: boolean }) {
 	return enabled ? (
-		<span className="text-[11px] text-emerald-700 dark:text-emerald-400">
+		<span className="text-[11px] text-success">
 			Enabled
 		</span>
 	) : (
@@ -1187,7 +1187,7 @@ function StatusInline({ enabled }: { enabled: boolean }) {
 
 function StatusBadge({ enabled }: { enabled: boolean }) {
 	return enabled ? (
-		<span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-900/60">
+		<span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-success-soft text-success border border-success/30">
 			Enabled
 		</span>
 	) : (

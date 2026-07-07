@@ -6,7 +6,7 @@ export { toast } from "@/stores/toast";
 
 const KIND_CLASSES: Record<ToastKind, string> = {
 	success: "bg-brand-600 text-white",
-	error: "bg-red-600 text-white",
+	error: "bg-destructive text-destructive-foreground",
 };
 
 export function ToastContainer() {

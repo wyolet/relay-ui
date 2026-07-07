@@ -142,7 +142,7 @@ function UnthrottledBanner({
 					{unthrottled.map((u) => (
 						<li
 							key={u.model.id}
-							className="inline-flex items-center gap-1.5 px-1.5 py-0.5 rounded bg-sky-500/10 border border-sky-500/20 text-[11px] text-foreground"
+							className="inline-flex items-center gap-1.5 px-1.5 py-0.5 rounded bg-info/10 border border-info/20 text-[11px] text-foreground"
 						>
 							{u.model.displayName?.trim() && (
 								<span>{u.model.displayName.trim()}</span>
@@ -169,7 +169,7 @@ function OverlapBanner({ overlaps }: { overlaps: RateLimitOverlap[] }) {
 			severity="warn"
 			title={`${overlaps.length} binding${overlaps.length === 1 ? "" : "s"} matched by more than one rate limit`}
 			body={
-				<ul className="divide-y divide-amber-500/20">
+				<ul className="divide-y divide-warning/20">
 					{overlaps.map((o) => (
 						<li
 							key={`${o.provider}/${o.model}@${o.host}`}

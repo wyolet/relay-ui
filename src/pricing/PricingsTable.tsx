@@ -102,7 +102,7 @@ function Row({
 			</Td>
 			<Td className="text-right">
 				{enabled ? (
-					<span className="text-[11px] text-emerald-700 dark:text-emerald-400">
+					<span className="text-[11px] text-success">
 						Enabled
 					</span>
 				) : (

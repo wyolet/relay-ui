@@ -23,15 +23,15 @@ const TONE: Record<
 		label: "Error",
 	},
 	warn: {
-		dot: "bg-amber-500 dark:bg-amber-400",
+		dot: "bg-warning",
 		Icon: AlertTriangle,
-		iconClass: "text-amber-600 dark:text-amber-400",
+		iconClass: "text-warning",
 		label: "Warning",
 	},
 	info: {
-		dot: "bg-sky-500 dark:bg-sky-400",
+		dot: "bg-info",
 		Icon: Info,
-		iconClass: "text-sky-600 dark:text-sky-400",
+		iconClass: "text-info",
 		label: "Info",
 	},
 };

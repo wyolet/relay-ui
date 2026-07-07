@@ -236,7 +236,7 @@ function ModelRow({
 						</span>
 						{dep && (
 							<AlertTriangle
-								className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0"
+								className="w-3.5 h-3.5 text-warning shrink-0"
 								aria-label={dep}
 							/>
 						)}
@@ -245,7 +245,7 @@ function ModelRow({
 					{(hasDisplayName(m.metadata) || dep) && (
 						<div className="text-[11px] text-muted-foreground truncate">
 							{dep ? (
-								<span className="text-amber-700 dark:text-amber-400">
+								<span className="text-warning">
 									{dep}
 								</span>
 							) : (
@@ -273,7 +273,7 @@ function ModelRow({
 						className={[
 							"inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border",
 							enabled
-								? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-200/60 dark:border-emerald-900/60"
+								? "bg-success-soft text-success border-success/30"
 								: "bg-muted text-muted-foreground border-border",
 						].join(" ")}
 						title="Provider-managed — toggle from the provider instead"

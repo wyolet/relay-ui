@@ -117,7 +117,7 @@ function RelayKeyDetailInner() {
 							<StatusBadge enabled={enabled} />
 							{rk.spec.passthroughAllowed && (
 								<span
-									className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium uppercase tracking-wide bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/30"
+									className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium uppercase tracking-wide bg-warning/10 text-warning border border-warning/30"
 									title="This relay key can request models outside its policy's grant."
 								>
 									Passthrough
@@ -282,7 +282,7 @@ function PolicyCard({
 							{displayLabel(policy.metadata)}
 						</Link>
 						{enabled ? (
-							<span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-900/60">
+							<span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-success-soft text-success border border-success/30">
 								Enabled
 							</span>
 						) : (
@@ -369,7 +369,7 @@ function Row({
 
 function StatusBadge({ enabled }: { enabled: boolean }) {
 	return enabled ? (
-		<span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-900/60">
+		<span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-success-soft text-success border border-success/30">
 			Active
 		</span>
 	) : (
