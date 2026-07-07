@@ -10,7 +10,7 @@ import { usePolicyUsage } from "@/policies/usePolicyUsage";
 import {
 	ResourceUsageCards,
 	UsageCardsSkeleton,
-} from "@/shared/ResourceUsageCards";
+} from "@/usage/ResourceUsageCards";
 import {
 	ResourceSpendCard,
 	ResourceSpendCardSkeleton,

@@ -45,54 +45,6 @@ function deprecationNote(m: Model): string | null {
 	return parts.join(" · ") || null;
 }
 
-function providerIdOf(m: Model): string {
-	return m.metadata.owner?.kind === "provider"
-		? (m.metadata.owner.id ?? "")
-		: "";
-}
-
-function providerOf(m: Model, slugById?: Map<string, string>): string {
-	const id = providerIdOf(m);
-	if (!id) return "";
-	return slugById?.get(id) ?? id;
-}
-
-export type ModelDeprecatedFilter = "active" | "deprecated" | "all";
-
-function isDeprecated(m: Model): boolean {
-	return Boolean(m.spec.deprecation || m.spec.deprecationDate);
-}
-
-export function applyModelFilter(
-	items: Model[],
-	q: string,
-	deprecated: ModelDeprecatedFilter,
-	slugById?: Map<string, string>,
-): Model[] {
-	const ql = q.trim().toLowerCase();
-	return items.filter((m) => {
-		const dep = isDeprecated(m);
-		if (deprecated === "active" && dep) return false;
-		if (deprecated === "deprecated" && !dep) return false;
-		if (!ql) return true;
-		const snapshotNames = (m.spec.snapshots ?? []).flatMap((s) =>
-			[s.name, s.originalName].filter((v): v is string => Boolean(v)),
-		);
-		const hay = [
-			m.metadata.name,
-			m.metadata.displayName,
-			m.spec.family,
-			providerOf(m, slugById),
-			...snapshotNames,
-			...(m.spec.tags ?? []),
-		]
-			.filter(Boolean)
-			.join(" ")
-			.toLowerCase();
-		return hay.includes(ql);
-	});
-}
-
 interface SortHeaderProps {
 	label: string;
 	field: ModelsSortKey;

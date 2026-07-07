@@ -13,7 +13,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { ResourceUsageCards } from "@/shared/ResourceUsageCards";
+import { ResourceUsageCards } from "@/usage/ResourceUsageCards";
 import { RequestsAreaChart } from "./RequestsAreaChart";
 import {
 	ResourceSpendCard,

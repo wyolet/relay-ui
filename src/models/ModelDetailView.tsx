@@ -65,7 +65,7 @@ import { ProviderLogo } from "@/providers/ProviderLogo";
 import {
 	ResourceUsageCards,
 	UsageCardsSkeleton,
-} from "@/shared/ResourceUsageCards";
+} from "@/usage/ResourceUsageCards";
 import {
 	ResourceSpendCard,
 	ResourceSpendCardSkeleton,

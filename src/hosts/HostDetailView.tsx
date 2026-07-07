@@ -30,7 +30,7 @@ import { ResourceLogs } from "@/logs/ResourceLogs";
 import {
 	ResourceUsageCards,
 	UsageCardsSkeleton,
-} from "@/shared/ResourceUsageCards";
+} from "@/usage/ResourceUsageCards";
 import { PageLoader } from "@/shared/Spinner";
 import {
 	ResourceSpendCard,

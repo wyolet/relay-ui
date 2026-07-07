@@ -30,7 +30,7 @@ import { PolicyRLPicker } from "@/policies/PolicyRLPicker";
 import { policyFromFormValues, usePolicyForm } from "@/policies/usePolicyForm";
 import { usePolicyHostRequirements } from "@/policies/usePolicyHostRequirements";
 import { IdentitySection } from "@/shared/IdentitySection";
-import { IncludeDeprecatedSwitch } from "@/shared/IncludeDeprecatedSwitch";
+import { IncludeDeprecatedSwitch } from "@/policies/IncludeDeprecatedSwitch";
 import { ToggleSwitch } from "@/shared/ToggleSwitch";
 
 interface PolicyFormProps {
