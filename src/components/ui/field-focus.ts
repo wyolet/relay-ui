@@ -1,8 +1,8 @@
 // The one focus treatment for field-shaped controls — "wash + settle":
-// brand-accent border + a violet wash fill (--input-wash) + a soft halo that
+// accent border + a mauve wash fill (--input-wash) + a soft halo that
 // collapses on arrival (animate-input-settle in globals.css). No standing
-// ring. The accent is the brand violet (--field-accent), not the near-neutral
-// semantic --primary — a wash needs real chroma to read as color.
+// ring. The accent is the chroma-boosted app mauve (--field-accent), not the
+// near-neutral semantic --primary — a wash needs real chroma to read as color.
 // Compose these constants instead of hand-rolling focus classes so every
 // field in the app stays in lockstep.
 

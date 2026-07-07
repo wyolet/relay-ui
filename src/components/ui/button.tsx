@@ -9,9 +9,9 @@ const buttonVariants = cva(
     variants: {
       variant: {
         // Emphasis ladder: default is the QUIET everyday affirmative —
-        // brand-violet text on the violet wash, so buttons and focused
+        // accent-mauve text on the mauve wash, so buttons and focused
         // fields speak one language. It never screams. cta is the loud
-        // violet gradient, rationed to one hero per view (Create · Save ·
+        // mauve gradient, rationed to one hero per view (Create · Save ·
         // Attach). Everything else stays quieter still.
         default:
           "bg-input-wash text-field-accent hover:bg-btn-tonal-hover aria-expanded:bg-btn-tonal-hover",
