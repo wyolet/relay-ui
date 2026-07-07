@@ -8,7 +8,13 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
+        // Emphasis ladder: default (solid primary) is the loud action —
+        // ration it to one per view. tonal is the quiet everyday
+        // affirmative: primary text on the input wash, so buttons and
+        // focused fields speak one language.
         default: "bg-primary text-primary-foreground hover:bg-primary/80",
+        tonal:
+          "bg-input-wash text-primary hover:bg-btn-tonal-hover aria-expanded:bg-btn-tonal-hover",
         outline:
           "border-border hover:bg-input/50 hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:bg-input/30",
         secondary:
