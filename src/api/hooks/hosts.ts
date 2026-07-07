@@ -101,29 +101,6 @@ export function useDeleteHost() {
 				}),
 			);
 		},
-		onMutate: async (id) => {
-			await queryClient.cancelQueries({ queryKey: ["hosts"] });
-			const previous = queryClient.getQueryData(hostsListQueryOptions.queryKey);
-			queryClient.setQueryData(
-				hostsListQueryOptions.queryKey,
-				(old: HostListResponse | undefined) => {
-					if (!old) return old;
-					return {
-						items: (old.items ?? []).filter((h) => h.metadata.id !== id),
-						total: old.total,
-					};
-				},
-			);
-			return { previous };
-		},
-		onError: (_err, _vars, context) => {
-			if (context?.previous !== undefined) {
-				queryClient.setQueryData(
-					hostsListQueryOptions.queryKey,
-					context.previous,
-				);
-			}
-		},
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: ["hosts"] });
 		},

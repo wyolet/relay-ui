@@ -83,36 +83,6 @@ export function useCreateRateLimit() {
 			);
 			return data;
 		},
-		onMutate: async (newRL) => {
-			await queryClient.cancelQueries({ queryKey: ["ratelimits"] });
-			const previous = queryClient.getQueryData(
-				rateLimitsListQueryOptions.queryKey,
-			);
-			queryClient.setQueryData(
-				rateLimitsListQueryOptions.queryKey,
-				(old: RateLimitListResponse | undefined) => {
-					if (!old) return old;
-					const optimistic: RateLimit = {
-						metadata: { name: newRL.metadata.name },
-						spec: { ...newRL.spec },
-					};
-					return {
-						...old,
-						items: [...(old.items ?? []), optimistic],
-						total: old.total + 1,
-					};
-				},
-			);
-			return { previous };
-		},
-		onError: (_err, _vars, context) => {
-			if (context?.previous !== undefined) {
-				queryClient.setQueryData(
-					rateLimitsListQueryOptions.queryKey,
-					context.previous,
-				);
-			}
-		},
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: ["ratelimits"] });
 		},
@@ -151,31 +121,6 @@ export function useDeleteRateLimit() {
 					params: { path: { id } },
 				}),
 			);
-		},
-		onMutate: async (id) => {
-			await queryClient.cancelQueries({ queryKey: ["ratelimits"] });
-			const previous = queryClient.getQueryData(
-				rateLimitsListQueryOptions.queryKey,
-			);
-			queryClient.setQueryData(
-				rateLimitsListQueryOptions.queryKey,
-				(old: RateLimitListResponse | undefined) => {
-					if (!old) return old;
-					return {
-						items: (old.items ?? []).filter((rl) => rl.metadata.id !== id),
-						total: old.total,
-					};
-				},
-			);
-			return { previous };
-		},
-		onError: (_err, _vars, context) => {
-			if (context?.previous !== undefined) {
-				queryClient.setQueryData(
-					rateLimitsListQueryOptions.queryKey,
-					context.previous,
-				);
-			}
 		},
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: ["ratelimits"] });

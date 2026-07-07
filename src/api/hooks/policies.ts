@@ -195,31 +195,6 @@ export function useDeletePolicy() {
 				}),
 			);
 		},
-		onMutate: async (id) => {
-			await queryClient.cancelQueries({ queryKey: ["policies"] });
-			const previous = queryClient.getQueryData(
-				policiesListQueryOptions.queryKey,
-			);
-			queryClient.setQueryData(
-				policiesListQueryOptions.queryKey,
-				(old: PolicyListResponse | undefined) => {
-					if (!old) return old;
-					return {
-						items: (old.items ?? []).filter((p) => p.metadata.id !== id),
-						total: old.total,
-					};
-				},
-			);
-			return { previous };
-		},
-		onError: (_err, _vars, context) => {
-			if (context?.previous !== undefined) {
-				queryClient.setQueryData(
-					policiesListQueryOptions.queryKey,
-					context.previous,
-				);
-			}
-		},
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: ["policies"] });
 		},

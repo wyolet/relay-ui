@@ -5,12 +5,7 @@ import {
 	useSuspenseQuery,
 } from "@tanstack/react-query";
 import { apiClient } from "@/api/client";
-import type {
-	Model,
-	ModelCreate,
-	ModelListResponse,
-	ModelUpdate,
-} from "@/api/types/model";
+import type { Model, ModelListResponse, ModelUpdate } from "@/api/types/model";
 import type { components, operations } from "@/api/types.gen";
 import { unwrap } from "@/api/unwrap";
 
@@ -129,49 +124,6 @@ export function useModel(name: string) {
 	return useSuspenseQuery(modelDetailQueryOptions(name));
 }
 
-export function useCreateModel() {
-	const queryClient = useQueryClient();
-	return useMutation({
-		mutationFn: async (body: ModelCreate): Promise<Model> => {
-			const data = unwrap(await apiClient.POST("/models", { body }));
-			return data;
-		},
-		onMutate: async (newModel) => {
-			await queryClient.cancelQueries({ queryKey: ["models"] });
-			const previous = queryClient.getQueryData(
-				modelsListQueryOptions.queryKey,
-			);
-			queryClient.setQueryData(
-				modelsListQueryOptions.queryKey,
-				(old: ModelListResponse | undefined) => {
-					if (!old) return old;
-					const optimistic: Model = {
-						metadata: { name: newModel.metadata.name },
-						spec: { ...newModel.spec },
-					};
-					return {
-						...old,
-						items: [...(old.items ?? []), optimistic],
-						total: old.total + 1,
-					};
-				},
-			);
-			return { previous };
-		},
-		onError: (_err, _vars, context) => {
-			if (context?.previous !== undefined) {
-				queryClient.setQueryData(
-					modelsListQueryOptions.queryKey,
-					context.previous,
-				);
-			}
-		},
-		onSuccess: () => {
-			void queryClient.invalidateQueries({ queryKey: ["models"] });
-		},
-	});
-}
-
 export function useUpdateModel() {
 	const queryClient = useQueryClient();
 	return useMutation({
@@ -204,31 +156,6 @@ export function useDeleteModel() {
 					params: { path: { id } },
 				}),
 			);
-		},
-		onMutate: async (id) => {
-			await queryClient.cancelQueries({ queryKey: ["models"] });
-			const previous = queryClient.getQueryData(
-				modelsListQueryOptions.queryKey,
-			);
-			queryClient.setQueryData(
-				modelsListQueryOptions.queryKey,
-				(old: ModelListResponse | undefined) => {
-					if (!old) return old;
-					return {
-						items: (old.items ?? []).filter((m) => m.metadata.id !== id),
-						total: old.total,
-					};
-				},
-			);
-			return { previous };
-		},
-		onError: (_err, _vars, context) => {
-			if (context?.previous !== undefined) {
-				queryClient.setQueryData(
-					modelsListQueryOptions.queryKey,
-					context.previous,
-				);
-			}
 		},
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: ["models"] });

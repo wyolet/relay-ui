@@ -97,36 +97,6 @@ export function useCreatePricing() {
 			const data = unwrap(await apiClient.POST("/pricings", { body }));
 			return data;
 		},
-		onMutate: async (newPricing) => {
-			await queryClient.cancelQueries({ queryKey: ["pricings"] });
-			const previous = queryClient.getQueryData(
-				pricingsListQueryOptions.queryKey,
-			);
-			queryClient.setQueryData(
-				pricingsListQueryOptions.queryKey,
-				(old: PricingListResponse | undefined) => {
-					if (!old) return old;
-					const optimistic: Pricing = {
-						metadata: { name: newPricing.metadata.name },
-						spec: { ...newPricing.spec },
-					};
-					return {
-						...old,
-						items: [...(old.items ?? []), optimistic],
-						total: old.total + 1,
-					};
-				},
-			);
-			return { previous };
-		},
-		onError: (_err, _vars, context) => {
-			if (context?.previous !== undefined) {
-				queryClient.setQueryData(
-					pricingsListQueryOptions.queryKey,
-					context.previous,
-				);
-			}
-		},
 		onSuccess: () => {
 			invalidatePricingDependents(queryClient);
 		},
@@ -165,31 +135,6 @@ export function useDeletePricing() {
 					params: { path: { id } },
 				}),
 			);
-		},
-		onMutate: async (id) => {
-			await queryClient.cancelQueries({ queryKey: ["pricings"] });
-			const previous = queryClient.getQueryData(
-				pricingsListQueryOptions.queryKey,
-			);
-			queryClient.setQueryData(
-				pricingsListQueryOptions.queryKey,
-				(old: PricingListResponse | undefined) => {
-					if (!old) return old;
-					return {
-						items: (old.items ?? []).filter((p) => p.metadata.id !== id),
-						total: old.total,
-					};
-				},
-			);
-			return { previous };
-		},
-		onError: (_err, _vars, context) => {
-			if (context?.previous !== undefined) {
-				queryClient.setQueryData(
-					pricingsListQueryOptions.queryKey,
-					context.previous,
-				);
-			}
 		},
 		onSuccess: () => {
 			invalidatePricingDependents(queryClient);
