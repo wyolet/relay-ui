@@ -272,7 +272,7 @@ function PoliciesPanel() {
 							<tr>
 								<Th>Name</Th>
 								<Th>Catalog</Th>
-								<Th align="right">Host keys</Th>
+								<Th align="right">Credentials</Th>
 								<Th>Rate limit</Th>
 								<th
 									scope="col"

@@ -155,7 +155,7 @@ export function PolicyHostRequirements({
 					<code className="font-mono text-foreground">
 						{unresolvedRefs.join(", ")}
 					</code>{" "}
-					don't resolve to any current model — no host key needed yet.
+					don't resolve to any current model — no credential needed yet.
 				</AlertBanner>
 			)}
 		</div>

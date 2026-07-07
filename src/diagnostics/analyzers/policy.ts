@@ -44,14 +44,14 @@ export function analyzePolicy(
 			severity: "error",
 			code: "policy.no-host-keys",
 			message:
-				"No host keys attached — this policy can't authenticate any upstream request.",
+				"No credentials attached — this policy can't authenticate any upstream request.",
 		});
 	} else if (hostKeyIds.length > 0 && enabledKeys.length === 0) {
 		out.push({
 			severity: "error",
 			code: "policy.host-keys-all-disabled",
 			message:
-				"All attached host keys are disabled or deleted — no upstream credential is usable.",
+				"All attached credentials are disabled or deleted — no upstream credential is usable.",
 		});
 	} else if (enabledKeys.length < livingKeys.length) {
 		const disabledKeys = livingKeys.filter((k) => k.spec.enabled === false);
@@ -61,7 +61,7 @@ export function analyzePolicy(
 		out.push({
 			severity: "warn",
 			code: "policy.host-keys-degraded",
-			message: `Disabled host keys in the pool: ${names}.`,
+			message: `Disabled credentials in the pool: ${names}.`,
 		});
 	}
 
@@ -76,7 +76,7 @@ export function analyzePolicy(
 				severity: "error",
 				code: "policy.host-disabled-transitive",
 				message:
-					"Every enabled host key points at a host that is disabled or deleted.",
+					"Every enabled credential points at a host that is disabled or deleted.",
 			});
 		}
 	}
@@ -150,8 +150,8 @@ export function analyzePolicy(
 				code: "policy.host-keys-outside-catalog",
 				message:
 					stray.length === 1
-						? `Host key ${phrased} stays attached but its host isn't in this policy's catalog. Detach the key or add models served on that host.`
-						: `${stray.length} host keys stay attached but their hosts aren't in this policy's catalog: ${phrased}. Detach them or add models served on those hosts.`,
+						? `Credential ${phrased} stays attached but its host isn't in this policy's catalog. Detach the credential or add models served on that host.`
+						: `${stray.length} credentials stay attached but their hosts aren't in this policy's catalog: ${phrased}. Detach them or add models served on those hosts.`,
 			});
 		}
 	}
@@ -272,14 +272,14 @@ function describeDeadGrant(raw: string): string {
 	}
 	switch (r.kind) {
 		case "host":
-			return `No models are reachable on host "${r.host}" — attach a host key for it, or remove "${raw}".`;
+			return `No models are reachable on host "${r.host}" — attach a credential for it, or remove "${raw}".`;
 		case "provider":
-			return `No "${r.provider}" models are reachable — attach a host key for a host that serves ${r.provider}, or remove "${raw}".`;
+			return `No "${r.provider}" models are reachable — attach a credential for a host that serves ${r.provider}, or remove "${raw}".`;
 		case "provider-on-host":
-			return `No "${r.provider}" models are reachable on host "${r.host}" — attach a host key for it, or remove "${raw}".`;
+			return `No "${r.provider}" models are reachable on host "${r.host}" — attach a credential for it, or remove "${raw}".`;
 		case "model":
 			return `Model "${r.provider}/${r.model}" isn't reachable — no host you have a key for serves it. Attach a key, or remove "${raw}".`;
 		case "binding":
-			return `Model "${r.provider}/${r.model}" isn't reachable on host "${r.host}" — attach a host key for it, or remove "${raw}".`;
+			return `Model "${r.provider}/${r.model}" isn't reachable on host "${r.host}" — attach a credential for it, or remove "${raw}".`;
 	}
 }

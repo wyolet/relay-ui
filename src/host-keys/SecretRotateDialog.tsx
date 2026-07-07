@@ -45,7 +45,7 @@ export function SecretRotateDialog({ hk, onClose }: SecretRotateDialogProps) {
 				},
 			});
 			setValue("");
-			toast("success", "Host key rotated.");
+			toast("success", "Credential rotated.");
 			onClose();
 		} catch (err) {
 			setInlineError(

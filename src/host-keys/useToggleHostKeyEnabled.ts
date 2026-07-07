@@ -22,7 +22,7 @@ export function useToggleHostKeyEnabled() {
 			});
 			toast(
 				"success",
-				`Host key "${displayLabel(hk.metadata)}" ${
+				`Credential "${displayLabel(hk.metadata)}" ${
 					nextEnabled ? "enabled" : "disabled"
 				}.`,
 			);
@@ -31,7 +31,7 @@ export function useToggleHostKeyEnabled() {
 				"error",
 				err instanceof ApiError
 					? err.body.message
-					: "Failed to update host key.",
+					: "Failed to update credential.",
 			);
 		}
 	}

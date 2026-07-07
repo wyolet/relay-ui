@@ -151,9 +151,9 @@ export function HostKeyForm({ hostKey, onSaved, onCancel }: HostKeyFormProps) {
 							<p className="mt-1.5 text-[11px] text-muted-foreground leading-snug">
 								Mirrors the provider's own tier (e.g. <em>OpenAI Tier 2</em>) so
 								Relay knows the real ceiling for this key. Distinct from a user
-								policy — even if this host key is added to a user policy's pool,
-								the host policy chosen here is never overridden, only respected
-								as a hard cap.
+								policy — even if this credential is added to a user policy's
+								pool, the host policy chosen here is never overridden, only
+								respected as a hard cap.
 							</p>
 						</div>
 					</div>
@@ -253,11 +253,11 @@ export function HostKeyForm({ hostKey, onSaved, onCancel }: HostKeyFormProps) {
 					<FormSection
 						icon={Link2}
 						title="Attached to user policies"
-						description="User policies that include this host key in their pool. Detach from a policy to remove it from rotation."
+						description="User policies that include this credential in their pool. Detach from a policy to remove it from rotation."
 					>
 						{attachedPolicies.length === 0 ? (
 							<p className="text-xs text-muted-foreground">
-								This host key is not attached to any user policy yet.
+								This credential is not attached to any user policy yet.
 							</p>
 						) : (
 							<ul className="divide-y divide-border">

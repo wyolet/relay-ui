@@ -26,7 +26,8 @@ export function PolicyKeysTab({ policy }: Props) {
 					Nothing to show
 				</div>
 				<div className="mt-0.5 text-xs text-muted-foreground">
-					Pick models on the Models tab, then attach host keys in the edit form.
+					Pick models on the Models tab, then attach credentials in the edit
+					form.
 				</div>
 			</div>
 		);
@@ -51,7 +52,7 @@ export function PolicyKeysTab({ policy }: Props) {
 								Host
 							</th>
 							<th className="px-3 py-1.5 text-[10px] uppercase tracking-wide text-muted-foreground font-medium">
-								Host keys
+								Credentials
 							</th>
 							<th className="px-3 py-1.5 text-[10px] uppercase tracking-wide text-muted-foreground font-medium text-right">
 								Status

@@ -28,7 +28,7 @@ export function analyzeHost(host: Host, graph: DiagnosticGraph): Diagnostic[] {
 			out.push({
 				severity: "warn",
 				code: "host.disabled-with-refs",
-				message: `Disabled but still referenced — ${enabledKeys.length} enabled host key${enabledKeys.length === 1 ? "" : "s"}, ${enabledBindings.length} enabled model binding${enabledBindings.length === 1 ? "" : "s"} will fail.`,
+				message: `Disabled but still referenced — ${enabledKeys.length} enabled credential${enabledKeys.length === 1 ? "" : "s"}, ${enabledBindings.length} enabled model binding${enabledBindings.length === 1 ? "" : "s"} will fail.`,
 			});
 		}
 	}
@@ -51,7 +51,7 @@ export function analyzeHost(host: Host, graph: DiagnosticGraph): Diagnostic[] {
 		out.push({
 			severity: "info",
 			code: "host.no-keys",
-			message: "No host keys registered for this host.",
+			message: "No credentials registered for this host.",
 		});
 	}
 

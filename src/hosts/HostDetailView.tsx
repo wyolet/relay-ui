@@ -67,7 +67,7 @@ const TABS: {
 	{ value: "configuration", label: "Configuration", icon: Sliders },
 	{ value: "host-policies", label: "Host policies", icon: ShieldCheck },
 	{ value: "user-policies", label: "User policies", icon: Users },
-	{ value: "host-keys", label: "Host keys", icon: KeyRound },
+	{ value: "host-keys", label: "Credentials", icon: KeyRound },
 	{ value: "models", label: "Models", icon: Boxes },
 	{ value: "usage", label: "Usage", icon: Activity },
 	{ value: "logs", label: "Logs", icon: ScrollText },
@@ -327,7 +327,7 @@ function OverviewTab({
 						sub={`${enabledModels} enabled`}
 					/>
 					<StatCard
-						label="Host keys"
+						label="Credentials"
 						value={refs.hostKeys.length}
 						sub={`${enabledHostKeys} enabled`}
 					/>
@@ -426,7 +426,7 @@ function ConfigurationTab({ host }: { host: Host }) {
 							<span className="text-muted-foreground">— (none set)</span>
 						)}
 						<p className="mt-0.5 text-[11px] text-muted-foreground leading-snug">
-							Used when a host key on this host doesn't specify its own host
+							Used when a credential on this host doesn't specify its own host
 							policy.
 						</p>
 					</Row>
@@ -510,7 +510,7 @@ function HostPoliciesTable({
 			<EmptyState
 				icon={ShieldCheck}
 				title="No host policies"
-				body="This host has no host-owned policies (tiers). Host keys will use the host's default policy if set."
+				body="This host has no host-owned policies (tiers). Credentials will use the host's default policy if set."
 			/>
 		);
 	}
@@ -521,7 +521,7 @@ function HostPoliciesTable({
 				<thead className="bg-muted/30 text-[10px] uppercase tracking-wide text-muted-foreground">
 					<tr>
 						<Th>Policy</Th>
-						<Th className="text-right">Host keys</Th>
+						<Th className="text-right">Credentials</Th>
 						<Th className="text-right">Default</Th>
 						<Th className="text-right">Status</Th>
 					</tr>
@@ -594,7 +594,7 @@ function UserPoliciesTable({
 			<EmptyState
 				icon={Users}
 				title="No user policies reach this host"
-				body="Attach one of this host's keys to a user policy's host-key pool to start routing through this host."
+				body="Attach one of this host's credentials to a user policy's credential pool to start routing through this host."
 			/>
 		);
 	}
@@ -604,7 +604,7 @@ function UserPoliciesTable({
 				<thead className="bg-muted/30 text-[10px] uppercase tracking-wide text-muted-foreground">
 					<tr>
 						<Th>Policy</Th>
-						<Th className="text-right">Host keys</Th>
+						<Th className="text-right">Credentials</Th>
 						<Th className="text-right">Relay keys</Th>
 						<Th className="text-right">Status</Th>
 					</tr>
@@ -676,7 +676,7 @@ function HostKeysTable({
 		return (
 			<EmptyState
 				icon={KeyRound}
-				title="No host keys yet"
+				title="No credentials yet"
 				body="Register an upstream credential to make this host live."
 			/>
 		);

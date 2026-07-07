@@ -29,7 +29,7 @@ function EditHostKeyInner() {
 					{displayLabel(hk.metadata)}
 				</Link>
 				<h1 className="mt-2 text-xl font-semibold text-foreground">
-					Edit host key
+					Edit credential
 				</h1>
 				<p className="mt-1 text-xs text-muted-foreground">
 					Change identity or how Relay sources the credential. The slug stays

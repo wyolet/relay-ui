@@ -160,14 +160,14 @@ export function useHostKeyDetail({ name, onDeleted }: UseHostKeyDetailOptions) {
 	async function confirmDelete() {
 		try {
 			await deleteHostKey.mutateAsync(hk.metadata.id ?? "");
-			toast("success", `Host key "${displayLabel(hk.metadata)}" deleted.`);
+			toast("success", `Credential "${displayLabel(hk.metadata)}" deleted.`);
 			onDeleted();
 		} catch (err) {
 			toast(
 				"error",
 				err instanceof ApiError
 					? err.body.message
-					: "Failed to delete host key.",
+					: "Failed to delete credential.",
 			);
 		}
 	}
@@ -200,7 +200,7 @@ export function useHostKeyDetail({ name, onDeleted }: UseHostKeyDetailOptions) {
 		if (!view.id) return;
 		try {
 			await navigator.clipboard.writeText(view.id);
-			toast("success", "Host key id copied.");
+			toast("success", "Credential id copied.");
 		} catch {
 			toast("error", "Couldn't copy to clipboard.");
 		}

@@ -181,7 +181,7 @@ export function HostsTable({ items, sort, dir, onSort }: HostsTableProps) {
 							onClick={onSort}
 						/>
 						<CountTh label="Models" />
-						<CountTh label="Host keys" />
+						<CountTh label="Credentials" />
 						<CountTh label="Host policies" />
 						<CountTh label="User policies" />
 						<th

@@ -207,7 +207,7 @@ function KeysPage() {
 						Relay keys
 					</TabsTrigger>
 					<TabsTrigger value="provider" className="px-3 h-9">
-						Host keys
+						Credentials
 					</TabsTrigger>
 				</TabsList>
 			</Tabs>
@@ -525,21 +525,21 @@ function HostKeysPanel() {
 			return;
 		}
 		const ok = await confirm({
-			title: `Delete host key ${displayLabel(hk.metadata)}?`,
-			description: "This host key is not attached to any user policy.",
+			title: `Delete credential ${displayLabel(hk.metadata)}?`,
+			description: "This credential is not attached to any user policy.",
 			confirmLabel: "Delete",
 			danger: true,
 		});
 		if (!ok) return;
 		try {
 			await deleteHostKey.mutateAsync(hk.metadata.id ?? "");
-			toast("success", `Host key "${displayLabel(hk.metadata)}" deleted.`);
+			toast("success", `Credential "${displayLabel(hk.metadata)}" deleted.`);
 		} catch (err) {
 			toast(
 				"error",
 				err instanceof ApiError
 					? err.body.message
-					: "Failed to delete host key.",
+					: "Failed to delete credential.",
 			);
 		}
 	}
@@ -548,7 +548,11 @@ function HostKeysPanel() {
 		<div>
 			<TableToolbar
 				search={
-					<SearchBox value={q} onChange={setQ} placeholder="Search host keys" />
+					<SearchBox
+						value={q}
+						onChange={setQ}
+						placeholder="Search credentials"
+					/>
 				}
 				actions={
 					<Link
@@ -556,7 +560,7 @@ function HostKeysPanel() {
 						className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-xs font-semibold text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 					>
 						<Plus className="w-3.5 h-3.5" />
-						New host key
+						New credential
 					</Link>
 				}
 			/>
@@ -567,7 +571,7 @@ function HostKeysPanel() {
 					{allItems.length === 0 ? (
 						<>
 							<p className="text-sm font-medium text-foreground mb-1">
-								No host keys yet
+								No credentials yet
 							</p>
 							<p className="text-sm text-muted-foreground mb-5">
 								Register upstream credentials — stored encrypted by Relay or
@@ -578,12 +582,12 @@ function HostKeysPanel() {
 								className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-sm font-semibold text-white transition-colors"
 							>
 								<Plus className="w-4 h-4" />
-								Create your first host key
+								Create your first credential
 							</Link>
 						</>
 					) : (
 						<p className="text-sm text-muted-foreground">
-							No host keys match the current filter.
+							No credentials match the current filter.
 						</p>
 					)}
 				</div>

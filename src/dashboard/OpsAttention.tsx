@@ -199,7 +199,7 @@ function BreakerPanel() {
 				pending ? null : (
 					<AllClear>
 						{keysChecked === 0
-							? "No host keys configured."
+							? "No credentials configured."
 							: `All ${keysChecked} key${keysChecked === 1 ? "" : "s"} healthy.`}
 					</AllClear>
 				)

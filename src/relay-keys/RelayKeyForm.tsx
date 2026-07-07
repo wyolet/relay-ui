@@ -108,7 +108,7 @@ export function RelayKeyForm({
 						value={values.passthroughAllowed}
 						onChange={(v) => form.setFieldValue("passthroughAllowed", v)}
 						label="Allow upstream passthrough"
-						hint="Permits the caller to forward their own provider API key instead of using the policy's host keys."
+						hint="Permits the caller to forward their own provider API key instead of using the policy's credentials."
 					/>
 					<ToggleSwitch
 						value={values.payloadLoggingEnabled}

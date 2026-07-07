@@ -116,8 +116,8 @@ function HostsPanel({ policy }: { policy: Policy }) {
 								</div>
 								<div className="text-[11px] text-muted-foreground truncate">
 									{keyCount === 0
-										? "no host key — requests will fail"
-										: `${keyCount} host key${keyCount === 1 ? "" : "s"}`}
+										? "no credential — requests will fail"
+										: `${keyCount} credential${keyCount === 1 ? "" : "s"}`}
 								</div>
 							</div>
 						</li>

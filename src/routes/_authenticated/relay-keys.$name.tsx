@@ -306,7 +306,7 @@ function PolicyCard({
 					)}
 					<dl className="mt-2 flex flex-wrap items-baseline gap-x-5 gap-y-1 text-[11px]">
 						<Stat label="Catalog grants" value={grantCount} />
-						<Stat label="Host-key pool" value={poolSize} />
+						<Stat label="Credential pool" value={poolSize} />
 						<Stat label="Rate limits" value={rlCount} />
 					</dl>
 				</div>
