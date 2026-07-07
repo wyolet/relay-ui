@@ -1,10 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import {
-	AlertTriangle,
-	ArrowDown,
-	ArrowUp,
-	MoreHorizontal,
-} from "lucide-react";
+import { AlertTriangle, MoreHorizontal } from "lucide-react";
 import { useMemo } from "react";
 import { bindingsByModel, useBindings } from "@/api/hooks/bindings";
 import { useGovernance } from "@/api/hooks/governance";
@@ -25,6 +20,7 @@ import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { resolveMutability } from "@/lib/ownership";
 import { confirm } from "@/shared/ConfirmDialog";
 import { Switch } from "@/shared/Switch";
+import { Th } from "@/shared/Th";
 import { toast } from "@/shared/Toast";
 
 // Sorting happens server-side (GET /models?sort=) since pagination landed:
@@ -43,49 +39,6 @@ function deprecationNote(m: Model): string | null {
 	else if (date) parts.push(`deprecated ${date}`);
 	if (d?.replacement) parts.push(`→ ${d.replacement}`);
 	return parts.join(" · ") || null;
-}
-
-interface SortHeaderProps {
-	label: string;
-	field: ModelsSortKey;
-	current: ModelsSortKey;
-	dir: ModelsSortDir;
-	onClick: (field: ModelsSortKey) => void;
-	align?: "left" | "right";
-}
-
-function SortHeader({
-	label,
-	field,
-	current,
-	dir,
-	onClick,
-	align = "left",
-}: SortHeaderProps) {
-	const active = current === field;
-	const Icon = dir === "asc" ? ArrowUp : ArrowDown;
-	return (
-		<th
-			scope="col"
-			className={[
-				"px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground",
-				align === "right" ? "text-right" : "text-left",
-			].join(" ")}
-		>
-			<button
-				type="button"
-				onClick={() => onClick(field)}
-				className={[
-					"inline-flex items-center gap-1 transition-colors",
-					align === "right" ? "flex-row-reverse" : "",
-					active ? "text-foreground" : "hover:text-foreground",
-				].join(" ")}
-			>
-				{label}
-				{active && <Icon className="w-3 h-3" aria-hidden="true" />}
-			</button>
-		</th>
-	);
 }
 
 function RowMenu({
@@ -326,21 +279,17 @@ export function ModelsTable({
 			<table className="w-full border-collapse">
 				<thead className="bg-muted/40">
 					<tr>
-						<SortHeader
-							label="Name"
-							field="name"
-							current={sort}
-							dir={dir}
-							onClick={onSort}
-						/>
-						{!hideProvider && (
-							<th
-								scope="col"
-								className="px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground text-left"
-							>
-								Hosts
-							</th>
-						)}
+						<Th
+							variant="column"
+							sort={{
+								active: sort === "name",
+								direction: dir,
+								onSort: () => onSort("name"),
+							}}
+						>
+							Name
+						</Th>
+						{!hideProvider && <Th variant="column">Hosts</Th>}
 						<th
 							scope="col"
 							className="w-12 px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground"

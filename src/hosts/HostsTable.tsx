@@ -1,5 +1,4 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowDown, ArrowUp } from "lucide-react";
 import { useUpdateHost } from "@/api/hooks/hosts";
 import { ApiError } from "@/api/types/errors";
 import type { Host } from "@/api/types/host";
@@ -9,6 +8,7 @@ import { HostCell } from "@/hosts/HostCell";
 import { useHostReferences } from "@/hosts/useHostReferences";
 import { displayLabel } from "@/lib/displayLabel";
 import { Switch } from "@/shared/Switch";
+import { Th } from "@/shared/Th";
 import { toast } from "@/shared/Toast";
 
 export type HostsSortKey = "name";
@@ -46,37 +46,6 @@ export function applyHostSort(
 		}),
 	);
 	return dir === "asc" ? sorted : sorted.reverse();
-}
-
-interface SortHeaderProps {
-	label: string;
-	field: HostsSortKey;
-	current: HostsSortKey;
-	dir: HostsSortDir;
-	onClick: (field: HostsSortKey) => void;
-}
-
-function SortHeader({ label, field, current, dir, onClick }: SortHeaderProps) {
-	const active = current === field;
-	const Icon = dir === "asc" ? ArrowUp : ArrowDown;
-	return (
-		<th
-			scope="col"
-			className="px-3 py-2 text-left text-[11px] font-medium uppercase tracking-wide text-muted-foreground"
-		>
-			<button
-				type="button"
-				onClick={() => onClick(field)}
-				className={[
-					"inline-flex items-center gap-1 transition-colors",
-					active ? "text-foreground" : "hover:text-foreground",
-				].join(" ")}
-			>
-				{label}
-				{active && <Icon className="w-3 h-3" aria-hidden="true" />}
-			</button>
-		</th>
-	);
 }
 
 function HostRow({ h }: { h: Host }) {
@@ -173,13 +142,16 @@ export function HostsTable({ items, sort, dir, onSort }: HostsTableProps) {
 			<table className="w-full border-collapse">
 				<thead className="bg-muted/40">
 					<tr>
-						<SortHeader
-							label="Name"
-							field="name"
-							current={sort}
-							dir={dir}
-							onClick={onSort}
-						/>
+						<Th
+							variant="column"
+							sort={{
+								active: sort === "name",
+								direction: dir,
+								onSort: () => onSort("name"),
+							}}
+						>
+							Name
+						</Th>
 						<CountTh label="Models" />
 						<CountTh label="Credentials" />
 						<CountTh label="Host policies" />
