@@ -1,4 +1,4 @@
-import { Check, ChevronDown, ListFilter, Search, X } from "lucide-react";
+import { Check, ChevronDown, ListFilter, Search } from "lucide-react";
 import { useState } from "react";
 import {
 	DropdownMenu,
@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/popover";
 import type { FilterOption } from "@/filters/types";
 import { cn } from "@/lib/utils";
+import { Chip } from "@/shared/Chip";
 import { SearchBox } from "@/shared/SearchBox";
 import {
 	LOG_DIMENSIONS,
@@ -131,7 +132,12 @@ export function LogsFilters({
 				>
 					<Search className="size-4 shrink-0 text-muted-foreground" />
 					{chips.map((c) => (
-						<Chip key={c.key} label={c.label} onRemove={c.onRemove} />
+						<Chip
+							key={c.key}
+							label={c.label}
+							onRemove={c.onRemove}
+							labelClassName="max-w-44"
+						/>
 					))}
 					<input
 						value={values.q}
@@ -294,22 +300,6 @@ function ToggleButton({
 
 function labelFor(options: FilterOption[], value: string): string {
 	return options.find((o) => o.value === value)?.label ?? value;
-}
-
-function Chip({ label, onRemove }: { label: string; onRemove: () => void }) {
-	return (
-		<span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/50 py-0.5 pl-2 pr-0.5 text-[11px] text-foreground">
-			<span className="max-w-44 truncate">{label}</span>
-			<button
-				type="button"
-				onClick={onRemove}
-				aria-label={`Remove ${label}`}
-				className="rounded-full p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-			>
-				<X className="size-3" aria-hidden="true" />
-			</button>
-		</span>
-	);
 }
 
 function MultiSelectPopover({

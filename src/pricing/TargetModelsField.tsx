@@ -1,6 +1,6 @@
-import { X } from "lucide-react";
 import { useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Chip } from "@/shared/Chip";
 import { SearchBox } from "@/shared/SearchBox";
 import {
 	type TargetModelOption,
@@ -43,20 +43,12 @@ export function TargetModelsField({ value, onChange }: TargetModelsFieldProps) {
 			{value.length > 0 && (
 				<div className="flex flex-wrap gap-1.5">
 					{value.map((id) => (
-						<span
+						<Chip
 							key={id}
-							className="inline-flex items-center gap-1 rounded border border-border bg-muted px-1.5 py-0.5 text-[11px] text-foreground"
-						>
-							{labelOf(id)}
-							<button
-								type="button"
-								onClick={() => toggle(id)}
-								aria-label={`Remove ${labelOf(id)}`}
-								className="text-muted-foreground hover:text-destructive"
-							>
-								<X className="w-3 h-3" />
-							</button>
-						</span>
+							shape="box"
+							label={labelOf(id)}
+							onRemove={() => toggle(id)}
+						/>
 					))}
 				</div>
 			)}

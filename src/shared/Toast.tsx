@@ -1,3 +1,5 @@
+import { X } from "lucide-react";
+import { IconButton } from "@/components/ui/icon-button";
 import { type ToastKind, useToastStore } from "@/stores/toast";
 
 export type { ToastKind, ToastMessage } from "@/stores/toast";
@@ -26,14 +28,14 @@ export function ToastContainer() {
 					className={`px-4 py-3 rounded-lg shadow-lg text-sm font-medium flex items-center gap-3 ${KIND_CLASSES[t.kind]}`}
 				>
 					<span className="flex-1">{t.message}</span>
-					<button
-						type="button"
-						aria-label="Dismiss"
+					<IconButton
+						icon={X}
+						weight="bare"
+						size="xs"
+						label="Dismiss"
 						onClick={() => dismiss(t.id)}
-						className="shrink-0 opacity-75 hover:opacity-100"
-					>
-						✕
-					</button>
+						className="text-current opacity-75 hover:text-current hover:opacity-100"
+					/>
 				</div>
 			))}
 		</div>

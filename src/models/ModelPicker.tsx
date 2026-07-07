@@ -5,7 +5,6 @@ import {
 	Globe,
 	Search,
 	TextCursorInput,
-	X,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import {
@@ -33,6 +32,7 @@ import {
 	type ProviderRow,
 	usePickerCatalog,
 } from "@/models/usePickerCatalog";
+import { Chip } from "@/shared/Chip";
 
 type Tab = "summary" | "providers" | "models" | "hosts" | "raw";
 
@@ -525,20 +525,14 @@ function SelectionFooter({
 	return (
 		<div className="border-t border-border px-3 py-2 flex flex-wrap items-center gap-1">
 			{refs.map((r) => (
-				<span
+				<Chip
 					key={r}
-					className="inline-flex items-center gap-1 h-6 pl-2 pr-0.5 rounded bg-primary/10 text-primary text-[11px] font-mono"
-				>
-					{r}
-					<button
-						type="button"
-						aria-label={`Remove ${r}`}
-						onClick={() => onRemove(r)}
-						className="h-5 w-5 inline-flex items-center justify-center rounded hover:bg-primary/20"
-					>
-						<X className="w-3 h-3" />
-					</button>
-				</span>
+					shape="box"
+					tone="primary"
+					mono
+					label={r}
+					onRemove={() => onRemove(r)}
+				/>
 			))}
 		</div>
 	);
