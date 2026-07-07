@@ -10,6 +10,7 @@ import type {
 	CreateRelayKeyResponse,
 	RelayKey,
 	RelayKeyList,
+	RotateRelayKeyResponse,
 } from "@/api/types/relayKey";
 import { unwrap } from "@/api/unwrap";
 
@@ -88,6 +89,27 @@ export function useUpdateRelayKey() {
 				await apiClient.PUT("/relay-keys/by-id/{id}", {
 					params: { path: { id } },
 					body,
+				}),
+			);
+			return data;
+		},
+		onSuccess: () => {
+			invalidateRelayKeyDependents(queryClient);
+		},
+	});
+}
+
+export function useRotateRelayKey() {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: async ({
+			id,
+		}: {
+			id: string;
+		}): Promise<RotateRelayKeyResponse> => {
+			const data = unwrap(
+				await apiClient.POST("/relay-keys/by-id/{id}/rotate", {
+					params: { path: { id } },
 				}),
 			);
 			return data;

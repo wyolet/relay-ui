@@ -50,7 +50,7 @@ const TABS: {
 }[] = [
 	{ value: "overview", label: "Overview", icon: LayoutGrid },
 	{ value: "models", label: "Models", icon: Boxes },
-	{ value: "keys", label: "Host keys", icon: KeyRound },
+	{ value: "keys", label: "Credentials", icon: KeyRound },
 	{ value: "rate-limits", label: "Rate limits", icon: Gauge },
 	{ value: "usage", label: "Usage", icon: Activity },
 	{ value: "logs", label: "Logs", icon: ScrollText },

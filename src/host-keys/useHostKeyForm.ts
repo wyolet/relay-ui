@@ -193,7 +193,7 @@ export function useHostKeyForm({
 						id: hostKey.metadata.id ?? "",
 						body: payload,
 					});
-					toast("success", `Host key "${displayName}" updated.`);
+					toast("success", `Credential "${displayName}" updated.`);
 					onSaved(saved.metadata.name);
 				} else {
 					const name = computeSlug(displayName);
@@ -215,7 +215,7 @@ export function useHostKeyForm({
 						spec,
 					};
 					const saved = await createHostKey.mutateAsync(payload);
-					toast("success", `Host key "${displayName}" created.`);
+					toast("success", `Credential "${displayName}" created.`);
 					onSaved(saved.metadata.name);
 				}
 			} catch (err) {
@@ -224,8 +224,8 @@ export function useHostKeyForm({
 					err instanceof ApiError
 						? err.body.message
 						: isEdit
-							? "Failed to update host key."
-							: "Failed to create host key.",
+							? "Failed to update credential."
+							: "Failed to create credential.",
 				);
 			}
 		},
@@ -346,7 +346,7 @@ export function useHostKeyForm({
 
 	async function detachFromPolicy(policyId: string) {
 		if (!hostKey) {
-			toast("error", "Host key not loaded.");
+			toast("error", "Credential not loaded.");
 			return;
 		}
 		await detach({

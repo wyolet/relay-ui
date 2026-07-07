@@ -19,10 +19,10 @@ function NewHostKeyInner() {
 					className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
 				>
 					<ChevronLeft className="w-3.5 h-3.5" />
-					Host keys
+					Credentials
 				</Link>
 				<h1 className="mt-2 text-xl font-semibold text-foreground">
-					New host key
+					New credential
 				</h1>
 				<p className="mt-1 text-xs text-muted-foreground">
 					Register an upstream credential — stored encrypted by Relay, or

@@ -7,7 +7,7 @@ const DIMENSION_LABELS: Record<UsageGroupBy, string> = {
 	host_id: "Host",
 	policy_id: "Policy",
 	relay_key_hash: "Relay key",
-	host_key_id: "Host key",
+	host_key_id: "Credential",
 };
 
 export function dimensionLabel(groupBy: UsageGroupBy): string {

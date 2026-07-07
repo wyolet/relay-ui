@@ -87,7 +87,7 @@ function HostKeyDetailInner() {
 				className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
 			>
 				<ChevronLeft className="w-3.5 h-3.5" />
-				Host keys
+				Credentials
 			</Link>
 
 			<header className="flex items-start justify-between gap-4">
@@ -254,8 +254,8 @@ function PoliciesPanel({
 		return (
 			<Card title="Attached to user policies" icon={Link2}>
 				<p className="text-xs text-muted-foreground">
-					This host key is not attached to any user policy. Attach it from a
-					policy's host-key pool to start routing traffic through it.
+					This credential is not attached to any user policy. Attach it from a
+					policy's credential pool to start routing traffic through it.
 				</p>
 			</Card>
 		);
@@ -311,7 +311,7 @@ function PoliciesPanel({
 												? "text-muted-foreground"
 												: "text-foreground"
 										}
-										title={`${row.poolSize} host key${row.poolSize === 1 ? "" : "s"} in this policy's pool`}
+										title={`${row.poolSize} credential${row.poolSize === 1 ? "" : "s"} in this policy's pool`}
 									>
 										1 / {row.poolSize}
 									</span>

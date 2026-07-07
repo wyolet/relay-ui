@@ -116,7 +116,7 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 
 				<Section
 					icon={KeyRound}
-					title="Host keys"
+					title="Credentials"
 					description="Credentials Relay rotates through when calls hit this policy."
 				>
 					<PolicyHostRequirements
