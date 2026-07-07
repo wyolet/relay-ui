@@ -32,6 +32,7 @@ import { RelayKeyRotateDialog } from "@/relay-keys/RelayKeyRotateDialog";
 import { useToggleRelayKeyEnabled } from "@/relay-keys/useToggleRelayKeyEnabled";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { PageLoader } from "@/shared/Spinner";
+import { StatusBadge } from "@/shared/StatusBadge";
 import { toast } from "@/shared/Toast";
 import { ResourceUsage } from "@/usage/ResourceUsage";
 
@@ -114,7 +115,7 @@ function RelayKeyDetailInner() {
 									(no display name)
 								</span>
 							)}
-							<StatusBadge enabled={enabled} />
+							<StatusBadge enabled={enabled} enabledLabel="Active" />
 							{rk.spec.passthroughAllowed && (
 								<span
 									className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium uppercase tracking-wide bg-warning/10 text-warning border border-warning/30"
@@ -364,18 +365,6 @@ function Row({
 			</dt>
 			<dd className="text-xs text-foreground min-w-0">{children}</dd>
 		</div>
-	);
-}
-
-function StatusBadge({ enabled }: { enabled: boolean }) {
-	return enabled ? (
-		<span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-success-soft text-success border border-success/30">
-			Active
-		</span>
-	) : (
-		<span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground border border-border">
-			Disabled
-		</span>
 	);
 }
 

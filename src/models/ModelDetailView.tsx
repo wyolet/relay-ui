@@ -62,15 +62,17 @@ import {
 import { useModelUsage } from "@/models/useModelUsage";
 import { fmtCost, MeterGrid } from "@/pricing/MeterGrid";
 import { ProviderLogo } from "@/providers/ProviderLogo";
-import {
-	ResourceUsageCards,
-	UsageCardsSkeleton,
-} from "@/usage/ResourceUsageCards";
+import { OwnerBadge, StatusBadge } from "@/shared/StatusBadge";
+import { Th } from "@/shared/Th";
 import {
 	ResourceSpendCard,
 	ResourceSpendCardSkeleton,
 } from "@/usage/ResourceSpendCard";
 import { ResourceUsage } from "@/usage/ResourceUsage";
+import {
+	ResourceUsageCards,
+	UsageCardsSkeleton,
+} from "@/usage/ResourceUsageCards";
 
 export type ModelDetailTab =
 	| "overview"
@@ -250,7 +252,9 @@ function Header({
 								</span>
 							)}
 							<StatusBadge enabled={enabled} />
-							{isProviderOwned && <OwnerBadge label="Provider" />}
+							{isProviderOwned && (
+								<OwnerBadge label="Provider" title="Provider-owned." />
+							)}
 							{dep && (
 								<span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium uppercase tracking-wide bg-warning/10 text-warning border border-warning/30">
 									<AlertTriangle className="w-3 h-3" />
@@ -1148,23 +1152,6 @@ function Row({
 	);
 }
 
-function Th({
-	children,
-	className = "",
-}: {
-	children: React.ReactNode;
-	className?: string;
-}) {
-	return (
-		<th
-			scope="col"
-			className={`px-3 py-1.5 text-left font-medium ${className}`}
-		>
-			{children}
-		</th>
-	);
-}
-
 function Td({
 	children,
 	className = "",
@@ -1177,34 +1164,9 @@ function Td({
 
 function StatusInline({ enabled }: { enabled: boolean }) {
 	return enabled ? (
-		<span className="text-[11px] text-success">
-			Enabled
-		</span>
+		<span className="text-[11px] text-success">Enabled</span>
 	) : (
 		<span className="text-[11px] text-muted-foreground">Disabled</span>
-	);
-}
-
-function StatusBadge({ enabled }: { enabled: boolean }) {
-	return enabled ? (
-		<span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-success-soft text-success border border-success/30">
-			Enabled
-		</span>
-	) : (
-		<span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground border border-border">
-			Disabled
-		</span>
-	);
-}
-
-function OwnerBadge({ label }: { label: string }) {
-	return (
-		<span
-			className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground border border-border"
-			title={`${label}-owned.`}
-		>
-			{label}-owned
-		</span>
 	);
 }
 

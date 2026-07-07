@@ -26,9 +26,7 @@ function statusBand(status: number): string {
 }
 function statusTone(e: LogEvent): string {
 	if (!isErrorEvent(e)) return "text-success";
-	return e.status >= 500
-		? "text-destructive"
-		: "text-warning";
+	return e.status >= 500 ? "text-destructive" : "text-warning";
 }
 function statusDot(e: LogEvent): string {
 	if (!isErrorEvent(e)) return "bg-success";

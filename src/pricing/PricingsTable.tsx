@@ -5,6 +5,7 @@ import { summarizeRatesParts } from "@/lib/usage-math/pricing";
 import { fmtRate, prettyMeter, prettyUnit } from "@/pricing/MeterGrid";
 import { useHostOptionById } from "@/pricing/useHostOptions";
 import { useTargetModelLabeler } from "@/pricing/useTargetModelOptions";
+import { Th } from "@/shared/Th";
 
 export function PricingsTable({ items }: { items: Pricing[] }) {
 	const labelOf = useTargetModelLabeler();
@@ -102,9 +103,7 @@ function Row({
 			</Td>
 			<Td className="text-right">
 				{enabled ? (
-					<span className="text-[11px] text-success">
-						Enabled
-					</span>
+					<span className="text-[11px] text-success">Enabled</span>
 				) : (
 					<span className="text-[11px] text-muted-foreground">Disabled</span>
 				)}
@@ -160,23 +159,6 @@ function shortMeter(meter: string): string {
 	if (meter === "tokens.input") return "in";
 	if (meter === "tokens.output") return "out";
 	return prettyMeter(meter).toLowerCase();
-}
-
-function Th({
-	children,
-	className = "",
-}: {
-	children: React.ReactNode;
-	className?: string;
-}) {
-	return (
-		<th
-			scope="col"
-			className={`px-3 py-1.5 text-left font-medium ${className}`}
-		>
-			{children}
-		</th>
-	);
 }
 
 function Td({

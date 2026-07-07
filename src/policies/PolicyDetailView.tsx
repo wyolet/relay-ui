@@ -23,6 +23,7 @@ import { PolicyModelsTab } from "@/policies/PolicyModelsTab";
 import { PolicyOverviewTab } from "@/policies/PolicyOverviewTab";
 import { PolicyRateLimitsTab } from "@/policies/PolicyRateLimitsTab";
 import { PageLoader } from "@/shared/Spinner";
+import { StatusBadge } from "@/shared/StatusBadge";
 import { ResourceUsage } from "@/usage/ResourceUsage";
 
 export type PolicyDetailTab =
@@ -233,18 +234,6 @@ function Header({
 				)}
 			</div>
 		</div>
-	);
-}
-
-function StatusBadge({ enabled }: { enabled: boolean }) {
-	return enabled ? (
-		<span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-success-soft text-success border border-success/30">
-			Enabled
-		</span>
-	) : (
-		<span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground border border-border">
-			Disabled
-		</span>
 	);
 }
 

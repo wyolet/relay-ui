@@ -10,6 +10,8 @@ import { compactNumber } from "@/lib/rateLimitFormat";
 import { isProviderOwned, isSystemOwned } from "@/lib/systemRateLimits";
 import { windowLabel } from "@/lib/timeWindow";
 import { useRateLimitReferences } from "@/rate-limits/useRateLimitReferences";
+import { OwnerBadge, StatusBadge } from "@/shared/StatusBadge";
+import { Th } from "@/shared/Th";
 
 interface Props {
 	rateLimit: RateLimit;
@@ -273,9 +275,7 @@ function PoliciesPanel({ rateLimit }: { rateLimit: RateLimit }) {
 												all ({scopeCount})
 											</span>
 										) : inactive ? (
-											<span className="text-warning text-[11px]">
-												inactive
-											</span>
+											<span className="text-warning text-[11px]">inactive</span>
 										) : (
 											<span className="text-foreground">
 												{scopeCount} ref{scopeCount === 1 ? "" : "s"}
@@ -295,9 +295,7 @@ function PoliciesPanel({ rateLimit }: { rateLimit: RateLimit }) {
 									</Td>
 									<Td className="text-right">
 										{enabled ? (
-											<span className="text-[11px] text-success">
-												Enabled
-											</span>
+											<span className="text-[11px] text-success">Enabled</span>
 										) : (
 											<span className="text-[11px] text-muted-foreground">
 												Disabled
@@ -311,23 +309,6 @@ function PoliciesPanel({ rateLimit }: { rateLimit: RateLimit }) {
 				</table>
 			</div>
 		</section>
-	);
-}
-
-function Th({
-	children,
-	className = "",
-}: {
-	children: React.ReactNode;
-	className?: string;
-}) {
-	return (
-		<th
-			scope="col"
-			className={`px-3 py-1.5 text-left font-medium ${className}`}
-		>
-			{children}
-		</th>
 	);
 }
 
@@ -367,29 +348,6 @@ function groupRules(rules: readonly RateLimitRule[]): RuleGroup[] {
 		else other.rules.push(r);
 	}
 	return [tokens, requests, other].filter((g) => g.rules.length > 0);
-}
-
-function StatusBadge({ enabled }: { enabled: boolean }) {
-	return enabled ? (
-		<span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-success-soft text-success border border-success/30">
-			Enabled
-		</span>
-	) : (
-		<span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground border border-border">
-			Disabled
-		</span>
-	);
-}
-
-function OwnerBadge({ label }: { label: string }) {
-	return (
-		<span
-			className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground border border-border"
-			title={`${label}-owned and managed by Relay.`}
-		>
-			{label}-owned
-		</span>
-	);
 }
 
 function Badge({

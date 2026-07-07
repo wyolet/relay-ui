@@ -245,9 +245,7 @@ function ModelRow({
 					{(hasDisplayName(m.metadata) || dep) && (
 						<div className="text-[11px] text-muted-foreground truncate">
 							{dep ? (
-								<span className="text-warning">
-									{dep}
-								</span>
+								<span className="text-warning">{dep}</span>
 							) : (
 								<code className="font-mono">{m.metadata.name}</code>
 							)}

@@ -31,6 +31,8 @@ import {
 import { HostLogo } from "@/hosts/HostLogo";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { PageLoader } from "@/shared/Spinner";
+import { StatusBadge } from "@/shared/StatusBadge";
+import { Th } from "@/shared/Th";
 
 export const Route = createFileRoute("/_authenticated/host-keys/$name")({
 	loader: ({ context, params }) => {
@@ -329,9 +331,7 @@ function PoliciesPanel({
 								</Td>
 								<Td className="text-right">
 									{row.enabled ? (
-										<span className="text-[11px] text-success">
-											Enabled
-										</span>
+										<span className="text-[11px] text-success">Enabled</span>
 									) : (
 										<span className="text-[11px] text-muted-foreground">
 											Disabled
@@ -405,23 +405,6 @@ function Row({
 	);
 }
 
-function Th({
-	children,
-	className = "",
-}: {
-	children: React.ReactNode;
-	className?: string;
-}) {
-	return (
-		<th
-			scope="col"
-			className={`px-3 py-1.5 text-left font-medium ${className}`}
-		>
-			{children}
-		</th>
-	);
-}
-
 function Td({
 	children,
 	className = "",
@@ -430,18 +413,6 @@ function Td({
 	className?: string;
 }) {
 	return <td className={`px-3 py-2 align-middle ${className}`}>{children}</td>;
-}
-
-function StatusBadge({ enabled }: { enabled: boolean }) {
-	return enabled ? (
-		<span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-success-soft text-success border border-success/30">
-			Enabled
-		</span>
-	) : (
-		<span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground border border-border">
-			Disabled
-		</span>
-	);
 }
 
 function KindBadge({ stored }: { stored: boolean }) {

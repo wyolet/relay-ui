@@ -24,13 +24,13 @@ import { analyzePolicy } from "@/diagnostics/analyzers/policy";
 import { DiagnosticList } from "@/diagnostics/DiagnosticList";
 import { useDiagnosticGraph } from "@/diagnostics/useDiagnostics";
 import { ModelPicker } from "@/models/ModelPicker";
+import { IncludeDeprecatedSwitch } from "@/policies/IncludeDeprecatedSwitch";
 import { PolicyAttachedRelayKeys } from "@/policies/PolicyAttachedRelayKeys";
 import { PolicyHostRequirements } from "@/policies/PolicyHostRequirements";
 import { PolicyRLPicker } from "@/policies/PolicyRLPicker";
 import { policyFromFormValues, usePolicyForm } from "@/policies/usePolicyForm";
 import { usePolicyHostRequirements } from "@/policies/usePolicyHostRequirements";
 import { IdentitySection } from "@/shared/IdentitySection";
-import { IncludeDeprecatedSwitch } from "@/policies/IncludeDeprecatedSwitch";
 import { ToggleSwitch } from "@/shared/ToggleSwitch";
 
 interface PolicyFormProps {

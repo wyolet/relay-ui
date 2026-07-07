@@ -1,4 +1,7 @@
 import type { UsageGroupBy, UsageRange } from "@/api/hooks/usage";
+import { fmtTs } from "@/lib/format";
+
+export { fmtCompact, fmtInt, fmtMs, fmtTs, sumTokens } from "@/lib/format";
 
 /** Human-readable column header / label for a group-by dimension. */
 const DIMENSION_LABELS: Record<UsageGroupBy, string> = {
@@ -14,33 +17,11 @@ export function dimensionLabel(groupBy: UsageGroupBy): string {
 	return DIMENSION_LABELS[groupBy];
 }
 
-export function fmtInt(n: number): string {
-	return n.toLocaleString();
-}
-
 /** Ratio 0..1 → "1.2%" (more precision under 10%, none above). */
 export function fmtPct(ratio: number): string {
 	const pct = ratio * 100;
 	const digits = pct > 0 && pct < 10 ? 1 : 0;
 	return `${pct.toLocaleString(undefined, { maximumFractionDigits: digits })}%`;
-}
-
-/** Large counts → "1.3B" / "4.1M" / "12.4k". */
-export function fmtCompact(n: number): string {
-	if (n >= 1_000_000_000)
-		return `${(n / 1_000_000_000).toLocaleString(undefined, { maximumFractionDigits: 1 })}B`;
-	if (n >= 1_000_000)
-		return `${(n / 1_000_000).toLocaleString(undefined, { maximumFractionDigits: 1 })}M`;
-	if (n >= 1_000)
-		return `${(n / 1_000).toLocaleString(undefined, { maximumFractionDigits: 1 })}k`;
-	return n.toLocaleString();
-}
-
-/** Latency in ms → "123 ms" / "1.2 s". */
-export function fmtMs(ms: number): string {
-	if (ms >= 1000)
-		return `${(ms / 1000).toLocaleString(undefined, { maximumFractionDigits: 1 })} s`;
-	return `${Math.round(ms)} ms`;
 }
 
 /** Money with adaptive precision; falls back when the code isn't ISO-valid. */
@@ -96,21 +77,6 @@ export function fmtSignedPp(delta: number): string {
 	const digits = abs > 0 && abs < 10 ? 1 : 0;
 	const sign = pp > 0 ? "+" : pp < 0 ? "−" : "±";
 	return `${sign}${abs.toLocaleString(undefined, { maximumFractionDigits: digits })} pp`;
-}
-
-export function sumTokens(
-	tokens: { [key: string]: number } | undefined,
-): number {
-	if (!tokens) return 0;
-	let total = 0;
-	for (const v of Object.values(tokens)) total += v;
-	return total;
-}
-
-export function fmtTs(ts: string): string {
-	const d = new Date(ts);
-	if (Number.isNaN(d.getTime())) return ts;
-	return d.toLocaleString();
 }
 
 /** Compact time for chart axis ticks. */

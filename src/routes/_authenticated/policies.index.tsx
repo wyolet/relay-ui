@@ -1,11 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import {
-	Gauge,
-	KeyRound,
-	MoreHorizontal,
-	Plus,
-	ShieldCheck,
-} from "lucide-react";
+import { Gauge, KeyRound, Plus, ShieldCheck } from "lucide-react";
 import { Suspense, useState } from "react";
 import { z } from "zod";
 import { bindingsListQueryOptions } from "@/api/hooks/bindings";
@@ -31,12 +25,6 @@ import { relayKeysListQueryOptions } from "@/api/hooks/relayKeys";
 import { ApiError } from "@/api/types/errors";
 import type { Policy } from "@/api/types/policy";
 import type { RateLimit } from "@/api/types/ratelimit";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DiagnosticDot } from "@/diagnostics/DiagnosticDot";
 import {
@@ -45,13 +33,16 @@ import {
 } from "@/diagnostics/useDiagnostics";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { resolveMutability } from "@/lib/ownership";
+import { compactNumber } from "@/lib/rateLimitFormat";
 import { windowShort } from "@/lib/timeWindow";
 import { confirm } from "@/shared/ConfirmDialog";
 import { FilterDropdown } from "@/shared/FilterDropdown";
+import { RowMenu } from "@/shared/RowMenu";
 import { SearchBox } from "@/shared/SearchBox";
 import { PageLoader } from "@/shared/Spinner";
 import { Switch } from "@/shared/Switch";
 import { TableToolbar } from "@/shared/TableToolbar";
+import { Th } from "@/shared/Th";
 import { toast } from "@/shared/Toast";
 
 type Tab = "policies" | "ratelimits";
@@ -112,55 +103,6 @@ export const Route = createFileRoute("/_authenticated/policies/")({
 	},
 	component: PoliciesPage,
 });
-
-interface MenuAction {
-	label: string;
-	onClick: () => void;
-	danger?: boolean;
-}
-
-function RowMenu({ actions }: { actions: MenuAction[] }) {
-	return (
-		<DropdownMenu>
-			<DropdownMenuTrigger
-				aria-label="Row actions"
-				className="h-7 w-7 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-			>
-				<MoreHorizontal className="w-3.5 h-3.5" />
-			</DropdownMenuTrigger>
-			<DropdownMenuContent align="end" className="min-w-[160px]">
-				{actions.map((a) => (
-					<DropdownMenuItem
-						key={a.label}
-						variant={a.danger ? "destructive" : "default"}
-						onClick={a.onClick}
-					>
-						{a.label}
-					</DropdownMenuItem>
-				))}
-			</DropdownMenuContent>
-		</DropdownMenu>
-	);
-}
-
-function Th({
-	children,
-	align = "left",
-}: {
-	children: React.ReactNode;
-	align?: "left" | "right";
-}) {
-	return (
-		<th
-			scope="col"
-			className={`px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground ${
-				align === "right" ? "text-right" : "text-left"
-			}`}
-		>
-			{children}
-		</th>
-	);
-}
 
 function describeCatalog(p: Policy): {
 	label: string;
@@ -270,10 +212,12 @@ function PoliciesPanel() {
 					<table className="w-full border-collapse">
 						<thead className="bg-muted/40">
 							<tr>
-								<Th>Name</Th>
-								<Th>Catalog</Th>
-								<Th align="right">Credentials</Th>
-								<Th>Rate limit</Th>
+								<Th variant="column">Name</Th>
+								<Th variant="column">Catalog</Th>
+								<Th variant="column" align="right">
+									Credentials
+								</Th>
+								<Th variant="column">Rate limit</Th>
 								<th
 									scope="col"
 									className="w-12 px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground"
@@ -453,13 +397,6 @@ function PolicyRow({
 	);
 }
 
-function fmtAmount(n: number): string {
-	if (n >= 1_000_000)
-		return `${(n / 1_000_000).toFixed(n % 1_000_000 ? 1 : 0)}M`;
-	if (n >= 1_000) return `${(n / 1_000).toFixed(n % 1_000 ? 1 : 0)}k`;
-	return String(n);
-}
-
 function RateLimitsPanel() {
 	const { data: rateLimitsData } = useRateLimits();
 	const deleteRL = useDeleteRateLimit();
@@ -550,10 +487,12 @@ function RateLimitsPanel() {
 					<table className="w-full border-collapse">
 						<thead className="bg-muted/40">
 							<tr>
-								<Th>Name</Th>
-								<Th>Strategy</Th>
-								<Th align="right">Window</Th>
-								<Th>Rules</Th>
+								<Th variant="column">Name</Th>
+								<Th variant="column">Strategy</Th>
+								<Th variant="column" align="right">
+									Window
+								</Th>
+								<Th variant="column">Rules</Th>
 								<th
 									scope="col"
 									className="w-12 px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground"
@@ -672,7 +611,7 @@ function summarizeRules(rl: RateLimit): string {
 		return "—";
 	}
 	if (rules.length === 1) {
-		return `${fmtAmount(rules[0].amount)} ${rules[0].meter}`;
+		return `${compactNumber(rules[0].amount)} ${rules[0].meter}`;
 	}
 	return `${rules.length} rules · ${rules
 		.slice(0, 2)

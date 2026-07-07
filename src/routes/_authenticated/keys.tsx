@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Check, Copy, KeyRound, MoreHorizontal, Plus } from "lucide-react";
+import { Check, Copy, KeyRound, Plus } from "lucide-react";
 import { Suspense, useState } from "react";
 import { z } from "zod";
 import { bindingsListQueryOptions } from "@/api/hooks/bindings";
@@ -23,12 +23,6 @@ import { ApiError } from "@/api/types/errors";
 import type { Host } from "@/api/types/host";
 import type { HostKey } from "@/api/types/hostkey";
 import type { RelayKey } from "@/api/types/relayKey";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DiagnosticDot } from "@/diagnostics/DiagnosticDot";
 import {
@@ -38,10 +32,12 @@ import {
 import { HostCell } from "@/hosts/HostCell";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { confirm } from "@/shared/ConfirmDialog";
+import { RowMenu } from "@/shared/RowMenu";
 import { SearchBox } from "@/shared/SearchBox";
 import { PageLoader } from "@/shared/Spinner";
 import { Switch } from "@/shared/Switch";
 import { TableToolbar } from "@/shared/TableToolbar";
+import { Th } from "@/shared/Th";
 import { toast } from "@/shared/Toast";
 
 function RelayKeyDiagDot({ id }: { id: string | undefined }) {
@@ -77,41 +73,6 @@ export const Route = createFileRoute("/_authenticated/keys")({
 	component: KeysPage,
 });
 
-interface MenuAction {
-	label: string;
-	onClick?: () => void;
-	/** Render the menu item as another element (e.g. a TanStack <Link>). */
-	render?: React.ReactElement;
-	danger?: boolean;
-	disabled?: boolean;
-}
-
-function RowMenu({ actions }: { actions: MenuAction[] }) {
-	return (
-		<DropdownMenu>
-			<DropdownMenuTrigger
-				aria-label="Row actions"
-				className="h-7 w-7 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-			>
-				<MoreHorizontal className="w-3.5 h-3.5" />
-			</DropdownMenuTrigger>
-			<DropdownMenuContent align="end" className="min-w-[180px]">
-				{actions.map((a) => (
-					<DropdownMenuItem
-						key={a.label}
-						disabled={a.disabled}
-						variant={a.danger ? "destructive" : "default"}
-						onClick={a.onClick}
-						render={a.render}
-					>
-						{a.label}
-					</DropdownMenuItem>
-				))}
-			</DropdownMenuContent>
-		</DropdownMenu>
-	);
-}
-
 function PrefixCell({ text, copyText }: { text: string; copyText: string }) {
 	const [copied, setCopied] = useState(false);
 	async function handleCopy() {
@@ -137,25 +98,6 @@ function PrefixCell({ text, copyText }: { text: string; copyText: string }) {
 				<Copy className="w-3 h-3 opacity-0 group-hover:opacity-100" />
 			)}
 		</button>
-	);
-}
-
-function Th({
-	children,
-	align = "left",
-}: {
-	children: React.ReactNode;
-	align?: "left" | "right";
-}) {
-	return (
-		<th
-			scope="col"
-			className={`px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground ${
-				align === "right" ? "text-right" : "text-left"
-			}`}
-		>
-			{children}
-		</th>
 	);
 }
 
@@ -360,10 +302,10 @@ function RelayKeysPanel() {
 						<thead className="bg-muted/40">
 							<tr>
 								<th scope="col" className="w-6 px-3 py-2" aria-label="Status" />
-								<Th>Name</Th>
-								<Th>Prefix</Th>
-								<Th>Policy</Th>
-								<Th>Passthrough</Th>
+								<Th variant="column">Name</Th>
+								<Th variant="column">Prefix</Th>
+								<Th variant="column">Policy</Th>
+								<Th variant="column">Passthrough</Th>
 								<th
 									scope="col"
 									className="w-12 px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground"
@@ -596,11 +538,13 @@ function HostKeysPanel() {
 					<table className="w-full border-collapse">
 						<thead className="bg-muted/40">
 							<tr>
-								<Th>Name</Th>
-								<Th>Host</Th>
-								<Th>Host policy</Th>
-								<Th>Source</Th>
-								<Th align="right">Used by</Th>
+								<Th variant="column">Name</Th>
+								<Th variant="column">Host</Th>
+								<Th variant="column">Host policy</Th>
+								<Th variant="column">Source</Th>
+								<Th variant="column" align="right">
+									Used by
+								</Th>
 								<th
 									scope="col"
 									className="w-10 px-3 py-2"

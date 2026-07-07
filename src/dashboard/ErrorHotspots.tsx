@@ -33,10 +33,7 @@ export function ErrorHotspots() {
 
 			{hotspots.length === 0 ? (
 				<div className="flex items-center gap-2 px-4 py-4 text-xs text-muted-foreground">
-					<ShieldCheck
-						className="size-4 text-success"
-						aria-hidden="true"
-					/>
+					<ShieldCheck className="size-4 text-success" aria-hidden="true" />
 					No errors in the current window.
 				</div>
 			) : (

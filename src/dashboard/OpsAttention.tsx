@@ -58,9 +58,7 @@ function OpsHeader() {
 						title={s.error}
 						className={cn(
 							"inline-flex items-center gap-1.5 font-medium",
-							s.status === "error"
-								? "text-destructive"
-								: "text-warning",
+							s.status === "error" ? "text-destructive" : "text-warning",
 						)}
 					>
 						<span
@@ -336,10 +334,7 @@ function PanelShell({
 function AllClear({ children }: { children: ReactNode }) {
 	return (
 		<div className="flex items-center gap-2 px-4 py-3 text-xs text-muted-foreground">
-			<CircleCheck
-				className="size-4 text-success"
-				aria-hidden="true"
-			/>
+			<CircleCheck className="size-4 text-success" aria-hidden="true" />
 			{children}
 		</div>
 	);

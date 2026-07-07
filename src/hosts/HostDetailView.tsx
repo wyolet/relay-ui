@@ -27,16 +27,18 @@ import { useHostUsage } from "@/hosts/useHostUsage";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { resolveMutability } from "@/lib/ownership";
 import { ResourceLogs } from "@/logs/ResourceLogs";
-import {
-	ResourceUsageCards,
-	UsageCardsSkeleton,
-} from "@/usage/ResourceUsageCards";
 import { PageLoader } from "@/shared/Spinner";
+import { OwnerBadge, StatusBadge } from "@/shared/StatusBadge";
+import { Th } from "@/shared/Th";
 import {
 	ResourceSpendCard,
 	ResourceSpendCardSkeleton,
 } from "@/usage/ResourceSpendCard";
 import { ResourceUsage } from "@/usage/ResourceUsage";
+import {
+	ResourceUsageCards,
+	UsageCardsSkeleton,
+} from "@/usage/ResourceUsageCards";
 
 export type HostDetailTab =
 	| "overview"
@@ -244,7 +246,7 @@ function Header({
 							</span>
 						)}
 						<StatusBadge enabled={enabled} />
-						{system && <OwnerBadge label="System" />}
+						{system && <OwnerBadge label="System" title="System-managed." />}
 					</h1>
 					<p className="mt-1 text-xs text-muted-foreground font-mono truncate">
 						{host.metadata.name}
@@ -888,23 +890,6 @@ function Row({
 	);
 }
 
-function Th({
-	children,
-	className = "",
-}: {
-	children: React.ReactNode;
-	className?: string;
-}) {
-	return (
-		<th
-			scope="col"
-			className={`px-3 py-1.5 text-left font-medium ${className}`}
-		>
-			{children}
-		</th>
-	);
-}
-
 function Td({
 	children,
 	className = "",
@@ -917,34 +902,9 @@ function Td({
 
 function StatusInline({ enabled }: { enabled: boolean }) {
 	return enabled ? (
-		<span className="text-[11px] text-success">
-			Enabled
-		</span>
+		<span className="text-[11px] text-success">Enabled</span>
 	) : (
 		<span className="text-[11px] text-muted-foreground">Disabled</span>
-	);
-}
-
-function StatusBadge({ enabled }: { enabled: boolean }) {
-	return enabled ? (
-		<span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-success-soft text-success border border-success/30">
-			Enabled
-		</span>
-	) : (
-		<span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground border border-border">
-			Disabled
-		</span>
-	);
-}
-
-function OwnerBadge({ label }: { label: string }) {
-	return (
-		<span
-			className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground border border-border"
-			title={`${label}-managed.`}
-		>
-			{label}-owned
-		</span>
 	);
 }
 

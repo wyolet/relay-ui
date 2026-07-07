@@ -106,9 +106,7 @@ function HostRow({
 				{missing ? (
 					<span
 						className={`inline-flex items-center gap-1.5 text-[11px] ${
-							showAsBreaking
-								? "text-warning"
-								: "text-muted-foreground"
+							showAsBreaking ? "text-warning" : "text-muted-foreground"
 						}`}
 					>
 						<AlertTriangle className="w-3.5 h-3.5" aria-hidden />
