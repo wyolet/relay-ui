@@ -1,9 +1,8 @@
 import { Link } from "@tanstack/react-router";
-import { Gauge, Pencil, Power, ShieldCheck, Trash2 } from "lucide-react";
+import { Gauge, ShieldCheck } from "lucide-react";
 import { useMemo } from "react";
 import { useRelayKeys } from "@/api/hooks/relayKeys";
 import type { RateLimit, RateLimitRule } from "@/api/types/ratelimit";
-import { Button, buttonVariants } from "@/components/ui/button";
 import { DiagnosticList } from "@/diagnostics/DiagnosticList";
 import { useRateLimitDiagnostics } from "@/diagnostics/useDiagnostics";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
@@ -11,6 +10,7 @@ import { compactNumber } from "@/lib/rateLimitFormat";
 import { isProviderOwned, isSystemOwned } from "@/lib/systemRateLimits";
 import { windowLabel } from "@/lib/timeWindow";
 import { useRateLimitReferences } from "@/rate-limits/useRateLimitReferences";
+import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
 import { OwnerBadge, StatusBadge } from "@/shared/StatusBadge";
 import { Th } from "@/shared/Th";
 
@@ -85,40 +85,24 @@ function Header({
 					</p>
 				)}
 			</div>
-			<div className="flex items-center gap-2 shrink-0">
-				{canMutate && (
-					<>
-						<Button
-							type="button"
-							variant="outline"
-							size="lg"
-							onClick={onToggleEnabled}
-							disabled={toggling}
-						>
-							<Power className="size-3.5" />
-							{enabled ? "Disable" : "Enable"}
-						</Button>
+			{canMutate && (
+				<DetailHeaderActions
+					enabled={enabled}
+					onToggle={onToggleEnabled}
+					toggling={toggling}
+					onDelete={onDelete}
+					deleting={deleting}
+					editLink={({ className, content }) => (
 						<Link
 							to="/policies/rate-limits/$name/edit"
 							params={{ name }}
-							className={buttonVariants({ variant: "outline", size: "lg" })}
+							className={className}
 						>
-							<Pencil className="size-3.5" />
-							Edit
+							{content}
 						</Link>
-						<Button
-							type="button"
-							variant="destructive"
-							size="lg"
-							onClick={onDelete}
-							disabled={deleting}
-						>
-							<Trash2 className="size-3.5" />
-							Delete
-						</Button>
-					</>
-				)}
-			</div>
+					)}
+				/>
+			)}
 		</div>
 	);
 }

@@ -3,13 +3,10 @@ import {
 	ChevronLeft,
 	KeyRound,
 	Link2,
-	Pencil,
-	Power,
 	ShieldCheck,
-	Trash2,
 	Unlink2,
 } from "lucide-react";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { DiagnosticList } from "@/diagnostics/DiagnosticList";
 import { useHostKeyDiagnostics } from "@/diagnostics/useDiagnostics";
 import { SecretRotateDialog } from "@/host-keys/SecretRotateDialog";
@@ -19,6 +16,7 @@ import {
 } from "@/host-keys/useHostKeyDetail";
 import { HostLogo } from "@/hosts/HostLogo";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
+import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
 import { StatusBadge } from "@/shared/StatusBadge";
 import { Th } from "@/shared/Th";
 
@@ -97,35 +95,21 @@ export function HostKeyDetailView({ name }: { name: string }) {
 						)}
 					</div>
 				</div>
-				<div className="flex items-center gap-2 shrink-0">
-					<Button
-						type="button"
-						variant="outline"
-						size="lg"
-						onClick={() => void setEnabled(!view.enabled)}
-						disabled={isToggling}
-					>
-						<Power className="size-3.5" />
-						{view.enabled ? "Disable" : "Enable"}
-					</Button>
-					<Link
-						to="/host-keys/$name/edit"
-						params={{ name }}
-						className={buttonVariants({ variant: "outline", size: "lg" })}
-					>
-						<Pencil className="size-3.5" />
-						Edit
-					</Link>
-					<Button
-						type="button"
-						variant="destructive"
-						size="lg"
-						onClick={attemptDelete}
-					>
-						<Trash2 className="size-3.5" />
-						Delete
-					</Button>
-				</div>
+				<DetailHeaderActions
+					enabled={view.enabled}
+					onToggle={() => void setEnabled(!view.enabled)}
+					toggling={isToggling}
+					onDelete={attemptDelete}
+					editLink={({ className, content }) => (
+						<Link
+							to="/host-keys/$name/edit"
+							params={{ name }}
+							className={className}
+						>
+							{content}
+						</Link>
+					)}
+				/>
 			</header>
 
 			<DiagnosticList diagnostics={diagnostics} />

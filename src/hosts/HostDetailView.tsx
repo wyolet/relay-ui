@@ -5,11 +5,9 @@ import {
 	ExternalLink,
 	KeyRound,
 	LayoutGrid,
-	Power,
 	ScrollText,
 	ShieldCheck,
 	Sliders,
-	Trash2,
 	Users,
 } from "lucide-react";
 import { Suspense, useMemo } from "react";
@@ -18,7 +16,6 @@ import type { Host } from "@/api/types/host";
 import type { HostKey } from "@/api/types/hostkey";
 import type { Model } from "@/api/types/model";
 import type { Policy } from "@/api/types/policy";
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DiagnosticList } from "@/diagnostics/DiagnosticList";
 import { useHostDiagnostics } from "@/diagnostics/useDiagnostics";
@@ -28,6 +25,7 @@ import { useHostUsage } from "@/hosts/useHostUsage";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { resolveMutability } from "@/lib/ownership";
 import { ResourceLogs } from "@/logs/ResourceLogs";
+import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
 import { PageLoader } from "@/shared/Spinner";
 import { OwnerBadge, StatusBadge } from "@/shared/StatusBadge";
 import { Th } from "@/shared/Th";
@@ -276,32 +274,15 @@ function Header({
 					)}
 				</div>
 			</div>
-			<div className="flex items-center gap-2 shrink-0">
-				{canEdit && (
-					<Button
-						type="button"
-						variant="outline"
-						size="lg"
-						onClick={onToggleEnabled}
-						disabled={toggling}
-					>
-						<Power className="size-3.5" />
-						{enabled ? "Disable" : "Enable"}
-					</Button>
-				)}
-				{canDelete && (
-					<Button
-						type="button"
-						variant="destructive"
-						size="lg"
-						onClick={onDelete}
-						disabled={deleting}
-					>
-						<Trash2 className="size-3.5" />
-						Delete
-					</Button>
-				)}
-			</div>
+			<DetailHeaderActions
+				enabled={enabled}
+				onToggle={onToggleEnabled}
+				toggling={toggling}
+				showToggle={canEdit}
+				showDelete={canDelete}
+				onDelete={onDelete}
+				deleting={deleting}
+			/>
 		</div>
 	);
 }

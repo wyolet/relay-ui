@@ -5,15 +5,11 @@ import {
 	Gauge,
 	KeyRound,
 	LayoutGrid,
-	Pencil,
-	Power,
 	ScrollText,
-	Trash2,
 } from "lucide-react";
 import { Suspense } from "react";
 import { useGovernance } from "@/api/hooks/governance";
 import type { Policy } from "@/api/types/policy";
-import { Button, buttonVariants } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { resolveMutability } from "@/lib/ownership";
@@ -23,6 +19,7 @@ import { PolicyKeysTab } from "@/policies/PolicyKeysTab";
 import { PolicyModelsTab } from "@/policies/PolicyModelsTab";
 import { PolicyOverviewTab } from "@/policies/PolicyOverviewTab";
 import { PolicyRateLimitsTab } from "@/policies/PolicyRateLimitsTab";
+import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
 import { PageLoader } from "@/shared/Spinner";
 import { StatusBadge } from "@/shared/StatusBadge";
 import { ResourceUsage } from "@/usage/ResourceUsage";
@@ -200,42 +197,28 @@ function Header({
 					</p>
 				)}
 			</div>
-			<div className="flex items-center gap-2 shrink-0">
-				{canEdit && (
-					<Button
-						type="button"
-						variant="outline"
-						size="lg"
-						onClick={onToggleEnabled}
-						disabled={toggling}
-					>
-						<Power className="size-3.5" />
-						{enabled ? "Disable" : "Enable"}
-					</Button>
-				)}
-				{canEdit && (
-					<Link
-						to="/policies/$name/edit"
-						params={{ name }}
-						className={buttonVariants({ variant: "outline", size: "lg" })}
-					>
-						<Pencil className="size-3.5" />
-						Edit
-					</Link>
-				)}
-				{canDelete && (
-					<Button
-						type="button"
-						variant="destructive"
-						size="lg"
-						onClick={onDelete}
-						disabled={deleting}
-					>
-						<Trash2 className="size-3.5" />
-						Delete
-					</Button>
-				)}
-			</div>
+			<DetailHeaderActions
+				enabled={enabled}
+				onToggle={onToggleEnabled}
+				toggling={toggling}
+				showToggle={canEdit}
+				showDelete={canDelete}
+				onDelete={onDelete}
+				deleting={deleting}
+				editLink={
+					canEdit
+						? ({ className, content }) => (
+								<Link
+									to="/policies/$name/edit"
+									params={{ name }}
+									className={className}
+								>
+									{content}
+								</Link>
+							)
+						: undefined
+				}
+			/>
 		</div>
 	);
 }

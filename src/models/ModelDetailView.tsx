@@ -24,14 +24,12 @@ import {
 	Mic,
 	Monitor,
 	Paperclip,
-	Power,
 	Radio,
 	Scale,
 	ScrollText,
 	Server,
 	Settings2,
 	ShieldCheck,
-	Trash2,
 	TrendingDown,
 	Volume2,
 	Wrench,
@@ -43,7 +41,6 @@ import { useHosts } from "@/api/hooks/hosts";
 import type { ModelHostView, ModelPolicyView } from "@/api/hooks/models";
 import type { Host } from "@/api/types/host";
 import type { Model, ModelCapabilities } from "@/api/types/model";
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DiagnosticList } from "@/diagnostics/DiagnosticList";
 import { useModelDiagnostics } from "@/diagnostics/useDiagnostics";
@@ -63,6 +60,7 @@ import {
 import { useModelUsage } from "@/models/useModelUsage";
 import { fmtCost, MeterGrid } from "@/pricing/MeterGrid";
 import { ProviderLogo } from "@/providers/ProviderLogo";
+import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
 import { OwnerBadge, StatusBadge } from "@/shared/StatusBadge";
 import { Th } from "@/shared/Th";
 import {
@@ -304,32 +302,15 @@ function Header({
 						)}
 					</div>
 				</div>
-				<div className="flex items-center gap-2 shrink-0">
-					{canEdit && (
-						<Button
-							type="button"
-							variant="outline"
-							size="lg"
-							onClick={onToggleEnabled}
-							disabled={toggling}
-						>
-							<Power className="size-3.5" />
-							{enabled ? "Disable" : "Enable"}
-						</Button>
-					)}
-					{canDelete && onDelete && (
-						<Button
-							type="button"
-							variant="destructive"
-							size="lg"
-							onClick={onDelete}
-							disabled={deleting}
-						>
-							<Trash2 className="size-3.5" />
-							Delete
-						</Button>
-					)}
-				</div>
+				<DetailHeaderActions
+					enabled={enabled}
+					onToggle={onToggleEnabled}
+					toggling={toggling}
+					showToggle={canEdit}
+					showDelete={canDelete}
+					onDelete={onDelete}
+					deleting={deleting}
+				/>
 			</div>
 			{dep && (
 				<div className="flex items-start gap-2 px-3 py-2 rounded-md border border-warning/30 bg-warning/10 text-xs text-warning">

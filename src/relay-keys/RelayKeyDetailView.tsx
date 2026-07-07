@@ -3,24 +3,22 @@ import {
 	Activity,
 	ChevronLeft,
 	KeyRound,
-	Pencil,
-	Power,
 	RotateCw,
 	ShieldCheck,
-	Trash2,
 } from "lucide-react";
 import { useState } from "react";
 import { usePolicies } from "@/api/hooks/policies";
 import { useDeleteRelayKey, useRelayKey } from "@/api/hooks/relayKeys";
 import { ApiError } from "@/api/types/errors";
 import type { Policy } from "@/api/types/policy";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { DiagnosticList } from "@/diagnostics/DiagnosticList";
 import { useRelayKeyDiagnostics } from "@/diagnostics/useDiagnostics";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { RelayKeyRotateDialog } from "@/relay-keys/RelayKeyRotateDialog";
 import { useToggleRelayKeyEnabled } from "@/relay-keys/useToggleRelayKeyEnabled";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
+import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
 import { StatusBadge } from "@/shared/StatusBadge";
 import { toast } from "@/shared/Toast";
 import { ResourceUsage } from "@/usage/ResourceUsage";
@@ -113,17 +111,21 @@ export function RelayKeyDetailView({ name }: { name: string }) {
 						)}
 					</div>
 				</div>
-				<div className="flex items-center gap-2 shrink-0">
-					<Button
-						type="button"
-						variant="outline"
-						size="lg"
-						onClick={() => void setEnabled(rk, !enabled)}
-						disabled={isToggling}
-					>
-						<Power className="size-3.5" />
-						{enabled ? "Disable" : "Enable"}
-					</Button>
+				<DetailHeaderActions
+					enabled={enabled}
+					onToggle={() => void setEnabled(rk, !enabled)}
+					toggling={isToggling}
+					onDelete={() => setConfirming(true)}
+					editLink={({ className, content }) => (
+						<Link
+							to="/relay-keys/$name/edit"
+							params={{ name }}
+							className={className}
+						>
+							{content}
+						</Link>
+					)}
+				>
 					<Button
 						type="button"
 						variant="outline"
@@ -133,24 +135,7 @@ export function RelayKeyDetailView({ name }: { name: string }) {
 						<RotateCw className="size-3.5" />
 						Rotate
 					</Button>
-					<Link
-						to="/relay-keys/$name/edit"
-						params={{ name }}
-						className={buttonVariants({ variant: "outline", size: "lg" })}
-					>
-						<Pencil className="size-3.5" />
-						Edit
-					</Link>
-					<Button
-						type="button"
-						variant="destructive"
-						size="lg"
-						onClick={() => setConfirming(true)}
-					>
-						<Trash2 className="size-3.5" />
-						Delete
-					</Button>
-				</div>
+				</DetailHeaderActions>
 			</header>
 
 			<DiagnosticList diagnostics={diagnostics} />

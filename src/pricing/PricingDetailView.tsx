@@ -1,11 +1,11 @@
 import { Link } from "@tanstack/react-router";
-import { Banknote, Boxes, Pencil, Power, Server, Trash2 } from "lucide-react";
+import { Banknote, Boxes, Server } from "lucide-react";
 import type { Pricing } from "@/api/types/pricing";
-import { Button, buttonVariants } from "@/components/ui/button";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { MeterGrid } from "@/pricing/MeterGrid";
 import { useHostOptionById } from "@/pricing/useHostOptions";
 import { useTargetModelLabeler } from "@/pricing/useTargetModelOptions";
+import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
 import { StatusBadge } from "@/shared/StatusBadge";
 
 interface Props {
@@ -92,36 +92,22 @@ function Header({
 					</p>
 				)}
 			</div>
-			<div className="flex items-center gap-2 shrink-0">
-				<Button
-					type="button"
-					variant="outline"
-					size="lg"
-					onClick={onToggleEnabled}
-					disabled={toggling}
-				>
-					<Power className="size-3.5" />
-					{enabled ? "Disable" : "Enable"}
-				</Button>
-				<Link
-					to="/pricing/$name/edit"
-					params={{ name }}
-					className={buttonVariants({ variant: "outline", size: "lg" })}
-				>
-					<Pencil className="size-3.5" />
-					Edit
-				</Link>
-				<Button
-					type="button"
-					variant="destructive"
-					size="lg"
-					onClick={onDelete}
-					disabled={deleting}
-				>
-					<Trash2 className="size-3.5" />
-					Delete
-				</Button>
-			</div>
+			<DetailHeaderActions
+				enabled={enabled}
+				onToggle={onToggleEnabled}
+				toggling={toggling}
+				onDelete={onDelete}
+				deleting={deleting}
+				editLink={({ className, content }) => (
+					<Link
+						to="/pricing/$name/edit"
+						params={{ name }}
+						className={className}
+					>
+						{content}
+					</Link>
+				)}
+			/>
 		</div>
 	);
 }

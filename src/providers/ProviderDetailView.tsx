@@ -1,16 +1,8 @@
 import { Link } from "@tanstack/react-router";
-import {
-	Boxes,
-	ExternalLink,
-	LayoutGrid,
-	Power,
-	Server,
-	Trash2,
-} from "lucide-react";
+import { Boxes, ExternalLink, LayoutGrid, Server } from "lucide-react";
 import { useGovernance } from "@/api/hooks/governance";
 import type { Model } from "@/api/types/model";
 import type { Provider } from "@/api/types/provider";
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { HostCell } from "@/hosts/HostCell";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
@@ -20,6 +12,7 @@ import {
 	type ProviderReferences,
 	useProviderReferences,
 } from "@/providers/useProviderReferences";
+import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
 import { OwnerBadge, StatusBadge } from "@/shared/StatusBadge";
 import { Th } from "@/shared/Th";
 
@@ -181,32 +174,15 @@ function Header({
 					)}
 				</div>
 			</div>
-			<div className="flex items-center gap-2 shrink-0">
-				{canEdit && (
-					<Button
-						type="button"
-						variant="outline"
-						size="lg"
-						onClick={onToggleEnabled}
-						disabled={toggling}
-					>
-						<Power className="size-3.5" />
-						{enabled ? "Disable" : "Enable"}
-					</Button>
-				)}
-				{canDelete && (
-					<Button
-						type="button"
-						variant="destructive"
-						size="lg"
-						onClick={onDelete}
-						disabled={deleting}
-					>
-						<Trash2 className="size-3.5" />
-						Delete
-					</Button>
-				)}
-			</div>
+			<DetailHeaderActions
+				enabled={enabled}
+				onToggle={onToggleEnabled}
+				toggling={toggling}
+				showToggle={canEdit}
+				showDelete={canDelete}
+				onDelete={onDelete}
+				deleting={deleting}
+			/>
 		</div>
 	);
 }
