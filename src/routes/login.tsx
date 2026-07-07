@@ -2,7 +2,7 @@ import { useForm } from "@tanstack/react-form";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { Eye, EyeOff, Lock, User } from "lucide-react";
-import { motion, MotionConfig } from "motion/react";
+import { AnimatePresence, motion, MotionConfig } from "motion/react";
 import { useState } from "react";
 import { z } from "zod";
 import { AuthError, useAuth, whoamiQueryOptions } from "@/api/auth";
@@ -172,6 +172,7 @@ function LoginPage() {
 	const navigate = useNavigate();
 	const { login } = useAuth();
 	const [serverError, setServerError] = useState<string | null>(null);
+	const [success, setSuccess] = useState(false);
 
 	const form = useForm({
 		defaultValues: { username: "", password: "" } as LoginValues,
@@ -193,6 +194,10 @@ function LoginPage() {
 			setServerError(null);
 			try {
 				await login(value.username, value.password);
+				// Let the send-off play before the route swap — signing in should
+				// feel like crossing a threshold, not a teleport.
+				setSuccess(true);
+				await new Promise((resolve) => setTimeout(resolve, 700));
 				await navigate({ to: "/" });
 			} catch (err) {
 				if (err instanceof AuthError) {
@@ -210,18 +215,29 @@ function LoginPage() {
 				{/* ambient brand glows — breathing slowly behind the card */}
 				<div aria-hidden className="pointer-events-none absolute inset-0">
 					<motion.div
-						animate={{ scale: [1, 1.12, 1], opacity: [0.75, 1, 0.75] }}
-						transition={{ duration: 11, repeat: Infinity, ease: "easeInOut" }}
+						animate={
+							success
+								? { scale: 1.35, opacity: 1 }
+								: { scale: [1, 1.12, 1], opacity: [0.75, 1, 0.75] }
+						}
+						transition={
+							success
+								? { duration: 0.8, ease: "easeOut" }
+								: { duration: 11, repeat: Infinity, ease: "easeInOut" }
+						}
 						className="absolute left-1/2 top-0 size-[46rem] -translate-x-1/2 -translate-y-1/3 rounded-full bg-brand-500/10 blur-[120px]"
 					/>
 					<motion.div
-						animate={{ scale: [1, 1.09, 1], opacity: [0.7, 1, 0.7] }}
-						transition={{
-							duration: 13,
-							repeat: Infinity,
-							ease: "easeInOut",
-							delay: 2,
-						}}
+						animate={
+							success
+								? { scale: 1.3, opacity: 1 }
+								: { scale: [1, 1.09, 1], opacity: [0.7, 1, 0.7] }
+						}
+						transition={
+							success
+								? { duration: 0.8, ease: "easeOut" }
+								: { duration: 13, repeat: Infinity, ease: "easeInOut", delay: 2 }
+						}
 						className="absolute bottom-0 right-0 size-[34rem] translate-x-1/4 translate-y-1/4 rounded-full bg-accent-500/10 blur-[120px]"
 					/>
 				</div>
@@ -267,7 +283,27 @@ function LoginPage() {
 							</p>
 						</motion.div>
 
-						<form
+						<AnimatePresence mode="wait" initial={false}>
+							{success ? (
+								<motion.div
+									key="success"
+									initial={{ opacity: 0, scale: 0.94 }}
+									animate={{ opacity: 1, scale: 1 }}
+									transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+									className="grid min-h-[17rem] content-center justify-items-center gap-3"
+								>
+									<BrandMark className="h-12 w-auto" />
+									<p className="text-sm text-muted-foreground">
+										You're in — opening the console…
+									</p>
+								</motion.div>
+							) : (
+								<motion.div
+									key="form"
+									exit={{ opacity: 0, y: -8 }}
+									transition={{ duration: 0.25, ease: "easeOut" }}
+								>
+								<form
 							onSubmit={(e) => {
 								e.preventDefault();
 								e.stopPropagation();
@@ -370,6 +406,9 @@ function LoginPage() {
 								</Button>
 							</motion.div>
 						)}
+								</motion.div>
+							)}
+						</AnimatePresence>
 
 						<motion.div
 							variants={rise}
