@@ -56,7 +56,7 @@ function ProviderDetailInner() {
 	const { tab } = Route.useSearch();
 	const navigate = useNavigate({ from: "/providers/$name" });
 	const { data: provider } = useProvider(name);
-	const updateProvider = useUpdateProvider(provider.metadata.id ?? "");
+	const updateProvider = useUpdateProvider();
 	const deleteProvider = useDeleteProvider();
 
 	async function handleDelete() {
@@ -89,8 +89,11 @@ function ProviderDetailInner() {
 		const next = !(provider.spec.enabled !== false);
 		try {
 			await updateProvider.mutateAsync({
-				metadata: provider.metadata,
-				spec: { ...provider.spec, enabled: next },
+				id: provider.metadata.id ?? "",
+				body: {
+					metadata: provider.metadata,
+					spec: { ...provider.spec, enabled: next },
+				},
 			});
 			toast("success", next ? "Provider enabled." : "Provider disabled.");
 		} catch (err) {

@@ -190,7 +190,7 @@ export function useSetupWizard() {
 	// --- mutations --------------------------------------------------------
 
 	const createHostKey = useCreateHostKey();
-	const updateHost = useUpdateHost(selectedHost?.metadata.id ?? "");
+	const updateHost = useUpdateHost();
 	const createPolicy = useCreatePolicy();
 	const updatePolicy = useUpdatePolicy();
 	const createRateLimit = useCreateRateLimit();
@@ -231,8 +231,11 @@ export function useSetupWizard() {
 				nextBaseURL !== selectedHost.spec.baseURL
 			) {
 				await updateHost.mutateAsync({
-					...selectedHost,
-					spec: { ...selectedHost.spec, baseURL: nextBaseURL },
+					id: hostId,
+					body: {
+						...selectedHost,
+						spec: { ...selectedHost.spec, baseURL: nextBaseURL },
+					},
 				});
 			}
 

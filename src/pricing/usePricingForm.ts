@@ -136,7 +136,7 @@ interface UsePricingFormOptions {
 export function usePricingForm({ pricing, onSaved }: UsePricingFormOptions) {
 	const isEdit = pricing !== undefined;
 	const createPricing = useCreatePricing();
-	const updatePricing = useUpdatePricing(pricing?.metadata.id ?? "");
+	const updatePricing = useUpdatePricing();
 
 	const initial = useMemo<PricingFormValues>(
 		() => (pricing ? pricingToValues(pricing) : emptyValues()),
@@ -210,7 +210,10 @@ export function usePricingForm({ pricing, onSaved }: UsePricingFormOptions) {
 						},
 						spec: { ...spec, enabled: pricing.spec.enabled },
 					};
-					await updatePricing.mutateAsync(payload);
+					await updatePricing.mutateAsync({
+						id: pricing.metadata.id ?? "",
+						body: payload,
+					});
 					toast("success", `Pricing "${displayName}" updated.`);
 				} else {
 					const payload: PricingCreate = {

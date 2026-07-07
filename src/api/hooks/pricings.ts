@@ -133,17 +133,22 @@ export function useCreatePricing() {
 	});
 }
 
-export function useUpdatePricing(id: string) {
+export function useUpdatePricing() {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: async (body: PricingUpdate): Promise<Pricing> => {
-			const data = unwrap(
+		mutationFn: async ({
+			id,
+			body,
+		}: {
+			id: string;
+			body: PricingUpdate;
+		}): Promise<Pricing> => {
+			return unwrap(
 				await apiClient.PUT("/pricings/by-id/{id}", {
 					params: { path: { id } },
 					body,
 				}),
 			);
-			return data;
 		},
 		onSuccess: () => {
 			invalidatePricingDependents(queryClient);

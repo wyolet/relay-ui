@@ -68,7 +68,7 @@ function HostDetailInner() {
 	const { tab } = Route.useSearch();
 	const navigate = useNavigate({ from: "/hosts/$name" });
 	const { data: host } = useHost(name);
-	const updateHost = useUpdateHost(host.metadata.id ?? "");
+	const updateHost = useUpdateHost();
 	const deleteHost = useDeleteHost();
 
 	async function handleDelete() {
@@ -96,8 +96,11 @@ function HostDetailInner() {
 		const next = !(host.spec.enabled !== false);
 		try {
 			await updateHost.mutateAsync({
-				metadata: host.metadata,
-				spec: { ...host.spec, enabled: next },
+				id: host.metadata.id ?? "",
+				body: {
+					metadata: host.metadata,
+					spec: { ...host.spec, enabled: next },
+				},
 			});
 			toast("success", next ? "Host enabled." : "Host disabled.");
 		} catch (err) {

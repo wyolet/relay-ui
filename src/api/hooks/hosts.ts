@@ -68,17 +68,22 @@ export function useHost(ref: string) {
 	return useSuspenseQuery(hostDetailQueryOptions(ref));
 }
 
-export function useUpdateHost(id: string) {
+export function useUpdateHost() {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: async (body: HostUpdate): Promise<Host> => {
-			const data = unwrap(
+		mutationFn: async ({
+			id,
+			body,
+		}: {
+			id: string;
+			body: HostUpdate;
+		}): Promise<Host> => {
+			return unwrap(
 				await apiClient.PUT("/hosts/by-id/{id}", {
 					params: { path: { id } },
 					body,
 				}),
 			);
-			return data;
 		},
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: ["hosts"] });

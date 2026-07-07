@@ -155,7 +155,7 @@ export function useRateLimitForm({
 }: UseRateLimitFormOptions) {
 	const isEdit = rateLimit !== undefined;
 	const createRL = useCreateRateLimit();
-	const updateRL = useUpdateRateLimit(rateLimit?.metadata.id ?? "");
+	const updateRL = useUpdateRateLimit();
 	const systemRLs = useSystemRateLimits();
 	const { data: proxyEnvelope } = useProxyMode();
 	const proxyCtx = proxyEnvelope.value;
@@ -233,7 +233,10 @@ export function useRateLimitForm({
 						},
 						spec,
 					};
-					await updateRL.mutateAsync(payload);
+					await updateRL.mutateAsync({
+						id: rateLimit.metadata.id ?? "",
+						body: payload,
+					});
 					toast("success", `Rate limit "${displayName}" updated.`);
 				} else {
 					const payload: RateLimitCreate = {

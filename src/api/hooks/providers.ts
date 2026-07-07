@@ -42,17 +42,22 @@ export function useProvider(ref: string) {
 	return useSuspenseQuery(providerDetailQueryOptions(ref));
 }
 
-export function useUpdateProvider(id: string) {
+export function useUpdateProvider() {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: async (body: Provider): Promise<Provider> => {
-			const data = unwrap(
+		mutationFn: async ({
+			id,
+			body,
+		}: {
+			id: string;
+			body: Provider;
+		}): Promise<Provider> => {
+			return unwrap(
 				await apiClient.PUT("/providers/by-id/{id}", {
 					params: { path: { id } },
 					body,
 				}),
 			);
-			return data;
 		},
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: ["providers"] });

@@ -172,17 +172,22 @@ export function useCreateModel() {
 	});
 }
 
-export function useUpdateModel(id: string) {
+export function useUpdateModel() {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: async (body: ModelUpdate): Promise<Model> => {
-			const data = unwrap(
+		mutationFn: async ({
+			id,
+			body,
+		}: {
+			id: string;
+			body: ModelUpdate;
+		}): Promise<Model> => {
+			return unwrap(
 				await apiClient.PUT("/models/by-id/{id}", {
 					params: { path: { id } },
 					body,
 				}),
 			);
-			return data;
 		},
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: ["models"] });

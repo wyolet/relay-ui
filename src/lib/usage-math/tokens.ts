@@ -71,5 +71,12 @@ export function splitTokens(tokens: Record<string, number>): TokenSplit {
 		} else if (m.kind === "output") output += m.count;
 		else other += m.count;
 	}
-	return { input, output, other, total: input + output + other, cached, meters };
+	return {
+		input,
+		output,
+		other,
+		total: input + output + other,
+		cached,
+		meters,
+	};
 }

@@ -92,8 +92,8 @@ function PolicyDetailInner() {
 		const next = !(policy.spec.enabled !== false);
 		try {
 			await updatePolicy.mutateAsync({
-				...policy,
-				spec: { ...policy.spec, enabled: next },
+				id: policy.metadata.id ?? "",
+				body: { ...policy, spec: { ...policy.spec, enabled: next } },
 			});
 			toast("success", next ? "Policy enabled." : "Policy disabled.");
 		} catch (err) {

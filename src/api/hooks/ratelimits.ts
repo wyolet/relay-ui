@@ -119,17 +119,22 @@ export function useCreateRateLimit() {
 	});
 }
 
-export function useUpdateRateLimit(id: string) {
+export function useUpdateRateLimit() {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: async (body: RateLimitUpdate): Promise<RateLimit> => {
-			const data = unwrap(
+		mutationFn: async ({
+			id,
+			body,
+		}: {
+			id: string;
+			body: RateLimitUpdate;
+		}): Promise<RateLimit> => {
+			return unwrap(
 				await apiClient.PUT("/rate-limits/by-id/{id}", {
 					params: { path: { id } },
 					body,
 				}),
 			);
-			return data;
 		},
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: ["ratelimits"] });

@@ -68,7 +68,7 @@ function ModelDetailInner() {
 	const { tab } = Route.useSearch();
 	const navigate = useNavigate({ from: "/models/$name" });
 	const { data: model } = useModel(name);
-	const updateModel = useUpdateModel(model.metadata.id ?? "");
+	const updateModel = useUpdateModel();
 	const deleteModel = useDeleteModel();
 
 	async function handleDelete() {
@@ -96,8 +96,11 @@ function ModelDetailInner() {
 		const next = !(model.spec.enabled !== false);
 		try {
 			await updateModel.mutateAsync({
-				metadata: model.metadata,
-				spec: { ...model.spec, enabled: next },
+				id: model.metadata.id ?? "",
+				body: {
+					metadata: model.metadata,
+					spec: { ...model.spec, enabled: next },
+				},
 			});
 			toast("success", next ? "Model enabled." : "Model disabled.");
 		} catch (err) {

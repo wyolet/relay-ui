@@ -139,7 +139,7 @@ interface UsePolicyFormOptions {
 export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 	const isEdit = policy !== undefined;
 	const createPolicy = useCreatePolicy();
-	const updatePolicy = useUpdatePolicy(policy?.metadata.id ?? "");
+	const updatePolicy = useUpdatePolicy();
 
 	const initial = useMemo<PolicyFormValues>(
 		() => (policy ? policyToValues(policy) : emptyValues()),
@@ -213,7 +213,10 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 						},
 						spec: { ...policy.spec, ...spec },
 					};
-					await updatePolicy.mutateAsync(payload);
+					await updatePolicy.mutateAsync({
+						id: policy.metadata.id ?? "",
+						body: payload,
+					});
 					toast("success", `Policy "${displayName}" updated.`);
 				} else {
 					const name = computeSlug(displayName);
