@@ -5,19 +5,18 @@ import {
 	useSuspenseQuery,
 } from "@tanstack/react-query";
 import { apiClient } from "@/api/client";
-import { ApiError } from "@/api/types/errors";
 import type {
 	CreateRelayKeyInput,
 	CreateRelayKeyResponse,
 	RelayKey,
 	RelayKeyList,
 } from "@/api/types/relayKey";
+import { unwrap } from "@/api/unwrap";
 
 export const relayKeysListQueryOptions = queryOptions({
 	queryKey: ["relay-keys"] as const,
 	queryFn: async (): Promise<RelayKeyList> => {
-		const { data, error } = await apiClient.GET("/relay-keys");
-		if (error) throw new ApiError(0, error.error);
+		const data = unwrap(await apiClient.GET("/relay-keys"));
 		return data;
 	},
 	staleTime: 30_000,
@@ -28,15 +27,28 @@ export function relayKeyDetailQueryOptions(ref: string) {
 	return queryOptions({
 		queryKey: ["relay-keys", ref] as const,
 		queryFn: async (): Promise<RelayKey> => {
-			const { data, error } = await apiClient.GET("/relay-keys/{ref}", {
-				params: { path: { ref } },
-			});
-			if (error) throw new ApiError(0, error.error);
+			const data = unwrap(
+				await apiClient.GET("/relay-keys/{ref}", {
+					params: { path: { ref } },
+				}),
+			);
 			return data;
 		},
 		staleTime: 30_000,
 		gcTime: 5 * 60_000,
 	});
+}
+
+/**
+ * A relay key references a policy; a mutation dirties that policy's
+ * "references" view (which keys use it).
+ */
+function invalidateRelayKeyDependents(
+	queryClient: ReturnType<typeof useQueryClient>,
+): void {
+	for (const key of [["relay-keys"], ["policies", "references"]]) {
+		void queryClient.invalidateQueries({ queryKey: key });
+	}
 }
 
 export function useRelayKeys() {
@@ -53,12 +65,11 @@ export function useCreateRelayKey() {
 		mutationFn: async (
 			body: CreateRelayKeyInput,
 		): Promise<CreateRelayKeyResponse> => {
-			const { data, error } = await apiClient.POST("/relay-keys", { body });
-			if (error) throw new ApiError(0, error.error);
+			const data = unwrap(await apiClient.POST("/relay-keys", { body }));
 			return data;
 		},
 		onSuccess: () => {
-			void queryClient.invalidateQueries({ queryKey: ["relay-keys"] });
+			invalidateRelayKeyDependents(queryClient);
 		},
 	});
 }
@@ -73,15 +84,16 @@ export function useUpdateRelayKey() {
 			id: string;
 			body: RelayKey;
 		}): Promise<RelayKey> => {
-			const { data, error } = await apiClient.PUT("/relay-keys/by-id/{id}", {
-				params: { path: { id } },
-				body,
-			});
-			if (error) throw new ApiError(0, error.error);
+			const data = unwrap(
+				await apiClient.PUT("/relay-keys/by-id/{id}", {
+					params: { path: { id } },
+					body,
+				}),
+			);
 			return data;
 		},
 		onSuccess: () => {
-			void queryClient.invalidateQueries({ queryKey: ["relay-keys"] });
+			invalidateRelayKeyDependents(queryClient);
 		},
 	});
 }
@@ -90,13 +102,14 @@ export function useDeleteRelayKey() {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: async (id: string): Promise<void> => {
-			const { error } = await apiClient.DELETE("/relay-keys/by-id/{id}", {
-				params: { path: { id } },
-			});
-			if (error) throw new ApiError(0, error.error);
+			unwrap(
+				await apiClient.DELETE("/relay-keys/by-id/{id}", {
+					params: { path: { id } },
+				}),
+			);
 		},
 		onSuccess: () => {
-			void queryClient.invalidateQueries({ queryKey: ["relay-keys"] });
+			invalidateRelayKeyDependents(queryClient);
 		},
 	});
 }

@@ -231,10 +231,16 @@ export function useHostKeyForm({
 		},
 	});
 
+	// Reset only when the form opens/closes or the edited resource changes — not
+	// on every `initial` identity change, so a background refetch can't wipe an
+	// open draft.
+	const resetKey = `${open}:${hostKey?.metadata.id ?? ""}`;
+	const lastResetKey = useRef<string | null>(null);
 	useEffect(() => {
-		if (open) form.reset(initial);
-		else form.reset(emptyValues());
-	}, [open, initial, form]);
+		if (lastResetKey.current === resetKey) return;
+		lastResetKey.current = resetKey;
+		form.reset(open ? initial : emptyValues());
+	}, [resetKey, open, initial, form]);
 
 	const values = useStore(form.store, (s) => s.values);
 	const slugPreview = isEdit

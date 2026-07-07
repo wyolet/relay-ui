@@ -139,7 +139,7 @@ interface UsePolicyFormOptions {
 export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 	const isEdit = policy !== undefined;
 	const createPolicy = useCreatePolicy();
-	const updatePolicy = useUpdatePolicy(policy?.metadata.id ?? "");
+	const updatePolicy = useUpdatePolicy();
 
 	const initial = useMemo<PolicyFormValues>(
 		() => (policy ? policyToValues(policy) : emptyValues()),
@@ -213,7 +213,10 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 						},
 						spec: { ...policy.spec, ...spec },
 					};
-					await updatePolicy.mutateAsync(payload);
+					await updatePolicy.mutateAsync({
+						id: policy.metadata.id ?? "",
+						body: payload,
+					});
 					toast("success", `Policy "${displayName}" updated.`);
 				} else {
 					const name = computeSlug(displayName);
@@ -242,10 +245,16 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 		},
 	});
 
+	// Reset only when the form opens/closes or the edited resource changes — not
+	// on every `initial` identity change, so a background refetch can't wipe an
+	// open draft.
+	const resetKey = `${open}:${policy?.metadata.id ?? ""}`;
+	const lastResetKey = useRef<string | null>(null);
 	useEffect(() => {
-		if (open) form.reset(initial);
-		else form.reset(emptyValues());
-	}, [open, initial, form]);
+		if (lastResetKey.current === resetKey) return;
+		lastResetKey.current = resetKey;
+		form.reset(open ? initial : emptyValues());
+	}, [resetKey, open, initial, form]);
 
 	const values = useStore(form.store, (s) => s.values);
 	const slugPreview = isEdit

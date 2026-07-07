@@ -502,8 +502,13 @@ function SelectionFooter({
 }) {
 	if (refs.length === 0) {
 		return (
-			<div className="border-t border-border px-3 py-2 text-[11px] text-muted-foreground">
-				Nothing selected — this policy grants no catalog access.
+			<div className="flex items-start gap-1.5 border-t border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[11px] text-amber-700 dark:text-amber-300">
+				<AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+				<span>
+					Nothing selected — an empty grant means{" "}
+					<strong>full catalog access</strong>. Pick at least one entry to
+					restrict it.
+				</span>
 			</div>
 		);
 	}

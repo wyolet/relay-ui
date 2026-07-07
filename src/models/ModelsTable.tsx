@@ -231,7 +231,7 @@ function ModelRow({
 	hostIds: readonly string[];
 }) {
 	const enabled = m.spec.enabled !== false;
-	const updateModel = useUpdateModel(m.metadata.id ?? "");
+	const updateModel = useUpdateModel();
 	const deleteModel = useDeleteModel();
 	const diagnostics = useModelDiagnostics(m.metadata.id);
 	const gov = useGovernance("model");
@@ -239,8 +239,8 @@ function ModelRow({
 	async function toggleEnabled(next: boolean) {
 		try {
 			await updateModel.mutateAsync({
-				metadata: m.metadata,
-				spec: { ...m.spec, enabled: next },
+				id: m.metadata.id ?? "",
+				body: { metadata: m.metadata, spec: { ...m.spec, enabled: next } },
 			});
 		} catch (err) {
 			toast(

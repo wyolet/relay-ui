@@ -33,7 +33,7 @@ function PricingDetailInner() {
 	const navigate = useNavigate({ from: "/pricing/$name" });
 	const { data: pricing } = usePricing(name);
 	const deletePricing = useDeletePricing();
-	const updatePricing = useUpdatePricing(pricing.metadata.id ?? "");
+	const updatePricing = useUpdatePricing();
 
 	async function handleDelete() {
 		const ok = await confirm({
@@ -62,8 +62,8 @@ function PricingDetailInner() {
 		const next = !(pricing.spec.enabled !== false);
 		try {
 			await updatePricing.mutateAsync({
-				...pricing,
-				spec: { ...pricing.spec, enabled: next },
+				id: pricing.metadata.id ?? "",
+				body: { ...pricing, spec: { ...pricing.spec, enabled: next } },
 			});
 			toast("success", next ? "Pricing enabled." : "Pricing disabled.");
 		} catch (err) {

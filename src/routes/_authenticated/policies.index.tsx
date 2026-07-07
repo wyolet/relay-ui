@@ -325,7 +325,7 @@ function PolicyRow({
 	onEdit: () => void;
 	onDelete: () => void;
 }) {
-	const updatePolicy = useUpdatePolicy(policy.metadata.id ?? "");
+	const updatePolicy = useUpdatePolicy();
 	const diagnostics = usePolicyDiagnostics(policy.metadata.id);
 	const catalog = describeCatalog(policy);
 	const enabled = policy.spec.enabled !== false;
@@ -338,8 +338,11 @@ function PolicyRow({
 	async function toggleEnabled(next: boolean) {
 		try {
 			await updatePolicy.mutateAsync({
-				metadata: policy.metadata,
-				spec: { ...policy.spec, enabled: next },
+				id: policy.metadata.id ?? "",
+				body: {
+					metadata: policy.metadata,
+					spec: { ...policy.spec, enabled: next },
+				},
 			});
 		} catch (err) {
 			toast(
@@ -595,14 +598,14 @@ function RateLimitRow({
 	onEdit: () => void;
 	onDelete: () => void;
 }) {
-	const updateRL = useUpdateRateLimit(rl.metadata.id ?? "");
+	const updateRL = useUpdateRateLimit();
 	const diagnostics = useRateLimitDiagnostics(rl.metadata.id);
 	const enabled = rl.spec.enabled !== false;
 	async function toggleEnabled(next: boolean) {
 		try {
 			await updateRL.mutateAsync({
-				metadata: rl.metadata,
-				spec: { ...rl.spec, enabled: next },
+				id: rl.metadata.id ?? "",
+				body: { metadata: rl.metadata, spec: { ...rl.spec, enabled: next } },
 			});
 		} catch (err) {
 			toast(

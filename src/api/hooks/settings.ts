@@ -5,8 +5,8 @@ import {
 	useSuspenseQuery,
 } from "@tanstack/react-query";
 import { apiClient } from "@/api/client";
-import { ApiError } from "@/api/types/errors";
 import type { components } from "@/api/types.gen";
+import { unwrap } from "@/api/unwrap";
 
 export type ProxyMode = components["schemas"]["ProxyMode"];
 export type ProxyModeEnvelope = components["schemas"]["ProxyModeEnvelope"];
@@ -17,8 +17,7 @@ export type PayloadLoggingEnvelope =
 export const proxyModeQueryOptions = queryOptions({
 	queryKey: ["settings", "proxy-mode"] as const,
 	queryFn: async (): Promise<ProxyModeEnvelope> => {
-		const { data, error } = await apiClient.GET("/settings/proxy-mode");
-		if (error) throw new ApiError(0, error.error);
+		const data = unwrap(await apiClient.GET("/settings/proxy-mode"));
 		return data;
 	},
 	staleTime: 30_000,
@@ -33,10 +32,11 @@ export function useUpdateProxyMode() {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: async (value: ProxyMode): Promise<ProxyModeEnvelope> => {
-			const { data, error } = await apiClient.PUT("/settings/proxy-mode", {
-				body: value,
-			});
-			if (error) throw new ApiError(0, error.error);
+			const data = unwrap(
+				await apiClient.PUT("/settings/proxy-mode", {
+					body: value,
+				}),
+			);
 			return data;
 		},
 		onSuccess: () => {
@@ -48,8 +48,7 @@ export function useUpdateProxyMode() {
 export const payloadLoggingQueryOptions = queryOptions({
 	queryKey: ["settings", "payload-logging"] as const,
 	queryFn: async (): Promise<PayloadLoggingEnvelope> => {
-		const { data, error } = await apiClient.GET("/settings/payload-logging");
-		if (error) throw new ApiError(0, error.error);
+		const data = unwrap(await apiClient.GET("/settings/payload-logging"));
 		return data;
 	},
 	staleTime: 30_000,
@@ -66,10 +65,11 @@ export function useUpdatePayloadLogging() {
 		mutationFn: async (
 			value: PayloadLogging,
 		): Promise<PayloadLoggingEnvelope> => {
-			const { data, error } = await apiClient.PUT("/settings/payload-logging", {
-				body: value,
-			});
-			if (error) throw new ApiError(0, error.error);
+			const data = unwrap(
+				await apiClient.PUT("/settings/payload-logging", {
+					body: value,
+				}),
+			);
 			return data;
 		},
 		onSuccess: () => {

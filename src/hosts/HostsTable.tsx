@@ -81,7 +81,7 @@ function SortHeader({ label, field, current, dir, onClick }: SortHeaderProps) {
 
 function HostRow({ h }: { h: Host }) {
 	const enabled = h.spec.enabled !== false;
-	const update = useUpdateHost(h.metadata.id ?? "");
+	const update = useUpdateHost();
 	const diagnostics = useHostDiagnostics(h.metadata.id);
 	const refs = useHostReferences(h);
 	const enabledModels = refs.enabledModels.length;
@@ -92,8 +92,8 @@ function HostRow({ h }: { h: Host }) {
 	async function toggle(next: boolean) {
 		try {
 			await update.mutateAsync({
-				metadata: h.metadata,
-				spec: { ...h.spec, enabled: next },
+				id: h.metadata.id ?? "",
+				body: { metadata: h.metadata, spec: { ...h.spec, enabled: next } },
 			});
 		} catch (err) {
 			toast(

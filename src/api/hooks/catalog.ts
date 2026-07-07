@@ -4,8 +4,8 @@ import {
 	useSuspenseQuery,
 } from "@tanstack/react-query";
 import { apiClient } from "@/api/client";
-import { ApiError } from "@/api/types/errors";
 import type { components } from "@/api/types.gen";
+import { unwrap } from "@/api/unwrap";
 
 export type CatalogResolveResponse = components["schemas"]["resolveOutputBody"];
 export type CatalogGraphResponse = components["schemas"]["graphOutputBody"];
@@ -37,15 +37,16 @@ export function catalogGraphQueryOptions(params: CatalogGraphParams = {}) {
 	return queryOptions({
 		queryKey: ["catalog", "graph", { label, includeDeprecated }] as const,
 		queryFn: async (): Promise<CatalogGraphResponse> => {
-			const { data, error } = await apiClient.GET("/catalog/graph", {
-				params: {
-					query: {
-						...(label ? { label: [...label] } : {}),
-						...(includeDeprecated ? { includeDeprecated } : {}),
+			const data = unwrap(
+				await apiClient.GET("/catalog/graph", {
+					params: {
+						query: {
+							...(label ? { label: [...label] } : {}),
+							...(includeDeprecated ? { includeDeprecated } : {}),
+						},
 					},
-				},
-			});
-			if (error) throw new ApiError(0, error.error);
+				}),
+			);
 			return data;
 		},
 		staleTime: 30_000,
@@ -69,10 +70,11 @@ export function catalogResolveQueryOptions(refs: readonly string[]) {
 	return queryOptions({
 		queryKey: ["catalog", "resolve", sorted] as const,
 		queryFn: async (): Promise<CatalogResolveResponse> => {
-			const { data, error } = await apiClient.GET("/catalog/resolve", {
-				params: { query: { ref: sorted } },
-			});
-			if (error) throw new ApiError(0, error.error);
+			const data = unwrap(
+				await apiClient.GET("/catalog/resolve", {
+					params: { query: { ref: sorted } },
+				}),
+			);
 			return data;
 		},
 		enabled: sorted.length > 0,

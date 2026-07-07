@@ -5,14 +5,9 @@ import {
 	useSuspenseQuery,
 } from "@tanstack/react-query";
 import { apiClient } from "@/api/client";
-import { ApiError } from "@/api/types/errors";
-import type {
-	Model,
-	ModelCreate,
-	ModelListResponse,
-	ModelUpdate,
-} from "@/api/types/model";
+import type { Model, ModelListResponse, ModelUpdate } from "@/api/types/model";
 import type { components, operations } from "@/api/types.gen";
+import { unwrap } from "@/api/unwrap";
 
 // --- Query options ---
 
@@ -28,10 +23,11 @@ export const modelsListQueryOptions = queryOptions({
 	queryFn: async (): Promise<ModelListResponse> => {
 		// limit=0 explicitly opts out of the server's default page window
 		// (relay >= 0.6 returns 100 models when no limit is given).
-		const { data, error } = await apiClient.GET("/models", {
-			params: { query: { limit: 0 } },
-		});
-		if (error) throw new ApiError(0, error.error);
+		const data = unwrap(
+			await apiClient.GET("/models", {
+				params: { query: { limit: 0 } },
+			}),
+		);
 		return data;
 	},
 	staleTime: 30_000,
@@ -43,10 +39,11 @@ export function modelsListQuery(params: ModelsListParams) {
 	return queryOptions({
 		queryKey: ["models", "list", params] as const,
 		queryFn: async (): Promise<ModelListResponse> => {
-			const { data, error } = await apiClient.GET("/models", {
-				params: { query: params },
-			});
-			if (error) throw new ApiError(0, error.error);
+			const data = unwrap(
+				await apiClient.GET("/models", {
+					params: { query: params },
+				}),
+			);
 			return data;
 		},
 		staleTime: 30_000,
@@ -62,10 +59,11 @@ export function modelDetailQueryOptions(name: string) {
 	return queryOptions({
 		queryKey: ["models", name] as const,
 		queryFn: async (): Promise<Model> => {
-			const { data, error } = await apiClient.GET("/models/{ref}", {
-				params: { path: { ref: name } },
-			});
-			if (error) throw new ApiError(0, error.error);
+			const data = unwrap(
+				await apiClient.GET("/models/{ref}", {
+					params: { path: { ref: name } },
+				}),
+			);
 			return data;
 		},
 		staleTime: 30_000,
@@ -85,10 +83,11 @@ export function modelHostsQueryOptions(ref: string) {
 	return queryOptions({
 		queryKey: ["models", ref, "hosts"] as const,
 		queryFn: async (): Promise<components["schemas"]["modelHostsOutBody"]> => {
-			const { data, error } = await apiClient.GET("/models/{ref}/hosts", {
-				params: { path: { ref } },
-			});
-			if (error) throw new ApiError(0, error.error);
+			const data = unwrap(
+				await apiClient.GET("/models/{ref}/hosts", {
+					params: { path: { ref } },
+				}),
+			);
 			return data;
 		},
 		staleTime: 30_000,
@@ -103,10 +102,11 @@ export function modelPoliciesQueryOptions(ref: string) {
 		queryFn: async (): Promise<
 			components["schemas"]["modelPoliciesOutBody"]
 		> => {
-			const { data, error } = await apiClient.GET("/models/{ref}/policies", {
-				params: { path: { ref } },
-			});
-			if (error) throw new ApiError(0, error.error);
+			const data = unwrap(
+				await apiClient.GET("/models/{ref}/policies", {
+					params: { path: { ref } },
+				}),
+			);
 			return data;
 		},
 		staleTime: 30_000,
@@ -116,6 +116,22 @@ export function modelPoliciesQueryOptions(ref: string) {
 
 // --- Hooks ---
 
+/**
+ * A model's enabled/deprecated state feeds the picker catalog and the
+ * server-side joins that resolve which models each policy grants and each host
+ * serves. Invalidating a bare domain prefix (e.g. `["policies"]`) marks that
+ * domain's list *and* every `["policies", ref, …]` join beneath it stale — the
+ * broad-prefix convention used for cross-domain invalidation throughout
+ * `src/api/hooks`.
+ */
+function invalidateModelDependents(
+	queryClient: ReturnType<typeof useQueryClient>,
+): void {
+	for (const key of [["models"], ["catalog"], ["policies"], ["hosts"]]) {
+		void queryClient.invalidateQueries({ queryKey: key });
+	}
+}
+
 export function useModels() {
 	return useSuspenseQuery(modelsListQueryOptions);
 }
@@ -124,63 +140,25 @@ export function useModel(name: string) {
 	return useSuspenseQuery(modelDetailQueryOptions(name));
 }
 
-export function useCreateModel() {
+export function useUpdateModel() {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: async (body: ModelCreate): Promise<Model> => {
-			const { data, error } = await apiClient.POST("/models", { body });
-			if (error) throw new ApiError(0, error.error);
-			return data;
-		},
-		onMutate: async (newModel) => {
-			await queryClient.cancelQueries({ queryKey: ["models"] });
-			const previous = queryClient.getQueryData(
-				modelsListQueryOptions.queryKey,
+		mutationFn: async ({
+			id,
+			body,
+		}: {
+			id: string;
+			body: ModelUpdate;
+		}): Promise<Model> => {
+			return unwrap(
+				await apiClient.PUT("/models/by-id/{id}", {
+					params: { path: { id } },
+					body,
+				}),
 			);
-			queryClient.setQueryData(
-				modelsListQueryOptions.queryKey,
-				(old: ModelListResponse | undefined) => {
-					if (!old) return old;
-					const optimistic: Model = {
-						metadata: { name: newModel.metadata.name },
-						spec: { ...newModel.spec },
-					};
-					return {
-						...old,
-						items: [...(old.items ?? []), optimistic],
-						total: old.total + 1,
-					};
-				},
-			);
-			return { previous };
-		},
-		onError: (_err, _vars, context) => {
-			if (context?.previous !== undefined) {
-				queryClient.setQueryData(
-					modelsListQueryOptions.queryKey,
-					context.previous,
-				);
-			}
 		},
 		onSuccess: () => {
-			void queryClient.invalidateQueries({ queryKey: ["models"] });
-		},
-	});
-}
-
-export function useUpdateModel(id: string) {
-	const queryClient = useQueryClient();
-	return useMutation({
-		mutationFn: async (body: ModelUpdate): Promise<Model> => {
-			const { data, error } = await apiClient.PUT("/models/by-id/{id}", {
-				params: { path: { id } },
-				body,
-			});
-			if (error) throw new ApiError(0, error.error);
-			return data;
-		},
-		onSuccess: () => {
-			void queryClient.invalidateQueries({ queryKey: ["models"] });
+			invalidateModelDependents(queryClient);
 		},
 	});
 }
@@ -189,38 +167,14 @@ export function useDeleteModel() {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: async (id: string): Promise<void> => {
-			const { error } = await apiClient.DELETE("/models/by-id/{id}", {
-				params: { path: { id } },
-			});
-			if (error) throw new ApiError(0, error.error);
-		},
-		onMutate: async (id) => {
-			await queryClient.cancelQueries({ queryKey: ["models"] });
-			const previous = queryClient.getQueryData(
-				modelsListQueryOptions.queryKey,
+			unwrap(
+				await apiClient.DELETE("/models/by-id/{id}", {
+					params: { path: { id } },
+				}),
 			);
-			queryClient.setQueryData(
-				modelsListQueryOptions.queryKey,
-				(old: ModelListResponse | undefined) => {
-					if (!old) return old;
-					return {
-						items: (old.items ?? []).filter((m) => m.metadata.id !== id),
-						total: old.total,
-					};
-				},
-			);
-			return { previous };
-		},
-		onError: (_err, _vars, context) => {
-			if (context?.previous !== undefined) {
-				queryClient.setQueryData(
-					modelsListQueryOptions.queryKey,
-					context.previous,
-				);
-			}
 		},
 		onSuccess: () => {
-			void queryClient.invalidateQueries({ queryKey: ["models"] });
+			invalidateModelDependents(queryClient);
 		},
 	});
 }

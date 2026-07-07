@@ -22,6 +22,7 @@ import {
 	validateRequestRate,
 } from "@/lib/rateLimitValidation";
 import { randomSuffix, slugify } from "@/lib/slug";
+import { WINDOW_PRESETS } from "@/lib/timeWindow";
 import { toast } from "@/shared/Toast";
 
 export type RateLimitStrategy = NonNullable<RateLimitRule["strategy"]>;
@@ -55,6 +56,13 @@ export interface RuleDraft {
 	meter: RateLimitMeter;
 	strategy: RateLimitStrategy;
 	window: string;
+	/** Whether the window is edited as free-form seconds vs a preset. Lives on
+	 * the draft (not component state) so it survives row removal/reordering. */
+	isCustomWindow: boolean;
+}
+
+function isPresetWindow(window: string): boolean {
+	return WINDOW_PRESETS.some((p) => String(p.value) === window);
 }
 
 export interface RateLimitFormValues {
@@ -113,6 +121,7 @@ export function emptyRule(): RuleDraft {
 		meter: "requests",
 		strategy: DEFAULT_STRATEGY,
 		window: "60",
+		isCustomWindow: false,
 	};
 }
 
@@ -134,6 +143,7 @@ function rlToValues(rl: RateLimit): RateLimitFormValues {
 					meter: r.meter,
 					strategy: r.strategy,
 					window: String(r.window),
+					isCustomWindow: !isPresetWindow(String(r.window)),
 				}))
 			: [emptyRule()];
 	return {
@@ -155,7 +165,7 @@ export function useRateLimitForm({
 }: UseRateLimitFormOptions) {
 	const isEdit = rateLimit !== undefined;
 	const createRL = useCreateRateLimit();
-	const updateRL = useUpdateRateLimit(rateLimit?.metadata.id ?? "");
+	const updateRL = useUpdateRateLimit();
 	const systemRLs = useSystemRateLimits();
 	const { data: proxyEnvelope } = useProxyMode();
 	const proxyCtx = proxyEnvelope.value;
@@ -233,7 +243,10 @@ export function useRateLimitForm({
 						},
 						spec,
 					};
-					await updateRL.mutateAsync(payload);
+					await updateRL.mutateAsync({
+						id: rateLimit.metadata.id ?? "",
+						body: payload,
+					});
 					toast("success", `Rate limit "${displayName}" updated.`);
 				} else {
 					const payload: RateLimitCreate = {

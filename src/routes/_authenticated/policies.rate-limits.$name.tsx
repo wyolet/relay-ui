@@ -47,7 +47,7 @@ function RateLimitDetailInner() {
 	const navigate = useNavigate({ from: "/policies/rate-limits/$name" });
 	const { data: rateLimit } = useRateLimit(name);
 	const deleteRL = useDeleteRateLimit();
-	const updateRL = useUpdateRateLimit(rateLimit.metadata.id ?? "");
+	const updateRL = useUpdateRateLimit();
 
 	async function handleDelete() {
 		const ok = await confirm({
@@ -78,8 +78,8 @@ function RateLimitDetailInner() {
 		const next = !(rateLimit.spec.enabled !== false);
 		try {
 			await updateRL.mutateAsync({
-				...rateLimit,
-				spec: { ...rateLimit.spec, enabled: next },
+				id: rateLimit.metadata.id ?? "",
+				body: { ...rateLimit, spec: { ...rateLimit.spec, enabled: next } },
 			});
 			toast("success", next ? "Rate limit enabled." : "Rate limit disabled.");
 		} catch (err) {
