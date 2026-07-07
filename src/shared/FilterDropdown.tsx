@@ -1,10 +1,12 @@
 import { Check, ChevronDown } from "lucide-react";
+import { buttonVariants } from "@/components/ui/button";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 
 export interface FilterDropdownOption<T extends string> {
 	value: T;
@@ -34,14 +36,14 @@ export function FilterDropdown<T extends string>({
 	const current = options.find((o) => o.value === value);
 	return (
 		<DropdownMenu>
+			{/* Trigger wears the Button outline chrome so toolbar filters sit
+			    pixel-identical to their button neighbors (same h-8 lg rung). */}
 			<DropdownMenuTrigger
-				className={[
-					"inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md border text-xs font-medium text-foreground hover:bg-muted transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-					active
-						? "border-primary/40 bg-primary/5"
-						: "border-input bg-background",
-					className ?? "",
-				].join(" ")}
+				className={cn(
+					buttonVariants({ variant: "outline", size: "lg" }),
+					active && "border-field-accent/40 bg-input-wash",
+					className,
+				)}
 			>
 				{label && <span className="text-muted-foreground">{label}:</span>}
 				<span>{current?.label ?? value}</span>

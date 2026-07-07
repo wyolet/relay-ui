@@ -26,14 +26,8 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { FilterDropdown } from "@/shared/FilterDropdown";
 import { PageLoader } from "@/shared/Spinner";
 import { CostChart } from "@/usage/CostChart";
 import { CostKpiCard } from "@/usage/CostKpiCard";
@@ -172,7 +166,7 @@ function UsagePage() {
 	);
 }
 
-/** Group-by dimension chooser (shadcn Select for consistent chrome). */
+/** Group-by dimension chooser (FilterDropdown — the one toolbar select). */
 function DimensionSelect({
 	value,
 	onChange,
@@ -180,27 +174,17 @@ function DimensionSelect({
 	value: UsageGroupBy;
 	onChange: (v: UsageGroupBy) => void;
 }) {
-	const items = USAGE_GROUP_BY.map((o) => ({
-		label: dimensionLabel(o),
-		value: o,
-	}));
 	return (
-		<Select
-			items={items}
+		<FilterDropdown
+			label="Group"
 			value={value}
-			onValueChange={(v) => onChange(v as UsageGroupBy)}
-		>
-			<SelectTrigger size="sm" className="text-xs">
-				<SelectValue />
-			</SelectTrigger>
-			<SelectContent>
-				{items.map((o) => (
-					<SelectItem key={o.value} value={o.value} className="text-xs">
-						{o.label}
-					</SelectItem>
-				))}
-			</SelectContent>
-		</Select>
+			options={USAGE_GROUP_BY.map((o) => ({
+				value: o,
+				label: dimensionLabel(o),
+			}))}
+			onChange={onChange}
+			align="start"
+		/>
 	);
 }
 
