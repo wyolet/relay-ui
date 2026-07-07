@@ -14,6 +14,7 @@ import { usePolicies } from "@/api/hooks/policies";
 import { useDeleteRelayKey, useRelayKey } from "@/api/hooks/relayKeys";
 import { ApiError } from "@/api/types/errors";
 import type { Policy } from "@/api/types/policy";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { DiagnosticList } from "@/diagnostics/DiagnosticList";
 import { useRelayKeyDiagnostics } from "@/diagnostics/useDiagnostics";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
@@ -113,39 +114,42 @@ export function RelayKeyDetailView({ name }: { name: string }) {
 					</div>
 				</div>
 				<div className="flex items-center gap-2 shrink-0">
-					<button
+					<Button
 						type="button"
+						variant="outline"
+						size="lg"
 						onClick={() => void setEnabled(rk, !enabled)}
 						disabled={isToggling}
-						className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium text-foreground border border-border hover:bg-muted disabled:opacity-50 transition-colors"
 					>
-						<Power className="w-3.5 h-3.5" />
+						<Power className="size-3.5" />
 						{enabled ? "Disable" : "Enable"}
-					</button>
-					<button
+					</Button>
+					<Button
 						type="button"
+						variant="outline"
+						size="lg"
 						onClick={() => setRotating(true)}
-						className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium text-foreground border border-border hover:bg-muted transition-colors"
 					>
-						<RotateCw className="w-3.5 h-3.5" />
+						<RotateCw className="size-3.5" />
 						Rotate
-					</button>
+					</Button>
 					<Link
 						to="/relay-keys/$name/edit"
 						params={{ name }}
-						className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium text-foreground border border-border hover:bg-muted transition-colors"
+						className={buttonVariants({ variant: "outline", size: "lg" })}
 					>
-						<Pencil className="w-3.5 h-3.5" />
+						<Pencil className="size-3.5" />
 						Edit
 					</Link>
-					<button
+					<Button
 						type="button"
+						variant="destructive"
+						size="lg"
 						onClick={() => setConfirming(true)}
-						className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium text-destructive border border-border hover:bg-destructive/10 transition-colors"
 					>
-						<Trash2 className="w-3.5 h-3.5" />
+						<Trash2 className="size-3.5" />
 						Delete
-					</button>
+					</Button>
 				</div>
 			</header>
 

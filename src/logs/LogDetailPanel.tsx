@@ -1,6 +1,7 @@
 import { MousePointerClick, X } from "lucide-react";
 import { Suspense, useState } from "react";
 import { type LogDetail, useLogDetail } from "@/api/hooks/logs";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { fmtInt, fmtMs, fmtTs, prettyBody, sumTokens } from "./format";
 import { type ChatMessage, parseTranscript } from "./generation";
@@ -98,14 +99,16 @@ function PanelBody({
 						</span>
 					)}
 					{onClose && (
-						<button
+						<Button
 							type="button"
+							variant="ghost"
+							size="icon-sm"
 							onClick={onClose}
 							aria-label="Close inspector"
-							className="ml-auto rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+							className="ml-auto text-muted-foreground"
 						>
 							<X className="size-4" />
-						</button>
+						</Button>
 					)}
 				</div>
 

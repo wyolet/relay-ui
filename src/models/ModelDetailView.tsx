@@ -43,6 +43,7 @@ import { useHosts } from "@/api/hooks/hosts";
 import type { ModelHostView, ModelPolicyView } from "@/api/hooks/models";
 import type { Host } from "@/api/types/host";
 import type { Model, ModelCapabilities } from "@/api/types/model";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DiagnosticList } from "@/diagnostics/DiagnosticList";
 import { useModelDiagnostics } from "@/diagnostics/useDiagnostics";
@@ -305,26 +306,28 @@ function Header({
 				</div>
 				<div className="flex items-center gap-2 shrink-0">
 					{canEdit && (
-						<button
+						<Button
 							type="button"
+							variant="outline"
+							size="lg"
 							onClick={onToggleEnabled}
 							disabled={toggling}
-							className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium text-foreground border border-border hover:bg-muted disabled:opacity-50 transition-colors"
 						>
-							<Power className="w-3.5 h-3.5" />
+							<Power className="size-3.5" />
 							{enabled ? "Disable" : "Enable"}
-						</button>
+						</Button>
 					)}
 					{canDelete && onDelete && (
-						<button
+						<Button
 							type="button"
+							variant="destructive"
+							size="lg"
 							onClick={onDelete}
 							disabled={deleting}
-							className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium text-destructive border border-border hover:bg-destructive/10 disabled:opacity-50 transition-colors"
 						>
-							<Trash2 className="w-3.5 h-3.5" />
+							<Trash2 className="size-3.5" />
 							Delete
-						</button>
+						</Button>
 					)}
 				</div>
 			</div>

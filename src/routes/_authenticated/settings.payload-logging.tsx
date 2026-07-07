@@ -8,6 +8,7 @@ import {
 	useUpdatePayloadLogging,
 } from "@/api/hooks/settings";
 import { ApiError } from "@/api/types/errors";
+import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { PageLoader } from "@/shared/Spinner";
 import { toast } from "@/shared/Toast";
@@ -116,21 +117,22 @@ function PayloadLoggingSettingsInner() {
 			</div>
 
 			<div className="sticky bottom-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-t border-border mt-6 -mx-6 px-6 py-3 flex items-center justify-end gap-2">
-				<button
+				<Button
 					type="button"
+					variant="outline"
+					size="lg"
 					onClick={() => setState(initial)}
-					className="h-8 px-3 rounded-md text-xs font-medium text-foreground hover:bg-muted"
 				>
 					Reset
-				</button>
-				<button
+				</Button>
+				<Button
 					type="button"
+					size="lg"
 					onClick={handleSave}
 					disabled={update.isPending}
-					className="h-8 px-3 rounded-md bg-primary hover:bg-primary/90 text-xs font-semibold text-primary-foreground disabled:opacity-50"
 				>
 					{update.isPending ? "Saving…" : "Save changes"}
-				</button>
+				</Button>
 			</div>
 		</div>
 	);

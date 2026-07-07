@@ -157,22 +157,26 @@ export function PolicyRLPicker({
 												)}
 											</div>
 											<div className="flex items-center gap-1 shrink-0">
-												<button
+												<Button
 													type="button"
+													variant="ghost"
+													size="icon"
 													onClick={() => setEditing({ kind: "edit", idx: i })}
-													className="h-7 w-7 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
+													className="text-muted-foreground"
 													aria-label="Edit"
 												>
-													<Pencil className="w-3.5 h-3.5" />
-												</button>
-												<button
+													<Pencil className="size-3.5" />
+												</Button>
+												<Button
 													type="button"
+													variant="ghost"
+													size="icon"
 													onClick={() => remove(i)}
-													className="h-7 w-7 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-destructive hover:bg-muted"
+													className="text-muted-foreground hover:text-destructive"
 													aria-label="Remove"
 												>
-													<Trash2 className="w-3.5 h-3.5" />
-												</button>
+													<Trash2 className="size-3.5" />
+												</Button>
 											</div>
 										</div>
 										{b.models.length === 0 ? (

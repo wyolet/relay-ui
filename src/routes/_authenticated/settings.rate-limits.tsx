@@ -27,6 +27,7 @@ import { proxyModeQueryOptions, useProxyMode } from "@/api/hooks/settings";
 import { ApiError } from "@/api/types/errors";
 import type { RateLimit, RateLimitRule } from "@/api/types/ratelimit";
 import { unwrap } from "@/api/unwrap";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
 	Select,
@@ -403,21 +404,17 @@ function SystemRateLimitsInner() {
 			</div>
 
 			<div className="sticky bottom-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-t border-border mt-6 -mx-6 px-6 py-3 flex items-center justify-end gap-2">
-				<button
-					type="button"
-					onClick={reset}
-					className="h-8 px-3 rounded-md text-xs font-medium text-foreground hover:bg-muted"
-				>
+				<Button type="button" variant="outline" size="lg" onClick={reset}>
 					Reset
-				</button>
-				<button
+				</Button>
+				<Button
 					type="button"
+					size="lg"
 					onClick={handleSave}
 					disabled={updateRL.isPending}
-					className="h-8 px-3 rounded-md bg-primary hover:bg-primary/90 text-xs font-semibold text-primary-foreground disabled:opacity-50"
 				>
 					{updateRL.isPending ? "Saving…" : "Save changes"}
-				</button>
+				</Button>
 			</div>
 		</div>
 	);
@@ -630,14 +627,16 @@ function InferenceSection({
 						onRemove={() => onRemoveRule(idx)}
 					/>
 				))}
-				<button
+				<Button
 					type="button"
+					variant="ghost"
+					size="lg"
 					onClick={onAddRule}
-					className="self-start inline-flex items-center gap-1 h-8 px-2.5 rounded-md text-xs font-medium text-foreground hover:bg-muted"
+					className="self-start"
 				>
-					<Plus className="w-3.5 h-3.5" />
+					<Plus className="size-3.5" />
 					Add limit
-				</button>
+				</Button>
 			</div>
 		</SectionShell>
 	);
@@ -725,15 +724,17 @@ function InferenceRuleRow({
 					onChange={(e) => onChange({ amount: e.currentTarget.value })}
 				/>
 			</div>
-			<button
+			<Button
 				type="button"
+				variant="ghost"
+				size="icon-lg"
 				onClick={onRemove}
 				disabled={!canRemove}
 				aria-label="Remove limit"
-				className="h-9 w-9 inline-flex items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-destructive disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-muted-foreground"
+				className="size-9 text-muted-foreground hover:text-destructive"
 			>
-				<X className="w-3.5 h-3.5" />
-			</button>
+				<X className="size-3.5" />
+			</Button>
 		</div>
 	);
 }

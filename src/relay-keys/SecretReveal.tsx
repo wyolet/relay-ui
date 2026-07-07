@@ -1,5 +1,6 @@
 import { Check, Copy } from "lucide-react";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import { toast } from "@/shared/Toast";
 
 /**
@@ -30,17 +31,19 @@ function CopyButton({ text }: { text: string }) {
 		}
 	}
 	return (
-		<button
+		<Button
 			type="button"
+			variant="ghost"
+			size="icon-lg"
 			onClick={() => void handleCopy()}
 			aria-label="Copy"
-			className="inline-flex items-center justify-center h-8 w-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+			className="text-muted-foreground"
 		>
 			{copied ? (
-				<Check className="w-4 h-4 text-primary" />
+				<Check className="size-4 text-primary" />
 			) : (
-				<Copy className="w-4 h-4" />
+				<Copy className="size-4" />
 			)}
-		</button>
+		</Button>
 	);
 }

@@ -8,6 +8,7 @@ import {
 	X,
 } from "lucide-react";
 import type { HostKey } from "@/api/types/hostkey";
+import { Button } from "@/components/ui/button";
 import {
 	Popover,
 	PopoverContent,
@@ -243,14 +244,16 @@ function HostCard({ req, onToggle, required, dangling }: HostCardProps) {
 								<span className="truncate text-foreground">
 									{displayLabel(key.metadata)}
 								</span>
-								<button
+								<Button
 									type="button"
+									variant="ghost"
+									size="icon-sm"
 									onClick={() => onToggle(id, false)}
-									className="h-6 w-6 inline-flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted shrink-0"
+									className="text-muted-foreground"
 									aria-label={`Detach ${displayLabel(key.metadata)}`}
 								>
-									<X className="h-3.5 w-3.5" />
-								</button>
+									<X className="size-3.5" />
+								</Button>
 							</li>
 						);
 					})}

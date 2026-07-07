@@ -66,7 +66,7 @@ function PrefixCell({ text, copyText }: { text: string; copyText: string }) {
 		>
 			<span>{text}</span>
 			{copied ? (
-				<Check className="w-3 h-3 text-brand-600 dark:text-brand-400" />
+				<Check className="w-3 h-3 text-primary" />
 			) : (
 				<Copy className="w-3 h-3 opacity-0 group-hover:opacity-100" />
 			)}

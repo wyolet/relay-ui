@@ -1,5 +1,6 @@
 import { X } from "lucide-react";
 import type { ReactNode } from "react";
+import { Button } from "@/components/ui/button";
 import { Toggle } from "@/components/ui/toggle";
 import { FilterDropdown } from "@/shared/FilterDropdown";
 import { SearchBox } from "@/shared/SearchBox";
@@ -64,17 +65,19 @@ export function FilterBar({
 					<Control key={def.key} def={def} state={state} onChange={onChange} />
 				))}
 				{active > 0 && (
-					<button
+					<Button
 						type="button"
+						variant="ghost"
+						size="lg"
 						onClick={clear}
-						className="inline-flex items-center gap-1 h-8 px-2 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+						className="text-muted-foreground"
 					>
-						<X className="w-3.5 h-3.5" aria-hidden />
+						<X className="size-3.5" aria-hidden />
 						Clear
 						<span className="inline-flex items-center justify-center min-w-4 h-4 px-1 rounded-full bg-border/60 text-[10px] font-medium tabular-nums">
 							{active}
 						</span>
-					</button>
+					</Button>
 				)}
 				{actions}
 			</div>
