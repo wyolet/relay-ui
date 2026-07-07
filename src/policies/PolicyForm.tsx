@@ -207,7 +207,7 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 				</Button>
 				<form.Subscribe selector={(s) => s.isSubmitting}>
 					{(isSubmitting) => (
-						<Button type="submit" size="lg" disabled={isSubmitting}>
+						<Button type="submit" variant="cta" size="lg" disabled={isSubmitting}>
 							{isSubmitting ? "Saving…" : isEdit ? "Save changes" : "Create"}
 						</Button>
 					)}

@@ -79,7 +79,7 @@ export function RateLimitsTable() {
 				actions={
 					<Link
 						to="/policies/rate-limits/new"
-						className={buttonVariants({ variant: "default", size: "lg" })}
+						className={buttonVariants({ variant: "cta", size: "lg" })}
 					>
 						<Plus className="w-3.5 h-3.5" />
 						New rate limit
@@ -100,7 +100,7 @@ export function RateLimitsTable() {
 							</p>
 							<Link
 								to="/policies/rate-limits/new"
-								className={buttonVariants({ variant: "default", size: "lg" })}
+								className={buttonVariants({ variant: "cta", size: "lg" })}
 							>
 								<Plus className="w-4 h-4" />
 								Create your first rate limit

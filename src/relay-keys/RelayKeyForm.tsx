@@ -125,7 +125,7 @@ export function RelayKeyForm({
 				</Button>
 				<form.Subscribe selector={(s) => s.isSubmitting}>
 					{(isSubmitting) => (
-						<Button type="submit" disabled={isSubmitting}>
+						<Button type="submit" variant="cta" disabled={isSubmitting}>
 							{isSubmitting ? "Saving…" : isEdit ? "Save changes" : "Create"}
 						</Button>
 					)}

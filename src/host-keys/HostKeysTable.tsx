@@ -110,7 +110,7 @@ export function HostKeysTable() {
 				actions={
 					<Link
 						to="/host-keys/new"
-						className={buttonVariants({ variant: "default", size: "lg" })}
+						className={buttonVariants({ variant: "cta", size: "lg" })}
 					>
 						<Plus className="w-3.5 h-3.5" />
 						New credential
@@ -132,7 +132,7 @@ export function HostKeysTable() {
 							</p>
 							<Link
 								to="/host-keys/new"
-								className={buttonVariants({ variant: "default", size: "lg" })}
+								className={buttonVariants({ variant: "cta", size: "lg" })}
 							>
 								<Plus className="w-4 h-4" />
 								Create your first credential

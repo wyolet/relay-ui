@@ -168,7 +168,7 @@ export function RelayKeysTable() {
 				actions={
 					<Link
 						to="/relay-keys/new"
-						className={buttonVariants({ variant: "default", size: "lg" })}
+						className={buttonVariants({ variant: "cta", size: "lg" })}
 					>
 						<Plus className="w-3.5 h-3.5" />
 						New key
@@ -193,7 +193,7 @@ export function RelayKeysTable() {
 							</p>
 							<Link
 								to="/relay-keys/new"
-								className={buttonVariants({ variant: "default", size: "lg" })}
+								className={buttonVariants({ variant: "cta", size: "lg" })}
 							>
 								<Plus className="w-4 h-4" />
 								Create API key
