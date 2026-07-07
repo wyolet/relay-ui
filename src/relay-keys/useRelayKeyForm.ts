@@ -174,13 +174,20 @@ export function useRelayKeyForm({
 		},
 	});
 
+	// Reset only when the form opens/closes or the edited resource changes — not
+	// on every `initial` identity change, so a background refetch can't wipe an
+	// open draft.
+	const resetKey = `${open}:${relayKey?.metadata.id ?? ""}`;
+	const lastResetKey = useRef<string | null>(null);
 	useEffect(() => {
+		if (lastResetKey.current === resetKey) return;
+		lastResetKey.current = resetKey;
 		if (open) form.reset(initial);
 		else {
 			form.reset(emptyValues());
 			setFreshSecret(null);
 		}
-	}, [open, initial, form]);
+	}, [resetKey, open, initial, form]);
 
 	const values = useStore(form.store, (s) => s.values);
 	const slugPreview = isEdit
