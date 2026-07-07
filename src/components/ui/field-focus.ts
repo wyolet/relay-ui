@@ -6,11 +6,12 @@
 // Compose these constants instead of hand-rolling focus classes so every
 // field in the app stays in lockstep.
 
-// The resting field frame — border and fill that Input/Textarea/SelectTrigger
-// carry. Composite fields (chip wrappers, search boxes) use this so they sit
-// on exactly the same ground as a plain Input.
+// The resting field frame — border and a faint accent-tinted fill (not the
+// neutral --input gray, which reads brown/gray and denies the palette).
+// Composite fields (chip wrappers, search boxes) use this so they sit on
+// exactly the same ground as a plain Input.
 export const fieldFrameClassName =
-	"rounded-md border border-input bg-input/20 dark:bg-input/30";
+	"rounded-md border border-input bg-field-rest";
 
 // Keyboard focus. Text inputs also match :focus-visible on click (browsers
 // treat caret focus as visible), so this alone covers them.

@@ -98,7 +98,7 @@ export function PoliciesTable() {
 				actions={
 					<Link
 						to="/policies/new"
-						className={buttonVariants({ variant: "cta", size: "lg" })}
+						className={buttonVariants({ variant: "default", size: "lg" })}
 					>
 						<Plus className="w-3.5 h-3.5" />
 						New policy
@@ -120,7 +120,7 @@ export function PoliciesTable() {
 							</p>
 							<Link
 								to="/policies/new"
-								className={buttonVariants({ variant: "cta", size: "lg" })}
+								className={buttonVariants({ variant: "default", size: "lg" })}
 							>
 								<Plus className="w-4 h-4" />
 								Create your first policy
