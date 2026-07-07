@@ -56,9 +56,7 @@ export function Chip({
 					icon={X}
 					weight="bare"
 					size="xs"
-					label={
-						typeof label === "string" ? `Remove ${label}` : "Remove"
-					}
+					label={typeof label === "string" ? `Remove ${label}` : "Remove"}
 					onClick={onRemove}
 					className={tone === "primary" ? "text-primary/70" : undefined}
 				/>

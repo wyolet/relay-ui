@@ -147,4 +147,3 @@ export function LogsHistogram({ filter }: { filter: LogsFilter }) {
 		</div>
 	);
 }
-

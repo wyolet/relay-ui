@@ -333,10 +333,7 @@ function ProviderList({
 				const modelCount = (index.modelsByProvider.get(name) ?? []).length;
 				return (
 					<li key={p.id}>
-						<OptionRow
-							onClick={() => onToggle(p)}
-							className="justify-between"
-						>
+						<OptionRow onClick={() => onToggle(p)} className="justify-between">
 							<span className="flex items-center gap-2.5 min-w-0">
 								<RowCheckbox state={selected ? "on" : "off"} />
 								<span className="text-sm text-foreground truncate">
@@ -474,10 +471,7 @@ function HostList({
 				const finalState: CheckState = hostGranted ? "on" : state;
 				return (
 					<li key={h.id}>
-						<OptionRow
-							onClick={() => onToggle(h)}
-							className="justify-between"
-						>
+						<OptionRow onClick={() => onToggle(h)} className="justify-between">
 							<span className="flex items-center gap-2.5 min-w-0">
 								<RowCheckbox state={finalState} />
 								<HostLogo host={h.logo} size={20} />

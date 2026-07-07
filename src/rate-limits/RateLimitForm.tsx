@@ -237,16 +237,18 @@ function RuleRow({
 					label={customWindow ? "Window (s)" : "Window"}
 					action={
 						customWindow ? (
-							<button
+							<Button
 								type="button"
+								variant="ghost"
+								size="xs"
 								onClick={() =>
 									onChange({ window: "60", isCustomWindow: false })
 								}
-								className="inline-flex items-center gap-0.5 text-[10px] font-medium text-muted-foreground hover:text-foreground"
+								className="h-auto gap-0.5 px-0 text-[10px] text-muted-foreground hover:bg-transparent hover:text-foreground"
 							>
 								<Undo2 className="w-3 h-3" />
 								Preset
-							</button>
+							</Button>
 						) : undefined
 					}
 				>

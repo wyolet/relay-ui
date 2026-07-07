@@ -60,9 +60,7 @@ export function Segmented<T extends string>({
 	className?: string;
 }) {
 	return (
-		<div
-			className={cn(CONTAINER[variant], stretch && "w-full", className)}
-		>
+		<div className={cn(CONTAINER[variant], stretch && "w-full", className)}>
 			{options.map((o) => {
 				const active = o.value === value;
 				return (

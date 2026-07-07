@@ -35,13 +35,7 @@ function PerSegmented({
 	value: RateLimitPer;
 	onChange: (value: RateLimitPer) => void;
 }) {
-	return (
-		<Segmented
-			value={value}
-			onChange={onChange}
-			options={PER_OPTIONS}
-		/>
-	);
+	return <Segmented value={value} onChange={onChange} options={PER_OPTIONS} />;
 }
 
 interface LimitBlockState {
