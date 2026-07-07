@@ -248,6 +248,8 @@ function LoginPage() {
 						}
 						className="absolute bottom-0 right-0 size-[34rem] translate-x-1/4 translate-y-1/4 rounded-full bg-accent-500/10 blur-[120px]"
 					/>
+					{/* grain dither so the glows blend instead of banding */}
+					<div className="bg-grain absolute inset-0 opacity-[0.04] mix-blend-overlay dark:opacity-[0.05]" />
 				</div>
 
 				<motion.div

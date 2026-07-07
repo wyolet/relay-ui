@@ -178,6 +178,14 @@
   body {
     @apply bg-background text-foreground;
   }
+  /* Film grain to dither large soft gradients — masks the 8-bit banding
+     rings that big low-alpha glows produce (Firefox especially, it doesn't
+     dither). Layer over a gradient at ~3-5% opacity. */
+  .bg-grain {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 160px 160px;
+  }
+
   /* Chrome autofill paints its own yellow/blue fill over our field styles.
      Its background can't be styled away — but it CAN be transitioned, so we
      defer that paint effectively forever and keep the text/caret themed. */
