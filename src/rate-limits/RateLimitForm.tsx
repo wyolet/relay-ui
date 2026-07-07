@@ -244,7 +244,9 @@ function RuleRow({
 						customWindow ? (
 							<button
 								type="button"
-								onClick={() => onChange({ window: "60", isCustomWindow: false })}
+								onClick={() =>
+									onChange({ window: "60", isCustomWindow: false })
+								}
 								className="inline-flex items-center gap-0.5 text-[10px] font-medium text-muted-foreground hover:text-foreground"
 							>
 								<Undo2 className="w-3 h-3" />

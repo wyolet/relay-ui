@@ -52,6 +52,17 @@
   --input: oklch(0.922 0.005 325.62);
   --ring: oklch(0.711 0.019 323.02);
   --radius: 0.625rem;
+
+  /* status tokens — success/warning/info status states (light).
+     `*` is the readable text/dot tone; `*-soft` is the tinted fill.
+     Values track tailwind emerald/amber/sky so the palette sweep is a
+     visual no-op. */
+  --success: oklch(0.596 0.145 163.225); /* emerald-600 */
+  --success-soft: oklch(0.979 0.021 166.113); /* emerald-50 */
+  --warning: oklch(0.666 0.179 58.318); /* amber-600 */
+  --warning-soft: oklch(0.987 0.022 95.277); /* amber-50 */
+  --info: oklch(0.588 0.158 241.966); /* sky-600 */
+  --info-soft: oklch(0.977 0.013 236.62); /* sky-50 */
 }
 
 .dark,
@@ -109,6 +120,14 @@
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
+
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+
   --font-heading: var(--font-sans);
   --font-sans: 'Inter Variable', sans-serif;
   --radius-sm: calc(var(--radius) * 0.6);
@@ -181,4 +200,12 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.542 0.034 322.5);
+
+  /* status tokens (dark) — brighter tones for contrast on dark surfaces */
+  --success: oklch(0.765 0.177 163.223); /* emerald-400 */
+  --success-soft: oklch(0.262 0.051 172.552); /* emerald-950 */
+  --warning: oklch(0.828 0.189 84.429); /* amber-400 */
+  --warning-soft: oklch(0.279 0.077 45.635); /* amber-950 */
+  --info: oklch(0.746 0.16 232.661); /* sky-400 */
+  --info-soft: oklch(0.293 0.066 243.157); /* sky-950 */
 }

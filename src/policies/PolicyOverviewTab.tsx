@@ -8,13 +8,13 @@ import { usePolicyHosts } from "@/policies/usePolicyHosts";
 import { usePolicyModels } from "@/policies/usePolicyModels";
 import { usePolicyUsage } from "@/policies/usePolicyUsage";
 import {
-	ResourceUsageCards,
-	UsageCardsSkeleton,
-} from "@/shared/ResourceUsageCards";
-import {
 	ResourceSpendCard,
 	ResourceSpendCardSkeleton,
 } from "@/usage/ResourceSpendCard";
+import {
+	ResourceUsageCards,
+	UsageCardsSkeleton,
+} from "@/usage/ResourceUsageCards";
 
 interface Props {
 	policy: Policy;

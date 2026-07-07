@@ -267,7 +267,7 @@ function HostCard({ req, onToggle, required, dangling }: HostCardProps) {
 							disabled={available.length === 0}
 						/>
 					) : (
-						<div className="flex items-center gap-1.5 text-[11px] text-amber-600 dark:text-amber-400">
+						<div className="flex items-center gap-1.5 text-[11px] text-warning">
 							<AlertTriangle className="h-3.5 w-3.5" aria-hidden />
 							No keys exist for this host.
 						</div>
@@ -300,7 +300,7 @@ function StatusBadge({
 }: StatusBadgeProps) {
 	if (dangling) {
 		return (
-			<span className="inline-flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
+			<span className="inline-flex items-center gap-1 text-[11px] text-warning">
 				<AlertTriangle className="h-3.5 w-3.5" aria-hidden />
 				outside catalog
 			</span>
@@ -308,7 +308,7 @@ function StatusBadge({
 	}
 	if (satisfied) {
 		return (
-			<span className="inline-flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400">
+			<span className="inline-flex items-center gap-1 text-[11px] text-success">
 				<CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
 				attached
 			</span>
@@ -316,7 +316,7 @@ function StatusBadge({
 	}
 	if (noAuth) {
 		return (
-			<span className="inline-flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400">
+			<span className="inline-flex items-center gap-1 text-[11px] text-success">
 				<CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
 				no key needed
 			</span>
@@ -324,7 +324,7 @@ function StatusBadge({
 	}
 	if (required) {
 		return (
-			<span className="inline-flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
+			<span className="inline-flex items-center gap-1 text-[11px] text-warning">
 				<AlertTriangle className="h-3.5 w-3.5" aria-hidden />
 				needs key
 			</span>

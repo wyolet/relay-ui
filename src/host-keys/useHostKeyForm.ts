@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { z } from "zod";
 import { useCreateHostKey, useUpdateHostKey } from "@/api/hooks/hostkeys";
 import { useHosts } from "@/api/hooks/hosts";
-import { usePolicies } from "@/api/hooks/policies";
+import { useDetachHostKeyFromPolicy, usePolicies } from "@/api/hooks/policies";
 import { ApiError } from "@/api/types/errors";
 import type {
 	HostKey,
@@ -14,7 +14,6 @@ import type {
 } from "@/api/types/hostkey";
 import { displayLabel } from "@/lib/displayLabel";
 import { randomSuffix, slugify } from "@/lib/slug";
-import { useDetachHostKeyFromPolicy } from "@/policies/useDetachHostKeyFromPolicy";
 import { toast } from "@/shared/Toast";
 
 export interface SelectOption {

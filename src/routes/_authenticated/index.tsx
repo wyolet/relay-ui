@@ -40,7 +40,7 @@ function WelcomePanel() {
 			</p>
 			<Link
 				to="/setup"
-				className="inline-flex items-center rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-700"
+				className="inline-flex items-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
 			>
 				Get started →
 			</Link>

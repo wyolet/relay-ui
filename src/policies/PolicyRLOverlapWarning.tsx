@@ -42,7 +42,7 @@ export function PolicyRLOverlapWarning({
 			}
 			body={
 				<table className="w-full text-[11px]">
-					<thead className="bg-amber-500/10 text-muted-foreground">
+					<thead className="bg-warning/10 text-muted-foreground">
 						<tr>
 							<th
 								scope="col"
@@ -78,7 +78,7 @@ export function PolicyRLOverlapWarning({
 							return (
 								<tr
 									key={`${bnd.provider}/${bnd.model}@${bnd.host}`}
-									className="border-t border-amber-500/20"
+									className="border-t border-warning/20"
 								>
 									<td className="px-3 py-1.5">
 										<span className="text-foreground">

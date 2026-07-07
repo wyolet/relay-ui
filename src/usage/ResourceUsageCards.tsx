@@ -1,4 +1,5 @@
 import type { ResourceUsageStats } from "@/api/hooks/usage";
+import { fmtCompact, fmtInt, fmtMs, fmtPct } from "@/usage/format";
 
 /**
  * The four real usage cards (Requests / Error rate / p95 / Tokens) shared by
@@ -84,28 +85,4 @@ export function UsageCard({
 			)}
 		</div>
 	);
-}
-
-function fmtInt(n: number): string {
-	return n.toLocaleString();
-}
-
-function fmtPct(ratio: number): string {
-	const pct = ratio * 100;
-	const digits = pct > 0 && pct < 10 ? 1 : 0;
-	return `${pct.toLocaleString(undefined, { maximumFractionDigits: digits })}%`;
-}
-
-function fmtMs(ms: number): string {
-	if (ms >= 1000)
-		return `${(ms / 1000).toLocaleString(undefined, { maximumFractionDigits: 1 })} s`;
-	return `${Math.round(ms)} ms`;
-}
-
-function fmtCompact(n: number): string {
-	if (n >= 1_000_000)
-		return `${(n / 1_000_000).toLocaleString(undefined, { maximumFractionDigits: 1 })}M`;
-	if (n >= 1_000)
-		return `${(n / 1_000).toLocaleString(undefined, { maximumFractionDigits: 1 })}k`;
-	return n.toLocaleString();
 }

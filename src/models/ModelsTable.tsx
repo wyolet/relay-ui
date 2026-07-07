@@ -45,54 +45,6 @@ function deprecationNote(m: Model): string | null {
 	return parts.join(" · ") || null;
 }
 
-function providerIdOf(m: Model): string {
-	return m.metadata.owner?.kind === "provider"
-		? (m.metadata.owner.id ?? "")
-		: "";
-}
-
-function providerOf(m: Model, slugById?: Map<string, string>): string {
-	const id = providerIdOf(m);
-	if (!id) return "";
-	return slugById?.get(id) ?? id;
-}
-
-export type ModelDeprecatedFilter = "active" | "deprecated" | "all";
-
-function isDeprecated(m: Model): boolean {
-	return Boolean(m.spec.deprecation || m.spec.deprecationDate);
-}
-
-export function applyModelFilter(
-	items: Model[],
-	q: string,
-	deprecated: ModelDeprecatedFilter,
-	slugById?: Map<string, string>,
-): Model[] {
-	const ql = q.trim().toLowerCase();
-	return items.filter((m) => {
-		const dep = isDeprecated(m);
-		if (deprecated === "active" && dep) return false;
-		if (deprecated === "deprecated" && !dep) return false;
-		if (!ql) return true;
-		const snapshotNames = (m.spec.snapshots ?? []).flatMap((s) =>
-			[s.name, s.originalName].filter((v): v is string => Boolean(v)),
-		);
-		const hay = [
-			m.metadata.name,
-			m.metadata.displayName,
-			m.spec.family,
-			providerOf(m, slugById),
-			...snapshotNames,
-			...(m.spec.tags ?? []),
-		]
-			.filter(Boolean)
-			.join(" ")
-			.toLowerCase();
-		return hay.includes(ql);
-	});
-}
-
 interface SortHeaderProps {
 	label: string;
 	field: ModelsSortKey;
@@ -284,7 +236,7 @@ function ModelRow({
 						</span>
 						{dep && (
 							<AlertTriangle
-								className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0"
+								className="w-3.5 h-3.5 text-warning shrink-0"
 								aria-label={dep}
 							/>
 						)}
@@ -293,9 +245,7 @@ function ModelRow({
 					{(hasDisplayName(m.metadata) || dep) && (
 						<div className="text-[11px] text-muted-foreground truncate">
 							{dep ? (
-								<span className="text-amber-700 dark:text-amber-400">
-									{dep}
-								</span>
+								<span className="text-warning">{dep}</span>
 							) : (
 								<code className="font-mono">{m.metadata.name}</code>
 							)}
@@ -321,7 +271,7 @@ function ModelRow({
 						className={[
 							"inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border",
 							enabled
-								? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-200/60 dark:border-emerald-900/60"
+								? "bg-success-soft text-success border-success/30"
 								: "bg-muted text-muted-foreground border-border",
 						].join(" ")}
 						title="Provider-managed — toggle from the provider instead"

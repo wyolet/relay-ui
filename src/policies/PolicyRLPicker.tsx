@@ -120,11 +120,11 @@ export function PolicyRLPicker({
 								<li
 									key={b.rateLimitId || `binding-${i}`}
 									className={`rounded-md border bg-card overflow-hidden shadow-sm ${
-										fullyOrphaned ? "border-amber-500/40" : "border-border"
+										fullyOrphaned ? "border-warning/40" : "border-border"
 									}`}
 								>
 									{fullyOrphaned && (
-										<div className="border-b border-amber-500/30 bg-amber-500/5 px-3 py-2">
+										<div className="border-b border-warning/30 bg-warning/5 px-3 py-2">
 											<AlertBanner severity="warn">
 												This rate limit targets{" "}
 												{orphans.map((m, idx) => (
@@ -272,9 +272,9 @@ function RefBlock({ stats, labels, rlMetaById, bindings }: RefBlockProps) {
 			</div>
 
 			{hasLost && (
-				<div className="mt-2 rounded border border-amber-500/30 bg-amber-500/5 px-2 py-1.5">
+				<div className="mt-2 rounded border border-warning/30 bg-warning/5 px-2 py-1.5">
 					<div className="text-[11px] text-foreground">
-						<AlertTriangle className="inline-block w-3 h-3 text-amber-600 mr-1 -mt-0.5" />
+						<AlertTriangle className="inline-block w-3 h-3 text-warning mr-1 -mt-0.5" />
 						Except {formatScopeFromConcrete(lostConcrete)} below — already
 						governed by{" "}
 						{stats.lostTo.length === 1

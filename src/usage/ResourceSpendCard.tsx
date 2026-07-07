@@ -1,5 +1,5 @@
 import { type CostResourceDimension, useResourceSpend } from "@/api/hooks/cost";
-import { UsageCard } from "@/shared/ResourceUsageCards";
+import { UsageCard } from "@/usage/ResourceUsageCards";
 import { fmtCompact, fmtMoneyCompact } from "./format";
 
 /**

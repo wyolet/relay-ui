@@ -19,7 +19,7 @@ export function ReleaseReadiness() {
 				RELEASE_GAPS.length === 1 ? "" : "s"
 			} still faked`}
 			body={
-				<ul className="divide-y divide-amber-500/30">
+				<ul className="divide-y divide-warning/30">
 					{RELEASE_GAPS.map((gap) => (
 						<GapRow key={gap.id} gap={gap} />
 					))}

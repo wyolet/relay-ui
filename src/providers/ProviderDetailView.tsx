@@ -19,6 +19,8 @@ import {
 	type ProviderReferences,
 	useProviderReferences,
 } from "@/providers/useProviderReferences";
+import { OwnerBadge, StatusBadge } from "@/shared/StatusBadge";
+import { Th } from "@/shared/Th";
 
 export type ProviderDetailTab = "overview" | "models" | "hosts";
 
@@ -142,7 +144,7 @@ function Header({
 							</span>
 						)}
 						<StatusBadge enabled={enabled} />
-						{system && <OwnerBadge label="System" />}
+						{system && <OwnerBadge label="System" title="System-managed." />}
 					</h1>
 					<p className="mt-1 text-xs text-muted-foreground font-mono truncate">
 						{provider.metadata.name}
@@ -386,23 +388,6 @@ function HostsTab({ refs }: { refs: ProviderReferences }) {
 
 /* ---------------- Shared ---------------- */
 
-function Th({
-	children,
-	className = "",
-}: {
-	children: React.ReactNode;
-	className?: string;
-}) {
-	return (
-		<th
-			scope="col"
-			className={`px-3 py-1.5 text-left font-medium ${className}`}
-		>
-			{children}
-		</th>
-	);
-}
-
 function Td({
 	children,
 	className = "",
@@ -415,34 +400,9 @@ function Td({
 
 function StatusInline({ enabled }: { enabled: boolean }) {
 	return enabled ? (
-		<span className="text-[11px] text-emerald-700 dark:text-emerald-400">
-			Enabled
-		</span>
+		<span className="text-[11px] text-success">Enabled</span>
 	) : (
 		<span className="text-[11px] text-muted-foreground">Disabled</span>
-	);
-}
-
-function StatusBadge({ enabled }: { enabled: boolean }) {
-	return enabled ? (
-		<span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-900/60">
-			Enabled
-		</span>
-	) : (
-		<span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground border border-border">
-			Disabled
-		</span>
-	);
-}
-
-function OwnerBadge({ label }: { label: string }) {
-	return (
-		<span
-			className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground border border-border"
-			title={`${label}-managed.`}
-		>
-			{label}-owned
-		</span>
 	);
 }
 

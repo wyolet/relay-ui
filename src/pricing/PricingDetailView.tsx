@@ -5,6 +5,7 @@ import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { MeterGrid } from "@/pricing/MeterGrid";
 import { useHostOptionById } from "@/pricing/useHostOptions";
 import { useTargetModelLabeler } from "@/pricing/useTargetModelOptions";
+import { StatusBadge } from "@/shared/StatusBadge";
 
 interface Props {
 	pricing: Pricing;
@@ -190,18 +191,6 @@ function MetadataFooter({ pricing }: { pricing: Pricing }) {
 			{createdAt && updatedAt && " · "}
 			{updatedAt && <>Updated {new Date(updatedAt).toLocaleString()}</>}
 		</p>
-	);
-}
-
-function StatusBadge({ enabled }: { enabled: boolean }) {
-	return enabled ? (
-		<span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-900/60">
-			Enabled
-		</span>
-	) : (
-		<span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground border border-border">
-			Disabled
-		</span>
 	);
 }
 
