@@ -61,6 +61,13 @@ const CONTROL_WINDOWS = [WINDOW_PRESETS[0], WINDOW_PRESETS[1]] as const;
 interface RuleDraft {
 	amount: string;
 	windowSec: number;
+	/** Free-form seconds vs a preset — lives on the draft so it survives row
+	 * removal/reordering (rows are keyed by index). */
+	isCustomWindow: boolean;
+}
+
+function isPresetWindow(windowSec: number): boolean {
+	return WINDOW_PRESETS.some((w) => w.value === windowSec);
 }
 
 interface SectionState {
@@ -77,13 +84,17 @@ interface FormState {
 
 function ruleToDraft(r: RateLimitRule): RuleDraft {
 	const w = r.window && r.window > 0 ? r.window : 60;
-	return { amount: String(r.amount), windowSec: w };
+	return {
+		amount: String(r.amount),
+		windowSec: w,
+		isCustomWindow: !isPresetWindow(w),
+	};
 }
 
 function buildControlState(rl: RateLimit | undefined): SectionState {
 	const defaults: RuleDraft[] = [
-		{ amount: "100", windowSec: 1 },
-		{ amount: "1000", windowSec: 60 },
+		{ amount: "100", windowSec: 1, isCustomWindow: false },
+		{ amount: "1000", windowSec: 60, isCustomWindow: false },
 	];
 	if (!rl) return { enabled: false, rules: defaults };
 	const existing = rl.spec.rules ?? [];
@@ -98,14 +109,14 @@ function buildInferenceState(rl: RateLimit | undefined): SectionState {
 	if (!rl) {
 		return {
 			enabled: false,
-			rules: [{ amount: "60", windowSec: 60 }],
+			rules: [{ amount: "60", windowSec: 60, isCustomWindow: false }],
 		};
 	}
 	const existing = rl.spec.rules ?? [];
 	const rules =
 		existing.length > 0
 			? existing.map(ruleToDraft)
-			: [{ amount: "60", windowSec: 60 }];
+			: [{ amount: "60", windowSec: 60, isCustomWindow: false }];
 	return { enabled: rl.spec.enabled !== false, rules };
 }
 
@@ -202,7 +213,10 @@ function SystemRateLimitsInner() {
 			...s,
 			[key]: {
 				...s[key],
-				rules: [...s[key].rules, { amount: "60", windowSec: 60 }],
+				rules: [
+					...s[key].rules,
+					{ amount: "60", windowSec: 60, isCustomWindow: false },
+				],
 			},
 		}));
 	}
@@ -643,7 +657,10 @@ function InferenceRuleRow({
 	onRemove,
 }: InferenceRuleRowProps) {
 	const preset = WINDOW_PRESETS.find((w) => w.value === rule.windowSec);
-	const selectValue = preset ? String(preset.value) : "custom";
+	const custom = rule.isCustomWindow;
+	const selectValue = custom
+		? "custom"
+		: String(preset?.value ?? rule.windowSec);
 	return (
 		<div className="grid grid-cols-[160px_120px_1fr_auto] gap-3 items-end rounded-md border border-border bg-card px-3 py-2.5">
 			<div>
@@ -661,8 +678,11 @@ function InferenceRuleRow({
 					]}
 					onValueChange={(v) => {
 						if (v === null) return;
-						if (v === "custom") return;
-						onChange({ windowSec: Number(v) });
+						if (v === "custom") {
+							onChange({ isCustomWindow: true });
+							return;
+						}
+						onChange({ windowSec: Number(v), isCustomWindow: false });
 					}}
 				>
 					<SelectTrigger className="w-full">
@@ -680,7 +700,7 @@ function InferenceRuleRow({
 			</div>
 			<div>
 				<div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-1">
-					{preset ? "Window" : "Seconds"}
+					{custom ? "Seconds" : "Window"}
 				</div>
 				<Input
 					type="number"
@@ -690,7 +710,7 @@ function InferenceRuleRow({
 					onChange={(e) =>
 						onChange({ windowSec: Number(e.currentTarget.value) })
 					}
-					disabled={preset !== undefined}
+					disabled={!custom}
 				/>
 			</div>
 			<div>
