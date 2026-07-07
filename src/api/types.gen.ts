@@ -520,6 +520,25 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/models/by-id/{id}/overlay": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read this model's overlay: patch, pristine template, effective spec, quarantine state */
+        get: operations["model_overlay_get"];
+        /** Set (replace) this model's overlay patch */
+        put: operations["model_overlay_put"];
+        post?: never;
+        /** Delete this model's overlay (factory reset to the pristine template) */
+        delete: operations["model_overlay_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/models/by-id/{id}/references": {
         parameters: {
             query?: never;
@@ -982,6 +1001,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/relay-keys/by-id/{id}/rotate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rotate a relay-key (server generates a new plaintext)
+         * @description Generates a fresh bearer token server-side, replaces the stored hash + display prefix, and returns the new plaintext once. The old token stops authenticating within ~1s fleet-wide. Revoked keys cannot be rotated — create a new key instead.
+         */
+        post: operations["rotate_relay_key"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/relay-keys/{ref}": {
         parameters: {
             query?: never;
@@ -1032,6 +1071,54 @@ export interface paths {
          */
         get: operations["list_settings"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/settings/auth:oidc": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get settings section: auth:oidc
+         * @description Inbound OpenID Connect login for the control plane. Generic OIDC (issuer discovery + authorization-code flow); disabled by default. registration=open auto-provisions a user on first login. The client secret is referenced by env var name, never stored here.
+         */
+        get: operations["get_settings_auth_oidc"];
+        /**
+         * Update settings section: auth:oidc
+         * @description Inbound OpenID Connect login for the control plane. Generic OIDC (issuer discovery + authorization-code flow); disabled by default. registration=open auto-provisions a user on first login. The client secret is referenced by env var name, never stored here.
+         */
+        put: operations["update_settings_auth_oidc"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/settings/catalog-source": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get settings section: catalog-source
+         * @description Provenance of the seeded public catalog: the version last seeded and when. Compared against RELAY_CATALOG_VERSION at boot; a mismatch triggers a re-seed (operator-edited rows are skipped, overlays re-apply). Blank the version to force a re-seed on the next boot.
+         */
+        get: operations["get_settings_catalog-source"];
+        /**
+         * Update settings section: catalog-source
+         * @description Provenance of the seeded public catalog: the version last seeded and when. Compared against RELAY_CATALOG_VERSION at boot; a mismatch triggers a re-seed (operator-edited rows are skipped, overlays re-apply). Blank the version to force a re-seed on the next boot.
+         */
+        put: operations["update_settings_catalog-source"];
         post?: never;
         delete?: never;
         options?: never;
@@ -1332,6 +1419,38 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AuthOIDC: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/AuthOIDC.json
+             */
+            readonly $schema?: string;
+            authParams?: {
+                [key: string]: string;
+            };
+            clientId?: string;
+            clientSecretEnv?: string;
+            enabled: boolean;
+            issuer?: string;
+            redirectUrl?: string;
+            registration?: string;
+            scopes?: string[] | null;
+        };
+        AuthOIDCEnvelope: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/AuthOIDCEnvelope.json
+             */
+            readonly $schema?: string;
+            /**
+             * @description One of the relay's registered settings section keys.
+             * @enum {string}
+             */
+            section: "auth:oidc" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            value: components["schemas"]["AuthOIDC"];
+        };
         Binding: {
             /**
              * Format: uri
@@ -1348,6 +1467,30 @@ export interface components {
             id: string;
             snapshots?: string[] | null;
             upstreamName?: string;
+        };
+        CatalogSource: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/CatalogSource.json
+             */
+            readonly $schema?: string;
+            seededAt?: string;
+            version?: string;
+        };
+        CatalogSourceEnvelope: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/CatalogSourceEnvelope.json
+             */
+            readonly $schema?: string;
+            /**
+             * @description One of the relay's registered settings section keys.
+             * @enum {string}
+             */
+            section: "auth:oidc" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            value: components["schemas"]["CatalogSource"];
         };
         DeprecationView: {
             replacement?: string;
@@ -1430,7 +1573,7 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            section: "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            section: "auth:oidc" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
             value: components["schemas"]["Governance"];
         };
         Host: {
@@ -1489,6 +1632,7 @@ export interface components {
         HostKeyValueFrom: {
             env?: string;
             kind: string;
+            provider?: string;
         };
         HostKeyView: {
             defaultTier?: string;
@@ -1590,7 +1734,7 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            section: "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            section: "auth:oidc" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
             value: components["schemas"]["Inference"];
         };
         Limit: {
@@ -1705,6 +1849,7 @@ export interface components {
             releasedAt?: string;
         };
         ModelSpec: {
+            aliases?: string[] | null;
             capabilities?: components["schemas"]["ModelCapabilities"];
             /** Format: int64 */
             contextWindowInput?: number;
@@ -1772,7 +1917,7 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            section: "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            section: "auth:oidc" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
             value: components["schemas"]["Parsing"];
         };
         PayloadClickHouse: {
@@ -1809,7 +1954,7 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            section: "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            section: "auth:oidc" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
             value: components["schemas"]["PayloadLogging"];
         };
         PayloadS3: {
@@ -1984,7 +2129,7 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            section: "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            section: "auth:oidc" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
             value: components["schemas"]["ProxyMode"];
         };
         Rate: {
@@ -2050,6 +2195,7 @@ export interface components {
             id?: string;
             kind: string;
             path?: string;
+            provider?: string;
         };
         RelayKey: {
             /**
@@ -2213,6 +2359,7 @@ export interface components {
              * @example https://example.com/schemas/authResponseBody.json
              */
             readonly $schema?: string;
+            roles?: string[] | null;
             user_id: string;
             username: string;
         };
@@ -2497,6 +2644,42 @@ export interface components {
             model: components["schemas"]["ModelRef"];
             pricing: components["schemas"]["ModelPriceRow"][] | null;
         };
+        overlayDeleteOutBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/overlayDeleteOutBody.json
+             */
+            readonly $schema?: string;
+            deleted: boolean;
+        };
+        overlayPutInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/overlayPutInputBody.json
+             */
+            readonly $schema?: string;
+            /** @description Sparse spec patch (JSON object). */
+            patch: unknown;
+        };
+        overlayView: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/overlayView.json
+             */
+            readonly $schema?: string;
+            effective: components["schemas"]["ModelSpec"];
+            kind: string;
+            patch?: unknown;
+            quarantineReason?: string;
+            quarantined?: boolean;
+            resourceId: string;
+            template: components["schemas"]["ModelSpec"];
+            /** Format: date-time */
+            updatedAt?: string;
+        };
         policyHostsOutBody: {
             /**
              * Format: uri
@@ -2600,13 +2783,23 @@ export interface components {
             /** @description New cleartext credential. */
             value: string;
         };
+        rotateRelayKeyResponseBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/rotateRelayKeyResponseBody.json
+             */
+            readonly $schema?: string;
+            plaintext: string;
+            relayKey: components["schemas"]["RelayKey"];
+        };
         settingsCatalogItem: {
             description?: string;
             /**
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            name: "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            name: "auth:oidc" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
             /** @description OpenAPI component name for this section's typed value. */
             schemaRef?: string;
         };
@@ -2624,7 +2817,7 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            section: "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            section: "auth:oidc" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
             value: unknown;
         };
         settingsListOutputBody: {
@@ -2963,6 +3156,15 @@ export interface operations {
                     "application/json": components["schemas"]["OpenAIError"];
                 };
             };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
             /** @description Unprocessable Entity */
             422: {
                 headers: {
@@ -3011,7 +3213,7 @@ export interface operations {
                 /** @description Label selector key=value (repeatable, all must match). */
                 label?: string[];
                 /** @description Sort field; prefix with '-' for descending. */
-                sort?: "name" | "created" | "updated";
+                sort?: "name" | "-name" | "created" | "-created" | "updated" | "-updated";
                 /** @description Max items to return (page size). */
                 limit?: number;
                 /** @description Items to skip before the page. */
@@ -3101,6 +3303,15 @@ export interface operations {
                     "application/json": components["schemas"]["OpenAIError"];
                 };
             };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
             /** @description Unprocessable Entity */
             422: {
                 headers: {
@@ -3157,6 +3368,15 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3346,7 +3566,7 @@ export interface operations {
                 /** @description Label selector key=value (repeatable, all must match). */
                 label?: string[];
                 /** @description Sort field; prefix with '-' for descending. */
-                sort?: "name" | "created" | "updated";
+                sort?: "name" | "-name" | "created" | "-created" | "updated" | "-updated";
                 /** @description Max items to return (page size). */
                 limit?: number;
                 /** @description Items to skip before the page. */
@@ -3436,6 +3656,15 @@ export interface operations {
                     "application/json": components["schemas"]["OpenAIError"];
                 };
             };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
             /** @description Unprocessable Entity */
             422: {
                 headers: {
@@ -3492,6 +3721,15 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3746,6 +3984,15 @@ export interface operations {
                     "application/json": components["schemas"]["OpenAIError"];
                 };
             };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
             /** @description Not Found */
             404: {
                 headers: {
@@ -3860,7 +4107,7 @@ export interface operations {
                 /** @description Label selector key=value (repeatable, all must match). */
                 label?: string[];
                 /** @description Sort field; prefix with '-' for descending. */
-                sort?: "name" | "created" | "updated";
+                sort?: "name" | "-name" | "created" | "-created" | "updated" | "-updated";
                 /** @description Max items to return (page size). */
                 limit?: number;
                 /** @description Items to skip before the page. */
@@ -3950,6 +4197,15 @@ export interface operations {
                     "application/json": components["schemas"]["OpenAIError"];
                 };
             };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
             /** @description Unprocessable Entity */
             422: {
                 headers: {
@@ -4006,6 +4262,15 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4601,6 +4866,15 @@ export interface operations {
                     "application/json": components["schemas"]["OpenAIError"];
                 };
             };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
             /** @description Internal Server Error */
             500: {
                 headers: {
@@ -4632,6 +4906,15 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4700,8 +4983,8 @@ export interface operations {
                 /** @description Label selector key=value (repeatable, all must match). */
                 label?: string[];
                 /** @description Sort field; prefix with '-' for descending. */
-                sort?: "name" | "family" | "context_window" | "released" | "created" | "updated";
-                /** @description Max items to return (page size). */
+                sort?: "name" | "-name" | "family" | "-family" | "context_window" | "-context_window" | "released" | "-released" | "created" | "-created" | "updated" | "-updated";
+                /** @description Max items to return (page size). Defaults to 100 when absent; pass 0 for the full set. */
                 limit?: number;
                 /** @description Items to skip before the page. */
                 offset?: number;
@@ -4790,6 +5073,15 @@ export interface operations {
                     "application/json": components["schemas"]["OpenAIError"];
                 };
             };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
             /** @description Unprocessable Entity */
             422: {
                 headers: {
@@ -4853,6 +5145,15 @@ export interface operations {
                     "application/json": components["schemas"]["OpenAIError"];
                 };
             };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
             /** @description Not Found */
             404: {
                 headers: {
@@ -4900,6 +5201,214 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    model_overlay_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Model UUIDv7 id. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["overlayView"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    model_overlay_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Model UUIDv7 id. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["overlayPutInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["overlayView"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    model_overlay_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Model UUIDv7 id. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["overlayDeleteOutBody"];
+                };
             };
             /** @description Unauthorized */
             401: {
@@ -5268,7 +5777,7 @@ export interface operations {
                 /** @description Label selector key=value (repeatable, all must match). */
                 label?: string[];
                 /** @description Sort field; prefix with '-' for descending. */
-                sort?: "name" | "created" | "updated";
+                sort?: "name" | "-name" | "created" | "-created" | "updated" | "-updated";
                 /** @description Max items to return (page size). */
                 limit?: number;
                 /** @description Items to skip before the page. */
@@ -5358,6 +5867,15 @@ export interface operations {
                     "application/json": components["schemas"]["OpenAIError"];
                 };
             };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
             /** @description Unprocessable Entity */
             422: {
                 headers: {
@@ -5414,6 +5932,15 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5598,6 +6125,15 @@ export interface operations {
                     "application/json": components["schemas"]["OpenAIError"];
                 };
             };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
             /** @description Not Found */
             404: {
                 headers: {
@@ -5652,6 +6188,15 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5966,7 +6511,7 @@ export interface operations {
                 /** @description Label selector key=value (repeatable, all must match). */
                 label?: string[];
                 /** @description Sort field; prefix with '-' for descending. */
-                sort?: "name" | "created" | "updated";
+                sort?: "name" | "-name" | "created" | "-created" | "updated" | "-updated";
                 /** @description Max items to return (page size). */
                 limit?: number;
                 /** @description Items to skip before the page. */
@@ -6056,6 +6601,15 @@ export interface operations {
                     "application/json": components["schemas"]["OpenAIError"];
                 };
             };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
             /** @description Unprocessable Entity */
             422: {
                 headers: {
@@ -6112,6 +6666,15 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -6293,7 +6856,7 @@ export interface operations {
                 /** @description Label selector key=value (repeatable, all must match). */
                 label?: string[];
                 /** @description Sort field; prefix with '-' for descending. */
-                sort?: "name" | "created" | "updated";
+                sort?: "name" | "-name" | "created" | "-created" | "updated" | "-updated";
                 /** @description Max items to return (page size). */
                 limit?: number;
                 /** @description Items to skip before the page. */
@@ -6383,6 +6946,15 @@ export interface operations {
                     "application/json": components["schemas"]["OpenAIError"];
                 };
             };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
             /** @description Unprocessable Entity */
             422: {
                 headers: {
@@ -6439,6 +7011,15 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -6670,7 +7251,7 @@ export interface operations {
                 /** @description Label selector key=value (repeatable, all must match). */
                 label?: string[];
                 /** @description Sort field; prefix with '-' for descending. */
-                sort?: "name" | "created" | "updated";
+                sort?: "name" | "-name" | "created" | "-created" | "updated" | "-updated";
                 /** @description Max items to return (page size). */
                 limit?: number;
                 /** @description Items to skip before the page. */
@@ -6760,6 +7341,15 @@ export interface operations {
                     "application/json": components["schemas"]["OpenAIError"];
                 };
             };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
             /** @description Unprocessable Entity */
             422: {
                 headers: {
@@ -6816,6 +7406,15 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -7057,7 +7656,7 @@ export interface operations {
                 /** @description Label selector key=value (repeatable, all must match). */
                 label?: string[];
                 /** @description Sort field; prefix with '-' for descending. */
-                sort?: "name" | "created" | "updated";
+                sort?: "name" | "-name" | "created" | "-created" | "updated" | "-updated";
                 /** @description Max items to return (page size). */
                 limit?: number;
                 /** @description Items to skip before the page. */
@@ -7147,6 +7746,15 @@ export interface operations {
                     "application/json": components["schemas"]["OpenAIError"];
                 };
             };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
             /** @description Unprocessable Entity */
             422: {
                 headers: {
@@ -7210,6 +7818,15 @@ export interface operations {
                     "application/json": components["schemas"]["OpenAIError"];
                 };
             };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
             /** @description Not Found */
             404: {
                 headers: {
@@ -7257,6 +7874,83 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    rotate_relay_key: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description RelayKey id (UUIDv7). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["rotateRelayKeyResponseBody"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
             };
             /** @description Unauthorized */
             401: {
@@ -7391,6 +8085,15 @@ export interface operations {
                     "application/json": components["schemas"]["OpenAIError"];
                 };
             };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
             /** @description Internal Server Error */
             500: {
                 headers: {
@@ -7422,6 +8125,202 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    get_settings_auth_oidc: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthOIDCEnvelope"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    update_settings_auth_oidc: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AuthOIDC"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthOIDCEnvelope"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    "get_settings_catalog-source": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogSourceEnvelope"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    "update_settings_catalog-source": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CatalogSource"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogSourceEnvelope"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
