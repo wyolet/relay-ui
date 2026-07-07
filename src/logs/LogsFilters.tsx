@@ -1,11 +1,6 @@
 import { Check, ChevronDown, ListFilter, Search } from "lucide-react";
 import { useState } from "react";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { buttonVariants } from "@/components/ui/button";
 import {
 	fieldFocusWithinClassName,
 	fieldFrameClassName,
@@ -17,6 +12,7 @@ import {
 } from "@/components/ui/popover";
 import type { FilterOption } from "@/filters/types";
 import { cn } from "@/lib/utils";
+import { FilterDropdown } from "@/shared/FilterDropdown";
 import { Chip } from "@/shared/Chip";
 import { OptionRow } from "@/shared/OptionRow";
 import { SearchBox } from "@/shared/SearchBox";
@@ -30,8 +26,12 @@ import {
 } from "./logFilterConfig";
 
 /** Shared trigger style for every filter control so they line up identically. */
-const TRIGGER =
-	"inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-card px-2.5 text-xs text-foreground transition-colors hover:bg-muted data-[popup-open]:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+// Toolbar trigger chrome = the Button outline recipe, so filter controls and
+// buttons can never drift apart again.
+const TRIGGER = cn(
+	buttonVariants({ variant: "outline" }),
+	"data-[popup-open]:bg-muted",
+);
 
 export interface LogsFilterValues {
 	q: string;
@@ -153,7 +153,8 @@ export function LogsFilters({
 					/>
 				</div>
 
-				<FilterSelect
+				<FilterDropdown
+					align="start"
 					label="Window"
 					value={values.since}
 					options={WINDOW_OPTIONS}
@@ -181,7 +182,8 @@ export function LogsFilters({
 
 			{open && (
 				<div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-card p-2.5">
-					<FilterSelect
+					<FilterDropdown
+						align="start"
 						label="Status"
 						value={values.status_class}
 						options={STATUS_OPTIONS}
@@ -226,52 +228,6 @@ function CountBadge({ n }: { n: number }) {
 		<span className="inline-flex min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-medium text-primary-foreground tabular-nums">
 			{n}
 		</span>
-	);
-}
-
-/** Single-select dropdown sharing the uniform TRIGGER style. */
-function FilterSelect<T extends string>({
-	label,
-	value,
-	options,
-	onChange,
-}: {
-	label: string;
-	value: T;
-	options: readonly { value: T; label: string }[];
-	onChange: (value: T) => void;
-}) {
-	const current = options.find((o) => o.value === value);
-	return (
-		<DropdownMenu>
-			<DropdownMenuTrigger className={TRIGGER}>
-				<span className="text-muted-foreground">{label}:</span>
-				<span>{current?.label ?? value}</span>
-				<ChevronDown
-					className="size-3.5 text-muted-foreground"
-					aria-hidden="true"
-				/>
-			</DropdownMenuTrigger>
-			<DropdownMenuContent align="start" className="min-w-36">
-				{options.map((o) => (
-					<DropdownMenuItem
-						key={o.value}
-						onClick={() => onChange(o.value)}
-						className={
-							o.value === value ? "bg-accent text-accent-foreground" : ""
-						}
-					>
-						<Check
-							className={cn(
-								"size-3.5",
-								o.value === value ? "opacity-100" : "opacity-0",
-							)}
-						/>
-						{o.label}
-					</DropdownMenuItem>
-				))}
-			</DropdownMenuContent>
-		</DropdownMenu>
 	);
 }
 

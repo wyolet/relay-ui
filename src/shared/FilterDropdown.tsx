@@ -36,11 +36,11 @@ export function FilterDropdown<T extends string>({
 	const current = options.find((o) => o.value === value);
 	return (
 		<DropdownMenu>
-			{/* Trigger wears the Button outline chrome so toolbar filters sit
-			    pixel-identical to their button neighbors (same h-8 lg rung). */}
+			{/* Trigger wears the compact Button outline chrome (default h-7) so
+			    toolbar filters read as quiet controls beside lg action buttons. */}
 			<DropdownMenuTrigger
 				className={cn(
-					buttonVariants({ variant: "outline", size: "lg" }),
+					buttonVariants({ variant: "outline" }),
 					active && "border-field-accent/40 bg-input-wash",
 					className,
 				)}
