@@ -61,6 +61,25 @@ export function hostKeyHealthQueryOptions(id: string) {
 	});
 }
 
+/**
+ * Host-keys gate which hosts a policy can reach, so a mutation dirties the
+ * reachability graph (host-bindings + picker catalog) and the server-side
+ * policy/host joins built from it.
+ */
+function invalidateHostKeyDependents(
+	queryClient: ReturnType<typeof useQueryClient>,
+): void {
+	for (const key of [
+		["host-keys"],
+		["host-bindings"],
+		["catalog"],
+		["policies"],
+		["hosts"],
+	]) {
+		void queryClient.invalidateQueries({ queryKey: key });
+	}
+}
+
 export function useHostKeys() {
 	return useSuspenseQuery(hostKeysListQueryOptions);
 }
@@ -77,7 +96,7 @@ export function useCreateHostKey() {
 			return data;
 		},
 		onSuccess: () => {
-			void queryClient.invalidateQueries({ queryKey: ["host-keys"] });
+			invalidateHostKeyDependents(queryClient);
 		},
 	});
 }
@@ -101,7 +120,7 @@ export function useUpdateHostKey() {
 			return data;
 		},
 		onSuccess: () => {
-			void queryClient.invalidateQueries({ queryKey: ["host-keys"] });
+			invalidateHostKeyDependents(queryClient);
 		},
 	});
 }
@@ -117,7 +136,7 @@ export function useDeleteHostKey() {
 			);
 		},
 		onSuccess: () => {
-			void queryClient.invalidateQueries({ queryKey: ["host-keys"] });
+			invalidateHostKeyDependents(queryClient);
 		},
 	});
 }

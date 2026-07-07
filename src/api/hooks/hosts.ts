@@ -60,6 +60,25 @@ export function hostModelsQueryOptions(ref: string) {
 	});
 }
 
+/**
+ * A host's enabled state feeds the picker catalog, the binding graph, and the
+ * server-side joins resolving which hosts each policy reaches and each model is
+ * served on.
+ */
+function invalidateHostDependents(
+	queryClient: ReturnType<typeof useQueryClient>,
+): void {
+	for (const key of [
+		["hosts"],
+		["catalog"],
+		["host-bindings"],
+		["policies"],
+		["models"],
+	]) {
+		void queryClient.invalidateQueries({ queryKey: key });
+	}
+}
+
 export function useHosts() {
 	return useSuspenseQuery(hostsListQueryOptions);
 }
@@ -86,7 +105,7 @@ export function useUpdateHost() {
 			);
 		},
 		onSuccess: () => {
-			void queryClient.invalidateQueries({ queryKey: ["hosts"] });
+			invalidateHostDependents(queryClient);
 		},
 	});
 }
@@ -102,7 +121,7 @@ export function useDeleteHost() {
 			);
 		},
 		onSuccess: () => {
-			void queryClient.invalidateQueries({ queryKey: ["hosts"] });
+			invalidateHostDependents(queryClient);
 		},
 	});
 }

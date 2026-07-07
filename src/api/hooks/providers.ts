@@ -34,6 +34,17 @@ export function providerDetailQueryOptions(ref: string) {
 	});
 }
 
+/**
+ * Providers feed the picker catalog graph.
+ */
+function invalidateProviderDependents(
+	queryClient: ReturnType<typeof useQueryClient>,
+): void {
+	for (const key of [["providers"], ["catalog"]]) {
+		void queryClient.invalidateQueries({ queryKey: key });
+	}
+}
+
 export function useProviders() {
 	return useSuspenseQuery(providersListQueryOptions);
 }
@@ -60,7 +71,7 @@ export function useUpdateProvider() {
 			);
 		},
 		onSuccess: () => {
-			void queryClient.invalidateQueries({ queryKey: ["providers"] });
+			invalidateProviderDependents(queryClient);
 		},
 	});
 }
@@ -76,7 +87,7 @@ export function useDeleteProvider() {
 			);
 		},
 		onSuccess: () => {
-			void queryClient.invalidateQueries({ queryKey: ["providers"] });
+			invalidateProviderDependents(queryClient);
 		},
 	});
 }

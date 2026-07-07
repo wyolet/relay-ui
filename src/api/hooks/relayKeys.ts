@@ -39,6 +39,18 @@ export function relayKeyDetailQueryOptions(ref: string) {
 	});
 }
 
+/**
+ * A relay key references a policy; a mutation dirties that policy's
+ * "references" view (which keys use it).
+ */
+function invalidateRelayKeyDependents(
+	queryClient: ReturnType<typeof useQueryClient>,
+): void {
+	for (const key of [["relay-keys"], ["policies", "references"]]) {
+		void queryClient.invalidateQueries({ queryKey: key });
+	}
+}
+
 export function useRelayKeys() {
 	return useSuspenseQuery(relayKeysListQueryOptions);
 }
@@ -57,7 +69,7 @@ export function useCreateRelayKey() {
 			return data;
 		},
 		onSuccess: () => {
-			void queryClient.invalidateQueries({ queryKey: ["relay-keys"] });
+			invalidateRelayKeyDependents(queryClient);
 		},
 	});
 }
@@ -81,7 +93,7 @@ export function useUpdateRelayKey() {
 			return data;
 		},
 		onSuccess: () => {
-			void queryClient.invalidateQueries({ queryKey: ["relay-keys"] });
+			invalidateRelayKeyDependents(queryClient);
 		},
 	});
 }
@@ -97,7 +109,7 @@ export function useDeleteRelayKey() {
 			);
 		},
 		onSuccess: () => {
-			void queryClient.invalidateQueries({ queryKey: ["relay-keys"] });
+			invalidateRelayKeyDependents(queryClient);
 		},
 	});
 }

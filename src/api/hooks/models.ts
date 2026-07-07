@@ -116,6 +116,22 @@ export function modelPoliciesQueryOptions(ref: string) {
 
 // --- Hooks ---
 
+/**
+ * A model's enabled/deprecated state feeds the picker catalog and the
+ * server-side joins that resolve which models each policy grants and each host
+ * serves. Invalidating a bare domain prefix (e.g. `["policies"]`) marks that
+ * domain's list *and* every `["policies", ref, …]` join beneath it stale — the
+ * broad-prefix convention used for cross-domain invalidation throughout
+ * `src/api/hooks`.
+ */
+function invalidateModelDependents(
+	queryClient: ReturnType<typeof useQueryClient>,
+): void {
+	for (const key of [["models"], ["catalog"], ["policies"], ["hosts"]]) {
+		void queryClient.invalidateQueries({ queryKey: key });
+	}
+}
+
 export function useModels() {
 	return useSuspenseQuery(modelsListQueryOptions);
 }
@@ -142,7 +158,7 @@ export function useUpdateModel() {
 			);
 		},
 		onSuccess: () => {
-			void queryClient.invalidateQueries({ queryKey: ["models"] });
+			invalidateModelDependents(queryClient);
 		},
 	});
 }
@@ -158,7 +174,7 @@ export function useDeleteModel() {
 			);
 		},
 		onSuccess: () => {
-			void queryClient.invalidateQueries({ queryKey: ["models"] });
+			invalidateModelDependents(queryClient);
 		},
 	});
 }

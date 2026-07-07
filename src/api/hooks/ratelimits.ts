@@ -44,6 +44,17 @@ export function rateLimitDetailQueryOptions(name: string) {
 
 // --- Hooks ---
 
+/**
+ * A rate-limit's rules surface in the server-side policy rate-limits join.
+ */
+function invalidateRateLimitDependents(
+	queryClient: ReturnType<typeof useQueryClient>,
+): void {
+	for (const key of [["ratelimits"], ["policies"]]) {
+		void queryClient.invalidateQueries({ queryKey: key });
+	}
+}
+
 export function useRateLimits() {
 	return useSuspenseQuery(rateLimitsListQueryOptions);
 }
@@ -84,7 +95,7 @@ export function useCreateRateLimit() {
 			return data;
 		},
 		onSuccess: () => {
-			void queryClient.invalidateQueries({ queryKey: ["ratelimits"] });
+			invalidateRateLimitDependents(queryClient);
 		},
 	});
 }
@@ -107,7 +118,7 @@ export function useUpdateRateLimit() {
 			);
 		},
 		onSuccess: () => {
-			void queryClient.invalidateQueries({ queryKey: ["ratelimits"] });
+			invalidateRateLimitDependents(queryClient);
 		},
 	});
 }
@@ -123,7 +134,7 @@ export function useDeleteRateLimit() {
 			);
 		},
 		onSuccess: () => {
-			void queryClient.invalidateQueries({ queryKey: ["ratelimits"] });
+			invalidateRateLimitDependents(queryClient);
 		},
 	});
 }
