@@ -1,4 +1,12 @@
-RELAY_URL ?= http://localhost:8080
+# Load RELAY_URL (and any other overrides) from a gitignored .env if present,
+# so you can point `make gen` at a remote control plane without exporting vars
+# every time, e.g.  RELAY_URL=https://relay-control-api.example.dev/api
+-include .env
+export
+
+# The control API — and its /openapi.json — mount under /api on the control
+# plane (:8081 locally; :8080 is the data plane and serves the wrong spec).
+RELAY_URL ?= http://localhost:8081/api
 
 .DEFAULT_GOAL := help
 
@@ -8,7 +16,7 @@ help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*##' $(MAKEFILE_LIST) | \
 		awk 'BEGIN {FS = ":.*##"}; {printf "  %-12s %s\n", $$1, $$2}'
 
-gen: ## Regenerate src/api/types.gen.ts from RELAY_URL (default: http://localhost:8080)
+gen: ## Regenerate src/api/types.gen.ts from RELAY_URL (default: http://localhost:8081/api)
 	@tmp=$$(mktemp /tmp/openapi-XXXXXX.json); \
 	echo "Fetching OpenAPI spec from $(RELAY_URL)/openapi.json …"; \
 	curl -sk -H 'Cache-Control: no-cache' "$(RELAY_URL)/openapi.json?nocache=$$(date +%s)" -o "$$tmp"; \
