@@ -1,5 +1,4 @@
 import { Gauge, Plus, Undo2, X } from "lucide-react";
-import { useState } from "react";
 import type { RateLimit } from "@/api/types/ratelimit";
 import { Input } from "@/components/ui/input";
 import {
@@ -19,6 +18,7 @@ import {
 	METER_VALUES,
 	type RateLimitMeter,
 	type RateLimitStrategy,
+	type RuleDraft,
 	STRATEGY_VALUES,
 	useRateLimitForm,
 } from "@/rate-limits/useRateLimitForm";
@@ -194,23 +194,11 @@ export function RateLimitForm({
 }
 
 interface RuleRowProps {
-	rule: {
-		amount: string;
-		meter: RateLimitMeter;
-		strategy: RateLimitStrategy;
-		window: string;
-	};
+	rule: RuleDraft;
 	canRemove: boolean;
 	amountError?: string;
 	windowError?: string;
-	onChange: (
-		patch: Partial<{
-			amount: string;
-			meter: RateLimitMeter;
-			strategy: RateLimitStrategy;
-			window: string;
-		}>,
-	) => void;
+	onChange: (patch: Partial<RuleDraft>) => void;
 	onRemove: () => void;
 }
 
@@ -226,7 +214,7 @@ function RuleRow({
 	const matchedPreset = WINDOW_PRESETS.find(
 		(p) => String(p.value) === rule.window,
 	);
-	const [customWindow, setCustomWindow] = useState<boolean>(!matchedPreset);
+	const customWindow = rule.isCustomWindow;
 	return (
 		<div
 			className={[
@@ -256,10 +244,7 @@ function RuleRow({
 						customWindow ? (
 							<button
 								type="button"
-								onClick={() => {
-									setCustomWindow(false);
-									onChange({ window: "60" });
-								}}
+								onClick={() => onChange({ window: "60", isCustomWindow: false })}
 								className="inline-flex items-center gap-0.5 text-[10px] font-medium text-muted-foreground hover:text-foreground"
 							>
 								<Undo2 className="w-3 h-3" />
@@ -295,10 +280,10 @@ function RuleRow({
 							onValueChange={(v) => {
 								if (v === null) return;
 								if (v === "custom") {
-									setCustomWindow(true);
+									onChange({ isCustomWindow: true });
 									return;
 								}
-								onChange({ window: v });
+								onChange({ window: v, isCustomWindow: false });
 							}}
 						>
 							<SelectTrigger className="w-full">
