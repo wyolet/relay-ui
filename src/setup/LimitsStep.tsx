@@ -6,6 +6,7 @@ import {
 	InputGroupInput,
 } from "@/components/ui/input-group";
 import { Switch } from "@/components/ui/switch";
+import { Segmented } from "@/shared/Segmented";
 import { wizardGhost, wizardPrimary } from "./ui";
 import type {
 	EasyRateLimit,
@@ -35,25 +36,11 @@ function PerSegmented({
 	onChange: (value: RateLimitPer) => void;
 }) {
 	return (
-		<div className="inline-flex rounded-md bg-muted/60 p-0.5">
-			{PER_OPTIONS.map((opt) => {
-				const active = opt.value === value;
-				return (
-					<button
-						key={opt.value}
-						type="button"
-						onClick={() => onChange(opt.value)}
-						className={`rounded-[5px] px-2 py-0.5 text-[11px] font-medium transition-all ${
-							active
-								? "bg-card text-foreground shadow-sm"
-								: "text-muted-foreground hover:text-foreground"
-						}`}
-					>
-						{opt.label}
-					</button>
-				);
-			})}
-		</div>
+		<Segmented
+			value={value}
+			onChange={onChange}
+			options={PER_OPTIONS}
+		/>
 	);
 }
 

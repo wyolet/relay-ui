@@ -12,6 +12,7 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { Segmented } from "@/shared/Segmented";
 import { type Theme, useTheme } from "@/stores/theme";
 
 const THEME_CYCLE: Theme[] = ["light", "dark", "system"];
@@ -24,30 +25,19 @@ const THEME_ICON: Record<Theme, ComponentType<{ className?: string }>> = {
 function ThemeSegment() {
 	const { theme, setTheme } = useTheme();
 	return (
-		<div className="flex items-center gap-0.5 rounded-md bg-muted p-0.5">
-			{THEME_CYCLE.map((t) => {
+		<Segmented
+			stretch
+			value={theme}
+			onChange={setTheme}
+			options={THEME_CYCLE.map((t) => {
 				const Icon = THEME_ICON[t];
-				const selected = theme === t;
-				return (
-					<button
-						key={t}
-						type="button"
-						onClick={() => setTheme(t)}
-						aria-pressed={selected}
-						aria-label={`Theme: ${t}`}
-						className={cn(
-							"flex h-6 flex-1 items-center justify-center rounded-[5px] transition-colors",
-							"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-							selected
-								? "bg-background text-foreground shadow-sm"
-								: "text-muted-foreground hover:text-foreground",
-						)}
-					>
-						<Icon className="size-3.5" />
-					</button>
-				);
+				return {
+					value: t,
+					ariaLabel: `Theme: ${t}`,
+					label: <Icon className="size-3.5" />,
+				};
 			})}
-		</div>
+		/>
 	);
 }
 
