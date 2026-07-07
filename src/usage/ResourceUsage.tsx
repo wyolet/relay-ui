@@ -51,7 +51,7 @@ export function ResourceUsage({
 							if (next) setInterval(next);
 						}}
 					>
-						<SelectTrigger className="h-7 w-[88px] text-xs">
+						<SelectTrigger size="sm" className="w-[88px] text-xs">
 							<SelectValue />
 						</SelectTrigger>
 						<SelectContent>

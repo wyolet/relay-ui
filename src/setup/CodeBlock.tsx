@@ -121,8 +121,7 @@ export function CodeBlock({ template, model, message }: CodeBlockProps) {
 			<Button
 				type="button"
 				variant="outline"
-				size="sm"
-				className="absolute right-2 top-2 h-7"
+				className="absolute right-2 top-2"
 				onClick={() => void copy()}
 			>
 				{copied ? "Copied" : "Copy"}
