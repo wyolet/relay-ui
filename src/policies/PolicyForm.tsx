@@ -64,7 +64,8 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 
 	const graph = useDiagnosticGraph();
 	const draftDiagnostics = useMemo(
-		() => analyzePolicy(policyFromFormValues(policy, values), graph),
+		() =>
+			graph ? analyzePolicy(policyFromFormValues(policy, values), graph) : [],
 		[policy, values, graph],
 	);
 

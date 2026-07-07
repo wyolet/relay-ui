@@ -6,7 +6,7 @@ import { DashboardKpis } from "@/dashboard/DashboardKpis";
 import { ErrorHotspots } from "@/dashboard/ErrorHotspots";
 import { OpsAttention } from "@/dashboard/OpsAttention";
 import { ReleaseReadiness } from "@/dashboard/ReleaseReadiness";
-import { useCatalogCounts } from "@/dashboard/useCatalogCounts";
+import { useCatalogEmpty } from "@/dashboard/useCatalogEmpty";
 import { PageLoader } from "@/shared/Spinner";
 import { useSetupStore } from "@/stores/setup";
 import { StackedUsageChart } from "@/usage/StackedUsageChart";
@@ -114,7 +114,7 @@ function DashboardTraffic() {
 }
 
 function DashboardInner() {
-	const { catalogEmpty } = useCatalogCounts();
+	const catalogEmpty = useCatalogEmpty();
 
 	return (
 		<div className="flex flex-col gap-6">
