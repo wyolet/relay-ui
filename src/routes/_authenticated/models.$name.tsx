@@ -43,23 +43,23 @@ const searchSchema = z.object({
 
 export const Route = createFileRoute("/_authenticated/models/$name")({
 	validateSearch: searchSchema,
-	loader: ({ context, params }) =>
-		Promise.all([
-			context.queryClient.ensureQueryData(modelDetailQueryOptions(params.name)),
-			context.queryClient.ensureQueryData(modelHostsQueryOptions(params.name)),
-			context.queryClient.ensureQueryData(
-				modelPoliciesQueryOptions(params.name),
-			),
-			context.queryClient.ensureQueryData(modelsListQueryOptions),
-			context.queryClient.ensureQueryData(hostsListQueryOptions),
-			context.queryClient.ensureQueryData(hostKeysListQueryOptions),
-			context.queryClient.ensureQueryData(policiesListQueryOptions),
-			context.queryClient.ensureQueryData(rateLimitsListQueryOptions),
-			context.queryClient.ensureQueryData(relayKeysListQueryOptions),
-			context.queryClient.ensureQueryData(providersListQueryOptions),
-			context.queryClient.ensureQueryData(bindingsListQueryOptions),
-			context.queryClient.ensureQueryData(governanceQueryOptions("model")),
-		]),
+	loader: ({ context, params }) => {
+		const { queryClient } = context;
+		void queryClient.prefetchQuery(modelsListQueryOptions);
+		void queryClient.prefetchQuery(hostKeysListQueryOptions);
+		void queryClient.prefetchQuery(policiesListQueryOptions);
+		void queryClient.prefetchQuery(rateLimitsListQueryOptions);
+		void queryClient.prefetchQuery(relayKeysListQueryOptions);
+		void queryClient.prefetchQuery(bindingsListQueryOptions);
+		return Promise.all([
+			queryClient.ensureQueryData(modelDetailQueryOptions(params.name)),
+			queryClient.ensureQueryData(modelHostsQueryOptions(params.name)),
+			queryClient.ensureQueryData(modelPoliciesQueryOptions(params.name)),
+			queryClient.ensureQueryData(providersListQueryOptions),
+			queryClient.ensureQueryData(hostsListQueryOptions),
+			queryClient.ensureQueryData(governanceQueryOptions("model")),
+		]);
+	},
 	component: ModelDetailPage,
 });
 

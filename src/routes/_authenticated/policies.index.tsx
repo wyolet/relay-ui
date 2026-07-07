@@ -96,18 +96,20 @@ const searchSchema = z.object({
 
 export const Route = createFileRoute("/_authenticated/policies/")({
 	validateSearch: searchSchema,
-	loader: ({ context }) =>
-		Promise.all([
-			context.queryClient.ensureQueryData(policiesListQueryOptions),
-			context.queryClient.ensureQueryData(rateLimitsListQueryOptions),
-			context.queryClient.ensureQueryData(hostKeysListQueryOptions),
-			context.queryClient.ensureQueryData(hostsListQueryOptions),
-			context.queryClient.ensureQueryData(bindingsListQueryOptions),
-			context.queryClient.ensureQueryData(modelsListQueryOptions),
-			context.queryClient.ensureQueryData(relayKeysListQueryOptions),
-			context.queryClient.ensureQueryData(providersListQueryOptions),
-			context.queryClient.ensureQueryData(governanceQueryOptions("policy")),
-		]),
+	loader: ({ context }) => {
+		const { queryClient } = context;
+		void queryClient.prefetchQuery(hostKeysListQueryOptions);
+		void queryClient.prefetchQuery(hostsListQueryOptions);
+		void queryClient.prefetchQuery(bindingsListQueryOptions);
+		void queryClient.prefetchQuery(modelsListQueryOptions);
+		void queryClient.prefetchQuery(relayKeysListQueryOptions);
+		void queryClient.prefetchQuery(providersListQueryOptions);
+		return Promise.all([
+			queryClient.ensureQueryData(policiesListQueryOptions),
+			queryClient.ensureQueryData(rateLimitsListQueryOptions),
+			queryClient.ensureQueryData(governanceQueryOptions("policy")),
+		]);
+	},
 	component: PoliciesPage,
 });
 

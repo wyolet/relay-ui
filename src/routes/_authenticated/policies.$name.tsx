@@ -37,27 +37,25 @@ const searchSchema = z.object({
 
 export const Route = createFileRoute("/_authenticated/policies/$name")({
 	validateSearch: searchSchema,
-	loader: ({ context, params }) =>
-		Promise.all([
-			context.queryClient.ensureQueryData(
-				policyDetailQueryOptions(params.name),
-			),
-			context.queryClient.ensureQueryData(
-				policyModelsQueryOptions(params.name),
-			),
-			context.queryClient.ensureQueryData(policyHostsQueryOptions(params.name)),
-			context.queryClient.ensureQueryData(
-				policyRateLimitsQueryOptions(params.name),
-			),
-			context.queryClient.ensureQueryData(hostKeysListQueryOptions),
-			context.queryClient.ensureQueryData(hostsListQueryOptions),
-			context.queryClient.ensureQueryData(bindingsListQueryOptions),
-			context.queryClient.ensureQueryData(providersListQueryOptions),
-			context.queryClient.ensureQueryData(modelsListQueryOptions),
-			context.queryClient.ensureQueryData(rateLimitsListQueryOptions),
-			context.queryClient.ensureQueryData(relayKeysListQueryOptions),
-			context.queryClient.ensureQueryData(governanceQueryOptions("policy")),
-		]),
+	loader: ({ context, params }) => {
+		const { queryClient } = context;
+		// Tab data streams in behind per-tab Suspense boundaries; only the
+		// detail doc + governance gate the header's first paint.
+		void queryClient.prefetchQuery(policyModelsQueryOptions(params.name));
+		void queryClient.prefetchQuery(policyHostsQueryOptions(params.name));
+		void queryClient.prefetchQuery(policyRateLimitsQueryOptions(params.name));
+		void queryClient.prefetchQuery(hostKeysListQueryOptions);
+		void queryClient.prefetchQuery(hostsListQueryOptions);
+		void queryClient.prefetchQuery(bindingsListQueryOptions);
+		void queryClient.prefetchQuery(providersListQueryOptions);
+		void queryClient.prefetchQuery(modelsListQueryOptions);
+		void queryClient.prefetchQuery(rateLimitsListQueryOptions);
+		void queryClient.prefetchQuery(relayKeysListQueryOptions);
+		return Promise.all([
+			queryClient.ensureQueryData(policyDetailQueryOptions(params.name)),
+			queryClient.ensureQueryData(governanceQueryOptions("policy")),
+		]);
+	},
 	component: PolicyDetailPage,
 });
 

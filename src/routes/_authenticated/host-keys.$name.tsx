@@ -10,6 +10,7 @@ import {
 	Unlink2,
 } from "lucide-react";
 import { Suspense } from "react";
+import { bindingsListQueryOptions } from "@/api/hooks/bindings";
 import {
 	hostKeyDetailQueryOptions,
 	hostKeysListQueryOptions,
@@ -32,19 +33,20 @@ import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { PageLoader } from "@/shared/Spinner";
 
 export const Route = createFileRoute("/_authenticated/host-keys/$name")({
-	loader: ({ context, params }) =>
-		Promise.all([
-			context.queryClient.ensureQueryData(
-				hostKeyDetailQueryOptions(params.name),
-			),
-			context.queryClient.ensureQueryData(hostKeysListQueryOptions),
-			context.queryClient.ensureQueryData(hostsListQueryOptions),
-			context.queryClient.ensureQueryData(policiesListQueryOptions),
-			context.queryClient.ensureQueryData(modelsListQueryOptions),
-			context.queryClient.ensureQueryData(rateLimitsListQueryOptions),
-			context.queryClient.ensureQueryData(relayKeysListQueryOptions),
-			context.queryClient.ensureQueryData(providersListQueryOptions),
-		]),
+	loader: ({ context, params }) => {
+		const { queryClient } = context;
+		void queryClient.prefetchQuery(hostKeysListQueryOptions);
+		void queryClient.prefetchQuery(modelsListQueryOptions);
+		void queryClient.prefetchQuery(rateLimitsListQueryOptions);
+		void queryClient.prefetchQuery(providersListQueryOptions);
+		void queryClient.prefetchQuery(bindingsListQueryOptions);
+		return Promise.all([
+			queryClient.ensureQueryData(hostKeyDetailQueryOptions(params.name)),
+			queryClient.ensureQueryData(hostsListQueryOptions),
+			queryClient.ensureQueryData(policiesListQueryOptions),
+			queryClient.ensureQueryData(relayKeysListQueryOptions),
+		]);
+	},
 	component: HostKeyDetailPage,
 });
 

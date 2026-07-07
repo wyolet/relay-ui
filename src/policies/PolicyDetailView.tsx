@@ -10,6 +10,7 @@ import {
 	ScrollText,
 	Trash2,
 } from "lucide-react";
+import { Suspense } from "react";
 import { useGovernance } from "@/api/hooks/governance";
 import type { Policy } from "@/api/types/policy";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -21,6 +22,7 @@ import { PolicyKeysTab } from "@/policies/PolicyKeysTab";
 import { PolicyModelsTab } from "@/policies/PolicyModelsTab";
 import { PolicyOverviewTab } from "@/policies/PolicyOverviewTab";
 import { PolicyRateLimitsTab } from "@/policies/PolicyRateLimitsTab";
+import { PageLoader } from "@/shared/Spinner";
 import { ResourceUsage } from "@/usage/ResourceUsage";
 
 export type PolicyDetailTab =
@@ -90,19 +92,27 @@ export function PolicyDetailView({
 				</TabsList>
 
 				<TabsContent value="overview">
-					<div className="flex flex-col gap-6 pt-2">
-						<PolicyOverviewTab policy={policy} />
-						<PolicyAttachedRelayKeys policy={policy} />
-					</div>
+					<Suspense fallback={<PageLoader className="min-h-[40vh]" />}>
+						<div className="flex flex-col gap-6 pt-2">
+							<PolicyOverviewTab policy={policy} />
+							<PolicyAttachedRelayKeys policy={policy} />
+						</div>
+					</Suspense>
 				</TabsContent>
 				<TabsContent value="models">
-					<PolicyModelsTab policy={policy} />
+					<Suspense fallback={<PageLoader className="min-h-[40vh]" />}>
+						<PolicyModelsTab policy={policy} />
+					</Suspense>
 				</TabsContent>
 				<TabsContent value="keys">
-					<PolicyKeysTab policy={policy} />
+					<Suspense fallback={<PageLoader className="min-h-[40vh]" />}>
+						<PolicyKeysTab policy={policy} />
+					</Suspense>
 				</TabsContent>
 				<TabsContent value="rate-limits">
-					<PolicyRateLimitsTab policy={policy} />
+					<Suspense fallback={<PageLoader className="min-h-[40vh]" />}>
+						<PolicyRateLimitsTab policy={policy} />
+					</Suspense>
 				</TabsContent>
 				<TabsContent value="usage">
 					{policy.metadata.id ? (
