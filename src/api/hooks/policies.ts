@@ -9,6 +9,7 @@ import {
 	useSuspenseQuery,
 } from "@tanstack/react-query";
 import { apiClient } from "@/api/client";
+import { ApiError } from "@/api/types/errors";
 import type {
 	Policy,
 	PolicyCreate,
@@ -17,6 +18,8 @@ import type {
 } from "@/api/types/policy";
 import type { components } from "@/api/types.gen";
 import { unwrap } from "@/api/unwrap";
+import { displayLabel } from "@/lib/displayLabel";
+import { toast } from "@/shared/Toast";
 
 export const policiesListQueryOptions = queryOptions({
 	queryKey: ["policies"] as const,
@@ -219,4 +222,57 @@ export function policyReferencesQueryOptions(id: string) {
 
 export function usePolicyReferences(id: string | undefined) {
 	return useSuspenseQuery(policyReferencesQueryOptions(id ?? ""));
+}
+
+interface DetachHostKeyArgs {
+	policyId: string;
+	hostKeyId: string;
+	policies: Policy[];
+}
+
+/**
+ * Removes a host key from a user policy's `hostKeyIds` pool. The detachment
+ * surfaces on both ends — `policy.spec.hostKeyIds` and `hostKey.policies` —
+ * so we invalidate both query keys on success. Lives in the api layer (below
+ * every domain) so host-keys can call it without a reverse policies dependency.
+ */
+export function useDetachHostKeyFromPolicy() {
+	const updatePolicy = useUpdatePolicy();
+	const queryClient = useQueryClient();
+
+	async function detach({ policyId, hostKeyId, policies }: DetachHostKeyArgs) {
+		const policy = policies.find((p) => p.metadata.id === policyId);
+		if (!policy) {
+			toast("error", "Policy not found — refresh and retry.");
+			return;
+		}
+		const nextHostKeyIds = (policy.spec.hostKeyIds ?? []).filter(
+			(id) => id !== hostKeyId,
+		);
+		try {
+			await updatePolicy.mutateAsync({
+				id: policyId,
+				body: {
+					metadata: policy.metadata,
+					spec: {
+						...policy.spec,
+						hostKeyIds: nextHostKeyIds.length > 0 ? nextHostKeyIds : null,
+					},
+				},
+			});
+			// `hostKey.policies` is computed server-side; refetch host keys so the
+			// detached entry disappears from any list/detail view that reads it.
+			void queryClient.invalidateQueries({ queryKey: ["host-keys"] });
+			toast("success", `Detached from "${displayLabel(policy.metadata)}".`);
+		} catch (err) {
+			toast(
+				"error",
+				err instanceof ApiError
+					? err.body.message
+					: "Failed to detach from policy.",
+			);
+		}
+	}
+
+	return { detach, isPending: updatePolicy.isPending };
 }

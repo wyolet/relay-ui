@@ -1,13 +1,12 @@
 import { useMemo, useState } from "react";
 import { useDeleteHostKey, useHostKey } from "@/api/hooks/hostkeys";
 import { useHosts } from "@/api/hooks/hosts";
-import { usePolicies } from "@/api/hooks/policies";
+import { useDetachHostKeyFromPolicy, usePolicies } from "@/api/hooks/policies";
 import { useRelayKeys } from "@/api/hooks/relayKeys";
 import { ApiError } from "@/api/types/errors";
 import type { Host } from "@/api/types/host";
 import { useToggleHostKeyEnabled } from "@/host-keys/useToggleHostKeyEnabled";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
-import { useDetachHostKeyFromPolicy } from "@/policies/useDetachHostKeyFromPolicy";
 import { toast } from "@/shared/Toast";
 
 interface UseHostKeyDetailOptions {
