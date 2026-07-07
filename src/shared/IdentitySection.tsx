@@ -1,5 +1,6 @@
 import { Tag } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { FormSection } from "@/shared/FormSection";
 
 interface IdentitySectionProps {
@@ -55,12 +56,12 @@ export function IdentitySection({
 					</p>
 				</div>
 				<div>
-					<textarea
+					<Textarea
 						value={description}
 						onChange={(e) => onDescriptionChange(e.currentTarget.value)}
 						placeholder="Description (optional)…"
 						rows={3}
-						className="w-full min-w-0 rounded-md border border-input bg-input/20 px-3 py-2 text-sm outline-none transition-[color,box-shadow,background-color] placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 dark:bg-input/30"
+						aria-invalid={descriptionError ? true : undefined}
 					/>
 					{descriptionError && (
 						<p className="mt-1.5 text-[11px] text-destructive">

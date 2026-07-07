@@ -8,6 +8,7 @@ import {
 	X,
 } from "lucide-react";
 import type { HostKey } from "@/api/types/hostkey";
+import { Button } from "@/components/ui/button";
 import {
 	Popover,
 	PopoverContent,
@@ -20,6 +21,7 @@ import type {
 	PolicyHostRequirements as Requirements,
 } from "@/policies/usePolicyHostRequirements";
 import { AlertBanner } from "@/shared/AlertBanner";
+import { OptionRow } from "@/shared/OptionRow";
 
 interface Props {
 	requirements: Requirements;
@@ -243,14 +245,16 @@ function HostCard({ req, onToggle, required, dangling }: HostCardProps) {
 								<span className="truncate text-foreground">
 									{displayLabel(key.metadata)}
 								</span>
-								<button
+								<Button
 									type="button"
+									variant="ghost"
+									size="icon-sm"
 									onClick={() => onToggle(id, false)}
-									className="h-6 w-6 inline-flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted shrink-0"
+									className="text-muted-foreground"
 									aria-label={`Detach ${displayLabel(key.metadata)}`}
 								>
-									<X className="h-3.5 w-3.5" />
-								</button>
+									<X className="size-3.5" />
+								</Button>
 							</li>
 						);
 					})}
@@ -363,13 +367,12 @@ function AddKeyPopover({ available, onPick, disabled }: AddKeyPopoverProps) {
 				<ul className="flex flex-col">
 					{available.map((k) => (
 						<li key={k.metadata.id}>
-							<button
-								type="button"
+							<OptionRow
 								onClick={() => k.metadata.id && onPick(k.metadata.id)}
-								className="w-full text-left px-2 py-1.5 rounded text-xs hover:bg-muted text-foreground"
+								className="rounded px-2 py-1.5 text-xs text-foreground hover:bg-muted"
 							>
 								{displayLabel(k.metadata)}
-							</button>
+							</OptionRow>
 						</li>
 					))}
 				</ul>

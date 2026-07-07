@@ -5,10 +5,7 @@ import {
 	Gauge,
 	KeyRound,
 	LayoutGrid,
-	Pencil,
-	Power,
 	ScrollText,
-	Trash2,
 } from "lucide-react";
 import { Suspense } from "react";
 import { useGovernance } from "@/api/hooks/governance";
@@ -22,6 +19,7 @@ import { PolicyKeysTab } from "@/policies/PolicyKeysTab";
 import { PolicyModelsTab } from "@/policies/PolicyModelsTab";
 import { PolicyOverviewTab } from "@/policies/PolicyOverviewTab";
 import { PolicyRateLimitsTab } from "@/policies/PolicyRateLimitsTab";
+import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
 import { PageLoader } from "@/shared/Spinner";
 import { StatusBadge } from "@/shared/StatusBadge";
 import { ResourceUsage } from "@/usage/ResourceUsage";
@@ -199,40 +197,28 @@ function Header({
 					</p>
 				)}
 			</div>
-			<div className="flex items-center gap-2 shrink-0">
-				{canEdit && (
-					<button
-						type="button"
-						onClick={onToggleEnabled}
-						disabled={toggling}
-						className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium text-foreground border border-border hover:bg-muted disabled:opacity-50 transition-colors"
-					>
-						<Power className="w-3.5 h-3.5" />
-						{enabled ? "Disable" : "Enable"}
-					</button>
-				)}
-				{canEdit && (
-					<Link
-						to="/policies/$name/edit"
-						params={{ name }}
-						className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium text-foreground border border-border hover:bg-muted transition-colors"
-					>
-						<Pencil className="w-3.5 h-3.5" />
-						Edit
-					</Link>
-				)}
-				{canDelete && (
-					<button
-						type="button"
-						onClick={onDelete}
-						disabled={deleting}
-						className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium text-destructive border border-border hover:bg-destructive/10 disabled:opacity-50 transition-colors"
-					>
-						<Trash2 className="w-3.5 h-3.5" />
-						Delete
-					</button>
-				)}
-			</div>
+			<DetailHeaderActions
+				enabled={enabled}
+				onToggle={onToggleEnabled}
+				toggling={toggling}
+				showToggle={canEdit}
+				showDelete={canDelete}
+				onDelete={onDelete}
+				deleting={deleting}
+				editLink={
+					canEdit
+						? ({ className, content }) => (
+								<Link
+									to="/policies/$name/edit"
+									params={{ name }}
+									className={className}
+								>
+									{content}
+								</Link>
+							)
+						: undefined
+				}
+			/>
 		</div>
 	);
 }

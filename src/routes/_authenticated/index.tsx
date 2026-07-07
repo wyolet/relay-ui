@@ -2,6 +2,7 @@ import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { relayKeysListQueryOptions } from "@/api/hooks/relayKeys";
 import { resolveWindow, useStackedTimeline } from "@/api/hooks/usage";
+import { buttonVariants } from "@/components/ui/button";
 import { DashboardKpis } from "@/dashboard/DashboardKpis";
 import { ErrorHotspots } from "@/dashboard/ErrorHotspots";
 import { OpsAttention } from "@/dashboard/OpsAttention";
@@ -40,7 +41,7 @@ function WelcomePanel() {
 			</p>
 			<Link
 				to="/setup"
-				className="inline-flex items-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+				className={buttonVariants({ variant: "cta", size: "lg" })}
 			>
 				Get started →
 			</Link>

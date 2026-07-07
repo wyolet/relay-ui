@@ -312,13 +312,14 @@ function PayloadAffordance({
 		);
 	}
 	return (
-		<button
+		<Button
 			type="button"
+			variant="link"
 			onClick={onOpen}
-			className="inline-flex w-fit items-center gap-1 text-xs font-medium text-primary hover:underline"
+			className="h-auto w-fit px-0"
 		>
 			View transcript &amp; raw →
-		</button>
+		</Button>
 	);
 }
 

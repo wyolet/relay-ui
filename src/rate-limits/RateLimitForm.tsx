@@ -1,5 +1,6 @@
 import { Gauge, Plus, Undo2, X } from "lucide-react";
 import type { RateLimit } from "@/api/types/ratelimit";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
 	Select,
@@ -155,14 +156,16 @@ export function RateLimitForm({
 							/>
 						))}
 					</div>
-					<button
+					<Button
 						type="button"
+						variant="ghost"
+						size="lg"
 						onClick={addRule}
-						className="mt-2 inline-flex items-center gap-1 h-8 px-2.5 rounded-md text-xs font-medium text-foreground hover:bg-muted"
+						className="mt-2"
 					>
-						<Plus className="w-3.5 h-3.5" />
+						<Plus className="size-3.5" />
 						Add rule
-					</button>
+					</Button>
 					{rulesError && (
 						<p className="mt-1.5 text-[11px] text-destructive">{rulesError}</p>
 					)}
@@ -170,22 +173,14 @@ export function RateLimitForm({
 			</div>
 
 			<div className="sticky bottom-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-t border-border mt-6 -mx-6 px-6 py-3 flex items-center justify-end gap-2">
-				<button
-					type="button"
-					onClick={onCancel}
-					className="h-8 px-3 rounded-md text-xs font-medium text-foreground hover:bg-muted"
-				>
+				<Button type="button" variant="outline" size="lg" onClick={onCancel}>
 					Cancel
-				</button>
+				</Button>
 				<form.Subscribe selector={(s) => s.isSubmitting}>
 					{(isSubmitting) => (
-						<button
-							type="submit"
-							disabled={isSubmitting}
-							className="h-8 px-3 rounded-md bg-primary hover:bg-primary/90 text-xs font-semibold text-primary-foreground disabled:opacity-50"
-						>
+						<Button type="submit" variant="cta" size="lg" disabled={isSubmitting}>
 							{isSubmitting ? "Saving…" : isEdit ? "Save changes" : "Create"}
-						</button>
+						</Button>
 					)}
 				</form.Subscribe>
 			</div>
@@ -242,16 +237,18 @@ function RuleRow({
 					label={customWindow ? "Window (s)" : "Window"}
 					action={
 						customWindow ? (
-							<button
+							<Button
 								type="button"
+								variant="ghost"
+								size="xs"
 								onClick={() =>
 									onChange({ window: "60", isCustomWindow: false })
 								}
-								className="inline-flex items-center gap-0.5 text-[10px] font-medium text-muted-foreground hover:text-foreground"
+								className="h-auto gap-0.5 px-0 text-[10px] text-muted-foreground hover:bg-transparent hover:text-foreground"
 							>
 								<Undo2 className="w-3 h-3" />
 								Preset
-							</button>
+							</Button>
 						) : undefined
 					}
 				>
@@ -352,15 +349,17 @@ function RuleRow({
 						</SelectContent>
 					</Select>
 				</LabeledInput>
-				<button
+				<Button
 					type="button"
+					variant="ghost"
+					size="icon-lg"
 					onClick={onRemove}
 					disabled={!canRemove}
 					aria-label="Remove rule"
-					className="h-9 w-9 inline-flex items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-destructive disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-muted-foreground"
+					className="size-9 text-muted-foreground hover:text-destructive"
 				>
-					<X className="w-3.5 h-3.5" />
-				</button>
+					<X className="size-3.5" />
+				</Button>
 			</div>
 			{hasError && (
 				<div

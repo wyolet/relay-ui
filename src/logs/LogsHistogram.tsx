@@ -7,7 +7,7 @@ import {
 	ChartTooltip,
 	ChartTooltipContent,
 } from "@/components/ui/chart";
-import { cn } from "@/lib/utils";
+import { Segmented } from "@/shared/Segmented";
 import { fmtInt } from "./format";
 
 const WINDOW_LABEL: Record<string, string> = {
@@ -82,20 +82,14 @@ export function LogsHistogram({ filter }: { filter: LogsFilter }) {
 							</span>
 						</span>
 					)}
-					<span className="inline-flex overflow-hidden rounded-md border border-border">
-						<MetricButton
-							active={metric === "requests"}
-							onClick={() => setMetric("requests")}
-						>
-							Requests
-						</MetricButton>
-						<MetricButton
-							active={metric === "tokens"}
-							onClick={() => setMetric("tokens")}
-						>
-							Tokens
-						</MetricButton>
-					</span>
+					<Segmented
+						value={metric}
+						onChange={setMetric}
+						options={[
+							{ value: "requests", label: "Requests" },
+							{ value: "tokens", label: "Tokens" },
+						]}
+					/>
 				</span>
 			</div>
 
@@ -151,30 +145,5 @@ export function LogsHistogram({ filter }: { filter: LogsFilter }) {
 				</ChartContainer>
 			)}
 		</div>
-	);
-}
-
-function MetricButton({
-	active,
-	onClick,
-	children,
-}: {
-	active: boolean;
-	onClick: () => void;
-	children: string;
-}) {
-	return (
-		<button
-			type="button"
-			onClick={onClick}
-			className={cn(
-				"px-2 py-0.5 text-[10px] font-medium transition-colors",
-				active
-					? "bg-primary/10 text-foreground"
-					: "text-muted-foreground hover:text-foreground",
-			)}
-		>
-			{children}
-		</button>
 	);
 }

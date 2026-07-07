@@ -8,9 +8,16 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/80",
+        // Emphasis ladder: default is the QUIET everyday affirmative —
+        // accent-mauve text on the mauve wash, so buttons and focused
+        // fields speak one language. It never screams. cta is the loud
+        // mauve gradient, rationed to one hero per view (Create · Save ·
+        // Attach). Everything else stays quieter still.
+        default:
+          "bg-input-wash text-field-accent hover:bg-btn-tonal-hover aria-expanded:bg-btn-tonal-hover",
+        cta: "text-white [background-image:var(--btn-cta)] [box-shadow:inset_0_1px_0_var(--btn-cta-highlight)] hover:brightness-[1.05] active:brightness-[0.97]",
         outline:
-          "border-border hover:bg-input/50 hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:bg-input/30",
+          "border-border bg-transparent hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/60",
         secondary:
           "bg-secondary text-secondary-foreground hover:bg-secondary/80 aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
         ghost:

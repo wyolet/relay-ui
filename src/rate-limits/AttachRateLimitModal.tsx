@@ -9,7 +9,9 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { ModelPicker } from "@/models/ModelPicker";
+import { OptionRow } from "@/shared/OptionRow";
 
 export interface RLMeta {
 	id: string;
@@ -103,7 +105,7 @@ export function AttachRateLimitModal({
 								<ChevronLeft className="w-3.5 h-3.5" />
 								Back
 							</Button>
-							<Button type="button" onClick={() => onSave(rateLimitId, models)}>
+							<Button type="button" variant="cta" onClick={() => onSave(rateLimitId, models)}>
 								{isEdit ? "Save changes" : "Attach"}
 							</Button>
 						</>
@@ -144,12 +146,11 @@ function Step1RateLimit({ value, onChange, options }: Step1Props) {
 
 	return (
 		<div className="flex flex-col gap-2">
-			<input
+			<Input
 				type="text"
 				value={q}
 				onChange={(e) => setQ(e.currentTarget.value)}
 				placeholder="Search rate limits…"
-				className="h-8 px-2 rounded-md border border-input bg-input/30 text-xs focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
 			/>
 			<ul className="max-h-80 overflow-auto rounded-md border border-border bg-muted/20 divide-y divide-border">
 				{filtered.length === 0 && (
@@ -161,12 +162,10 @@ function Step1RateLimit({ value, onChange, options }: Step1Props) {
 					const selected = opt.id === value;
 					return (
 						<li key={opt.id}>
-							<button
-								type="button"
+							<OptionRow
 								onClick={() => onChange(opt.id)}
-								className={`w-full flex items-start gap-2 px-2 py-2 text-left hover:bg-muted/50 ${
-									selected ? "bg-primary/10" : ""
-								}`}
+								selected={selected}
+								className="items-start gap-2 px-2 hover:bg-muted/50"
 							>
 								<span
 									className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${
@@ -187,7 +186,7 @@ function Step1RateLimit({ value, onChange, options }: Step1Props) {
 										</span>
 									)}
 								</span>
-							</button>
+							</OptionRow>
 						</li>
 					);
 				})}

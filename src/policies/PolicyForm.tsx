@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { useMemo } from "react";
 import type { Policy } from "@/api/types/policy";
+import { Button } from "@/components/ui/button";
 import {
 	Select,
 	SelectContent,
@@ -201,22 +202,14 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 			</div>
 
 			<div className="sticky bottom-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-t border-border mt-6 -mx-6 px-6 py-3 flex items-center justify-end gap-2">
-				<button
-					type="button"
-					onClick={onCancel}
-					className="h-8 px-3 rounded-md text-xs font-medium text-foreground hover:bg-muted"
-				>
+				<Button type="button" variant="outline" size="lg" onClick={onCancel}>
 					Cancel
-				</button>
+				</Button>
 				<form.Subscribe selector={(s) => s.isSubmitting}>
 					{(isSubmitting) => (
-						<button
-							type="submit"
-							disabled={isSubmitting}
-							className="h-8 px-3 rounded-md bg-primary hover:bg-primary/90 text-xs font-semibold text-primary-foreground disabled:opacity-50"
-						>
+						<Button type="submit" variant="cta" size="lg" disabled={isSubmitting}>
 							{isSubmitting ? "Saving…" : isEdit ? "Save changes" : "Create"}
-						</button>
+						</Button>
 					)}
 				</form.Subscribe>
 			</div>

@@ -3,12 +3,10 @@ import {
 	ChevronLeft,
 	KeyRound,
 	Link2,
-	Pencil,
-	Power,
 	ShieldCheck,
-	Trash2,
 	Unlink2,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { DiagnosticList } from "@/diagnostics/DiagnosticList";
 import { useHostKeyDiagnostics } from "@/diagnostics/useDiagnostics";
 import { SecretRotateDialog } from "@/host-keys/SecretRotateDialog";
@@ -18,6 +16,7 @@ import {
 } from "@/host-keys/useHostKeyDetail";
 import { HostLogo } from "@/hosts/HostLogo";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
+import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
 import { StatusBadge } from "@/shared/StatusBadge";
 import { Th } from "@/shared/Th";
 
@@ -96,33 +95,21 @@ export function HostKeyDetailView({ name }: { name: string }) {
 						)}
 					</div>
 				</div>
-				<div className="flex items-center gap-2 shrink-0">
-					<button
-						type="button"
-						onClick={() => void setEnabled(!view.enabled)}
-						disabled={isToggling}
-						className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium text-foreground border border-border hover:bg-muted disabled:opacity-50 transition-colors"
-					>
-						<Power className="w-3.5 h-3.5" />
-						{view.enabled ? "Disable" : "Enable"}
-					</button>
-					<Link
-						to="/host-keys/$name/edit"
-						params={{ name }}
-						className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium text-foreground border border-border hover:bg-muted transition-colors"
-					>
-						<Pencil className="w-3.5 h-3.5" />
-						Edit
-					</Link>
-					<button
-						type="button"
-						onClick={attemptDelete}
-						className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium text-destructive border border-border hover:bg-destructive/10 transition-colors"
-					>
-						<Trash2 className="w-3.5 h-3.5" />
-						Delete
-					</button>
-				</div>
+				<DetailHeaderActions
+					enabled={view.enabled}
+					onToggle={() => void setEnabled(!view.enabled)}
+					toggling={isToggling}
+					onDelete={attemptDelete}
+					editLink={({ className, content }) => (
+						<Link
+							to="/host-keys/$name/edit"
+							params={{ name }}
+							className={className}
+						>
+							{content}
+						</Link>
+					)}
+				/>
 			</header>
 
 			<DiagnosticList diagnostics={diagnostics} />
@@ -164,14 +151,10 @@ export function HostKeyDetailView({ name }: { name: string }) {
 								<span className="inline-flex items-center rounded-full border border-border bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
 									encrypted at rest
 								</span>
-								<button
-									type="button"
-									onClick={openRotate}
-									className="inline-flex items-center gap-1.5 h-7 px-2 rounded-md text-[11px] font-medium text-foreground border border-border hover:bg-muted transition-colors"
-								>
-									<KeyRound className="w-3 h-3" />
+								<Button type="button" variant="outline" onClick={openRotate}>
+									<KeyRound className="size-3" />
 									Rotate
-								</button>
+								</Button>
 							</div>
 						) : view.envVar ? (
 							<div className="flex items-center gap-2 flex-wrap">
@@ -307,8 +290,9 @@ function PoliciesPanel({
 									)}
 								</Td>
 								<Td className="text-right">
-									<button
+									<Button
 										type="button"
+										variant="outline"
 										onClick={() => onDetach(row.id)}
 										disabled={detaching || row.hostOwned}
 										title={
@@ -316,11 +300,10 @@ function PoliciesPanel({
 												? "Host-owned policy — managed by Relay"
 												: "Remove this key from the policy's pool"
 										}
-										className="inline-flex items-center gap-1 h-7 px-2 rounded-md text-[11px] font-medium text-foreground border border-border hover:bg-muted disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
 									>
-										<Unlink2 className="w-3 h-3" />
+										<Unlink2 className="size-3" />
 										Detach
-									</button>
+									</Button>
 								</Td>
 							</tr>
 						))}

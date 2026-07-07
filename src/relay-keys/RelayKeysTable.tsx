@@ -9,6 +9,7 @@ import {
 } from "@/api/hooks/relayKeys";
 import { ApiError } from "@/api/types/errors";
 import type { RelayKey } from "@/api/types/relayKey";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { DiagnosticDot } from "@/diagnostics/DiagnosticDot";
 import { useRelayKeyDiagnostics } from "@/diagnostics/useDiagnostics";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
@@ -58,19 +59,21 @@ function PrefixCell({ text, copyText }: { text: string; copyText: string }) {
 		}
 	}
 	return (
-		<button
+		<Button
 			type="button"
+			variant="ghost"
+			size="sm"
 			onClick={() => void handleCopy()}
 			title="Copy prefix"
-			className="inline-flex items-center gap-1.5 text-[11px] font-mono text-muted-foreground px-1.5 py-0.5 rounded bg-muted hover:bg-muted/60 transition-colors"
+			className="gap-1.5 bg-muted px-1.5 font-mono text-[11px] font-normal text-muted-foreground hover:bg-muted/60"
 		>
 			<span>{text}</span>
 			{copied ? (
-				<Check className="w-3 h-3 text-brand-600 dark:text-brand-400" />
+				<Check className="w-3 h-3 text-primary" />
 			) : (
 				<Copy className="w-3 h-3 opacity-0 group-hover:opacity-100" />
 			)}
-		</button>
+		</Button>
 	);
 }
 
@@ -165,7 +168,7 @@ export function RelayKeysTable() {
 				actions={
 					<Link
 						to="/relay-keys/new"
-						className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md bg-primary hover:bg-primary/90 active:bg-primary/80 text-xs font-semibold text-primary-foreground transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+						className={buttonVariants({ variant: "default", size: "lg" })}
 					>
 						<Plus className="w-3.5 h-3.5" />
 						New key
@@ -190,7 +193,7 @@ export function RelayKeysTable() {
 							</p>
 							<Link
 								to="/relay-keys/new"
-								className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-primary hover:bg-primary/90 active:bg-primary/80 text-sm font-semibold text-primary-foreground transition-colors"
+								className={buttonVariants({ variant: "default", size: "lg" })}
 							>
 								<Plus className="w-4 h-4" />
 								Create API key

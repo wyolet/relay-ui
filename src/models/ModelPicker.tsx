@@ -5,11 +5,15 @@ import {
 	Globe,
 	Search,
 	TextCursorInput,
-	X,
 } from "lucide-react";
 import { useMemo, useState } from "react";
+import {
+	fieldFocusClassName,
+	fieldFrameClassName,
+} from "@/components/ui/field-focus";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import { KIND_META } from "@/config/catalogRef";
 import { HostLogo } from "@/hosts/HostLogo";
 import {
@@ -20,6 +24,7 @@ import {
 	validateCatalogRef,
 } from "@/lib/catalogRef";
 import { from as slugFrom } from "@/lib/slug";
+import { cn } from "@/lib/utils";
 import {
 	type HostRow,
 	type ModelRow,
@@ -27,6 +32,8 @@ import {
 	type ProviderRow,
 	usePickerCatalog,
 } from "@/models/usePickerCatalog";
+import { Chip } from "@/shared/Chip";
+import { OptionRow } from "@/shared/OptionRow";
 
 type Tab = "summary" | "providers" | "models" | "hosts" | "raw";
 
@@ -236,7 +243,11 @@ export function ModelPicker({
 									value={q}
 									onChange={(e) => setQ(e.currentTarget.value)}
 									placeholder={`Search ${tab}…`}
-									className="w-full h-7 pl-7 pr-2 rounded-md border border-input bg-input/30 text-xs outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
+									className={cn(
+										"w-full h-7 pl-7 pr-2 text-xs outline-none placeholder:text-muted-foreground transition-[color,box-shadow,background-color]",
+										fieldFrameClassName,
+										fieldFocusClassName,
+									)}
 								/>
 							</div>
 						)}
@@ -322,11 +333,7 @@ function ProviderList({
 				const modelCount = (index.modelsByProvider.get(name) ?? []).length;
 				return (
 					<li key={p.id}>
-						<button
-							type="button"
-							onClick={() => onToggle(p)}
-							className="w-full flex items-center justify-between gap-3 px-3 py-2 text-left hover:bg-muted/40 transition-colors"
-						>
+						<OptionRow onClick={() => onToggle(p)} className="justify-between">
 							<span className="flex items-center gap-2.5 min-w-0">
 								<RowCheckbox state={selected ? "on" : "off"} />
 								<span className="text-sm text-foreground truncate">
@@ -339,7 +346,7 @@ function ProviderList({
 							<span className="text-[11px] text-muted-foreground tabular-nums">
 								{modelCount} model{modelCount === 1 ? "" : "s"}
 							</span>
-						</button>
+						</OptionRow>
 					</li>
 				);
 			})}
@@ -378,11 +385,10 @@ function ModelList({
 						: "off";
 				return (
 					<li key={m.id}>
-						<button
-							type="button"
+						<OptionRow
 							onClick={() => onToggleModel(m)}
 							disabled={coveredByProvider}
-							className="w-full flex items-center justify-between gap-3 px-3 py-2 text-left hover:bg-muted/40 transition-colors disabled:cursor-not-allowed"
+							className="justify-between"
 						>
 							<span className="flex items-center gap-2.5 min-w-0">
 								<RowCheckbox state={state} />
@@ -420,7 +426,7 @@ function ModelList({
 									);
 								})}
 							</span>
-						</button>
+						</OptionRow>
 					</li>
 				);
 			})}
@@ -465,11 +471,7 @@ function HostList({
 				const finalState: CheckState = hostGranted ? "on" : state;
 				return (
 					<li key={h.id}>
-						<button
-							type="button"
-							onClick={() => onToggle(h)}
-							className="w-full flex items-center justify-between gap-3 px-3 py-2 text-left hover:bg-muted/40 transition-colors"
-						>
+						<OptionRow onClick={() => onToggle(h)} className="justify-between">
 							<span className="flex items-center gap-2.5 min-w-0">
 								<RowCheckbox state={finalState} />
 								<HostLogo host={h.logo} size={20} />
@@ -485,7 +487,7 @@ function HostList({
 							<span className="text-[11px] text-muted-foreground tabular-nums">
 								{total === 0 ? "0 models" : `${covered}/${total}`}
 							</span>
-						</button>
+						</OptionRow>
 					</li>
 				);
 			})}
@@ -515,20 +517,14 @@ function SelectionFooter({
 	return (
 		<div className="border-t border-border px-3 py-2 flex flex-wrap items-center gap-1">
 			{refs.map((r) => (
-				<span
+				<Chip
 					key={r}
-					className="inline-flex items-center gap-1 h-6 pl-2 pr-0.5 rounded bg-primary/10 text-primary text-[11px] font-mono"
-				>
-					{r}
-					<button
-						type="button"
-						aria-label={`Remove ${r}`}
-						onClick={() => onRemove(r)}
-						className="h-5 w-5 inline-flex items-center justify-center rounded hover:bg-primary/20"
-					>
-						<X className="w-3 h-3" />
-					</button>
-				</span>
+					shape="box"
+					tone="primary"
+					mono
+					label={r}
+					onRemove={() => onRemove(r)}
+				/>
 			))}
 		</div>
 	);
@@ -708,13 +704,13 @@ function RawEditor({
 				<code className="font-mono text-foreground/80">:</code> with{" "}
 				<code className="font-mono text-foreground/80">-</code>.
 			</div>
-			<textarea
+			<Textarea
 				value={draft}
 				onChange={(e) => emit(e.currentTarget.value)}
 				spellCheck={false}
 				rows={8}
 				placeholder="anthropic&#10;openai/gpt-4o&#10;@bedrock"
-				className="w-full min-h-32 rounded-md border border-input bg-input/20 px-3 py-2 text-xs font-mono leading-relaxed outline-none transition-[border-color,box-shadow] placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
+				className="min-h-32 font-mono text-xs leading-relaxed"
 			/>
 			{errors.length > 0 && (
 				<ul className="space-y-0.5 text-[11px]">

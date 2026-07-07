@@ -1,5 +1,11 @@
 import { Search, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+	fieldFocusClassName,
+	fieldFrameClassName,
+} from "@/components/ui/field-focus";
+import { cn } from "@/lib/utils";
 
 interface SearchBoxProps {
 	value: string;
@@ -118,17 +124,23 @@ export function SearchBox({
 				}}
 				placeholder={placeholder}
 				aria-label={ariaLabel ?? placeholder}
-				className="w-full h-8 pl-8 pr-8 rounded-md text-xs text-foreground bg-background border border-input placeholder:text-muted-foreground hover:border-ring/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus:border-transparent transition-[box-shadow,border-color] [&::-webkit-search-cancel-button]:hidden"
+				className={cn(
+					"w-full h-8 pl-8 pr-8 text-xs text-foreground placeholder:text-muted-foreground outline-none transition-[color,box-shadow,background-color] [&::-webkit-search-cancel-button]:hidden",
+					fieldFrameClassName,
+					fieldFocusClassName,
+				)}
 			/>
 			{draft ? (
-				<button
+				<Button
 					type="button"
+					variant="ghost"
+					size="icon-xs"
 					onClick={clear}
 					aria-label="Clear search"
-					className="absolute right-1.5 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-5 h-5 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+					className="absolute right-1.5 top-1/2 -mt-2.5 text-muted-foreground"
 				>
-					<X className="w-3.5 h-3.5" aria-hidden />
-				</button>
+					<X className="size-3.5" aria-hidden />
+				</Button>
 			) : (
 				hotkey &&
 				!focused && (

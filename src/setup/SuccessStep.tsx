@@ -134,7 +134,7 @@ export function SuccessStep({
 									if (next) setShapeId(next.id);
 								}}
 							>
-								<SelectTrigger className="h-7 w-auto text-xs">
+								<SelectTrigger size="sm" className="w-auto text-xs">
 									<SelectValue />
 								</SelectTrigger>
 								<SelectContent>

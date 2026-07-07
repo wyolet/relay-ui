@@ -1,11 +1,10 @@
-import { Check, ChevronDown, ListFilter, Search, X } from "lucide-react";
+import { Check, ChevronDown, ListFilter, Search } from "lucide-react";
 import { useState } from "react";
+import { buttonVariants } from "@/components/ui/button";
 import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+	fieldFocusWithinClassName,
+	fieldFrameClassName,
+} from "@/components/ui/field-focus";
 import {
 	Popover,
 	PopoverContent,
@@ -13,6 +12,9 @@ import {
 } from "@/components/ui/popover";
 import type { FilterOption } from "@/filters/types";
 import { cn } from "@/lib/utils";
+import { FilterDropdown } from "@/shared/FilterDropdown";
+import { Chip } from "@/shared/Chip";
+import { OptionRow } from "@/shared/OptionRow";
 import { SearchBox } from "@/shared/SearchBox";
 import {
 	LOG_DIMENSIONS,
@@ -24,8 +26,12 @@ import {
 } from "./logFilterConfig";
 
 /** Shared trigger style for every filter control so they line up identically. */
-const TRIGGER =
-	"inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-card px-2.5 text-xs text-foreground transition-colors hover:bg-muted data-[popup-open]:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+// Toolbar trigger chrome = the Button outline recipe, so filter controls and
+// buttons can never drift apart again.
+const TRIGGER = cn(
+	buttonVariants({ variant: "outline" }),
+	"data-[popup-open]:bg-muted",
+);
 
 export interface LogsFilterValues {
 	q: string;
@@ -118,10 +124,21 @@ export function LogsFilters({
 	return (
 		<div className="flex flex-col gap-2">
 			<div className="flex flex-wrap items-center gap-2">
-				<div className="flex min-h-8 min-w-0 flex-1 flex-wrap items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1">
+				<div
+					className={cn(
+						"flex min-h-8 min-w-0 flex-1 flex-wrap items-center gap-1.5 px-2.5 py-1",
+						fieldFrameClassName,
+						fieldFocusWithinClassName,
+					)}
+				>
 					<Search className="size-4 shrink-0 text-muted-foreground" />
 					{chips.map((c) => (
-						<Chip key={c.key} label={c.label} onRemove={c.onRemove} />
+						<Chip
+							key={c.key}
+							label={c.label}
+							onRemove={c.onRemove}
+							labelClassName="max-w-44"
+						/>
 					))}
 					<input
 						value={values.q}
@@ -136,7 +153,8 @@ export function LogsFilters({
 					/>
 				</div>
 
-				<FilterSelect
+				<FilterDropdown
+					align="start"
 					label="Window"
 					value={values.since}
 					options={WINDOW_OPTIONS}
@@ -164,7 +182,8 @@ export function LogsFilters({
 
 			{open && (
 				<div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-card p-2.5">
-					<FilterSelect
+					<FilterDropdown
+						align="start"
 						label="Status"
 						value={values.status_class}
 						options={STATUS_OPTIONS}
@@ -212,52 +231,6 @@ function CountBadge({ n }: { n: number }) {
 	);
 }
 
-/** Single-select dropdown sharing the uniform TRIGGER style. */
-function FilterSelect<T extends string>({
-	label,
-	value,
-	options,
-	onChange,
-}: {
-	label: string;
-	value: T;
-	options: readonly { value: T; label: string }[];
-	onChange: (value: T) => void;
-}) {
-	const current = options.find((o) => o.value === value);
-	return (
-		<DropdownMenu>
-			<DropdownMenuTrigger className={TRIGGER}>
-				<span className="text-muted-foreground">{label}:</span>
-				<span>{current?.label ?? value}</span>
-				<ChevronDown
-					className="size-3.5 text-muted-foreground"
-					aria-hidden="true"
-				/>
-			</DropdownMenuTrigger>
-			<DropdownMenuContent align="start" className="min-w-36">
-				{options.map((o) => (
-					<DropdownMenuItem
-						key={o.value}
-						onClick={() => onChange(o.value)}
-						className={
-							o.value === value ? "bg-accent text-accent-foreground" : ""
-						}
-					>
-						<Check
-							className={cn(
-								"size-3.5",
-								o.value === value ? "opacity-100" : "opacity-0",
-							)}
-						/>
-						{o.label}
-					</DropdownMenuItem>
-				))}
-			</DropdownMenuContent>
-		</DropdownMenu>
-	);
-}
-
 function ToggleButton({
 	label,
 	pressed,
@@ -284,22 +257,6 @@ function ToggleButton({
 
 function labelFor(options: FilterOption[], value: string): string {
 	return options.find((o) => o.value === value)?.label ?? value;
-}
-
-function Chip({ label, onRemove }: { label: string; onRemove: () => void }) {
-	return (
-		<span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/50 py-0.5 pl-2 pr-0.5 text-[11px] text-foreground">
-			<span className="max-w-44 truncate">{label}</span>
-			<button
-				type="button"
-				onClick={onRemove}
-				aria-label={`Remove ${label}`}
-				className="rounded-full p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-			>
-				<X className="size-3" aria-hidden="true" />
-			</button>
-		</span>
-	);
 }
 
 function MultiSelectPopover({
@@ -379,11 +336,10 @@ function MultiCheckList({
 					const checked = selected.includes(o.value);
 					return (
 						<li key={o.value}>
-							<button
-								type="button"
+							<OptionRow
 								aria-pressed={checked}
 								onClick={() => onToggle(o.value)}
-								className="flex w-full items-center gap-2 rounded-md px-1 py-1.5 text-left text-xs text-foreground hover:bg-muted/50"
+								className="gap-2 rounded-md px-1 py-1.5 text-xs text-foreground hover:bg-muted/50"
 							>
 								<span
 									className={cn(
@@ -397,7 +353,7 @@ function MultiCheckList({
 									{checked && <Check className="size-3" />}
 								</span>
 								<span className="min-w-0 truncate">{o.label}</span>
-							</button>
+							</OptionRow>
 						</li>
 					);
 				})}

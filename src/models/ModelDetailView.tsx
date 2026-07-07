@@ -24,14 +24,12 @@ import {
 	Mic,
 	Monitor,
 	Paperclip,
-	Power,
 	Radio,
 	Scale,
 	ScrollText,
 	Server,
 	Settings2,
 	ShieldCheck,
-	Trash2,
 	TrendingDown,
 	Volume2,
 	Wrench,
@@ -62,6 +60,7 @@ import {
 import { useModelUsage } from "@/models/useModelUsage";
 import { fmtCost, MeterGrid } from "@/pricing/MeterGrid";
 import { ProviderLogo } from "@/providers/ProviderLogo";
+import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
 import { OwnerBadge, StatusBadge } from "@/shared/StatusBadge";
 import { Th } from "@/shared/Th";
 import {
@@ -303,30 +302,15 @@ function Header({
 						)}
 					</div>
 				</div>
-				<div className="flex items-center gap-2 shrink-0">
-					{canEdit && (
-						<button
-							type="button"
-							onClick={onToggleEnabled}
-							disabled={toggling}
-							className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium text-foreground border border-border hover:bg-muted disabled:opacity-50 transition-colors"
-						>
-							<Power className="w-3.5 h-3.5" />
-							{enabled ? "Disable" : "Enable"}
-						</button>
-					)}
-					{canDelete && onDelete && (
-						<button
-							type="button"
-							onClick={onDelete}
-							disabled={deleting}
-							className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium text-destructive border border-border hover:bg-destructive/10 disabled:opacity-50 transition-colors"
-						>
-							<Trash2 className="w-3.5 h-3.5" />
-							Delete
-						</button>
-					)}
-				</div>
+				<DetailHeaderActions
+					enabled={enabled}
+					onToggle={onToggleEnabled}
+					toggling={toggling}
+					showToggle={canEdit}
+					showDelete={canDelete}
+					onDelete={onDelete}
+					deleting={deleting}
+				/>
 			</div>
 			{dep && (
 				<div className="flex items-start gap-2 px-3 py-2 rounded-md border border-warning/30 bg-warning/10 text-xs text-warning">

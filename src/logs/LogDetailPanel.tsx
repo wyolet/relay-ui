@@ -1,7 +1,9 @@
 import { MousePointerClick, X } from "lucide-react";
 import { Suspense, useState } from "react";
 import { type LogDetail, useLogDetail } from "@/api/hooks/logs";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { Segmented } from "@/shared/Segmented";
 import { fmtInt, fmtMs, fmtTs, prettyBody, sumTokens } from "./format";
 import { type ChatMessage, parseTranscript } from "./generation";
 import { isErrorEvent } from "./predicates";
@@ -98,14 +100,16 @@ function PanelBody({
 						</span>
 					)}
 					{onClose && (
-						<button
+						<Button
 							type="button"
+							variant="ghost"
+							size="icon-sm"
 							onClick={onClose}
 							aria-label="Close inspector"
-							className="ml-auto rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+							className="ml-auto text-muted-foreground"
 						>
 							<X className="size-4" />
-						</button>
+						</Button>
 					)}
 				</div>
 
@@ -145,17 +149,15 @@ function PanelBody({
 			</div>
 
 			{transcript && (
-				<div className="flex gap-1 border-b border-border px-2">
-					<TabButton
-						active={tab === "messages"}
-						onClick={() => setTab("messages")}
-					>
-						Messages
-					</TabButton>
-					<TabButton active={tab === "raw"} onClick={() => setTab("raw")}>
-						Raw
-					</TabButton>
-				</div>
+				<Segmented
+					variant="underline"
+					value={tab}
+					onChange={setTab}
+					options={[
+						{ value: "messages", label: "Messages" },
+						{ value: "raw", label: "Raw" },
+					]}
+				/>
 			)}
 
 			<div className="max-h-[65vh] overflow-auto">
@@ -166,31 +168,6 @@ function PanelBody({
 				)}
 			</div>
 		</div>
-	);
-}
-
-function TabButton({
-	active,
-	onClick,
-	children,
-}: {
-	active: boolean;
-	onClick: () => void;
-	children: string;
-}) {
-	return (
-		<button
-			type="button"
-			onClick={onClick}
-			className={cn(
-				"border-b-2 px-2.5 py-2 text-xs transition-colors",
-				active
-					? "border-primary text-foreground"
-					: "border-transparent text-muted-foreground hover:text-foreground",
-			)}
-		>
-			{children}
-		</button>
 	);
 }
 

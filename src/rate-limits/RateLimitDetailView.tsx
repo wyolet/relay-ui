@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Gauge, Pencil, Power, ShieldCheck, Trash2 } from "lucide-react";
+import { Gauge, ShieldCheck } from "lucide-react";
 import { useMemo } from "react";
 import { useRelayKeys } from "@/api/hooks/relayKeys";
 import type { RateLimit, RateLimitRule } from "@/api/types/ratelimit";
@@ -10,6 +10,7 @@ import { compactNumber } from "@/lib/rateLimitFormat";
 import { isProviderOwned, isSystemOwned } from "@/lib/systemRateLimits";
 import { windowLabel } from "@/lib/timeWindow";
 import { useRateLimitReferences } from "@/rate-limits/useRateLimitReferences";
+import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
 import { OwnerBadge, StatusBadge } from "@/shared/StatusBadge";
 import { Th } from "@/shared/Th";
 
@@ -84,38 +85,24 @@ function Header({
 					</p>
 				)}
 			</div>
-			<div className="flex items-center gap-2 shrink-0">
-				{canMutate && (
-					<>
-						<button
-							type="button"
-							onClick={onToggleEnabled}
-							disabled={toggling}
-							className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium text-foreground border border-border hover:bg-muted disabled:opacity-50 transition-colors"
-						>
-							<Power className="w-3.5 h-3.5" />
-							{enabled ? "Disable" : "Enable"}
-						</button>
+			{canMutate && (
+				<DetailHeaderActions
+					enabled={enabled}
+					onToggle={onToggleEnabled}
+					toggling={toggling}
+					onDelete={onDelete}
+					deleting={deleting}
+					editLink={({ className, content }) => (
 						<Link
 							to="/policies/rate-limits/$name/edit"
 							params={{ name }}
-							className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium text-foreground border border-border hover:bg-muted transition-colors"
+							className={className}
 						>
-							<Pencil className="w-3.5 h-3.5" />
-							Edit
+							{content}
 						</Link>
-						<button
-							type="button"
-							onClick={onDelete}
-							disabled={deleting}
-							className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium text-destructive border border-border hover:bg-destructive/10 disabled:opacity-50 transition-colors"
-						>
-							<Trash2 className="w-3.5 h-3.5" />
-							Delete
-						</button>
-					</>
-				)}
-			</div>
+					)}
+				/>
+			)}
 		</div>
 	);
 }

@@ -7,6 +7,7 @@ import { usePolicies } from "@/api/hooks/policies";
 import { ApiError } from "@/api/types/errors";
 import type { Host } from "@/api/types/host";
 import type { HostKey } from "@/api/types/hostkey";
+import { buttonVariants } from "@/components/ui/button";
 import { DiagnosticDot } from "@/diagnostics/DiagnosticDot";
 import { useHostKeyDiagnostics } from "@/diagnostics/useDiagnostics";
 import { HostCell } from "@/hosts/HostCell";
@@ -109,7 +110,7 @@ export function HostKeysTable() {
 				actions={
 					<Link
 						to="/host-keys/new"
-						className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md bg-primary hover:bg-primary/90 active:bg-primary/80 text-xs font-semibold text-primary-foreground transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+						className={buttonVariants({ variant: "default", size: "lg" })}
 					>
 						<Plus className="w-3.5 h-3.5" />
 						New credential
@@ -131,7 +132,7 @@ export function HostKeysTable() {
 							</p>
 							<Link
 								to="/host-keys/new"
-								className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-primary hover:bg-primary/90 active:bg-primary/80 text-sm font-semibold text-primary-foreground transition-colors"
+								className={buttonVariants({ variant: "default", size: "lg" })}
 							>
 								<Plus className="w-4 h-4" />
 								Create your first credential

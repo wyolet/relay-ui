@@ -17,6 +17,7 @@ import {
 	usePolicyExcludedModels,
 	usePolicyModels,
 } from "@/policies/usePolicyModels";
+import { OptionRow } from "@/shared/OptionRow";
 
 interface Props {
 	policy: Policy;
@@ -205,10 +206,9 @@ function HostGroup({ rows }: { rows: PolicyModelView[] }) {
 			</ul>
 
 			{showToggle && (
-				<button
-					type="button"
+				<OptionRow
 					onClick={() => setExpanded((v) => !v)}
-					className="w-full px-3 py-1.5 text-[11px] text-muted-foreground hover:text-foreground hover:bg-muted/40 flex items-center justify-center gap-1 border-t border-border"
+					className="justify-center gap-1 border-t border-border px-3 py-1.5 text-[11px] text-muted-foreground hover:text-foreground"
 				>
 					{expanded ? (
 						<>
@@ -220,7 +220,7 @@ function HostGroup({ rows }: { rows: PolicyModelView[] }) {
 							Show all models ({hiddenCount} more)
 						</>
 					)}
-				</button>
+				</OptionRow>
 			)}
 		</section>
 	);

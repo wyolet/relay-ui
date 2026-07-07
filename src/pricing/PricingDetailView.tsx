@@ -1,10 +1,11 @@
 import { Link } from "@tanstack/react-router";
-import { Banknote, Boxes, Pencil, Power, Server, Trash2 } from "lucide-react";
+import { Banknote, Boxes, Server } from "lucide-react";
 import type { Pricing } from "@/api/types/pricing";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { MeterGrid } from "@/pricing/MeterGrid";
 import { useHostOptionById } from "@/pricing/useHostOptions";
 import { useTargetModelLabeler } from "@/pricing/useTargetModelOptions";
+import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
 import { StatusBadge } from "@/shared/StatusBadge";
 
 interface Props {
@@ -91,34 +92,22 @@ function Header({
 					</p>
 				)}
 			</div>
-			<div className="flex items-center gap-2 shrink-0">
-				<button
-					type="button"
-					onClick={onToggleEnabled}
-					disabled={toggling}
-					className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium text-foreground border border-border hover:bg-muted disabled:opacity-50 transition-colors"
-				>
-					<Power className="w-3.5 h-3.5" />
-					{enabled ? "Disable" : "Enable"}
-				</button>
-				<Link
-					to="/pricing/$name/edit"
-					params={{ name }}
-					className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium text-foreground border border-border hover:bg-muted transition-colors"
-				>
-					<Pencil className="w-3.5 h-3.5" />
-					Edit
-				</Link>
-				<button
-					type="button"
-					onClick={onDelete}
-					disabled={deleting}
-					className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium text-destructive border border-border hover:bg-destructive/10 disabled:opacity-50 transition-colors"
-				>
-					<Trash2 className="w-3.5 h-3.5" />
-					Delete
-				</button>
-			</div>
+			<DetailHeaderActions
+				enabled={enabled}
+				onToggle={onToggleEnabled}
+				toggling={toggling}
+				onDelete={onDelete}
+				deleting={deleting}
+				editLink={({ className, content }) => (
+					<Link
+						to="/pricing/$name/edit"
+						params={{ name }}
+						className={className}
+					>
+						{content}
+					</Link>
+				)}
+			/>
 		</div>
 	);
 }
