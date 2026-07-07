@@ -4,6 +4,8 @@ Operator admin UI for **Wyolet Relay** (high-throughput Go LLM router). Static S
 
 React 19 + Vite + TanStack Router + TanStack Query + Tailwind v4 + Biome + shadcn (luma) on `@base-ui/react`. Package manager: **bun**. Path alias `@/*` → `src/*`.
 
+> This file is the durable rulebook — principles and structure that shouldn't rot. It deliberately omits current state; for what's shipped, read the code and git history.
+
 ## Commands
 
 - `bun run dev` — dev server on :5140; proxies `/api` + `/config.json` to a Relay control plane (default `http://localhost:8081`, override `RELAY_CONTROL_TARGET`).
@@ -22,6 +24,11 @@ All state management and query handling live in **focused custom hooks**:
 - **Server state** → TanStack Query. Centralize `queryOptions` in `src/api/hooks/<domain>.ts`; loaders and hooks share the same options object — never redeclare keys inline. All fetchers go through `openapi-fetch` (`src/api`).
 - **Shared/persisted client state** → zustand in `src/stores/` (persist middleware for reload-surviving state). **Ephemeral UI state** → `useState`.
 - Never `useEffect` for fetching or deriving state. Never copy query results into `useState`.
+- Keys are stable server ids, never array indices, for dynamic lists. No `useMemo`/`useCallback` cargo-culting — only with a measured reason or when identity matters downstream.
+
+## Detect repeating templates — extract, don't copy
+
+The moment a layout, row, badge, table-chrome, or status pattern appears (or is about to appear) a **second** time, lift it into one shared component used in both places — visual drift between twins reads as a bug, and forked copies rot independently. One source per pattern, owned where used: genuinely cross-domain chrome lives in `shared/` as a small "kit" (e.g. table header cells, status badges, row menus); domain-specific twins live in the domain folder. Shared dimensions and rhythms belong in the template too, not re-specified at call sites.
 
 ## Layout
 
@@ -43,6 +50,7 @@ Never escape the type system: no `any`, no `as unknown as`, no `@ts-ignore`/`@ts
 
 ## Styling
 
-- **Semantic tokens only**: `bg-card`, `text-foreground`, `text-muted-foreground`, `border-border`, `bg-primary`, `text-destructive`, … Never raw palettes (`gray-*`, `bg-white dark:…`) or hard-coded light/dark pairs. Brand scales (`brand-*`, `accent-*`) only where no semantic token fits.
+- **Semantic tokens only**: `bg-card`, `text-foreground`, `text-muted-foreground`, `border-border`, `bg-primary`, `text-destructive`, … Never raw palettes (`gray-*`, `bg-white dark:…`) or hard-coded light/dark pairs. **Reaching for a dark-mode pair is the tell you want a token** — add one (e.g. `--success`, `--warning`) so a restyle is a token change, not a colorsweep. Brand scales (`brand-*`, `accent-*`) only where no semantic token fits.
+- **One loud action per view.** Genuine buttons use the `Button` component with primary treatment reserved for the single hero action; everything else stays quiet (outline/ghost). Don't hand-roll CTA styling with brand colors.
 - Keep shadcn primitive sizing (`Input` h-9; `SelectTrigger size="sm"` for h-7 — a className won't win over the data-attr variant). Never native `<select>`; use `Select` / `ToggleGroup`.
 - base-ui gotchas: `SelectValue` renders the raw value — pass `items={[{label,value}]}` to `Select.Root`; `ToggleGroup` value is `string[]` — pass `[value]` and guard empty.
