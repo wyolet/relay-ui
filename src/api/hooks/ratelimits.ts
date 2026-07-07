@@ -5,13 +5,13 @@ import {
 	useSuspenseQuery,
 } from "@tanstack/react-query";
 import { apiClient } from "@/api/client";
-import { ApiError } from "@/api/types/errors";
 import type {
 	RateLimit,
 	RateLimitCreate,
 	RateLimitListResponse,
 	RateLimitUpdate,
 } from "@/api/types/ratelimit";
+import { unwrap } from "@/api/unwrap";
 import { isSystemOwned } from "@/lib/systemRateLimits";
 
 // --- Query options ---
@@ -19,8 +19,7 @@ import { isSystemOwned } from "@/lib/systemRateLimits";
 export const rateLimitsListQueryOptions = queryOptions({
 	queryKey: ["ratelimits"] as const,
 	queryFn: async (): Promise<RateLimitListResponse> => {
-		const { data, error } = await apiClient.GET("/rate-limits");
-		if (error) throw new ApiError(0, error.error);
+		const data = unwrap(await apiClient.GET("/rate-limits"));
 		return data;
 	},
 	staleTime: 30_000,
@@ -31,10 +30,11 @@ export function rateLimitDetailQueryOptions(name: string) {
 	return queryOptions({
 		queryKey: ["ratelimits", name] as const,
 		queryFn: async (): Promise<RateLimit> => {
-			const { data, error } = await apiClient.GET("/rate-limits/{ref}", {
-				params: { path: { ref: name } },
-			});
-			if (error) throw new ApiError(0, error.error);
+			const data = unwrap(
+				await apiClient.GET("/rate-limits/{ref}", {
+					params: { path: { ref: name } },
+				}),
+			);
 			return data;
 		},
 		staleTime: 30_000,
@@ -76,10 +76,11 @@ export function useCreateRateLimit() {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: async (body: RateLimitCreate): Promise<RateLimit> => {
-			const { data, error } = await apiClient.POST("/rate-limits", {
-				body,
-			});
-			if (error) throw new ApiError(0, error.error);
+			const data = unwrap(
+				await apiClient.POST("/rate-limits", {
+					body,
+				}),
+			);
 			return data;
 		},
 		onMutate: async (newRL) => {
@@ -122,11 +123,12 @@ export function useUpdateRateLimit(id: string) {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: async (body: RateLimitUpdate): Promise<RateLimit> => {
-			const { data, error } = await apiClient.PUT("/rate-limits/by-id/{id}", {
-				params: { path: { id } },
-				body,
-			});
-			if (error) throw new ApiError(0, error.error);
+			const data = unwrap(
+				await apiClient.PUT("/rate-limits/by-id/{id}", {
+					params: { path: { id } },
+					body,
+				}),
+			);
 			return data;
 		},
 		onSuccess: () => {
@@ -139,10 +141,11 @@ export function useDeleteRateLimit() {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: async (id: string): Promise<void> => {
-			const { error } = await apiClient.DELETE("/rate-limits/by-id/{id}", {
-				params: { path: { id } },
-			});
-			if (error) throw new ApiError(0, error.error);
+			unwrap(
+				await apiClient.DELETE("/rate-limits/by-id/{id}", {
+					params: { path: { id } },
+				}),
+			);
 		},
 		onMutate: async (id) => {
 			await queryClient.cancelQueries({ queryKey: ["ratelimits"] });

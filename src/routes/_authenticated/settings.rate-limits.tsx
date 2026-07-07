@@ -26,6 +26,7 @@ import {
 import { proxyModeQueryOptions, useProxyMode } from "@/api/hooks/settings";
 import { ApiError } from "@/api/types/errors";
 import type { RateLimit, RateLimitRule } from "@/api/types/ratelimit";
+import { unwrap } from "@/api/unwrap";
 import { Input } from "@/components/ui/input";
 import {
 	Select,
@@ -163,12 +164,12 @@ function SystemRateLimitsInner() {
 			id: string;
 			body: RateLimit;
 		}): Promise<RateLimit> => {
-			const { data, error } = await apiClient.PUT("/rate-limits/by-id/{id}", {
-				params: { path: { id } },
-				body,
-			});
-			if (error) throw new ApiError(0, error.error);
-			return data;
+			return unwrap(
+				await apiClient.PUT("/rate-limits/by-id/{id}", {
+					params: { path: { id } },
+					body,
+				}),
+			);
 		},
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: ["ratelimits"] });

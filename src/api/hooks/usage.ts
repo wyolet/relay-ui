@@ -4,8 +4,8 @@ import {
 	useSuspenseQuery,
 } from "@tanstack/react-query";
 import { apiClient } from "@/api/client";
-import { ApiError } from "@/api/types/errors";
 import type { components, operations } from "@/api/types.gen";
+import { unwrap } from "@/api/unwrap";
 import { type CostTotal, costTotal } from "@/lib/usage-math/cost";
 import { compareValue, type DeltaResult } from "@/lib/usage-math/delta";
 import { type LatencyRung, latencyLadder } from "@/lib/usage-math/latency";
@@ -98,10 +98,11 @@ export function usageSummaryQueryOptions(
 				query.from = win.from;
 				query.to = win.to;
 			}
-			const { data, error } = await apiClient.GET("/usage/summary", {
-				params: { query },
-			});
-			if (error) throw new ApiError(0, error.error);
+			const data = unwrap(
+				await apiClient.GET("/usage/summary", {
+					params: { query },
+				}),
+			);
 			return data;
 		},
 		staleTime: 15_000,
@@ -139,10 +140,11 @@ export function resourceUsageQueryOptions(
 		queryFn: async (): Promise<UsageSummaryResult> => {
 			const query: UsageSummaryQuery = { group_by: dimension };
 			query[dimension] = [id];
-			const { data, error } = await apiClient.GET("/usage/summary", {
-				params: { query },
-			});
-			if (error) throw new ApiError(0, error.error);
+			const data = unwrap(
+				await apiClient.GET("/usage/summary", {
+					params: { query },
+				}),
+			);
 			return data;
 		},
 		staleTime: 15_000,
@@ -162,10 +164,11 @@ export function modelHostUsageQueryOptions(modelId: string) {
 				group_by: "host_id",
 				model_id: [modelId],
 			};
-			const { data, error } = await apiClient.GET("/usage/summary", {
-				params: { query },
-			});
-			if (error) throw new ApiError(0, error.error);
+			const data = unwrap(
+				await apiClient.GET("/usage/summary", {
+					params: { query },
+				}),
+			);
 			return data;
 		},
 		staleTime: 30_000,
@@ -200,10 +203,11 @@ export function usageTimeseriesQueryOptions(
 	return queryOptions({
 		queryKey: ["usage", "timeseries", interval, groupBy, since] as const,
 		queryFn: async (): Promise<UsageTimeSeriesResult> => {
-			const { data, error } = await apiClient.GET("/usage/timeseries", {
-				params: { query: { interval, group_by: groupBy, since } },
-			});
-			if (error) throw new ApiError(0, error.error);
+			const data = unwrap(
+				await apiClient.GET("/usage/timeseries", {
+					params: { query: { interval, group_by: groupBy, since } },
+				}),
+			);
 			return data;
 		},
 		staleTime: 15_000,
@@ -341,17 +345,18 @@ export function stackedTimeseriesQueryOptions(
 	return queryOptions({
 		queryKey: ["usage", "stacked", groupBy, win.from, win.to, win.interval],
 		queryFn: async (): Promise<UsageTimeSeriesResult> => {
-			const { data, error } = await apiClient.GET("/usage/timeseries", {
-				params: {
-					query: {
-						group_by: groupBy,
-						from: win.from,
-						to: win.to,
-						interval: win.interval,
+			const data = unwrap(
+				await apiClient.GET("/usage/timeseries", {
+					params: {
+						query: {
+							group_by: groupBy,
+							from: win.from,
+							to: win.to,
+							interval: win.interval,
+						},
 					},
-				},
-			});
-			if (error) throw new ApiError(0, error.error);
+				}),
+			);
 			return data;
 		},
 		staleTime: 15_000,
@@ -630,10 +635,11 @@ export function usageTotalsQueryOptions(win: UsageWindow) {
 	return queryOptions({
 		queryKey: ["usage", "totals", win.from, win.to] as const,
 		queryFn: async (): Promise<UsageSummaryResult> => {
-			const { data, error } = await apiClient.GET("/usage/summary", {
-				params: { query: { from: win.from, to: win.to } },
-			});
-			if (error) throw new ApiError(0, error.error);
+			const data = unwrap(
+				await apiClient.GET("/usage/summary", {
+					params: { query: { from: win.from, to: win.to } },
+				}),
+			);
 			return data;
 		},
 		staleTime: 15_000,
@@ -753,10 +759,11 @@ export function resourceTimelineQueryOptions(
 		queryFn: async (): Promise<UsageTimeSeriesResult> => {
 			const query: UsageTimeseriesQuery = { interval, group_by: dimension };
 			query[dimension] = [id];
-			const { data, error } = await apiClient.GET("/usage/timeseries", {
-				params: { query },
-			});
-			if (error) throw new ApiError(0, error.error);
+			const data = unwrap(
+				await apiClient.GET("/usage/timeseries", {
+					params: { query },
+				}),
+			);
 			return data;
 		},
 		staleTime: 15_000,

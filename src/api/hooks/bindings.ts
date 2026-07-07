@@ -1,7 +1,7 @@
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { apiClient } from "@/api/client";
-import { ApiError } from "@/api/types/errors";
 import type { components, operations } from "@/api/types.gen";
+import { unwrap } from "@/api/unwrap";
 
 // --- Schema-derived types ---
 
@@ -16,8 +16,7 @@ type BindingList =
 export const bindingsListQueryOptions = queryOptions({
 	queryKey: ["host-bindings"] as const,
 	queryFn: async (): Promise<BindingList> => {
-		const { data, error } = await apiClient.GET("/host-bindings");
-		if (error) throw new ApiError(0, error.error);
+		const data = unwrap(await apiClient.GET("/host-bindings"));
 		return data;
 	},
 	staleTime: 30_000,

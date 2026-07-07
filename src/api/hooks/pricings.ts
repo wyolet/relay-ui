@@ -5,7 +5,6 @@ import {
 	useSuspenseQuery,
 } from "@tanstack/react-query";
 import { apiClient } from "@/api/client";
-import { ApiError } from "@/api/types/errors";
 import type {
 	Pricing,
 	PricingCreate,
@@ -13,6 +12,7 @@ import type {
 	PricingUpdate,
 } from "@/api/types/pricing";
 import type { operations } from "@/api/types.gen";
+import { unwrap } from "@/api/unwrap";
 
 // --- Query options ---
 
@@ -23,8 +23,7 @@ export type PricingsListParams = NonNullable<
 export const pricingsListQueryOptions = queryOptions({
 	queryKey: ["pricings"] as const,
 	queryFn: async (): Promise<PricingListResponse> => {
-		const { data, error } = await apiClient.GET("/pricings");
-		if (error) throw new ApiError(0, error.error);
+		const data = unwrap(await apiClient.GET("/pricings"));
 		return data;
 	},
 	staleTime: 30_000,
@@ -36,10 +35,11 @@ export function pricingsListQuery(params: PricingsListParams) {
 	return queryOptions({
 		queryKey: ["pricings", "list", params] as const,
 		queryFn: async (): Promise<PricingListResponse> => {
-			const { data, error } = await apiClient.GET("/pricings", {
-				params: { query: params },
-			});
-			if (error) throw new ApiError(0, error.error);
+			const data = unwrap(
+				await apiClient.GET("/pricings", {
+					params: { query: params },
+				}),
+			);
 			return data;
 		},
 		staleTime: 30_000,
@@ -51,10 +51,11 @@ export function pricingDetailQueryOptions(ref: string) {
 	return queryOptions({
 		queryKey: ["pricings", ref] as const,
 		queryFn: async (): Promise<Pricing> => {
-			const { data, error } = await apiClient.GET("/pricings/{ref}", {
-				params: { path: { ref } },
-			});
-			if (error) throw new ApiError(0, error.error);
+			const data = unwrap(
+				await apiClient.GET("/pricings/{ref}", {
+					params: { path: { ref } },
+				}),
+			);
 			return data;
 		},
 		staleTime: 30_000,
@@ -93,8 +94,7 @@ export function useCreatePricing() {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: async (body: PricingCreate): Promise<Pricing> => {
-			const { data, error } = await apiClient.POST("/pricings", { body });
-			if (error) throw new ApiError(0, error.error);
+			const data = unwrap(await apiClient.POST("/pricings", { body }));
 			return data;
 		},
 		onMutate: async (newPricing) => {
@@ -137,11 +137,12 @@ export function useUpdatePricing(id: string) {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: async (body: PricingUpdate): Promise<Pricing> => {
-			const { data, error } = await apiClient.PUT("/pricings/by-id/{id}", {
-				params: { path: { id } },
-				body,
-			});
-			if (error) throw new ApiError(0, error.error);
+			const data = unwrap(
+				await apiClient.PUT("/pricings/by-id/{id}", {
+					params: { path: { id } },
+					body,
+				}),
+			);
 			return data;
 		},
 		onSuccess: () => {
@@ -154,10 +155,11 @@ export function useDeletePricing() {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: async (id: string): Promise<void> => {
-			const { error } = await apiClient.DELETE("/pricings/by-id/{id}", {
-				params: { path: { id } },
-			});
-			if (error) throw new ApiError(0, error.error);
+			unwrap(
+				await apiClient.DELETE("/pricings/by-id/{id}", {
+					params: { path: { id } },
+				}),
+			);
 		},
 		onMutate: async (id) => {
 			await queryClient.cancelQueries({ queryKey: ["pricings"] });

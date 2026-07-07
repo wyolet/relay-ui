@@ -7,8 +7,8 @@ import {
 	useSuspenseQuery,
 } from "@tanstack/react-query";
 import { apiClient } from "@/api/client";
-import { ApiError } from "@/api/types/errors";
 import type { components, operations } from "@/api/types.gen";
+import { unwrap } from "@/api/unwrap";
 
 // --- Schema-derived types ---
 
@@ -31,16 +31,17 @@ export function logsInfiniteQueryOptions(filter: LogsFilter = {}) {
 	return infiniteQueryOptions({
 		queryKey: ["logs", "list", filter] as const,
 		queryFn: async ({ pageParam }): Promise<LogListPage> => {
-			const { data, error } = await apiClient.GET("/logs", {
-				params: {
-					query: {
-						...filter,
-						limit: LIST_PAGE_SIZE,
-						cursor: pageParam || undefined,
+			const data = unwrap(
+				await apiClient.GET("/logs", {
+					params: {
+						query: {
+							...filter,
+							limit: LIST_PAGE_SIZE,
+							cursor: pageParam || undefined,
+						},
 					},
-				},
-			});
-			if (error) throw new ApiError(0, error.error);
+				}),
+			);
 			return data;
 		},
 		initialPageParam: "",
@@ -97,19 +98,20 @@ export function logsHistogramQueryOptions(filter: LogsFilter) {
 	return queryOptions({
 		queryKey: ["logs", "histogram", filter] as const,
 		queryFn: async (): Promise<LogHistogramPoint[]> => {
-			const { data, error } = await apiClient.GET("/usage/timeseries", {
-				params: {
-					query: {
-						interval: intervalForSince(filter.since),
-						group_by: "source",
-						since: filter.since,
-						model_id: filter.model_id,
-						host_id: filter.host_id,
-						policy_id: filter.policy_id,
+			const data = unwrap(
+				await apiClient.GET("/usage/timeseries", {
+					params: {
+						query: {
+							interval: intervalForSince(filter.since),
+							group_by: "source",
+							since: filter.since,
+							model_id: filter.model_id,
+							host_id: filter.host_id,
+							policy_id: filter.policy_id,
+						},
 					},
-				},
-			});
-			if (error) throw new ApiError(0, error.error);
+				}),
+			);
 			const byEpoch = new Map<
 				number,
 				{ requests: number; errors: number; tokens: number }
@@ -160,10 +162,11 @@ export function logDetailQueryOptions(requestId: string) {
 	return queryOptions({
 		queryKey: ["logs", "detail", requestId] as const,
 		queryFn: async (): Promise<LogDetail> => {
-			const { data, error } = await apiClient.GET("/logs/{request_id}", {
-				params: { path: { request_id: requestId } },
-			});
-			if (error) throw new ApiError(0, error.error);
+			const data = unwrap(
+				await apiClient.GET("/logs/{request_id}", {
+					params: { path: { request_id: requestId } },
+				}),
+			);
 			return data;
 		},
 		staleTime: 5 * 60_000,

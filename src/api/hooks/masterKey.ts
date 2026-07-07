@@ -8,8 +8,8 @@
 
 import { useMutation } from "@tanstack/react-query";
 import { apiClient } from "@/api/client";
-import { ApiError } from "@/api/types/errors";
 import type { components } from "@/api/types.gen";
+import { unwrap } from "@/api/unwrap";
 
 export type MasterKeyResponse =
 	components["schemas"]["masterKeyGenerateOutputBody"];
@@ -17,8 +17,7 @@ export type MasterKeyResponse =
 export function useGenerateMasterKey() {
 	return useMutation({
 		mutationFn: async (): Promise<MasterKeyResponse> => {
-			const { data, error } = await apiClient.POST("/master-key/generate", {});
-			if (error) throw new ApiError(0, error.error);
+			const data = unwrap(await apiClient.POST("/master-key/generate", {}));
 			return data;
 		},
 	});

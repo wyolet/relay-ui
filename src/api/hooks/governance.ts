@@ -5,8 +5,8 @@ import {
 	useSuspenseQuery,
 } from "@tanstack/react-query";
 import { apiClient } from "@/api/client";
-import { ApiError } from "@/api/types/errors";
 import type { components } from "@/api/types.gen";
+import { unwrap } from "@/api/unwrap";
 
 export type Governance = components["schemas"]["Governance"];
 export type GovernanceEnvelope = components["schemas"]["GovernanceEnvelope"];
@@ -25,8 +25,7 @@ async function fetchGovernance(
 				: section === "policy"
 					? await apiClient.GET("/settings/governance:policy")
 					: await apiClient.GET("/settings/governance:provider");
-	if (res.error) throw new ApiError(0, res.error.error);
-	return res.data;
+	return unwrap(res);
 }
 
 async function putGovernance(
@@ -41,8 +40,7 @@ async function putGovernance(
 				: section === "policy"
 					? await apiClient.PUT("/settings/governance:policy", { body })
 					: await apiClient.PUT("/settings/governance:provider", { body });
-	if (res.error) throw new ApiError(0, res.error.error);
-	return res.data;
+	return unwrap(res);
 }
 
 export function governanceQueryOptions(section: GovernanceSection) {
