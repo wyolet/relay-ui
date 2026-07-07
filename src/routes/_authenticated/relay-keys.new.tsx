@@ -1,11 +1,11 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Check, ChevronLeft, Copy } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { Suspense, useState } from "react";
 import { policiesListQueryOptions } from "@/api/hooks/policies";
 import { Button } from "@/components/ui/button";
 import { RelayKeyForm } from "@/relay-keys/RelayKeyForm";
+import { SecretReveal } from "@/relay-keys/SecretReveal";
 import { PageLoader } from "@/shared/Spinner";
-import { toast } from "@/shared/Toast";
 
 export const Route = createFileRoute("/_authenticated/relay-keys/new")({
 	loader: ({ context }) =>
@@ -30,12 +30,7 @@ function NewRelayKeyInner() {
 						stored.
 					</p>
 				</div>
-				<div className="flex items-center gap-2 rounded-md border border-border bg-muted/30 px-3 py-2">
-					<code className="flex-1 text-xs font-mono text-foreground break-all">
-						{plaintext}
-					</code>
-					<CopyInline text={plaintext} />
-				</div>
+				<SecretReveal secret={plaintext} />
 				<div className="flex justify-end gap-2">
 					<Button
 						type="button"
@@ -95,33 +90,6 @@ function NewRelayKeyInner() {
 				}
 			/>
 		</div>
-	);
-}
-
-function CopyInline({ text }: { text: string }) {
-	const [copied, setCopied] = useState(false);
-	async function handleCopy() {
-		try {
-			await navigator.clipboard.writeText(text);
-			setCopied(true);
-			setTimeout(() => setCopied(false), 1_500);
-		} catch {
-			toast("error", "Couldn't copy to clipboard.");
-		}
-	}
-	return (
-		<button
-			type="button"
-			onClick={() => void handleCopy()}
-			aria-label="Copy"
-			className="inline-flex items-center justify-center h-8 w-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-		>
-			{copied ? (
-				<Check className="w-4 h-4 text-primary" />
-			) : (
-				<Copy className="w-4 h-4" />
-			)}
-		</button>
 	);
 }
 
