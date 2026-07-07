@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ChevronLeft } from "lucide-react";
 import { Suspense } from "react";
+import { bindingsListQueryOptions } from "@/api/hooks/bindings";
 import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
 import { modelsListQueryOptions } from "@/api/hooks/models";
@@ -12,16 +13,20 @@ import { PolicyForm } from "@/policies/PolicyForm";
 import { PageLoader } from "@/shared/Spinner";
 
 export const Route = createFileRoute("/_authenticated/policies/new")({
-	loader: ({ context }) =>
-		Promise.all([
-			context.queryClient.ensureQueryData(providersListQueryOptions),
-			context.queryClient.ensureQueryData(hostKeysListQueryOptions),
-			context.queryClient.ensureQueryData(hostsListQueryOptions),
-			context.queryClient.ensureQueryData(modelsListQueryOptions),
-			context.queryClient.ensureQueryData(rateLimitsListQueryOptions),
-			context.queryClient.ensureQueryData(policiesListQueryOptions),
-			context.queryClient.ensureQueryData(relayKeysListQueryOptions),
-		]),
+	loader: ({ context }) => {
+		const { queryClient } = context;
+		// Nothing gates first paint — PolicyForm's pickers stream in behind its
+		// own render; warm them all (incl. bindings for usePolicyHostRequirements).
+		void queryClient.prefetchQuery(providersListQueryOptions);
+		void queryClient.prefetchQuery(hostKeysListQueryOptions);
+		void queryClient.prefetchQuery(hostsListQueryOptions);
+		void queryClient.prefetchQuery(modelsListQueryOptions);
+		void queryClient.prefetchQuery(rateLimitsListQueryOptions);
+		void queryClient.prefetchQuery(policiesListQueryOptions);
+		void queryClient.prefetchQuery(relayKeysListQueryOptions);
+		void queryClient.prefetchQuery(bindingsListQueryOptions);
+		return null;
+	},
 	component: NewPolicyPage,
 });
 

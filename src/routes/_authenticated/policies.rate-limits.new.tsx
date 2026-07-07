@@ -1,7 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ChevronLeft } from "lucide-react";
 import { Suspense } from "react";
-import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
 import { proxyModeQueryOptions } from "@/api/hooks/settings";
 import { RateLimitForm } from "@/rate-limits/RateLimitForm";
 import { PageLoader } from "@/shared/Spinner";
@@ -10,10 +9,7 @@ export const Route = createFileRoute(
 	"/_authenticated/policies/rate-limits/new",
 )({
 	loader: ({ context }) =>
-		Promise.all([
-			context.queryClient.ensureQueryData(rateLimitsListQueryOptions),
-			context.queryClient.ensureQueryData(proxyModeQueryOptions),
-		]),
+		context.queryClient.ensureQueryData(proxyModeQueryOptions),
 	component: NewRateLimitPage,
 });
 

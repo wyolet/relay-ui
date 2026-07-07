@@ -1,11 +1,16 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ChevronLeft } from "lucide-react";
 import { Suspense } from "react";
+import { bindingsListQueryOptions } from "@/api/hooks/bindings";
 import { governanceQueryOptions, useGovernance } from "@/api/hooks/governance";
 import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
 import { modelsListQueryOptions } from "@/api/hooks/models";
-import { policyDetailQueryOptions, usePolicy } from "@/api/hooks/policies";
+import {
+	policiesListQueryOptions,
+	policyDetailQueryOptions,
+	usePolicy,
+} from "@/api/hooks/policies";
 import { providersListQueryOptions } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
 import { relayKeysListQueryOptions } from "@/api/hooks/relayKeys";
@@ -15,19 +20,24 @@ import { PolicyForm } from "@/policies/PolicyForm";
 import { PageLoader } from "@/shared/Spinner";
 
 export const Route = createFileRoute("/_authenticated/policies/$name_/edit")({
-	loader: ({ context, params }) =>
-		Promise.all([
-			context.queryClient.ensureQueryData(
-				policyDetailQueryOptions(params.name),
-			),
-			context.queryClient.ensureQueryData(hostKeysListQueryOptions),
-			context.queryClient.ensureQueryData(hostsListQueryOptions),
-			context.queryClient.ensureQueryData(providersListQueryOptions),
-			context.queryClient.ensureQueryData(modelsListQueryOptions),
-			context.queryClient.ensureQueryData(rateLimitsListQueryOptions),
-			context.queryClient.ensureQueryData(relayKeysListQueryOptions),
-			context.queryClient.ensureQueryData(governanceQueryOptions("policy")),
-		]),
+	loader: ({ context, params }) => {
+		const { queryClient } = context;
+		// PolicyForm's field pickers stream in behind its own render; warm them
+		// (incl. bindings for usePolicyHostRequirements, previously missing and
+		// causing a post-mount suspense waterfall) without blocking the route.
+		void queryClient.prefetchQuery(hostKeysListQueryOptions);
+		void queryClient.prefetchQuery(hostsListQueryOptions);
+		void queryClient.prefetchQuery(providersListQueryOptions);
+		void queryClient.prefetchQuery(modelsListQueryOptions);
+		void queryClient.prefetchQuery(rateLimitsListQueryOptions);
+		void queryClient.prefetchQuery(relayKeysListQueryOptions);
+		void queryClient.prefetchQuery(policiesListQueryOptions);
+		void queryClient.prefetchQuery(bindingsListQueryOptions);
+		return Promise.all([
+			queryClient.ensureQueryData(policyDetailQueryOptions(params.name)),
+			queryClient.ensureQueryData(governanceQueryOptions("policy")),
+		]);
+	},
 	component: EditPolicyPage,
 });
 

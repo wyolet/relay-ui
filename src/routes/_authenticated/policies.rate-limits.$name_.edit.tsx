@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ChevronLeft } from "lucide-react";
 import { Suspense } from "react";
+import { bindingsListQueryOptions } from "@/api/hooks/bindings";
 import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
 import { modelsListQueryOptions } from "@/api/hooks/models";
@@ -22,20 +23,23 @@ import { PageLoader } from "@/shared/Spinner";
 export const Route = createFileRoute(
 	"/_authenticated/policies/rate-limits/$name_/edit",
 )({
-	loader: ({ context, params }) =>
-		Promise.all([
-			context.queryClient.ensureQueryData(
-				rateLimitDetailQueryOptions(params.name),
-			),
-			context.queryClient.ensureQueryData(rateLimitsListQueryOptions),
-			context.queryClient.ensureQueryData(proxyModeQueryOptions),
-			context.queryClient.ensureQueryData(policiesListQueryOptions),
-			context.queryClient.ensureQueryData(hostKeysListQueryOptions),
-			context.queryClient.ensureQueryData(hostsListQueryOptions),
-			context.queryClient.ensureQueryData(modelsListQueryOptions),
-			context.queryClient.ensureQueryData(relayKeysListQueryOptions),
-			context.queryClient.ensureQueryData(providersListQueryOptions),
-		]),
+	loader: ({ context, params }) => {
+		const { queryClient } = context;
+		// rateLimits + bindings feed the DiagnosticList this edit view renders
+		// (non-blocking now); warm them alongside the form pickers.
+		void queryClient.prefetchQuery(rateLimitsListQueryOptions);
+		void queryClient.prefetchQuery(policiesListQueryOptions);
+		void queryClient.prefetchQuery(hostKeysListQueryOptions);
+		void queryClient.prefetchQuery(hostsListQueryOptions);
+		void queryClient.prefetchQuery(modelsListQueryOptions);
+		void queryClient.prefetchQuery(relayKeysListQueryOptions);
+		void queryClient.prefetchQuery(providersListQueryOptions);
+		void queryClient.prefetchQuery(bindingsListQueryOptions);
+		return Promise.all([
+			queryClient.ensureQueryData(rateLimitDetailQueryOptions(params.name)),
+			queryClient.ensureQueryData(proxyModeQueryOptions),
+		]);
+	},
 	component: RateLimitEditPage,
 });
 

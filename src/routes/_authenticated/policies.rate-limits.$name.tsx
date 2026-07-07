@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ChevronLeft } from "lucide-react";
 import { Suspense } from "react";
+import { bindingsListQueryOptions } from "@/api/hooks/bindings";
 import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
 import { modelsListQueryOptions } from "@/api/hooks/models";
@@ -14,7 +15,6 @@ import {
 	useUpdateRateLimit,
 } from "@/api/hooks/ratelimits";
 import { relayKeysListQueryOptions } from "@/api/hooks/relayKeys";
-import { proxyModeQueryOptions } from "@/api/hooks/settings";
 import { ApiError } from "@/api/types/errors";
 import { displayLabel } from "@/lib/displayLabel";
 import { RateLimitDetailView } from "@/rate-limits/RateLimitDetailView";
@@ -25,20 +25,20 @@ import { toast } from "@/shared/Toast";
 export const Route = createFileRoute(
 	"/_authenticated/policies/rate-limits/$name",
 )({
-	loader: ({ context, params }) =>
-		Promise.all([
-			context.queryClient.ensureQueryData(
-				rateLimitDetailQueryOptions(params.name),
-			),
-			context.queryClient.ensureQueryData(rateLimitsListQueryOptions),
-			context.queryClient.ensureQueryData(proxyModeQueryOptions),
-			context.queryClient.ensureQueryData(policiesListQueryOptions),
-			context.queryClient.ensureQueryData(hostKeysListQueryOptions),
-			context.queryClient.ensureQueryData(hostsListQueryOptions),
-			context.queryClient.ensureQueryData(modelsListQueryOptions),
-			context.queryClient.ensureQueryData(relayKeysListQueryOptions),
-			context.queryClient.ensureQueryData(providersListQueryOptions),
-		]),
+	loader: ({ context, params }) => {
+		const { queryClient } = context;
+		void queryClient.prefetchQuery(rateLimitsListQueryOptions);
+		void queryClient.prefetchQuery(hostKeysListQueryOptions);
+		void queryClient.prefetchQuery(hostsListQueryOptions);
+		void queryClient.prefetchQuery(modelsListQueryOptions);
+		void queryClient.prefetchQuery(providersListQueryOptions);
+		void queryClient.prefetchQuery(bindingsListQueryOptions);
+		return Promise.all([
+			queryClient.ensureQueryData(rateLimitDetailQueryOptions(params.name)),
+			queryClient.ensureQueryData(policiesListQueryOptions),
+			queryClient.ensureQueryData(relayKeysListQueryOptions),
+		]);
+	},
 	component: RateLimitDetailPage,
 });
 

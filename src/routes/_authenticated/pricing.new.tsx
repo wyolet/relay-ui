@@ -3,14 +3,12 @@ import { ChevronLeft } from "lucide-react";
 import { Suspense } from "react";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
 import { modelsListQueryOptions } from "@/api/hooks/models";
-import { pricingsListQueryOptions } from "@/api/hooks/pricings";
 import { PricingForm } from "@/pricing/PricingForm";
 import { PageLoader } from "@/shared/Spinner";
 
 export const Route = createFileRoute("/_authenticated/pricing/new")({
 	loader: ({ context }) =>
 		Promise.all([
-			context.queryClient.ensureQueryData(pricingsListQueryOptions),
 			context.queryClient.ensureQueryData(modelsListQueryOptions),
 			context.queryClient.ensureQueryData(hostsListQueryOptions),
 		]),

@@ -42,19 +42,24 @@ const searchSchema = z.object({
 
 export const Route = createFileRoute("/_authenticated/hosts/$name")({
 	validateSearch: searchSchema,
-	loader: ({ context, params }) =>
-		Promise.all([
-			context.queryClient.ensureQueryData(hostDetailQueryOptions(params.name)),
-			context.queryClient.ensureQueryData(hostsListQueryOptions),
-			context.queryClient.ensureQueryData(bindingsListQueryOptions),
-			context.queryClient.ensureQueryData(hostKeysListQueryOptions),
-			context.queryClient.ensureQueryData(policiesListQueryOptions),
-			context.queryClient.ensureQueryData(modelsListQueryOptions),
-			context.queryClient.ensureQueryData(rateLimitsListQueryOptions),
-			context.queryClient.ensureQueryData(relayKeysListQueryOptions),
-			context.queryClient.ensureQueryData(providersListQueryOptions),
-			context.queryClient.ensureQueryData(governanceQueryOptions("host")),
-		]),
+	loader: ({ context, params }) => {
+		const { queryClient } = context;
+		// The reference lists feed the per-tab loaders, which stream in behind
+		// each tab's Suspense boundary; only the detail doc + governance gate
+		// the header's first paint.
+		void queryClient.prefetchQuery(hostsListQueryOptions);
+		void queryClient.prefetchQuery(bindingsListQueryOptions);
+		void queryClient.prefetchQuery(hostKeysListQueryOptions);
+		void queryClient.prefetchQuery(policiesListQueryOptions);
+		void queryClient.prefetchQuery(modelsListQueryOptions);
+		void queryClient.prefetchQuery(rateLimitsListQueryOptions);
+		void queryClient.prefetchQuery(relayKeysListQueryOptions);
+		void queryClient.prefetchQuery(providersListQueryOptions);
+		return Promise.all([
+			queryClient.ensureQueryData(hostDetailQueryOptions(params.name)),
+			queryClient.ensureQueryData(governanceQueryOptions("host")),
+		]);
+	},
 	component: HostDetailPage,
 });
 
