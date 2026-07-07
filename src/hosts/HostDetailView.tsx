@@ -31,6 +31,7 @@ import {
 	ResourceUsageCards,
 	UsageCardsSkeleton,
 } from "@/shared/ResourceUsageCards";
+import { PageLoader } from "@/shared/Spinner";
 import {
 	ResourceSpendCard,
 	ResourceSpendCardSkeleton,
@@ -81,8 +82,6 @@ export function HostDetailView({
 	onDelete,
 	deleting,
 }: Props) {
-	const refs = useHostReferences(host);
-
 	return (
 		<div className="flex flex-col gap-5">
 			<Header
@@ -107,29 +106,32 @@ export function HostDetailView({
 				</TabsList>
 
 				<TabsContent value="overview">
-					<OverviewTab host={host} refs={refs} />
+					<Suspense fallback={<PageLoader className="min-h-[40vh]" />}>
+						<OverviewTabLoader host={host} />
+					</Suspense>
 				</TabsContent>
 				<TabsContent value="configuration">
 					<ConfigurationTab host={host} />
 				</TabsContent>
 				<TabsContent value="host-policies">
-					<HostPoliciesTable
-						host={host}
-						policies={refs.hostPolicies}
-						hostKeys={refs.hostKeys}
-					/>
+					<Suspense fallback={<PageLoader className="min-h-[40vh]" />}>
+						<HostPoliciesTabLoader host={host} />
+					</Suspense>
 				</TabsContent>
 				<TabsContent value="user-policies">
-					<UserPoliciesTable rows={refs.userPolicies} />
+					<Suspense fallback={<PageLoader className="min-h-[40vh]" />}>
+						<UserPoliciesTabLoader host={host} />
+					</Suspense>
 				</TabsContent>
 				<TabsContent value="host-keys">
-					<HostKeysTable
-						hostKeys={refs.hostKeys}
-						hostPolicies={refs.hostPolicies}
-					/>
+					<Suspense fallback={<PageLoader className="min-h-[40vh]" />}>
+						<HostKeysTabLoader host={host} />
+					</Suspense>
 				</TabsContent>
 				<TabsContent value="models">
-					<ModelsTable models={refs.models} />
+					<Suspense fallback={<PageLoader className="min-h-[40vh]" />}>
+						<ModelsTabLoader host={host} />
+					</Suspense>
 				</TabsContent>
 				<TabsContent value="usage">
 					{host.metadata.id ? (
@@ -156,6 +158,46 @@ export function HostDetailView({
 			</Tabs>
 		</div>
 	);
+}
+
+/* ---------------- Per-tab loaders ----------------
+
+   Each tab derives its slice from useHostReferences itself, inside the tab's
+   own Suspense boundary, so the header + tab bar paint immediately instead of
+   gating on the five underlying lists. The hook is cache-backed, so calling it
+   from several mounted tabs is free. */
+
+function OverviewTabLoader({ host }: { host: Host }) {
+	const refs = useHostReferences(host);
+	return <OverviewTab host={host} refs={refs} />;
+}
+
+function HostPoliciesTabLoader({ host }: { host: Host }) {
+	const refs = useHostReferences(host);
+	return (
+		<HostPoliciesTable
+			host={host}
+			policies={refs.hostPolicies}
+			hostKeys={refs.hostKeys}
+		/>
+	);
+}
+
+function UserPoliciesTabLoader({ host }: { host: Host }) {
+	const refs = useHostReferences(host);
+	return <UserPoliciesTable rows={refs.userPolicies} />;
+}
+
+function HostKeysTabLoader({ host }: { host: Host }) {
+	const refs = useHostReferences(host);
+	return (
+		<HostKeysTable hostKeys={refs.hostKeys} hostPolicies={refs.hostPolicies} />
+	);
+}
+
+function ModelsTabLoader({ host }: { host: Host }) {
+	const refs = useHostReferences(host);
+	return <ModelsTable models={refs.models} />;
 }
 
 /* ---------------- Header ---------------- */

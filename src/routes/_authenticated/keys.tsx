@@ -1,7 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Check, Copy, KeyRound, MoreHorizontal, Plus } from "lucide-react";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { z } from "zod";
+import { bindingsListQueryOptions } from "@/api/hooks/bindings";
 import {
 	hostKeysListQueryOptions,
 	useDeleteHostKey,
@@ -38,6 +39,7 @@ import { HostCell } from "@/hosts/HostCell";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { confirm } from "@/shared/ConfirmDialog";
 import { SearchBox } from "@/shared/SearchBox";
+import { PageLoader } from "@/shared/Spinner";
 import { Switch } from "@/shared/Switch";
 import { TableToolbar } from "@/shared/TableToolbar";
 import { toast } from "@/shared/Toast";
@@ -69,6 +71,7 @@ export const Route = createFileRoute("/_authenticated/keys")({
 		void context.queryClient.prefetchQuery(modelsListQueryOptions);
 		void context.queryClient.prefetchQuery(rateLimitsListQueryOptions);
 		void context.queryClient.prefetchQuery(providersListQueryOptions);
+		void context.queryClient.prefetchQuery(bindingsListQueryOptions);
 		return null;
 	},
 	component: KeysPage,
@@ -209,8 +212,16 @@ function KeysPage() {
 				</TabsList>
 			</Tabs>
 
-			{search.tab === "relay" && <RelayKeysPanel />}
-			{search.tab === "provider" && <HostKeysPanel />}
+			{search.tab === "relay" && (
+				<Suspense fallback={<PageLoader className="min-h-[40vh]" />}>
+					<RelayKeysPanel />
+				</Suspense>
+			)}
+			{search.tab === "provider" && (
+				<Suspense fallback={<PageLoader className="min-h-[40vh]" />}>
+					<HostKeysPanel />
+				</Suspense>
+			)}
 		</div>
 	);
 }
