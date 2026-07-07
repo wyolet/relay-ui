@@ -2,7 +2,7 @@ import { useForm } from "@tanstack/react-form";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { Eye, EyeOff, Lock, User } from "lucide-react";
-import { motion } from "motion/react";
+import { AnimatePresence, MotionConfig, motion } from "motion/react";
 import { useState } from "react";
 import { z } from "zod";
 import { AuthError, useAuth, whoamiQueryOptions } from "@/api/auth";
@@ -10,13 +10,12 @@ import { CONTROL_API_URL } from "@/api/client";
 import { feature } from "@/api/runtimeConfig";
 import { Button } from "@/components/ui/button";
 import {
-	InputGroup,
-	InputGroupAddon,
-	InputGroupButton,
-	InputGroupInput,
-} from "@/components/ui/input-group";
+	fieldFocusWithinClassName,
+	fieldFrameClassName,
+} from "@/components/ui/field-focus";
+import { IconButton } from "@/components/ui/icon-button";
 import { Label } from "@/components/ui/label";
-import { wizardPrimary } from "@/setup/ui";
+import { cn } from "@/lib/utils";
 import { BrandMark } from "@/shared/BrandMark";
 
 export const Route = createFileRoute("/login")({
@@ -41,6 +40,21 @@ const loginSchema = z.object({
 });
 
 type LoginValues = z.infer<typeof loginSchema>;
+
+/* Entrance choreography: the card rises once, then its children cascade in a
+   short stagger. MotionConfig honors the OS reduced-motion preference. */
+const cascade = {
+	hidden: {},
+	show: { transition: { staggerChildren: 0.07, delayChildren: 0.1 } },
+};
+const rise = {
+	hidden: { opacity: 0, y: 10 },
+	show: {
+		opacity: 1,
+		y: 0,
+		transition: { duration: 0.45, ease: [0.22, 1, 0.36, 1] as const },
+	},
+};
 
 function LiveStatus() {
 	const { data, isError, isLoading } = useQuery({
@@ -90,6 +104,8 @@ interface FieldRowProps {
 	disabled: boolean;
 }
 
+/** Login field on the shared field system: the wrapper carries the mauve
+ *  frame + focus-within wash/settle, the inner input stays naked. */
 function FieldRow({
 	id,
 	label,
@@ -109,11 +125,19 @@ function FieldRow({
 	return (
 		<div className="flex flex-col gap-1.5">
 			<Label htmlFor={id}>{label}</Label>
-			<InputGroup className="h-11">
-				<InputGroupAddon>
-					<Icon className="text-muted-foreground/70" />
-				</InputGroupAddon>
-				<InputGroupInput
+			<div
+				className={cn(
+					fieldFrameClassName,
+					fieldFocusWithinClassName,
+					"flex h-11 items-center gap-2.5 px-3 transition-[border-color,background-color]",
+					hasError && "border-destructive",
+				)}
+			>
+				<Icon
+					className="size-4 shrink-0 text-muted-foreground/70"
+					aria-hidden
+				/>
+				<input
 					id={id}
 					type={inputType}
 					autoComplete={autoComplete}
@@ -124,22 +148,20 @@ function FieldRow({
 					onBlur={onBlur}
 					aria-invalid={hasError || undefined}
 					aria-describedby={hasError ? `${id}-error` : undefined}
-					className="text-sm"
+					className="h-full min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/60 disabled:cursor-not-allowed"
 				/>
 				{isPassword && (
-					<InputGroupAddon align="inline-end">
-						<InputGroupButton
-							size="icon-sm"
-							tabIndex={-1}
-							onClick={() => setReveal((v) => !v)}
-							disabled={disabled}
-							aria-label={reveal ? "Hide password" : "Show password"}
-						>
-							{reveal ? <EyeOff /> : <Eye />}
-						</InputGroupButton>
-					</InputGroupAddon>
+					<IconButton
+						icon={reveal ? EyeOff : Eye}
+						label={reveal ? "Hide password" : "Show password"}
+						weight="bare"
+						size="sm"
+						tabIndex={-1}
+						onClick={() => setReveal((v) => !v)}
+						disabled={disabled}
+					/>
 				)}
-			</InputGroup>
+			</div>
 			{hasError && (
 				<p id={`${id}-error`} role="alert" className="text-xs text-destructive">
 					{errors[0]}
@@ -153,6 +175,7 @@ function LoginPage() {
 	const navigate = useNavigate();
 	const { login } = useAuth();
 	const [serverError, setServerError] = useState<string | null>(null);
+	const [success, setSuccess] = useState(false);
 
 	const form = useForm({
 		defaultValues: { username: "", password: "" } as LoginValues,
@@ -174,6 +197,10 @@ function LoginPage() {
 			setServerError(null);
 			try {
 				await login(value.username, value.password);
+				// Let the send-off play before the route swap — signing in should
+				// feel like crossing a threshold, not a teleport.
+				setSuccess(true);
+				await new Promise((resolve) => setTimeout(resolve, 700));
 				await navigate({ to: "/" });
 			} catch (err) {
 				if (err instanceof AuthError) {
@@ -186,131 +213,227 @@ function LoginPage() {
 	});
 
 	return (
-		<div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-4 py-10">
-			{/* ambient brand glows behind the card */}
-			<div aria-hidden className="pointer-events-none absolute inset-0">
-				<div className="absolute left-1/2 top-0 size-[42rem] -translate-x-1/2 -translate-y-1/3 rounded-full bg-brand-500/10 blur-[120px]" />
-				<div className="absolute bottom-0 right-0 size-[32rem] translate-x-1/4 translate-y-1/4 rounded-full bg-accent-500/10 blur-[120px]" />
-			</div>
-
-			<motion.div
-				initial={{ opacity: 0, y: 16 }}
-				animate={{ opacity: 1, y: 0 }}
-				transition={{ duration: 0.3, ease: "easeOut" }}
-				className="relative w-full max-w-sm overflow-hidden rounded-3xl border border-border/70 bg-card/95 p-8 shadow-2xl shadow-black/10 ring-1 ring-black/5 backdrop-blur-sm dark:shadow-black/40 dark:ring-white/5"
-			>
-				{/* top edge highlight */}
-				<div
-					aria-hidden
-					className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand-500/40 to-transparent"
-				/>
-				<div className="mb-8 flex flex-col items-center text-center">
-					<BrandMark className="mb-5 h-9 w-auto" />
-					<div className="flex items-baseline gap-2">
-						<span className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
-							Wyolet
-						</span>
-						<span className="text-sm font-semibold uppercase tracking-[0.2em] text-foreground">
-							Relay
-						</span>
-					</div>
-					<p className="mt-2 text-xs text-muted-foreground">
-						Sign in to the operator console
-					</p>
+		<MotionConfig reducedMotion="user">
+			<div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-4 py-10">
+				{/* ambient brand glows — breathing slowly behind the card */}
+				<div aria-hidden className="pointer-events-none absolute inset-0">
+					<motion.div
+						animate={
+							success
+								? { scale: 1.35, opacity: 1 }
+								: { scale: [1, 1.12, 1], opacity: [0.75, 1, 0.75] }
+						}
+						transition={
+							success
+								? { duration: 0.8, ease: "easeOut" }
+								: { duration: 11, repeat: Infinity, ease: "easeInOut" }
+						}
+						className="absolute left-1/2 top-0 size-[46rem] -translate-x-1/2 -translate-y-1/3 rounded-full bg-brand-500/10 blur-[120px]"
+					/>
+					<motion.div
+						animate={
+							success
+								? { scale: 1.3, opacity: 1 }
+								: { scale: [1, 1.09, 1], opacity: [0.7, 1, 0.7] }
+						}
+						transition={
+							success
+								? { duration: 0.8, ease: "easeOut" }
+								: {
+										duration: 13,
+										repeat: Infinity,
+										ease: "easeInOut",
+										delay: 2,
+									}
+						}
+						className="absolute bottom-0 right-0 size-[34rem] translate-x-1/4 translate-y-1/4 rounded-full bg-accent-500/10 blur-[120px]"
+					/>
+					{/* grain dither so the glows blend instead of banding */}
+					<div className="bg-grain absolute inset-0 opacity-[0.04] mix-blend-overlay dark:opacity-[0.05]" />
 				</div>
 
-				<form
-					onSubmit={(e) => {
-						e.preventDefault();
-						e.stopPropagation();
-						void form.handleSubmit();
-					}}
-					className="flex flex-col gap-4"
-					aria-label="Sign in"
+				<motion.div
+					initial={{ opacity: 0, y: 22, scale: 0.985 }}
+					animate={{ opacity: 1, y: 0, scale: 1 }}
+					transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+					className="relative w-full max-w-[27rem] overflow-hidden rounded-3xl border border-border/70 bg-card/95 p-9 shadow-2xl shadow-black/10 ring-1 ring-black/5 backdrop-blur-sm dark:shadow-black/40 dark:ring-white/5"
 				>
-					<form.Field name="username">
-						{(field) => (
-							<FieldRow
-								id="username"
-								label="Username"
-								type="text"
-								icon={User}
-								autoComplete="username"
-								value={field.state.value}
-								onChange={field.handleChange}
-								onBlur={field.handleBlur}
-								errors={field.state.meta.errors
-									.filter((e): e is string => typeof e === "string")
-									.slice(0, 1)}
-								disabled={form.state.isSubmitting}
-							/>
-						)}
-					</form.Field>
+					{/* top edge highlight */}
+					<div
+						aria-hidden
+						className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand-500/40 to-transparent"
+					/>
 
-					<form.Field name="password">
-						{(field) => (
-							<FieldRow
-								id="password"
-								label="Password"
-								type="password"
-								icon={Lock}
-								autoComplete="current-password"
-								value={field.state.value}
-								onChange={field.handleChange}
-								onBlur={field.handleBlur}
-								errors={field.state.meta.errors
-									.filter((e): e is string => typeof e === "string")
-									.slice(0, 1)}
-								disabled={form.state.isSubmitting}
-							/>
-						)}
-					</form.Field>
-
-					{serverError !== null && (
-						<p role="alert" className="text-xs text-destructive">
-							{serverError}
-						</p>
-					)}
-
-					<form.Subscribe
-						selector={(s) => [s.isSubmitting, s.canSubmit] as const}
-					>
-						{([isSubmitting, canSubmit]) => (
-							<Button
-								type="submit"
-								disabled={isSubmitting || !canSubmit}
-								className={`${wizardPrimary} mt-2 w-full`}
-							>
-								{isSubmitting ? "Signing in…" : "Sign in"}
-							</Button>
-						)}
-					</form.Subscribe>
-				</form>
-
-				{feature("oidc") && (
-					<div className="mt-4 flex flex-col gap-4">
-						<div className="flex items-center gap-3">
-							<div className="h-px flex-1 bg-border/50" />
-							<span className="text-xs text-muted-foreground">or</span>
-							<div className="h-px flex-1 bg-border/50" />
-						</div>
-						<Button
-							type="button"
-							variant="outline"
-							className="w-full"
-							onClick={() => {
-								window.location.assign(`${CONTROL_API_URL}/auth/oidc/start`);
-							}}
+					<motion.div variants={cascade} initial="hidden" animate="show">
+						<motion.div
+							variants={rise}
+							className="mb-9 flex flex-col items-center text-center"
 						>
-							Continue with SSO
-						</Button>
-					</div>
-				)}
+							<motion.div
+								initial={{ opacity: 0, scale: 0.9 }}
+								animate={{ opacity: 1, scale: 1 }}
+								transition={{
+									duration: 0.55,
+									ease: [0.22, 1, 0.36, 1],
+									delay: 0.05,
+								}}
+							>
+								<BrandMark className="mb-5 h-9 w-auto" />
+							</motion.div>
+							<div className="flex items-baseline gap-2">
+								<span className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
+									Wyolet
+								</span>
+								<span className="text-sm font-semibold uppercase tracking-[0.2em] text-foreground">
+									Relay
+								</span>
+							</div>
+							<p className="mt-2.5 text-[13px] text-muted-foreground">
+								Sign in to the operator console
+							</p>
+						</motion.div>
 
-				<div className="mt-8 border-t border-border/50 pt-6">
-					<LiveStatus />
-				</div>
-			</motion.div>
-		</div>
+						<AnimatePresence mode="wait" initial={false}>
+							{success ? (
+								<motion.div
+									key="success"
+									initial={{ opacity: 0, scale: 0.94 }}
+									animate={{ opacity: 1, scale: 1 }}
+									transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+									className="grid min-h-[17rem] content-center justify-items-center gap-3"
+								>
+									<BrandMark className="h-12 w-auto" />
+									<p className="text-sm text-muted-foreground">
+										You're in — opening the console…
+									</p>
+								</motion.div>
+							) : (
+								<motion.div
+									key="form"
+									exit={{ opacity: 0, y: -8 }}
+									transition={{ duration: 0.25, ease: "easeOut" }}
+								>
+									<form
+										onSubmit={(e) => {
+											e.preventDefault();
+											e.stopPropagation();
+											void form.handleSubmit();
+										}}
+										className="flex flex-col gap-4"
+										aria-label="Sign in"
+									>
+										<motion.div variants={rise}>
+											<form.Field name="username">
+												{(field) => (
+													<FieldRow
+														id="username"
+														label="Username"
+														type="text"
+														icon={User}
+														autoComplete="username"
+														value={field.state.value}
+														onChange={field.handleChange}
+														onBlur={field.handleBlur}
+														errors={field.state.meta.errors
+															.filter((e): e is string => typeof e === "string")
+															.slice(0, 1)}
+														disabled={form.state.isSubmitting}
+													/>
+												)}
+											</form.Field>
+										</motion.div>
+
+										<motion.div variants={rise}>
+											<form.Field name="password">
+												{(field) => (
+													<FieldRow
+														id="password"
+														label="Password"
+														type="password"
+														icon={Lock}
+														autoComplete="current-password"
+														value={field.state.value}
+														onChange={field.handleChange}
+														onBlur={field.handleBlur}
+														errors={field.state.meta.errors
+															.filter((e): e is string => typeof e === "string")
+															.slice(0, 1)}
+														disabled={form.state.isSubmitting}
+													/>
+												)}
+											</form.Field>
+										</motion.div>
+
+										{serverError !== null && (
+											<motion.div
+												key={serverError}
+												initial={{ opacity: 0, y: -6 }}
+												animate={{ opacity: 1, y: 0, x: [0, -5, 5, -3, 0] }}
+												transition={{ duration: 0.4, ease: "easeOut" }}
+												role="alert"
+												className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive"
+											>
+												{serverError}
+											</motion.div>
+										)}
+
+										<form.Subscribe
+											selector={(s) => [s.isSubmitting, s.canSubmit] as const}
+										>
+											{([isSubmitting, canSubmit]) => (
+												<motion.div variants={rise}>
+													<Button
+														type="submit"
+														variant="cta"
+														disabled={isSubmitting || !canSubmit}
+														className="mt-2 h-10 w-full rounded-lg text-sm"
+													>
+														{isSubmitting ? "Signing in…" : "Sign in"}
+													</Button>
+												</motion.div>
+											)}
+										</form.Subscribe>
+									</form>
+
+									{feature("oidc") && (
+										<motion.div
+											variants={rise}
+											className="mt-5 flex flex-col gap-4"
+										>
+											<div className="flex items-center gap-3">
+												<div className="h-px flex-1 bg-border/50" />
+												<span className="text-xs text-muted-foreground">
+													or
+												</span>
+												<div className="h-px flex-1 bg-border/50" />
+											</div>
+											<Button
+												type="button"
+												variant="outline"
+												className="h-10 w-full rounded-lg text-sm"
+												onClick={() => {
+													window.location.assign(
+														`${CONTROL_API_URL}/auth/oidc/start`,
+													);
+												}}
+											>
+												Continue with SSO
+											</Button>
+										</motion.div>
+									)}
+								</motion.div>
+							)}
+						</AnimatePresence>
+
+						<motion.div
+							variants={rise}
+							className="mt-9 border-t border-border/50 pt-6"
+						>
+							<LiveStatus />
+						</motion.div>
+					</motion.div>
+				</motion.div>
+			</div>
+		</MotionConfig>
 	);
 }
