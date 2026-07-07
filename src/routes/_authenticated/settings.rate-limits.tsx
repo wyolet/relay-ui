@@ -409,7 +409,8 @@ function SystemRateLimitsInner() {
 				</Button>
 				<Button
 					type="button"
-					variant="cta" size="lg"
+					variant="cta"
+					size="lg"
 					onClick={handleSave}
 					disabled={updateRL.isPending}
 				>

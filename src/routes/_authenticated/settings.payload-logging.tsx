@@ -128,7 +128,8 @@ function PayloadLoggingSettingsInner() {
 				</Button>
 				<Button
 					type="button"
-					variant="cta" size="lg"
+					variant="cta"
+					size="lg"
 					onClick={handleSave}
 					disabled={update.isPending}
 				>

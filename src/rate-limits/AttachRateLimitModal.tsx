@@ -105,7 +105,11 @@ export function AttachRateLimitModal({
 								<ChevronLeft className="w-3.5 h-3.5" />
 								Back
 							</Button>
-							<Button type="button" variant="cta" onClick={() => onSave(rateLimitId, models)}>
+							<Button
+								type="button"
+								variant="cta"
+								onClick={() => onSave(rateLimitId, models)}
+							>
 								{isEdit ? "Save changes" : "Attach"}
 							</Button>
 						</>

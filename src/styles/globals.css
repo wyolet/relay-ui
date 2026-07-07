@@ -178,6 +178,18 @@
   body {
     @apply bg-background text-foreground;
   }
+  /* Chrome autofill paints its own yellow/blue fill over our field styles.
+     Its background can't be styled away — but it CAN be transitioned, so we
+     defer that paint effectively forever and keep the text/caret themed. */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus {
+    -webkit-text-fill-color: var(--foreground);
+    caret-color: var(--foreground);
+    transition:
+      background-color 9999999s ease-in-out 0s,
+      color 9999999s ease-in-out 0s;
+  }
   /* Hide native number-input spinners (shadcn's Input doesn't strip them). */
   input[type="number"]::-webkit-inner-spin-button,
   input[type="number"]::-webkit-outer-spin-button {

@@ -12,8 +12,8 @@ import {
 } from "@/components/ui/popover";
 import type { FilterOption } from "@/filters/types";
 import { cn } from "@/lib/utils";
-import { FilterDropdown } from "@/shared/FilterDropdown";
 import { Chip } from "@/shared/Chip";
+import { FilterDropdown } from "@/shared/FilterDropdown";
 import { OptionRow } from "@/shared/OptionRow";
 import { SearchBox } from "@/shared/SearchBox";
 import {
