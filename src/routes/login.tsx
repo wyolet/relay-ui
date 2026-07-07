@@ -2,7 +2,7 @@ import { useForm } from "@tanstack/react-form";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { Eye, EyeOff, Lock, User } from "lucide-react";
-import { AnimatePresence, motion, MotionConfig } from "motion/react";
+import { AnimatePresence, MotionConfig, motion } from "motion/react";
 import { useState } from "react";
 import { z } from "zod";
 import { AuthError, useAuth, whoamiQueryOptions } from "@/api/auth";
@@ -133,7 +133,10 @@ function FieldRow({
 					hasError && "border-destructive",
 				)}
 			>
-				<Icon className="size-4 shrink-0 text-muted-foreground/70" aria-hidden />
+				<Icon
+					className="size-4 shrink-0 text-muted-foreground/70"
+					aria-hidden
+				/>
 				<input
 					id={id}
 					type={inputType}
@@ -236,7 +239,12 @@ function LoginPage() {
 						transition={
 							success
 								? { duration: 0.8, ease: "easeOut" }
-								: { duration: 13, repeat: Infinity, ease: "easeInOut", delay: 2 }
+								: {
+										duration: 13,
+										repeat: Infinity,
+										ease: "easeInOut",
+										delay: 2,
+									}
 						}
 						className="absolute bottom-0 right-0 size-[34rem] translate-x-1/4 translate-y-1/4 rounded-full bg-accent-500/10 blur-[120px]"
 					/>
@@ -303,109 +311,114 @@ function LoginPage() {
 									exit={{ opacity: 0, y: -8 }}
 									transition={{ duration: 0.25, ease: "easeOut" }}
 								>
-								<form
-							onSubmit={(e) => {
-								e.preventDefault();
-								e.stopPropagation();
-								void form.handleSubmit();
-							}}
-							className="flex flex-col gap-4"
-							aria-label="Sign in"
-						>
-							<motion.div variants={rise}>
-								<form.Field name="username">
-									{(field) => (
-										<FieldRow
-											id="username"
-											label="Username"
-											type="text"
-											icon={User}
-											autoComplete="username"
-											value={field.state.value}
-											onChange={field.handleChange}
-											onBlur={field.handleBlur}
-											errors={field.state.meta.errors
-												.filter((e): e is string => typeof e === "string")
-												.slice(0, 1)}
-											disabled={form.state.isSubmitting}
-										/>
-									)}
-								</form.Field>
-							</motion.div>
+									<form
+										onSubmit={(e) => {
+											e.preventDefault();
+											e.stopPropagation();
+											void form.handleSubmit();
+										}}
+										className="flex flex-col gap-4"
+										aria-label="Sign in"
+									>
+										<motion.div variants={rise}>
+											<form.Field name="username">
+												{(field) => (
+													<FieldRow
+														id="username"
+														label="Username"
+														type="text"
+														icon={User}
+														autoComplete="username"
+														value={field.state.value}
+														onChange={field.handleChange}
+														onBlur={field.handleBlur}
+														errors={field.state.meta.errors
+															.filter((e): e is string => typeof e === "string")
+															.slice(0, 1)}
+														disabled={form.state.isSubmitting}
+													/>
+												)}
+											</form.Field>
+										</motion.div>
 
-							<motion.div variants={rise}>
-								<form.Field name="password">
-									{(field) => (
-										<FieldRow
-											id="password"
-											label="Password"
-											type="password"
-											icon={Lock}
-											autoComplete="current-password"
-											value={field.state.value}
-											onChange={field.handleChange}
-											onBlur={field.handleBlur}
-											errors={field.state.meta.errors
-												.filter((e): e is string => typeof e === "string")
-												.slice(0, 1)}
-											disabled={form.state.isSubmitting}
-										/>
-									)}
-								</form.Field>
-							</motion.div>
+										<motion.div variants={rise}>
+											<form.Field name="password">
+												{(field) => (
+													<FieldRow
+														id="password"
+														label="Password"
+														type="password"
+														icon={Lock}
+														autoComplete="current-password"
+														value={field.state.value}
+														onChange={field.handleChange}
+														onBlur={field.handleBlur}
+														errors={field.state.meta.errors
+															.filter((e): e is string => typeof e === "string")
+															.slice(0, 1)}
+														disabled={form.state.isSubmitting}
+													/>
+												)}
+											</form.Field>
+										</motion.div>
 
-							{serverError !== null && (
-								<motion.div
-									key={serverError}
-									initial={{ opacity: 0, y: -6 }}
-									animate={{ opacity: 1, y: 0, x: [0, -5, 5, -3, 0] }}
-									transition={{ duration: 0.4, ease: "easeOut" }}
-									role="alert"
-									className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive"
-								>
-									{serverError}
-								</motion.div>
-							)}
+										{serverError !== null && (
+											<motion.div
+												key={serverError}
+												initial={{ opacity: 0, y: -6 }}
+												animate={{ opacity: 1, y: 0, x: [0, -5, 5, -3, 0] }}
+												transition={{ duration: 0.4, ease: "easeOut" }}
+												role="alert"
+												className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive"
+											>
+												{serverError}
+											</motion.div>
+										)}
 
-							<form.Subscribe
-								selector={(s) => [s.isSubmitting, s.canSubmit] as const}
-							>
-								{([isSubmitting, canSubmit]) => (
-									<motion.div variants={rise}>
-										<Button
-											type="submit"
-											variant="cta"
-											disabled={isSubmitting || !canSubmit}
-											className="mt-2 h-10 w-full rounded-lg text-sm"
+										<form.Subscribe
+											selector={(s) => [s.isSubmitting, s.canSubmit] as const}
 										>
-											{isSubmitting ? "Signing in…" : "Sign in"}
-										</Button>
-									</motion.div>
-								)}
-							</form.Subscribe>
-						</form>
+											{([isSubmitting, canSubmit]) => (
+												<motion.div variants={rise}>
+													<Button
+														type="submit"
+														variant="cta"
+														disabled={isSubmitting || !canSubmit}
+														className="mt-2 h-10 w-full rounded-lg text-sm"
+													>
+														{isSubmitting ? "Signing in…" : "Sign in"}
+													</Button>
+												</motion.div>
+											)}
+										</form.Subscribe>
+									</form>
 
-						{feature("oidc") && (
-							<motion.div variants={rise} className="mt-5 flex flex-col gap-4">
-								<div className="flex items-center gap-3">
-									<div className="h-px flex-1 bg-border/50" />
-									<span className="text-xs text-muted-foreground">or</span>
-									<div className="h-px flex-1 bg-border/50" />
-								</div>
-								<Button
-									type="button"
-									variant="outline"
-									className="h-10 w-full rounded-lg text-sm"
-									onClick={() => {
-										window.location.assign(
-											`${CONTROL_API_URL}/auth/oidc/start`,
-										);
-									}}
-								>
-									Continue with SSO
-								</Button>
-							</motion.div>
-						)}
+									{feature("oidc") && (
+										<motion.div
+											variants={rise}
+											className="mt-5 flex flex-col gap-4"
+										>
+											<div className="flex items-center gap-3">
+												<div className="h-px flex-1 bg-border/50" />
+												<span className="text-xs text-muted-foreground">
+													or
+												</span>
+												<div className="h-px flex-1 bg-border/50" />
+											</div>
+											<Button
+												type="button"
+												variant="outline"
+												className="h-10 w-full rounded-lg text-sm"
+												onClick={() => {
+													window.location.assign(
+														`${CONTROL_API_URL}/auth/oidc/start`,
+													);
+												}}
+											>
+												Continue with SSO
+											</Button>
+										</motion.div>
+									)}
 								</motion.div>
 							)}
 						</AnimatePresence>
