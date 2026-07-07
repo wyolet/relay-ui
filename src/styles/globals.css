@@ -71,6 +71,7 @@
      rationed loud gradient. */
   --field-accent: oklch(0.52 0.105 318);
   --field-rest: oklch(0.52 0.105 318 / 0.03);
+  --field-border: oklch(0.52 0.105 318 / 0.24);
   --input-wash: oklch(0.52 0.105 318 / 0.07);
   --btn-tonal-hover: oklch(0.52 0.105 318 / 0.13);
   --btn-cta: linear-gradient(180deg, oklch(0.575 0.1 318), oklch(0.485 0.115 318));
@@ -135,6 +136,7 @@
 
   --color-field-accent: var(--field-accent);
   --color-field-rest: var(--field-rest);
+  --color-field-border: var(--field-border);
   --color-input-wash: var(--input-wash);
   --color-btn-tonal-hover: var(--btn-tonal-hover);
 
@@ -243,6 +245,7 @@
      the tint stays visible on dark ground. */
   --field-accent: oklch(0.72 0.08 318);
   --field-rest: oklch(0.72 0.08 318 / 0.06);
+  --field-border: oklch(0.72 0.08 318 / 0.24);
   --input-wash: oklch(0.72 0.08 318 / 0.1);
   --btn-tonal-hover: oklch(0.72 0.08 318 / 0.16);
   --btn-cta: linear-gradient(180deg, oklch(0.73 0.075 318), oklch(0.64 0.09 318));
