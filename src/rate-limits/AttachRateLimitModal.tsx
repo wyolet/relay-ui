@@ -9,6 +9,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { ModelPicker } from "@/models/ModelPicker";
 
 export interface RLMeta {
@@ -144,12 +145,11 @@ function Step1RateLimit({ value, onChange, options }: Step1Props) {
 
 	return (
 		<div className="flex flex-col gap-2">
-			<input
+			<Input
 				type="text"
 				value={q}
 				onChange={(e) => setQ(e.currentTarget.value)}
 				placeholder="Search rate limits…"
-				className="h-8 px-2 rounded-md border border-input bg-input/30 text-xs focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
 			/>
 			<ul className="max-h-80 overflow-auto rounded-md border border-border bg-muted/20 divide-y divide-border">
 				{filtered.length === 0 && (

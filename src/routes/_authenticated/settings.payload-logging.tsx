@@ -9,6 +9,7 @@ import {
 } from "@/api/hooks/settings";
 import { ApiError } from "@/api/types/errors";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { PageLoader } from "@/shared/Spinner";
 import { toast } from "@/shared/Toast";
@@ -101,7 +102,7 @@ function PayloadLoggingSettingsInner() {
 					description="Bodies larger than this are truncated before storage. Bytes; 0 means no cap."
 				>
 					<div className="inline-flex items-center gap-2">
-						<input
+						<Input
 							type="number"
 							min={0}
 							value={state.maxBytes}
@@ -109,7 +110,7 @@ function PayloadLoggingSettingsInner() {
 								patch({ maxBytes: Math.max(0, Number(e.target.value) || 0) })
 							}
 							disabled={!state.enabled}
-							className="h-9 w-40 rounded-md border border-border bg-card px-2 text-sm text-foreground tabular-nums focus:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+							className="w-40 tabular-nums"
 						/>
 						<span className="text-xs text-muted-foreground">bytes</span>
 					</div>

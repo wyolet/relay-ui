@@ -7,6 +7,10 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
+	fieldFocusWithinClassName,
+	fieldFrameClassName,
+} from "@/components/ui/field-focus";
+import {
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
@@ -118,7 +122,13 @@ export function LogsFilters({
 	return (
 		<div className="flex flex-col gap-2">
 			<div className="flex flex-wrap items-center gap-2">
-				<div className="flex min-h-8 min-w-0 flex-1 flex-wrap items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1">
+				<div
+					className={cn(
+						"flex min-h-8 min-w-0 flex-1 flex-wrap items-center gap-1.5 px-2.5 py-1",
+						fieldFrameClassName,
+						fieldFocusWithinClassName,
+					)}
+				>
 					<Search className="size-4 shrink-0 text-muted-foreground" />
 					{chips.map((c) => (
 						<Chip key={c.key} label={c.label} onRemove={c.onRemove} />

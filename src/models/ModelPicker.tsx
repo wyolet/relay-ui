@@ -8,8 +8,13 @@ import {
 	X,
 } from "lucide-react";
 import { useMemo, useState } from "react";
+import {
+	fieldFocusClassName,
+	fieldFrameClassName,
+} from "@/components/ui/field-focus";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import { KIND_META } from "@/config/catalogRef";
 import { HostLogo } from "@/hosts/HostLogo";
 import {
@@ -20,6 +25,7 @@ import {
 	validateCatalogRef,
 } from "@/lib/catalogRef";
 import { from as slugFrom } from "@/lib/slug";
+import { cn } from "@/lib/utils";
 import {
 	type HostRow,
 	type ModelRow,
@@ -236,7 +242,11 @@ export function ModelPicker({
 									value={q}
 									onChange={(e) => setQ(e.currentTarget.value)}
 									placeholder={`Search ${tab}…`}
-									className="w-full h-7 pl-7 pr-2 rounded-md border border-input bg-input/30 text-xs outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
+									className={cn(
+										"w-full h-7 pl-7 pr-2 text-xs outline-none placeholder:text-muted-foreground transition-[color,box-shadow,background-color]",
+										fieldFrameClassName,
+										fieldFocusClassName,
+									)}
 								/>
 							</div>
 						)}
@@ -708,13 +718,13 @@ function RawEditor({
 				<code className="font-mono text-foreground/80">:</code> with{" "}
 				<code className="font-mono text-foreground/80">-</code>.
 			</div>
-			<textarea
+			<Textarea
 				value={draft}
 				onChange={(e) => emit(e.currentTarget.value)}
 				spellCheck={false}
 				rows={8}
 				placeholder="anthropic&#10;openai/gpt-4o&#10;@bedrock"
-				className="w-full min-h-32 rounded-md border border-input bg-input/20 px-3 py-2 text-xs font-mono leading-relaxed outline-none transition-[border-color,box-shadow] placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
+				className="min-h-32 font-mono text-xs leading-relaxed"
 			/>
 			{errors.length > 0 && (
 				<ul className="space-y-0.5 text-[11px]">

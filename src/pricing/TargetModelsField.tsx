@@ -1,5 +1,6 @@
 import { X } from "lucide-react";
 import { useState } from "react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { SearchBox } from "@/shared/SearchBox";
 import {
 	type TargetModelOption,
@@ -105,12 +106,14 @@ function OptionRow({
 }) {
 	return (
 		<li>
-			<label className="flex cursor-pointer items-center gap-2.5 px-3 py-2 hover:bg-muted/40">
-				<input
-					type="checkbox"
+			<label
+				htmlFor={`target-model-${option.id}`}
+				className="flex cursor-pointer items-center gap-2.5 px-3 py-2 hover:bg-muted/40"
+			>
+				<Checkbox
+					id={`target-model-${option.id}`}
 					checked={checked}
-					onChange={onToggle}
-					className="accent-primary"
+					onCheckedChange={onToggle}
 				/>
 				<span className="min-w-0">
 					<span className="block truncate text-xs text-foreground">
