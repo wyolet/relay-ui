@@ -1,6 +1,6 @@
 {
   "name": "relay-ui",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "private": true,
   "type": "module",
   "description": "Operator admin UI for Wyolet Relay — embedded into the Relay binary and served at /ui/.",
