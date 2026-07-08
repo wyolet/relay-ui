@@ -4,6 +4,8 @@ import { type LogDetail, useLogDetail } from "@/api/hooks/logs";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Segmented } from "@/shared/Segmented";
+import { failureAttribution } from "./attribution";
+import { FailureLayerBadge } from "./FailureLayerBadge";
 import { fmtInt, fmtMs, fmtTs, prettyBody, sumTokens } from "./format";
 import { type ChatMessage, parseTranscript } from "./generation";
 import { isErrorEvent } from "./predicates";
@@ -63,6 +65,7 @@ function PanelBody({
 	const { data } = useLogDetail(requestId);
 	const { log, payload } = data;
 	const isError = isErrorEvent(log);
+	const attribution = failureAttribution(log);
 	const transcript = parseTranscript(payload);
 
 	const [tab, setTab] = useState<"messages" | "raw">("messages");
@@ -94,6 +97,7 @@ function PanelBody({
 					<code className="truncate font-mono text-xs text-foreground">
 						{modelLabel}
 					</code>
+					{attribution && <FailureLayerBadge layer={attribution.layer} />}
 					{log.error_kind && (
 						<span className="rounded bg-destructive/10 px-1.5 py-0.5 text-[11px] text-destructive">
 							{log.error_kind}
@@ -131,13 +135,18 @@ function PanelBody({
 							{labelFor?.("policy", log.policy_id) ?? log.policy_id}
 						</KV>
 					)}
-					<KV label="Source">{log.source}</KV>
+					<KV label="Runner">{log.source}</KV>
 					{log.attempts !== undefined && log.attempts > 1 && (
 						<KV label="Attempts">{String(log.attempts)}</KV>
 					)}
 					{log.streamed && <KV label="Streamed">yes</KV>}
 				</div>
 
+				{attribution && (
+					<p className="mt-2 text-[11px] text-muted-foreground">
+						{attribution.reason}
+					</p>
+				)}
 				{log.error_message && (
 					<p className="mt-2 text-[11px] text-destructive">
 						{log.error_message}

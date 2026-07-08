@@ -4,6 +4,8 @@ import type { LogEvent, LogsFilter } from "@/api/hooks/logs";
 import { useLogDetail, useLogs } from "@/api/hooks/logs";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { failureAttribution } from "./attribution";
+import { FailureLayerBadge } from "./FailureLayerBadge";
 import { fmtInt, fmtMs, fmtTs, sumTokens } from "./format";
 import { LogsEmpty } from "./LogsEmpty";
 import { isErrorEvent } from "./predicates";
@@ -229,15 +231,30 @@ function LogRow({
 				{fmtInt(sumTokens(event.tokens))}
 			</td>
 			<td className="px-3 py-2">
-				{event.error_kind ? (
-					<span className="text-destructive">{event.error_kind}</span>
-				) : (
-					<span className="text-muted-foreground">
-						{event.finish_reason ?? "—"}
-					</span>
-				)}
+				<FinishCell event={event} />
 			</td>
 		</tr>
+	);
+}
+
+/** Finish column: the finish reason for successes; for failures, the
+ * failing layer + error kind so "us or them?" reads off the row. */
+function FinishCell({ event }: { event: LogEvent }) {
+	const attribution = failureAttribution(event);
+	if (!attribution) {
+		return (
+			<span className="text-muted-foreground">
+				{event.finish_reason ?? "—"}
+			</span>
+		);
+	}
+	return (
+		<span className="inline-flex items-center gap-1.5">
+			<FailureLayerBadge layer={attribution.layer} />
+			{event.error_kind && (
+				<span className="text-destructive">{event.error_kind}</span>
+			)}
+		</span>
 	);
 }
 
@@ -252,13 +269,19 @@ function ExpandedDetail({
 	labelFor?: LogLabeler;
 	onOpen: () => void;
 }) {
+	const attribution = failureAttribution(event);
 	return (
 		<div className="flex flex-col gap-3 px-4 py-3">
 			<div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs sm:grid-cols-4">
 				<KV label="Latency">{fmtMs(event.duration_ms)}</KV>
 				<KV label="Tokens">{fmtInt(sumTokens(event.tokens))}</KV>
 				<KV label="Finish">{event.finish_reason ?? "—"}</KV>
-				<KV label="Source">{event.source}</KV>
+				<KV label="Runner">{event.source}</KV>
+				{attribution && (
+					<KV label="Failed layer">
+						<FailureLayerBadge layer={attribution.layer} />
+					</KV>
+				)}
 				{event.requested_model && (
 					<KV label="Requested">{event.requested_model}</KV>
 				)}
@@ -273,6 +296,11 @@ function ExpandedDetail({
 				{event.streamed && <KV label="Streamed">yes</KV>}
 			</div>
 
+			{attribution && (
+				<p className="text-[11px] text-muted-foreground">
+					{attribution.reason}
+				</p>
+			)}
 			{event.error_message && (
 				<p className="text-[11px] text-destructive">{event.error_message}</p>
 			)}
