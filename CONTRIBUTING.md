@@ -10,7 +10,7 @@ rules every change must obey.
 
 - **[Bun](https://bun.sh)** (package manager + test runner)
 - A running **Relay** control plane to develop against — the standalone image
-  serves one on `http://localhost:8080`:
+  serves it on `http://localhost:8081` (`:8080` is the data plane):
   ```bash
   docker run -p 8080:8080 -p 8081:8081 wyolet/relay:standalone
   ```
@@ -24,11 +24,11 @@ bun install
 bun run dev          # Vite dev server on http://localhost:5140
 ```
 
-The dev server proxies API calls (`/control`, `/openapi.json`, …) to the
-control plane at `http://localhost:8080`. Override the target:
+The dev server proxies `/api` and `/config.json` to the control plane at
+`http://localhost:8081`. Override the target:
 
 ```bash
-RELAY_CONTROL_TARGET=http://localhost:8080 bun run dev
+RELAY_CONTROL_TARGET=http://localhost:8081 bun run dev
 ```
 
 ## Build & checks
@@ -46,7 +46,8 @@ The typed API client is generated from Relay's OpenAPI spec — never hand-edit
 `src/api/types.gen.ts`:
 
 ```bash
-RELAY_URL=http://localhost:8080 make gen   # regenerate from a running control plane
+make gen                                       # default: http://localhost:8081/api
+RELAY_URL=http://localhost:8081/api make gen   # custom control-plane URL
 ```
 
 Commit the regenerated file alongside the change that needs it.

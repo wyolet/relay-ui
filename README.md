@@ -64,10 +64,11 @@ bun run dev          # Vite dev server on http://localhost:5140
 ```
 
 The dev server proxies API calls to a Relay control plane at
-`http://localhost:8080`. Point it elsewhere with `RELAY_CONTROL_TARGET`:
+`http://localhost:8081` (`:8080` is the data plane). Point it elsewhere with
+`RELAY_CONTROL_TARGET`:
 
 ```bash
-RELAY_CONTROL_TARGET=http://localhost:8080 bun run dev
+RELAY_CONTROL_TARGET=http://localhost:8081 bun run dev
 ```
 
 ## Building
@@ -81,9 +82,12 @@ bun run build        # outputs to dist/
 API types are generated from the Relay OpenAPI spec via the Makefile — never
 edit `src/api/types.gen.ts` by hand:
 
+The control API — and its `/openapi.json` — mount under `/api` on the control
+plane (`:8081`), so `RELAY_URL` points at that base:
+
 ```bash
-make gen                                  # default: http://localhost:8080/openapi.json
-RELAY_URL=http://localhost:8080 make gen  # custom control-plane URL
+make gen                                      # default: http://localhost:8081/api
+RELAY_URL=http://localhost:8081/api make gen  # custom control-plane URL
 ```
 
 Commit the regenerated file after running it.

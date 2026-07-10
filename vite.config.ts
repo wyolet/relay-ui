@@ -29,6 +29,10 @@ const CONTROL_TARGET =
 // hostname; HMR then runs over wss on 443. Unset, plain localhost.
 const DEV_HOST = process.env.RELAY_DEV_HOST ?? fileEnv.RELAY_DEV_HOST
 
+// Dev-server port from env so it's never pinned in code; the fallback is this
+// repo's allocated slot, not Vite's default. Override with RELAY_UI_PORT.
+const PORT = Number(process.env.RELAY_UI_PORT ?? fileEnv.RELAY_UI_PORT ?? 5140)
+
 const proxy = {
   target: CONTROL_TARGET,
   changeOrigin: true,
@@ -52,7 +56,7 @@ const config = defineConfig({
   },
   server: {
     host: true,
-    port: 5140,
+    port: PORT,
     strictPort: true,
     allowedHosts: DEV_HOST ? [DEV_HOST, 'localhost'] : ['localhost'],
     ...(DEV_HOST

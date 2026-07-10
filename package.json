@@ -23,8 +23,7 @@
     "check": "biome check ./src",
     "test": "bun test src/",
     "test:e2e": "playwright test",
-    "ci": "bun run typecheck && bun run lint && bun run test",
-    "gen:api": "openapi-typescript ${OPENAPI_URL:-http://localhost:8080/openapi.json} -o src/api/types.gen.ts"
+    "ci": "bun run typecheck && bun run lint && bun run test"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",

@@ -5,6 +5,9 @@ node_modules
 dist
 dist-ssr
 *.local
+
+# Plans, designs, roadmaps — never committed.
+.tmp/
 # All real env files are local-only — they leak baked-in values into builds.
 # Commit .env.development.example as the documented template instead.
 .env

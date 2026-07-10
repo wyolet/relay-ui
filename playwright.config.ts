@@ -1,5 +1,10 @@
 import { defineConfig, devices } from "@playwright/test";
 
+// Same env var the dev server reads, so the two never drift; fallback is the
+// repo's allocated slot.
+const PORT = process.env.RELAY_UI_PORT ?? "5140";
+const BASE_URL = `http://localhost:${PORT}`;
+
 export default defineConfig({
 	testDir: "./e2e",
 	fullyParallel: true,
@@ -8,7 +13,7 @@ export default defineConfig({
 	workers: process.env.CI ? 1 : undefined,
 	reporter: "list",
 	use: {
-		baseURL: "http://localhost:5140",
+		baseURL: BASE_URL,
 		trace: "retain-on-failure",
 	},
 	projects: [
@@ -22,7 +27,7 @@ export default defineConfig({
 		// load falls back to origin defaults → apiClient stays same-origin → all
 		// calls land on the Vite dev server, which Playwright route-mocks intercept.
 		command: "VITE_RUNTIME_CONFIG_URL=/__e2e_no_config.json bun run dev",
-		url: "http://localhost:5140",
+		url: BASE_URL,
 		reuseExistingServer: !process.env.CI,
 		timeout: 60_000,
 	},

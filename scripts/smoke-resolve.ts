@@ -6,7 +6,7 @@
  * FE `refCovers` produces over the same catalog, and prints per-ref diffs.
  *
  * Usage:
- *   RELAY_URL=http://localhost:8080 \
+ *   RELAY_URL=http://localhost:8081/api \
  *   RELAY_COOKIE='session=...' \
  *     bun run scripts/smoke-resolve.ts
  *
@@ -24,7 +24,8 @@ import type { Host } from "../src/api/types/host";
 import type { Model } from "../src/api/types/model";
 import type { Provider } from "../src/api/types/provider";
 
-const BASE = process.env.RELAY_URL ?? "http://localhost:8080";
+// Control-API base, including the /api mount the routes live under.
+const BASE = process.env.RELAY_URL ?? "http://localhost:8081/api";
 const COOKIE = process.env.RELAY_COOKIE ?? "";
 
 async function api<T>(path: string): Promise<T> {

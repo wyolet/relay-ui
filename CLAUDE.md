@@ -13,6 +13,17 @@ React 19 + Vite + TanStack Router + TanStack Query + Tailwind v4 + Biome + shadc
 - `make gen` — regenerate `src/api/types.gen.ts` from `RELAY_URL` (control plane; the spec lives under its `/api` mount). Never hand-edit generated files (`types.gen.ts`, `routeTree.gen.ts`).
 - `make release VERSION=vX.Y.Z` — tag + release tarball; the `wyolet/relay` repo pins and embeds it.
 
+## Conventions
+
+Treat this as an open-source repo — everything tracked is self-contained and public-safe. These hold regardless of the section below.
+
+- **Config comes from env, never hardcoded.** Ports, hosts, API targets, feature flags — read them from `.env*` / `import.meta.env`, with a neutral fallback in code. Tool configs (`vite.config.ts`, `playwright.config.ts`) read from env too; a port pinned in a config file is a bug. `.env*` is gitignored; the tracked `.env.development.example` documents every key with a placeholder — updating one without the other is a bug. Real hosts/domains live only in the gitignored `.env*`, never in tracked files.
+- **Comments are minimal — 1–3 lines of _why_,** only where the code can't say it. No changelogs, history, or "used to be X"; the code and git say _what_.
+- **Names are direct.** Functions/methods describe what the body does; variables give intuition for what they hold. No marketing words or unshipped plans baked into identifiers.
+- **Commits & PRs: minimal and specific to the change** — what/why/what-was-decided, nothing the diff already shows. Reference issues/PRs. Technical tone, no marketing.
+- **Docs state facts or the how/why it's done — never "what is done"** (code says that). `docs/` = durable facts (e.g. the `/config.json` contract). Plans, designs, roadmaps go in `.tmp/` (gitignored, never committed). Plain words — no filler vocabulary.
+- **One source per pattern.** A second copy of a value, config, or UI shape is drift waiting to happen — derive it, don't duplicate it (see the extract-don't-copy rule below).
+
 ## Core principle: components render, hooks think
 
 Components hold **representation only** — markup, styling, minimal local UI state. They never hold functionality: no fetching, no mutations, no business logic, no derived business state. Rendering is a design concern — keep components small, inputs stable, re-renders minimal.

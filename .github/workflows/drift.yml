@@ -23,10 +23,12 @@ jobs:
         continue-on-error: true
         run: |
           docker pull ghcr.io/wyolet/relay:latest 2>&1
-          docker run -d --name relay -p 8080:8080 ghcr.io/wyolet/relay:latest
-          # Wait up to 30s for the server to be ready
+          # Control plane on :8081; the OpenAPI spec lives under its /api mount
+          # (:8080 is the data plane and serves the wrong spec).
+          docker run -d --name relay -p 8081:8081 ghcr.io/wyolet/relay:latest
+          # Wait up to 30s for the control API to be ready
           for i in $(seq 1 30); do
-            if curl -sf http://localhost:8080/openapi.json > /dev/null; then
+            if curl -sf http://localhost:8081/api/openapi.json > /dev/null; then
               echo "relay_up=true" >> $GITHUB_OUTPUT
               break
             fi
@@ -41,13 +43,13 @@ jobs:
 
       - name: Regenerate types
         if: steps.relay.outputs.relay_up == 'true'
-        run: OPENAPI_URL=http://localhost:8080/openapi.json bun run gen:api
+        run: make gen RELAY_URL=http://localhost:8081/api
 
       - name: Fail on drift
         if: steps.relay.outputs.relay_up == 'true'
         run: |
           if ! git diff --exit-code src/api/types.gen.ts; then
-            echo "::error::API type drift detected — run 'bun run gen:api' locally and commit the result."
+            echo "::error::API type drift detected — run 'make gen' locally and commit the result."
             exit 1
           fi
           echo "No drift detected."
