@@ -11,6 +11,7 @@ const DIMENSION_LABELS: Record<UsageGroupBy, string> = {
 	policy_id: "Policy",
 	relay_key_hash: "Relay key",
 	host_key_id: "Credential",
+	"extras.instance": "Instance",
 };
 
 export function dimensionLabel(groupBy: UsageGroupBy): string {

@@ -50,6 +50,7 @@ export const USAGE_GROUP_BY = [
 	"policy_id",
 	"relay_key_hash",
 	"host_key_id",
+	"extras.instance",
 ] as const;
 export type UsageGroupBy = (typeof USAGE_GROUP_BY)[number];
 

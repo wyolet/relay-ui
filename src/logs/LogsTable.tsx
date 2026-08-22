@@ -14,7 +14,7 @@ import type { LogLabeler } from "./useLogsFilterOptions";
 /** Which dimension a click-to-filter affordance targets. */
 export type LogFilterKey = "model_id" | "host_id" | "status_class";
 
-const COLUMN_COUNT = 8;
+const COLUMN_COUNT = 9;
 
 /** Case-insensitive match across the fields a row exposes. */
 function matchesQuery(e: LogEvent, needle: string): boolean {
@@ -94,6 +94,7 @@ export function LogsTable({
 							<th className="px-3 py-2 font-medium">Status</th>
 							<th className="px-3 py-2 font-medium">Model</th>
 							<th className="px-3 py-2 font-medium">Host</th>
+							<th className="px-3 py-2 font-medium">Instance</th>
 							<th className="px-3 py-2 text-right font-medium">Latency</th>
 							<th className="px-3 py-2 text-right font-medium">Tokens</th>
 							<th className="px-3 py-2 font-medium">Finish</th>
@@ -224,6 +225,11 @@ function LogRow({
 					</span>
 				</Filterable>
 			</td>
+			<td className="px-3 py-2">
+				<span className="block max-w-[10rem] truncate font-mono text-muted-foreground">
+					{event.extras?.instance ?? "—"}
+				</span>
+			</td>
 			<td className="px-3 py-2 text-right font-mono tabular-nums text-muted-foreground">
 				{fmtMs(event.duration_ms)}
 			</td>
@@ -277,6 +283,8 @@ function ExpandedDetail({
 				<KV label="Tokens">{fmtInt(sumTokens(event.tokens))}</KV>
 				<KV label="Finish">{event.finish_reason ?? "—"}</KV>
 				<KV label="Runner">{event.source}</KV>
+				<KV label="Instance">{event.extras?.instance ?? "—"}</KV>
+				<KV label="Client IP">{event.extras?.client_ip ?? "—"}</KV>
 				{attribution && (
 					<KV label="Failed layer">
 						<FailureLayerBadge layer={attribution.layer} />
