@@ -1,6 +1,6 @@
 import { Banknote } from "lucide-react";
 import { useCostKpi } from "@/api/hooks/cost";
-import type { UsageWindow } from "@/api/hooks/usage";
+import type { UsageSummaryFilter, UsageWindow } from "@/api/hooks/usage";
 import { fmtMoneyCompact, fmtPct } from "./format";
 import { deltaChip, StatCard } from "./UsageStatCards";
 
@@ -13,11 +13,13 @@ import { deltaChip, StatCard } from "./UsageStatCards";
 export function CostKpiCard({
 	win,
 	compareLabel,
+	filter,
 }: {
 	win: UsageWindow;
 	compareLabel?: string;
+	filter?: UsageSummaryFilter;
 }) {
-	const kpi = useCostKpi(win);
+	const kpi = useCostKpi(win, filter);
 	const { usd, unpricedEvents, unpricedShare } = kpi.current;
 
 	let hint: string | undefined;

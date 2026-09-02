@@ -51,6 +51,9 @@ export const USAGE_GROUP_BY = [
 	"policy_id",
 	"relay_key_hash",
 	"host_key_id",
+	"team_id",
+	"project_id",
+	"principal_id",
 	"extras.instance",
 ] as const;
 export type UsageGroupBy = (typeof USAGE_GROUP_BY)[number];
@@ -78,6 +81,9 @@ export type UsageSummaryFilter = Pick<
 	| "policy_id"
 	| "relay_key_hash"
 	| "host_key_id"
+	| "team_id"
+	| "project_id"
+	| "principal_id"
 >;
 
 export function usageSummaryQueryOptions(
@@ -343,14 +349,24 @@ export interface StackedTimeline {
 export function stackedTimeseriesQueryOptions(
 	groupBy: UsageGroupBy,
 	win: ResolvedWindow,
+	filter?: UsageSummaryFilter,
 ) {
 	return queryOptions({
-		queryKey: ["usage", "stacked", groupBy, win.from, win.to, win.interval],
+		queryKey: [
+			"usage",
+			"stacked",
+			groupBy,
+			win.from,
+			win.to,
+			win.interval,
+			filter ?? {},
+		],
 		queryFn: async (): Promise<UsageTimeSeriesResult> => {
 			const data = unwrap(
 				await apiClient.GET("/usage/timeseries", {
 					params: {
 						query: {
+							...filter,
 							group_by: groupBy,
 							from: win.from,
 							to: win.to,
@@ -398,11 +414,12 @@ export function useStackedTimeline(
 	metric: StackableMetric,
 	customFrom?: string,
 	customTo?: string,
+	filter?: UsageSummaryFilter,
 ): StackedTimeline {
 	// Window resolution (quantized → stable key) lives here, not in the route.
 	const win = resolveWindow(range, customFrom, customTo);
 	const { data } = useSuspenseQuery(
-		stackedTimeseriesQueryOptions(groupBy, win),
+		stackedTimeseriesQueryOptions(groupBy, win, filter),
 	);
 	const { points, series } = deriveStacked(
 		data.rows,
@@ -556,8 +573,14 @@ function sumTokens(tokens: { [key: string]: number } | undefined): number {
  * Overview for the dashboard: KPIs + a ranked leaderboard for one dimension,
  * derived from the same summary query the detail table uses.
  */
-export function useUsageOverview(groupBy: UsageGroupBy, win?: UsageWindow) {
-	const { data } = useSuspenseQuery(usageSummaryQueryOptions(groupBy, win));
+export function useUsageOverview(
+	groupBy: UsageGroupBy,
+	win?: UsageWindow,
+	filter?: UsageSummaryFilter,
+) {
+	const { data } = useSuspenseQuery(
+		usageSummaryQueryOptions(groupBy, win, filter),
+	);
 	const rows = data.rows ?? [];
 	return {
 		from: data.from,
@@ -597,12 +620,13 @@ export interface UsageKpiDeltas {
 export function useUsageOverviewWithDeltas(
 	groupBy: UsageGroupBy,
 	win: UsageWindow,
+	filter?: UsageSummaryFilter,
 ) {
 	const { previous } = usageComparisonWindows(win);
 	const [current, prior] = useSuspenseQueries({
 		queries: [
-			usageSummaryQueryOptions(groupBy, win),
-			usageSummaryQueryOptions(groupBy, previous),
+			usageSummaryQueryOptions(groupBy, win, filter),
+			usageSummaryQueryOptions(groupBy, previous, filter),
 		],
 	});
 	const rows = current.data.rows ?? [];
@@ -633,13 +657,16 @@ export function useUsageOverviewWithDeltas(
  * This is the only honest source for whole-relay latency percentiles —
  * per-group percentiles cannot be merged after the fact.
  */
-export function usageTotalsQueryOptions(win: UsageWindow) {
+export function usageTotalsQueryOptions(
+	win: UsageWindow,
+	filter?: UsageSummaryFilter,
+) {
 	return queryOptions({
-		queryKey: ["usage", "totals", win.from, win.to] as const,
+		queryKey: ["usage", "totals", win.from, win.to, filter ?? {}] as const,
 		queryFn: async (): Promise<UsageSummaryResult> => {
 			const data = unwrap(
 				await apiClient.GET("/usage/summary", {
-					params: { query: { from: win.from, to: win.to } },
+					params: { query: { ...filter, from: win.from, to: win.to } },
 				}),
 			);
 			return data;
@@ -657,8 +684,11 @@ export interface LatencyProfile {
 	requests: number;
 }
 
-export function useLatencyProfile(win: UsageWindow): LatencyProfile | null {
-	const { data } = useSuspenseQuery(usageTotalsQueryOptions(win));
+export function useLatencyProfile(
+	win: UsageWindow,
+	filter?: UsageSummaryFilter,
+): LatencyProfile | null {
+	const { data } = useSuspenseQuery(usageTotalsQueryOptions(win, filter));
 	const row = (data.rows ?? [])[0];
 	if (!row || row.requests === 0) return null;
 	return {
@@ -676,8 +706,11 @@ export function useLatencyProfile(win: UsageWindow): LatencyProfile | null {
 export function useTokenSplit(
 	groupBy: UsageGroupBy,
 	win: UsageWindow,
+	filter?: UsageSummaryFilter,
 ): TokenSplit {
-	const { data } = useSuspenseQuery(usageSummaryQueryOptions(groupBy, win));
+	const { data } = useSuspenseQuery(
+		usageSummaryQueryOptions(groupBy, win, filter),
+	);
 	return splitTokens(mergeMeters((data.rows ?? []).map((r) => r.tokens)));
 }
 
@@ -853,8 +886,33 @@ export function useScopeSpend(
 		enabled: id.length > 0,
 		retry: false,
 	});
-	if (isError) return { spend: null, unavailable: true };
-	if (!data) return { spend: null, unavailable: false };
+	return { ...deriveScopeSpend(data, groupBy), unavailable: isError };
+}
+
+/**
+ * The same breakdown for an arbitrary slice of the stream — how a scoped
+ * home totals every project the actor can see in one call. Shares the
+ * summary cache entry with the rest of the page.
+ */
+export function useFilteredSpend(
+	groupBy: UsageGroupBy,
+	win: UsageWindow,
+	filter: UsageSummaryFilter,
+	enabled = true,
+): { spend: ScopeSpend | null; unavailable: boolean } {
+	const { data, isError } = useQuery({
+		...usageSummaryQueryOptions(groupBy, win, filter),
+		enabled,
+		retry: false,
+	});
+	return { ...deriveScopeSpend(data, groupBy), unavailable: isError };
+}
+
+function deriveScopeSpend(
+	data: UsageSummaryResult | undefined,
+	groupBy: string,
+): { spend: ScopeSpend | null } {
+	if (!data) return { spend: null };
 	const rows = data.rows ?? [];
 	let requests = 0;
 	let tokens = 0;
@@ -877,6 +935,5 @@ export function useScopeSpend(
 			from: data.from,
 			to: data.to,
 		},
-		unavailable: false,
 	};
 }
