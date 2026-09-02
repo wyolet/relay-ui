@@ -17,8 +17,11 @@ import { Route as AuthenticatedUsageRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedTeamsRouteImport } from './routes/_authenticated/teams'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedServiceAccountsRouteImport } from './routes/_authenticated/service-accounts'
+import { Route as AuthenticatedRolesRouteImport } from './routes/_authenticated/roles'
+import { Route as AuthenticatedRoleBindingsRouteImport } from './routes/_authenticated/role-bindings'
 import { Route as AuthenticatedProjectsRouteImport } from './routes/_authenticated/projects'
 import { Route as AuthenticatedPricingRouteImport } from './routes/_authenticated/pricing'
+import { Route as AuthenticatedPolicyBindingsRouteImport } from './routes/_authenticated/policy-bindings'
 import { Route as AuthenticatedPoliciesRouteImport } from './routes/_authenticated/policies'
 import { Route as AuthenticatedModelsRouteImport } from './routes/_authenticated/models'
 import { Route as AuthenticatedKeysRouteImport } from './routes/_authenticated/keys'
@@ -28,8 +31,11 @@ import { Route as AuthenticatedBootstrapRouteImport } from './routes/_authentica
 import { Route as AuthenticatedTeamsIndexRouteImport } from './routes/_authenticated/teams.index'
 import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated/settings.index'
 import { Route as AuthenticatedServiceAccountsIndexRouteImport } from './routes/_authenticated/service-accounts.index'
+import { Route as AuthenticatedRolesIndexRouteImport } from './routes/_authenticated/roles.index'
+import { Route as AuthenticatedRoleBindingsIndexRouteImport } from './routes/_authenticated/role-bindings.index'
 import { Route as AuthenticatedProjectsIndexRouteImport } from './routes/_authenticated/projects.index'
 import { Route as AuthenticatedPricingIndexRouteImport } from './routes/_authenticated/pricing.index'
+import { Route as AuthenticatedPolicyBindingsIndexRouteImport } from './routes/_authenticated/policy-bindings.index'
 import { Route as AuthenticatedPoliciesIndexRouteImport } from './routes/_authenticated/policies.index'
 import { Route as AuthenticatedModelsIndexRouteImport } from './routes/_authenticated/models.index'
 import { Route as AuthenticatedLogsIndexRouteImport } from './routes/_authenticated/logs.index'
@@ -43,11 +49,17 @@ import { Route as AuthenticatedSettingsPermissionsRouteImport } from './routes/_
 import { Route as AuthenticatedSettingsPayloadLoggingRouteImport } from './routes/_authenticated/settings.payload-logging'
 import { Route as AuthenticatedServiceAccountsNewRouteImport } from './routes/_authenticated/service-accounts.new'
 import { Route as AuthenticatedServiceAccountsNameRouteImport } from './routes/_authenticated/service-accounts.$name'
+import { Route as AuthenticatedRolesNewRouteImport } from './routes/_authenticated/roles.new'
+import { Route as AuthenticatedRolesNameRouteImport } from './routes/_authenticated/roles.$name'
+import { Route as AuthenticatedRoleBindingsNewRouteImport } from './routes/_authenticated/role-bindings.new'
+import { Route as AuthenticatedRoleBindingsNameRouteImport } from './routes/_authenticated/role-bindings.$name'
 import { Route as AuthenticatedProvidersNameRouteImport } from './routes/_authenticated/providers.$name'
 import { Route as AuthenticatedProjectsNewRouteImport } from './routes/_authenticated/projects.new'
 import { Route as AuthenticatedProjectsNameRouteImport } from './routes/_authenticated/projects.$name'
 import { Route as AuthenticatedPricingNewRouteImport } from './routes/_authenticated/pricing.new'
 import { Route as AuthenticatedPricingNameRouteImport } from './routes/_authenticated/pricing.$name'
+import { Route as AuthenticatedPolicyBindingsNewRouteImport } from './routes/_authenticated/policy-bindings.new'
+import { Route as AuthenticatedPolicyBindingsNameRouteImport } from './routes/_authenticated/policy-bindings.$name'
 import { Route as AuthenticatedPoliciesNewRouteImport } from './routes/_authenticated/policies.new'
 import { Route as AuthenticatedPoliciesNameRouteImport } from './routes/_authenticated/policies.$name'
 import { Route as AuthenticatedModelsNewRouteImport } from './routes/_authenticated/models.new'
@@ -62,8 +74,11 @@ import { Route as AuthenticatedGroupsNewRouteImport } from './routes/_authentica
 import { Route as AuthenticatedGroupsNameRouteImport } from './routes/_authenticated/groups.$name'
 import { Route as AuthenticatedTeamsNameEditRouteImport } from './routes/_authenticated/teams.$name_.edit'
 import { Route as AuthenticatedServiceAccountsNameEditRouteImport } from './routes/_authenticated/service-accounts.$name_.edit'
+import { Route as AuthenticatedRolesNameEditRouteImport } from './routes/_authenticated/roles.$name_.edit'
+import { Route as AuthenticatedRoleBindingsNameEditRouteImport } from './routes/_authenticated/role-bindings.$name_.edit'
 import { Route as AuthenticatedProjectsNameEditRouteImport } from './routes/_authenticated/projects.$name_.edit'
 import { Route as AuthenticatedPricingNameEditRouteImport } from './routes/_authenticated/pricing.$name_.edit'
+import { Route as AuthenticatedPolicyBindingsNameEditRouteImport } from './routes/_authenticated/policy-bindings.$name_.edit'
 import { Route as AuthenticatedPoliciesRateLimitsNewRouteImport } from './routes/_authenticated/policies.rate-limits.new'
 import { Route as AuthenticatedPoliciesRateLimitsNameRouteImport } from './routes/_authenticated/policies.rate-limits.$name'
 import { Route as AuthenticatedPoliciesNameEditRouteImport } from './routes/_authenticated/policies.$name_.edit'
@@ -113,6 +128,17 @@ const AuthenticatedServiceAccountsRoute =
     path: '/service-accounts',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedRolesRoute = AuthenticatedRolesRouteImport.update({
+  id: '/roles',
+  path: '/roles',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedRoleBindingsRoute =
+  AuthenticatedRoleBindingsRouteImport.update({
+    id: '/role-bindings',
+    path: '/role-bindings',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedProjectsRoute = AuthenticatedProjectsRouteImport.update({
   id: '/projects',
   path: '/projects',
@@ -123,6 +149,12 @@ const AuthenticatedPricingRoute = AuthenticatedPricingRouteImport.update({
   path: '/pricing',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedPolicyBindingsRoute =
+  AuthenticatedPolicyBindingsRouteImport.update({
+    id: '/policy-bindings',
+    path: '/policy-bindings',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedPoliciesRoute = AuthenticatedPoliciesRouteImport.update({
   id: '/policies',
   path: '/policies',
@@ -170,6 +202,17 @@ const AuthenticatedServiceAccountsIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedServiceAccountsRoute,
   } as any)
+const AuthenticatedRolesIndexRoute = AuthenticatedRolesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedRolesRoute,
+} as any)
+const AuthenticatedRoleBindingsIndexRoute =
+  AuthenticatedRoleBindingsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedRoleBindingsRoute,
+  } as any)
 const AuthenticatedProjectsIndexRoute =
   AuthenticatedProjectsIndexRouteImport.update({
     id: '/',
@@ -181,6 +224,12 @@ const AuthenticatedPricingIndexRoute =
     id: '/',
     path: '/',
     getParentRoute: () => AuthenticatedPricingRoute,
+  } as any)
+const AuthenticatedPolicyBindingsIndexRoute =
+  AuthenticatedPolicyBindingsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedPolicyBindingsRoute,
   } as any)
 const AuthenticatedPoliciesIndexRoute =
   AuthenticatedPoliciesIndexRouteImport.update({
@@ -257,6 +306,28 @@ const AuthenticatedServiceAccountsNameRoute =
     path: '/$name',
     getParentRoute: () => AuthenticatedServiceAccountsRoute,
   } as any)
+const AuthenticatedRolesNewRoute = AuthenticatedRolesNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => AuthenticatedRolesRoute,
+} as any)
+const AuthenticatedRolesNameRoute = AuthenticatedRolesNameRouteImport.update({
+  id: '/$name',
+  path: '/$name',
+  getParentRoute: () => AuthenticatedRolesRoute,
+} as any)
+const AuthenticatedRoleBindingsNewRoute =
+  AuthenticatedRoleBindingsNewRouteImport.update({
+    id: '/new',
+    path: '/new',
+    getParentRoute: () => AuthenticatedRoleBindingsRoute,
+  } as any)
+const AuthenticatedRoleBindingsNameRoute =
+  AuthenticatedRoleBindingsNameRouteImport.update({
+    id: '/$name',
+    path: '/$name',
+    getParentRoute: () => AuthenticatedRoleBindingsRoute,
+  } as any)
 const AuthenticatedProvidersNameRoute =
   AuthenticatedProvidersNameRouteImport.update({
     id: '/providers/$name',
@@ -285,6 +356,18 @@ const AuthenticatedPricingNameRoute =
     id: '/$name',
     path: '/$name',
     getParentRoute: () => AuthenticatedPricingRoute,
+  } as any)
+const AuthenticatedPolicyBindingsNewRoute =
+  AuthenticatedPolicyBindingsNewRouteImport.update({
+    id: '/new',
+    path: '/new',
+    getParentRoute: () => AuthenticatedPolicyBindingsRoute,
+  } as any)
+const AuthenticatedPolicyBindingsNameRoute =
+  AuthenticatedPolicyBindingsNameRouteImport.update({
+    id: '/$name',
+    path: '/$name',
+    getParentRoute: () => AuthenticatedPolicyBindingsRoute,
   } as any)
 const AuthenticatedPoliciesNewRoute =
   AuthenticatedPoliciesNewRouteImport.update({
@@ -363,6 +446,18 @@ const AuthenticatedServiceAccountsNameEditRoute =
     path: '/$name/edit',
     getParentRoute: () => AuthenticatedServiceAccountsRoute,
   } as any)
+const AuthenticatedRolesNameEditRoute =
+  AuthenticatedRolesNameEditRouteImport.update({
+    id: '/$name_/edit',
+    path: '/$name/edit',
+    getParentRoute: () => AuthenticatedRolesRoute,
+  } as any)
+const AuthenticatedRoleBindingsNameEditRoute =
+  AuthenticatedRoleBindingsNameEditRouteImport.update({
+    id: '/$name_/edit',
+    path: '/$name/edit',
+    getParentRoute: () => AuthenticatedRoleBindingsRoute,
+  } as any)
 const AuthenticatedProjectsNameEditRoute =
   AuthenticatedProjectsNameEditRouteImport.update({
     id: '/$name_/edit',
@@ -374,6 +469,12 @@ const AuthenticatedPricingNameEditRoute =
     id: '/$name_/edit',
     path: '/$name/edit',
     getParentRoute: () => AuthenticatedPricingRoute,
+  } as any)
+const AuthenticatedPolicyBindingsNameEditRoute =
+  AuthenticatedPolicyBindingsNameEditRouteImport.update({
+    id: '/$name_/edit',
+    path: '/$name/edit',
+    getParentRoute: () => AuthenticatedPolicyBindingsRoute,
   } as any)
 const AuthenticatedPoliciesRateLimitsNewRoute =
   AuthenticatedPoliciesRateLimitsNewRouteImport.update({
@@ -434,8 +535,11 @@ export interface FileRoutesByFullPath {
   '/keys': typeof AuthenticatedKeysRoute
   '/models': typeof AuthenticatedModelsRouteWithChildren
   '/policies': typeof AuthenticatedPoliciesRouteWithChildren
+  '/policy-bindings': typeof AuthenticatedPolicyBindingsRouteWithChildren
   '/pricing': typeof AuthenticatedPricingRouteWithChildren
   '/projects': typeof AuthenticatedProjectsRouteWithChildren
+  '/role-bindings': typeof AuthenticatedRoleBindingsRouteWithChildren
+  '/roles': typeof AuthenticatedRolesRouteWithChildren
   '/service-accounts': typeof AuthenticatedServiceAccountsRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRouteWithChildren
   '/teams': typeof AuthenticatedTeamsRouteWithChildren
@@ -452,11 +556,17 @@ export interface FileRoutesByFullPath {
   '/models/new': typeof AuthenticatedModelsNewRoute
   '/policies/$name': typeof AuthenticatedPoliciesNameRoute
   '/policies/new': typeof AuthenticatedPoliciesNewRoute
+  '/policy-bindings/$name': typeof AuthenticatedPolicyBindingsNameRoute
+  '/policy-bindings/new': typeof AuthenticatedPolicyBindingsNewRoute
   '/pricing/$name': typeof AuthenticatedPricingNameRoute
   '/pricing/new': typeof AuthenticatedPricingNewRoute
   '/projects/$name': typeof AuthenticatedProjectsNameRoute
   '/projects/new': typeof AuthenticatedProjectsNewRoute
   '/providers/$name': typeof AuthenticatedProvidersNameRoute
+  '/role-bindings/$name': typeof AuthenticatedRoleBindingsNameRoute
+  '/role-bindings/new': typeof AuthenticatedRoleBindingsNewRoute
+  '/roles/$name': typeof AuthenticatedRolesNameRoute
+  '/roles/new': typeof AuthenticatedRolesNewRoute
   '/service-accounts/$name': typeof AuthenticatedServiceAccountsNameRoute
   '/service-accounts/new': typeof AuthenticatedServiceAccountsNewRoute
   '/settings/payload-logging': typeof AuthenticatedSettingsPayloadLoggingRoute
@@ -470,8 +580,11 @@ export interface FileRoutesByFullPath {
   '/logs/': typeof AuthenticatedLogsIndexRoute
   '/models/': typeof AuthenticatedModelsIndexRoute
   '/policies/': typeof AuthenticatedPoliciesIndexRoute
+  '/policy-bindings/': typeof AuthenticatedPolicyBindingsIndexRoute
   '/pricing/': typeof AuthenticatedPricingIndexRoute
   '/projects/': typeof AuthenticatedProjectsIndexRoute
+  '/role-bindings/': typeof AuthenticatedRoleBindingsIndexRoute
+  '/roles/': typeof AuthenticatedRolesIndexRoute
   '/service-accounts/': typeof AuthenticatedServiceAccountsIndexRoute
   '/settings/': typeof AuthenticatedSettingsIndexRoute
   '/teams/': typeof AuthenticatedTeamsIndexRoute
@@ -482,8 +595,11 @@ export interface FileRoutesByFullPath {
   '/policies/$name/edit': typeof AuthenticatedPoliciesNameEditRoute
   '/policies/rate-limits/$name': typeof AuthenticatedPoliciesRateLimitsNameRoute
   '/policies/rate-limits/new': typeof AuthenticatedPoliciesRateLimitsNewRoute
+  '/policy-bindings/$name/edit': typeof AuthenticatedPolicyBindingsNameEditRoute
   '/pricing/$name/edit': typeof AuthenticatedPricingNameEditRoute
   '/projects/$name/edit': typeof AuthenticatedProjectsNameEditRoute
+  '/role-bindings/$name/edit': typeof AuthenticatedRoleBindingsNameEditRoute
+  '/roles/$name/edit': typeof AuthenticatedRolesNameEditRoute
   '/service-accounts/$name/edit': typeof AuthenticatedServiceAccountsNameEditRoute
   '/teams/$name/edit': typeof AuthenticatedTeamsNameEditRoute
   '/policies/rate-limits/$name/edit': typeof AuthenticatedPoliciesRateLimitsNameEditRoute
@@ -507,11 +623,17 @@ export interface FileRoutesByTo {
   '/models/new': typeof AuthenticatedModelsNewRoute
   '/policies/$name': typeof AuthenticatedPoliciesNameRoute
   '/policies/new': typeof AuthenticatedPoliciesNewRoute
+  '/policy-bindings/$name': typeof AuthenticatedPolicyBindingsNameRoute
+  '/policy-bindings/new': typeof AuthenticatedPolicyBindingsNewRoute
   '/pricing/$name': typeof AuthenticatedPricingNameRoute
   '/pricing/new': typeof AuthenticatedPricingNewRoute
   '/projects/$name': typeof AuthenticatedProjectsNameRoute
   '/projects/new': typeof AuthenticatedProjectsNewRoute
   '/providers/$name': typeof AuthenticatedProvidersNameRoute
+  '/role-bindings/$name': typeof AuthenticatedRoleBindingsNameRoute
+  '/role-bindings/new': typeof AuthenticatedRoleBindingsNewRoute
+  '/roles/$name': typeof AuthenticatedRolesNameRoute
+  '/roles/new': typeof AuthenticatedRolesNewRoute
   '/service-accounts/$name': typeof AuthenticatedServiceAccountsNameRoute
   '/service-accounts/new': typeof AuthenticatedServiceAccountsNewRoute
   '/settings/payload-logging': typeof AuthenticatedSettingsPayloadLoggingRoute
@@ -525,8 +647,11 @@ export interface FileRoutesByTo {
   '/logs': typeof AuthenticatedLogsIndexRoute
   '/models': typeof AuthenticatedModelsIndexRoute
   '/policies': typeof AuthenticatedPoliciesIndexRoute
+  '/policy-bindings': typeof AuthenticatedPolicyBindingsIndexRoute
   '/pricing': typeof AuthenticatedPricingIndexRoute
   '/projects': typeof AuthenticatedProjectsIndexRoute
+  '/role-bindings': typeof AuthenticatedRoleBindingsIndexRoute
+  '/roles': typeof AuthenticatedRolesIndexRoute
   '/service-accounts': typeof AuthenticatedServiceAccountsIndexRoute
   '/settings': typeof AuthenticatedSettingsIndexRoute
   '/teams': typeof AuthenticatedTeamsIndexRoute
@@ -537,8 +662,11 @@ export interface FileRoutesByTo {
   '/policies/$name/edit': typeof AuthenticatedPoliciesNameEditRoute
   '/policies/rate-limits/$name': typeof AuthenticatedPoliciesRateLimitsNameRoute
   '/policies/rate-limits/new': typeof AuthenticatedPoliciesRateLimitsNewRoute
+  '/policy-bindings/$name/edit': typeof AuthenticatedPolicyBindingsNameEditRoute
   '/pricing/$name/edit': typeof AuthenticatedPricingNameEditRoute
   '/projects/$name/edit': typeof AuthenticatedProjectsNameEditRoute
+  '/role-bindings/$name/edit': typeof AuthenticatedRoleBindingsNameEditRoute
+  '/roles/$name/edit': typeof AuthenticatedRolesNameEditRoute
   '/service-accounts/$name/edit': typeof AuthenticatedServiceAccountsNameEditRoute
   '/teams/$name/edit': typeof AuthenticatedTeamsNameEditRoute
   '/policies/rate-limits/$name/edit': typeof AuthenticatedPoliciesRateLimitsNameEditRoute
@@ -554,8 +682,11 @@ export interface FileRoutesById {
   '/_authenticated/keys': typeof AuthenticatedKeysRoute
   '/_authenticated/models': typeof AuthenticatedModelsRouteWithChildren
   '/_authenticated/policies': typeof AuthenticatedPoliciesRouteWithChildren
+  '/_authenticated/policy-bindings': typeof AuthenticatedPolicyBindingsRouteWithChildren
   '/_authenticated/pricing': typeof AuthenticatedPricingRouteWithChildren
   '/_authenticated/projects': typeof AuthenticatedProjectsRouteWithChildren
+  '/_authenticated/role-bindings': typeof AuthenticatedRoleBindingsRouteWithChildren
+  '/_authenticated/roles': typeof AuthenticatedRolesRouteWithChildren
   '/_authenticated/service-accounts': typeof AuthenticatedServiceAccountsRouteWithChildren
   '/_authenticated/settings': typeof AuthenticatedSettingsRouteWithChildren
   '/_authenticated/teams': typeof AuthenticatedTeamsRouteWithChildren
@@ -573,11 +704,17 @@ export interface FileRoutesById {
   '/_authenticated/models/new': typeof AuthenticatedModelsNewRoute
   '/_authenticated/policies/$name': typeof AuthenticatedPoliciesNameRoute
   '/_authenticated/policies/new': typeof AuthenticatedPoliciesNewRoute
+  '/_authenticated/policy-bindings/$name': typeof AuthenticatedPolicyBindingsNameRoute
+  '/_authenticated/policy-bindings/new': typeof AuthenticatedPolicyBindingsNewRoute
   '/_authenticated/pricing/$name': typeof AuthenticatedPricingNameRoute
   '/_authenticated/pricing/new': typeof AuthenticatedPricingNewRoute
   '/_authenticated/projects/$name': typeof AuthenticatedProjectsNameRoute
   '/_authenticated/projects/new': typeof AuthenticatedProjectsNewRoute
   '/_authenticated/providers/$name': typeof AuthenticatedProvidersNameRoute
+  '/_authenticated/role-bindings/$name': typeof AuthenticatedRoleBindingsNameRoute
+  '/_authenticated/role-bindings/new': typeof AuthenticatedRoleBindingsNewRoute
+  '/_authenticated/roles/$name': typeof AuthenticatedRolesNameRoute
+  '/_authenticated/roles/new': typeof AuthenticatedRolesNewRoute
   '/_authenticated/service-accounts/$name': typeof AuthenticatedServiceAccountsNameRoute
   '/_authenticated/service-accounts/new': typeof AuthenticatedServiceAccountsNewRoute
   '/_authenticated/settings/payload-logging': typeof AuthenticatedSettingsPayloadLoggingRoute
@@ -591,8 +728,11 @@ export interface FileRoutesById {
   '/_authenticated/logs/': typeof AuthenticatedLogsIndexRoute
   '/_authenticated/models/': typeof AuthenticatedModelsIndexRoute
   '/_authenticated/policies/': typeof AuthenticatedPoliciesIndexRoute
+  '/_authenticated/policy-bindings/': typeof AuthenticatedPolicyBindingsIndexRoute
   '/_authenticated/pricing/': typeof AuthenticatedPricingIndexRoute
   '/_authenticated/projects/': typeof AuthenticatedProjectsIndexRoute
+  '/_authenticated/role-bindings/': typeof AuthenticatedRoleBindingsIndexRoute
+  '/_authenticated/roles/': typeof AuthenticatedRolesIndexRoute
   '/_authenticated/service-accounts/': typeof AuthenticatedServiceAccountsIndexRoute
   '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
   '/_authenticated/teams/': typeof AuthenticatedTeamsIndexRoute
@@ -603,8 +743,11 @@ export interface FileRoutesById {
   '/_authenticated/policies/$name_/edit': typeof AuthenticatedPoliciesNameEditRoute
   '/_authenticated/policies/rate-limits/$name': typeof AuthenticatedPoliciesRateLimitsNameRoute
   '/_authenticated/policies/rate-limits/new': typeof AuthenticatedPoliciesRateLimitsNewRoute
+  '/_authenticated/policy-bindings/$name_/edit': typeof AuthenticatedPolicyBindingsNameEditRoute
   '/_authenticated/pricing/$name_/edit': typeof AuthenticatedPricingNameEditRoute
   '/_authenticated/projects/$name_/edit': typeof AuthenticatedProjectsNameEditRoute
+  '/_authenticated/role-bindings/$name_/edit': typeof AuthenticatedRoleBindingsNameEditRoute
+  '/_authenticated/roles/$name_/edit': typeof AuthenticatedRolesNameEditRoute
   '/_authenticated/service-accounts/$name_/edit': typeof AuthenticatedServiceAccountsNameEditRoute
   '/_authenticated/teams/$name_/edit': typeof AuthenticatedTeamsNameEditRoute
   '/_authenticated/policies/rate-limits/$name_/edit': typeof AuthenticatedPoliciesRateLimitsNameEditRoute
@@ -621,8 +764,11 @@ export interface FileRouteTypes {
     | '/keys'
     | '/models'
     | '/policies'
+    | '/policy-bindings'
     | '/pricing'
     | '/projects'
+    | '/role-bindings'
+    | '/roles'
     | '/service-accounts'
     | '/settings'
     | '/teams'
@@ -639,11 +785,17 @@ export interface FileRouteTypes {
     | '/models/new'
     | '/policies/$name'
     | '/policies/new'
+    | '/policy-bindings/$name'
+    | '/policy-bindings/new'
     | '/pricing/$name'
     | '/pricing/new'
     | '/projects/$name'
     | '/projects/new'
     | '/providers/$name'
+    | '/role-bindings/$name'
+    | '/role-bindings/new'
+    | '/roles/$name'
+    | '/roles/new'
     | '/service-accounts/$name'
     | '/service-accounts/new'
     | '/settings/payload-logging'
@@ -657,8 +809,11 @@ export interface FileRouteTypes {
     | '/logs/'
     | '/models/'
     | '/policies/'
+    | '/policy-bindings/'
     | '/pricing/'
     | '/projects/'
+    | '/role-bindings/'
+    | '/roles/'
     | '/service-accounts/'
     | '/settings/'
     | '/teams/'
@@ -669,8 +824,11 @@ export interface FileRouteTypes {
     | '/policies/$name/edit'
     | '/policies/rate-limits/$name'
     | '/policies/rate-limits/new'
+    | '/policy-bindings/$name/edit'
     | '/pricing/$name/edit'
     | '/projects/$name/edit'
+    | '/role-bindings/$name/edit'
+    | '/roles/$name/edit'
     | '/service-accounts/$name/edit'
     | '/teams/$name/edit'
     | '/policies/rate-limits/$name/edit'
@@ -694,11 +852,17 @@ export interface FileRouteTypes {
     | '/models/new'
     | '/policies/$name'
     | '/policies/new'
+    | '/policy-bindings/$name'
+    | '/policy-bindings/new'
     | '/pricing/$name'
     | '/pricing/new'
     | '/projects/$name'
     | '/projects/new'
     | '/providers/$name'
+    | '/role-bindings/$name'
+    | '/role-bindings/new'
+    | '/roles/$name'
+    | '/roles/new'
     | '/service-accounts/$name'
     | '/service-accounts/new'
     | '/settings/payload-logging'
@@ -712,8 +876,11 @@ export interface FileRouteTypes {
     | '/logs'
     | '/models'
     | '/policies'
+    | '/policy-bindings'
     | '/pricing'
     | '/projects'
+    | '/role-bindings'
+    | '/roles'
     | '/service-accounts'
     | '/settings'
     | '/teams'
@@ -724,8 +891,11 @@ export interface FileRouteTypes {
     | '/policies/$name/edit'
     | '/policies/rate-limits/$name'
     | '/policies/rate-limits/new'
+    | '/policy-bindings/$name/edit'
     | '/pricing/$name/edit'
     | '/projects/$name/edit'
+    | '/role-bindings/$name/edit'
+    | '/roles/$name/edit'
     | '/service-accounts/$name/edit'
     | '/teams/$name/edit'
     | '/policies/rate-limits/$name/edit'
@@ -740,8 +910,11 @@ export interface FileRouteTypes {
     | '/_authenticated/keys'
     | '/_authenticated/models'
     | '/_authenticated/policies'
+    | '/_authenticated/policy-bindings'
     | '/_authenticated/pricing'
     | '/_authenticated/projects'
+    | '/_authenticated/role-bindings'
+    | '/_authenticated/roles'
     | '/_authenticated/service-accounts'
     | '/_authenticated/settings'
     | '/_authenticated/teams'
@@ -759,11 +932,17 @@ export interface FileRouteTypes {
     | '/_authenticated/models/new'
     | '/_authenticated/policies/$name'
     | '/_authenticated/policies/new'
+    | '/_authenticated/policy-bindings/$name'
+    | '/_authenticated/policy-bindings/new'
     | '/_authenticated/pricing/$name'
     | '/_authenticated/pricing/new'
     | '/_authenticated/projects/$name'
     | '/_authenticated/projects/new'
     | '/_authenticated/providers/$name'
+    | '/_authenticated/role-bindings/$name'
+    | '/_authenticated/role-bindings/new'
+    | '/_authenticated/roles/$name'
+    | '/_authenticated/roles/new'
     | '/_authenticated/service-accounts/$name'
     | '/_authenticated/service-accounts/new'
     | '/_authenticated/settings/payload-logging'
@@ -777,8 +956,11 @@ export interface FileRouteTypes {
     | '/_authenticated/logs/'
     | '/_authenticated/models/'
     | '/_authenticated/policies/'
+    | '/_authenticated/policy-bindings/'
     | '/_authenticated/pricing/'
     | '/_authenticated/projects/'
+    | '/_authenticated/role-bindings/'
+    | '/_authenticated/roles/'
     | '/_authenticated/service-accounts/'
     | '/_authenticated/settings/'
     | '/_authenticated/teams/'
@@ -789,8 +971,11 @@ export interface FileRouteTypes {
     | '/_authenticated/policies/$name_/edit'
     | '/_authenticated/policies/rate-limits/$name'
     | '/_authenticated/policies/rate-limits/new'
+    | '/_authenticated/policy-bindings/$name_/edit'
     | '/_authenticated/pricing/$name_/edit'
     | '/_authenticated/projects/$name_/edit'
+    | '/_authenticated/role-bindings/$name_/edit'
+    | '/_authenticated/roles/$name_/edit'
     | '/_authenticated/service-accounts/$name_/edit'
     | '/_authenticated/teams/$name_/edit'
     | '/_authenticated/policies/rate-limits/$name_/edit'
@@ -860,6 +1045,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedServiceAccountsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/roles': {
+      id: '/_authenticated/roles'
+      path: '/roles'
+      fullPath: '/roles'
+      preLoaderRoute: typeof AuthenticatedRolesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/role-bindings': {
+      id: '/_authenticated/role-bindings'
+      path: '/role-bindings'
+      fullPath: '/role-bindings'
+      preLoaderRoute: typeof AuthenticatedRoleBindingsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/projects': {
       id: '/_authenticated/projects'
       path: '/projects'
@@ -872,6 +1071,13 @@ declare module '@tanstack/react-router' {
       path: '/pricing'
       fullPath: '/pricing'
       preLoaderRoute: typeof AuthenticatedPricingRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/policy-bindings': {
+      id: '/_authenticated/policy-bindings'
+      path: '/policy-bindings'
+      fullPath: '/policy-bindings'
+      preLoaderRoute: typeof AuthenticatedPolicyBindingsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/policies': {
@@ -937,6 +1143,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedServiceAccountsIndexRouteImport
       parentRoute: typeof AuthenticatedServiceAccountsRoute
     }
+    '/_authenticated/roles/': {
+      id: '/_authenticated/roles/'
+      path: '/'
+      fullPath: '/roles/'
+      preLoaderRoute: typeof AuthenticatedRolesIndexRouteImport
+      parentRoute: typeof AuthenticatedRolesRoute
+    }
+    '/_authenticated/role-bindings/': {
+      id: '/_authenticated/role-bindings/'
+      path: '/'
+      fullPath: '/role-bindings/'
+      preLoaderRoute: typeof AuthenticatedRoleBindingsIndexRouteImport
+      parentRoute: typeof AuthenticatedRoleBindingsRoute
+    }
     '/_authenticated/projects/': {
       id: '/_authenticated/projects/'
       path: '/'
@@ -950,6 +1170,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/pricing/'
       preLoaderRoute: typeof AuthenticatedPricingIndexRouteImport
       parentRoute: typeof AuthenticatedPricingRoute
+    }
+    '/_authenticated/policy-bindings/': {
+      id: '/_authenticated/policy-bindings/'
+      path: '/'
+      fullPath: '/policy-bindings/'
+      preLoaderRoute: typeof AuthenticatedPolicyBindingsIndexRouteImport
+      parentRoute: typeof AuthenticatedPolicyBindingsRoute
     }
     '/_authenticated/policies/': {
       id: '/_authenticated/policies/'
@@ -1042,6 +1269,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedServiceAccountsNameRouteImport
       parentRoute: typeof AuthenticatedServiceAccountsRoute
     }
+    '/_authenticated/roles/new': {
+      id: '/_authenticated/roles/new'
+      path: '/new'
+      fullPath: '/roles/new'
+      preLoaderRoute: typeof AuthenticatedRolesNewRouteImport
+      parentRoute: typeof AuthenticatedRolesRoute
+    }
+    '/_authenticated/roles/$name': {
+      id: '/_authenticated/roles/$name'
+      path: '/$name'
+      fullPath: '/roles/$name'
+      preLoaderRoute: typeof AuthenticatedRolesNameRouteImport
+      parentRoute: typeof AuthenticatedRolesRoute
+    }
+    '/_authenticated/role-bindings/new': {
+      id: '/_authenticated/role-bindings/new'
+      path: '/new'
+      fullPath: '/role-bindings/new'
+      preLoaderRoute: typeof AuthenticatedRoleBindingsNewRouteImport
+      parentRoute: typeof AuthenticatedRoleBindingsRoute
+    }
+    '/_authenticated/role-bindings/$name': {
+      id: '/_authenticated/role-bindings/$name'
+      path: '/$name'
+      fullPath: '/role-bindings/$name'
+      preLoaderRoute: typeof AuthenticatedRoleBindingsNameRouteImport
+      parentRoute: typeof AuthenticatedRoleBindingsRoute
+    }
     '/_authenticated/providers/$name': {
       id: '/_authenticated/providers/$name'
       path: '/providers/$name'
@@ -1076,6 +1331,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/pricing/$name'
       preLoaderRoute: typeof AuthenticatedPricingNameRouteImport
       parentRoute: typeof AuthenticatedPricingRoute
+    }
+    '/_authenticated/policy-bindings/new': {
+      id: '/_authenticated/policy-bindings/new'
+      path: '/new'
+      fullPath: '/policy-bindings/new'
+      preLoaderRoute: typeof AuthenticatedPolicyBindingsNewRouteImport
+      parentRoute: typeof AuthenticatedPolicyBindingsRoute
+    }
+    '/_authenticated/policy-bindings/$name': {
+      id: '/_authenticated/policy-bindings/$name'
+      path: '/$name'
+      fullPath: '/policy-bindings/$name'
+      preLoaderRoute: typeof AuthenticatedPolicyBindingsNameRouteImport
+      parentRoute: typeof AuthenticatedPolicyBindingsRoute
     }
     '/_authenticated/policies/new': {
       id: '/_authenticated/policies/new'
@@ -1175,6 +1444,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedServiceAccountsNameEditRouteImport
       parentRoute: typeof AuthenticatedServiceAccountsRoute
     }
+    '/_authenticated/roles/$name_/edit': {
+      id: '/_authenticated/roles/$name_/edit'
+      path: '/$name/edit'
+      fullPath: '/roles/$name/edit'
+      preLoaderRoute: typeof AuthenticatedRolesNameEditRouteImport
+      parentRoute: typeof AuthenticatedRolesRoute
+    }
+    '/_authenticated/role-bindings/$name_/edit': {
+      id: '/_authenticated/role-bindings/$name_/edit'
+      path: '/$name/edit'
+      fullPath: '/role-bindings/$name/edit'
+      preLoaderRoute: typeof AuthenticatedRoleBindingsNameEditRouteImport
+      parentRoute: typeof AuthenticatedRoleBindingsRoute
+    }
     '/_authenticated/projects/$name_/edit': {
       id: '/_authenticated/projects/$name_/edit'
       path: '/$name/edit'
@@ -1188,6 +1471,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/pricing/$name/edit'
       preLoaderRoute: typeof AuthenticatedPricingNameEditRouteImport
       parentRoute: typeof AuthenticatedPricingRoute
+    }
+    '/_authenticated/policy-bindings/$name_/edit': {
+      id: '/_authenticated/policy-bindings/$name_/edit'
+      path: '/$name/edit'
+      fullPath: '/policy-bindings/$name/edit'
+      preLoaderRoute: typeof AuthenticatedPolicyBindingsNameEditRouteImport
+      parentRoute: typeof AuthenticatedPolicyBindingsRoute
     }
     '/_authenticated/policies/rate-limits/new': {
       id: '/_authenticated/policies/rate-limits/new'
@@ -1341,6 +1631,28 @@ const AuthenticatedPoliciesRouteWithChildren =
     AuthenticatedPoliciesRouteChildren,
   )
 
+interface AuthenticatedPolicyBindingsRouteChildren {
+  AuthenticatedPolicyBindingsNameRoute: typeof AuthenticatedPolicyBindingsNameRoute
+  AuthenticatedPolicyBindingsNewRoute: typeof AuthenticatedPolicyBindingsNewRoute
+  AuthenticatedPolicyBindingsIndexRoute: typeof AuthenticatedPolicyBindingsIndexRoute
+  AuthenticatedPolicyBindingsNameEditRoute: typeof AuthenticatedPolicyBindingsNameEditRoute
+}
+
+const AuthenticatedPolicyBindingsRouteChildren: AuthenticatedPolicyBindingsRouteChildren =
+  {
+    AuthenticatedPolicyBindingsNameRoute: AuthenticatedPolicyBindingsNameRoute,
+    AuthenticatedPolicyBindingsNewRoute: AuthenticatedPolicyBindingsNewRoute,
+    AuthenticatedPolicyBindingsIndexRoute:
+      AuthenticatedPolicyBindingsIndexRoute,
+    AuthenticatedPolicyBindingsNameEditRoute:
+      AuthenticatedPolicyBindingsNameEditRoute,
+  }
+
+const AuthenticatedPolicyBindingsRouteWithChildren =
+  AuthenticatedPolicyBindingsRoute._addFileChildren(
+    AuthenticatedPolicyBindingsRouteChildren,
+  )
+
 interface AuthenticatedPricingRouteChildren {
   AuthenticatedPricingNameRoute: typeof AuthenticatedPricingNameRoute
   AuthenticatedPricingNewRoute: typeof AuthenticatedPricingNewRoute
@@ -1376,6 +1688,44 @@ const AuthenticatedProjectsRouteWithChildren =
   AuthenticatedProjectsRoute._addFileChildren(
     AuthenticatedProjectsRouteChildren,
   )
+
+interface AuthenticatedRoleBindingsRouteChildren {
+  AuthenticatedRoleBindingsNameRoute: typeof AuthenticatedRoleBindingsNameRoute
+  AuthenticatedRoleBindingsNewRoute: typeof AuthenticatedRoleBindingsNewRoute
+  AuthenticatedRoleBindingsIndexRoute: typeof AuthenticatedRoleBindingsIndexRoute
+  AuthenticatedRoleBindingsNameEditRoute: typeof AuthenticatedRoleBindingsNameEditRoute
+}
+
+const AuthenticatedRoleBindingsRouteChildren: AuthenticatedRoleBindingsRouteChildren =
+  {
+    AuthenticatedRoleBindingsNameRoute: AuthenticatedRoleBindingsNameRoute,
+    AuthenticatedRoleBindingsNewRoute: AuthenticatedRoleBindingsNewRoute,
+    AuthenticatedRoleBindingsIndexRoute: AuthenticatedRoleBindingsIndexRoute,
+    AuthenticatedRoleBindingsNameEditRoute:
+      AuthenticatedRoleBindingsNameEditRoute,
+  }
+
+const AuthenticatedRoleBindingsRouteWithChildren =
+  AuthenticatedRoleBindingsRoute._addFileChildren(
+    AuthenticatedRoleBindingsRouteChildren,
+  )
+
+interface AuthenticatedRolesRouteChildren {
+  AuthenticatedRolesNameRoute: typeof AuthenticatedRolesNameRoute
+  AuthenticatedRolesNewRoute: typeof AuthenticatedRolesNewRoute
+  AuthenticatedRolesIndexRoute: typeof AuthenticatedRolesIndexRoute
+  AuthenticatedRolesNameEditRoute: typeof AuthenticatedRolesNameEditRoute
+}
+
+const AuthenticatedRolesRouteChildren: AuthenticatedRolesRouteChildren = {
+  AuthenticatedRolesNameRoute: AuthenticatedRolesNameRoute,
+  AuthenticatedRolesNewRoute: AuthenticatedRolesNewRoute,
+  AuthenticatedRolesIndexRoute: AuthenticatedRolesIndexRoute,
+  AuthenticatedRolesNameEditRoute: AuthenticatedRolesNameEditRoute,
+}
+
+const AuthenticatedRolesRouteWithChildren =
+  AuthenticatedRolesRoute._addFileChildren(AuthenticatedRolesRouteChildren)
 
 interface AuthenticatedServiceAccountsRouteChildren {
   AuthenticatedServiceAccountsNameRoute: typeof AuthenticatedServiceAccountsNameRoute
@@ -1446,8 +1796,11 @@ interface AuthenticatedRouteChildren {
   AuthenticatedKeysRoute: typeof AuthenticatedKeysRoute
   AuthenticatedModelsRoute: typeof AuthenticatedModelsRouteWithChildren
   AuthenticatedPoliciesRoute: typeof AuthenticatedPoliciesRouteWithChildren
+  AuthenticatedPolicyBindingsRoute: typeof AuthenticatedPolicyBindingsRouteWithChildren
   AuthenticatedPricingRoute: typeof AuthenticatedPricingRouteWithChildren
   AuthenticatedProjectsRoute: typeof AuthenticatedProjectsRouteWithChildren
+  AuthenticatedRoleBindingsRoute: typeof AuthenticatedRoleBindingsRouteWithChildren
+  AuthenticatedRolesRoute: typeof AuthenticatedRolesRouteWithChildren
   AuthenticatedServiceAccountsRoute: typeof AuthenticatedServiceAccountsRouteWithChildren
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRouteWithChildren
   AuthenticatedTeamsRoute: typeof AuthenticatedTeamsRouteWithChildren
@@ -1469,8 +1822,12 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedKeysRoute: AuthenticatedKeysRoute,
   AuthenticatedModelsRoute: AuthenticatedModelsRouteWithChildren,
   AuthenticatedPoliciesRoute: AuthenticatedPoliciesRouteWithChildren,
+  AuthenticatedPolicyBindingsRoute:
+    AuthenticatedPolicyBindingsRouteWithChildren,
   AuthenticatedPricingRoute: AuthenticatedPricingRouteWithChildren,
   AuthenticatedProjectsRoute: AuthenticatedProjectsRouteWithChildren,
+  AuthenticatedRoleBindingsRoute: AuthenticatedRoleBindingsRouteWithChildren,
+  AuthenticatedRolesRoute: AuthenticatedRolesRouteWithChildren,
   AuthenticatedServiceAccountsRoute:
     AuthenticatedServiceAccountsRouteWithChildren,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRouteWithChildren,

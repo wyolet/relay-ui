@@ -24,6 +24,7 @@ import { resolveWindow, useScopeSpend } from "@/api/hooks/usage";
 import { ApiError } from "@/api/types/errors";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { useToggleProjectEnabled } from "@/projects/useToggleProjectEnabled";
+import { subjectLabel } from "@/role-bindings/SubjectsEditor";
 import { Chip } from "@/shared/Chip";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { DetailCard, DetailEmpty, DetailRow } from "@/shared/DetailCard";
@@ -253,7 +254,19 @@ export function ProjectDetailView({ name }: { name: string }) {
 				)}
 			</DetailCard>
 
-			<DetailCard title="Policy bindings" icon={ShieldCheck}>
+			<DetailCard
+				title="Policy bindings"
+				icon={ShieldCheck}
+				action={
+					<Link
+						to="/policy-bindings/new"
+						search={{ project_id: projectId }}
+						className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+					>
+						New policy binding
+					</Link>
+				}
+			>
 				{(policyBindings.data?.items ?? []).length === 0 ? (
 					<DetailEmpty>
 						No policy binding routes this project's callers to a policy.
@@ -262,11 +275,20 @@ export function ProjectDetailView({ name }: { name: string }) {
 					<ul className="divide-y divide-border">
 						{(policyBindings.data?.items ?? []).map((b) => (
 							<li key={b.metadata.name} className="py-2 first:pt-0 last:pb-0">
-								<DetailRow label={displayLabel(b.metadata)}>
+								<DetailRow
+									label={
+										<Link
+											to="/policy-bindings/$name"
+											params={{ name: b.metadata.name }}
+											className="hover:underline"
+										>
+											{displayLabel(b.metadata)}
+										</Link>
+									}
+								>
 									priority {b.spec.priority ?? 0} ·{" "}
-									{(b.spec.subjects ?? [])
-										.map((s) => `${s.kind}:${s.name ?? s.id ?? ""}`)
-										.join(", ") || "no subjects"}
+									{(b.spec.subjects ?? []).map(subjectLabel).join(", ") ||
+										"no subjects"}
 								</DetailRow>
 							</li>
 						))}
@@ -274,7 +296,19 @@ export function ProjectDetailView({ name }: { name: string }) {
 				)}
 			</DetailCard>
 
-			<DetailCard title="Access at project scope" icon={ShieldCheck}>
+			<DetailCard
+				title="Access at project scope"
+				icon={ShieldCheck}
+				action={
+					<Link
+						to="/role-bindings/new"
+						search={{ scope_kind: "project", scope_id: projectId }}
+						className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+					>
+						New role binding
+					</Link>
+				}
+			>
 				{(roleBindings.data?.items ?? []).length === 0 ? (
 					<DetailEmpty>
 						No role bindings grant access at this project's scope.
@@ -283,10 +317,19 @@ export function ProjectDetailView({ name }: { name: string }) {
 					<ul className="divide-y divide-border">
 						{(roleBindings.data?.items ?? []).map((b) => (
 							<li key={b.metadata.name} className="py-2 first:pt-0 last:pb-0">
-								<DetailRow label={displayLabel(b.metadata)}>
-									{(b.spec.subjects ?? [])
-										.map((s) => `${s.kind}:${s.name ?? s.id ?? ""}`)
-										.join(", ") || "no subjects"}
+								<DetailRow
+									label={
+										<Link
+											to="/role-bindings/$name"
+											params={{ name: b.metadata.name }}
+											className="hover:underline"
+										>
+											{displayLabel(b.metadata)}
+										</Link>
+									}
+								>
+									{(b.spec.subjects ?? []).map(subjectLabel).join(", ") ||
+										"no subjects"}
 								</DetailRow>
 							</li>
 						))}

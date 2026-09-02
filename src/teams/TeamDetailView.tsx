@@ -7,6 +7,7 @@ import { useDeleteTeam, useTeam, useTeamReferences } from "@/api/hooks/teams";
 import { resolveWindow, useScopeSpend } from "@/api/hooks/usage";
 import { ApiError } from "@/api/types/errors";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
+import { subjectLabel } from "@/role-bindings/SubjectsEditor";
 import { Chip } from "@/shared/Chip";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { DetailCard, DetailEmpty, DetailRow } from "@/shared/DetailCard";
@@ -180,7 +181,19 @@ export function TeamDetailView({ name }: { name: string }) {
 				)}
 			</DetailCard>
 
-			<DetailCard title="Access at team scope" icon={ShieldCheck}>
+			<DetailCard
+				title="Access at team scope"
+				icon={ShieldCheck}
+				action={
+					<Link
+						to="/role-bindings/new"
+						search={{ scope_kind: "team", scope_id: teamId }}
+						className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+					>
+						New role binding
+					</Link>
+				}
+			>
 				{(bindings.data?.items ?? []).length === 0 ? (
 					<DetailEmpty>
 						No role bindings grant access at this team's scope.
@@ -189,10 +202,19 @@ export function TeamDetailView({ name }: { name: string }) {
 					<ul className="divide-y divide-border">
 						{(bindings.data?.items ?? []).map((b) => (
 							<li key={b.metadata.name} className="py-2 first:pt-0 last:pb-0">
-								<DetailRow label={displayLabel(b.metadata)}>
-									{(b.spec.subjects ?? [])
-										.map((s) => `${s.kind}:${s.name ?? s.id ?? ""}`)
-										.join(", ") || "no subjects"}
+								<DetailRow
+									label={
+										<Link
+											to="/role-bindings/$name"
+											params={{ name: b.metadata.name }}
+											className="hover:underline"
+										>
+											{displayLabel(b.metadata)}
+										</Link>
+									}
+								>
+									{(b.spec.subjects ?? []).map(subjectLabel).join(", ") ||
+										"no subjects"}
 								</DetailRow>
 							</li>
 						))}

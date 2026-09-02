@@ -32,7 +32,7 @@ export function DetailRow({
 	label,
 	children,
 }: {
-	label: string;
+	label: React.ReactNode;
 	children: React.ReactNode;
 }) {
 	return (

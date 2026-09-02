@@ -6,7 +6,9 @@ import {
 	Bot,
 	Boxes,
 	KeyRound,
+	KeySquare,
 	LayoutDashboard,
+	Link2,
 	ShieldCheck,
 	Users,
 	UsersRound,
@@ -37,7 +39,10 @@ interface NavItem {
 		| "/service-accounts"
 		| "/groups"
 		| "/teams"
-		| "/projects";
+		| "/projects"
+		| "/roles"
+		| "/role-bindings"
+		| "/policy-bindings";
 	label: string;
 	icon: ComponentType<{ className?: string }>;
 	prefix: string;
@@ -88,6 +93,24 @@ const NAV_GROUPS: NavGroup[] = [
 				prefix: "/service-accounts",
 			},
 			{ to: "/groups", label: "Groups", icon: UsersRound, prefix: "/groups" },
+		],
+	},
+	{
+		label: "Access",
+		items: [
+			{ to: "/roles", label: "Roles", icon: ShieldCheck, prefix: "/roles" },
+			{
+				to: "/role-bindings",
+				label: "Role bindings",
+				icon: KeySquare,
+				prefix: "/role-bindings",
+			},
+			{
+				to: "/policy-bindings",
+				label: "Policy bindings",
+				icon: Link2,
+				prefix: "/policy-bindings",
+			},
 		],
 	},
 ];
