@@ -13,6 +13,7 @@ import { Route as SetupRouteImport } from './routes/setup'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedUsersRouteImport } from './routes/_authenticated/users'
 import { Route as AuthenticatedUsageRouteImport } from './routes/_authenticated/usage'
 import { Route as AuthenticatedTeamsRouteImport } from './routes/_authenticated/teams'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
@@ -28,6 +29,8 @@ import { Route as AuthenticatedKeysRouteImport } from './routes/_authenticated/k
 import { Route as AuthenticatedHostKeysRouteImport } from './routes/_authenticated/host-keys'
 import { Route as AuthenticatedGroupsRouteImport } from './routes/_authenticated/groups'
 import { Route as AuthenticatedBootstrapRouteImport } from './routes/_authenticated/bootstrap'
+import { Route as AuthenticatedAuditRouteImport } from './routes/_authenticated/audit'
+import { Route as AuthenticatedUsersIndexRouteImport } from './routes/_authenticated/users.index'
 import { Route as AuthenticatedTeamsIndexRouteImport } from './routes/_authenticated/teams.index'
 import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated/settings.index'
 import { Route as AuthenticatedServiceAccountsIndexRouteImport } from './routes/_authenticated/service-accounts.index'
@@ -41,6 +44,7 @@ import { Route as AuthenticatedModelsIndexRouteImport } from './routes/_authenti
 import { Route as AuthenticatedLogsIndexRouteImport } from './routes/_authenticated/logs.index'
 import { Route as AuthenticatedHostKeysIndexRouteImport } from './routes/_authenticated/host-keys.index'
 import { Route as AuthenticatedGroupsIndexRouteImport } from './routes/_authenticated/groups.index'
+import { Route as AuthenticatedUsersIdRouteImport } from './routes/_authenticated/users.$id'
 import { Route as AuthenticatedTeamsNewRouteImport } from './routes/_authenticated/teams.new'
 import { Route as AuthenticatedTeamsNameRouteImport } from './routes/_authenticated/teams.$name'
 import { Route as AuthenticatedSettingsRateLimitsRouteImport } from './routes/_authenticated/settings.rate-limits'
@@ -105,6 +109,11 @@ const AuthenticatedRoute = AuthenticatedRouteImport.update({
 const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedUsersRoute = AuthenticatedUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedUsageRoute = AuthenticatedUsageRouteImport.update({
@@ -185,6 +194,16 @@ const AuthenticatedBootstrapRoute = AuthenticatedBootstrapRouteImport.update({
   path: '/bootstrap',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedAuditRoute = AuthenticatedAuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedUsersIndexRoute = AuthenticatedUsersIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedUsersRoute,
+} as any)
 const AuthenticatedTeamsIndexRoute = AuthenticatedTeamsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -260,6 +279,11 @@ const AuthenticatedGroupsIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedGroupsRoute,
   } as any)
+const AuthenticatedUsersIdRoute = AuthenticatedUsersIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AuthenticatedUsersRoute,
+} as any)
 const AuthenticatedTeamsNewRoute = AuthenticatedTeamsNewRouteImport.update({
   id: '/new',
   path: '/new',
@@ -529,6 +553,7 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/login': typeof LoginRoute
   '/setup': typeof SetupRoute
+  '/audit': typeof AuthenticatedAuditRoute
   '/bootstrap': typeof AuthenticatedBootstrapRoute
   '/groups': typeof AuthenticatedGroupsRouteWithChildren
   '/host-keys': typeof AuthenticatedHostKeysRouteWithChildren
@@ -544,6 +569,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AuthenticatedSettingsRouteWithChildren
   '/teams': typeof AuthenticatedTeamsRouteWithChildren
   '/usage': typeof AuthenticatedUsageRoute
+  '/users': typeof AuthenticatedUsersRouteWithChildren
   '/groups/$name': typeof AuthenticatedGroupsNameRoute
   '/groups/new': typeof AuthenticatedGroupsNewRoute
   '/host-keys/$name': typeof AuthenticatedHostKeysNameRoute
@@ -575,6 +601,7 @@ export interface FileRoutesByFullPath {
   '/settings/rate-limits': typeof AuthenticatedSettingsRateLimitsRoute
   '/teams/$name': typeof AuthenticatedTeamsNameRoute
   '/teams/new': typeof AuthenticatedTeamsNewRoute
+  '/users/$id': typeof AuthenticatedUsersIdRoute
   '/groups/': typeof AuthenticatedGroupsIndexRoute
   '/host-keys/': typeof AuthenticatedHostKeysIndexRoute
   '/logs/': typeof AuthenticatedLogsIndexRoute
@@ -588,6 +615,7 @@ export interface FileRoutesByFullPath {
   '/service-accounts/': typeof AuthenticatedServiceAccountsIndexRoute
   '/settings/': typeof AuthenticatedSettingsIndexRoute
   '/teams/': typeof AuthenticatedTeamsIndexRoute
+  '/users/': typeof AuthenticatedUsersIndexRoute
   '/groups/$name/edit': typeof AuthenticatedGroupsNameEditRoute
   '/host-keys/$name/edit': typeof AuthenticatedHostKeysNameEditRoute
   '/keys/$name/edit': typeof AuthenticatedKeysNameEditRoute
@@ -607,6 +635,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/setup': typeof SetupRoute
+  '/audit': typeof AuthenticatedAuditRoute
   '/bootstrap': typeof AuthenticatedBootstrapRoute
   '/keys': typeof AuthenticatedKeysRoute
   '/usage': typeof AuthenticatedUsageRoute
@@ -642,6 +671,7 @@ export interface FileRoutesByTo {
   '/settings/rate-limits': typeof AuthenticatedSettingsRateLimitsRoute
   '/teams/$name': typeof AuthenticatedTeamsNameRoute
   '/teams/new': typeof AuthenticatedTeamsNewRoute
+  '/users/$id': typeof AuthenticatedUsersIdRoute
   '/groups': typeof AuthenticatedGroupsIndexRoute
   '/host-keys': typeof AuthenticatedHostKeysIndexRoute
   '/logs': typeof AuthenticatedLogsIndexRoute
@@ -655,6 +685,7 @@ export interface FileRoutesByTo {
   '/service-accounts': typeof AuthenticatedServiceAccountsIndexRoute
   '/settings': typeof AuthenticatedSettingsIndexRoute
   '/teams': typeof AuthenticatedTeamsIndexRoute
+  '/users': typeof AuthenticatedUsersIndexRoute
   '/groups/$name/edit': typeof AuthenticatedGroupsNameEditRoute
   '/host-keys/$name/edit': typeof AuthenticatedHostKeysNameEditRoute
   '/keys/$name/edit': typeof AuthenticatedKeysNameEditRoute
@@ -676,6 +707,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
   '/setup': typeof SetupRoute
+  '/_authenticated/audit': typeof AuthenticatedAuditRoute
   '/_authenticated/bootstrap': typeof AuthenticatedBootstrapRoute
   '/_authenticated/groups': typeof AuthenticatedGroupsRouteWithChildren
   '/_authenticated/host-keys': typeof AuthenticatedHostKeysRouteWithChildren
@@ -691,6 +723,7 @@ export interface FileRoutesById {
   '/_authenticated/settings': typeof AuthenticatedSettingsRouteWithChildren
   '/_authenticated/teams': typeof AuthenticatedTeamsRouteWithChildren
   '/_authenticated/usage': typeof AuthenticatedUsageRoute
+  '/_authenticated/users': typeof AuthenticatedUsersRouteWithChildren
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/groups/$name': typeof AuthenticatedGroupsNameRoute
   '/_authenticated/groups/new': typeof AuthenticatedGroupsNewRoute
@@ -723,6 +756,7 @@ export interface FileRoutesById {
   '/_authenticated/settings/rate-limits': typeof AuthenticatedSettingsRateLimitsRoute
   '/_authenticated/teams/$name': typeof AuthenticatedTeamsNameRoute
   '/_authenticated/teams/new': typeof AuthenticatedTeamsNewRoute
+  '/_authenticated/users/$id': typeof AuthenticatedUsersIdRoute
   '/_authenticated/groups/': typeof AuthenticatedGroupsIndexRoute
   '/_authenticated/host-keys/': typeof AuthenticatedHostKeysIndexRoute
   '/_authenticated/logs/': typeof AuthenticatedLogsIndexRoute
@@ -736,6 +770,7 @@ export interface FileRoutesById {
   '/_authenticated/service-accounts/': typeof AuthenticatedServiceAccountsIndexRoute
   '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
   '/_authenticated/teams/': typeof AuthenticatedTeamsIndexRoute
+  '/_authenticated/users/': typeof AuthenticatedUsersIndexRoute
   '/_authenticated/groups/$name_/edit': typeof AuthenticatedGroupsNameEditRoute
   '/_authenticated/host-keys/$name_/edit': typeof AuthenticatedHostKeysNameEditRoute
   '/_authenticated/keys_/$name_/edit': typeof AuthenticatedKeysNameEditRoute
@@ -758,6 +793,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/setup'
+    | '/audit'
     | '/bootstrap'
     | '/groups'
     | '/host-keys'
@@ -773,6 +809,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/teams'
     | '/usage'
+    | '/users'
     | '/groups/$name'
     | '/groups/new'
     | '/host-keys/$name'
@@ -804,6 +841,7 @@ export interface FileRouteTypes {
     | '/settings/rate-limits'
     | '/teams/$name'
     | '/teams/new'
+    | '/users/$id'
     | '/groups/'
     | '/host-keys/'
     | '/logs/'
@@ -817,6 +855,7 @@ export interface FileRouteTypes {
     | '/service-accounts/'
     | '/settings/'
     | '/teams/'
+    | '/users/'
     | '/groups/$name/edit'
     | '/host-keys/$name/edit'
     | '/keys/$name/edit'
@@ -836,6 +875,7 @@ export interface FileRouteTypes {
   to:
     | '/login'
     | '/setup'
+    | '/audit'
     | '/bootstrap'
     | '/keys'
     | '/usage'
@@ -871,6 +911,7 @@ export interface FileRouteTypes {
     | '/settings/rate-limits'
     | '/teams/$name'
     | '/teams/new'
+    | '/users/$id'
     | '/groups'
     | '/host-keys'
     | '/logs'
@@ -884,6 +925,7 @@ export interface FileRouteTypes {
     | '/service-accounts'
     | '/settings'
     | '/teams'
+    | '/users'
     | '/groups/$name/edit'
     | '/host-keys/$name/edit'
     | '/keys/$name/edit'
@@ -904,6 +946,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/login'
     | '/setup'
+    | '/_authenticated/audit'
     | '/_authenticated/bootstrap'
     | '/_authenticated/groups'
     | '/_authenticated/host-keys'
@@ -919,6 +962,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings'
     | '/_authenticated/teams'
     | '/_authenticated/usage'
+    | '/_authenticated/users'
     | '/_authenticated/'
     | '/_authenticated/groups/$name'
     | '/_authenticated/groups/new'
@@ -951,6 +995,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings/rate-limits'
     | '/_authenticated/teams/$name'
     | '/_authenticated/teams/new'
+    | '/_authenticated/users/$id'
     | '/_authenticated/groups/'
     | '/_authenticated/host-keys/'
     | '/_authenticated/logs/'
@@ -964,6 +1009,7 @@ export interface FileRouteTypes {
     | '/_authenticated/service-accounts/'
     | '/_authenticated/settings/'
     | '/_authenticated/teams/'
+    | '/_authenticated/users/'
     | '/_authenticated/groups/$name_/edit'
     | '/_authenticated/host-keys/$name_/edit'
     | '/_authenticated/keys_/$name_/edit'
@@ -1015,6 +1061,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/users': {
+      id: '/_authenticated/users'
+      path: '/users'
+      fullPath: '/users'
+      preLoaderRoute: typeof AuthenticatedUsersRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/usage': {
@@ -1122,6 +1175,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedBootstrapRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/audit': {
+      id: '/_authenticated/audit'
+      path: '/audit'
+      fullPath: '/audit'
+      preLoaderRoute: typeof AuthenticatedAuditRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/users/': {
+      id: '/_authenticated/users/'
+      path: '/'
+      fullPath: '/users/'
+      preLoaderRoute: typeof AuthenticatedUsersIndexRouteImport
+      parentRoute: typeof AuthenticatedUsersRoute
+    }
     '/_authenticated/teams/': {
       id: '/_authenticated/teams/'
       path: '/'
@@ -1212,6 +1279,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/groups/'
       preLoaderRoute: typeof AuthenticatedGroupsIndexRouteImport
       parentRoute: typeof AuthenticatedGroupsRoute
+    }
+    '/_authenticated/users/$id': {
+      id: '/_authenticated/users/$id'
+      path: '/$id'
+      fullPath: '/users/$id'
+      preLoaderRoute: typeof AuthenticatedUsersIdRouteImport
+      parentRoute: typeof AuthenticatedUsersRoute
     }
     '/_authenticated/teams/new': {
       id: '/_authenticated/teams/new'
@@ -1789,7 +1863,21 @@ const AuthenticatedTeamsRouteChildren: AuthenticatedTeamsRouteChildren = {
 const AuthenticatedTeamsRouteWithChildren =
   AuthenticatedTeamsRoute._addFileChildren(AuthenticatedTeamsRouteChildren)
 
+interface AuthenticatedUsersRouteChildren {
+  AuthenticatedUsersIdRoute: typeof AuthenticatedUsersIdRoute
+  AuthenticatedUsersIndexRoute: typeof AuthenticatedUsersIndexRoute
+}
+
+const AuthenticatedUsersRouteChildren: AuthenticatedUsersRouteChildren = {
+  AuthenticatedUsersIdRoute: AuthenticatedUsersIdRoute,
+  AuthenticatedUsersIndexRoute: AuthenticatedUsersIndexRoute,
+}
+
+const AuthenticatedUsersRouteWithChildren =
+  AuthenticatedUsersRoute._addFileChildren(AuthenticatedUsersRouteChildren)
+
 interface AuthenticatedRouteChildren {
+  AuthenticatedAuditRoute: typeof AuthenticatedAuditRoute
   AuthenticatedBootstrapRoute: typeof AuthenticatedBootstrapRoute
   AuthenticatedGroupsRoute: typeof AuthenticatedGroupsRouteWithChildren
   AuthenticatedHostKeysRoute: typeof AuthenticatedHostKeysRouteWithChildren
@@ -1805,6 +1893,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRouteWithChildren
   AuthenticatedTeamsRoute: typeof AuthenticatedTeamsRouteWithChildren
   AuthenticatedUsageRoute: typeof AuthenticatedUsageRoute
+  AuthenticatedUsersRoute: typeof AuthenticatedUsersRouteWithChildren
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedHostsNameRoute: typeof AuthenticatedHostsNameRoute
   AuthenticatedKeysNameRoute: typeof AuthenticatedKeysNameRoute
@@ -1816,6 +1905,7 @@ interface AuthenticatedRouteChildren {
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedAuditRoute: AuthenticatedAuditRoute,
   AuthenticatedBootstrapRoute: AuthenticatedBootstrapRoute,
   AuthenticatedGroupsRoute: AuthenticatedGroupsRouteWithChildren,
   AuthenticatedHostKeysRoute: AuthenticatedHostKeysRouteWithChildren,
@@ -1833,6 +1923,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedSettingsRoute: AuthenticatedSettingsRouteWithChildren,
   AuthenticatedTeamsRoute: AuthenticatedTeamsRouteWithChildren,
   AuthenticatedUsageRoute: AuthenticatedUsageRoute,
+  AuthenticatedUsersRoute: AuthenticatedUsersRouteWithChildren,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedHostsNameRoute: AuthenticatedHostsNameRoute,
   AuthenticatedKeysNameRoute: AuthenticatedKeysNameRoute,
