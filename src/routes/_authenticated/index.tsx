@@ -1,6 +1,6 @@
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { Suspense } from "react";
-import { relayKeysListQueryOptions } from "@/api/hooks/relayKeys";
+import { keysListQueryOptions } from "@/api/hooks/keys";
 import { resolveWindow, useStackedTimeline } from "@/api/hooks/usage";
 import { buttonVariants } from "@/components/ui/button";
 import { DashboardKpis } from "@/dashboard/DashboardKpis";
@@ -19,10 +19,9 @@ export const Route = createFileRoute("/_authenticated/")({
 	// sets `dismissed`, after which the WelcomePanel is the opt-in entry point.
 	async beforeLoad({ context }) {
 		if (useSetupStore.getState().dismissed) return;
-		const relayKeys = await context.queryClient.ensureQueryData(
-			relayKeysListQueryOptions,
-		);
-		if ((relayKeys.items ?? []).length === 0) {
+		const keys =
+			await context.queryClient.ensureQueryData(keysListQueryOptions);
+		if ((keys.items ?? []).length === 0) {
 			throw redirect({ to: "/setup" });
 		}
 	},

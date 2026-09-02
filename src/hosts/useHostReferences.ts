@@ -1,9 +1,9 @@
 import { useMemo } from "react";
 import { bindingsByHost, useBindings } from "@/api/hooks/bindings";
 import { useHostKeys } from "@/api/hooks/hostkeys";
+import { useKeys } from "@/api/hooks/keys";
 import { useModels } from "@/api/hooks/models";
 import { usePolicies } from "@/api/hooks/policies";
-import { useRelayKeys } from "@/api/hooks/relayKeys";
 import type { Host } from "@/api/types/host";
 import type { HostKey } from "@/api/types/hostkey";
 import type { Model } from "@/api/types/model";
@@ -22,10 +22,10 @@ export interface HostReferences {
 	userPolicies: Array<{
 		policy: Policy;
 		hostKeyCount: number;
-		relayKeyCount: number;
+		keyCount: number;
 	}>;
-	/** Sum of non-revoked relay keys whose policy uses any HK of this host. */
-	totalRelayKeys: number;
+	/** Sum of non-revoked keys whose policy uses any HK of this host. */
+	totalKeys: number;
 }
 
 /**
@@ -37,7 +37,7 @@ export function useHostReferences(host: Host): HostReferences {
 	const { data: modelsData } = useModels();
 	const { data: hostKeysData } = useHostKeys();
 	const { data: policiesData } = usePolicies();
-	const { data: relayKeysData } = useRelayKeys();
+	const { data: keysData } = useKeys();
 	const { data: bindingsData } = useBindings();
 
 	return useMemo(() => {
@@ -72,28 +72,28 @@ export function useHostReferences(host: Host): HostReferences {
 				p.metadata.owner?.kind === "host" && p.metadata.owner.id === hostId,
 		);
 
-		const relayKeyCountByPolicy = new Map<string, number>();
-		for (const rk of relayKeysData.items ?? []) {
+		const keyCountByPolicy = new Map<string, number>();
+		for (const rk of keysData.items ?? []) {
 			const pid = rk.spec.policyId;
 			if (!pid) continue;
-			relayKeyCountByPolicy.set(pid, (relayKeyCountByPolicy.get(pid) ?? 0) + 1);
+			keyCountByPolicy.set(pid, (keyCountByPolicy.get(pid) ?? 0) + 1);
 		}
 
 		const userPolicies: HostReferences["userPolicies"] = [];
-		let totalRelayKeys = 0;
+		let totalKeys = 0;
 		for (const p of allPolicies) {
 			if (p.metadata.owner?.kind === "host") continue;
 			const hits = (p.spec.hostKeyIds ?? []).filter((id) => hostKeyIds.has(id));
 			if (hits.length === 0) continue;
 			const rkCount = p.metadata.id
-				? (relayKeyCountByPolicy.get(p.metadata.id) ?? 0)
+				? (keyCountByPolicy.get(p.metadata.id) ?? 0)
 				: 0;
 			userPolicies.push({
 				policy: p,
 				hostKeyCount: hits.length,
-				relayKeyCount: rkCount,
+				keyCount: rkCount,
 			});
-			totalRelayKeys += rkCount;
+			totalKeys += rkCount;
 		}
 
 		return {
@@ -102,14 +102,7 @@ export function useHostReferences(host: Host): HostReferences {
 			hostKeys,
 			hostPolicies,
 			userPolicies,
-			totalRelayKeys,
+			totalKeys,
 		};
-	}, [
-		host,
-		modelsData,
-		hostKeysData,
-		policiesData,
-		relayKeysData,
-		bindingsData,
-	]);
+	}, [host, modelsData, hostKeysData, policiesData, keysData, bindingsData]);
 }

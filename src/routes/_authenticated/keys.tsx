@@ -4,14 +4,15 @@ import { z } from "zod";
 import { bindingsListQueryOptions } from "@/api/hooks/bindings";
 import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
+import { keysListQuery, keysListQueryOptions } from "@/api/hooks/keys";
 import { modelsListQueryOptions } from "@/api/hooks/models";
 import { policiesListQueryOptions } from "@/api/hooks/policies";
 import { providersListQueryOptions } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
-import { relayKeysListQueryOptions } from "@/api/hooks/relayKeys";
+import { serviceAccountsListQueryOptions } from "@/api/hooks/serviceAccounts";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { HostKeysTable } from "@/host-keys/HostKeysTable";
-import { RelayKeysTable } from "@/relay-keys/RelayKeysTable";
+import { KeysTable, toKeysParams } from "@/keys/KeysTable";
 import { PageLoader } from "@/shared/Spinner";
 
 type Tab = "relay" | "provider";
@@ -19,15 +20,29 @@ type Tab = "relay" | "provider";
 const searchSchema = z.object({
 	tab: z.enum(["relay", "provider"]).default("relay"),
 	q: z.string().default(""),
+	principal_kind: z
+		.enum(["all", "serviceaccount", "user"])
+		.catch("all")
+		.default("all"),
+	principal_id: z.string().catch("").default(""),
+	expired: z.enum(["all", "true", "false"]).catch("all").default("all"),
 });
 
 export const Route = createFileRoute("/_authenticated/keys")({
 	validateSearch: searchSchema,
-	loader: ({ context }) => {
+	loaderDeps: ({ search }) => ({
+		q: search.q,
+		principal_kind: search.principal_kind,
+		principal_id: search.principal_id,
+		expired: search.expired,
+	}),
+	loader: ({ context, deps }) => {
 		void context.queryClient.prefetchQuery(policiesListQueryOptions);
 		void context.queryClient.prefetchQuery(hostKeysListQueryOptions);
 		void context.queryClient.prefetchQuery(hostsListQueryOptions);
-		void context.queryClient.prefetchQuery(relayKeysListQueryOptions);
+		void context.queryClient.prefetchQuery(keysListQueryOptions);
+		void context.queryClient.prefetchQuery(serviceAccountsListQueryOptions);
+		void context.queryClient.ensureQueryData(keysListQuery(toKeysParams(deps)));
 		void context.queryClient.prefetchQuery(modelsListQueryOptions);
 		void context.queryClient.prefetchQuery(rateLimitsListQueryOptions);
 		void context.queryClient.prefetchQuery(providersListQueryOptions);
@@ -61,7 +76,7 @@ function KeysPage() {
 			>
 				<TabsList variant="underline">
 					<TabsTrigger value="relay" className="px-3 h-9">
-						Relay keys
+						API keys
 					</TabsTrigger>
 					<TabsTrigger value="provider" className="px-3 h-9">
 						Credentials
@@ -71,7 +86,7 @@ function KeysPage() {
 
 			{search.tab === "relay" && (
 				<Suspense fallback={<PageLoader className="min-h-[40vh]" />}>
-					<RelayKeysTable />
+					<KeysTable />
 				</Suspense>
 			)}
 			{search.tab === "provider" && (

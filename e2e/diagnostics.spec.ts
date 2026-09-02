@@ -78,10 +78,10 @@ test.describe("Diagnostics — Policies", () => {
 		).toBeVisible();
 	});
 
-	test("clean policy with host keys and a relay key has no error dot in the list", async ({
+	test("clean policy with host keys and a key has no error dot in the list", async ({
 		page,
 	}) => {
-		const relayKey = {
+		const key = {
 			metadata: { id: "rk-1", name: "app-prod", owner: { kind: "user" } },
 			spec: {
 				enabled: true,
@@ -96,7 +96,7 @@ test.describe("Diagnostics — Policies", () => {
 			hosts: [host],
 			models: [model],
 			providers: [provider],
-			relayKeys: [relayKey],
+			keys: [key],
 		});
 
 		await page.goto("/policies");

@@ -12,11 +12,11 @@ import {
 	useHost,
 	useUpdateHost,
 } from "@/api/hooks/hosts";
+import { keysListQueryOptions } from "@/api/hooks/keys";
 import { modelsListQueryOptions } from "@/api/hooks/models";
 import { policiesListQueryOptions } from "@/api/hooks/policies";
 import { providersListQueryOptions } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
-import { relayKeysListQueryOptions } from "@/api/hooks/relayKeys";
 import { ApiError } from "@/api/types/errors";
 import { type HostDetailTab, HostDetailView } from "@/hosts/HostDetailView";
 import { displayLabel } from "@/lib/displayLabel";
@@ -53,7 +53,7 @@ export const Route = createFileRoute("/_authenticated/hosts/$name")({
 		void queryClient.prefetchQuery(policiesListQueryOptions);
 		void queryClient.prefetchQuery(modelsListQueryOptions);
 		void queryClient.prefetchQuery(rateLimitsListQueryOptions);
-		void queryClient.prefetchQuery(relayKeysListQueryOptions);
+		void queryClient.prefetchQuery(keysListQueryOptions);
 		void queryClient.prefetchQuery(providersListQueryOptions);
 		return Promise.all([
 			queryClient.ensureQueryData(hostDetailQueryOptions(params.name)),

@@ -6,6 +6,7 @@ import { bindingsListQueryOptions } from "@/api/hooks/bindings";
 import { governanceQueryOptions } from "@/api/hooks/governance";
 import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
+import { keysListQueryOptions } from "@/api/hooks/keys";
 import {
 	modelDetailQueryOptions,
 	modelHostsQueryOptions,
@@ -18,7 +19,6 @@ import {
 import { policiesListQueryOptions } from "@/api/hooks/policies";
 import { providersListQueryOptions } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
-import { relayKeysListQueryOptions } from "@/api/hooks/relayKeys";
 import { ApiError } from "@/api/types/errors";
 import { displayLabel } from "@/lib/displayLabel";
 import { type ModelDetailTab, ModelDetailView } from "@/models/ModelDetailView";
@@ -49,7 +49,7 @@ export const Route = createFileRoute("/_authenticated/models/$name")({
 		void queryClient.prefetchQuery(hostKeysListQueryOptions);
 		void queryClient.prefetchQuery(policiesListQueryOptions);
 		void queryClient.prefetchQuery(rateLimitsListQueryOptions);
-		void queryClient.prefetchQuery(relayKeysListQueryOptions);
+		void queryClient.prefetchQuery(keysListQueryOptions);
 		void queryClient.prefetchQuery(bindingsListQueryOptions);
 		return Promise.all([
 			queryClient.ensureQueryData(modelDetailQueryOptions(params.name)),

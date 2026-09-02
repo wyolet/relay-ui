@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
 import { useDeleteHostKey, useHostKey } from "@/api/hooks/hostkeys";
 import { useHosts } from "@/api/hooks/hosts";
+import { useKeys } from "@/api/hooks/keys";
 import { useDetachHostKeyFromPolicy, usePolicies } from "@/api/hooks/policies";
-import { useRelayKeys } from "@/api/hooks/relayKeys";
 import { ApiError } from "@/api/types/errors";
 import type { Host } from "@/api/types/host";
 import { useToggleHostKeyEnabled } from "@/host-keys/useToggleHostKeyEnabled";
@@ -51,15 +51,15 @@ export interface AttachedPolicyRow {
 	hostOwned: boolean;
 	/** Count of host keys in this policy's hostKeyIds pool. */
 	poolSize: number;
-	/** Relay keys whose policyId === this policy id. */
-	relayKeyCount: number;
+	/** API keys whose policyId === this policy id. */
+	keyCount: number;
 }
 
 export function useHostKeyDetail({ name, onDeleted }: UseHostKeyDetailOptions) {
 	const { data: hk } = useHostKey(name);
 	const { data: hostsData } = useHosts();
 	const { data: policiesData } = usePolicies();
-	const { data: relayKeysData } = useRelayKeys();
+	const { data: keysData } = useKeys();
 	const deleteHostKey = useDeleteHostKey();
 	const { detach, isPending: isDetachPending } = useDetachHostKeyFromPolicy();
 	const { setEnabled: setEnabledMutation, isPending: isToggling } =
@@ -70,15 +70,15 @@ export function useHostKeyDetail({ name, onDeleted }: UseHostKeyDetailOptions) {
 
 	const refs = hk.policies ?? [];
 
-	const relayKeyCountByPolicy = useMemo(() => {
+	const keyCountByPolicy = useMemo(() => {
 		const counts = new Map<string, number>();
-		for (const rk of relayKeysData.items ?? []) {
+		for (const rk of keysData.items ?? []) {
 			const pid = rk.spec.policyId;
 			if (!pid) continue;
 			counts.set(pid, (counts.get(pid) ?? 0) + 1);
 		}
 		return counts;
-	}, [relayKeysData]);
+	}, [keysData]);
 
 	const attachedPolicies: AttachedPolicyRow[] = refs.map((ref) => {
 		const match = (policiesData.items ?? []).find(
@@ -94,7 +94,7 @@ export function useHostKeyDetail({ name, onDeleted }: UseHostKeyDetailOptions) {
 			enabled: match ? match.spec.enabled !== false : true,
 			hostOwned: match?.metadata.owner?.kind === "host",
 			poolSize,
-			relayKeyCount: relayKeyCountByPolicy.get(ref.id) ?? 0,
+			keyCount: keyCountByPolicy.get(ref.id) ?? 0,
 		};
 	});
 

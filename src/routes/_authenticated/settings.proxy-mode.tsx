@@ -106,7 +106,7 @@ function ProxyModeSettingsInner() {
 				<Section
 					icon={ShieldOff}
 					title="Allow unauthenticated"
-					description="Accept proxy-mode requests without a Relay key. Usage is still recorded, but cannot be attributed to a caller."
+					description="Accept proxy-mode requests without a Key. Usage is still recorded, but cannot be attributed to a caller."
 				>
 					<div className="inline-flex items-center gap-2.5">
 						<Switch

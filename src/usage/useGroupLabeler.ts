@@ -2,9 +2,9 @@ import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
+import { keysListQueryOptions } from "@/api/hooks/keys";
 import { modelsListQueryOptions } from "@/api/hooks/models";
 import { policiesListQueryOptions } from "@/api/hooks/policies";
-import { relayKeysListQueryOptions } from "@/api/hooks/relayKeys";
 import type { UsageGroupBy } from "@/api/hooks/usage";
 import { displayLabel } from "@/lib/displayLabel";
 
@@ -35,8 +35,8 @@ export function useGroupLabeler(
 		...hostKeysListQueryOptions,
 		enabled: groupBy === "host_key_id",
 	});
-	const relayKeys = useQuery({
-		...relayKeysListQueryOptions,
+	const keys = useQuery({
+		...keysListQueryOptions,
 		enabled: groupBy === "relay_key_hash",
 	});
 
@@ -81,7 +81,7 @@ export function useGroupLabeler(
 			);
 		else if (groupBy === "relay_key_hash")
 			map = index(
-				relayKeys.data?.items,
+				keys.data?.items,
 				(r) => r.spec.keyHash,
 				(r) => r.metadata,
 			);
@@ -93,6 +93,6 @@ export function useGroupLabeler(
 		hosts.data,
 		policies.data,
 		hostKeys.data,
-		relayKeys.data,
+		keys.data,
 	]);
 }

@@ -13,7 +13,7 @@ import { ProviderLogo } from "@/providers/ProviderLogo";
 /**
  * Resolves a usage `group` value to a brand logo when the dimension has one:
  * hosts and host-keys → the host's logo; models → their owning provider's logo.
- * Other dimensions (policy, relay key, source) have no logo and return null, so
+ * Other dimensions (policy, key, source) have no logo and return null, so
  * the caller can fall back to a colored swatch. Only the list(s) the current
  * dimension needs are fetched, lazily; returns null until they resolve.
  */

@@ -3,10 +3,12 @@ import {
 	Activity,
 	Banknote,
 	BarChart3,
+	Bot,
 	Boxes,
 	KeyRound,
 	LayoutDashboard,
 	ShieldCheck,
+	Users,
 } from "lucide-react";
 import type { ComponentType } from "react";
 import {
@@ -23,7 +25,16 @@ import {
 import { BrandMark } from "@/shared/BrandMark";
 
 interface NavItem {
-	to: "/" | "/usage" | "/logs" | "/models" | "/keys" | "/policies" | "/pricing";
+	to:
+		| "/"
+		| "/usage"
+		| "/logs"
+		| "/models"
+		| "/keys"
+		| "/policies"
+		| "/pricing"
+		| "/service-accounts"
+		| "/groups";
 	label: string;
 	icon: ComponentType<{ className?: string }>;
 	prefix: string;
@@ -60,6 +71,18 @@ const NAV_GROUPS: NavGroup[] = [
 				icon: Banknote,
 				prefix: "/pricing",
 			},
+		],
+	},
+	{
+		label: "Identity",
+		items: [
+			{
+				to: "/service-accounts",
+				label: "Service accounts",
+				icon: Bot,
+				prefix: "/service-accounts",
+			},
+			{ to: "/groups", label: "Groups", icon: Users, prefix: "/groups" },
 		],
 	},
 ];

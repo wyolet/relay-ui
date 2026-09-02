@@ -52,12 +52,12 @@ function StatsGrid({ policy }: { policy: Policy }) {
 				/>
 				{policy.metadata.id ? (
 					<Suspense
-						fallback={<StatCard label="Relay keys" value="…" sub="loading" />}
+						fallback={<StatCard label="API keys" value="…" sub="loading" />}
 					>
-						<RelayKeyStatCard policyId={policy.metadata.id} />
+						<KeyStatCard policyId={policy.metadata.id} />
 					</Suspense>
 				) : (
-					<StatCard label="Relay keys" value="—" sub="unsaved" />
+					<StatCard label="API keys" value="—" sub="unsaved" />
 				)}
 				{policy.metadata.id && (
 					<>
@@ -77,12 +77,12 @@ function StatsGrid({ policy }: { policy: Policy }) {
 	);
 }
 
-function RelayKeyStatCard({ policyId }: { policyId: string }) {
+function KeyStatCard({ policyId }: { policyId: string }) {
 	const { data } = usePolicyReferences(policyId);
-	const count = (data.items ?? []).filter((r) => r.kind === "relay-key").length;
+	const count = (data.items ?? []).filter((r) => r.kind === "key").length;
 	return (
 		<StatCard
-			label="Relay keys"
+			label="API keys"
 			value={count}
 			sub={count === 0 ? "unused" : "using this policy"}
 		/>

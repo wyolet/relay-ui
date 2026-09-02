@@ -9,7 +9,7 @@ const DIMENSION_LABELS: Record<UsageGroupBy, string> = {
 	model_id: "Model",
 	host_id: "Host",
 	policy_id: "Policy",
-	relay_key_hash: "Relay key",
+	relay_key_hash: "Key",
 	host_key_id: "Credential",
 	"extras.instance": "Instance",
 };

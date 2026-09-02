@@ -114,7 +114,7 @@ export function usageSummaryQueryOptions(
 // --- Per-resource usage (scoped /usage/summary) ---
 
 /** A resource whose usage we can scope by id via the matching filter param.
- * relay_key_hash scopes by the key's hash (RelayKeySpec.keyHash). */
+ * relay_key_hash scopes by the key's hash (KeySpec.keyHash). */
 export type ResourceUsageDimension =
 	| "host_id"
 	| "model_id"
