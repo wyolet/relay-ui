@@ -1,12 +1,13 @@
 import {
 	queryOptions,
+	useQuery,
 	useSuspenseQueries,
 	useSuspenseQuery,
 } from "@tanstack/react-query";
 import { apiClient } from "@/api/client";
 import type { components, operations } from "@/api/types.gen";
 import { unwrap } from "@/api/unwrap";
-import { type CostTotal, costTotal } from "@/lib/usage-math/cost";
+import { type CostTotal, costTotal, sumCostRows } from "@/lib/usage-math/cost";
 import { compareValue, type DeltaResult } from "@/lib/usage-math/delta";
 import { type LatencyRung, latencyLadder } from "@/lib/usage-math/latency";
 import {
@@ -786,5 +787,96 @@ export function useResourceTimeline(
 		to: data.to,
 		interval,
 		points: deriveTimeline(data.rows, data.from, data.to, interval),
+	};
+}
+
+// --- Tenancy-scope spend (team / project) ---
+
+/** A tenancy scope the summary endpoint can filter by id. */
+export type UsageScopeDimension = "team_id" | "project_id";
+
+/** One group's slice of a scope's spend (a project inside a team, a source
+ * inside a project — whichever dimension the caller grouped by). */
+export interface ScopeSpendRow {
+	key: string;
+	requests: number;
+	cost: CostTotal;
+}
+
+export interface ScopeSpend {
+	total: CostTotal;
+	requests: number;
+	tokens: number;
+	rows: ScopeSpendRow[];
+	from: string;
+	to: string;
+}
+
+export function scopeSpendQueryOptions(
+	dimension: UsageScopeDimension,
+	id: string,
+	groupBy: string,
+	win: UsageWindow,
+) {
+	return queryOptions({
+		queryKey: ["usage", "scope", dimension, id, groupBy, win.from, win.to],
+		queryFn: async (): Promise<UsageSummaryResult> => {
+			const query: UsageSummaryQuery = {
+				group_by: groupBy,
+				from: win.from,
+				to: win.to,
+			};
+			query[dimension] = [id];
+			const data = unwrap(
+				await apiClient.GET("/usage/summary", { params: { query } }),
+			);
+			return data;
+		},
+		staleTime: 15_000,
+		gcTime: 5 * 60_000,
+	});
+}
+
+/**
+ * Spend for one team/project over a window. Non-suspending and never
+ * retried: a deployment with no usage reader configured answers with an
+ * error, and the caller hides its tiles rather than failing the page.
+ */
+export function useScopeSpend(
+	dimension: UsageScopeDimension,
+	id: string,
+	groupBy: string,
+	win: UsageWindow,
+): { spend: ScopeSpend | null; unavailable: boolean } {
+	const { data, isError } = useQuery({
+		...scopeSpendQueryOptions(dimension, id, groupBy, win),
+		enabled: id.length > 0,
+		retry: false,
+	});
+	if (isError) return { spend: null, unavailable: true };
+	if (!data) return { spend: null, unavailable: false };
+	const rows = data.rows ?? [];
+	let requests = 0;
+	let tokens = 0;
+	for (const r of rows) {
+		requests += r.requests;
+		tokens += sumTokens(r.tokens);
+	}
+	return {
+		spend: {
+			total: sumCostRows(rows),
+			requests,
+			tokens,
+			rows: rows
+				.map((r) => ({
+					key: r.group[groupBy] ?? "",
+					requests: r.requests,
+					cost: costTotal(r.cost_nanos, r.unpriced, r.requests),
+				}))
+				.sort((a, b) => (b.cost.usd ?? 0) - (a.cost.usd ?? 0)),
+			from: data.from,
+			to: data.to,
+		},
+		unavailable: false,
 	};
 }

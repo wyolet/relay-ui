@@ -1,6 +1,7 @@
 import {
 	queryOptions,
 	useMutation,
+	useQuery,
 	useQueryClient,
 	useSuspenseQuery,
 } from "@tanstack/react-query";
@@ -47,6 +48,16 @@ export function keysListQuery(params: KeysListParams) {
 
 export function useKeysList(params: KeysListParams) {
 	return useSuspenseQuery(keysListQuery(params));
+}
+
+/** The keys issued to a set of principals — how a project's keys are
+ * listed, since /keys has no project filter of its own. Non-suspending:
+ * the caller renders without them. */
+export function useKeysForPrincipals(principalIds: string[]) {
+	return useQuery({
+		...keysListQuery({ principal_id: principalIds }),
+		enabled: principalIds.length > 0,
+	});
 }
 
 export function keyDetailQueryOptions(ref: string) {

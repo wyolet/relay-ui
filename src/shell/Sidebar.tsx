@@ -9,6 +9,7 @@ import {
 	LayoutDashboard,
 	ShieldCheck,
 	Users,
+	UsersRound,
 } from "lucide-react";
 import type { ComponentType } from "react";
 import {
@@ -34,7 +35,9 @@ interface NavItem {
 		| "/policies"
 		| "/pricing"
 		| "/service-accounts"
-		| "/groups";
+		| "/groups"
+		| "/teams"
+		| "/projects";
 	label: string;
 	icon: ComponentType<{ className?: string }>;
 	prefix: string;
@@ -76,13 +79,15 @@ const NAV_GROUPS: NavGroup[] = [
 	{
 		label: "Identity",
 		items: [
+			{ to: "/teams", label: "Teams", icon: Users, prefix: "/teams" },
+			{ to: "/projects", label: "Projects", icon: Boxes, prefix: "/projects" },
 			{
 				to: "/service-accounts",
 				label: "Service accounts",
 				icon: Bot,
 				prefix: "/service-accounts",
 			},
-			{ to: "/groups", label: "Groups", icon: Users, prefix: "/groups" },
+			{ to: "/groups", label: "Groups", icon: UsersRound, prefix: "/groups" },
 		],
 	},
 ];
