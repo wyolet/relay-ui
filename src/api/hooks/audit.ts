@@ -117,3 +117,45 @@ export function useAuditFacets(window: { from?: string; to?: string }) {
 	const { data } = useQuery(auditFacetsQueryOptions(window));
 	return data ?? { actions: [], kinds: [] };
 }
+
+// --- Denied-outcome count (dashboard tile) ---
+
+/** The audit API returns no totals, so the tile counts a capped page and
+ * says "N+" when the cursor shows more. */
+const DENIED_PROBE_LIMIT = 500;
+
+export interface DeniedCount {
+	events: number;
+	/** More denials exist beyond the probe — render the count as "N+". */
+	truncated: boolean;
+}
+
+export function deniedAuditCountQueryOptions(from: string) {
+	return queryOptions({
+		queryKey: ["audit", "denied-count", from] as const,
+		queryFn: async (): Promise<DeniedCount> => {
+			const data = unwrap(
+				await apiClient.GET("/audit", {
+					params: {
+						query: { status: "denied", from, limit: DENIED_PROBE_LIMIT },
+					},
+				}),
+			);
+			return {
+				events: (data.events ?? []).length,
+				truncated: Boolean(data.next_cursor),
+			};
+		},
+		staleTime: 60_000,
+		gcTime: 5 * 60_000,
+		// A deployment without audit access answers 403 — a permanent answer.
+		retry: false,
+	});
+}
+
+/** Denied control-plane requests since `from`. Non-suspending and never
+ * retried: the tile hides rather than failing the dashboard. */
+export function useDeniedAuditCount(from: string): DeniedCount | null {
+	const { data } = useQuery(deniedAuditCountQueryOptions(from));
+	return data ?? null;
+}

@@ -1,6 +1,7 @@
 import { Coins } from "lucide-react";
 import {
 	type UsageGroupBy,
+	type UsageSummaryFilter,
 	type UsageWindow,
 	useTokenSplit,
 } from "@/api/hooks/usage";
@@ -22,11 +23,13 @@ const KIND_DOTS: Record<TokenKind, string> = {
 export function TokenSplitCard({
 	groupBy,
 	win,
+	filter,
 }: {
 	groupBy: UsageGroupBy;
 	win: UsageWindow;
+	filter?: UsageSummaryFilter;
 }) {
-	const split = useTokenSplit(groupBy, win);
+	const split = useTokenSplit(groupBy, win, filter);
 
 	if (split.total === 0) {
 		return (

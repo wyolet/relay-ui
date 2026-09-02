@@ -1,5 +1,6 @@
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { Suspense } from "react";
+import { useAuth, whoamiQueryOptions } from "@/api/auth";
 import { keysListQueryOptions } from "@/api/hooks/keys";
 import { resolveWindow, useStackedTimeline } from "@/api/hooks/usage";
 import { buttonVariants } from "@/components/ui/button";
@@ -7,6 +8,8 @@ import { DashboardKpis } from "@/dashboard/DashboardKpis";
 import { ErrorHotspots } from "@/dashboard/ErrorHotspots";
 import { OpsAttention } from "@/dashboard/OpsAttention";
 import { ReleaseReadiness } from "@/dashboard/ReleaseReadiness";
+import { ScopedHome } from "@/dashboard/ScopedHome";
+import { TenancyOverview } from "@/dashboard/TenancyOverview";
 import { useCatalogEmpty } from "@/dashboard/useCatalogEmpty";
 import { PageLoader } from "@/shared/Spinner";
 import { useSetupStore } from "@/stores/setup";
@@ -19,6 +22,10 @@ export const Route = createFileRoute("/_authenticated/")({
 	// sets `dismissed`, after which the WelcomePanel is the opt-in entry point.
 	async beforeLoad({ context }) {
 		if (useSetupStore.getState().dismissed) return;
+		// The wizard configures the whole relay, so it is an admin flow; a
+		// scoped actor cannot even list keys to answer the probe.
+		const who = await context.queryClient.ensureQueryData(whoamiQueryOptions);
+		if (!who.roles.includes("admin")) return;
 		const keys =
 			await context.queryClient.ensureQueryData(keysListQueryOptions);
 		if ((keys.items ?? []).length === 0) {
@@ -113,7 +120,7 @@ function DashboardTraffic() {
 	);
 }
 
-function DashboardInner() {
+function AdminHome() {
 	const catalogEmpty = useCatalogEmpty();
 
 	return (
@@ -128,8 +135,17 @@ function DashboardInner() {
 					<TrafficBand />
 				</Suspense>
 			)}
+
+			{!catalogEmpty && <TenancyOverview />}
 		</div>
 	);
+}
+
+function DashboardInner() {
+	// A scoped actor sees their own tenancy, not the fleet: every block below
+	// reads catalog-wide endpoints their role bindings do not reach.
+	const { isAdmin } = useAuth();
+	return isAdmin ? <AdminHome /> : <ScopedHome />;
 }
 
 function DashboardPage() {

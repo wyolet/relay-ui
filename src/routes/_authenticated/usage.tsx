@@ -13,6 +13,7 @@ import {
 	USAGE_RANGES,
 	type UsageGroupBy,
 	type UsageRange,
+	type UsageSummaryFilter,
 	type UsageWindow,
 	usageComparisonWindows,
 	usageSummaryQueryOptions,
@@ -35,6 +36,11 @@ import { dimensionLabel, RANGE_COMPARE_LABELS } from "@/usage/format";
 import { LatencyProfileCard } from "@/usage/LatencyProfileCard";
 import { StackedUsageChart } from "@/usage/StackedUsageChart";
 import { TokenSplitCard } from "@/usage/TokenSplitCard";
+import {
+	type UsageScope,
+	UsageScopeFilters,
+	usageScopeFilter,
+} from "@/usage/UsageScopeFilters";
 import { UsageStatCards } from "@/usage/UsageStatCards";
 import { UsageTopGroups } from "@/usage/UsageTopGroups";
 
@@ -44,6 +50,10 @@ const searchSchema = z.object({
 	metric: z.enum(USAGE_METRICS).default("requests"),
 	from: z.string().optional(),
 	to: z.string().optional(),
+	// Tenancy scope — server-side id filters, applied to every query below.
+	team_id: z.array(z.string()).default([]),
+	project_id: z.array(z.string()).default([]),
+	principal_id: z.array(z.string()).default([]),
 });
 
 type UsageSearch = z.infer<typeof searchSchema>;
@@ -54,18 +64,19 @@ export const Route = createFileRoute("/_authenticated/usage")({
 	loader: ({ context, deps }) => {
 		const { queryClient } = context;
 		const win = resolveWindow(deps.range, deps.from, deps.to);
+		const filter = usageScopeFilter(deps);
 		// Same windows the KPI/leaderboard hooks derive → same cache entries.
 		const { previous } = usageComparisonWindows(win);
 		void queryClient.ensureQueryData(
-			usageSummaryQueryOptions(deps.group_by, win),
+			usageSummaryQueryOptions(deps.group_by, win, filter),
 		);
 		void queryClient.ensureQueryData(
-			usageSummaryQueryOptions(deps.group_by, previous),
+			usageSummaryQueryOptions(deps.group_by, previous, filter),
 		);
 		void queryClient.ensureQueryData(
-			stackedTimeseriesQueryOptions(deps.group_by, win),
+			stackedTimeseriesQueryOptions(deps.group_by, win, filter),
 		);
-		void queryClient.ensureQueryData(usageTotalsQueryOptions(win));
+		void queryClient.ensureQueryData(usageTotalsQueryOptions(win, filter));
 	},
 	component: UsagePage,
 });
@@ -82,6 +93,16 @@ function UsagePage() {
 	// the same inputs inside useStackedTimeline).
 	const win: UsageWindow = resolveWindow(range, search.from, search.to);
 	const metric = search.metric;
+	const filter = usageScopeFilter(search);
+
+	function toggleScope(key: keyof UsageScope, value: string) {
+		const current = search[key];
+		setSearch({
+			[key]: current.includes(value)
+				? current.filter((v) => v !== value)
+				: [...current, value],
+		});
+	}
 
 	return (
 		<div className="flex flex-col gap-4">
@@ -102,13 +123,16 @@ function UsagePage() {
 			</div>
 
 			<div className="flex flex-wrap items-center justify-between gap-3">
-				<RangePicker
-					range={range}
-					from={search.from}
-					to={search.to}
-					onRange={(r) => setSearch({ range: r })}
-					onCustom={(from, to) => setSearch({ range: "custom", from, to })}
-				/>
+				<div className="flex flex-wrap items-center gap-3">
+					<RangePicker
+						range={range}
+						from={search.from}
+						to={search.to}
+						onRange={(r) => setSearch({ range: r })}
+						onCustom={(from, to) => setSearch({ range: "custom", from, to })}
+					/>
+					<UsageScopeFilters scope={search} onToggle={toggleScope} />
+				</div>
 				<div className="flex flex-wrap items-center gap-3">
 					<Segmented
 						value={metric}
@@ -130,7 +154,7 @@ function UsagePage() {
 			</div>
 
 			<Suspense fallback={<Loading />}>
-				<KpiHeader groupBy={group_by} win={win} range={range} />
+				<KpiHeader groupBy={group_by} win={win} range={range} filter={filter} />
 			</Suspense>
 
 			{/* items-start: without it the grid stretches the chart card to the
@@ -144,22 +168,23 @@ function UsagePage() {
 							range={range}
 							from={search.from}
 							to={search.to}
+							filter={filter}
 						/>
 					) : (
-						<Chart search={search} metric={metric} />
+						<Chart search={search} metric={metric} filter={filter} />
 					)}
 				</Suspense>
 				<Suspense fallback={<Loading />}>
-					<UsageTopGroups groupBy={group_by} win={win} />
+					<UsageTopGroups groupBy={group_by} win={win} filter={filter} />
 				</Suspense>
 			</div>
 
 			<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
 				<Suspense fallback={<Loading />}>
-					<LatencyProfileCard win={win} />
+					<LatencyProfileCard win={win} filter={filter} />
 				</Suspense>
 				<Suspense fallback={<Loading />}>
-					<TokenSplitCard groupBy={group_by} win={win} />
+					<TokenSplitCard groupBy={group_by} win={win} filter={filter} />
 				</Suspense>
 			</div>
 		</div>
@@ -191,9 +216,11 @@ function DimensionSelect({
 function Chart({
 	search,
 	metric,
+	filter,
 }: {
 	search: UsageSearch;
 	metric: StackableMetric;
+	filter: UsageSummaryFilter;
 }) {
 	const data = useStackedTimeline(
 		search.group_by,
@@ -201,6 +228,7 @@ function Chart({
 		metric,
 		search.from,
 		search.to,
+		filter,
 	);
 	return (
 		<StackedUsageChart data={data} groupBy={search.group_by} metric={metric} />
@@ -213,12 +241,14 @@ function KpiHeader({
 	groupBy,
 	win,
 	range,
+	filter,
 }: {
 	groupBy: UsageGroupBy;
 	win: UsageWindow;
 	range: UsageRange;
+	filter: UsageSummaryFilter;
 }) {
-	const { kpis, deltas } = useUsageOverviewWithDeltas(groupBy, win);
+	const { kpis, deltas } = useUsageOverviewWithDeltas(groupBy, win, filter);
 	return (
 		<UsageStatCards
 			kpis={kpis}
@@ -228,7 +258,11 @@ function KpiHeader({
 				// Own Suspense with a null fallback: the cost fan-out streams in
 				// without ever blocking the four instant cards.
 				<Suspense fallback={null}>
-					<CostKpiCard win={win} compareLabel={RANGE_COMPARE_LABELS[range]} />
+					<CostKpiCard
+						win={win}
+						compareLabel={RANGE_COMPARE_LABELS[range]}
+						filter={filter}
+					/>
 				</Suspense>
 			}
 		/>

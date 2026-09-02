@@ -45,10 +45,16 @@ export interface CostKpi {
 
 /** Estimated spend for the window with a period-over-period delta. Reads the
  * same ungrouped totals row the latency profile uses. */
-export function useCostKpi(win: UsageWindow): CostKpi {
+export function useCostKpi(
+	win: UsageWindow,
+	filter?: UsageSummaryFilter,
+): CostKpi {
 	const { previous } = usageComparisonWindows(win);
 	const [current, prior] = useSuspenseQueries({
-		queries: [usageTotalsQueryOptions(win), usageTotalsQueryOptions(previous)],
+		queries: [
+			usageTotalsQueryOptions(win, filter),
+			usageTotalsQueryOptions(previous, filter),
+		],
 	});
 	const sum = sumCostRows(current.data.rows ?? []);
 	const prevSum = sumCostRows(prior.data.rows ?? []);
@@ -78,10 +84,11 @@ export function useCostTimeline(
 	range: UsageRange,
 	customFrom?: string,
 	customTo?: string,
+	filter?: UsageSummaryFilter,
 ): CostTimeline {
 	const win = resolveWindow(range, customFrom, customTo);
 	const { data } = useSuspenseQuery(
-		stackedTimeseriesQueryOptions(groupBy, win),
+		stackedTimeseriesQueryOptions(groupBy, win, filter),
 	);
 
 	const samples: SeriesSample[] = [];
@@ -122,7 +129,7 @@ export function useCostTimeline(
 // resource card.
 export type CostResourceDimension = Exclude<
 	UsageGroupBy,
-	"source" | `extras.${string}`
+	"source" | "team_id" | "project_id" | "principal_id" | `extras.${string}`
 >;
 
 export interface ResourceSpend {
