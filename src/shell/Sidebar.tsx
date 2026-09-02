@@ -9,11 +9,14 @@ import {
 	KeySquare,
 	LayoutDashboard,
 	Link2,
+	ScrollText,
 	ShieldCheck,
+	UserRound,
 	Users,
 	UsersRound,
 } from "lucide-react";
 import type { ComponentType } from "react";
+import { useCanListUsers } from "@/api/hooks/users";
 import {
 	SidebarContent,
 	SidebarGroup,
@@ -42,7 +45,9 @@ interface NavItem {
 		| "/projects"
 		| "/roles"
 		| "/role-bindings"
-		| "/policy-bindings";
+		| "/policy-bindings"
+		| "/audit"
+		| "/users";
 	label: string;
 	icon: ComponentType<{ className?: string }>;
 	prefix: string;
@@ -111,6 +116,8 @@ const NAV_GROUPS: NavGroup[] = [
 				icon: Link2,
 				prefix: "/policy-bindings",
 			},
+			{ to: "/users", label: "Users", icon: UserRound, prefix: "/users" },
+			{ to: "/audit", label: "Audit", icon: ScrollText, prefix: "/audit" },
 		],
 	},
 ];
@@ -140,6 +147,10 @@ function NavMenuItem({ item, active }: { item: NavItem; active: boolean }) {
 
 export function Sidebar() {
 	const path = useRouterState({ select: (s) => s.location.pathname });
+	// Users is admin-only; a 403 from the list means this actor has no business
+	// seeing the entry at all.
+	const canListUsers = useCanListUsers();
+	const visible = (item: NavItem) => item.to !== "/users" || canListUsers;
 
 	return (
 		<SidebarRoot collapsible="icon">
@@ -162,7 +173,7 @@ export function Sidebar() {
 					<SidebarGroup key={group.label}>
 						<SidebarGroupLabel>{group.label}</SidebarGroupLabel>
 						<SidebarMenu>
-							{group.items.map((item) => (
+							{group.items.filter(visible).map((item) => (
 								<NavMenuItem
 									key={item.to}
 									item={item}

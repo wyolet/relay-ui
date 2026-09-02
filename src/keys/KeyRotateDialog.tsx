@@ -11,7 +11,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import { SecretReveal } from "@/keys/SecretReveal";
+import { SecretReveal } from "@/shared/SecretReveal";
 import { AlertBanner } from "@/shared/AlertBanner";
 import { Segmented } from "@/shared/Segmented";
 import { toast } from "@/shared/Toast";
