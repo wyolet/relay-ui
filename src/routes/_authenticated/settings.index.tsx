@@ -34,7 +34,7 @@ const ITEMS: SettingItem[] = [
 		to: "/settings/payload-logging",
 		label: "Payload logging",
 		description:
-			"Global default for capturing request/response bodies. Overrides per-policy and per-relay-key toggles.",
+			"Global default for capturing request/response bodies. Overrides per-policy and per-key toggles.",
 		icon: ScrollText,
 	},
 	{

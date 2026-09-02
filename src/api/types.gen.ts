@@ -4,6 +4,46 @@
  */
 
 export interface paths {
+    "/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Apply a manifest bundle
+         * @description Diffs the submitted documents against the stored rows and writes the difference. Every row is authorized before anything is written; a denied row fails the whole apply.
+         */
+        post: operations["apply"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/audit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List admin audit events (newest first), filterable
+         * @description Every mutating control-plane action, every denial, and every login/logout — one row per request. A change lists the JSON paths it touched; values are never recorded.
+         */
+        get: operations["audit_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/login": {
         parameters: {
             query?: never;
@@ -33,6 +73,83 @@ export interface paths {
         /** Destroy the current session */
         post: operations["auth_logout"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/token": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mint an inference token for a project
+         * @description Session auth only: a token names the user it was minted for, which an admin token cannot supply. The token is returned once and never stored — revoke it by jti or bump the user's token version.
+         */
+        post: operations["auth_token_mint"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/token/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Revoke the presented inference token
+         * @description For a client holding the token but no session: the token verifies itself, and its claims carry the project the denylist entry is written under.
+         */
+        post: operations["auth_token_revoke"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/token/revoke-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Invalidate every inference token the caller holds */
+        post: operations["auth_token_revoke_all"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/token/{jti}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Revoke one inference token by its jti
+         * @description The mint is looked up in the audit log, which is where the token's project and expiry are recorded — no token registry exists.
+         */
+        delete: operations["auth_token_revoke_jti"];
         options?: never;
         head?: never;
         patch?: never;
@@ -118,6 +235,79 @@ export interface paths {
          * @description Returns the in-memory catalog snapshot the hot path reads. Use to compare against PG (admin list endpoints) when investigating why a row isn't reaching the data plane — the sanitizer may have dropped it.
          */
         get: operations["debug_snapshot"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export the tenant-owned rows as a manifest bundle
+         * @description Secrets never leave: host-key values are omitted, and a Key exports only its hash, prefix, and expiry.
+         */
+        get: operations["export"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List groups */
+        get: operations["list_groups"];
+        put?: never;
+        /** Create group */
+        post: operations["create_group"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/groups/by-id/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update group by id */
+        put: operations["update_group"];
+        post?: never;
+        /** Delete group by id */
+        delete: operations["delete_group"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/groups/{ref}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get group by slug or id */
+        get: operations["get_group"];
         put?: never;
         post?: never;
         delete?: never;
@@ -404,6 +594,106 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/keys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List keys */
+        get: operations["list_keys"];
+        put?: never;
+        /**
+         * Create a key (server generates plaintext)
+         * @description Generates a fresh bearer token server-side via crypto/rand, persists only sha256(plaintext) + a short display prefix, and returns the plaintext once in the response. The caller MUST save the plaintext on receipt — it is not retrievable later.
+         */
+        post: operations["create_relay_key"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/keys/by-id/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update key by id */
+        put: operations["update_key"];
+        post?: never;
+        /** Delete key by id */
+        delete: operations["delete_key"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/keys/by-id/{id}/rotate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rotate a key (server generates a new plaintext)
+         * @description Generates a fresh bearer token server-side, replaces the stored hash + display prefix, and returns the new plaintext once. The old token stops authenticating after graceSeconds (0 = immediately, within ~1s fleet-wide). Revoked keys cannot be rotated — create a new key instead.
+         */
+        post: operations["rotate_relay_key"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/keys/{ref}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get key by slug or id */
+        get: operations["get_key"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/license": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read the live license
+         * @description Summarizes the license this process verified at boot. An unlicensed deployment returns licensed=false; every gated feature reports license_required.
+         */
+        get: operations["get_license"];
+        /**
+         * Install a license without a redeploy
+         * @description Verifies the value offline and, on success, stores it in the `license` settings section and makes it live. A value that does not verify is rejected and the previous license stays in place. RELAY_LICENSE_FILE / RELAY_LICENSE still win when set.
+         */
+        put: operations["put_license"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/logs": {
         parameters: {
             query?: never;
@@ -660,6 +950,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/policies/by-id/{id}/keys/{keyId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Attach a Key to this Policy
+         * @description Sets Key.Spec.PolicyID to this policy. Overwrites any prior attachment (moving a key from A to B is the common case).
+         */
+        post: operations["attach_relay_key_to_policy"];
+        /**
+         * Detach a Key from this Policy
+         * @description Clears Key.Spec.PolicyID. Returns 409 if the key currently points at a different policy (the caller is acting on stale state).
+         */
+        delete: operations["detach_relay_key_from_policy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/policies/by-id/{id}/references": {
         parameters: {
             query?: never;
@@ -672,30 +986,6 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/policies/by-id/{id}/relay-keys/{relayKeyId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Attach a RelayKey to this Policy
-         * @description Sets RelayKey.Spec.PolicyID to this policy. Overwrites any prior attachment (moving a key from A to B is the common case).
-         */
-        post: operations["attach_relay_key_to_policy"];
-        /**
-         * Detach a RelayKey from this Policy
-         * @description Clears RelayKey.Spec.PolicyID. Returns 409 if the key currently points at a different policy (the caller is acting on stale state).
-         */
-        delete: operations["detach_relay_key_from_policy"];
         options?: never;
         head?: never;
         patch?: never;
@@ -769,6 +1059,59 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/policy-bindings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List policy-bindings */
+        get: operations["list_policy-bindings"];
+        put?: never;
+        /** Create policy-binding */
+        post: operations["create_policy-binding"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/policy-bindings/by-id/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update policy-binding by id */
+        put: operations["update_policy-binding"];
+        post?: never;
+        /** Delete policy-binding by id */
+        delete: operations["delete_policy-binding"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/policy-bindings/{ref}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get policy-binding by slug or id */
+        get: operations["get_policy-binding"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/pricings": {
         parameters: {
             query?: never;
@@ -814,6 +1157,76 @@ export interface paths {
         };
         /** Get pricing by slug or id */
         get: operations["get_pricing"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List projects */
+        get: operations["list_projects"];
+        put?: never;
+        /** Create project */
+        post: operations["create_project"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/by-id/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update project by id */
+        put: operations["update_project"];
+        post?: never;
+        /** Delete project by id */
+        delete: operations["delete_project"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/by-id/{id}/references": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List rows that reference this project */
+        get: operations["list_project_references"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{ref}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get project by slug or id */
+        get: operations["get_project"];
         put?: never;
         post?: never;
         delete?: never;
@@ -962,82 +1375,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/relay-keys": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List relay-keys */
-        get: operations["list_relay-keys"];
-        put?: never;
-        /**
-         * Create a relay-key (server generates plaintext)
-         * @description Generates a fresh bearer token server-side via crypto/rand, persists only sha256(plaintext) + a short display prefix, and returns the plaintext once in the response. The caller MUST save the plaintext on receipt — it is not retrievable later.
-         */
-        post: operations["create_relay_key"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/relay-keys/by-id/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Update relay-key by id */
-        put: operations["update_relay-key"];
-        post?: never;
-        /** Delete relay-key by id */
-        delete: operations["delete_relay-key"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/relay-keys/by-id/{id}/rotate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Rotate a relay-key (server generates a new plaintext)
-         * @description Generates a fresh bearer token server-side, replaces the stored hash + display prefix, and returns the new plaintext once. The old token stops authenticating within ~1s fleet-wide. Revoked keys cannot be rotated — create a new key instead.
-         */
-        post: operations["rotate_relay_key"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/relay-keys/{ref}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get relay-key by slug or id */
-        get: operations["get_relay-key"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/reload": {
         parameters: {
             query?: never;
@@ -1052,6 +1389,199 @@ export interface paths {
          * @description Rebuilds the in-memory snapshot from PG. Normally unnecessary — NOTIFY/LISTEN propagates writes within ~1s. Use this if you suspect the snapshot has drifted (e.g. after a manual DB edit).
          */
         post: operations["reload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/role-bindings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List role-bindings */
+        get: operations["list_role-bindings"];
+        put?: never;
+        /** Create role-binding */
+        post: operations["create_role-binding"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/role-bindings/by-id/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update role-binding by id */
+        put: operations["update_role-binding"];
+        post?: never;
+        /** Delete role-binding by id */
+        delete: operations["delete_role-binding"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/role-bindings/{ref}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get role-binding by slug or id */
+        get: operations["get_role-binding"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List roles */
+        get: operations["list_roles"];
+        put?: never;
+        /** Create role */
+        post: operations["create_role"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/roles/by-id/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update role by id */
+        put: operations["update_role"];
+        post?: never;
+        /** Delete role by id */
+        delete: operations["delete_role"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/roles/by-id/{id}/references": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List rows that reference this role */
+        get: operations["list_role_references"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/roles/{ref}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get role by slug or id */
+        get: operations["get_role"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/service-accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List service-accounts */
+        get: operations["list_service-accounts"];
+        put?: never;
+        /** Create service-account */
+        post: operations["create_service-account"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/service-accounts/by-id/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update service-account by id */
+        put: operations["update_service-account"];
+        post?: never;
+        /** Delete service-account by id */
+        delete: operations["delete_service-account"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/service-accounts/by-id/{id}/references": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List rows that reference this service-account */
+        get: operations["list_service-account_references"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/service-accounts/{ref}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get service-account by slug or id */
+        get: operations["get_service-account"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1231,12 +1761,12 @@ export interface paths {
         };
         /**
          * Get settings section: inference
-         * @description Authenticated /v1/* behavior. AllowMissingPolicy lets RelayKeys with no Spec.PolicyID reach any host the relay has hostkeys for, bypassing the per-policy authorization gate. Default off.
+         * @description Authenticated /v1/* behavior. AllowMissingPolicy lets Keys with no Spec.PolicyID reach any host the relay has hostkeys for, bypassing the per-policy authorization gate. Default off.
          */
         get: operations["get_settings_inference"];
         /**
          * Update settings section: inference
-         * @description Authenticated /v1/* behavior. AllowMissingPolicy lets RelayKeys with no Spec.PolicyID reach any host the relay has hostkeys for, bypassing the per-policy authorization gate. Default off.
+         * @description Authenticated /v1/* behavior. AllowMissingPolicy lets Keys with no Spec.PolicyID reach any host the relay has hostkeys for, bypassing the per-policy authorization gate. Default off.
          */
         put: operations["update_settings_inference"];
         post?: never;
@@ -1338,6 +1868,76 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/teams": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List teams */
+        get: operations["list_teams"];
+        put?: never;
+        /** Create team */
+        post: operations["create_team"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/teams/by-id/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update team by id */
+        put: operations["update_team"];
+        post?: never;
+        /** Delete team by id */
+        delete: operations["delete_team"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/teams/by-id/{id}/references": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List rows that reference this team */
+        get: operations["list_team_references"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/teams/{ref}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get team by slug or id */
+        get: operations["get_team"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/usage/events": {
         parameters: {
             query?: never;
@@ -1398,6 +1998,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List user accounts
+         * @description Identity rows only: id, username, email, roles, disabled. Never returns password hashes or identity-provider subjects.
+         */
+        get: operations["list_users"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/users/by-id/{id}/revoke-tokens": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Invalidate every inference token a user holds */
+        post: operations["user_revoke_tokens"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/version": {
         parameters: {
             query?: never;
@@ -1419,6 +2056,44 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AuditActor: {
+            id?: string;
+            ip?: string;
+            kind: string;
+            name?: string;
+            sessionId?: string;
+        };
+        AuditChange: {
+            fields?: string[] | null;
+        };
+        AuditEvent: {
+            action: string;
+            actor: components["schemas"]["AuditActor"];
+            change?: components["schemas"]["AuditChange"];
+            id: string;
+            outcome: components["schemas"]["AuditOutcome"];
+            request: components["schemas"]["AuditRequest"];
+            resource: components["schemas"]["AuditResource"];
+            /** Format: date-time */
+            ts: string;
+        };
+        AuditOutcome: {
+            /** Format: int64 */
+            code: number;
+            status: string;
+        };
+        AuditRequest: {
+            id?: string;
+            method?: string;
+            path?: string;
+        };
+        AuditResource: {
+            id?: string;
+            kind: string;
+            name?: string;
+            owner?: components["schemas"]["Owner"];
+            scope?: string[] | null;
+        };
         AuthOIDC: {
             /**
              * Format: uri
@@ -1432,7 +2107,9 @@ export interface components {
             clientId?: string;
             clientSecretEnv?: string;
             enabled: boolean;
+            groupsClaim?: string;
             issuer?: string;
+            postLoginUrl?: string;
             redirectUrl?: string;
             registration?: string;
             scopes?: string[] | null;
@@ -1448,7 +2125,7 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            section: "auth:oidc" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            section: "audit" | "auth:oidc" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
             value: components["schemas"]["AuthOIDC"];
         };
         Binding: {
@@ -1489,8 +2166,20 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            section: "auth:oidc" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            section: "audit" | "auth:oidc" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
             value: components["schemas"]["CatalogSource"];
+        };
+        Counts: {
+            /** Format: int64 */
+            create: number;
+            /** Format: int64 */
+            delete: number;
+            /** Format: int64 */
+            skipDirty: number;
+            /** Format: int64 */
+            unchanged: number;
+            /** Format: int64 */
+            update: number;
         };
         DeprecationView: {
             replacement?: string;
@@ -1509,6 +2198,14 @@ export interface components {
             /** Format: int64 */
             p99: number;
         };
+        Entry: {
+            action: string;
+            changedFields?: string[] | null;
+            id?: string;
+            idMismatch?: string;
+            kind: string;
+            name: string;
+        };
         Event: {
             /** Format: int64 */
             attempts?: number;
@@ -1517,6 +2214,8 @@ export interface components {
             };
             /** Format: int64 */
             cost_nanos?: number;
+            credential_id?: string;
+            credential_kind?: string;
             /** Format: int64 */
             duration_ms: number;
             error_kind?: string;
@@ -1533,6 +2232,11 @@ export interface components {
             policy?: string;
             policy_id?: string;
             pricing?: string;
+            principal?: string;
+            principal_id?: string;
+            principal_kind?: string;
+            project?: string;
+            project_id?: string;
             provider?: string;
             reasoning?: components["schemas"]["ReasoningTiming"];
             relay_key_hash?: string;
@@ -1545,6 +2249,8 @@ export interface components {
             tags?: {
                 [key: string]: string;
             };
+            team?: string;
+            team_id?: string;
             tokens?: {
                 [key: string]: number;
             };
@@ -1573,8 +2279,33 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            section: "auth:oidc" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            section: "audit" | "auth:oidc" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
             value: components["schemas"]["Governance"];
+        };
+        Group: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Group.json
+             */
+            readonly $schema?: string;
+            metadata: components["schemas"]["Metadata"];
+            spec: components["schemas"]["GroupSpec"];
+        };
+        GroupList: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/GroupList.json
+             */
+            readonly $schema?: string;
+            items: components["schemas"]["Group"][] | null;
+            /** Format: int64 */
+            total: number;
+        };
+        GroupSpec: {
+            enabled?: boolean;
+            memberIds?: string[] | null;
         };
         Host: {
             /**
@@ -1597,6 +2328,17 @@ export interface components {
             metadata: components["schemas"]["Metadata"];
             policies?: components["schemas"]["HostKeyPolicyRef"][] | null;
             spec: components["schemas"]["HostKeySpec"];
+            status?: components["schemas"]["HostKeyStatus"];
+        };
+        HostKeyCredentialStatus: {
+            /** Format: date-time */
+            at: string;
+            /** Format: date-time */
+            expiresAt?: string;
+            lastError?: string;
+            /** Format: date-time */
+            renewedAt?: string;
+            state: string;
         };
         HostKeyList: {
             /**
@@ -1628,6 +2370,9 @@ export interface components {
             pricingStrategy?: string;
             value?: string;
             valueFrom: components["schemas"]["HostKeyValueFrom"];
+        };
+        HostKeyStatus: {
+            credential?: components["schemas"]["HostKeyCredentialStatus"];
         };
         HostKeyValueFrom: {
             env?: string;
@@ -1683,6 +2428,7 @@ export interface components {
             homepageURL?: string;
             icon?: components["schemas"]["Icon"];
             noAuth?: boolean;
+            path?: string;
             policies?: string[] | null;
             pricingStrategies?: string[] | null;
             statusPageURL?: string;
@@ -1722,6 +2468,8 @@ export interface components {
              */
             readonly $schema?: string;
             allowMissingPolicy: boolean;
+            /** Format: int64 */
+            keyRotateMaxGrace: number;
         };
         InferenceEnvelope: {
             /**
@@ -1734,8 +2482,70 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            section: "auth:oidc" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            section: "audit" | "auth:oidc" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
             value: components["schemas"]["Inference"];
+        };
+        Info: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Info.json
+             */
+            readonly $schema?: string;
+            /** @description Licensed customer, from the file's sub claim. */
+            customer?: string;
+            /**
+             * Format: date-time
+             * @description Expiry, from the file's exp claim.
+             */
+            expiresAt?: string;
+            /** @description Gated features this license unlocks. */
+            features?: string[] | null;
+            /** @description True while an expired license is inside its 30-day grace window. */
+            grace: boolean;
+            /** @description False on a community deployment (no license, or one past its grace window). */
+            licensed: boolean;
+        };
+        Key: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Key.json
+             */
+            readonly $schema?: string;
+            metadata: components["schemas"]["Metadata"];
+            spec: components["schemas"]["KeySpec"];
+        };
+        KeyList: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/KeyList.json
+             */
+            readonly $schema?: string;
+            items: components["schemas"]["Key"][] | null;
+            /** Format: int64 */
+            total: number;
+        };
+        KeyPrincipal: {
+            id: string;
+            kind: string;
+        };
+        KeySpec: {
+            enabled?: boolean;
+            /** Format: date-time */
+            expiresAt?: string;
+            /** Format: date-time */
+            graceUntil?: string;
+            keyHash: string;
+            passthroughAllowed?: boolean;
+            payloadLoggingEnabled?: boolean;
+            policyId?: string;
+            prefix?: string;
+            previousKeyHash?: string;
+            principal: components["schemas"]["KeyPrincipal"];
+            /** Format: date-time */
+            revokedAt?: string;
         };
         Limit: {
             /** Format: int64 */
@@ -1745,6 +2555,9 @@ export interface components {
             window: string;
         };
         Metadata: {
+            annotations?: {
+                [key: string]: string;
+            };
             /** Format: date-time */
             createdAt?: string;
             description?: string;
@@ -1791,6 +2604,7 @@ export interface components {
             structuredOutputs?: boolean;
             systemMessages?: boolean;
             tools?: boolean;
+            unsupportedParams?: string[] | null;
             vision?: boolean;
             webSearch?: boolean;
         };
@@ -1917,7 +2731,7 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            section: "auth:oidc" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            section: "audit" | "auth:oidc" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
             value: components["schemas"]["Parsing"];
         };
         PayloadClickHouse: {
@@ -1954,7 +2768,7 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            section: "auth:oidc" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            section: "audit" | "auth:oidc" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
             value: components["schemas"]["PayloadLogging"];
         };
         PayloadS3: {
@@ -1976,6 +2790,27 @@ export interface components {
             metadata: components["schemas"]["Metadata"];
             spec: components["schemas"]["PolicySpec"];
         };
+        PolicyBinding: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/PolicyBinding.json
+             */
+            readonly $schema?: string;
+            metadata: components["schemas"]["Metadata"];
+            spec: components["schemas"]["PolicyBindingSpec"];
+        };
+        PolicyBindingList: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/PolicyBindingList.json
+             */
+            readonly $schema?: string;
+            items: components["schemas"]["PolicyBinding"][] | null;
+            /** Format: int64 */
+            total: number;
+        };
         PolicyBindingRow: {
             binding: components["schemas"]["BindingView"];
             host: components["schemas"]["HostRef"];
@@ -1983,6 +2818,14 @@ export interface components {
             matchedBy: string[] | null;
             model: components["schemas"]["ModelRef"];
             provider: components["schemas"]["ProviderRef"];
+        };
+        PolicyBindingSpec: {
+            enabled?: boolean;
+            policyId: string;
+            /** Format: int64 */
+            priority?: number;
+            projectId: string;
+            subjects: components["schemas"]["RoleBindingSubject"][] | null;
         };
         PolicyHostRow: {
             host: components["schemas"]["HostRef"];
@@ -2075,6 +2918,32 @@ export interface components {
             name: string;
             rates: components["schemas"]["Rate"][] | null;
         };
+        Project: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Project.json
+             */
+            readonly $schema?: string;
+            metadata: components["schemas"]["Metadata"];
+            spec: components["schemas"]["ProjectSpec"];
+        };
+        ProjectList: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/ProjectList.json
+             */
+            readonly $schema?: string;
+            items: components["schemas"]["Project"][] | null;
+            /** Format: int64 */
+            total: number;
+        };
+        ProjectSpec: {
+            budget?: components["schemas"]["TeamBudget"];
+            enabled?: boolean;
+            teamId: string;
+        };
         Provider: {
             /**
              * Format: uri
@@ -2129,7 +2998,7 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            section: "auth:oidc" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            section: "audit" | "auth:oidc" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
             value: components["schemas"]["ProxyMode"];
         };
         Rate: {
@@ -2197,36 +3066,66 @@ export interface components {
             path?: string;
             provider?: string;
         };
-        RelayKey: {
+        Role: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
-             * @example https://example.com/schemas/RelayKey.json
+             * @example https://example.com/schemas/Role.json
              */
             readonly $schema?: string;
             metadata: components["schemas"]["Metadata"];
-            spec: components["schemas"]["RelayKeySpec"];
+            spec: components["schemas"]["RoleSpec"];
         };
-        RelayKeyList: {
+        RoleBinding: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
-             * @example https://example.com/schemas/RelayKeyList.json
+             * @example https://example.com/schemas/RoleBinding.json
              */
             readonly $schema?: string;
-            items: components["schemas"]["RelayKey"][] | null;
+            metadata: components["schemas"]["Metadata"];
+            spec: components["schemas"]["RoleBindingSpec"];
+        };
+        RoleBindingList: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/RoleBindingList.json
+             */
+            readonly $schema?: string;
+            items: components["schemas"]["RoleBinding"][] | null;
             /** Format: int64 */
             total: number;
         };
-        RelayKeySpec: {
+        RoleBindingSpec: {
             enabled?: boolean;
-            keyHash: string;
-            passthroughAllowed?: boolean;
-            payloadLoggingEnabled?: boolean;
-            policyId?: string;
-            prefix?: string;
-            /** Format: date-time */
-            revokedAt?: string;
+            roleId: string;
+            scope: components["schemas"]["Owner"];
+            subjects: components["schemas"]["RoleBindingSubject"][] | null;
+        };
+        RoleBindingSubject: {
+            id?: string;
+            kind: string;
+            name?: string;
+        };
+        RoleList: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/RoleList.json
+             */
+            readonly $schema?: string;
+            items: components["schemas"]["Role"][] | null;
+            /** Format: int64 */
+            total: number;
+        };
+        RoleRule: {
+            kinds: string[] | null;
+            verbs: string[] | null;
+        };
+        RoleSpec: {
+            enabled?: boolean;
+            rules: components["schemas"]["RoleRule"][] | null;
         };
         RuntimeConfig: {
             /**
@@ -2246,6 +3145,32 @@ export interface components {
             telemetry?: components["schemas"]["Telemetry"];
             version?: string;
         };
+        ServiceAccount: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/ServiceAccount.json
+             */
+            readonly $schema?: string;
+            metadata: components["schemas"]["Metadata"];
+            spec: components["schemas"]["ServiceAccountSpec"];
+        };
+        ServiceAccountList: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/ServiceAccountList.json
+             */
+            readonly $schema?: string;
+            items: components["schemas"]["ServiceAccount"][] | null;
+            /** Format: int64 */
+            total: number;
+        };
+        ServiceAccountSpec: {
+            enabled?: boolean;
+            policyId?: string;
+            projectId: string;
+        };
         Spec: {
             adapter: string;
             enabled?: boolean;
@@ -2257,9 +3182,12 @@ export interface components {
         };
         SpecStruct: {
             enabled?: boolean;
+            /** Format: date-time */
+            expiresAt?: string;
             passthroughAllowed?: boolean;
             payloadLoggingEnabled?: boolean;
             policyId?: string;
+            principal: components["schemas"]["KeyPrincipal"];
         };
         SummaryResult: {
             /**
@@ -2295,6 +3223,36 @@ export interface components {
             ttft_ms?: components["schemas"]["DurationStats"];
             /** Format: int64 */
             unpriced: number;
+        };
+        Team: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Team.json
+             */
+            readonly $schema?: string;
+            metadata: components["schemas"]["Metadata"];
+            spec: components["schemas"]["TeamSpec"];
+        };
+        TeamBudget: {
+            amount: string;
+            onExceed?: string;
+            period?: string;
+        };
+        TeamList: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/TeamList.json
+             */
+            readonly $schema?: string;
+            items: components["schemas"]["Team"][] | null;
+            /** Format: int64 */
+            total: number;
+        };
+        TeamSpec: {
+            budget?: components["schemas"]["TeamBudget"];
+            enabled?: boolean;
         };
         Telemetry: {
             environment?: string;
@@ -2352,6 +3310,28 @@ export interface components {
             /** Format: int64 */
             start: number;
         };
+        applyOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/applyOutputBody.json
+             */
+            readonly $schema?: string;
+            /** @description False for a dry run. */
+            applied: boolean;
+            counts: components["schemas"]["Counts"];
+            plan: components["schemas"]["Entry"][] | null;
+        };
+        auditListOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/auditListOutputBody.json
+             */
+            readonly $schema?: string;
+            events: components["schemas"]["AuditEvent"][] | null;
+            next_cursor?: string;
+        };
         authResponseBody: {
             /**
              * Format: uri
@@ -2360,28 +3340,32 @@ export interface components {
              */
             readonly $schema?: string;
             roles?: string[] | null;
+            /** @description Scopes the caller holds a role binding at, as "team:<id>" / "project:<id>". */
+            scopes?: string[] | null;
+            /** @description RBAC subject strings this caller acts under. */
+            subjects?: string[] | null;
             user_id: string;
             username: string;
         };
-        createRelayKeyInputBody: {
+        createKeyInputBody: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
-             * @example https://example.com/schemas/createRelayKeyInputBody.json
+             * @example https://example.com/schemas/createKeyInputBody.json
              */
             readonly $schema?: string;
             metadata: components["schemas"]["MetadataStruct"];
             spec: components["schemas"]["SpecStruct"];
         };
-        createRelayKeyResponseBody: {
+        createKeyResponseBody: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
-             * @example https://example.com/schemas/createRelayKeyResponseBody.json
+             * @example https://example.com/schemas/createKeyResponseBody.json
              */
             readonly $schema?: string;
+            key: components["schemas"]["Key"];
             plaintext: string;
-            relayKey: components["schemas"]["RelayKey"];
         };
         debugPolicyJoin: {
             /** Format: int64 */
@@ -2402,19 +3386,21 @@ export interface components {
             counts: components["schemas"]["debugSnapshotCounts"];
             hostKeys?: components["schemas"]["HostKey"][] | null;
             hosts?: components["schemas"]["Host"][] | null;
+            keys?: components["schemas"]["Key"][] | null;
             models?: components["schemas"]["Model"][] | null;
             policies?: components["schemas"]["Policy"][] | null;
             policyJoins?: components["schemas"]["debugPolicyJoin"][] | null;
             pricings?: components["schemas"]["Pricing"][] | null;
             providers?: components["schemas"]["Provider"][] | null;
             rateLimits?: components["schemas"]["RateLimit"][] | null;
-            relayKeys?: components["schemas"]["RelayKey"][] | null;
         };
         debugSnapshotCounts: {
             /** Format: int64 */
             hostKeys: number;
             /** Format: int64 */
             hosts: number;
+            /** Format: int64 */
+            keys: number;
             /** Format: int64 */
             models: number;
             /** Format: int64 */
@@ -2425,8 +3411,6 @@ export interface components {
             providers: number;
             /** Format: int64 */
             rateLimits: number;
-            /** Format: int64 */
-            relayKeys: number;
         };
         graphBinding: {
             adapter: string;
@@ -2535,6 +3519,16 @@ export interface components {
             host: components["schemas"]["HostRef"];
             policies: components["schemas"]["HostPolicyRow"][] | null;
         };
+        licenseInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/licenseInputBody.json
+             */
+            readonly $schema?: string;
+            /** @description The signed license file, verbatim. Empty clears the stored license (the deployment falls back to the environment, else community). */
+            value: string;
+        };
         listBody_github_com_wyolet_relay_app_binding_Binding_: {
             /**
              * Format: uri
@@ -2613,6 +3607,31 @@ export interface components {
              * @description Number of stored-mode HostKey rows re-encrypted.
              */
             rotated: number;
+        };
+        mintTokenInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/mintTokenInputBody.json
+             */
+            readonly $schema?: string;
+            /** @description Project id or slug to mint the token for. */
+            project: string;
+            /** @description Requested lifetime as a Go duration (e.g. "30m"). Defaults to the auth:tokens defaultTTL; may not exceed maxTTL. */
+            ttl?: string;
+        };
+        mintTokenOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/mintTokenOutputBody.json
+             */
+            readonly $schema?: string;
+            /** Format: date-time */
+            expiresAt: string;
+            jti: string;
+            project: string;
+            token: string;
         };
         modelHostsOutBody: {
             /**
@@ -2723,7 +3742,7 @@ export interface components {
         referenceItem: {
             /** @description Resource id. */
             id: string;
-            /** @description Resource kind (host, policy, host-key, relay-key, model, pricing). */
+            /** @description Resource kind (host, policy, host-key, key, service-account, model, pricing). */
             kind: string;
             /** @description Resource slug. */
             name: string;
@@ -2773,6 +3792,16 @@ export interface components {
             results: components["schemas"]["refResult"][] | null;
             unresolved: string[] | null;
         };
+        revokeTokenInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/revokeTokenInputBody.json
+             */
+            readonly $schema?: string;
+            /** @description The token to revoke; only its claims are read. */
+            token: string;
+        };
         rotateHostKeyInputBody: {
             /**
              * Format: uri
@@ -2783,15 +3812,25 @@ export interface components {
             /** @description New cleartext credential. */
             value: string;
         };
-        rotateRelayKeyResponseBody: {
+        rotateKeyBody: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
-             * @example https://example.com/schemas/rotateRelayKeyResponseBody.json
+             * @example https://example.com/schemas/rotateKeyBody.json
              */
             readonly $schema?: string;
+            /** Format: int64 */
+            graceSeconds?: number;
+        };
+        rotateKeyResponseBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/rotateKeyResponseBody.json
+             */
+            readonly $schema?: string;
+            key: components["schemas"]["Key"];
             plaintext: string;
-            relayKey: components["schemas"]["RelayKey"];
         };
         settingsCatalogItem: {
             description?: string;
@@ -2799,7 +3838,7 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            name: "auth:oidc" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            name: "audit" | "auth:oidc" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
             /** @description OpenAPI component name for this section's typed value. */
             schemaRef?: string;
         };
@@ -2817,7 +3856,7 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            section: "auth:oidc" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            section: "audit" | "auth:oidc" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
             value: unknown;
         };
         settingsListOutputBody: {
@@ -2839,6 +3878,24 @@ export interface components {
             events: components["schemas"]["Event"][] | null;
             next_cursor?: string;
         };
+        userRow: {
+            disabled: boolean;
+            email?: string;
+            id: string;
+            roles?: string[] | null;
+            username: string;
+        };
+        usersListOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/usersListOutputBody.json
+             */
+            readonly $schema?: string;
+            items: components["schemas"]["userRow"][] | null;
+            /** Format: int64 */
+            total: number;
+        };
         versionOutputBody: {
             /**
              * Format: uri
@@ -2846,6 +3903,8 @@ export interface components {
              * @example https://example.com/schemas/versionOutputBody.json
              */
             readonly $schema?: string;
+            /** @description Live license summary. Present for authenticated callers only — the endpoint itself is public. */
+            license?: components["schemas"]["Info"];
             /** @description Relay build version. */
             version: string;
         };
@@ -2858,6 +3917,175 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    apply: {
+        parameters: {
+            query?: {
+                /** @description Plan only; write nothing. */
+                dryRun?: boolean;
+                /** @description Write over operator-edited (dirty) rows. */
+                force?: boolean;
+                /** @description Delete selected rows the bundle omits. Requires selector. */
+                prune?: boolean;
+                /** @description Label selector naming the managed set, e.g. env=prod,team=platform. */
+                selector?: string;
+            };
+            header?: {
+                /** @description application/yaml (multi-document) or application/json ({"documents": [...]}). */
+                "Content-Type"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/octet-stream": string;
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["applyOutputBody"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    audit_list: {
+        parameters: {
+            query?: {
+                /** @description Match the acting user's id. */
+                actor_id?: string;
+                /** @description Match the acting user's name. */
+                actor_name?: string;
+                /** @description Match any of the given action strings (e.g. "policies.update"). */
+                action?: string[] | null;
+                /** @description Match any of the given resource kinds (API singular, e.g. "policy"). */
+                resource_kind?: string[] | null;
+                /** @description Match a single resource id. */
+                resource_id?: string;
+                /** @description Match any of the given scopes, as "project:<id>" or "team:<id>". */
+                scope?: string[] | null;
+                /** @description Match one outcome status. */
+                status?: "allowed" | "denied" | "error";
+                /** @description Absolute lower bound (RFC3339). */
+                from?: string;
+                /** @description Absolute upper bound (RFC3339). */
+                to?: string;
+                /** @description Cap on returned rows (page size). Default 100, max 10000. */
+                limit?: number;
+                /** @description Opaque pagination cursor from a previous response's next_cursor. Returns the next (older) page. */
+                cursor?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["auditListOutputBody"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
     auth_login: {
         parameters: {
             query?: never;
@@ -2936,6 +4164,279 @@ export interface operations {
             };
             /** @description Error */
             default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    auth_token_mint: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["mintTokenInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["mintTokenOutputBody"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    auth_token_revoke: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["revokeTokenInputBody"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    auth_token_revoke_all: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    auth_token_revoke_jti: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                jti: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3158,6 +4659,416 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    export: {
+        parameters: {
+            query?: {
+                /** @description Comma-separated API plurals to include. Default: every exportable kind. */
+                kinds?: string;
+                /** @description Restrict to a subtree: team:<id> or project:<id>. */
+                scope?: string;
+                /** @description yaml (default) or json. */
+                format?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Content-Type"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    list_groups: {
+        parameters: {
+            query?: {
+                /** @description Match name exactly. */
+                name?: string;
+                /** @description Match enabled (true/false). */
+                enabled?: boolean;
+                /** @description Free-text search. */
+                q?: string;
+                /** @description Label selector key=value (repeatable, all must match). */
+                label?: string[];
+                /** @description Sort field; prefix with '-' for descending. */
+                sort?: "name" | "-name";
+                /** @description Max items to return (page size). */
+                limit?: number;
+                /** @description Items to skip before the page. */
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupList"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    create_group: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Group"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Group"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    update_group: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource id (UUIDv7). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Group"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Group"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    delete_group: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource id (UUIDv7). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    get_group: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource slug or UUIDv7 id. */
+                ref: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Group"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4659,6 +6570,573 @@ export interface operations {
             };
         };
     };
+    list_keys: {
+        parameters: {
+            query?: {
+                /** @description Match name exactly. */
+                name?: string;
+                /** @description Match enabled (true/false). */
+                enabled?: boolean;
+                /** @description Match revoked (true/false). */
+                revoked?: boolean;
+                /** @description Match passthrough (true/false). */
+                passthrough?: boolean;
+                /** @description Match payload_logging (true/false). */
+                payload_logging?: boolean;
+                /** @description Match any of the given policy_id values. */
+                policy_id?: string[];
+                /** @description Match any of the given principal_kind values. */
+                principal_kind?: ("serviceaccount" | "user")[];
+                /** @description Match any of the given principal_id values. */
+                principal_id?: string[];
+                /** @description Match expired (true/false). */
+                expired?: boolean;
+                /** @description Match prefix exactly. */
+                prefix?: string;
+                /** @description created lower bound (RFC3339). */
+                created_from?: string;
+                /** @description created upper bound (RFC3339). */
+                created_to?: string;
+                /** @description updated lower bound (RFC3339). */
+                updated_from?: string;
+                /** @description updated upper bound (RFC3339). */
+                updated_to?: string;
+                /** @description Free-text search. */
+                q?: string;
+                /** @description Label selector key=value (repeatable, all must match). */
+                label?: string[];
+                /** @description Sort field; prefix with '-' for descending. */
+                sort?: "name" | "-name" | "created" | "-created" | "updated" | "-updated";
+                /** @description Max items to return (page size). */
+                limit?: number;
+                /** @description Items to skip before the page. */
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KeyList"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    create_relay_key: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["createKeyInputBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["createKeyResponseBody"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    update_key: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource id (UUIDv7). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Key"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Key"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    delete_key: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource id (UUIDv7). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    rotate_relay_key: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Key id (UUIDv7). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["rotateKeyBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["rotateKeyResponseBody"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    get_key: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource slug or UUIDv7 id. */
+                ref: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Key"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    get_license: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Info"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    put_license: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["licenseInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Info"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
     logs_list: {
         parameters: {
             query?: {
@@ -4674,6 +7152,12 @@ export interface operations {
                 relay_key_hash?: string[] | null;
                 /** @description Match any of the given Policy.metadata.id values. */
                 policy_id?: string[] | null;
+                /** @description Match any of the given Project.metadata.id values. */
+                project_id?: string[] | null;
+                /** @description Match any of the given Team.metadata.id values. */
+                team_id?: string[] | null;
+                /** @description Match any of the given principal ids (ServiceAccount.metadata.id or user id). */
+                principal_id?: string[] | null;
                 /** @description Match any of the given Model.metadata.id values. */
                 model_id?: string[] | null;
                 /** @description Match any of the given Host.metadata.id values. */
@@ -6043,56 +8527,6 @@ export interface operations {
             };
         };
     };
-    list_policy_references: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Target resource id. */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["referencesOutputBody"];
-                };
-            };
-            /** @description Unauthorized */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OpenAIError"];
-                };
-            };
-            /** @description Unprocessable Entity */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OpenAIError"];
-                };
-            };
-            /** @description Internal Server Error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OpenAIError"];
-                };
-            };
-        };
-    };
     attach_relay_key_to_policy: {
         parameters: {
             query?: never;
@@ -6100,8 +8534,8 @@ export interface operations {
             path: {
                 /** @description Policy id (UUIDv7). */
                 id: string;
-                /** @description RelayKey id (UUIDv7). */
-                relayKeyId: string;
+                /** @description Key id (UUIDv7). */
+                keyId: string;
             };
             cookie?: never;
         };
@@ -6113,7 +8547,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["RelayKey"];
+                    "application/json": components["schemas"]["Key"];
                 };
             };
             /** @description Unauthorized */
@@ -6170,8 +8604,8 @@ export interface operations {
             path: {
                 /** @description Policy id (UUIDv7). */
                 id: string;
-                /** @description RelayKey id (UUIDv7). */
-                relayKeyId: string;
+                /** @description Key id (UUIDv7). */
+                keyId: string;
             };
             cookie?: never;
         };
@@ -6183,7 +8617,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["RelayKey"];
+                    "application/json": components["schemas"]["Key"];
                 };
             };
             /** @description Unauthorized */
@@ -6215,6 +8649,56 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    list_policy_references: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Target resource id. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["referencesOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -6441,6 +8925,349 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["policyRateLimitsOutBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    "list_policy-bindings": {
+        parameters: {
+            query?: {
+                /** @description Match name exactly. */
+                name?: string;
+                /** @description Match enabled (true/false). */
+                enabled?: boolean;
+                /** @description Match any of the given project_id values. */
+                project_id?: string[];
+                /** @description Match any of the given policy_id values. */
+                policy_id?: string[];
+                /** @description Match any of the given subject values. */
+                subject?: string[];
+                /** @description Free-text search. */
+                q?: string;
+                /** @description Label selector key=value (repeatable, all must match). */
+                label?: string[];
+                /** @description Sort field; prefix with '-' for descending. */
+                sort?: "name" | "-name";
+                /** @description Max items to return (page size). */
+                limit?: number;
+                /** @description Items to skip before the page. */
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PolicyBindingList"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    "create_policy-binding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PolicyBinding"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PolicyBinding"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    "update_policy-binding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource id (UUIDv7). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PolicyBinding"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PolicyBinding"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    "delete_policy-binding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource id (UUIDv7). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    "get_policy-binding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource slug or UUIDv7 id. */
+                ref: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PolicyBinding"];
                 };
             };
             /** @description Unauthorized */
@@ -6796,6 +9623,395 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Pricing"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    list_projects: {
+        parameters: {
+            query?: {
+                /** @description Match name exactly. */
+                name?: string;
+                /** @description Match enabled (true/false). */
+                enabled?: boolean;
+                /** @description Match any of the given team_id values. */
+                team_id?: string[];
+                /** @description Free-text search. */
+                q?: string;
+                /** @description Label selector key=value (repeatable, all must match). */
+                label?: string[];
+                /** @description Sort field; prefix with '-' for descending. */
+                sort?: "name" | "-name";
+                /** @description Max items to return (page size). */
+                limit?: number;
+                /** @description Items to skip before the page. */
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectList"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    create_project: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Project"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Project"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    update_project: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource id (UUIDv7). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Project"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Project"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    delete_project: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource id (UUIDv7). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    list_project_references: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Target resource id. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["referencesOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    get_project: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource slug or UUIDv7 id. */
+                ref: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Project"];
                 };
             };
             /** @description Unauthorized */
@@ -7626,37 +10842,74 @@ export interface operations {
             };
         };
     };
-    "list_relay-keys": {
+    reload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["reloadOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    "list_role-bindings": {
         parameters: {
             query?: {
                 /** @description Match name exactly. */
                 name?: string;
                 /** @description Match enabled (true/false). */
                 enabled?: boolean;
-                /** @description Match revoked (true/false). */
-                revoked?: boolean;
-                /** @description Match passthrough (true/false). */
-                passthrough?: boolean;
-                /** @description Match payload_logging (true/false). */
-                payload_logging?: boolean;
-                /** @description Match any of the given policy_id values. */
-                policy_id?: string[];
-                /** @description Match prefix exactly. */
-                prefix?: string;
-                /** @description created lower bound (RFC3339). */
-                created_from?: string;
-                /** @description created upper bound (RFC3339). */
-                created_to?: string;
-                /** @description updated lower bound (RFC3339). */
-                updated_from?: string;
-                /** @description updated upper bound (RFC3339). */
-                updated_to?: string;
+                /** @description Match any of the given role_id values. */
+                role_id?: string[];
+                /** @description Match scope_kind exactly. */
+                scope_kind?: "system" | "team" | "project";
+                /** @description Match any of the given scope_id values. */
+                scope_id?: string[];
+                /** @description Match any of the given subject values. */
+                subject?: string[];
                 /** @description Free-text search. */
                 q?: string;
                 /** @description Label selector key=value (repeatable, all must match). */
                 label?: string[];
                 /** @description Sort field; prefix with '-' for descending. */
-                sort?: "name" | "-name" | "created" | "-created" | "updated" | "-updated";
+                sort?: "name" | "-name";
                 /** @description Max items to return (page size). */
                 limit?: number;
                 /** @description Items to skip before the page. */
@@ -7674,7 +10927,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["RelayKeyList"];
+                    "application/json": components["schemas"]["RoleBindingList"];
                 };
             };
             /** @description Bad Request */
@@ -7706,7 +10959,7 @@ export interface operations {
             };
         };
     };
-    create_relay_key: {
+    "create_role-binding": {
         parameters: {
             query?: never;
             header?: never;
@@ -7715,7 +10968,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["createRelayKeyInputBody"];
+                "application/json": components["schemas"]["RoleBinding"];
             };
         };
         responses: {
@@ -7725,7 +10978,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["createRelayKeyResponseBody"];
+                    "application/json": components["schemas"]["RoleBinding"];
                 };
             };
             /** @description Bad Request */
@@ -7775,7 +11028,7 @@ export interface operations {
             };
         };
     };
-    "update_relay-key": {
+    "update_role-binding": {
         parameters: {
             query?: never;
             header?: never;
@@ -7787,7 +11040,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["RelayKey"];
+                "application/json": components["schemas"]["RoleBinding"];
             };
         };
         responses: {
@@ -7797,7 +11050,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["RelayKey"];
+                    "application/json": components["schemas"]["RoleBinding"];
                 };
             };
             /** @description Bad Request */
@@ -7856,7 +11109,7 @@ export interface operations {
             };
         };
     };
-    "delete_relay-key": {
+    "delete_role-binding": {
         parameters: {
             query?: never;
             header?: never;
@@ -7922,13 +11175,13 @@ export interface operations {
             };
         };
     };
-    rotate_relay_key: {
+    "get_role-binding": {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description RelayKey id (UUIDv7). */
-                id: string;
+                /** @description Resource slug or UUIDv7 id. */
+                ref: string;
             };
             cookie?: never;
         };
@@ -7940,7 +11193,201 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["rotateRelayKeyResponseBody"];
+                    "application/json": components["schemas"]["RoleBinding"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    list_roles: {
+        parameters: {
+            query?: {
+                /** @description Match name exactly. */
+                name?: string;
+                /** @description Match enabled (true/false). */
+                enabled?: boolean;
+                /** @description Free-text search. */
+                q?: string;
+                /** @description Label selector key=value (repeatable, all must match). */
+                label?: string[];
+                /** @description Sort field; prefix with '-' for descending. */
+                sort?: "name" | "-name";
+                /** @description Max items to return (page size). */
+                limit?: number;
+                /** @description Items to skip before the page. */
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleList"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    create_role: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Role"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Role"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    update_role: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource id (UUIDv7). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Role"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Role"];
                 };
             };
             /** @description Bad Request */
@@ -7999,7 +11446,123 @@ export interface operations {
             };
         };
     };
-    "get_relay-key": {
+    delete_role: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource id (UUIDv7). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    list_role_references: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Target resource id. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["referencesOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    get_role: {
         parameters: {
             query?: never;
             header?: never;
@@ -8017,7 +11580,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["RelayKey"];
+                    "application/json": components["schemas"]["Role"];
                 };
             };
             /** @description Unauthorized */
@@ -8058,9 +11621,28 @@ export interface operations {
             };
         };
     };
-    reload: {
+    "list_service-accounts": {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Match name exactly. */
+                name?: string;
+                /** @description Match enabled (true/false). */
+                enabled?: boolean;
+                /** @description Match any of the given project_id values. */
+                project_id?: string[];
+                /** @description Match any of the given policy_id values. */
+                policy_id?: string[];
+                /** @description Free-text search. */
+                q?: string;
+                /** @description Label selector key=value (repeatable, all must match). */
+                label?: string[];
+                /** @description Sort field; prefix with '-' for descending. */
+                sort?: "name" | "-name";
+                /** @description Max items to return (page size). */
+                limit?: number;
+                /** @description Items to skip before the page. */
+                offset?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -8073,7 +11655,67 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["reloadOutputBody"];
+                    "application/json": components["schemas"]["ServiceAccountList"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    "create_service-account": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ServiceAccount"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceAccount"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
                 };
             };
             /** @description Unauthorized */
@@ -8087,6 +11729,271 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    "update_service-account": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource id (UUIDv7). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ServiceAccount"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceAccount"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    "delete_service-account": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource id (UUIDv7). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    "list_service-account_references": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Target resource id. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["referencesOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    "get_service-account": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource slug or UUIDv7 id. */
+                ref: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceAccount"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -9161,6 +13068,393 @@ export interface operations {
             };
         };
     };
+    list_teams: {
+        parameters: {
+            query?: {
+                /** @description Match name exactly. */
+                name?: string;
+                /** @description Match enabled (true/false). */
+                enabled?: boolean;
+                /** @description Free-text search. */
+                q?: string;
+                /** @description Label selector key=value (repeatable, all must match). */
+                label?: string[];
+                /** @description Sort field; prefix with '-' for descending. */
+                sort?: "name" | "-name";
+                /** @description Max items to return (page size). */
+                limit?: number;
+                /** @description Items to skip before the page. */
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeamList"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    create_team: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Team"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Team"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    update_team: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource id (UUIDv7). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Team"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Team"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    delete_team: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource id (UUIDv7). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    list_team_references: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Target resource id. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["referencesOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    get_team: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource slug or UUIDv7 id. */
+                ref: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Team"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
     usage_events: {
         parameters: {
             query?: {
@@ -9176,6 +13470,12 @@ export interface operations {
                 relay_key_hash?: string[] | null;
                 /** @description Match any of the given Policy.metadata.id values. */
                 policy_id?: string[] | null;
+                /** @description Match any of the given Project.metadata.id values. */
+                project_id?: string[] | null;
+                /** @description Match any of the given Team.metadata.id values. */
+                team_id?: string[] | null;
+                /** @description Match any of the given principal ids (ServiceAccount.metadata.id or user id). */
+                principal_id?: string[] | null;
                 /** @description Match any of the given Model.metadata.id values. */
                 model_id?: string[] | null;
                 /** @description Match any of the given Host.metadata.id values. */
@@ -9297,6 +13597,12 @@ export interface operations {
                 relay_key_hash?: string[] | null;
                 /** @description Match any of the given Policy.metadata.id values. */
                 policy_id?: string[] | null;
+                /** @description Match any of the given Project.metadata.id values. */
+                project_id?: string[] | null;
+                /** @description Match any of the given Team.metadata.id values. */
+                team_id?: string[] | null;
+                /** @description Match any of the given principal ids (ServiceAccount.metadata.id or user id). */
+                principal_id?: string[] | null;
                 /** @description Match any of the given Model.metadata.id values. */
                 model_id?: string[] | null;
                 /** @description Match any of the given Host.metadata.id values. */
@@ -9345,7 +13651,7 @@ export interface operations {
                 q?: string;
                 /** @description Caller-tag filter as "key:value" (repeatable). Same key repeated matches any of its values; different keys must all match. */
                 tag?: string[] | null;
-                /** @description "source" (default) | "model" | "host" | "policy" | "provider" (event-time slugs) | "model_id" | "host_id" | "policy_id" | "relay_key_hash" | "host_key_id" | "finish_reason" | "error_kind" | "tags.<key>" (group by a caller tag's value). */
+                /** @description "source" (default) | "model" | "host" | "policy" | "provider" | "project" | "team" | "principal" (event-time slugs) | "model_id" | "host_id" | "policy_id" | "project_id" | "team_id" | "principal_id" | "credential_id" | "relay_key_hash" | "host_key_id" | "finish_reason" | "error_kind" | "tags.<key>" (group by a caller tag's value). */
                 group_by?: string;
             };
             header?: never;
@@ -9416,6 +13722,12 @@ export interface operations {
                 relay_key_hash?: string[] | null;
                 /** @description Match any of the given Policy.metadata.id values. */
                 policy_id?: string[] | null;
+                /** @description Match any of the given Project.metadata.id values. */
+                project_id?: string[] | null;
+                /** @description Match any of the given Team.metadata.id values. */
+                team_id?: string[] | null;
+                /** @description Match any of the given principal ids (ServiceAccount.metadata.id or user id). */
+                principal_id?: string[] | null;
                 /** @description Match any of the given Model.metadata.id values. */
                 model_id?: string[] | null;
                 /** @description Match any of the given Host.metadata.id values. */
@@ -9466,7 +13778,7 @@ export interface operations {
                 tag?: string[] | null;
                 /** @description Bucket width (e.g. "5m", "1h", "1d"). Required. */
                 interval?: string;
-                /** @description Optional dimension to split series by: "source" | "model" | "host" | "policy" | "provider" (event-time slugs) | "model_id" | "host_id" | "policy_id" | "relay_key_hash" | "host_key_id" | "finish_reason" | "error_kind" | "tags.<key>". Empty returns a single series. */
+                /** @description Optional dimension to split series by: "source" | "model" | "host" | "policy" | "provider" | "project" | "team" | "principal" (event-time slugs) | "model_id" | "host_id" | "policy_id" | "project_id" | "team_id" | "principal_id" | "credential_id" | "relay_key_hash" | "host_key_id" | "finish_reason" | "error_kind" | "tags.<key>". Empty returns a single series. */
                 group_by?: string;
             };
             header?: never;
@@ -9513,6 +13825,127 @@ export interface operations {
             };
             /** @description Internal Server Error */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    list_users: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["usersListOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    user_revoke_tokens: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

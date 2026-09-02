@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Gauge, ShieldCheck } from "lucide-react";
 import { useMemo } from "react";
-import { useRelayKeys } from "@/api/hooks/relayKeys";
+import { useKeys } from "@/api/hooks/keys";
 import type { RateLimit, RateLimitRule } from "@/api/types/ratelimit";
 import { DiagnosticList } from "@/diagnostics/DiagnosticList";
 import { useRateLimitDiagnostics } from "@/diagnostics/useDiagnostics";
@@ -163,17 +163,17 @@ function RulesPanel({ rules }: { rules: readonly RateLimitRule[] }) {
 
 function PoliciesPanel({ rateLimit }: { rateLimit: RateLimit }) {
 	const refs = useRateLimitReferences(rateLimit.metadata.id);
-	const { data: relayKeys } = useRelayKeys();
+	const { data: keys } = useKeys();
 
-	const relayKeyCountByPolicy = useMemo(() => {
+	const keyCountByPolicy = useMemo(() => {
 		const counts = new Map<string, number>();
-		for (const rk of relayKeys.items ?? []) {
+		for (const rk of keys.items ?? []) {
 			const pid = rk.spec.policyId;
 			if (!pid) continue;
 			counts.set(pid, (counts.get(pid) ?? 0) + 1);
 		}
 		return counts;
-	}, [relayKeys]);
+	}, [keys]);
 
 	if (refs.length === 0) {
 		return (
@@ -211,7 +211,7 @@ function PoliciesPanel({ rateLimit }: { rateLimit: RateLimit }) {
 							<Th>Policy</Th>
 							<Th>Binding</Th>
 							<Th className="text-right">Scope</Th>
-							<Th className="text-right">Relay keys</Th>
+							<Th className="text-right">API keys</Th>
 							<Th className="text-right">Status</Th>
 						</tr>
 					</thead>
@@ -221,7 +221,7 @@ function PoliciesPanel({ rateLimit }: { rateLimit: RateLimit }) {
 							const id = ref.policy.metadata.id;
 							const enabled = ref.policy.spec.enabled !== false;
 							const hostOwned = ref.policy.metadata.owner?.kind === "host";
-							const rkCount = id ? (relayKeyCountByPolicy.get(id) ?? 0) : 0;
+							const rkCount = id ? (keyCountByPolicy.get(id) ?? 0) : 0;
 							const scopeCount = ref.isDefault
 								? (ref.policy.spec.models?.length ?? 0)
 								: ref.refs.length;

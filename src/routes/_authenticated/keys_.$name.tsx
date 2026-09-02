@@ -3,21 +3,18 @@ import { Suspense } from "react";
 import { bindingsListQueryOptions } from "@/api/hooks/bindings";
 import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
+import { keyDetailQueryOptions, keysListQueryOptions } from "@/api/hooks/keys";
 import { modelsListQueryOptions } from "@/api/hooks/models";
 import { policiesListQueryOptions } from "@/api/hooks/policies";
 import { providersListQueryOptions } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
-import {
-	relayKeyDetailQueryOptions,
-	relayKeysListQueryOptions,
-} from "@/api/hooks/relayKeys";
-import { RelayKeyDetailView } from "@/relay-keys/RelayKeyDetailView";
+import { KeyDetailView } from "@/keys/KeyDetailView";
 import { PageLoader } from "@/shared/Spinner";
 
-export const Route = createFileRoute("/_authenticated/relay-keys/$name")({
+export const Route = createFileRoute("/_authenticated/keys_/$name")({
 	loader: ({ context, params }) => {
 		const { queryClient } = context;
-		void queryClient.prefetchQuery(relayKeysListQueryOptions);
+		void queryClient.prefetchQuery(keysListQueryOptions);
 		void queryClient.prefetchQuery(hostKeysListQueryOptions);
 		void queryClient.prefetchQuery(hostsListQueryOptions);
 		void queryClient.prefetchQuery(modelsListQueryOptions);
@@ -25,18 +22,18 @@ export const Route = createFileRoute("/_authenticated/relay-keys/$name")({
 		void queryClient.prefetchQuery(providersListQueryOptions);
 		void queryClient.prefetchQuery(bindingsListQueryOptions);
 		return Promise.all([
-			queryClient.ensureQueryData(relayKeyDetailQueryOptions(params.name)),
+			queryClient.ensureQueryData(keyDetailQueryOptions(params.name)),
 			queryClient.ensureQueryData(policiesListQueryOptions),
 		]);
 	},
-	component: RelayKeyDetailPage,
+	component: KeyDetailPage,
 });
 
-function RelayKeyDetailPage() {
+function KeyDetailPage() {
 	const { name } = Route.useParams();
 	return (
 		<Suspense fallback={<PageLoader />}>
-			<RelayKeyDetailView name={name} />
+			<KeyDetailView name={name} />
 		</Suspense>
 	);
 }

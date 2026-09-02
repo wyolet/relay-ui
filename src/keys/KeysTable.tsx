@@ -1,28 +1,32 @@
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { Check, Copy, KeyRound, Plus } from "lucide-react";
 import { useState } from "react";
-import { usePolicies } from "@/api/hooks/policies";
 import {
-	useDeleteRelayKey,
-	useRelayKeys,
-	useUpdateRelayKey,
-} from "@/api/hooks/relayKeys";
+	type KeysListParams,
+	useDeleteKey,
+	useKeysList,
+	useUpdateKey,
+} from "@/api/hooks/keys";
+import { usePolicies } from "@/api/hooks/policies";
+import { useServiceAccounts } from "@/api/hooks/serviceAccounts";
 import { ApiError } from "@/api/types/errors";
-import type { RelayKey } from "@/api/types/relayKey";
+import type { Key } from "@/api/types/key";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { DiagnosticDot } from "@/diagnostics/DiagnosticDot";
-import { useRelayKeyDiagnostics } from "@/diagnostics/useDiagnostics";
+import { useKeyDiagnostics } from "@/diagnostics/useDiagnostics";
+import { FilterBar } from "@/filters/FilterBar";
+import { activeFilterCount } from "@/filters/toQueryParams";
+import type { FilterDef, FilterState } from "@/filters/types";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { confirm } from "@/shared/ConfirmDialog";
 import { RowMenu } from "@/shared/RowMenu";
-import { SearchBox } from "@/shared/SearchBox";
 import { Switch } from "@/shared/Switch";
 import { TableToolbar } from "@/shared/TableToolbar";
 import { Th } from "@/shared/Th";
 import { toast } from "@/shared/Toast";
 
-function RelayKeyDiagDot({ id }: { id: string | undefined }) {
-	const diagnostics = useRelayKeyDiagnostics(id);
+function KeyDiagDot({ id }: { id: string | undefined }) {
+	const diagnostics = useKeyDiagnostics(id);
 	return <DiagnosticDot diagnostics={diagnostics} />;
 }
 
@@ -77,18 +81,72 @@ function PrefixCell({ text, copyText }: { text: string; copyText: string }) {
 	);
 }
 
-function relayStatus(rk: RelayKey): { tone: StatusTone; label: string } {
+function relayStatus(rk: Key): { tone: StatusTone; label: string } {
 	if (rk.spec.enabled === false) return { tone: "warn", label: "Disabled" };
+	if (rk.spec.revokedAt) return { tone: "danger", label: "Revoked" };
+	if (rk.spec.expiresAt && Date.parse(rk.spec.expiresAt) < Date.now())
+		return { tone: "danger", label: "Expired" };
 	return { tone: "active", label: "Active" };
 }
 
-export function RelayKeysTable() {
+/** Filters rendered above the table, all served by GET /keys. */
+export const KEY_FILTERS = [
+	{
+		key: "q",
+		type: "search",
+		label: "Search",
+		placeholder: "Search keys",
+		default: "",
+	},
+	{
+		key: "principal_kind",
+		type: "select",
+		label: "Principal",
+		default: "all",
+		options: [
+			{ value: "all", label: "Any principal" },
+			{ value: "serviceaccount", label: "Service accounts" },
+			{ value: "user", label: "Users" },
+		],
+	},
+	{
+		key: "expired",
+		type: "select",
+		label: "Expiry",
+		default: "all",
+		options: [
+			{ value: "all", label: "Any expiry" },
+			{ value: "false", label: "Not expired" },
+			{ value: "true", label: "Expired" },
+		],
+	},
+] as const satisfies readonly FilterDef[];
+
+/** Map the route's filter state onto GET /keys query params. */
+export function toKeysParams(search: {
+	q: string;
+	principal_kind: "all" | "serviceaccount" | "user";
+	principal_id: string;
+	expired: "all" | "true" | "false";
+}): KeysListParams {
+	const params: KeysListParams = {};
+	const q = search.q.trim();
+	if (q) params.q = q;
+	if (search.principal_kind !== "all")
+		params.principal_kind = [search.principal_kind];
+	if (search.principal_id) params.principal_id = [search.principal_id];
+	if (search.expired !== "all") params.expired = search.expired === "true";
+	return params;
+}
+
+export function KeysTable() {
 	const navigate = useNavigate({ from: "/keys" });
 	const search = useSearch({ from: "/_authenticated/keys" });
-	const { data: relayKeysData } = useRelayKeys();
+	const { data: keysData } = useKeysList(toKeysParams(search));
+	const { data: accountsData } = useServiceAccounts();
 	const { data: policiesData } = usePolicies();
-	const updateRelayKey = useUpdateRelayKey();
-	const deleteRelayKey = useDeleteRelayKey();
+	const updateKey = useUpdateKey();
+	const deleteKey = useDeleteKey();
 
 	const policyLabels = new Map<string, string>();
 	for (const p of policiesData.items ?? []) {
@@ -96,24 +154,23 @@ export function RelayKeysTable() {
 			policyLabels.set(p.metadata.id, displayLabel(p.metadata));
 	}
 
-	const allItems = relayKeysData.items ?? [];
-	const needle = search.q.trim().toLowerCase();
-	const items = needle
-		? allItems.filter(
-				(rk) =>
-					displayLabel(rk.metadata).toLowerCase().includes(needle) ||
-					rk.metadata.name.toLowerCase().includes(needle) ||
-					(rk.spec.prefix ?? "").toLowerCase().includes(needle),
-			)
-		: allItems;
-
-	function setQ(q: string) {
-		void navigate({ search: (prev) => ({ ...prev, q }), replace: true });
+	const accountLabels = new Map<string, string>();
+	for (const sa of accountsData.items ?? []) {
+		if (sa.metadata.id)
+			accountLabels.set(sa.metadata.id, displayLabel(sa.metadata));
 	}
 
-	async function handleToggleEnabled(rk: RelayKey, nextEnabled: boolean) {
+	// Server-filtered: render as-is.
+	const items = keysData.items ?? [];
+	const filtered = activeFilterCount(KEY_FILTERS, { ...search }) > 0;
+
+	function patch(next: FilterState) {
+		void navigate({ search: (prev) => ({ ...prev, ...next }), replace: true });
+	}
+
+	async function handleToggleEnabled(rk: Key, nextEnabled: boolean) {
 		try {
-			await updateRelayKey.mutateAsync({
+			await updateKey.mutateAsync({
 				id: rk.metadata.id ?? "",
 				body: {
 					metadata: rk.metadata,
@@ -122,19 +179,17 @@ export function RelayKeysTable() {
 			});
 			toast(
 				"success",
-				`Relay key "${displayLabel(rk.metadata)}" ${nextEnabled ? "enabled" : "disabled"}.`,
+				`Key "${displayLabel(rk.metadata)}" ${nextEnabled ? "enabled" : "disabled"}.`,
 			);
 		} catch (err) {
 			toast(
 				"error",
-				err instanceof ApiError
-					? err.body.message
-					: "Failed to update relay key.",
+				err instanceof ApiError ? err.body.message : "Failed to update key.",
 			);
 		}
 	}
 
-	async function handleDelete(rk: RelayKey) {
+	async function handleDelete(rk: Key) {
 		const ok = await confirm({
 			title: `Delete ${displayLabel(rk.metadata)}?`,
 			description: "Apps using this key will start returning 401.",
@@ -143,14 +198,12 @@ export function RelayKeysTable() {
 		});
 		if (!ok) return;
 		try {
-			await deleteRelayKey.mutateAsync(rk.metadata.id ?? "");
-			toast("success", `Relay key "${displayLabel(rk.metadata)}" deleted.`);
+			await deleteKey.mutateAsync(rk.metadata.id ?? "");
+			toast("success", `Key "${displayLabel(rk.metadata)}" deleted.`);
 		} catch (err) {
 			toast(
 				"error",
-				err instanceof ApiError
-					? err.body.message
-					: "Failed to delete relay key.",
+				err instanceof ApiError ? err.body.message : "Failed to delete key.",
 			);
 		}
 	}
@@ -159,15 +212,19 @@ export function RelayKeysTable() {
 		<div>
 			<TableToolbar
 				search={
-					<SearchBox
-						value={search.q}
-						onChange={setQ}
-						placeholder="Search keys"
+					<FilterBar
+						defs={KEY_FILTERS}
+						state={{
+							q: search.q,
+							principal_kind: search.principal_kind,
+							expired: search.expired,
+						}}
+						onChange={patch}
 					/>
 				}
 				actions={
 					<Link
-						to="/relay-keys/new"
+						to="/keys/new"
 						className={buttonVariants({ variant: "default", size: "lg" })}
 					>
 						<Plus className="w-3.5 h-3.5" />
@@ -179,7 +236,7 @@ export function RelayKeysTable() {
 			{items.length === 0 ? (
 				<div className="rounded-lg border border-dashed border-input bg-card px-6 py-14 text-center">
 					<KeyRound className="w-6 h-6 mx-auto mb-3 text-muted-foreground/50" />
-					{allItems.length === 0 ? (
+					{!filtered ? (
 						<>
 							<p className="text-sm font-medium text-foreground mb-1">
 								Create your first API key
@@ -192,7 +249,7 @@ export function RelayKeysTable() {
 								.
 							</p>
 							<Link
-								to="/relay-keys/new"
+								to="/keys/new"
 								className={buttonVariants({ variant: "default", size: "lg" })}
 							>
 								<Plus className="w-4 h-4" />
@@ -213,7 +270,9 @@ export function RelayKeysTable() {
 								<th scope="col" className="w-6 px-3 py-2" aria-label="Status" />
 								<Th variant="column">Name</Th>
 								<Th variant="column">Prefix</Th>
+								<Th variant="column">Principal</Th>
 								<Th variant="column">Policy</Th>
+								<Th variant="column">Expires</Th>
 								<Th variant="column">Passthrough</Th>
 								<th
 									scope="col"
@@ -252,13 +311,13 @@ export function RelayKeysTable() {
 										<td className="px-3 py-2">
 											<div className="flex items-center gap-2">
 												<Link
-													to="/relay-keys/$name"
+													to="/keys/$name"
 													params={{ name: rk.metadata.name }}
 													className="text-sm font-medium text-foreground hover:underline"
 												>
 													{displayLabel(rk.metadata)}
 												</Link>
-												<RelayKeyDiagDot id={rk.metadata.id} />
+												<KeyDiagDot id={rk.metadata.id} />
 											</div>
 											{hasDisplayName(rk.metadata) && (
 												<div className="font-mono text-[11px] text-muted-foreground">
@@ -279,7 +338,18 @@ export function RelayKeysTable() {
 											)}
 										</td>
 										<td className="px-3 py-2 text-xs text-foreground">
+											{rk.spec.principal.kind === "user"
+												? "User"
+												: (accountLabels.get(rk.spec.principal.id) ??
+													`Service account (${rk.spec.principal.id.slice(0, 6)}…)`)}
+										</td>
+										<td className="px-3 py-2 text-xs text-foreground">
 											{policyLabel}
+										</td>
+										<td className="px-3 py-2 text-xs text-muted-foreground">
+											{rk.spec.expiresAt
+												? new Date(rk.spec.expiresAt).toLocaleDateString()
+												: "—"}
 										</td>
 										<td className="px-3 py-2 text-xs text-muted-foreground">
 											{rk.spec.passthroughAllowed ? "Allowed" : "—"}
@@ -298,7 +368,7 @@ export function RelayKeysTable() {
 														label: "Edit",
 														render: (
 															<Link
-																to="/relay-keys/$name/edit"
+																to="/keys/$name/edit"
 																params={{ name: rk.metadata.name }}
 															/>
 														),

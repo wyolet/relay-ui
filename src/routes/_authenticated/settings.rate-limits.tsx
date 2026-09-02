@@ -359,7 +359,7 @@ function SystemRateLimitsInner() {
 				<InferenceSection
 					icon={Globe}
 					title="Inference"
-					description="Authenticated /v1/* traffic. Limits apply per relay key by default."
+					description="Authenticated /v1/* traffic. Limits apply per key by default."
 					rl={rlByName.get(SYSTEM_RL_INFERENCE)}
 					state={state.inference}
 					onToggle={(enabled) => patchSection("inference", { enabled })}

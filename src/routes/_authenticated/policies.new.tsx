@@ -4,11 +4,11 @@ import { Suspense } from "react";
 import { bindingsListQueryOptions } from "@/api/hooks/bindings";
 import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
+import { keysListQueryOptions } from "@/api/hooks/keys";
 import { modelsListQueryOptions } from "@/api/hooks/models";
 import { policiesListQueryOptions } from "@/api/hooks/policies";
 import { providersListQueryOptions } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
-import { relayKeysListQueryOptions } from "@/api/hooks/relayKeys";
 import { PolicyForm } from "@/policies/PolicyForm";
 import { PageLoader } from "@/shared/Spinner";
 
@@ -23,7 +23,7 @@ export const Route = createFileRoute("/_authenticated/policies/new")({
 		void queryClient.prefetchQuery(modelsListQueryOptions);
 		void queryClient.prefetchQuery(rateLimitsListQueryOptions);
 		void queryClient.prefetchQuery(policiesListQueryOptions);
-		void queryClient.prefetchQuery(relayKeysListQueryOptions);
+		void queryClient.prefetchQuery(keysListQueryOptions);
 		void queryClient.prefetchQuery(bindingsListQueryOptions);
 		return null;
 	},
@@ -48,7 +48,7 @@ function NewPolicyInner() {
 				</h1>
 				<p className="mt-1 text-xs text-muted-foreground">
 					Bundle upstream credentials, allowed models, and rate limits, then
-					attach to relay keys.
+					attach to keys.
 				</p>
 			</div>
 			<PolicyForm

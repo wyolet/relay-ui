@@ -22,7 +22,7 @@ export function analyzePolicy(
 	const policyId = policy.metadata.id;
 	const enabled = policy.spec.enabled !== false;
 	// Host-owned policies (provider tiers) are reference shapes pointed AT
-	// by host keys; they don't pool keys, can't be attached to relay keys,
+	// by host keys; they don't pool keys, can't be attached to keys,
 	// and their rate-limit / catalog state is the provider's contract, not
 	// something an operator can fix from this UI. Skip every check.
 	if (policy.metadata.owner?.kind === "host") {
@@ -229,27 +229,24 @@ export function analyzePolicy(
 	}
 
 	{
-		const attachedRelayKeys = policyId
-			? (graph.relayKeysByPolicyId.get(policyId) ?? [])
+		const attachedKeys = policyId
+			? (graph.keysByPolicyId.get(policyId) ?? [])
 			: [];
-		const enabledRelayKeys = attachedRelayKeys.filter(
-			(rk) => rk.spec.enabled !== false,
-		);
+		const enabledKeys = attachedKeys.filter((rk) => rk.spec.enabled !== false);
 
-		if (!enabled && enabledRelayKeys.length > 0) {
+		if (!enabled && enabledKeys.length > 0) {
 			out.push({
 				severity: "warn",
-				code: "policy.disabled-with-relay-keys",
-				message: `Policy is disabled but ${enabledRelayKeys.length} enabled relay key${enabledRelayKeys.length === 1 ? "" : "s"} reference it — they will reject requests.`,
+				code: "policy.disabled-with-keys",
+				message: `Policy is disabled but ${enabledKeys.length} enabled key${enabledKeys.length === 1 ? "" : "s"} reference it — they will reject requests.`,
 			});
 		}
 
-		if (attachedRelayKeys.length === 0) {
+		if (attachedKeys.length === 0) {
 			out.push({
 				severity: "info",
-				code: "policy.no-relay-keys",
-				message:
-					"No relay keys are attached — this policy receives no traffic.",
+				code: "policy.no-keys",
+				message: "No keys are attached — this policy receives no traffic.",
 			});
 		}
 	}

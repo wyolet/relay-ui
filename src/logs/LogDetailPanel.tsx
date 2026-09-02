@@ -204,7 +204,7 @@ function RawBodies({ payload }: { payload: LogDetail["payload"] }) {
 	if (!payload) {
 		return (
 			<div className="m-3 rounded-md border border-dashed border-border px-3 py-4 text-center text-xs text-muted-foreground">
-				No bodies captured — this request's policy or relay key isn't opted into
+				No bodies captured — this request's policy or key isn't opted into
 				payload logging.
 			</div>
 		);

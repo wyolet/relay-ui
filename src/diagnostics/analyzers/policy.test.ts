@@ -5,11 +5,11 @@ import {
 	graph,
 	makeHost,
 	makeHostKey,
+	makeKey,
 	makeModel,
 	makePolicy,
 	makeProvider,
 	makeRateLimit,
-	makeRelayKey,
 } from "@/diagnostics/fixtures";
 
 const codes = (ds: { code: string }[]) => ds.map((d) => d.code).sort();
@@ -127,7 +127,7 @@ describe("analyzePolicy", () => {
 		expect(codes(ds)).toContain("policy.rl-binding-dead");
 	});
 
-	it("warns when disabled but enabled relay keys attached", () => {
+	it("warns when disabled but enabled keys attached", () => {
 		const host = makeHost({ id: "h1", name: "openai" });
 		const hk = makeHostKey({ id: "k1", hostId: "h1", policyId: "p1" });
 		const p = makePolicy({
@@ -135,20 +135,20 @@ describe("analyzePolicy", () => {
 			hostKeyIds: ["k1"],
 			enabled: false,
 		});
-		const rk = makeRelayKey({ policyId: "p1" });
+		const rk = makeKey({ policyId: "p1" });
 		const ds = analyzePolicy(
 			p,
 			graph({
 				policies: [p],
 				hostKeys: [hk],
 				hosts: [host],
-				relayKeys: [rk],
+				keys: [rk],
 			}),
 		);
-		expect(codes(ds)).toContain("policy.disabled-with-relay-keys");
+		expect(codes(ds)).toContain("policy.disabled-with-keys");
 	});
 
-	it("skips host-key and relay-key checks for host-owned policies", () => {
+	it("skips host-key and key checks for host-owned policies", () => {
 		// Host-owned (tier) policy with no hostKeyIds — would normally trigger
 		// policy.no-host-keys, but tier policies don't pool host keys.
 		const tier: ReturnType<typeof makePolicy> = {
@@ -165,11 +165,11 @@ describe("analyzePolicy", () => {
 		expect(c).not.toContain("policy.host-keys-all-disabled");
 		expect(c).not.toContain("policy.host-keys-degraded");
 		expect(c).not.toContain("policy.host-disabled-transitive");
-		expect(c).not.toContain("policy.no-relay-keys");
-		expect(c).not.toContain("policy.disabled-with-relay-keys");
+		expect(c).not.toContain("policy.no-keys");
+		expect(c).not.toContain("policy.disabled-with-keys");
 	});
 
-	it("info: no relay keys attached", () => {
+	it("info: no keys attached", () => {
 		const host = makeHost({ id: "h1", name: "openai" });
 		const hk = makeHostKey({ id: "k1", hostId: "h1", policyId: "p1" });
 		const p = makePolicy({ id: "p1", hostKeyIds: ["k1"] });
@@ -177,7 +177,7 @@ describe("analyzePolicy", () => {
 			p,
 			graph({ policies: [p], hostKeys: [hk], hosts: [host] }),
 		);
-		expect(codes(ds)).toContain("policy.no-relay-keys");
+		expect(codes(ds)).toContain("policy.no-keys");
 	});
 
 	describe("catalog coverage", () => {

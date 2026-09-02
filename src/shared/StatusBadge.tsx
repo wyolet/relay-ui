@@ -1,7 +1,7 @@
 /**
  * The canonical enabled/disabled pill and owner pill shared by every detail
  * view. `enabledLabel`/`disabledLabel` let a caller relabel the states (e.g.
- * relay keys read "Active"); `title` lets the owner pill carry a per-domain
+ * keys read "Active"); `title` lets the owner pill carry a per-domain
  * tooltip.
  */
 export function StatusBadge({

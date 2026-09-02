@@ -12,10 +12,10 @@ import { CodeBlock } from "./CodeBlock";
 import { API_SHAPES, DEFAULT_SHAPE } from "./shapes";
 import { buildSnippets, relayBaseUrl } from "./snippets";
 import { wizardGhost, wizardPrimary } from "./ui";
-import type { CreatedRelayKey, SampleModel } from "./useSetupWizard";
+import type { CreatedKey, SampleModel } from "./useSetupWizard";
 
 interface SuccessStepProps {
-	relayKey: CreatedRelayKey;
+	apiKey: CreatedKey;
 	models: SampleModel[];
 	onAddAnother: () => void;
 	onFinish: () => void;
@@ -48,7 +48,7 @@ function useRotating<T>(items: readonly T[], intervalMs: number): T {
 }
 
 export function SuccessStep({
-	relayKey,
+	apiKey,
 	models,
 	onAddAnother,
 	onFinish,
@@ -60,8 +60,8 @@ export function SuccessStep({
 	// Templates are stable (per key + adapter); only the spliced model/prompt
 	// values rotate, on slightly different beats so they never sync up.
 	const snippets = useMemo(
-		() => buildSnippets(relayKey.plaintext, shape.adapter),
-		[relayKey.plaintext, shape.adapter],
+		() => buildSnippets(apiKey.plaintext, shape.adapter),
+		[apiKey.plaintext, shape.adapter],
 	);
 	const modelValues =
 		models.length > 0 ? models.map((m) => m.value) : ["your-model"];
@@ -70,7 +70,7 @@ export function SuccessStep({
 
 	async function copyKey() {
 		try {
-			await navigator.clipboard.writeText(relayKey.plaintext);
+			await navigator.clipboard.writeText(apiKey.plaintext);
 			setCopiedKey(true);
 			window.setTimeout(() => setCopiedKey(false), 1500);
 		} catch {
@@ -93,16 +93,14 @@ export function SuccessStep({
 
 			<div className="rounded-xl border border-border bg-background p-4">
 				<div className="mb-1 flex items-center justify-between">
-					<span className="text-xs font-medium text-foreground">
-						Your relay key
-					</span>
+					<span className="text-xs font-medium text-foreground">Your key</span>
 					<span className="text-[11px] text-destructive">
 						Shown once — copy it now
 					</span>
 				</div>
 				<div className="flex items-center gap-2">
 					<code className="flex-1 truncate rounded-md border border-border bg-muted/50 px-3 py-2 text-[12px] text-foreground">
-						{relayKey.plaintext}
+						{apiKey.plaintext}
 					</code>
 					<Button
 						type="button"

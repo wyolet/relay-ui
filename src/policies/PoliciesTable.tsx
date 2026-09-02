@@ -70,7 +70,7 @@ export function PoliciesTable() {
 		const ok = await confirm({
 			title: `Delete policy ${p.metadata.name}?`,
 			description:
-				"Relay keys using this policy will lose access until reattached.",
+				"API keys using this policy will lose access until reattached.",
 			confirmLabel: "Delete",
 			danger: true,
 		});
@@ -116,7 +116,7 @@ export function PoliciesTable() {
 							</p>
 							<p className="text-sm text-muted-foreground mb-5">
 								Bundle upstream secrets, allowed models, and rate limits — then
-								attach to relay keys.
+								attach to keys.
 							</p>
 							<Link
 								to="/policies/new"

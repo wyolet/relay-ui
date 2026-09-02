@@ -7,34 +7,34 @@ import {
 	ShieldCheck,
 } from "lucide-react";
 import { useState } from "react";
+import { useDeleteKey, useKey } from "@/api/hooks/keys";
 import { usePolicies } from "@/api/hooks/policies";
-import { useDeleteRelayKey, useRelayKey } from "@/api/hooks/relayKeys";
 import { ApiError } from "@/api/types/errors";
 import type { Policy } from "@/api/types/policy";
 import { Button } from "@/components/ui/button";
 import { DiagnosticList } from "@/diagnostics/DiagnosticList";
-import { useRelayKeyDiagnostics } from "@/diagnostics/useDiagnostics";
+import { useKeyDiagnostics } from "@/diagnostics/useDiagnostics";
+import { KeyRotateDialog } from "@/keys/KeyRotateDialog";
+import { useToggleKeyEnabled } from "@/keys/useToggleKeyEnabled";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
-import { RelayKeyRotateDialog } from "@/relay-keys/RelayKeyRotateDialog";
-import { useToggleRelayKeyEnabled } from "@/relay-keys/useToggleRelayKeyEnabled";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
 import { StatusBadge } from "@/shared/StatusBadge";
 import { toast } from "@/shared/Toast";
 import { ResourceUsage } from "@/usage/ResourceUsage";
 
-export function RelayKeyDetailView({ name }: { name: string }) {
-	const { data: rk } = useRelayKey(name);
+export function KeyDetailView({ name }: { name: string }) {
+	const { data: rk } = useKey(name);
 	const { data: policiesData } = usePolicies();
-	const deleteRelayKey = useDeleteRelayKey();
-	const { setEnabled, isPending: isToggling } = useToggleRelayKeyEnabled();
+	const deleteKey = useDeleteKey();
+	const { setEnabled, isPending: isToggling } = useToggleKeyEnabled();
 	const navigate = useNavigate();
 
 	const [confirming, setConfirming] = useState(false);
 	const [rotating, setRotating] = useState(false);
 
 	const rkId = rk.metadata.id ?? "";
-	const diagnostics = useRelayKeyDiagnostics(rk.metadata.id);
+	const diagnostics = useKeyDiagnostics(rk.metadata.id);
 	const policy = (policiesData.items ?? []).find(
 		(p) => p.metadata.id === rk.spec.policyId,
 	);
@@ -43,8 +43,8 @@ export function RelayKeyDetailView({ name }: { name: string }) {
 
 	async function handleDelete() {
 		try {
-			await deleteRelayKey.mutateAsync(rkId);
-			toast("success", `Relay key "${displayLabel(rk.metadata)}" deleted.`);
+			await deleteKey.mutateAsync(rkId);
+			toast("success", `Key "${displayLabel(rk.metadata)}" deleted.`);
 			void navigate({
 				to: "/keys",
 				search: { tab: "relay", q: "" },
@@ -52,9 +52,7 @@ export function RelayKeyDetailView({ name }: { name: string }) {
 		} catch (err) {
 			toast(
 				"error",
-				err instanceof ApiError
-					? err.body.message
-					: "Failed to delete relay key.",
+				err instanceof ApiError ? err.body.message : "Failed to delete key.",
 			);
 		}
 	}
@@ -67,7 +65,7 @@ export function RelayKeyDetailView({ name }: { name: string }) {
 				className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
 			>
 				<ChevronLeft className="w-3.5 h-3.5" />
-				Relay keys
+				API keys
 			</Link>
 
 			<header className="flex items-start justify-between gap-4">
@@ -87,7 +85,7 @@ export function RelayKeyDetailView({ name }: { name: string }) {
 							{rk.spec.passthroughAllowed && (
 								<span
 									className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium uppercase tracking-wide bg-warning/10 text-warning border border-warning/30"
-									title="This relay key can request models outside its policy's grant."
+									title="This key can request models outside its policy's grant."
 								>
 									Passthrough
 								</span>
@@ -117,11 +115,7 @@ export function RelayKeyDetailView({ name }: { name: string }) {
 					toggling={isToggling}
 					onDelete={() => setConfirming(true)}
 					editLink={({ className, content }) => (
-						<Link
-							to="/relay-keys/$name/edit"
-							params={{ name }}
-							className={className}
-						>
+						<Link to="/keys/$name/edit" params={{ name }} className={className}>
 							{content}
 						</Link>
 					)}
@@ -144,6 +138,33 @@ export function RelayKeyDetailView({ name }: { name: string }) {
 
 			<Card title="Configuration" icon={KeyRound}>
 				<dl className="divide-y divide-border">
+					<Row label="Principal">
+						<span className="text-foreground">
+							{rk.spec.principal.kind === "user" ? "User" : "Service account"}{" "}
+							<code className="font-mono text-[11px] text-muted-foreground">
+								{rk.spec.principal.id}
+							</code>
+						</span>
+					</Row>
+					<Row label="Expires">
+						{rk.spec.expiresAt ? (
+							<span className="text-foreground">
+								{new Date(rk.spec.expiresAt).toLocaleString()}
+							</span>
+						) : (
+							<span className="text-muted-foreground">Never</span>
+						)}
+					</Row>
+					<Row label="Rotation grace">
+						{rk.spec.graceUntil ? (
+							<span className="text-foreground">
+								Previous secret valid until{" "}
+								{new Date(rk.spec.graceUntil).toLocaleString()}
+							</span>
+						) : (
+							<span className="text-muted-foreground">—</span>
+						)}
+					</Row>
 					<Row label="Prefix">
 						{rk.spec.prefix ? (
 							<code className="font-mono text-foreground">
@@ -180,7 +201,7 @@ export function RelayKeyDetailView({ name }: { name: string }) {
 			)}
 
 			{rotating && (
-				<RelayKeyRotateDialog rk={rk} onClose={() => setRotating(false)} />
+				<KeyRotateDialog rk={rk} onClose={() => setRotating(false)} />
 			)}
 
 			{confirming && (
@@ -188,7 +209,7 @@ export function RelayKeyDetailView({ name }: { name: string }) {
 					resourceName={rk.metadata.name}
 					onConfirm={() => void handleDelete()}
 					onCancel={() => setConfirming(false)}
-					isPending={deleteRelayKey.isPending}
+					isPending={deleteKey.isPending}
 				/>
 			)}
 		</div>
@@ -206,7 +227,7 @@ function PolicyCard({
 		return (
 			<Card title="Policy" icon={ShieldCheck}>
 				<p className="text-xs text-muted-foreground">
-					No policy attached — this relay key cannot route any requests.
+					No policy attached — this key cannot route any requests.
 				</p>
 			</Card>
 		);

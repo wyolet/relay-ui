@@ -1,12 +1,9 @@
-import type { RelayKey } from "@/api/types/relayKey";
+import type { Key } from "@/api/types/key";
 import { analyzePolicy } from "@/diagnostics/analyzers/policy";
 import type { Diagnostic, DiagnosticGraph } from "@/diagnostics/types";
 import { displayLabel } from "@/lib/displayLabel";
 
-export function analyzeRelayKey(
-	rk: RelayKey,
-	graph: DiagnosticGraph,
-): Diagnostic[] {
+export function analyzeKey(rk: Key, graph: DiagnosticGraph): Diagnostic[] {
 	const out: Diagnostic[] = [];
 	const enabled = rk.spec.enabled !== false;
 
@@ -16,14 +13,14 @@ export function analyzeRelayKey(
 	if (!policy) {
 		out.push({
 			severity: "error",
-			code: "relay-key.policy-dangling",
+			code: "key.policy-dangling",
 			message: "Attached policy no longer exists — requests will be rejected.",
 		});
 	} else {
 		if (policy.spec.enabled === false) {
 			out.push({
 				severity: "warn",
-				code: "relay-key.policy-disabled",
+				code: "key.policy-disabled",
 				message: `Attached policy "${displayLabel(policy.metadata)}" is disabled — requests will return 401.`,
 			});
 		}
@@ -33,7 +30,7 @@ export function analyzeRelayKey(
 		if (policyErrors.length > 0) {
 			out.push({
 				severity: "error",
-				code: "relay-key.policy-broken",
+				code: "key.policy-broken",
 				message: `Attached policy has ${policyErrors.length} error${policyErrors.length === 1 ? "" : "s"} — fix on the policy page.`,
 			});
 		}
@@ -42,7 +39,7 @@ export function analyzeRelayKey(
 	if (!enabled) {
 		out.push({
 			severity: "info",
-			code: "relay-key.disabled",
+			code: "key.disabled",
 			message: "Disabled — requests with this key return 401.",
 		});
 	}

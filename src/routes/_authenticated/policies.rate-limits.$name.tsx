@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { bindingsListQueryOptions } from "@/api/hooks/bindings";
 import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
+import { keysListQueryOptions } from "@/api/hooks/keys";
 import { modelsListQueryOptions } from "@/api/hooks/models";
 import { policiesListQueryOptions } from "@/api/hooks/policies";
 import { providersListQueryOptions } from "@/api/hooks/providers";
@@ -14,7 +15,6 @@ import {
 	useRateLimit,
 	useUpdateRateLimit,
 } from "@/api/hooks/ratelimits";
-import { relayKeysListQueryOptions } from "@/api/hooks/relayKeys";
 import { ApiError } from "@/api/types/errors";
 import { displayLabel } from "@/lib/displayLabel";
 import { RateLimitDetailView } from "@/rate-limits/RateLimitDetailView";
@@ -36,7 +36,7 @@ export const Route = createFileRoute(
 		return Promise.all([
 			queryClient.ensureQueryData(rateLimitDetailQueryOptions(params.name)),
 			queryClient.ensureQueryData(policiesListQueryOptions),
-			queryClient.ensureQueryData(relayKeysListQueryOptions),
+			queryClient.ensureQueryData(keysListQueryOptions),
 		]);
 	},
 	component: RateLimitDetailPage,

@@ -71,10 +71,10 @@ function PayloadLoggingSettingsInner() {
 				</h1>
 				<p className="mt-1 text-xs text-muted-foreground max-w-2xl">
 					Capture full request and response bodies for inspection under Logs.
-					This is the global default — it overrides the per-policy and
-					per-relay-key toggles (global › policy › relay-key). Bodies are stored
-					via the <code className="font-mono">{base.backend || "—"}</code>{" "}
-					backend configured on the relay.
+					This is the global default — it overrides the per-policy and per-key
+					toggles (global › policy › key). Bodies are stored via the{" "}
+					<code className="font-mono">{base.backend || "—"}</code> backend
+					configured on the relay.
 				</p>
 			</div>
 

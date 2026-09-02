@@ -6,6 +6,7 @@ import { bindingsListQueryOptions } from "@/api/hooks/bindings";
 import { governanceQueryOptions } from "@/api/hooks/governance";
 import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
+import { keysListQueryOptions } from "@/api/hooks/keys";
 import { modelsListQueryOptions } from "@/api/hooks/models";
 import { policiesListQueryOptions } from "@/api/hooks/policies";
 import {
@@ -16,7 +17,6 @@ import {
 	useUpdateProvider,
 } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
-import { relayKeysListQueryOptions } from "@/api/hooks/relayKeys";
 import { ApiError } from "@/api/types/errors";
 import { displayLabel } from "@/lib/displayLabel";
 import {
@@ -45,7 +45,7 @@ export const Route = createFileRoute("/_authenticated/providers/$name")({
 			context.queryClient.ensureQueryData(hostKeysListQueryOptions),
 			context.queryClient.ensureQueryData(policiesListQueryOptions),
 			context.queryClient.ensureQueryData(rateLimitsListQueryOptions),
-			context.queryClient.ensureQueryData(relayKeysListQueryOptions),
+			context.queryClient.ensureQueryData(keysListQueryOptions),
 			context.queryClient.ensureQueryData(governanceQueryOptions("provider")),
 		]),
 	component: ProviderDetailPage,

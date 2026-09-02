@@ -1,18 +1,16 @@
 import { Link } from "@tanstack/react-router";
 import { KeyRound, PencilLine, Plus } from "lucide-react";
-import { useRelayKeys } from "@/api/hooks/relayKeys";
+import { useKeys } from "@/api/hooks/keys";
 import type { Policy } from "@/api/types/policy";
 import { Button } from "@/components/ui/button";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 
-interface PolicyAttachedRelayKeysProps {
+interface PolicyAttachedKeysProps {
 	policy: Policy;
 }
 
-export function PolicyAttachedRelayKeys({
-	policy,
-}: PolicyAttachedRelayKeysProps) {
-	const { data } = useRelayKeys();
+export function PolicyAttachedKeys({ policy }: PolicyAttachedKeysProps) {
+	const { data } = useKeys();
 	const policyId = policy.metadata.id;
 	const attached = (data.items ?? []).filter(
 		(rk) => rk.spec.policyId === policyId,
@@ -24,23 +22,23 @@ export function PolicyAttachedRelayKeys({
 				<div className="flex items-center gap-2">
 					<KeyRound className="w-3.5 h-3.5 text-muted-foreground" />
 					<h2 className="text-xs font-semibold text-foreground">
-						Attached relay keys
+						Attached keys
 					</h2>
 					<span className="text-[11px] text-muted-foreground tabular-nums">
 						{attached.length}
 					</span>
 				</div>
-				<Link to="/relay-keys/new">
+				<Link to="/keys/new">
 					<Button type="button" variant="outline" size="sm">
 						<Plus className="w-3.5 h-3.5" />
-						New relay key
+						New key
 					</Button>
 				</Link>
 			</header>
 
 			{attached.length === 0 ? (
 				<p className="px-4 py-6 text-center text-xs text-muted-foreground">
-					No relay keys reference this policy yet.
+					No keys reference this policy yet.
 				</p>
 			) : (
 				<ul className="divide-y divide-border">
@@ -52,7 +50,7 @@ export function PolicyAttachedRelayKeys({
 								className="flex items-center justify-between gap-3 px-4 py-2"
 							>
 								<Link
-									to="/relay-keys/$name"
+									to="/keys/$name"
 									params={{ name: rk.metadata.name }}
 									className="min-w-0 flex-1 group focus:outline-none"
 								>
@@ -72,10 +70,7 @@ export function PolicyAttachedRelayKeys({
 										</div>
 									)}
 								</Link>
-								<Link
-									to="/relay-keys/$name/edit"
-									params={{ name: rk.metadata.name }}
-								>
+								<Link to="/keys/$name/edit" params={{ name: rk.metadata.name }}>
 									<Button type="button" variant="outline" size="sm">
 										<PencilLine className="w-3.5 h-3.5" />
 										Reassign

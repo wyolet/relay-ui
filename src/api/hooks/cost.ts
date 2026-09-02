@@ -120,7 +120,10 @@ export function useCostTimeline(
 /** Resources whose detail pages show an Est. spend card. */
 // Catalog resources only: "source" and the dynamic map dimensions have no
 // resource card.
-export type CostResourceDimension = Exclude<UsageGroupBy, "source" | `extras.${string}`>;
+export type CostResourceDimension = Exclude<
+	UsageGroupBy,
+	"source" | `extras.${string}`
+>;
 
 export interface ResourceSpend {
 	sum: CostTotal;

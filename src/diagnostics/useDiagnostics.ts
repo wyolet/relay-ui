@@ -3,17 +3,17 @@ import { useMemo } from "react";
 import { bindingsListQueryOptions } from "@/api/hooks/bindings";
 import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
+import { keysListQueryOptions } from "@/api/hooks/keys";
 import { modelsListQueryOptions } from "@/api/hooks/models";
 import { policiesListQueryOptions } from "@/api/hooks/policies";
 import { providersListQueryOptions } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
-import { relayKeysListQueryOptions } from "@/api/hooks/relayKeys";
 import { analyzeHost } from "@/diagnostics/analyzers/host";
 import { analyzeHostKey } from "@/diagnostics/analyzers/hostKey";
+import { analyzeKey } from "@/diagnostics/analyzers/key";
 import { analyzeModel } from "@/diagnostics/analyzers/model";
 import { analyzePolicy } from "@/diagnostics/analyzers/policy";
 import { analyzeRateLimit } from "@/diagnostics/analyzers/rateLimit";
-import { analyzeRelayKey } from "@/diagnostics/analyzers/relayKey";
 import { buildDiagnosticGraph } from "@/diagnostics/buildGraph";
 import type { Diagnostic, DiagnosticGraph } from "@/diagnostics/types";
 
@@ -32,7 +32,7 @@ export function useDiagnosticGraph(): DiagnosticGraph | undefined {
 	const { data: hosts } = useQuery(hostsListQueryOptions);
 	const { data: models } = useQuery(modelsListQueryOptions);
 	const { data: rateLimits } = useQuery(rateLimitsListQueryOptions);
-	const { data: relayKeys } = useQuery(relayKeysListQueryOptions);
+	const { data: keys } = useQuery(keysListQueryOptions);
 	const { data: providers } = useQuery(providersListQueryOptions);
 	const { data: bindings } = useQuery(bindingsListQueryOptions);
 
@@ -43,7 +43,7 @@ export function useDiagnosticGraph(): DiagnosticGraph | undefined {
 			!hosts ||
 			!models ||
 			!rateLimits ||
-			!relayKeys ||
+			!keys ||
 			!providers ||
 			!bindings
 		) {
@@ -55,7 +55,7 @@ export function useDiagnosticGraph(): DiagnosticGraph | undefined {
 			hosts: hosts.items ?? [],
 			models: models.items ?? [],
 			rateLimits: rateLimits.items ?? [],
-			relayKeys: relayKeys.items ?? [],
+			keys: keys.items ?? [],
 			providers: providers.items ?? [],
 			bindings: bindings.items ?? [],
 		});
@@ -65,7 +65,7 @@ export function useDiagnosticGraph(): DiagnosticGraph | undefined {
 		hosts,
 		models,
 		rateLimits,
-		relayKeys,
+		keys,
 		providers,
 		bindings,
 	]);
@@ -83,13 +83,13 @@ export function usePolicyDiagnostics(
 	}, [graph, policyId]);
 }
 
-export function useRelayKeyDiagnostics(id: string | undefined): Diagnostic[] {
+export function useKeyDiagnostics(id: string | undefined): Diagnostic[] {
 	const graph = useDiagnosticGraph();
 	return useMemo(() => {
 		if (!graph || !id) return [];
-		const rk = graph.relayKeys.get(id);
+		const rk = graph.keys.get(id);
 		if (!rk) return [];
-		return analyzeRelayKey(rk, graph);
+		return analyzeKey(rk, graph);
 	}, [graph, id]);
 }
 

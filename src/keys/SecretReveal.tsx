@@ -5,7 +5,7 @@ import { toast } from "@/shared/Toast";
 
 /**
  * Reveal-once secret row: the plaintext shown alongside a copy affordance.
- * Used after a relay key is created or rotated — the server never returns the
+ * Used after a key is created or rotated — the server never returns the
  * plaintext again.
  */
 export function SecretReveal({ secret }: { secret: string }) {
