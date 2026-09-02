@@ -1,6 +1,7 @@
 import { queryOptions, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { apiClient } from "./client";
+import { CAPABILITIES_KEY } from "./hooks/capabilities";
 
 interface Whoami {
 	authenticated: boolean;
@@ -65,6 +66,8 @@ export function useAuth() {
 		await queryClient.invalidateQueries({
 			queryKey: whoamiQueryOptions.queryKey,
 		});
+		// Capability probes answer per actor; the next session must re-probe.
+		queryClient.removeQueries({ queryKey: [CAPABILITIES_KEY] });
 	}
 
 	async function logout(): Promise<void> {

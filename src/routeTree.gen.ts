@@ -47,10 +47,12 @@ import { Route as AuthenticatedGroupsIndexRouteImport } from './routes/_authenti
 import { Route as AuthenticatedUsersIdRouteImport } from './routes/_authenticated/users.$id'
 import { Route as AuthenticatedTeamsNewRouteImport } from './routes/_authenticated/teams.new'
 import { Route as AuthenticatedTeamsNameRouteImport } from './routes/_authenticated/teams.$name'
+import { Route as AuthenticatedSettingsSsoRouteImport } from './routes/_authenticated/settings.sso'
 import { Route as AuthenticatedSettingsRateLimitsRouteImport } from './routes/_authenticated/settings.rate-limits'
 import { Route as AuthenticatedSettingsProxyModeRouteImport } from './routes/_authenticated/settings.proxy-mode'
 import { Route as AuthenticatedSettingsPermissionsRouteImport } from './routes/_authenticated/settings.permissions'
 import { Route as AuthenticatedSettingsPayloadLoggingRouteImport } from './routes/_authenticated/settings.payload-logging'
+import { Route as AuthenticatedSettingsLicenseRouteImport } from './routes/_authenticated/settings.license'
 import { Route as AuthenticatedServiceAccountsNewRouteImport } from './routes/_authenticated/service-accounts.new'
 import { Route as AuthenticatedServiceAccountsNameRouteImport } from './routes/_authenticated/service-accounts.$name'
 import { Route as AuthenticatedRolesNewRouteImport } from './routes/_authenticated/roles.new'
@@ -294,6 +296,12 @@ const AuthenticatedTeamsNameRoute = AuthenticatedTeamsNameRouteImport.update({
   path: '/$name',
   getParentRoute: () => AuthenticatedTeamsRoute,
 } as any)
+const AuthenticatedSettingsSsoRoute =
+  AuthenticatedSettingsSsoRouteImport.update({
+    id: '/sso',
+    path: '/sso',
+    getParentRoute: () => AuthenticatedSettingsRoute,
+  } as any)
 const AuthenticatedSettingsRateLimitsRoute =
   AuthenticatedSettingsRateLimitsRouteImport.update({
     id: '/rate-limits',
@@ -316,6 +324,12 @@ const AuthenticatedSettingsPayloadLoggingRoute =
   AuthenticatedSettingsPayloadLoggingRouteImport.update({
     id: '/payload-logging',
     path: '/payload-logging',
+    getParentRoute: () => AuthenticatedSettingsRoute,
+  } as any)
+const AuthenticatedSettingsLicenseRoute =
+  AuthenticatedSettingsLicenseRouteImport.update({
+    id: '/license',
+    path: '/license',
     getParentRoute: () => AuthenticatedSettingsRoute,
   } as any)
 const AuthenticatedServiceAccountsNewRoute =
@@ -595,10 +609,12 @@ export interface FileRoutesByFullPath {
   '/roles/new': typeof AuthenticatedRolesNewRoute
   '/service-accounts/$name': typeof AuthenticatedServiceAccountsNameRoute
   '/service-accounts/new': typeof AuthenticatedServiceAccountsNewRoute
+  '/settings/license': typeof AuthenticatedSettingsLicenseRoute
   '/settings/payload-logging': typeof AuthenticatedSettingsPayloadLoggingRoute
   '/settings/permissions': typeof AuthenticatedSettingsPermissionsRoute
   '/settings/proxy-mode': typeof AuthenticatedSettingsProxyModeRoute
   '/settings/rate-limits': typeof AuthenticatedSettingsRateLimitsRoute
+  '/settings/sso': typeof AuthenticatedSettingsSsoRoute
   '/teams/$name': typeof AuthenticatedTeamsNameRoute
   '/teams/new': typeof AuthenticatedTeamsNewRoute
   '/users/$id': typeof AuthenticatedUsersIdRoute
@@ -665,10 +681,12 @@ export interface FileRoutesByTo {
   '/roles/new': typeof AuthenticatedRolesNewRoute
   '/service-accounts/$name': typeof AuthenticatedServiceAccountsNameRoute
   '/service-accounts/new': typeof AuthenticatedServiceAccountsNewRoute
+  '/settings/license': typeof AuthenticatedSettingsLicenseRoute
   '/settings/payload-logging': typeof AuthenticatedSettingsPayloadLoggingRoute
   '/settings/permissions': typeof AuthenticatedSettingsPermissionsRoute
   '/settings/proxy-mode': typeof AuthenticatedSettingsProxyModeRoute
   '/settings/rate-limits': typeof AuthenticatedSettingsRateLimitsRoute
+  '/settings/sso': typeof AuthenticatedSettingsSsoRoute
   '/teams/$name': typeof AuthenticatedTeamsNameRoute
   '/teams/new': typeof AuthenticatedTeamsNewRoute
   '/users/$id': typeof AuthenticatedUsersIdRoute
@@ -750,10 +768,12 @@ export interface FileRoutesById {
   '/_authenticated/roles/new': typeof AuthenticatedRolesNewRoute
   '/_authenticated/service-accounts/$name': typeof AuthenticatedServiceAccountsNameRoute
   '/_authenticated/service-accounts/new': typeof AuthenticatedServiceAccountsNewRoute
+  '/_authenticated/settings/license': typeof AuthenticatedSettingsLicenseRoute
   '/_authenticated/settings/payload-logging': typeof AuthenticatedSettingsPayloadLoggingRoute
   '/_authenticated/settings/permissions': typeof AuthenticatedSettingsPermissionsRoute
   '/_authenticated/settings/proxy-mode': typeof AuthenticatedSettingsProxyModeRoute
   '/_authenticated/settings/rate-limits': typeof AuthenticatedSettingsRateLimitsRoute
+  '/_authenticated/settings/sso': typeof AuthenticatedSettingsSsoRoute
   '/_authenticated/teams/$name': typeof AuthenticatedTeamsNameRoute
   '/_authenticated/teams/new': typeof AuthenticatedTeamsNewRoute
   '/_authenticated/users/$id': typeof AuthenticatedUsersIdRoute
@@ -835,10 +855,12 @@ export interface FileRouteTypes {
     | '/roles/new'
     | '/service-accounts/$name'
     | '/service-accounts/new'
+    | '/settings/license'
     | '/settings/payload-logging'
     | '/settings/permissions'
     | '/settings/proxy-mode'
     | '/settings/rate-limits'
+    | '/settings/sso'
     | '/teams/$name'
     | '/teams/new'
     | '/users/$id'
@@ -905,10 +927,12 @@ export interface FileRouteTypes {
     | '/roles/new'
     | '/service-accounts/$name'
     | '/service-accounts/new'
+    | '/settings/license'
     | '/settings/payload-logging'
     | '/settings/permissions'
     | '/settings/proxy-mode'
     | '/settings/rate-limits'
+    | '/settings/sso'
     | '/teams/$name'
     | '/teams/new'
     | '/users/$id'
@@ -989,10 +1013,12 @@ export interface FileRouteTypes {
     | '/_authenticated/roles/new'
     | '/_authenticated/service-accounts/$name'
     | '/_authenticated/service-accounts/new'
+    | '/_authenticated/settings/license'
     | '/_authenticated/settings/payload-logging'
     | '/_authenticated/settings/permissions'
     | '/_authenticated/settings/proxy-mode'
     | '/_authenticated/settings/rate-limits'
+    | '/_authenticated/settings/sso'
     | '/_authenticated/teams/$name'
     | '/_authenticated/teams/new'
     | '/_authenticated/users/$id'
@@ -1301,6 +1327,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTeamsNameRouteImport
       parentRoute: typeof AuthenticatedTeamsRoute
     }
+    '/_authenticated/settings/sso': {
+      id: '/_authenticated/settings/sso'
+      path: '/sso'
+      fullPath: '/settings/sso'
+      preLoaderRoute: typeof AuthenticatedSettingsSsoRouteImport
+      parentRoute: typeof AuthenticatedSettingsRoute
+    }
     '/_authenticated/settings/rate-limits': {
       id: '/_authenticated/settings/rate-limits'
       path: '/rate-limits'
@@ -1327,6 +1360,13 @@ declare module '@tanstack/react-router' {
       path: '/payload-logging'
       fullPath: '/settings/payload-logging'
       preLoaderRoute: typeof AuthenticatedSettingsPayloadLoggingRouteImport
+      parentRoute: typeof AuthenticatedSettingsRoute
+    }
+    '/_authenticated/settings/license': {
+      id: '/_authenticated/settings/license'
+      path: '/license'
+      fullPath: '/settings/license'
+      preLoaderRoute: typeof AuthenticatedSettingsLicenseRouteImport
       parentRoute: typeof AuthenticatedSettingsRoute
     }
     '/_authenticated/service-accounts/new': {
@@ -1825,19 +1865,23 @@ const AuthenticatedServiceAccountsRouteWithChildren =
   )
 
 interface AuthenticatedSettingsRouteChildren {
+  AuthenticatedSettingsLicenseRoute: typeof AuthenticatedSettingsLicenseRoute
   AuthenticatedSettingsPayloadLoggingRoute: typeof AuthenticatedSettingsPayloadLoggingRoute
   AuthenticatedSettingsPermissionsRoute: typeof AuthenticatedSettingsPermissionsRoute
   AuthenticatedSettingsProxyModeRoute: typeof AuthenticatedSettingsProxyModeRoute
   AuthenticatedSettingsRateLimitsRoute: typeof AuthenticatedSettingsRateLimitsRoute
+  AuthenticatedSettingsSsoRoute: typeof AuthenticatedSettingsSsoRoute
   AuthenticatedSettingsIndexRoute: typeof AuthenticatedSettingsIndexRoute
 }
 
 const AuthenticatedSettingsRouteChildren: AuthenticatedSettingsRouteChildren = {
+  AuthenticatedSettingsLicenseRoute: AuthenticatedSettingsLicenseRoute,
   AuthenticatedSettingsPayloadLoggingRoute:
     AuthenticatedSettingsPayloadLoggingRoute,
   AuthenticatedSettingsPermissionsRoute: AuthenticatedSettingsPermissionsRoute,
   AuthenticatedSettingsProxyModeRoute: AuthenticatedSettingsProxyModeRoute,
   AuthenticatedSettingsRateLimitsRoute: AuthenticatedSettingsRateLimitsRoute,
+  AuthenticatedSettingsSsoRoute: AuthenticatedSettingsSsoRoute,
   AuthenticatedSettingsIndexRoute: AuthenticatedSettingsIndexRoute,
 }
 

@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ChevronLeft, Forward, type LucideIcon, ShieldOff } from "lucide-react";
+import { ChevronLeft, Forward, ShieldOff } from "lucide-react";
 import { Suspense, useMemo, useState } from "react";
 import {
 	type ProxyMode,
@@ -10,6 +10,7 @@ import {
 import { ApiError } from "@/api/types/errors";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { SettingsSection } from "@/shared/SettingsSection";
 import { PageLoader } from "@/shared/Spinner";
 import { toast } from "@/shared/Toast";
 
@@ -86,7 +87,7 @@ function ProxyModeSettingsInner() {
 			</div>
 
 			<div className="mt-6 divide-y divide-border">
-				<Section
+				<SettingsSection
 					icon={Forward}
 					title="Enable proxy mode"
 					description="Permit requests that already carry valid upstream auth headers."
@@ -101,9 +102,9 @@ function ProxyModeSettingsInner() {
 							{state.enabled ? "Enabled" : "Disabled"}
 						</span>
 					</div>
-				</Section>
+				</SettingsSection>
 
-				<Section
+				<SettingsSection
 					icon={ShieldOff}
 					title="Allow unauthenticated"
 					description="Accept proxy-mode requests without a Key. Usage is still recorded, but cannot be attributed to a caller."
@@ -119,7 +120,7 @@ function ProxyModeSettingsInner() {
 							{state.allowUnauthenticated ? "Allowed" : "Required"}
 						</span>
 					</div>
-				</Section>
+				</SettingsSection>
 			</div>
 
 			<div className="sticky bottom-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-t border-border mt-6 -mx-6 px-6 py-3 flex items-center justify-end gap-2">
@@ -136,33 +137,6 @@ function ProxyModeSettingsInner() {
 					{updateProxyMode.isPending ? "Saving…" : "Save changes"}
 				</Button>
 			</div>
-		</div>
-	);
-}
-
-interface SectionProps {
-	icon: LucideIcon;
-	title: string;
-	description: string;
-	children: React.ReactNode;
-}
-
-function Section({ icon: Icon, title, description, children }: SectionProps) {
-	return (
-		<div className="grid grid-cols-1 md:grid-cols-[260px_1fr] gap-4 md:gap-8 py-8 first:pt-0 last:pb-0">
-			<div className="md:pt-0.5">
-				<div className="flex items-center gap-2">
-					<Icon
-						className="w-3.5 h-3.5 text-muted-foreground shrink-0"
-						aria-hidden="true"
-					/>
-					<h2 className="text-sm font-semibold text-foreground">{title}</h2>
-				</div>
-				<p className="mt-1 text-[11px] text-muted-foreground leading-relaxed">
-					{description}
-				</p>
-			</div>
-			<div className="min-w-0">{children}</div>
 		</div>
 	);
 }

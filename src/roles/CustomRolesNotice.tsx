@@ -6,7 +6,7 @@ export function CustomRolesNotice() {
 		<p className="text-[11px] text-muted-foreground">
 			Authoring roles of your own needs a license — the built-in roles are
 			always available.{" "}
-			<Link to="/settings" className="underline hover:text-foreground">
+			<Link to="/settings/license" className="underline hover:text-foreground">
 				Manage the license
 			</Link>
 			.

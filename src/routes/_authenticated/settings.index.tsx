@@ -1,7 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
+	BadgeCheck,
 	Forward,
 	Gauge,
+	LogIn,
 	type LucideIcon,
 	ScrollText,
 	ShieldCheck,
@@ -16,7 +18,9 @@ interface SettingItem {
 		| "/settings/rate-limits"
 		| "/settings/proxy-mode"
 		| "/settings/payload-logging"
-		| "/settings/permissions";
+		| "/settings/permissions"
+		| "/settings/sso"
+		| "/settings/license";
 	label: string;
 	description: string;
 	icon: LucideIcon;
@@ -43,6 +47,20 @@ const ITEMS: SettingItem[] = [
 		description:
 			"Throttling for Relay's control and inference APIs. Configure RPS / RPM / RPH / RPD caps.",
 		icon: Gauge,
+	},
+	{
+		to: "/settings/sso",
+		label: "SSO",
+		description:
+			"Sign operators in through your identity provider (OIDC). Licensed feature; password login always works.",
+		icon: LogIn,
+	},
+	{
+		to: "/settings/license",
+		label: "License",
+		description:
+			"Install or review the license file that unlocks SSO and custom roles.",
+		icon: BadgeCheck,
 	},
 	{
 		to: "/settings/permissions",
