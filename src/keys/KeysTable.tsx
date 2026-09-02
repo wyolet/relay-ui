@@ -18,6 +18,7 @@ import { FilterBar } from "@/filters/FilterBar";
 import { activeFilterCount } from "@/filters/toQueryParams";
 import type { FilterDef, FilterState } from "@/filters/types";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
+import { OwnerLink } from "@/projects/OwnerLink";
 import { confirm } from "@/shared/ConfirmDialog";
 import { RowMenu } from "@/shared/RowMenu";
 import { Switch } from "@/shared/Switch";
@@ -324,6 +325,9 @@ export function KeysTable() {
 													{rk.metadata.name}
 												</div>
 											)}
+											<div className="mt-1 empty:hidden">
+												<OwnerLink owner={rk.metadata.owner} />
+											</div>
 										</td>
 										<td className="px-3 py-2">
 											{rk.spec.prefix ? (

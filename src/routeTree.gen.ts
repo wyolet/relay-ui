@@ -14,8 +14,10 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedUsageRouteImport } from './routes/_authenticated/usage'
+import { Route as AuthenticatedTeamsRouteImport } from './routes/_authenticated/teams'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedServiceAccountsRouteImport } from './routes/_authenticated/service-accounts'
+import { Route as AuthenticatedProjectsRouteImport } from './routes/_authenticated/projects'
 import { Route as AuthenticatedPricingRouteImport } from './routes/_authenticated/pricing'
 import { Route as AuthenticatedPoliciesRouteImport } from './routes/_authenticated/policies'
 import { Route as AuthenticatedModelsRouteImport } from './routes/_authenticated/models'
@@ -23,14 +25,18 @@ import { Route as AuthenticatedKeysRouteImport } from './routes/_authenticated/k
 import { Route as AuthenticatedHostKeysRouteImport } from './routes/_authenticated/host-keys'
 import { Route as AuthenticatedGroupsRouteImport } from './routes/_authenticated/groups'
 import { Route as AuthenticatedBootstrapRouteImport } from './routes/_authenticated/bootstrap'
+import { Route as AuthenticatedTeamsIndexRouteImport } from './routes/_authenticated/teams.index'
 import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated/settings.index'
 import { Route as AuthenticatedServiceAccountsIndexRouteImport } from './routes/_authenticated/service-accounts.index'
+import { Route as AuthenticatedProjectsIndexRouteImport } from './routes/_authenticated/projects.index'
 import { Route as AuthenticatedPricingIndexRouteImport } from './routes/_authenticated/pricing.index'
 import { Route as AuthenticatedPoliciesIndexRouteImport } from './routes/_authenticated/policies.index'
 import { Route as AuthenticatedModelsIndexRouteImport } from './routes/_authenticated/models.index'
 import { Route as AuthenticatedLogsIndexRouteImport } from './routes/_authenticated/logs.index'
 import { Route as AuthenticatedHostKeysIndexRouteImport } from './routes/_authenticated/host-keys.index'
 import { Route as AuthenticatedGroupsIndexRouteImport } from './routes/_authenticated/groups.index'
+import { Route as AuthenticatedTeamsNewRouteImport } from './routes/_authenticated/teams.new'
+import { Route as AuthenticatedTeamsNameRouteImport } from './routes/_authenticated/teams.$name'
 import { Route as AuthenticatedSettingsRateLimitsRouteImport } from './routes/_authenticated/settings.rate-limits'
 import { Route as AuthenticatedSettingsProxyModeRouteImport } from './routes/_authenticated/settings.proxy-mode'
 import { Route as AuthenticatedSettingsPermissionsRouteImport } from './routes/_authenticated/settings.permissions'
@@ -38,6 +44,8 @@ import { Route as AuthenticatedSettingsPayloadLoggingRouteImport } from './route
 import { Route as AuthenticatedServiceAccountsNewRouteImport } from './routes/_authenticated/service-accounts.new'
 import { Route as AuthenticatedServiceAccountsNameRouteImport } from './routes/_authenticated/service-accounts.$name'
 import { Route as AuthenticatedProvidersNameRouteImport } from './routes/_authenticated/providers.$name'
+import { Route as AuthenticatedProjectsNewRouteImport } from './routes/_authenticated/projects.new'
+import { Route as AuthenticatedProjectsNameRouteImport } from './routes/_authenticated/projects.$name'
 import { Route as AuthenticatedPricingNewRouteImport } from './routes/_authenticated/pricing.new'
 import { Route as AuthenticatedPricingNameRouteImport } from './routes/_authenticated/pricing.$name'
 import { Route as AuthenticatedPoliciesNewRouteImport } from './routes/_authenticated/policies.new'
@@ -52,7 +60,9 @@ import { Route as AuthenticatedHostKeysNewRouteImport } from './routes/_authenti
 import { Route as AuthenticatedHostKeysNameRouteImport } from './routes/_authenticated/host-keys.$name'
 import { Route as AuthenticatedGroupsNewRouteImport } from './routes/_authenticated/groups.new'
 import { Route as AuthenticatedGroupsNameRouteImport } from './routes/_authenticated/groups.$name'
+import { Route as AuthenticatedTeamsNameEditRouteImport } from './routes/_authenticated/teams.$name_.edit'
 import { Route as AuthenticatedServiceAccountsNameEditRouteImport } from './routes/_authenticated/service-accounts.$name_.edit'
+import { Route as AuthenticatedProjectsNameEditRouteImport } from './routes/_authenticated/projects.$name_.edit'
 import { Route as AuthenticatedPricingNameEditRouteImport } from './routes/_authenticated/pricing.$name_.edit'
 import { Route as AuthenticatedPoliciesRateLimitsNewRouteImport } from './routes/_authenticated/policies.rate-limits.new'
 import { Route as AuthenticatedPoliciesRateLimitsNameRouteImport } from './routes/_authenticated/policies.rate-limits.$name'
@@ -87,6 +97,11 @@ const AuthenticatedUsageRoute = AuthenticatedUsageRouteImport.update({
   path: '/usage',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedTeamsRoute = AuthenticatedTeamsRouteImport.update({
+  id: '/teams',
+  path: '/teams',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -98,6 +113,11 @@ const AuthenticatedServiceAccountsRoute =
     path: '/service-accounts',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedProjectsRoute = AuthenticatedProjectsRouteImport.update({
+  id: '/projects',
+  path: '/projects',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedPricingRoute = AuthenticatedPricingRouteImport.update({
   id: '/pricing',
   path: '/pricing',
@@ -133,6 +153,11 @@ const AuthenticatedBootstrapRoute = AuthenticatedBootstrapRouteImport.update({
   path: '/bootstrap',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedTeamsIndexRoute = AuthenticatedTeamsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedTeamsRoute,
+} as any)
 const AuthenticatedSettingsIndexRoute =
   AuthenticatedSettingsIndexRouteImport.update({
     id: '/',
@@ -144,6 +169,12 @@ const AuthenticatedServiceAccountsIndexRoute =
     id: '/',
     path: '/',
     getParentRoute: () => AuthenticatedServiceAccountsRoute,
+  } as any)
+const AuthenticatedProjectsIndexRoute =
+  AuthenticatedProjectsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedProjectsRoute,
   } as any)
 const AuthenticatedPricingIndexRoute =
   AuthenticatedPricingIndexRouteImport.update({
@@ -180,6 +211,16 @@ const AuthenticatedGroupsIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedGroupsRoute,
   } as any)
+const AuthenticatedTeamsNewRoute = AuthenticatedTeamsNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => AuthenticatedTeamsRoute,
+} as any)
+const AuthenticatedTeamsNameRoute = AuthenticatedTeamsNameRouteImport.update({
+  id: '/$name',
+  path: '/$name',
+  getParentRoute: () => AuthenticatedTeamsRoute,
+} as any)
 const AuthenticatedSettingsRateLimitsRoute =
   AuthenticatedSettingsRateLimitsRouteImport.update({
     id: '/rate-limits',
@@ -221,6 +262,18 @@ const AuthenticatedProvidersNameRoute =
     id: '/providers/$name',
     path: '/providers/$name',
     getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedProjectsNewRoute =
+  AuthenticatedProjectsNewRouteImport.update({
+    id: '/new',
+    path: '/new',
+    getParentRoute: () => AuthenticatedProjectsRoute,
+  } as any)
+const AuthenticatedProjectsNameRoute =
+  AuthenticatedProjectsNameRouteImport.update({
+    id: '/$name',
+    path: '/$name',
+    getParentRoute: () => AuthenticatedProjectsRoute,
   } as any)
 const AuthenticatedPricingNewRoute = AuthenticatedPricingNewRouteImport.update({
   id: '/new',
@@ -298,11 +351,23 @@ const AuthenticatedGroupsNameRoute = AuthenticatedGroupsNameRouteImport.update({
   path: '/$name',
   getParentRoute: () => AuthenticatedGroupsRoute,
 } as any)
+const AuthenticatedTeamsNameEditRoute =
+  AuthenticatedTeamsNameEditRouteImport.update({
+    id: '/$name_/edit',
+    path: '/$name/edit',
+    getParentRoute: () => AuthenticatedTeamsRoute,
+  } as any)
 const AuthenticatedServiceAccountsNameEditRoute =
   AuthenticatedServiceAccountsNameEditRouteImport.update({
     id: '/$name_/edit',
     path: '/$name/edit',
     getParentRoute: () => AuthenticatedServiceAccountsRoute,
+  } as any)
+const AuthenticatedProjectsNameEditRoute =
+  AuthenticatedProjectsNameEditRouteImport.update({
+    id: '/$name_/edit',
+    path: '/$name/edit',
+    getParentRoute: () => AuthenticatedProjectsRoute,
   } as any)
 const AuthenticatedPricingNameEditRoute =
   AuthenticatedPricingNameEditRouteImport.update({
@@ -370,8 +435,10 @@ export interface FileRoutesByFullPath {
   '/models': typeof AuthenticatedModelsRouteWithChildren
   '/policies': typeof AuthenticatedPoliciesRouteWithChildren
   '/pricing': typeof AuthenticatedPricingRouteWithChildren
+  '/projects': typeof AuthenticatedProjectsRouteWithChildren
   '/service-accounts': typeof AuthenticatedServiceAccountsRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRouteWithChildren
+  '/teams': typeof AuthenticatedTeamsRouteWithChildren
   '/usage': typeof AuthenticatedUsageRoute
   '/groups/$name': typeof AuthenticatedGroupsNameRoute
   '/groups/new': typeof AuthenticatedGroupsNewRoute
@@ -387,6 +454,8 @@ export interface FileRoutesByFullPath {
   '/policies/new': typeof AuthenticatedPoliciesNewRoute
   '/pricing/$name': typeof AuthenticatedPricingNameRoute
   '/pricing/new': typeof AuthenticatedPricingNewRoute
+  '/projects/$name': typeof AuthenticatedProjectsNameRoute
+  '/projects/new': typeof AuthenticatedProjectsNewRoute
   '/providers/$name': typeof AuthenticatedProvidersNameRoute
   '/service-accounts/$name': typeof AuthenticatedServiceAccountsNameRoute
   '/service-accounts/new': typeof AuthenticatedServiceAccountsNewRoute
@@ -394,14 +463,18 @@ export interface FileRoutesByFullPath {
   '/settings/permissions': typeof AuthenticatedSettingsPermissionsRoute
   '/settings/proxy-mode': typeof AuthenticatedSettingsProxyModeRoute
   '/settings/rate-limits': typeof AuthenticatedSettingsRateLimitsRoute
+  '/teams/$name': typeof AuthenticatedTeamsNameRoute
+  '/teams/new': typeof AuthenticatedTeamsNewRoute
   '/groups/': typeof AuthenticatedGroupsIndexRoute
   '/host-keys/': typeof AuthenticatedHostKeysIndexRoute
   '/logs/': typeof AuthenticatedLogsIndexRoute
   '/models/': typeof AuthenticatedModelsIndexRoute
   '/policies/': typeof AuthenticatedPoliciesIndexRoute
   '/pricing/': typeof AuthenticatedPricingIndexRoute
+  '/projects/': typeof AuthenticatedProjectsIndexRoute
   '/service-accounts/': typeof AuthenticatedServiceAccountsIndexRoute
   '/settings/': typeof AuthenticatedSettingsIndexRoute
+  '/teams/': typeof AuthenticatedTeamsIndexRoute
   '/groups/$name/edit': typeof AuthenticatedGroupsNameEditRoute
   '/host-keys/$name/edit': typeof AuthenticatedHostKeysNameEditRoute
   '/keys/$name/edit': typeof AuthenticatedKeysNameEditRoute
@@ -410,7 +483,9 @@ export interface FileRoutesByFullPath {
   '/policies/rate-limits/$name': typeof AuthenticatedPoliciesRateLimitsNameRoute
   '/policies/rate-limits/new': typeof AuthenticatedPoliciesRateLimitsNewRoute
   '/pricing/$name/edit': typeof AuthenticatedPricingNameEditRoute
+  '/projects/$name/edit': typeof AuthenticatedProjectsNameEditRoute
   '/service-accounts/$name/edit': typeof AuthenticatedServiceAccountsNameEditRoute
+  '/teams/$name/edit': typeof AuthenticatedTeamsNameEditRoute
   '/policies/rate-limits/$name/edit': typeof AuthenticatedPoliciesRateLimitsNameEditRoute
 }
 export interface FileRoutesByTo {
@@ -434,6 +509,8 @@ export interface FileRoutesByTo {
   '/policies/new': typeof AuthenticatedPoliciesNewRoute
   '/pricing/$name': typeof AuthenticatedPricingNameRoute
   '/pricing/new': typeof AuthenticatedPricingNewRoute
+  '/projects/$name': typeof AuthenticatedProjectsNameRoute
+  '/projects/new': typeof AuthenticatedProjectsNewRoute
   '/providers/$name': typeof AuthenticatedProvidersNameRoute
   '/service-accounts/$name': typeof AuthenticatedServiceAccountsNameRoute
   '/service-accounts/new': typeof AuthenticatedServiceAccountsNewRoute
@@ -441,14 +518,18 @@ export interface FileRoutesByTo {
   '/settings/permissions': typeof AuthenticatedSettingsPermissionsRoute
   '/settings/proxy-mode': typeof AuthenticatedSettingsProxyModeRoute
   '/settings/rate-limits': typeof AuthenticatedSettingsRateLimitsRoute
+  '/teams/$name': typeof AuthenticatedTeamsNameRoute
+  '/teams/new': typeof AuthenticatedTeamsNewRoute
   '/groups': typeof AuthenticatedGroupsIndexRoute
   '/host-keys': typeof AuthenticatedHostKeysIndexRoute
   '/logs': typeof AuthenticatedLogsIndexRoute
   '/models': typeof AuthenticatedModelsIndexRoute
   '/policies': typeof AuthenticatedPoliciesIndexRoute
   '/pricing': typeof AuthenticatedPricingIndexRoute
+  '/projects': typeof AuthenticatedProjectsIndexRoute
   '/service-accounts': typeof AuthenticatedServiceAccountsIndexRoute
   '/settings': typeof AuthenticatedSettingsIndexRoute
+  '/teams': typeof AuthenticatedTeamsIndexRoute
   '/groups/$name/edit': typeof AuthenticatedGroupsNameEditRoute
   '/host-keys/$name/edit': typeof AuthenticatedHostKeysNameEditRoute
   '/keys/$name/edit': typeof AuthenticatedKeysNameEditRoute
@@ -457,7 +538,9 @@ export interface FileRoutesByTo {
   '/policies/rate-limits/$name': typeof AuthenticatedPoliciesRateLimitsNameRoute
   '/policies/rate-limits/new': typeof AuthenticatedPoliciesRateLimitsNewRoute
   '/pricing/$name/edit': typeof AuthenticatedPricingNameEditRoute
+  '/projects/$name/edit': typeof AuthenticatedProjectsNameEditRoute
   '/service-accounts/$name/edit': typeof AuthenticatedServiceAccountsNameEditRoute
+  '/teams/$name/edit': typeof AuthenticatedTeamsNameEditRoute
   '/policies/rate-limits/$name/edit': typeof AuthenticatedPoliciesRateLimitsNameEditRoute
 }
 export interface FileRoutesById {
@@ -472,8 +555,10 @@ export interface FileRoutesById {
   '/_authenticated/models': typeof AuthenticatedModelsRouteWithChildren
   '/_authenticated/policies': typeof AuthenticatedPoliciesRouteWithChildren
   '/_authenticated/pricing': typeof AuthenticatedPricingRouteWithChildren
+  '/_authenticated/projects': typeof AuthenticatedProjectsRouteWithChildren
   '/_authenticated/service-accounts': typeof AuthenticatedServiceAccountsRouteWithChildren
   '/_authenticated/settings': typeof AuthenticatedSettingsRouteWithChildren
+  '/_authenticated/teams': typeof AuthenticatedTeamsRouteWithChildren
   '/_authenticated/usage': typeof AuthenticatedUsageRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/groups/$name': typeof AuthenticatedGroupsNameRoute
@@ -490,6 +575,8 @@ export interface FileRoutesById {
   '/_authenticated/policies/new': typeof AuthenticatedPoliciesNewRoute
   '/_authenticated/pricing/$name': typeof AuthenticatedPricingNameRoute
   '/_authenticated/pricing/new': typeof AuthenticatedPricingNewRoute
+  '/_authenticated/projects/$name': typeof AuthenticatedProjectsNameRoute
+  '/_authenticated/projects/new': typeof AuthenticatedProjectsNewRoute
   '/_authenticated/providers/$name': typeof AuthenticatedProvidersNameRoute
   '/_authenticated/service-accounts/$name': typeof AuthenticatedServiceAccountsNameRoute
   '/_authenticated/service-accounts/new': typeof AuthenticatedServiceAccountsNewRoute
@@ -497,14 +584,18 @@ export interface FileRoutesById {
   '/_authenticated/settings/permissions': typeof AuthenticatedSettingsPermissionsRoute
   '/_authenticated/settings/proxy-mode': typeof AuthenticatedSettingsProxyModeRoute
   '/_authenticated/settings/rate-limits': typeof AuthenticatedSettingsRateLimitsRoute
+  '/_authenticated/teams/$name': typeof AuthenticatedTeamsNameRoute
+  '/_authenticated/teams/new': typeof AuthenticatedTeamsNewRoute
   '/_authenticated/groups/': typeof AuthenticatedGroupsIndexRoute
   '/_authenticated/host-keys/': typeof AuthenticatedHostKeysIndexRoute
   '/_authenticated/logs/': typeof AuthenticatedLogsIndexRoute
   '/_authenticated/models/': typeof AuthenticatedModelsIndexRoute
   '/_authenticated/policies/': typeof AuthenticatedPoliciesIndexRoute
   '/_authenticated/pricing/': typeof AuthenticatedPricingIndexRoute
+  '/_authenticated/projects/': typeof AuthenticatedProjectsIndexRoute
   '/_authenticated/service-accounts/': typeof AuthenticatedServiceAccountsIndexRoute
   '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
+  '/_authenticated/teams/': typeof AuthenticatedTeamsIndexRoute
   '/_authenticated/groups/$name_/edit': typeof AuthenticatedGroupsNameEditRoute
   '/_authenticated/host-keys/$name_/edit': typeof AuthenticatedHostKeysNameEditRoute
   '/_authenticated/keys_/$name_/edit': typeof AuthenticatedKeysNameEditRoute
@@ -513,7 +604,9 @@ export interface FileRoutesById {
   '/_authenticated/policies/rate-limits/$name': typeof AuthenticatedPoliciesRateLimitsNameRoute
   '/_authenticated/policies/rate-limits/new': typeof AuthenticatedPoliciesRateLimitsNewRoute
   '/_authenticated/pricing/$name_/edit': typeof AuthenticatedPricingNameEditRoute
+  '/_authenticated/projects/$name_/edit': typeof AuthenticatedProjectsNameEditRoute
   '/_authenticated/service-accounts/$name_/edit': typeof AuthenticatedServiceAccountsNameEditRoute
+  '/_authenticated/teams/$name_/edit': typeof AuthenticatedTeamsNameEditRoute
   '/_authenticated/policies/rate-limits/$name_/edit': typeof AuthenticatedPoliciesRateLimitsNameEditRoute
 }
 export interface FileRouteTypes {
@@ -529,8 +622,10 @@ export interface FileRouteTypes {
     | '/models'
     | '/policies'
     | '/pricing'
+    | '/projects'
     | '/service-accounts'
     | '/settings'
+    | '/teams'
     | '/usage'
     | '/groups/$name'
     | '/groups/new'
@@ -546,6 +641,8 @@ export interface FileRouteTypes {
     | '/policies/new'
     | '/pricing/$name'
     | '/pricing/new'
+    | '/projects/$name'
+    | '/projects/new'
     | '/providers/$name'
     | '/service-accounts/$name'
     | '/service-accounts/new'
@@ -553,14 +650,18 @@ export interface FileRouteTypes {
     | '/settings/permissions'
     | '/settings/proxy-mode'
     | '/settings/rate-limits'
+    | '/teams/$name'
+    | '/teams/new'
     | '/groups/'
     | '/host-keys/'
     | '/logs/'
     | '/models/'
     | '/policies/'
     | '/pricing/'
+    | '/projects/'
     | '/service-accounts/'
     | '/settings/'
+    | '/teams/'
     | '/groups/$name/edit'
     | '/host-keys/$name/edit'
     | '/keys/$name/edit'
@@ -569,7 +670,9 @@ export interface FileRouteTypes {
     | '/policies/rate-limits/$name'
     | '/policies/rate-limits/new'
     | '/pricing/$name/edit'
+    | '/projects/$name/edit'
     | '/service-accounts/$name/edit'
+    | '/teams/$name/edit'
     | '/policies/rate-limits/$name/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -593,6 +696,8 @@ export interface FileRouteTypes {
     | '/policies/new'
     | '/pricing/$name'
     | '/pricing/new'
+    | '/projects/$name'
+    | '/projects/new'
     | '/providers/$name'
     | '/service-accounts/$name'
     | '/service-accounts/new'
@@ -600,14 +705,18 @@ export interface FileRouteTypes {
     | '/settings/permissions'
     | '/settings/proxy-mode'
     | '/settings/rate-limits'
+    | '/teams/$name'
+    | '/teams/new'
     | '/groups'
     | '/host-keys'
     | '/logs'
     | '/models'
     | '/policies'
     | '/pricing'
+    | '/projects'
     | '/service-accounts'
     | '/settings'
+    | '/teams'
     | '/groups/$name/edit'
     | '/host-keys/$name/edit'
     | '/keys/$name/edit'
@@ -616,7 +725,9 @@ export interface FileRouteTypes {
     | '/policies/rate-limits/$name'
     | '/policies/rate-limits/new'
     | '/pricing/$name/edit'
+    | '/projects/$name/edit'
     | '/service-accounts/$name/edit'
+    | '/teams/$name/edit'
     | '/policies/rate-limits/$name/edit'
   id:
     | '__root__'
@@ -630,8 +741,10 @@ export interface FileRouteTypes {
     | '/_authenticated/models'
     | '/_authenticated/policies'
     | '/_authenticated/pricing'
+    | '/_authenticated/projects'
     | '/_authenticated/service-accounts'
     | '/_authenticated/settings'
+    | '/_authenticated/teams'
     | '/_authenticated/usage'
     | '/_authenticated/'
     | '/_authenticated/groups/$name'
@@ -648,6 +761,8 @@ export interface FileRouteTypes {
     | '/_authenticated/policies/new'
     | '/_authenticated/pricing/$name'
     | '/_authenticated/pricing/new'
+    | '/_authenticated/projects/$name'
+    | '/_authenticated/projects/new'
     | '/_authenticated/providers/$name'
     | '/_authenticated/service-accounts/$name'
     | '/_authenticated/service-accounts/new'
@@ -655,14 +770,18 @@ export interface FileRouteTypes {
     | '/_authenticated/settings/permissions'
     | '/_authenticated/settings/proxy-mode'
     | '/_authenticated/settings/rate-limits'
+    | '/_authenticated/teams/$name'
+    | '/_authenticated/teams/new'
     | '/_authenticated/groups/'
     | '/_authenticated/host-keys/'
     | '/_authenticated/logs/'
     | '/_authenticated/models/'
     | '/_authenticated/policies/'
     | '/_authenticated/pricing/'
+    | '/_authenticated/projects/'
     | '/_authenticated/service-accounts/'
     | '/_authenticated/settings/'
+    | '/_authenticated/teams/'
     | '/_authenticated/groups/$name_/edit'
     | '/_authenticated/host-keys/$name_/edit'
     | '/_authenticated/keys_/$name_/edit'
@@ -671,7 +790,9 @@ export interface FileRouteTypes {
     | '/_authenticated/policies/rate-limits/$name'
     | '/_authenticated/policies/rate-limits/new'
     | '/_authenticated/pricing/$name_/edit'
+    | '/_authenticated/projects/$name_/edit'
     | '/_authenticated/service-accounts/$name_/edit'
+    | '/_authenticated/teams/$name_/edit'
     | '/_authenticated/policies/rate-limits/$name_/edit'
   fileRoutesById: FileRoutesById
 }
@@ -718,6 +839,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedUsageRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/teams': {
+      id: '/_authenticated/teams'
+      path: '/teams'
+      fullPath: '/teams'
+      preLoaderRoute: typeof AuthenticatedTeamsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/settings': {
       id: '/_authenticated/settings'
       path: '/settings'
@@ -730,6 +858,13 @@ declare module '@tanstack/react-router' {
       path: '/service-accounts'
       fullPath: '/service-accounts'
       preLoaderRoute: typeof AuthenticatedServiceAccountsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/projects': {
+      id: '/_authenticated/projects'
+      path: '/projects'
+      fullPath: '/projects'
+      preLoaderRoute: typeof AuthenticatedProjectsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/pricing': {
@@ -781,6 +916,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedBootstrapRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/teams/': {
+      id: '/_authenticated/teams/'
+      path: '/'
+      fullPath: '/teams/'
+      preLoaderRoute: typeof AuthenticatedTeamsIndexRouteImport
+      parentRoute: typeof AuthenticatedTeamsRoute
+    }
     '/_authenticated/settings/': {
       id: '/_authenticated/settings/'
       path: '/'
@@ -794,6 +936,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/service-accounts/'
       preLoaderRoute: typeof AuthenticatedServiceAccountsIndexRouteImport
       parentRoute: typeof AuthenticatedServiceAccountsRoute
+    }
+    '/_authenticated/projects/': {
+      id: '/_authenticated/projects/'
+      path: '/'
+      fullPath: '/projects/'
+      preLoaderRoute: typeof AuthenticatedProjectsIndexRouteImport
+      parentRoute: typeof AuthenticatedProjectsRoute
     }
     '/_authenticated/pricing/': {
       id: '/_authenticated/pricing/'
@@ -836,6 +985,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/groups/'
       preLoaderRoute: typeof AuthenticatedGroupsIndexRouteImport
       parentRoute: typeof AuthenticatedGroupsRoute
+    }
+    '/_authenticated/teams/new': {
+      id: '/_authenticated/teams/new'
+      path: '/new'
+      fullPath: '/teams/new'
+      preLoaderRoute: typeof AuthenticatedTeamsNewRouteImport
+      parentRoute: typeof AuthenticatedTeamsRoute
+    }
+    '/_authenticated/teams/$name': {
+      id: '/_authenticated/teams/$name'
+      path: '/$name'
+      fullPath: '/teams/$name'
+      preLoaderRoute: typeof AuthenticatedTeamsNameRouteImport
+      parentRoute: typeof AuthenticatedTeamsRoute
     }
     '/_authenticated/settings/rate-limits': {
       id: '/_authenticated/settings/rate-limits'
@@ -885,6 +1048,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/providers/$name'
       preLoaderRoute: typeof AuthenticatedProvidersNameRouteImport
       parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/projects/new': {
+      id: '/_authenticated/projects/new'
+      path: '/new'
+      fullPath: '/projects/new'
+      preLoaderRoute: typeof AuthenticatedProjectsNewRouteImport
+      parentRoute: typeof AuthenticatedProjectsRoute
+    }
+    '/_authenticated/projects/$name': {
+      id: '/_authenticated/projects/$name'
+      path: '/$name'
+      fullPath: '/projects/$name'
+      preLoaderRoute: typeof AuthenticatedProjectsNameRouteImport
+      parentRoute: typeof AuthenticatedProjectsRoute
     }
     '/_authenticated/pricing/new': {
       id: '/_authenticated/pricing/new'
@@ -984,12 +1161,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedGroupsNameRouteImport
       parentRoute: typeof AuthenticatedGroupsRoute
     }
+    '/_authenticated/teams/$name_/edit': {
+      id: '/_authenticated/teams/$name_/edit'
+      path: '/$name/edit'
+      fullPath: '/teams/$name/edit'
+      preLoaderRoute: typeof AuthenticatedTeamsNameEditRouteImport
+      parentRoute: typeof AuthenticatedTeamsRoute
+    }
     '/_authenticated/service-accounts/$name_/edit': {
       id: '/_authenticated/service-accounts/$name_/edit'
       path: '/$name/edit'
       fullPath: '/service-accounts/$name/edit'
       preLoaderRoute: typeof AuthenticatedServiceAccountsNameEditRouteImport
       parentRoute: typeof AuthenticatedServiceAccountsRoute
+    }
+    '/_authenticated/projects/$name_/edit': {
+      id: '/_authenticated/projects/$name_/edit'
+      path: '/$name/edit'
+      fullPath: '/projects/$name/edit'
+      preLoaderRoute: typeof AuthenticatedProjectsNameEditRouteImport
+      parentRoute: typeof AuthenticatedProjectsRoute
     }
     '/_authenticated/pricing/$name_/edit': {
       id: '/_authenticated/pricing/$name_/edit'
@@ -1167,6 +1358,25 @@ const AuthenticatedPricingRouteChildren: AuthenticatedPricingRouteChildren = {
 const AuthenticatedPricingRouteWithChildren =
   AuthenticatedPricingRoute._addFileChildren(AuthenticatedPricingRouteChildren)
 
+interface AuthenticatedProjectsRouteChildren {
+  AuthenticatedProjectsNameRoute: typeof AuthenticatedProjectsNameRoute
+  AuthenticatedProjectsNewRoute: typeof AuthenticatedProjectsNewRoute
+  AuthenticatedProjectsIndexRoute: typeof AuthenticatedProjectsIndexRoute
+  AuthenticatedProjectsNameEditRoute: typeof AuthenticatedProjectsNameEditRoute
+}
+
+const AuthenticatedProjectsRouteChildren: AuthenticatedProjectsRouteChildren = {
+  AuthenticatedProjectsNameRoute: AuthenticatedProjectsNameRoute,
+  AuthenticatedProjectsNewRoute: AuthenticatedProjectsNewRoute,
+  AuthenticatedProjectsIndexRoute: AuthenticatedProjectsIndexRoute,
+  AuthenticatedProjectsNameEditRoute: AuthenticatedProjectsNameEditRoute,
+}
+
+const AuthenticatedProjectsRouteWithChildren =
+  AuthenticatedProjectsRoute._addFileChildren(
+    AuthenticatedProjectsRouteChildren,
+  )
+
 interface AuthenticatedServiceAccountsRouteChildren {
   AuthenticatedServiceAccountsNameRoute: typeof AuthenticatedServiceAccountsNameRoute
   AuthenticatedServiceAccountsNewRoute: typeof AuthenticatedServiceAccountsNewRoute
@@ -1212,6 +1422,23 @@ const AuthenticatedSettingsRouteWithChildren =
     AuthenticatedSettingsRouteChildren,
   )
 
+interface AuthenticatedTeamsRouteChildren {
+  AuthenticatedTeamsNameRoute: typeof AuthenticatedTeamsNameRoute
+  AuthenticatedTeamsNewRoute: typeof AuthenticatedTeamsNewRoute
+  AuthenticatedTeamsIndexRoute: typeof AuthenticatedTeamsIndexRoute
+  AuthenticatedTeamsNameEditRoute: typeof AuthenticatedTeamsNameEditRoute
+}
+
+const AuthenticatedTeamsRouteChildren: AuthenticatedTeamsRouteChildren = {
+  AuthenticatedTeamsNameRoute: AuthenticatedTeamsNameRoute,
+  AuthenticatedTeamsNewRoute: AuthenticatedTeamsNewRoute,
+  AuthenticatedTeamsIndexRoute: AuthenticatedTeamsIndexRoute,
+  AuthenticatedTeamsNameEditRoute: AuthenticatedTeamsNameEditRoute,
+}
+
+const AuthenticatedTeamsRouteWithChildren =
+  AuthenticatedTeamsRoute._addFileChildren(AuthenticatedTeamsRouteChildren)
+
 interface AuthenticatedRouteChildren {
   AuthenticatedBootstrapRoute: typeof AuthenticatedBootstrapRoute
   AuthenticatedGroupsRoute: typeof AuthenticatedGroupsRouteWithChildren
@@ -1220,8 +1447,10 @@ interface AuthenticatedRouteChildren {
   AuthenticatedModelsRoute: typeof AuthenticatedModelsRouteWithChildren
   AuthenticatedPoliciesRoute: typeof AuthenticatedPoliciesRouteWithChildren
   AuthenticatedPricingRoute: typeof AuthenticatedPricingRouteWithChildren
+  AuthenticatedProjectsRoute: typeof AuthenticatedProjectsRouteWithChildren
   AuthenticatedServiceAccountsRoute: typeof AuthenticatedServiceAccountsRouteWithChildren
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRouteWithChildren
+  AuthenticatedTeamsRoute: typeof AuthenticatedTeamsRouteWithChildren
   AuthenticatedUsageRoute: typeof AuthenticatedUsageRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedHostsNameRoute: typeof AuthenticatedHostsNameRoute
@@ -1241,9 +1470,11 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedModelsRoute: AuthenticatedModelsRouteWithChildren,
   AuthenticatedPoliciesRoute: AuthenticatedPoliciesRouteWithChildren,
   AuthenticatedPricingRoute: AuthenticatedPricingRouteWithChildren,
+  AuthenticatedProjectsRoute: AuthenticatedProjectsRouteWithChildren,
   AuthenticatedServiceAccountsRoute:
     AuthenticatedServiceAccountsRouteWithChildren,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRouteWithChildren,
+  AuthenticatedTeamsRoute: AuthenticatedTeamsRouteWithChildren,
   AuthenticatedUsageRoute: AuthenticatedUsageRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedHostsNameRoute: AuthenticatedHostsNameRoute,

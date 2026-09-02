@@ -16,6 +16,7 @@ import { DiagnosticDot } from "@/diagnostics/DiagnosticDot";
 import { usePolicyDiagnostics } from "@/diagnostics/useDiagnostics";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { resolveMutability } from "@/lib/ownership";
+import { OwnerLink } from "@/projects/OwnerLink";
 import { confirm } from "@/shared/ConfirmDialog";
 import {
 	matchesOwnerFilter,
@@ -244,6 +245,9 @@ function PolicyRow({
 						</code>
 					)}
 				</Link>
+				<div className="mt-1 empty:hidden">
+					<OwnerLink owner={policy.metadata.owner} />
+				</div>
 			</td>
 			<td className="px-3 py-2">
 				<span
