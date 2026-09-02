@@ -1,11 +1,9 @@
 import {
 	queryOptions,
 	useMutation,
-	useQuery,
 	useSuspenseQuery,
 } from "@tanstack/react-query";
 import { apiClient } from "@/api/client";
-import { ApiError } from "@/api/types/errors";
 import type { components } from "@/api/types.gen";
 import { unwrap } from "@/api/unwrap";
 
@@ -26,16 +24,6 @@ export const usersListQueryOptions = queryOptions({
 
 export function useUsers() {
 	return useSuspenseQuery(usersListQueryOptions);
-}
-
-/**
- * Whether the current actor may list users — the nav entry hides when the
- * endpoint answers 403. Non-suspending, and the probe doubles as the list's
- * cache warm-up, so opening the page costs no second request.
- */
-export function useCanListUsers(): boolean {
-	const { error } = useQuery(usersListQueryOptions);
-	return !(error instanceof ApiError && error.status === 403);
 }
 
 /** Look one account up by id, from the list the actor can already see. */

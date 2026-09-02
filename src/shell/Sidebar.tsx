@@ -16,7 +16,7 @@ import {
 	UsersRound,
 } from "lucide-react";
 import type { ComponentType } from "react";
-import { useCanListUsers } from "@/api/hooks/users";
+import { type Capability, useCapabilities } from "@/api/hooks/capabilities";
 import {
 	SidebarContent,
 	SidebarGroup,
@@ -51,6 +51,9 @@ interface NavItem {
 	label: string;
 	icon: ComponentType<{ className?: string }>;
 	prefix: string;
+	/** Entry hides when the actor may not list this kind. Observe views have
+	 * none — they degrade to their own empty states instead. */
+	capability?: Capability;
 }
 
 interface NavGroup {
@@ -70,54 +73,107 @@ const NAV_GROUPS: NavGroup[] = [
 	{
 		label: "Configure",
 		items: [
-			{ to: "/models", label: "Models", icon: Boxes, prefix: "/models" },
-			{ to: "/keys", label: "Keys", icon: KeyRound, prefix: "/keys" },
+			{
+				to: "/models",
+				label: "Models",
+				icon: Boxes,
+				prefix: "/models",
+				capability: "models",
+			},
+			{
+				to: "/keys",
+				label: "Keys",
+				icon: KeyRound,
+				prefix: "/keys",
+				capability: "keys",
+			},
 			{
 				to: "/policies",
 				label: "Policies",
 				icon: ShieldCheck,
 				prefix: "/policies",
+				capability: "policies",
 			},
 			{
 				to: "/pricing",
 				label: "Pricing",
 				icon: Banknote,
 				prefix: "/pricing",
+				capability: "pricings",
 			},
 		],
 	},
 	{
 		label: "Identity",
 		items: [
-			{ to: "/teams", label: "Teams", icon: Users, prefix: "/teams" },
-			{ to: "/projects", label: "Projects", icon: Boxes, prefix: "/projects" },
+			{
+				to: "/teams",
+				label: "Teams",
+				icon: Users,
+				prefix: "/teams",
+				capability: "teams",
+			},
+			{
+				to: "/projects",
+				label: "Projects",
+				icon: Boxes,
+				prefix: "/projects",
+				capability: "projects",
+			},
 			{
 				to: "/service-accounts",
 				label: "Service accounts",
 				icon: Bot,
 				prefix: "/service-accounts",
+				capability: "service-accounts",
 			},
-			{ to: "/groups", label: "Groups", icon: UsersRound, prefix: "/groups" },
+			{
+				to: "/groups",
+				label: "Groups",
+				icon: UsersRound,
+				prefix: "/groups",
+				capability: "groups",
+			},
 		],
 	},
 	{
 		label: "Access",
 		items: [
-			{ to: "/roles", label: "Roles", icon: ShieldCheck, prefix: "/roles" },
+			{
+				to: "/roles",
+				label: "Roles",
+				icon: ShieldCheck,
+				prefix: "/roles",
+				capability: "roles",
+			},
 			{
 				to: "/role-bindings",
 				label: "Role bindings",
 				icon: KeySquare,
 				prefix: "/role-bindings",
+				capability: "role-bindings",
 			},
 			{
 				to: "/policy-bindings",
 				label: "Policy bindings",
 				icon: Link2,
 				prefix: "/policy-bindings",
+				capability: "policy-bindings",
 			},
-			{ to: "/users", label: "Users", icon: UserRound, prefix: "/users" },
-			{ to: "/audit", label: "Audit", icon: ScrollText, prefix: "/audit" },
+			{
+				to: "/users",
+				label: "Users",
+				icon: UserRound,
+				prefix: "/users",
+				capability: "users",
+			},
+			{
+				to: "/audit",
+				label: "Audit",
+				icon: ScrollText,
+				prefix: "/audit",
+				capability: "audit",
+			},
 		],
 	},
 ];
@@ -147,10 +203,9 @@ function NavMenuItem({ item, active }: { item: NavItem; active: boolean }) {
 
 export function Sidebar() {
 	const path = useRouterState({ select: (s) => s.location.pathname });
-	// Users is admin-only; a 403 from the list means this actor has no business
-	// seeing the entry at all.
-	const canListUsers = useCanListUsers();
-	const visible = (item: NavItem) => item.to !== "/users" || canListUsers;
+	const capabilities = useCapabilities();
+	const visible = (item: NavItem) =>
+		!item.capability || capabilities[item.capability];
 
 	return (
 		<SidebarRoot collapsible="icon">
