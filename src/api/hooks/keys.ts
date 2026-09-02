@@ -6,6 +6,7 @@ import {
 	useSuspenseQuery,
 } from "@tanstack/react-query";
 import { apiClient } from "@/api/client";
+import { ApiError } from "@/api/types/errors";
 import type {
 	CreateKeyInput,
 	CreateKeyResponse,
@@ -154,6 +155,13 @@ export function useRotateKey() {
 		},
 		onSuccess: () => {
 			invalidateKeyDependents(queryClient);
+		},
+		onError: (err) => {
+			// 409 means the row moved under us; the cached copy is stale either
+			// way, so re-read before the caller retries.
+			if (err instanceof ApiError && err.status === 409) {
+				invalidateKeyDependents(queryClient);
+			}
 		},
 	});
 }

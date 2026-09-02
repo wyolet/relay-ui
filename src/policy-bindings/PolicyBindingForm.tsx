@@ -158,20 +158,19 @@ export function PolicyBindingForm({
 				<FormSection
 					icon={ListOrdered}
 					title="Priority"
-					description={`Lower wins when several bindings match one caller. Defaults to ${DEFAULT_PRIORITY}.`}
+					description={`Lower wins when several bindings match one caller. Leave blank to take the server's default of ${DEFAULT_PRIORITY}.`}
 				>
 					<div className="max-w-[10rem]">
 						<Input
 							type="number"
 							min={0}
 							max={10000}
-							value={String(values.priority)}
-							onChange={(e) =>
-								form.setFieldValue(
-									"priority",
-									Number.parseInt(e.currentTarget.value, 10) || 0,
-								)
-							}
+							placeholder={String(DEFAULT_PRIORITY)}
+							value={values.priority === null ? "" : String(values.priority)}
+							onChange={(e) => {
+								const n = Number.parseInt(e.currentTarget.value, 10);
+								form.setFieldValue("priority", Number.isNaN(n) ? null : n);
+							}}
 							aria-label="Priority"
 							aria-invalid={priorityError ? true : undefined}
 						/>

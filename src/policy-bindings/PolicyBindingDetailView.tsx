@@ -9,6 +9,7 @@ import {
 import { ApiError } from "@/api/types/errors";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { OwnerLink } from "@/projects/OwnerLink";
+import { DEFAULT_PRIORITY } from "@/policy-bindings/usePolicyBindingForm";
 import { subjectLabel } from "@/role-bindings/SubjectsEditor";
 import { Chip } from "@/shared/Chip";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
@@ -129,7 +130,7 @@ export function PolicyBindingDetailView({ name }: { name: string }) {
 						)}
 					</DetailRow>
 					<DetailRow label="Priority">
-						{binding.spec.priority ?? "—"}{" "}
+						{binding.spec.priority ?? DEFAULT_PRIORITY}{" "}
 						<span className="text-muted-foreground">(lower wins)</span>
 					</DetailRow>
 					{labels.length > 0 && (

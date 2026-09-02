@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { projectsListQueryOptions } from "@/api/hooks/projects";
 import { useMintToken, useRevokeAllTokens } from "@/api/hooks/tokens";
+import { feature } from "@/api/runtimeConfig";
 import { ApiError } from "@/api/types/errors";
 import { Button } from "@/components/ui/button";
 import {
@@ -88,6 +89,9 @@ export function TokenDialog({ onClose }: { onClose: () => void }) {
 	}
 
 	const busy = mint.isPending || revokeAll.isPending;
+	// Revoking every token bumps the caller's token version, which only a
+	// deployment with a user store can record.
+	const canRevokeAll = feature("users");
 
 	return (
 		<Dialog open onOpenChange={(next) => !next && !busy && onClose()}>
@@ -146,15 +150,17 @@ export function TokenDialog({ onClose }: { onClose: () => void }) {
 						</Button>
 					) : (
 						<>
-							<Button
-								type="button"
-								variant="ghost"
-								onClick={() => void handleRevokeAll()}
-								disabled={busy}
-								className="mr-auto text-destructive"
-							>
-								{revokeAll.isPending ? "Revoking…" : "Revoke all my tokens"}
-							</Button>
+							{canRevokeAll && (
+								<Button
+									type="button"
+									variant="ghost"
+									onClick={() => void handleRevokeAll()}
+									disabled={busy}
+									className="mr-auto text-destructive"
+								>
+									{revokeAll.isPending ? "Revoking…" : "Revoke all my tokens"}
+								</Button>
+							)}
 							<Button
 								type="button"
 								variant="ghost"

@@ -98,6 +98,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/auth/token/keys/rotate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rotate the inference-token signing key
+         * @description Generates a new signing key and records it in the auth:tokens section. The outgoing key stays on the verifier, so tokens already minted keep working until they expire.
+         */
+        post: operations["auth_token_key_rotate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/token/revoke": {
         parameters: {
             query?: never;
@@ -2018,6 +2038,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/users/by-id/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Update a user account
+         * @description Edits `disabled` and `roles`. Disabling bumps the user's token version, so tokens already minted stop verifying.
+         */
+        put: operations["update_user"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/users/by-id/{id}/revoke-tokens": {
         parameters: {
             query?: never;
@@ -2171,9 +2211,13 @@ export interface components {
         };
         Counts: {
             /** Format: int64 */
+            conflict: number;
+            /** Format: int64 */
             create: number;
             /** Format: int64 */
             delete: number;
+            /** Format: int64 */
+            forbidden: number;
             /** Format: int64 */
             skipDirty: number;
             /** Format: int64 */
@@ -2205,6 +2249,14 @@ export interface components {
             idMismatch?: string;
             kind: string;
             name: string;
+        };
+        ErrorDetail: {
+            /** @description Where the error occurred, e.g. 'body.items[3].tags' or 'path.thing-id' */
+            location?: string;
+            /** @description Error message text */
+            message?: string;
+            /** @description The value at the given location */
+            value?: unknown;
         };
         Event: {
             /** Format: int64 */
@@ -2373,6 +2425,10 @@ export interface components {
         };
         HostKeyStatus: {
             credential?: components["schemas"]["HostKeyCredentialStatus"];
+            unresolved?: components["schemas"]["HostKeyUnresolvedStatus"];
+        };
+        HostKeyUnresolvedStatus: {
+            reason: string;
         };
         HostKeyValueFrom: {
             env?: string;
@@ -2547,6 +2603,9 @@ export interface components {
             /** Format: date-time */
             revokedAt?: string;
         };
+        LicenseStruct: {
+            error: string;
+        };
         Limit: {
             /** Format: int64 */
             amount: number;
@@ -2699,6 +2758,7 @@ export interface components {
         };
         OpenAIErrorInner: {
             code?: string;
+            details?: components["schemas"]["ErrorDetail"][] | null;
             message: string;
             type: string;
         };
@@ -3631,6 +3691,7 @@ export interface components {
             expiresAt: string;
             jti: string;
             project: string;
+            teamId: string;
             token: string;
         };
         modelHostsOutBody: {
@@ -3765,6 +3826,7 @@ export interface components {
              * @example https://example.com/schemas/reloadOutputBody.json
              */
             readonly $schema?: string;
+            license?: components["schemas"]["LicenseStruct"];
             status: string;
         };
         resolveBindingRef: {
@@ -3879,11 +3941,29 @@ export interface components {
             next_cursor?: string;
         };
         userRow: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/userRow.json
+             */
+            readonly $schema?: string;
             disabled: boolean;
             email?: string;
             id: string;
             roles?: string[] | null;
             username: string;
+        };
+        userUpdateInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/userUpdateInputBody.json
+             */
+            readonly $schema?: string;
+            /** @description Disable or re-enable the account. Disabling also invalidates every inference token the user holds. */
+            disabled?: boolean;
+            /** @description Replace the account's roles. Omit to leave them unchanged. */
+            roles?: string[];
         };
         usersListOutputBody: {
             /**
@@ -4240,6 +4320,69 @@ export interface operations {
                     "application/json": components["schemas"]["OpenAIError"];
                 };
             };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    auth_token_key_rotate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
             /** @description Internal Server Error */
             500: {
                 headers: {
@@ -4374,7 +4517,12 @@ export interface operations {
     };
     auth_token_revoke_jti: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Team the token was minted under, from the mint response. Used only when no mint is recorded; requires admin. */
+                team_id?: string;
+                /** @description Token expiry (RFC3339), from the mint response. Used only when no mint is recorded; requires admin. */
+                exp?: string;
+            };
             header?: never;
             path: {
                 jti: string;
@@ -6935,6 +7083,15 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -13863,6 +14020,77 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+        };
+    };
+    update_user: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["userUpdateInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["userRow"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
