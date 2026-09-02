@@ -23,7 +23,8 @@ import {
 } from "@/shared/LabelsEditor";
 import { toast } from "@/shared/Toast";
 
-/** What the server applies when a binding declares no priority. Lower wins. */
+/** What the server applies when a binding declares no priority. Lower wins.
+ * A blank field stays blank (null) so the binding keeps deferring to it. */
 export const DEFAULT_PRIORITY = 100;
 
 /** The first string error a field carries, or undefined. */
@@ -39,7 +40,7 @@ export interface PolicyBindingFormValues {
 	description: string;
 	projectId: string;
 	policyId: string;
-	priority: number;
+	priority: number | null;
 	subjects: SubjectRow[];
 	enabled: boolean;
 	labels: LabelPair[];
@@ -51,7 +52,7 @@ function emptyValues(projectId: string): PolicyBindingFormValues {
 		description: "",
 		projectId,
 		policyId: "",
-		priority: DEFAULT_PRIORITY,
+		priority: null,
 		subjects: [newSubjectRow()],
 		enabled: true,
 		labels: [],
@@ -64,7 +65,7 @@ function toValues(binding: PolicyBinding): PolicyBindingFormValues {
 		description: binding.metadata.description ?? "",
 		projectId: binding.spec.projectId,
 		policyId: binding.spec.policyId,
-		priority: binding.spec.priority ?? DEFAULT_PRIORITY,
+		priority: binding.spec.priority ?? null,
 		subjects: toSubjectRows(binding.spec.subjects),
 		enabled: binding.spec.enabled ?? true,
 		labels: toLabelPairs(binding.metadata.labels),
@@ -84,7 +85,8 @@ const schema = z.object({
 		.number()
 		.int("Priority is a whole number")
 		.min(0, "Priority starts at 0")
-		.max(10000, "Priority tops out at 10000"),
+		.max(10000, "Priority tops out at 10000")
+		.nullable(),
 	subjects: z
 		.array(
 			z.object({
@@ -159,7 +161,8 @@ export function usePolicyBindingForm({
 			const spec = {
 				projectId: value.projectId,
 				policyId: value.policyId,
-				priority: value.priority,
+				// Absent, not 0: the server reads a missing priority as its default.
+				priority: value.priority ?? undefined,
 				subjects: fromSubjectRows(value.subjects),
 				enabled: value.enabled,
 			};

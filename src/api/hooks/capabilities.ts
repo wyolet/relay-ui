@@ -1,6 +1,7 @@
 import { useQueries } from "@tanstack/react-query";
 import { useAuth } from "@/api/auth";
 import { apiClient } from "@/api/client";
+import { feature } from "@/api/runtimeConfig";
 import { ApiError } from "@/api/types/errors";
 import { unwrap } from "@/api/unwrap";
 
@@ -74,6 +75,21 @@ const PROBE: Record<Capability, () => Promise<unknown>> = {
 
 const CAPABILITIES = Object.keys(PROBE) as Capability[];
 
+/**
+ * Kinds a deployment can leave unwired (no user store, no audit reader). Their
+ * routes then answer 404, which a permission probe cannot tell apart from
+ * "allowed" — config.json's feature flags answer that half.
+ */
+const FEATURE_GATED: Partial<Record<Capability, string>> = {
+	users: "users",
+	audit: "audit",
+};
+
+function wired(kind: Capability): boolean {
+	const flag = FEATURE_GATED[kind];
+	return flag === undefined || feature(flag);
+}
+
 /** Query key prefix; `useAuth().login` drops the branch so a new session
  * re-probes rather than inheriting the previous actor's answers. */
 export const CAPABILITIES_KEY = "capabilities";
@@ -90,7 +106,7 @@ export function useCapabilities(): Record<Capability, boolean> {
 		queries: CAPABILITIES.map((kind) => ({
 			queryKey: [CAPABILITIES_KEY, kind] as const,
 			queryFn: PROBE[kind],
-			enabled: authenticated && !isAdmin,
+			enabled: authenticated && !isAdmin && wired(kind),
 			// A permission answer holds for the session; 403 is permanent.
 			staleTime: Number.POSITIVE_INFINITY,
 			gcTime: Number.POSITIVE_INFINITY,
@@ -100,10 +116,11 @@ export function useCapabilities(): Record<Capability, boolean> {
 			Object.fromEntries(
 				CAPABILITIES.map((kind, i) => [
 					kind,
-					!(
-						results[i].error instanceof ApiError &&
-						results[i].error.status === 403
-					),
+					wired(kind) &&
+						!(
+							results[i].error instanceof ApiError &&
+							results[i].error.status === 403
+						),
 				]),
 			) as Record<Capability, boolean>,
 	});
