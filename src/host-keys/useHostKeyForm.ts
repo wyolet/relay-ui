@@ -15,6 +15,7 @@ import type {
 import { displayLabel } from "@/lib/displayLabel";
 import { randomSuffix, slugify } from "@/lib/slug";
 import { toast } from "@/shared/Toast";
+import { isHostTierPolicy } from "./tierPolicy";
 
 export interface SelectOption {
 	value: string;
@@ -311,19 +312,10 @@ export function useHostKeyForm({
 		[hostsData.items],
 	);
 
-	// Host-key policies are owned by the host/provider, not the user. Today the
-	// backend tags them with `owner.kind === "provider"`; once per-host
-	// ownership lands we'll get `"host"` with `owner.id === hostId` too. Accept
-	// either so existing data renders correctly.
 	const policyOptions = useMemo<SelectOption[]>(
 		() =>
 			(policiesData.items ?? [])
-				.filter((p) => {
-					const owner = p.metadata.owner;
-					if (!owner || owner.kind === "user") return false;
-					if (owner.kind === "host") return owner.id === values.hostId;
-					return true;
-				})
+				.filter((p) => isHostTierPolicy(p, values.hostId))
 				.map((p) => ({
 					value: p.metadata.id ?? "",
 					label: displayLabel(p.metadata),

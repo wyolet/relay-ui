@@ -23,13 +23,14 @@ interface PolicyOpts {
 	models?: string[];
 	rateLimitId?: string;
 	rlBindings?: { rateLimitId: string; models?: string[] }[];
+	owner?: { kind: string; id?: string };
 }
 export function makePolicy(o: PolicyOpts = {}): Policy {
 	return {
 		metadata: {
 			id: o.id ?? "policy-1",
 			name: o.name ?? "policy-1",
-			owner: { kind: "user" },
+			owner: o.owner ?? { kind: "user" },
 		},
 		spec: {
 			enabled: o.enabled ?? true,

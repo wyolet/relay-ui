@@ -14,6 +14,7 @@ import { useCreateRateLimit } from "@/api/hooks/ratelimits";
 import { ApiError } from "@/api/types/errors";
 import type { Host } from "@/api/types/host";
 import type { Policy, PolicyCreate } from "@/api/types/policy";
+import { defaultTierPolicyId } from "@/host-keys/tierPolicy";
 import { displayLabel } from "@/lib/displayLabel";
 import { slugWithSuffix } from "@/lib/slug";
 import type {
@@ -170,22 +171,8 @@ export function useSetupWizard() {
 		? modelsForHost(selectedHost.metadata.id).length
 		: 0;
 
-	// The host key must attach to a provider/host-owned policy (never a user
-	// policy). The host advertises its default via `spec.defaultPolicy` (a slug);
-	// resolve it to an id, falling back to the first non-user policy for the host.
 	function resolveProviderPolicyId(host: Host): string | undefined {
-		const items = policiesData.items ?? [];
-		const byDefault = host.spec.defaultPolicy
-			? items.find((p) => p.metadata.name === host.spec.defaultPolicy)
-			: undefined;
-		if (byDefault?.metadata.id) return byDefault.metadata.id;
-		const owned = items.find((p) => {
-			const owner = p.metadata.owner;
-			if (!owner || owner.kind === "user") return false;
-			if (owner.kind === "host") return owner.id === host.metadata.id;
-			return true;
-		});
-		return owned?.metadata.id;
+		return defaultTierPolicyId(host, policiesData.items ?? []);
 	}
 
 	// --- mutations --------------------------------------------------------
