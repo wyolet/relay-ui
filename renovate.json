@@ -24,8 +24,8 @@
   },
   "packageRules": [
     {
-      "description": "One weekly PR for non-major npm updates past 1.0",
-      "matchManagers": ["npm"],
+      "description": "One weekly PR for non-major package updates past 1.0",
+      "matchManagers": ["bun"],
       "matchUpdateTypes": ["minor", "patch"],
       "matchCurrentVersion": "!/^v?0\\./",
       "groupName": "npm non-major"

@@ -70,9 +70,5 @@
   "trustedDependencies": [
     "esbuild",
     "lightningcss"
-  ],
-  "_comment_overrides": "rolldown: vite@8.0.10 pins rolldown rc.17, whose dep-optimizer fails to suffix-disambiguate CJS wrapper names and collides with es-toolkit's `require_*` local bindings (recharts dep) -> 'require_isUnsafeProperty is not a function' in dev. Stable 1.0.2 fixes the rename. Remove this override once Vite ships with rolldown >= 1.0.2.",
-  "overrides": {
-    "rolldown": "1.0.2"
-  }
+  ]
 }
