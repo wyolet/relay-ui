@@ -49,7 +49,7 @@ const BY_KIND: Record<string, FailureAttribution> = {
 	},
 	policy_missing: {
 		layer: "relay",
-		reason: "The relay key resolved to no policy.",
+		reason: "The key resolved to no policy.",
 	},
 	no_upstream_auth: {
 		layer: "client",

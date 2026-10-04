@@ -77,7 +77,7 @@ export function LogsTable({
 				title="No logs yet"
 				body={
 					emptyBody ??
-					"Requests through the relay land here, newest first. Opt a policy or relay-key into payload logging to also capture request and response bodies."
+					"Requests through the relay land here, newest first. Opt a policy or key into payload logging to also capture request and response bodies."
 				}
 			/>
 		);

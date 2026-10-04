@@ -10,6 +10,8 @@ import { unwrap } from "@/api/unwrap";
 
 export type ProxyMode = components["schemas"]["ProxyMode"];
 export type ProxyModeEnvelope = components["schemas"]["ProxyModeEnvelope"];
+export type AuthOIDC = components["schemas"]["AuthOIDC"];
+export type AuthOIDCEnvelope = components["schemas"]["AuthOIDCEnvelope"];
 export type PayloadLogging = components["schemas"]["PayloadLogging"];
 export type PayloadLoggingEnvelope =
 	components["schemas"]["PayloadLoggingEnvelope"];
@@ -69,6 +71,35 @@ export function useUpdatePayloadLogging() {
 				await apiClient.PUT("/settings/payload-logging", {
 					body: value,
 				}),
+			);
+			return data;
+		},
+		onSuccess: () => {
+			void queryClient.invalidateQueries({ queryKey: ["settings"] });
+		},
+	});
+}
+
+export const authOIDCQueryOptions = queryOptions({
+	queryKey: ["settings", "auth:oidc"] as const,
+	queryFn: async (): Promise<AuthOIDCEnvelope> => {
+		const data = unwrap(await apiClient.GET("/settings/auth:oidc"));
+		return data;
+	},
+	staleTime: 30_000,
+	gcTime: 5 * 60_000,
+});
+
+export function useAuthOIDC() {
+	return useSuspenseQuery(authOIDCQueryOptions);
+}
+
+export function useUpdateAuthOIDC() {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: async (value: AuthOIDC): Promise<AuthOIDCEnvelope> => {
+			const data = unwrap(
+				await apiClient.PUT("/settings/auth:oidc", { body: value }),
 			);
 			return data;
 		},

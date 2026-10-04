@@ -5,11 +5,11 @@ import { bindingsListQueryOptions } from "@/api/hooks/bindings";
 import { governanceQueryOptions } from "@/api/hooks/governance";
 import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
+import { keysListQueryOptions } from "@/api/hooks/keys";
 import { modelsListQueryOptions } from "@/api/hooks/models";
 import { policiesListQueryOptions } from "@/api/hooks/policies";
 import { providersListQueryOptions } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
-import { relayKeysListQueryOptions } from "@/api/hooks/relayKeys";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PoliciesTable } from "@/policies/PoliciesTable";
 import { RateLimitsTable } from "@/rate-limits/RateLimitsTable";
@@ -29,7 +29,7 @@ export const Route = createFileRoute("/_authenticated/policies/")({
 		void queryClient.prefetchQuery(hostsListQueryOptions);
 		void queryClient.prefetchQuery(bindingsListQueryOptions);
 		void queryClient.prefetchQuery(modelsListQueryOptions);
-		void queryClient.prefetchQuery(relayKeysListQueryOptions);
+		void queryClient.prefetchQuery(keysListQueryOptions);
 		void queryClient.prefetchQuery(providersListQueryOptions);
 		return Promise.all([
 			queryClient.ensureQueryData(policiesListQueryOptions),
@@ -56,7 +56,7 @@ function PoliciesPage() {
 						<h1 className="text-lg font-semibold text-foreground">Policies</h1>
 						<p className="text-xs text-muted-foreground mt-0.5">
 							Bundle upstream credentials, allowed models, and rate limits, then
-							attach to relay keys.
+							attach to keys.
 						</p>
 					</div>
 				</div>

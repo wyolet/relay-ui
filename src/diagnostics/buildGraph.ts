@@ -2,11 +2,11 @@ import type { Binding } from "@/api/hooks/bindings";
 import { bindingsByHost, bindingsByModel } from "@/api/hooks/bindings";
 import type { Host } from "@/api/types/host";
 import type { HostKey } from "@/api/types/hostkey";
+import type { Key } from "@/api/types/key";
 import type { Model } from "@/api/types/model";
 import type { Policy } from "@/api/types/policy";
 import type { Provider } from "@/api/types/provider";
 import type { RateLimit } from "@/api/types/ratelimit";
-import type { RelayKey } from "@/api/types/relayKey";
 import type { DiagnosticGraph } from "./types";
 
 interface GraphInput {
@@ -15,7 +15,7 @@ interface GraphInput {
 	hosts: Host[];
 	models: Model[];
 	rateLimits: RateLimit[];
-	relayKeys: RelayKey[];
+	keys: Key[];
 	providers: Provider[];
 	bindings: Binding[];
 }
@@ -31,13 +31,13 @@ function byId<T extends { metadata: { id?: string } }>(
 }
 
 export function buildDiagnosticGraph(input: GraphInput): DiagnosticGraph {
-	const relayKeysByPolicyId = new Map<string, RelayKey[]>();
-	for (const rk of input.relayKeys) {
+	const keysByPolicyId = new Map<string, Key[]>();
+	for (const rk of input.keys) {
 		const pid = rk.spec.policyId;
 		if (!pid) continue;
-		const list = relayKeysByPolicyId.get(pid);
+		const list = keysByPolicyId.get(pid);
 		if (list) list.push(rk);
-		else relayKeysByPolicyId.set(pid, [rk]);
+		else keysByPolicyId.set(pid, [rk]);
 	}
 
 	const policiesByHostKeyId = new Map<string, Policy[]>();
@@ -66,11 +66,11 @@ export function buildDiagnosticGraph(input: GraphInput): DiagnosticGraph {
 		hosts: byId(input.hosts),
 		models: byId(input.models),
 		rateLimits: byId(input.rateLimits),
-		relayKeys: byId(input.relayKeys),
+		keys: byId(input.keys),
 		providers: byId(input.providers),
 		bindingsByModel: bindingsByModel(input.bindings),
 		bindingsByHost: bindingsByHost(input.bindings),
-		relayKeysByPolicyId,
+		keysByPolicyId,
 		policiesByHostKeyId,
 		policiesByRateLimitId,
 	};

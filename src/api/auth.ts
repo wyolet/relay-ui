@@ -1,28 +1,38 @@
 import { queryOptions, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { apiClient } from "./client";
+import { CAPABILITIES_KEY } from "./hooks/capabilities";
 
 interface Whoami {
 	authenticated: boolean;
 	userId?: string;
 	username?: string;
 	roles: string[];
+	/** Scopes the caller holds a role binding at, as "team:<id>" / "project:<id>". */
+	scopes: string[];
 }
 
 /**
- * GET /auth/whoami — returns { user_id, username, roles } on 200.
+ * GET /auth/whoami — returns { user_id, username, roles, scopes } on 200.
  * Any non-OK response means unauthenticated.
  */
 async function fetchWhoami(): Promise<Whoami> {
 	const { data } = await apiClient.GET("/auth/whoami");
-	// `roles` isn't in types.gen.ts yet — cast goes away on the next types.gen regen.
-	const roles = (data as { roles?: string[] } | undefined)?.roles;
 	return {
 		authenticated: Boolean(data?.user_id),
 		userId: data?.user_id,
 		username: data?.username,
-		roles: roles ?? [],
+		roles: data?.roles ?? [],
+		scopes: data?.scopes ?? [],
 	};
+}
+
+/** Ids from the "<kind>:<id>" scope strings whoami reports. */
+export function scopeIds(scopes: readonly string[], kind: string): string[] {
+	const prefix = `${kind}:`;
+	return scopes.flatMap((s) =>
+		s.startsWith(prefix) ? [s.slice(prefix.length)] : [],
+	);
 }
 
 export const whoamiQueryOptions = queryOptions({
@@ -42,6 +52,7 @@ export function useAuth() {
 	const username = data?.username;
 	const userId = data?.userId;
 	const roles = data?.roles ?? [];
+	const scopes = data?.scopes ?? [];
 	const isAdmin = roles.includes("admin");
 
 	async function login(username: string, password: string): Promise<void> {
@@ -55,6 +66,8 @@ export function useAuth() {
 		await queryClient.invalidateQueries({
 			queryKey: whoamiQueryOptions.queryKey,
 		});
+		// Capability probes answer per actor; the next session must re-probe.
+		queryClient.removeQueries({ queryKey: [CAPABILITIES_KEY] });
 	}
 
 	async function logout(): Promise<void> {
@@ -65,12 +78,22 @@ export function useAuth() {
 		queryClient.setQueryData<Whoami>(whoamiQueryOptions.queryKey, {
 			authenticated: false,
 			roles: [],
+			scopes: [],
 		});
 		await navigate({ to: "/login" });
 		queryClient.clear();
 	}
 
-	return { authenticated, username, userId, roles, isAdmin, login, logout };
+	return {
+		authenticated,
+		username,
+		userId,
+		roles,
+		scopes,
+		isAdmin,
+		login,
+		logout,
+	};
 }
 
 export class AuthError extends Error {

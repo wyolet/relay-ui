@@ -2,10 +2,14 @@ import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
+import { keysListQueryOptions } from "@/api/hooks/keys";
 import { modelsListQueryOptions } from "@/api/hooks/models";
 import { policiesListQueryOptions } from "@/api/hooks/policies";
-import { relayKeysListQueryOptions } from "@/api/hooks/relayKeys";
+import { projectsListQueryOptions } from "@/api/hooks/projects";
+import { serviceAccountsListQueryOptions } from "@/api/hooks/serviceAccounts";
+import { teamsListQueryOptions } from "@/api/hooks/teams";
 import type { UsageGroupBy } from "@/api/hooks/usage";
+import { usersListQueryOptions } from "@/api/hooks/users";
 import { displayLabel } from "@/lib/displayLabel";
 
 type Labelable = { name: string; displayName?: string };
@@ -35,9 +39,27 @@ export function useGroupLabeler(
 		...hostKeysListQueryOptions,
 		enabled: groupBy === "host_key_id",
 	});
-	const relayKeys = useQuery({
-		...relayKeysListQueryOptions,
+	const keys = useQuery({
+		...keysListQueryOptions,
 		enabled: groupBy === "relay_key_hash",
+	});
+	const teams = useQuery({
+		...teamsListQueryOptions,
+		enabled: groupBy === "team_id",
+	});
+	const projects = useQuery({
+		...projectsListQueryOptions,
+		enabled: groupBy === "project_id",
+	});
+	// A principal id is either a service account or a user account, so both
+	// lists are needed to name one.
+	const serviceAccounts = useQuery({
+		...serviceAccountsListQueryOptions,
+		enabled: groupBy === "principal_id",
+	});
+	const users = useQuery({
+		...usersListQueryOptions,
+		enabled: groupBy === "principal_id",
 	});
 
 	return useMemo(() => {
@@ -81,10 +103,31 @@ export function useGroupLabeler(
 			);
 		else if (groupBy === "relay_key_hash")
 			map = index(
-				relayKeys.data?.items,
+				keys.data?.items,
 				(r) => r.spec.keyHash,
 				(r) => r.metadata,
 			);
+		else if (groupBy === "team_id")
+			map = index(
+				teams.data?.items,
+				(r) => r.metadata.id,
+				(r) => r.metadata,
+			);
+		else if (groupBy === "project_id")
+			map = index(
+				projects.data?.items,
+				(r) => r.metadata.id,
+				(r) => r.metadata,
+			);
+		else if (groupBy === "principal_id") {
+			map = index(
+				serviceAccounts.data?.items,
+				(r) => r.metadata.id,
+				(r) => r.metadata,
+			);
+			for (const u of users.data ?? [])
+				map.set(u.id, u.username || u.email || u.id);
+		}
 
 		return (value: string) => map?.get(value) ?? value;
 	}, [
@@ -93,6 +136,10 @@ export function useGroupLabeler(
 		hosts.data,
 		policies.data,
 		hostKeys.data,
-		relayKeys.data,
+		keys.data,
+		teams.data,
+		projects.data,
+		serviceAccounts.data,
+		users.data,
 	]);
 }

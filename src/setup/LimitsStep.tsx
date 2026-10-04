@@ -201,7 +201,7 @@ export function LimitsStep({
 					onClick={handleSubmit}
 					disabled={busy || !canSubmit}
 				>
-					{busy ? "Finishing…" : "Create my relay key"}
+					{busy ? "Finishing…" : "Create my key"}
 				</Button>
 			</div>
 		</div>

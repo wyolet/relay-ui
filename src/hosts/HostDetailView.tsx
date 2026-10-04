@@ -328,7 +328,7 @@ function OverviewTab({
 						sub={
 							refs.userPolicies.length === 0
 								? "unused"
-								: `${refs.totalRelayKeys} relay key${refs.totalRelayKeys === 1 ? "" : "s"}`
+								: `${refs.totalKeys} key${refs.totalKeys === 1 ? "" : "s"}`
 						}
 					/>
 					{host.metadata.id && (
@@ -591,12 +591,12 @@ function UserPoliciesTable({
 					<tr>
 						<Th>Policy</Th>
 						<Th className="text-right">Credentials</Th>
-						<Th className="text-right">Relay keys</Th>
+						<Th className="text-right">API keys</Th>
 						<Th className="text-right">Status</Th>
 					</tr>
 				</thead>
 				<tbody className="divide-y divide-border">
-					{rows.map(({ policy: p, hostKeyCount, relayKeyCount }) => {
+					{rows.map(({ policy: p, hostKeyCount, keyCount }) => {
 						const enabled = p.spec.enabled !== false;
 						return (
 							<tr
@@ -621,12 +621,12 @@ function UserPoliciesTable({
 								<Td className="text-right tabular-nums">
 									<span
 										className={
-											relayKeyCount === 0
+											keyCount === 0
 												? "text-muted-foreground"
 												: "text-foreground"
 										}
 									>
-										{relayKeyCount}
+										{keyCount}
 									</span>
 								</Td>
 								<Td className="text-right">

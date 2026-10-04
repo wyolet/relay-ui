@@ -1,11 +1,11 @@
 import type { Binding } from "@/api/hooks/bindings";
 import type { Host } from "@/api/types/host";
 import type { HostKey } from "@/api/types/hostkey";
+import type { Key } from "@/api/types/key";
 import type { Model } from "@/api/types/model";
 import type { Policy } from "@/api/types/policy";
 import type { Provider } from "@/api/types/provider";
 import type { RateLimit } from "@/api/types/ratelimit";
-import type { RelayKey } from "@/api/types/relayKey";
 import { buildDiagnosticGraph } from "@/diagnostics/buildGraph";
 import type { DiagnosticGraph } from "@/diagnostics/types";
 
@@ -157,13 +157,13 @@ export function makeRateLimit(o: RateLimitOpts = {}): RateLimit {
 	};
 }
 
-interface RelayKeyOpts {
+interface KeyOpts {
 	id?: string;
 	name?: string;
 	policyId: string;
 	enabled?: boolean;
 }
-export function makeRelayKey(o: RelayKeyOpts): RelayKey {
+export function makeKey(o: KeyOpts): Key {
 	return {
 		metadata: {
 			id: o.id ?? "rk-1",
@@ -174,6 +174,7 @@ export function makeRelayKey(o: RelayKeyOpts): RelayKey {
 			enabled: o.enabled ?? true,
 			keyHash: "hash",
 			policyId: o.policyId,
+			principal: { kind: "user", id: "u-1" },
 		},
 	};
 }
@@ -195,7 +196,7 @@ interface GraphOpts {
 	hosts?: Host[];
 	models?: Model[];
 	rateLimits?: RateLimit[];
-	relayKeys?: RelayKey[];
+	keys?: Key[];
 	providers?: Provider[];
 	bindings?: Binding[];
 }
@@ -206,7 +207,7 @@ export function graph(o: GraphOpts = {}): DiagnosticGraph {
 		hosts: o.hosts ?? [],
 		models: o.models ?? [],
 		rateLimits: o.rateLimits ?? [],
-		relayKeys: o.relayKeys ?? [],
+		keys: o.keys ?? [],
 		providers: o.providers ?? [],
 		bindings: o.bindings ?? [],
 	});

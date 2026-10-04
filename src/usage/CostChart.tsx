@@ -1,6 +1,10 @@
 import { Banknote } from "lucide-react";
 import { useCostTimeline } from "@/api/hooks/cost";
-import type { UsageGroupBy, UsageRange } from "@/api/hooks/usage";
+import type {
+	UsageGroupBy,
+	UsageRange,
+	UsageSummaryFilter,
+} from "@/api/hooks/usage";
 import { dimensionLabel, fmtCompact, fmtRange } from "./format";
 import { StackedUsageChart } from "./StackedUsageChart";
 import { UsageEmpty } from "./UsageEmpty";
@@ -16,13 +20,15 @@ export function CostChart({
 	range,
 	from,
 	to,
+	filter,
 }: {
 	groupBy: UsageGroupBy;
 	range: UsageRange;
 	from?: string;
 	to?: string;
+	filter?: UsageSummaryFilter;
 }) {
-	const data = useCostTimeline(groupBy, range, from, to);
+	const data = useCostTimeline(groupBy, range, from, to, filter);
 	const labelFor = useGroupLabeler(groupBy);
 
 	if (data.series.length === 0) {

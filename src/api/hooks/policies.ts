@@ -5,6 +5,7 @@
 import {
 	queryOptions,
 	useMutation,
+	useQuery,
 	useQueryClient,
 	useSuspenseQuery,
 } from "@tanstack/react-query";
@@ -30,6 +31,37 @@ export const policiesListQueryOptions = queryOptions({
 	staleTime: 30_000,
 	gcTime: 5 * 60_000,
 });
+
+/** The project-owned policies. `owner` filters by kind only, so the owning
+ * project is matched here — the one client-side narrowing in this path. */
+export function projectPoliciesQueryOptions(projectId: string) {
+	return queryOptions({
+		queryKey: ["policies", "project", projectId] as const,
+		queryFn: async (): Promise<PolicyListResponse> => {
+			const data = unwrap(
+				await apiClient.GET("/policies", {
+					params: { query: { owner: "project" } },
+				}),
+			);
+			return {
+				...data,
+				items: (data.items ?? []).filter(
+					(p) => p.metadata.owner?.id === projectId,
+				),
+			};
+		},
+		staleTime: 30_000,
+		gcTime: 5 * 60_000,
+	});
+}
+
+/** Non-suspending: the project page renders without its policies. */
+export function useProjectPolicies(projectId: string) {
+	return useQuery({
+		...projectPoliciesQueryOptions(projectId),
+		enabled: projectId.length > 0,
+	});
+}
 
 export function policyDetailQueryOptions(name: string) {
 	return queryOptions({

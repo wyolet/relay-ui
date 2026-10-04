@@ -31,7 +31,7 @@ export const THROTTLED_STATUSES = [429];
 
 /**
  * Rejected (4xx) traffic over the trailing 24h: total volume split into
- * throttled / auth / other buckets, plus the relay keys catching the most
+ * throttled / auth / other buckets, plus the keys catching the most
  * rejections. Three summary calls against the same window — one grouped by
  * key for the leaderboard, two ungrouped slices for the bucket counts.
  * Note a 429 can be relay-issued (our rate limit) or an upstream 429 passed

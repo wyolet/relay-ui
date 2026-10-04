@@ -70,10 +70,10 @@ function DiagnosticActionLink({ link }: { link: DiagLink }) {
 			</Link>
 		);
 	}
-	if (link.to === "/relay-keys/$name" && link.params?.name) {
+	if (link.to === "/keys/$name" && link.params?.name) {
 		return (
 			<Link
-				to="/relay-keys/$name"
+				to="/keys/$name"
 				params={{ name: link.params.name }}
 				className="ml-1 underline underline-offset-2 hover:text-primary"
 			>

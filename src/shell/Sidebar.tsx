@@ -3,12 +3,20 @@ import {
 	Activity,
 	Banknote,
 	BarChart3,
+	Bot,
 	Boxes,
 	KeyRound,
+	KeySquare,
 	LayoutDashboard,
+	Link2,
+	ScrollText,
 	ShieldCheck,
+	UserRound,
+	Users,
+	UsersRound,
 } from "lucide-react";
 import type { ComponentType } from "react";
+import { type Capability, useCapabilities } from "@/api/hooks/capabilities";
 import {
 	SidebarContent,
 	SidebarGroup,
@@ -23,10 +31,29 @@ import {
 import { BrandMark } from "@/shared/BrandMark";
 
 interface NavItem {
-	to: "/" | "/usage" | "/logs" | "/models" | "/keys" | "/policies" | "/pricing";
+	to:
+		| "/"
+		| "/usage"
+		| "/logs"
+		| "/models"
+		| "/keys"
+		| "/policies"
+		| "/pricing"
+		| "/service-accounts"
+		| "/groups"
+		| "/teams"
+		| "/projects"
+		| "/roles"
+		| "/role-bindings"
+		| "/policy-bindings"
+		| "/audit"
+		| "/users";
 	label: string;
 	icon: ComponentType<{ className?: string }>;
 	prefix: string;
+	/** Entry hides when the actor may not list this kind. Observe views have
+	 * none — they degrade to their own empty states instead. */
+	capability?: Capability;
 }
 
 interface NavGroup {
@@ -46,19 +73,106 @@ const NAV_GROUPS: NavGroup[] = [
 	{
 		label: "Configure",
 		items: [
-			{ to: "/models", label: "Models", icon: Boxes, prefix: "/models" },
-			{ to: "/keys", label: "Keys", icon: KeyRound, prefix: "/keys" },
+			{
+				to: "/models",
+				label: "Models",
+				icon: Boxes,
+				prefix: "/models",
+				capability: "models",
+			},
+			{
+				to: "/keys",
+				label: "Keys",
+				icon: KeyRound,
+				prefix: "/keys",
+				capability: "keys",
+			},
 			{
 				to: "/policies",
 				label: "Policies",
 				icon: ShieldCheck,
 				prefix: "/policies",
+				capability: "policies",
 			},
 			{
 				to: "/pricing",
 				label: "Pricing",
 				icon: Banknote,
 				prefix: "/pricing",
+				capability: "pricings",
+			},
+		],
+	},
+	{
+		label: "Identity",
+		items: [
+			{
+				to: "/teams",
+				label: "Teams",
+				icon: Users,
+				prefix: "/teams",
+				capability: "teams",
+			},
+			{
+				to: "/projects",
+				label: "Projects",
+				icon: Boxes,
+				prefix: "/projects",
+				capability: "projects",
+			},
+			{
+				to: "/service-accounts",
+				label: "Service accounts",
+				icon: Bot,
+				prefix: "/service-accounts",
+				capability: "service-accounts",
+			},
+			{
+				to: "/groups",
+				label: "Groups",
+				icon: UsersRound,
+				prefix: "/groups",
+				capability: "groups",
+			},
+		],
+	},
+	{
+		label: "Access",
+		items: [
+			{
+				to: "/roles",
+				label: "Roles",
+				icon: ShieldCheck,
+				prefix: "/roles",
+				capability: "roles",
+			},
+			{
+				to: "/role-bindings",
+				label: "Role bindings",
+				icon: KeySquare,
+				prefix: "/role-bindings",
+				capability: "role-bindings",
+			},
+			{
+				to: "/policy-bindings",
+				label: "Policy bindings",
+				icon: Link2,
+				prefix: "/policy-bindings",
+				capability: "policy-bindings",
+			},
+			{
+				to: "/users",
+				label: "Users",
+				icon: UserRound,
+				prefix: "/users",
+				capability: "users",
+			},
+			{
+				to: "/audit",
+				label: "Audit",
+				icon: ScrollText,
+				prefix: "/audit",
+				capability: "audit",
 			},
 		],
 	},
@@ -89,6 +203,9 @@ function NavMenuItem({ item, active }: { item: NavItem; active: boolean }) {
 
 export function Sidebar() {
 	const path = useRouterState({ select: (s) => s.location.pathname });
+	const capabilities = useCapabilities();
+	const visible = (item: NavItem) =>
+		!item.capability || capabilities[item.capability];
 
 	return (
 		<SidebarRoot collapsible="icon">
@@ -111,7 +228,7 @@ export function Sidebar() {
 					<SidebarGroup key={group.label}>
 						<SidebarGroupLabel>{group.label}</SidebarGroupLabel>
 						<SidebarMenu>
-							{group.items.map((item) => (
+							{group.items.filter(visible).map((item) => (
 								<NavMenuItem
 									key={item.to}
 									item={item}

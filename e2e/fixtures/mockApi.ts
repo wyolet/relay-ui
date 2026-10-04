@@ -11,7 +11,7 @@ export interface MockGraph {
 	hosts: unknown[];
 	models: unknown[];
 	rateLimits: unknown[];
-	relayKeys: unknown[];
+	keys: unknown[];
 	providers: unknown[];
 	proxyMode?: { value: { enabled: boolean; allowUnauthenticated: boolean } };
 }
@@ -22,7 +22,7 @@ export const EMPTY_GRAPH: MockGraph = {
 	hosts: [],
 	models: [],
 	rateLimits: [],
-	relayKeys: [],
+	keys: [],
 	providers: [],
 	proxyMode: { value: { enabled: false, allowUnauthenticated: false } },
 };
@@ -71,8 +71,8 @@ export async function mockApi(page: Page, graph: MockGraph): Promise<void> {
 		detailHandler(graph.rateLimits as { metadata: { name: string } }[]),
 	);
 	await page.route(
-		"**/relay-keys/*",
-		detailHandler(graph.relayKeys as { metadata: { name: string } }[]),
+		"**/keys/*",
+		detailHandler(graph.keys as { metadata: { name: string } }[]),
 	);
 	await page.route(
 		"**/models/*",
@@ -100,8 +100,8 @@ export async function mockApi(page: Page, graph: MockGraph): Promise<void> {
 		(route) => void fulfillJson(route, { items: graph.rateLimits }),
 	);
 	await page.route(
-		"**/relay-keys",
-		(route) => void fulfillJson(route, { items: graph.relayKeys }),
+		"**/keys",
+		(route) => void fulfillJson(route, { items: graph.keys }),
 	);
 	await page.route(
 		"**/providers",

@@ -230,7 +230,7 @@ function PoliciesPanel({
 						<tr>
 							<Th>Policy</Th>
 							<Th className="text-right">Pool</Th>
-							<Th className="text-right">Relay keys</Th>
+							<Th className="text-right">API keys</Th>
 							<Th className="text-right">Status</Th>
 							<Th className="text-right">Action</Th>
 						</tr>
@@ -272,12 +272,12 @@ function PoliciesPanel({
 								<Td className="text-right tabular-nums">
 									<span
 										className={
-											row.relayKeyCount === 0
+											row.keyCount === 0
 												? "text-muted-foreground"
 												: "text-foreground"
 										}
 									>
-										{row.relayKeyCount}
+										{row.keyCount}
 									</span>
 								</Td>
 								<Td className="text-right">

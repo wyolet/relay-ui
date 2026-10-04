@@ -1,5 +1,9 @@
 import { Gauge } from "lucide-react";
-import { type UsageWindow, useLatencyProfile } from "@/api/hooks/usage";
+import {
+	type UsageSummaryFilter,
+	type UsageWindow,
+	useLatencyProfile,
+} from "@/api/hooks/usage";
 import type { LatencyRungLabel } from "@/lib/usage-math/latency";
 import { fmtCompact, fmtMs } from "./format";
 import { UsageEmpty } from "./UsageEmpty";
@@ -20,11 +24,17 @@ const RUNG_HINTS: Record<LatencyRungLabel, string> = {
 };
 
 /**
- * Whole-relay latency distribution for the selected window: p50/p95/p99/max
+ * Latency distribution for the selected window (and slice): p50/p95/p99/max
  * as a percentile ladder. Shows the tail pain the "Avg latency" KPI hides.
  */
-export function LatencyProfileCard({ win }: { win: UsageWindow }) {
-	const profile = useLatencyProfile(win);
+export function LatencyProfileCard({
+	win,
+	filter,
+}: {
+	win: UsageWindow;
+	filter?: UsageSummaryFilter;
+}) {
+	const profile = useLatencyProfile(win, filter);
 
 	if (!profile) {
 		return (

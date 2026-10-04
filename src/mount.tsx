@@ -28,6 +28,7 @@ export function mountApp(): void {
 				queryClient.setQueryData(whoamiQueryOptions.queryKey, {
 					authenticated: false,
 					roles: [],
+					scopes: [],
 				});
 				void router.navigate({ to: "/login" });
 			},

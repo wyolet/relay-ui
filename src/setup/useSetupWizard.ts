@@ -1,15 +1,16 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
+import { useAuth } from "@/api/auth";
 import { useCatalogGraph } from "@/api/hooks/catalog";
 import { useCreateHostKey } from "@/api/hooks/hostkeys";
 import { useHosts, useUpdateHost } from "@/api/hooks/hosts";
+import { useCreateKey } from "@/api/hooks/keys";
 import {
 	useCreatePolicy,
 	usePolicies,
 	useUpdatePolicy,
 } from "@/api/hooks/policies";
 import { useCreateRateLimit } from "@/api/hooks/ratelimits";
-import { useCreateRelayKey } from "@/api/hooks/relayKeys";
 import { ApiError } from "@/api/types/errors";
 import type { Host } from "@/api/types/host";
 import type { Policy, PolicyCreate } from "@/api/types/policy";
@@ -55,7 +56,7 @@ export interface ProviderCard {
 	available: boolean;
 }
 
-export interface CreatedRelayKey {
+export interface CreatedKey {
 	plaintext: string;
 	displayName: string;
 }
@@ -100,9 +101,9 @@ export function useSetupWizard() {
 	const [providerId, setProviderId] = useState<ProviderId | null>(null);
 	const [hostKeyId, setHostKeyId] = useState<string>("");
 	// Carried across "add another provider" so later host keys join the same
-	// policy and reuse the already-issued relay key.
+	// policy and reuse the already-issued key.
 	const [policy, setPolicy] = useState<Policy | null>(null);
-	const [relayKey, setRelayKey] = useState<CreatedRelayKey | null>(null);
+	const [apiKey, setApiKey] = useState<CreatedKey | null>(null);
 	const [sampleModels, setSampleModels] = useState<SampleModel[]>([]);
 	const [busy, setBusy] = useState(false);
 	const [error, setError] = useState<string | null>(null);
@@ -194,7 +195,8 @@ export function useSetupWizard() {
 	const createPolicy = useCreatePolicy();
 	const updatePolicy = useUpdatePolicy();
 	const createRateLimit = useCreateRateLimit();
-	const createRelayKey = useCreateRelayKey();
+	const createKey = useCreateKey();
+	const { userId } = useAuth();
 
 	// --- step actions -----------------------------------------------------
 
@@ -262,7 +264,7 @@ export function useSetupWizard() {
 
 			setSampleModels(sampleModelsForHost(selectedHost.metadata.id));
 
-			// "Add another provider" path: a policy + relay key already exist, so
+			// "Add another provider" path: a policy + key already exist, so
 			// just widen the policy — by host key when keyed, by host grant when not.
 			if (policy) {
 				const grant = newHostKeyId
@@ -349,15 +351,21 @@ export function useSetupWizard() {
 			const createdPolicy = await createPolicy.mutateAsync(body);
 			setPolicy(createdPolicy);
 
-			const rk = await createRelayKey.mutateAsync({
+			const rk = await createKey.mutateAsync({
 				metadata: {
-					name: slugWithSuffix("first relay key"),
-					displayName: "First relay key",
+					name: slugWithSuffix("first key"),
+					displayName: "First key",
 				},
-				spec: { policyId: createdPolicy.metadata.id, enabled: true },
+				spec: {
+					// The wizard runs as the signed-in operator, so the first key is
+					// theirs — no service account exists yet.
+					principal: { kind: "user", id: userId ?? "" },
+					policyId: createdPolicy.metadata.id,
+					enabled: true,
+				},
 			});
-			setRelayKey({ plaintext: rk.plaintext, displayName: "First relay key" });
-			toast("success", "Relay key created — you're ready to go.");
+			setApiKey({ plaintext: rk.plaintext, displayName: "First key" });
+			toast("success", "Key created — you're ready to go.");
 			setStep("done");
 		} catch (err) {
 			const msg = errMessage(err, "Failed to finish setup.");
@@ -389,9 +397,9 @@ export function useSetupWizard() {
 		selectedHost,
 		selectedModelCount,
 		sampleModels,
-		relayKey,
+		apiKey,
 		// derived: have we already issued a key (reuse mode)?
-		hasIssuedKey: relayKey !== null,
+		hasIssuedKey: apiKey !== null,
 		policyName: policy ? displayLabel(policy.metadata) : "",
 		selectProvider,
 		backToProviders,

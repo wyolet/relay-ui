@@ -26,7 +26,7 @@ import { DiagnosticList } from "@/diagnostics/DiagnosticList";
 import { useDiagnosticGraph } from "@/diagnostics/useDiagnostics";
 import { ModelPicker } from "@/models/ModelPicker";
 import { IncludeDeprecatedSwitch } from "@/policies/IncludeDeprecatedSwitch";
-import { PolicyAttachedRelayKeys } from "@/policies/PolicyAttachedRelayKeys";
+import { PolicyAttachedKeys } from "@/policies/PolicyAttachedKeys";
 import { PolicyHostRequirements } from "@/policies/PolicyHostRequirements";
 import { PolicyRLPicker } from "@/policies/PolicyRLPicker";
 import { policyFromFormValues, usePolicyForm } from "@/policies/usePolicyForm";
@@ -173,7 +173,7 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 						value={values.payloadLoggingEnabled}
 						onChange={(v) => form.setFieldValue("payloadLoggingEnabled", v)}
 						label="Capture request & response payloads"
-						hint="Logs bodies for this policy's traffic (visible under Logs), overriding the per-relay-key setting. A global default can override this in turn."
+						hint="Logs bodies for this policy's traffic (visible under Logs), overriding the per-key setting. A global default can override this in turn."
 					/>
 				</Section>
 
@@ -193,10 +193,10 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 				{policy && (
 					<Section
 						icon={ShieldCheck}
-						title="Relay keys"
-						description="Relay keys that resolve to this policy. Use Reassign to move a key to a different policy."
+						title="API keys"
+						description="API keys that resolve to this policy. Use Reassign to move a key to a different policy."
 					>
-						<PolicyAttachedRelayKeys policy={policy} />
+						<PolicyAttachedKeys policy={policy} />
 					</Section>
 				)}
 			</div>

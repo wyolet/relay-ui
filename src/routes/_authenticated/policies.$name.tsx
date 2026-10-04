@@ -5,6 +5,7 @@ import { bindingsListQueryOptions } from "@/api/hooks/bindings";
 import { governanceQueryOptions } from "@/api/hooks/governance";
 import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
+import { keysListQueryOptions } from "@/api/hooks/keys";
 import { modelsListQueryOptions } from "@/api/hooks/models";
 import {
 	policyDetailQueryOptions,
@@ -17,7 +18,6 @@ import {
 } from "@/api/hooks/policies";
 import { providersListQueryOptions } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
-import { relayKeysListQueryOptions } from "@/api/hooks/relayKeys";
 import { ApiError } from "@/api/types/errors";
 import { displayLabel } from "@/lib/displayLabel";
 import {
@@ -50,7 +50,7 @@ export const Route = createFileRoute("/_authenticated/policies/$name")({
 		void queryClient.prefetchQuery(providersListQueryOptions);
 		void queryClient.prefetchQuery(modelsListQueryOptions);
 		void queryClient.prefetchQuery(rateLimitsListQueryOptions);
-		void queryClient.prefetchQuery(relayKeysListQueryOptions);
+		void queryClient.prefetchQuery(keysListQueryOptions);
 		return Promise.all([
 			queryClient.ensureQueryData(policyDetailQueryOptions(params.name)),
 			queryClient.ensureQueryData(governanceQueryOptions("policy")),
@@ -71,7 +71,7 @@ function PolicyDetailInner() {
 		const ok = await confirm({
 			title: `Delete policy ${name}?`,
 			description:
-				"Relay keys using this policy will lose access until reattached.",
+				"API keys using this policy will lose access until reattached.",
 			confirmLabel: "Delete",
 			danger: true,
 		});

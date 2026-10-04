@@ -16,7 +16,7 @@ import {
 
 /**
  * The dashboard's lead block: what needs an operator's attention over the
- * trailing 24h — rejected (4xx) traffic split by kind and relay key, host
+ * trailing 24h — rejected (4xx) traffic split by kind and key, host
  * keys with a tripped circuit breaker, and hosts with elevated error rates.
  * Quiet when everything is fine; control-plane health only surfaces when
  * degraded.

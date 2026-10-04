@@ -204,7 +204,7 @@ export function ModelPicker({
 							</div>
 							<div className="text-[10px] text-muted-foreground">
 								{restricted
-									? "Pick what relay keys may call."
+									? "Pick what keys may call."
 									: "Every provider, model, and host."}
 							</div>
 						</div>

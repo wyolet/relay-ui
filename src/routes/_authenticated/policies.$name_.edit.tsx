@@ -5,6 +5,7 @@ import { bindingsListQueryOptions } from "@/api/hooks/bindings";
 import { governanceQueryOptions, useGovernance } from "@/api/hooks/governance";
 import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
+import { keysListQueryOptions } from "@/api/hooks/keys";
 import { modelsListQueryOptions } from "@/api/hooks/models";
 import {
 	policiesListQueryOptions,
@@ -13,7 +14,6 @@ import {
 } from "@/api/hooks/policies";
 import { providersListQueryOptions } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
-import { relayKeysListQueryOptions } from "@/api/hooks/relayKeys";
 import { displayLabel } from "@/lib/displayLabel";
 import { resolveMutability } from "@/lib/ownership";
 import { PolicyForm } from "@/policies/PolicyForm";
@@ -30,7 +30,7 @@ export const Route = createFileRoute("/_authenticated/policies/$name_/edit")({
 		void queryClient.prefetchQuery(providersListQueryOptions);
 		void queryClient.prefetchQuery(modelsListQueryOptions);
 		void queryClient.prefetchQuery(rateLimitsListQueryOptions);
-		void queryClient.prefetchQuery(relayKeysListQueryOptions);
+		void queryClient.prefetchQuery(keysListQueryOptions);
 		void queryClient.prefetchQuery(policiesListQueryOptions);
 		void queryClient.prefetchQuery(bindingsListQueryOptions);
 		return Promise.all([

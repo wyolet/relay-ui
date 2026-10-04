@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import {
 	type UsageGroupBy,
 	type UsageGroupStat,
+	type UsageSummaryFilter,
 	type UsageWindow,
 	useUsageOverview,
 } from "@/api/hooks/usage";
@@ -27,13 +28,16 @@ export function UsageTopGroups({
 	groupBy,
 	limit,
 	win,
+	filter,
 }: {
 	groupBy: UsageGroupBy;
 	limit?: number;
 	/** Window to rank within; omit for the server's default window. */
 	win?: UsageWindow;
+	/** Server-side slice to rank within (the explorer's scope filters). */
+	filter?: UsageSummaryFilter;
 }) {
-	const { groups } = useUsageOverview(groupBy, win);
+	const { groups } = useUsageOverview(groupBy, win, filter);
 	const labelFor = useGroupLabeler(groupBy);
 	const logoFor = useGroupLogo(groupBy, 24);
 

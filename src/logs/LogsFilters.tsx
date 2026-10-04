@@ -1,21 +1,18 @@
-import { Check, ChevronDown, ListFilter, Search } from "lucide-react";
+import { ChevronDown, ListFilter, Search } from "lucide-react";
 import { useState } from "react";
-import { buttonVariants } from "@/components/ui/button";
 import {
 	fieldFocusWithinClassName,
 	fieldFrameClassName,
 } from "@/components/ui/field-focus";
-import {
-	Popover,
-	PopoverContent,
-	PopoverTrigger,
-} from "@/components/ui/popover";
 import type { FilterOption } from "@/filters/types";
 import { cn } from "@/lib/utils";
 import { Chip } from "@/shared/Chip";
 import { FilterDropdown } from "@/shared/FilterDropdown";
-import { OptionRow } from "@/shared/OptionRow";
-import { SearchBox } from "@/shared/SearchBox";
+import {
+	CountBadge,
+	filterTriggerClassName,
+	MultiSelect,
+} from "@/shared/MultiSelect";
 import {
 	LOG_DIMENSIONS,
 	type LogDimensionKey,
@@ -24,14 +21,6 @@ import {
 	type StatusClass,
 	WINDOW_OPTIONS,
 } from "./logFilterConfig";
-
-/** Shared trigger style for every filter control so they line up identically. */
-// Toolbar trigger chrome = the Button outline recipe, so filter controls and
-// buttons can never drift apart again.
-const TRIGGER = cn(
-	buttonVariants({ variant: "outline" }),
-	"data-[popup-open]:bg-muted",
-);
 
 export interface LogsFilterValues {
 	q: string;
@@ -165,7 +154,7 @@ export function LogsFilters({
 					type="button"
 					onClick={() => setOpen((o) => !o)}
 					aria-expanded={open}
-					className={cn(TRIGGER, open && "bg-muted")}
+					className={cn(filterTriggerClassName, open && "bg-muted")}
 				>
 					<ListFilter className="size-3.5" aria-hidden="true" />
 					Filters
@@ -200,7 +189,7 @@ export function LogsFilters({
 						onToggle={() => onChange({ slow: !values.slow })}
 					/>
 					{LOG_DIMENSIONS.map((dim) => (
-						<MultiSelectPopover
+						<MultiSelect
 							key={dim.key}
 							label={dim.label}
 							options={options[dim.key]}
@@ -223,14 +212,6 @@ export function LogsFilters({
 	);
 }
 
-function CountBadge({ n }: { n: number }) {
-	return (
-		<span className="inline-flex min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-medium text-primary-foreground tabular-nums">
-			{n}
-		</span>
-	);
-}
-
 function ToggleButton({
 	label,
 	pressed,
@@ -246,7 +227,7 @@ function ToggleButton({
 			aria-pressed={pressed}
 			onClick={onToggle}
 			className={cn(
-				TRIGGER,
+				filterTriggerClassName,
 				pressed && "border-primary/60 bg-primary/10 text-foreground",
 			)}
 		>
@@ -257,107 +238,4 @@ function ToggleButton({
 
 function labelFor(options: FilterOption[], value: string): string {
 	return options.find((o) => o.value === value)?.label ?? value;
-}
-
-function MultiSelectPopover({
-	label,
-	options,
-	selected,
-	onToggle,
-}: {
-	label: string;
-	options: FilterOption[];
-	selected: string[];
-	onToggle: (value: string) => void;
-}) {
-	return (
-		<Popover>
-			<PopoverTrigger className={TRIGGER}>
-				{label}
-				{selected.length > 0 && <CountBadge n={selected.length} />}
-				<ChevronDown
-					className="size-3.5 text-muted-foreground"
-					aria-hidden="true"
-				/>
-			</PopoverTrigger>
-			<PopoverContent align="start" className="w-64 p-2">
-				<MultiCheckList
-					options={options}
-					selected={selected}
-					onToggle={onToggle}
-					emptyLabel={label.toLowerCase()}
-				/>
-			</PopoverContent>
-		</Popover>
-	);
-}
-
-function MultiCheckList({
-	options,
-	selected,
-	onToggle,
-	emptyLabel,
-}: {
-	options: FilterOption[];
-	selected: string[];
-	onToggle: (value: string) => void;
-	emptyLabel: string;
-}) {
-	const [needle, setNeedle] = useState("");
-
-	if (options.length === 0) {
-		return (
-			<p className="text-xs text-muted-foreground">
-				No {emptyLabel} available.
-			</p>
-		);
-	}
-
-	const filtered = needle
-		? options.filter((o) =>
-				o.label.toLowerCase().includes(needle.toLowerCase()),
-			)
-		: options;
-
-	return (
-		<div className="flex flex-col gap-2">
-			{options.length > 8 && (
-				<SearchBox
-					value={needle}
-					onChange={setNeedle}
-					debounceMs={0}
-					hotkey={false}
-					placeholder="Filter…"
-					aria-label={`Filter ${emptyLabel}`}
-				/>
-			)}
-			<ul className="max-h-48 overflow-y-auto">
-				{filtered.map((o) => {
-					const checked = selected.includes(o.value);
-					return (
-						<li key={o.value}>
-							<OptionRow
-								aria-pressed={checked}
-								onClick={() => onToggle(o.value)}
-								className="gap-2 rounded-md px-1 py-1.5 text-xs text-foreground hover:bg-muted/50"
-							>
-								<span
-									className={cn(
-										"flex size-4 shrink-0 items-center justify-center rounded-[4px] border",
-										checked
-											? "border-primary bg-primary text-primary-foreground"
-											: "border-input",
-									)}
-									aria-hidden="true"
-								>
-									{checked && <Check className="size-3" />}
-								</span>
-								<span className="min-w-0 truncate">{o.label}</span>
-							</OptionRow>
-						</li>
-					);
-				})}
-			</ul>
-		</div>
-	);
 }

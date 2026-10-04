@@ -6,11 +6,11 @@ import {
 	hostKeysListQueryOptions,
 } from "@/api/hooks/hostkeys";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
+import { keysListQueryOptions } from "@/api/hooks/keys";
 import { modelsListQueryOptions } from "@/api/hooks/models";
 import { policiesListQueryOptions } from "@/api/hooks/policies";
 import { providersListQueryOptions } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
-import { relayKeysListQueryOptions } from "@/api/hooks/relayKeys";
 import { HostKeyDetailView } from "@/host-keys/HostKeyDetailView";
 import { PageLoader } from "@/shared/Spinner";
 
@@ -26,7 +26,7 @@ export const Route = createFileRoute("/_authenticated/host-keys/$name")({
 			queryClient.ensureQueryData(hostKeyDetailQueryOptions(params.name)),
 			queryClient.ensureQueryData(hostsListQueryOptions),
 			queryClient.ensureQueryData(policiesListQueryOptions),
-			queryClient.ensureQueryData(relayKeysListQueryOptions),
+			queryClient.ensureQueryData(keysListQueryOptions),
 		]);
 	},
 	component: HostKeyDetailPage,

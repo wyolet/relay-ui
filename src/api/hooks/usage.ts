@@ -1,12 +1,13 @@
 import {
 	queryOptions,
+	useQuery,
 	useSuspenseQueries,
 	useSuspenseQuery,
 } from "@tanstack/react-query";
 import { apiClient } from "@/api/client";
 import type { components, operations } from "@/api/types.gen";
 import { unwrap } from "@/api/unwrap";
-import { type CostTotal, costTotal } from "@/lib/usage-math/cost";
+import { type CostTotal, costTotal, sumCostRows } from "@/lib/usage-math/cost";
 import { compareValue, type DeltaResult } from "@/lib/usage-math/delta";
 import { type LatencyRung, latencyLadder } from "@/lib/usage-math/latency";
 import {
@@ -50,6 +51,9 @@ export const USAGE_GROUP_BY = [
 	"policy_id",
 	"relay_key_hash",
 	"host_key_id",
+	"team_id",
+	"project_id",
+	"principal_id",
 	"extras.instance",
 ] as const;
 export type UsageGroupBy = (typeof USAGE_GROUP_BY)[number];
@@ -77,6 +81,9 @@ export type UsageSummaryFilter = Pick<
 	| "policy_id"
 	| "relay_key_hash"
 	| "host_key_id"
+	| "team_id"
+	| "project_id"
+	| "principal_id"
 >;
 
 export function usageSummaryQueryOptions(
@@ -114,7 +121,7 @@ export function usageSummaryQueryOptions(
 // --- Per-resource usage (scoped /usage/summary) ---
 
 /** A resource whose usage we can scope by id via the matching filter param.
- * relay_key_hash scopes by the key's hash (RelayKeySpec.keyHash). */
+ * relay_key_hash scopes by the key's hash (KeySpec.keyHash). */
 export type ResourceUsageDimension =
 	| "host_id"
 	| "model_id"
@@ -342,14 +349,24 @@ export interface StackedTimeline {
 export function stackedTimeseriesQueryOptions(
 	groupBy: UsageGroupBy,
 	win: ResolvedWindow,
+	filter?: UsageSummaryFilter,
 ) {
 	return queryOptions({
-		queryKey: ["usage", "stacked", groupBy, win.from, win.to, win.interval],
+		queryKey: [
+			"usage",
+			"stacked",
+			groupBy,
+			win.from,
+			win.to,
+			win.interval,
+			filter ?? {},
+		],
 		queryFn: async (): Promise<UsageTimeSeriesResult> => {
 			const data = unwrap(
 				await apiClient.GET("/usage/timeseries", {
 					params: {
 						query: {
+							...filter,
 							group_by: groupBy,
 							from: win.from,
 							to: win.to,
@@ -397,11 +414,12 @@ export function useStackedTimeline(
 	metric: StackableMetric,
 	customFrom?: string,
 	customTo?: string,
+	filter?: UsageSummaryFilter,
 ): StackedTimeline {
 	// Window resolution (quantized → stable key) lives here, not in the route.
 	const win = resolveWindow(range, customFrom, customTo);
 	const { data } = useSuspenseQuery(
-		stackedTimeseriesQueryOptions(groupBy, win),
+		stackedTimeseriesQueryOptions(groupBy, win, filter),
 	);
 	const { points, series } = deriveStacked(
 		data.rows,
@@ -555,8 +573,14 @@ function sumTokens(tokens: { [key: string]: number } | undefined): number {
  * Overview for the dashboard: KPIs + a ranked leaderboard for one dimension,
  * derived from the same summary query the detail table uses.
  */
-export function useUsageOverview(groupBy: UsageGroupBy, win?: UsageWindow) {
-	const { data } = useSuspenseQuery(usageSummaryQueryOptions(groupBy, win));
+export function useUsageOverview(
+	groupBy: UsageGroupBy,
+	win?: UsageWindow,
+	filter?: UsageSummaryFilter,
+) {
+	const { data } = useSuspenseQuery(
+		usageSummaryQueryOptions(groupBy, win, filter),
+	);
 	const rows = data.rows ?? [];
 	return {
 		from: data.from,
@@ -596,12 +620,13 @@ export interface UsageKpiDeltas {
 export function useUsageOverviewWithDeltas(
 	groupBy: UsageGroupBy,
 	win: UsageWindow,
+	filter?: UsageSummaryFilter,
 ) {
 	const { previous } = usageComparisonWindows(win);
 	const [current, prior] = useSuspenseQueries({
 		queries: [
-			usageSummaryQueryOptions(groupBy, win),
-			usageSummaryQueryOptions(groupBy, previous),
+			usageSummaryQueryOptions(groupBy, win, filter),
+			usageSummaryQueryOptions(groupBy, previous, filter),
 		],
 	});
 	const rows = current.data.rows ?? [];
@@ -632,13 +657,16 @@ export function useUsageOverviewWithDeltas(
  * This is the only honest source for whole-relay latency percentiles —
  * per-group percentiles cannot be merged after the fact.
  */
-export function usageTotalsQueryOptions(win: UsageWindow) {
+export function usageTotalsQueryOptions(
+	win: UsageWindow,
+	filter?: UsageSummaryFilter,
+) {
 	return queryOptions({
-		queryKey: ["usage", "totals", win.from, win.to] as const,
+		queryKey: ["usage", "totals", win.from, win.to, filter ?? {}] as const,
 		queryFn: async (): Promise<UsageSummaryResult> => {
 			const data = unwrap(
 				await apiClient.GET("/usage/summary", {
-					params: { query: { from: win.from, to: win.to } },
+					params: { query: { ...filter, from: win.from, to: win.to } },
 				}),
 			);
 			return data;
@@ -656,8 +684,11 @@ export interface LatencyProfile {
 	requests: number;
 }
 
-export function useLatencyProfile(win: UsageWindow): LatencyProfile | null {
-	const { data } = useSuspenseQuery(usageTotalsQueryOptions(win));
+export function useLatencyProfile(
+	win: UsageWindow,
+	filter?: UsageSummaryFilter,
+): LatencyProfile | null {
+	const { data } = useSuspenseQuery(usageTotalsQueryOptions(win, filter));
 	const row = (data.rows ?? [])[0];
 	if (!row || row.requests === 0) return null;
 	return {
@@ -675,8 +706,11 @@ export function useLatencyProfile(win: UsageWindow): LatencyProfile | null {
 export function useTokenSplit(
 	groupBy: UsageGroupBy,
 	win: UsageWindow,
+	filter?: UsageSummaryFilter,
 ): TokenSplit {
-	const { data } = useSuspenseQuery(usageSummaryQueryOptions(groupBy, win));
+	const { data } = useSuspenseQuery(
+		usageSummaryQueryOptions(groupBy, win, filter),
+	);
 	return splitTokens(mergeMeters((data.rows ?? []).map((r) => r.tokens)));
 }
 
@@ -786,5 +820,120 @@ export function useResourceTimeline(
 		to: data.to,
 		interval,
 		points: deriveTimeline(data.rows, data.from, data.to, interval),
+	};
+}
+
+// --- Tenancy-scope spend (team / project) ---
+
+/** A tenancy scope the summary endpoint can filter by id. */
+export type UsageScopeDimension = "team_id" | "project_id";
+
+/** One group's slice of a scope's spend (a project inside a team, a source
+ * inside a project — whichever dimension the caller grouped by). */
+export interface ScopeSpendRow {
+	key: string;
+	requests: number;
+	cost: CostTotal;
+}
+
+export interface ScopeSpend {
+	total: CostTotal;
+	requests: number;
+	tokens: number;
+	rows: ScopeSpendRow[];
+	from: string;
+	to: string;
+}
+
+export function scopeSpendQueryOptions(
+	dimension: UsageScopeDimension,
+	id: string,
+	groupBy: string,
+	win: UsageWindow,
+) {
+	return queryOptions({
+		queryKey: ["usage", "scope", dimension, id, groupBy, win.from, win.to],
+		queryFn: async (): Promise<UsageSummaryResult> => {
+			const query: UsageSummaryQuery = {
+				group_by: groupBy,
+				from: win.from,
+				to: win.to,
+			};
+			query[dimension] = [id];
+			const data = unwrap(
+				await apiClient.GET("/usage/summary", { params: { query } }),
+			);
+			return data;
+		},
+		staleTime: 15_000,
+		gcTime: 5 * 60_000,
+	});
+}
+
+/**
+ * Spend for one team/project over a window. Non-suspending and never
+ * retried: a deployment with no usage reader configured answers with an
+ * error, and the caller hides its tiles rather than failing the page.
+ */
+export function useScopeSpend(
+	dimension: UsageScopeDimension,
+	id: string,
+	groupBy: string,
+	win: UsageWindow,
+): { spend: ScopeSpend | null; unavailable: boolean } {
+	const { data, isError } = useQuery({
+		...scopeSpendQueryOptions(dimension, id, groupBy, win),
+		enabled: id.length > 0,
+		retry: false,
+	});
+	return { ...deriveScopeSpend(data, groupBy), unavailable: isError };
+}
+
+/**
+ * The same breakdown for an arbitrary slice of the stream — how a scoped
+ * home totals every project the actor can see in one call. Shares the
+ * summary cache entry with the rest of the page.
+ */
+export function useFilteredSpend(
+	groupBy: UsageGroupBy,
+	win: UsageWindow,
+	filter: UsageSummaryFilter,
+	enabled = true,
+): { spend: ScopeSpend | null; unavailable: boolean } {
+	const { data, isError } = useQuery({
+		...usageSummaryQueryOptions(groupBy, win, filter),
+		enabled,
+		retry: false,
+	});
+	return { ...deriveScopeSpend(data, groupBy), unavailable: isError };
+}
+
+function deriveScopeSpend(
+	data: UsageSummaryResult | undefined,
+	groupBy: string,
+): { spend: ScopeSpend | null } {
+	if (!data) return { spend: null };
+	const rows = data.rows ?? [];
+	let requests = 0;
+	let tokens = 0;
+	for (const r of rows) {
+		requests += r.requests;
+		tokens += sumTokens(r.tokens);
+	}
+	return {
+		spend: {
+			total: sumCostRows(rows),
+			requests,
+			tokens,
+			rows: rows
+				.map((r) => ({
+					key: r.group[groupBy] ?? "",
+					requests: r.requests,
+					cost: costTotal(r.cost_nanos, r.unpriced, r.requests),
+				}))
+				.sort((a, b) => (b.cost.usd ?? 0) - (a.cost.usd ?? 0)),
+			from: data.from,
+			to: data.to,
+		},
 	};
 }
