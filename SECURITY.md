@@ -40,11 +40,14 @@ advisories.
 
 ## Verifying releases
 
-Each release tarball carries a build provenance attestation from this
-repository's release workflow:
+Each release tarball carries a build provenance attestation and a signed
+CycloneDX SBOM of its runtime dependencies (`relay-ui-vX.Y.Z.cdx.json`, also a
+release asset), both from this repository's release workflow:
 
 ```sh
 gh attestation verify relay-ui-vX.Y.Z.tar.gz --repo wyolet/relay-ui
+gh attestation verify relay-ui-vX.Y.Z.tar.gz --repo wyolet/relay-ui \
+  --predicate-type https://cyclonedx.org/bom
 ```
 
 ## Disclosure

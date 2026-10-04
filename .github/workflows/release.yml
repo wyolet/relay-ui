@@ -57,6 +57,16 @@ jobs:
           tar -czf "out/relay-ui-${GITHUB_REF_NAME}.tar.gz" -C dist .
           cp "out/relay-ui-${GITHUB_REF_NAME}.tar.gz" out/relay-ui-latest.tar.gz
 
+      # Runtime dependencies only. cdxgen reads node_modules when present, which
+      # mislabels dev tooling, so it sees just the manifest and lockfile.
+      - name: SBOM
+        run: |
+          mkdir sbom-src
+          cp package.json bun.lock sbom-src/
+          npx --yes @cyclonedx/cdxgen@12.8.5 -t js --required-only \
+            --no-install-deps --no-recurse \
+            -o "out/relay-ui-${GITHUB_REF_NAME}.cdx.json" sbom-src
+
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: tarballs
@@ -81,6 +91,7 @@ jobs:
           sha256sum "${TARBALL}" > "${TARBALL}.sha256"
           sha256sum relay-ui-latest.tar.gz > relay-ui-latest.tar.gz.sha256
           echo "TARBALL=${TARBALL}" >> "$GITHUB_ENV"
+          echo "SBOM=relay-ui-${GITHUB_REF_NAME}.cdx.json" >> "$GITHUB_ENV"
           {
             echo "## relay-ui ${GITHUB_REF_NAME}"
             echo
@@ -90,9 +101,16 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       # Consumers verify with: gh attestation verify <tarball> --repo wyolet/relay-ui
-      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+      - name: Attest build provenance
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-path: ${{ env.TARBALL }}
+
+      - name: Attest SBOM
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: ${{ env.TARBALL }}
+          sbom-path: ${{ env.SBOM }}
 
       - name: Create GitHub release
         env:
@@ -103,7 +121,7 @@ jobs:
             --verify-tag \
             --title "relay-ui ${GITHUB_REF_NAME}" \
             --generate-notes \
-            "${TARBALL}" "${TARBALL}.sha256"
+            "${TARBALL}" "${TARBALL}.sha256" "${SBOM}"
 
       # Moving "latest" release that always points at the most recent tag.
       # Backend pins exact tags; this is a convenience alias only.
