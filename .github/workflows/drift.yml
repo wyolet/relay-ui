@@ -5,51 +5,48 @@ on:
     - cron: '0 3 * * *'   # nightly at 03:00 UTC
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   drift:
     runs-on: ubuntu-latest
+    env:
+      # Public, self-contained build (bundled Postgres) of the latest relay release.
+      RELAY_IMAGE: docker.io/wyolet/relay:standalone
     steps:
-      - uses: actions/checkout@v6
-
-      - uses: oven-sh/setup-bun@v2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          bun-version: latest
+          persist-credentials: false
+
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version-file: package.json
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      # An unreachable relay fails the run: a skipped check must never read as green.
       - name: Start Relay container
-        id: relay
-        continue-on-error: true
         run: |
-          docker pull ghcr.io/wyolet/relay:latest 2>&1
+          docker run -d --name relay -p 8081:8081 "$RELAY_IMAGE"
           # Control plane on :8081; the OpenAPI spec lives under its /api mount
           # (:8080 is the data plane and serves the wrong spec).
-          docker run -d --name relay -p 8081:8081 ghcr.io/wyolet/relay:latest
-          # Wait up to 30s for the control API to be ready
-          for i in $(seq 1 30); do
-            if curl -sf http://localhost:8081/api/openapi.json > /dev/null; then
-              echo "relay_up=true" >> $GITHUB_OUTPUT
-              break
-            fi
+          for i in $(seq 1 90); do
+            curl -sf http://localhost:8081/api/openapi.json > /dev/null && exit 0
             sleep 1
           done
-
-      - name: Skip if relay image unavailable
-        if: steps.relay.outcome == 'failure' || steps.relay.outputs.relay_up != 'true'
-        run: |
-          echo "::warning::wyolet/relay Docker image not reachable — skipping drift check."
-          exit 0
+          docker logs relay | tail -50
+          echo "::error::$RELAY_IMAGE control API did not come up"
+          exit 1
 
       - name: Regenerate types
-        if: steps.relay.outputs.relay_up == 'true'
         run: make gen RELAY_URL=http://localhost:8081/api
 
       - name: Fail on drift
-        if: steps.relay.outputs.relay_up == 'true'
         run: |
           if ! git diff --exit-code src/api/types.gen.ts; then
-            echo "::error::API type drift detected — run 'make gen' locally and commit the result."
+            echo "::error::API type drift against $RELAY_IMAGE — run 'make gen' against that release and commit, or release relay."
             exit 1
           fi
           echo "No drift detected."
