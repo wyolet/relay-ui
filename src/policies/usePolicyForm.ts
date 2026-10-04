@@ -49,7 +49,6 @@ export function policyFromFormValues(
 							models: b.models.length > 0 ? b.models : null,
 						}))
 					: null,
-			skipDefaultLimits: values.skipDefaultLimits,
 			includeDeprecated: values.includeDeprecated,
 			payloadLoggingEnabled: values.payloadLoggingEnabled,
 		},
@@ -63,7 +62,6 @@ export interface PolicyFormValues {
 	keySelection: KeySelection;
 	models: string[];
 	rlBindings: RLBindingValue[];
-	skipDefaultLimits: boolean;
 	enabled: boolean;
 	includeDeprecated: boolean;
 	payloadLoggingEnabled: boolean;
@@ -87,7 +85,6 @@ const schema = z.object({
 			models: z.array(z.string()),
 		}),
 	),
-	skipDefaultLimits: z.boolean(),
 	enabled: z.boolean(),
 	includeDeprecated: z.boolean(),
 	payloadLoggingEnabled: z.boolean(),
@@ -101,7 +98,6 @@ function emptyValues(): PolicyFormValues {
 		keySelection: DEFAULT_KEY_SELECTION,
 		models: [],
 		rlBindings: [],
-		skipDefaultLimits: false,
 		enabled: true,
 		includeDeprecated: false,
 		payloadLoggingEnabled: false,
@@ -123,7 +119,6 @@ function policyToValues(policy: Policy): PolicyFormValues {
 		keySelection: policy.spec.keySelection ?? DEFAULT_KEY_SELECTION,
 		models: policy.spec.models ?? [],
 		rlBindings: bindings,
-		skipDefaultLimits: policy.spec.skipDefaultLimits ?? false,
 		enabled: policy.spec.enabled ?? true,
 		includeDeprecated: policy.spec.includeDeprecated ?? false,
 		payloadLoggingEnabled: policy.spec.payloadLoggingEnabled ?? false,
@@ -195,7 +190,6 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 								models: b.models.length > 0 ? b.models : null,
 							}))
 						: null,
-				skipDefaultLimits: value.skipDefaultLimits,
 				includeDeprecated: value.includeDeprecated,
 				payloadLoggingEnabled: value.payloadLoggingEnabled,
 			};
