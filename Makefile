@@ -17,12 +17,11 @@ help: ## Show available targets
 		awk 'BEGIN {FS = ":.*##"}; {printf "  %-12s %s\n", $$1, $$2}'
 
 gen: ## Regenerate src/api/types.gen.ts from RELAY_URL (default: http://localhost:8081/api)
-	@tmp=$$(mktemp /tmp/openapi-XXXXXX.json); \
+	@set -e; tmp=$$(mktemp /tmp/openapi-XXXXXX.json); trap 'rm -f "$$tmp"' EXIT; \
 	echo "Fetching OpenAPI spec from $(RELAY_URL)/openapi.json …"; \
-	curl -sk -H 'Cache-Control: no-cache' "$(RELAY_URL)/openapi.json?nocache=$$(date +%s)" -o "$$tmp"; \
+	curl -fsS -H 'Cache-Control: no-cache' "$(RELAY_URL)/openapi.json?nocache=$$(date +%s)" -o "$$tmp"; \
 	echo "Running openapi-typescript …"; \
 	bun x openapi-typescript "$$tmp" -o src/api/types.gen.ts; \
-	rm -f "$$tmp"; \
 	echo "Done. src/api/types.gen.ts updated."
 
 dev: ## Start Vite dev server on :5140

@@ -1,7 +1,7 @@
 import { QueryCache, QueryClient } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
 import ReactDOM from "react-dom/client";
-import { whoamiQueryOptions } from "@/api/auth";
+import { removeAccountQueries, whoamiQueryOptions } from "@/api/auth";
 import { ApiError } from "@/api/types/errors";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { applyTheme, useThemeStore } from "@/stores/theme";
@@ -30,7 +30,9 @@ export function mountApp(): void {
 					roles: [],
 					scopes: [],
 				});
-				void router.navigate({ to: "/login" });
+				void router
+					.navigate({ to: "/login" })
+					.then(() => removeAccountQueries(queryClient));
 			},
 		}),
 		defaultOptions: {

@@ -9,94 +9,93 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SetupRouteImport } from './routes/setup'
-import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as SetupRouteImport } from './routes/setup'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
-import { Route as AuthenticatedUsersRouteImport } from './routes/_authenticated/users'
-import { Route as AuthenticatedUsageRouteImport } from './routes/_authenticated/usage'
-import { Route as AuthenticatedTeamsRouteImport } from './routes/_authenticated/teams'
-import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
-import { Route as AuthenticatedServiceAccountsRouteImport } from './routes/_authenticated/service-accounts'
-import { Route as AuthenticatedRolesRouteImport } from './routes/_authenticated/roles'
-import { Route as AuthenticatedRoleBindingsRouteImport } from './routes/_authenticated/role-bindings'
-import { Route as AuthenticatedProjectsRouteImport } from './routes/_authenticated/projects'
-import { Route as AuthenticatedPricingRouteImport } from './routes/_authenticated/pricing'
-import { Route as AuthenticatedPolicyBindingsRouteImport } from './routes/_authenticated/policy-bindings'
-import { Route as AuthenticatedPoliciesRouteImport } from './routes/_authenticated/policies'
-import { Route as AuthenticatedModelsRouteImport } from './routes/_authenticated/models'
-import { Route as AuthenticatedKeysRouteImport } from './routes/_authenticated/keys'
-import { Route as AuthenticatedHostKeysRouteImport } from './routes/_authenticated/host-keys'
-import { Route as AuthenticatedGroupsRouteImport } from './routes/_authenticated/groups'
-import { Route as AuthenticatedBootstrapRouteImport } from './routes/_authenticated/bootstrap'
 import { Route as AuthenticatedAuditRouteImport } from './routes/_authenticated/audit'
-import { Route as AuthenticatedUsersIndexRouteImport } from './routes/_authenticated/users.index'
-import { Route as AuthenticatedTeamsIndexRouteImport } from './routes/_authenticated/teams.index'
-import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated/settings.index'
-import { Route as AuthenticatedServiceAccountsIndexRouteImport } from './routes/_authenticated/service-accounts.index'
-import { Route as AuthenticatedRolesIndexRouteImport } from './routes/_authenticated/roles.index'
-import { Route as AuthenticatedRoleBindingsIndexRouteImport } from './routes/_authenticated/role-bindings.index'
-import { Route as AuthenticatedProjectsIndexRouteImport } from './routes/_authenticated/projects.index'
-import { Route as AuthenticatedPricingIndexRouteImport } from './routes/_authenticated/pricing.index'
-import { Route as AuthenticatedPolicyBindingsIndexRouteImport } from './routes/_authenticated/policy-bindings.index'
-import { Route as AuthenticatedPoliciesIndexRouteImport } from './routes/_authenticated/policies.index'
-import { Route as AuthenticatedModelsIndexRouteImport } from './routes/_authenticated/models.index'
-import { Route as AuthenticatedLogsIndexRouteImport } from './routes/_authenticated/logs.index'
-import { Route as AuthenticatedHostKeysIndexRouteImport } from './routes/_authenticated/host-keys.index'
+import { Route as AuthenticatedBootstrapRouteImport } from './routes/_authenticated/bootstrap'
+import { Route as AuthenticatedGroupsRouteImport } from './routes/_authenticated/groups'
+import { Route as AuthenticatedHostKeysRouteImport } from './routes/_authenticated/host-keys'
+import { Route as AuthenticatedKeysRouteImport } from './routes/_authenticated/keys'
+import { Route as AuthenticatedModelsRouteImport } from './routes/_authenticated/models'
+import { Route as AuthenticatedPoliciesRouteImport } from './routes/_authenticated/policies'
+import { Route as AuthenticatedPolicyBindingsRouteImport } from './routes/_authenticated/policy-bindings'
+import { Route as AuthenticatedPricingRouteImport } from './routes/_authenticated/pricing'
+import { Route as AuthenticatedProjectsRouteImport } from './routes/_authenticated/projects'
+import { Route as AuthenticatedRoleBindingsRouteImport } from './routes/_authenticated/role-bindings'
+import { Route as AuthenticatedRolesRouteImport } from './routes/_authenticated/roles'
+import { Route as AuthenticatedServiceAccountsRouteImport } from './routes/_authenticated/service-accounts'
+import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedTeamsRouteImport } from './routes/_authenticated/teams'
+import { Route as AuthenticatedUsageRouteImport } from './routes/_authenticated/usage'
+import { Route as AuthenticatedUsersRouteImport } from './routes/_authenticated/users'
 import { Route as AuthenticatedGroupsIndexRouteImport } from './routes/_authenticated/groups.index'
-import { Route as AuthenticatedUsersIdRouteImport } from './routes/_authenticated/users.$id'
-import { Route as AuthenticatedTeamsNewRouteImport } from './routes/_authenticated/teams.new'
-import { Route as AuthenticatedTeamsNameRouteImport } from './routes/_authenticated/teams.$name'
-import { Route as AuthenticatedSettingsSsoRouteImport } from './routes/_authenticated/settings.sso'
-import { Route as AuthenticatedSettingsRateLimitsRouteImport } from './routes/_authenticated/settings.rate-limits'
-import { Route as AuthenticatedSettingsProxyModeRouteImport } from './routes/_authenticated/settings.proxy-mode'
-import { Route as AuthenticatedSettingsPermissionsRouteImport } from './routes/_authenticated/settings.permissions'
-import { Route as AuthenticatedSettingsPayloadLoggingRouteImport } from './routes/_authenticated/settings.payload-logging'
-import { Route as AuthenticatedSettingsLicenseRouteImport } from './routes/_authenticated/settings.license'
-import { Route as AuthenticatedServiceAccountsNewRouteImport } from './routes/_authenticated/service-accounts.new'
-import { Route as AuthenticatedServiceAccountsNameRouteImport } from './routes/_authenticated/service-accounts.$name'
-import { Route as AuthenticatedRolesNewRouteImport } from './routes/_authenticated/roles.new'
-import { Route as AuthenticatedRolesNameRouteImport } from './routes/_authenticated/roles.$name'
-import { Route as AuthenticatedRoleBindingsNewRouteImport } from './routes/_authenticated/role-bindings.new'
-import { Route as AuthenticatedRoleBindingsNameRouteImport } from './routes/_authenticated/role-bindings.$name'
-import { Route as AuthenticatedProvidersNameRouteImport } from './routes/_authenticated/providers.$name'
-import { Route as AuthenticatedProjectsNewRouteImport } from './routes/_authenticated/projects.new'
-import { Route as AuthenticatedProjectsNameRouteImport } from './routes/_authenticated/projects.$name'
-import { Route as AuthenticatedPricingNewRouteImport } from './routes/_authenticated/pricing.new'
-import { Route as AuthenticatedPricingNameRouteImport } from './routes/_authenticated/pricing.$name'
-import { Route as AuthenticatedPolicyBindingsNewRouteImport } from './routes/_authenticated/policy-bindings.new'
-import { Route as AuthenticatedPolicyBindingsNameRouteImport } from './routes/_authenticated/policy-bindings.$name'
-import { Route as AuthenticatedPoliciesNewRouteImport } from './routes/_authenticated/policies.new'
-import { Route as AuthenticatedPoliciesNameRouteImport } from './routes/_authenticated/policies.$name'
-import { Route as AuthenticatedModelsNewRouteImport } from './routes/_authenticated/models.new'
-import { Route as AuthenticatedModelsNameRouteImport } from './routes/_authenticated/models.$name'
-import { Route as AuthenticatedLogsRequestIdRouteImport } from './routes/_authenticated/logs.$requestId'
-import { Route as AuthenticatedKeysNewRouteImport } from './routes/_authenticated/keys_.new'
-import { Route as AuthenticatedKeysNameRouteImport } from './routes/_authenticated/keys_.$name'
-import { Route as AuthenticatedHostsNameRouteImport } from './routes/_authenticated/hosts.$name'
-import { Route as AuthenticatedHostKeysNewRouteImport } from './routes/_authenticated/host-keys.new'
-import { Route as AuthenticatedHostKeysNameRouteImport } from './routes/_authenticated/host-keys.$name'
-import { Route as AuthenticatedGroupsNewRouteImport } from './routes/_authenticated/groups.new'
 import { Route as AuthenticatedGroupsNameRouteImport } from './routes/_authenticated/groups.$name'
-import { Route as AuthenticatedTeamsNameEditRouteImport } from './routes/_authenticated/teams.$name_.edit'
-import { Route as AuthenticatedServiceAccountsNameEditRouteImport } from './routes/_authenticated/service-accounts.$name_.edit'
-import { Route as AuthenticatedRolesNameEditRouteImport } from './routes/_authenticated/roles.$name_.edit'
-import { Route as AuthenticatedRoleBindingsNameEditRouteImport } from './routes/_authenticated/role-bindings.$name_.edit'
-import { Route as AuthenticatedProjectsNameEditRouteImport } from './routes/_authenticated/projects.$name_.edit'
-import { Route as AuthenticatedPricingNameEditRouteImport } from './routes/_authenticated/pricing.$name_.edit'
-import { Route as AuthenticatedPolicyBindingsNameEditRouteImport } from './routes/_authenticated/policy-bindings.$name_.edit'
-import { Route as AuthenticatedPoliciesRateLimitsNewRouteImport } from './routes/_authenticated/policies.rate-limits.new'
-import { Route as AuthenticatedPoliciesRateLimitsNameRouteImport } from './routes/_authenticated/policies.rate-limits.$name'
-import { Route as AuthenticatedPoliciesNameEditRouteImport } from './routes/_authenticated/policies.$name_.edit'
-import { Route as AuthenticatedModelsNameEditRouteImport } from './routes/_authenticated/models.$name.edit'
-import { Route as AuthenticatedKeysNameEditRouteImport } from './routes/_authenticated/keys_.$name_.edit'
-import { Route as AuthenticatedHostKeysNameEditRouteImport } from './routes/_authenticated/host-keys.$name_.edit'
+import { Route as AuthenticatedGroupsNewRouteImport } from './routes/_authenticated/groups.new'
+import { Route as AuthenticatedHostKeysIndexRouteImport } from './routes/_authenticated/host-keys.index'
+import { Route as AuthenticatedHostKeysNameRouteImport } from './routes/_authenticated/host-keys.$name'
+import { Route as AuthenticatedHostKeysNewRouteImport } from './routes/_authenticated/host-keys.new'
+import { Route as AuthenticatedHostsNameRouteImport } from './routes/_authenticated/hosts.$name'
+import { Route as AuthenticatedKeysNameRouteImport } from './routes/_authenticated/keys_.$name'
+import { Route as AuthenticatedKeysNewRouteImport } from './routes/_authenticated/keys_.new'
+import { Route as AuthenticatedLogsIndexRouteImport } from './routes/_authenticated/logs.index'
+import { Route as AuthenticatedLogsRequestIdRouteImport } from './routes/_authenticated/logs.$requestId'
+import { Route as AuthenticatedModelsIndexRouteImport } from './routes/_authenticated/models.index'
+import { Route as AuthenticatedModelsNameRouteImport } from './routes/_authenticated/models.$name'
+import { Route as AuthenticatedModelsNewRouteImport } from './routes/_authenticated/models.new'
+import { Route as AuthenticatedPoliciesIndexRouteImport } from './routes/_authenticated/policies.index'
+import { Route as AuthenticatedPoliciesNameRouteImport } from './routes/_authenticated/policies.$name'
+import { Route as AuthenticatedPoliciesNewRouteImport } from './routes/_authenticated/policies.new'
+import { Route as AuthenticatedPolicyBindingsIndexRouteImport } from './routes/_authenticated/policy-bindings.index'
+import { Route as AuthenticatedPolicyBindingsNameRouteImport } from './routes/_authenticated/policy-bindings.$name'
+import { Route as AuthenticatedPolicyBindingsNewRouteImport } from './routes/_authenticated/policy-bindings.new'
+import { Route as AuthenticatedPricingIndexRouteImport } from './routes/_authenticated/pricing.index'
+import { Route as AuthenticatedPricingNameRouteImport } from './routes/_authenticated/pricing.$name'
+import { Route as AuthenticatedPricingNewRouteImport } from './routes/_authenticated/pricing.new'
+import { Route as AuthenticatedProjectsIndexRouteImport } from './routes/_authenticated/projects.index'
+import { Route as AuthenticatedProjectsNameRouteImport } from './routes/_authenticated/projects.$name'
+import { Route as AuthenticatedProjectsNewRouteImport } from './routes/_authenticated/projects.new'
+import { Route as AuthenticatedProvidersNameRouteImport } from './routes/_authenticated/providers.$name'
+import { Route as AuthenticatedRoleBindingsIndexRouteImport } from './routes/_authenticated/role-bindings.index'
+import { Route as AuthenticatedRoleBindingsNameRouteImport } from './routes/_authenticated/role-bindings.$name'
+import { Route as AuthenticatedRoleBindingsNewRouteImport } from './routes/_authenticated/role-bindings.new'
+import { Route as AuthenticatedRolesIndexRouteImport } from './routes/_authenticated/roles.index'
+import { Route as AuthenticatedRolesNameRouteImport } from './routes/_authenticated/roles.$name'
+import { Route as AuthenticatedRolesNewRouteImport } from './routes/_authenticated/roles.new'
+import { Route as AuthenticatedServiceAccountsIndexRouteImport } from './routes/_authenticated/service-accounts.index'
+import { Route as AuthenticatedServiceAccountsNameRouteImport } from './routes/_authenticated/service-accounts.$name'
+import { Route as AuthenticatedServiceAccountsNewRouteImport } from './routes/_authenticated/service-accounts.new'
+import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated/settings.index'
+import { Route as AuthenticatedSettingsLicenseRouteImport } from './routes/_authenticated/settings.license'
+import { Route as AuthenticatedSettingsPayloadLoggingRouteImport } from './routes/_authenticated/settings.payload-logging'
+import { Route as AuthenticatedSettingsPermissionsRouteImport } from './routes/_authenticated/settings.permissions'
+import { Route as AuthenticatedSettingsProxyModeRouteImport } from './routes/_authenticated/settings.proxy-mode'
+import { Route as AuthenticatedSettingsRateLimitsRouteImport } from './routes/_authenticated/settings.rate-limits'
+import { Route as AuthenticatedSettingsSsoRouteImport } from './routes/_authenticated/settings.sso'
+import { Route as AuthenticatedTeamsIndexRouteImport } from './routes/_authenticated/teams.index'
+import { Route as AuthenticatedTeamsNameRouteImport } from './routes/_authenticated/teams.$name'
+import { Route as AuthenticatedTeamsNewRouteImport } from './routes/_authenticated/teams.new'
+import { Route as AuthenticatedUsersIndexRouteImport } from './routes/_authenticated/users.index'
+import { Route as AuthenticatedUsersIdRouteImport } from './routes/_authenticated/users.$id'
 import { Route as AuthenticatedGroupsNameEditRouteImport } from './routes/_authenticated/groups.$name_.edit'
+import { Route as AuthenticatedHostKeysNameEditRouteImport } from './routes/_authenticated/host-keys.$name_.edit'
+import { Route as AuthenticatedKeysNameEditRouteImport } from './routes/_authenticated/keys_.$name_.edit'
+import { Route as AuthenticatedModelsNameEditRouteImport } from './routes/_authenticated/models.$name.edit'
+import { Route as AuthenticatedPoliciesNameEditRouteImport } from './routes/_authenticated/policies.$name_.edit'
+import { Route as AuthenticatedPoliciesRateLimitsNameRouteImport } from './routes/_authenticated/policies.rate-limits.$name'
+import { Route as AuthenticatedPoliciesRateLimitsNewRouteImport } from './routes/_authenticated/policies.rate-limits.new'
+import { Route as AuthenticatedPolicyBindingsNameEditRouteImport } from './routes/_authenticated/policy-bindings.$name_.edit'
+import { Route as AuthenticatedPricingNameEditRouteImport } from './routes/_authenticated/pricing.$name_.edit'
+import { Route as AuthenticatedProjectsNameEditRouteImport } from './routes/_authenticated/projects.$name_.edit'
+import { Route as AuthenticatedRoleBindingsNameEditRouteImport } from './routes/_authenticated/role-bindings.$name_.edit'
+import { Route as AuthenticatedRolesNameEditRouteImport } from './routes/_authenticated/roles.$name_.edit'
+import { Route as AuthenticatedServiceAccountsNameEditRouteImport } from './routes/_authenticated/service-accounts.$name_.edit'
+import { Route as AuthenticatedTeamsNameEditRouteImport } from './routes/_authenticated/teams.$name_.edit'
 import { Route as AuthenticatedPoliciesRateLimitsNameEditRouteImport } from './routes/_authenticated/policies.rate-limits.$name_.edit'
 
-const SetupRoute = SetupRouteImport.update({
-  id: '/setup',
-  path: '/setup',
+const AuthenticatedRoute = AuthenticatedRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -104,8 +103,9 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedRoute = AuthenticatedRouteImport.update({
-  id: '/_authenticated',
+const SetupRoute = SetupRouteImport.update({
+  id: '/setup',
+  path: '/setup',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
@@ -113,51 +113,39 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedUsersRoute = AuthenticatedUsersRouteImport.update({
-  id: '/users',
-  path: '/users',
+const AuthenticatedAuditRoute = AuthenticatedAuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedUsageRoute = AuthenticatedUsageRouteImport.update({
-  id: '/usage',
-  path: '/usage',
+const AuthenticatedBootstrapRoute = AuthenticatedBootstrapRouteImport.update({
+  id: '/bootstrap',
+  path: '/bootstrap',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedTeamsRoute = AuthenticatedTeamsRouteImport.update({
-  id: '/teams',
-  path: '/teams',
+const AuthenticatedGroupsRoute = AuthenticatedGroupsRouteImport.update({
+  id: '/groups',
+  path: '/groups',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
+const AuthenticatedHostKeysRoute = AuthenticatedHostKeysRouteImport.update({
+  id: '/host-keys',
+  path: '/host-keys',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedServiceAccountsRoute =
-  AuthenticatedServiceAccountsRouteImport.update({
-    id: '/service-accounts',
-    path: '/service-accounts',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedRolesRoute = AuthenticatedRolesRouteImport.update({
-  id: '/roles',
-  path: '/roles',
+const AuthenticatedKeysRoute = AuthenticatedKeysRouteImport.update({
+  id: '/keys',
+  path: '/keys',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedRoleBindingsRoute =
-  AuthenticatedRoleBindingsRouteImport.update({
-    id: '/role-bindings',
-    path: '/role-bindings',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedProjectsRoute = AuthenticatedProjectsRouteImport.update({
-  id: '/projects',
-  path: '/projects',
+const AuthenticatedModelsRoute = AuthenticatedModelsRouteImport.update({
+  id: '/models',
+  path: '/models',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedPricingRoute = AuthenticatedPricingRouteImport.update({
-  id: '/pricing',
-  path: '/pricing',
+const AuthenticatedPoliciesRoute = AuthenticatedPoliciesRouteImport.update({
+  id: '/policies',
+  path: '/policies',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedPolicyBindingsRoute =
@@ -166,294 +154,73 @@ const AuthenticatedPolicyBindingsRoute =
     path: '/policy-bindings',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AuthenticatedPoliciesRoute = AuthenticatedPoliciesRouteImport.update({
-  id: '/policies',
-  path: '/policies',
+const AuthenticatedPricingRoute = AuthenticatedPricingRouteImport.update({
+  id: '/pricing',
+  path: '/pricing',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedModelsRoute = AuthenticatedModelsRouteImport.update({
-  id: '/models',
-  path: '/models',
+const AuthenticatedProjectsRoute = AuthenticatedProjectsRouteImport.update({
+  id: '/projects',
+  path: '/projects',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedKeysRoute = AuthenticatedKeysRouteImport.update({
-  id: '/keys',
-  path: '/keys',
+const AuthenticatedRoleBindingsRoute =
+  AuthenticatedRoleBindingsRouteImport.update({
+    id: '/role-bindings',
+    path: '/role-bindings',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedRolesRoute = AuthenticatedRolesRouteImport.update({
+  id: '/roles',
+  path: '/roles',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedHostKeysRoute = AuthenticatedHostKeysRouteImport.update({
-  id: '/host-keys',
-  path: '/host-keys',
+const AuthenticatedServiceAccountsRoute =
+  AuthenticatedServiceAccountsRouteImport.update({
+    id: '/service-accounts',
+    path: '/service-accounts',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedGroupsRoute = AuthenticatedGroupsRouteImport.update({
-  id: '/groups',
-  path: '/groups',
+const AuthenticatedTeamsRoute = AuthenticatedTeamsRouteImport.update({
+  id: '/teams',
+  path: '/teams',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedBootstrapRoute = AuthenticatedBootstrapRouteImport.update({
-  id: '/bootstrap',
-  path: '/bootstrap',
+const AuthenticatedUsageRoute = AuthenticatedUsageRouteImport.update({
+  id: '/usage',
+  path: '/usage',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedAuditRoute = AuthenticatedAuditRouteImport.update({
-  id: '/audit',
-  path: '/audit',
+const AuthenticatedUsersRoute = AuthenticatedUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedUsersIndexRoute = AuthenticatedUsersIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AuthenticatedUsersRoute,
-} as any)
-const AuthenticatedTeamsIndexRoute = AuthenticatedTeamsIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AuthenticatedTeamsRoute,
-} as any)
-const AuthenticatedSettingsIndexRoute =
-  AuthenticatedSettingsIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => AuthenticatedSettingsRoute,
-  } as any)
-const AuthenticatedServiceAccountsIndexRoute =
-  AuthenticatedServiceAccountsIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => AuthenticatedServiceAccountsRoute,
-  } as any)
-const AuthenticatedRolesIndexRoute = AuthenticatedRolesIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AuthenticatedRolesRoute,
-} as any)
-const AuthenticatedRoleBindingsIndexRoute =
-  AuthenticatedRoleBindingsIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => AuthenticatedRoleBindingsRoute,
-  } as any)
-const AuthenticatedProjectsIndexRoute =
-  AuthenticatedProjectsIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => AuthenticatedProjectsRoute,
-  } as any)
-const AuthenticatedPricingIndexRoute =
-  AuthenticatedPricingIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => AuthenticatedPricingRoute,
-  } as any)
-const AuthenticatedPolicyBindingsIndexRoute =
-  AuthenticatedPolicyBindingsIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => AuthenticatedPolicyBindingsRoute,
-  } as any)
-const AuthenticatedPoliciesIndexRoute =
-  AuthenticatedPoliciesIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => AuthenticatedPoliciesRoute,
-  } as any)
-const AuthenticatedModelsIndexRoute =
-  AuthenticatedModelsIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => AuthenticatedModelsRoute,
-  } as any)
-const AuthenticatedLogsIndexRoute = AuthenticatedLogsIndexRouteImport.update({
-  id: '/logs/',
-  path: '/logs/',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
-const AuthenticatedHostKeysIndexRoute =
-  AuthenticatedHostKeysIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => AuthenticatedHostKeysRoute,
-  } as any)
 const AuthenticatedGroupsIndexRoute =
   AuthenticatedGroupsIndexRouteImport.update({
     id: '/',
     path: '/',
     getParentRoute: () => AuthenticatedGroupsRoute,
   } as any)
-const AuthenticatedUsersIdRoute = AuthenticatedUsersIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => AuthenticatedUsersRoute,
-} as any)
-const AuthenticatedTeamsNewRoute = AuthenticatedTeamsNewRouteImport.update({
-  id: '/new',
-  path: '/new',
-  getParentRoute: () => AuthenticatedTeamsRoute,
-} as any)
-const AuthenticatedTeamsNameRoute = AuthenticatedTeamsNameRouteImport.update({
+const AuthenticatedGroupsNameRoute = AuthenticatedGroupsNameRouteImport.update({
   id: '/$name',
   path: '/$name',
-  getParentRoute: () => AuthenticatedTeamsRoute,
+  getParentRoute: () => AuthenticatedGroupsRoute,
 } as any)
-const AuthenticatedSettingsSsoRoute =
-  AuthenticatedSettingsSsoRouteImport.update({
-    id: '/sso',
-    path: '/sso',
-    getParentRoute: () => AuthenticatedSettingsRoute,
-  } as any)
-const AuthenticatedSettingsRateLimitsRoute =
-  AuthenticatedSettingsRateLimitsRouteImport.update({
-    id: '/rate-limits',
-    path: '/rate-limits',
-    getParentRoute: () => AuthenticatedSettingsRoute,
-  } as any)
-const AuthenticatedSettingsProxyModeRoute =
-  AuthenticatedSettingsProxyModeRouteImport.update({
-    id: '/proxy-mode',
-    path: '/proxy-mode',
-    getParentRoute: () => AuthenticatedSettingsRoute,
-  } as any)
-const AuthenticatedSettingsPermissionsRoute =
-  AuthenticatedSettingsPermissionsRouteImport.update({
-    id: '/permissions',
-    path: '/permissions',
-    getParentRoute: () => AuthenticatedSettingsRoute,
-  } as any)
-const AuthenticatedSettingsPayloadLoggingRoute =
-  AuthenticatedSettingsPayloadLoggingRouteImport.update({
-    id: '/payload-logging',
-    path: '/payload-logging',
-    getParentRoute: () => AuthenticatedSettingsRoute,
-  } as any)
-const AuthenticatedSettingsLicenseRoute =
-  AuthenticatedSettingsLicenseRouteImport.update({
-    id: '/license',
-    path: '/license',
-    getParentRoute: () => AuthenticatedSettingsRoute,
-  } as any)
-const AuthenticatedServiceAccountsNewRoute =
-  AuthenticatedServiceAccountsNewRouteImport.update({
-    id: '/new',
-    path: '/new',
-    getParentRoute: () => AuthenticatedServiceAccountsRoute,
-  } as any)
-const AuthenticatedServiceAccountsNameRoute =
-  AuthenticatedServiceAccountsNameRouteImport.update({
-    id: '/$name',
-    path: '/$name',
-    getParentRoute: () => AuthenticatedServiceAccountsRoute,
-  } as any)
-const AuthenticatedRolesNewRoute = AuthenticatedRolesNewRouteImport.update({
+const AuthenticatedGroupsNewRoute = AuthenticatedGroupsNewRouteImport.update({
   id: '/new',
   path: '/new',
-  getParentRoute: () => AuthenticatedRolesRoute,
+  getParentRoute: () => AuthenticatedGroupsRoute,
 } as any)
-const AuthenticatedRolesNameRoute = AuthenticatedRolesNameRouteImport.update({
-  id: '/$name',
-  path: '/$name',
-  getParentRoute: () => AuthenticatedRolesRoute,
-} as any)
-const AuthenticatedRoleBindingsNewRoute =
-  AuthenticatedRoleBindingsNewRouteImport.update({
-    id: '/new',
-    path: '/new',
-    getParentRoute: () => AuthenticatedRoleBindingsRoute,
-  } as any)
-const AuthenticatedRoleBindingsNameRoute =
-  AuthenticatedRoleBindingsNameRouteImport.update({
-    id: '/$name',
-    path: '/$name',
-    getParentRoute: () => AuthenticatedRoleBindingsRoute,
-  } as any)
-const AuthenticatedProvidersNameRoute =
-  AuthenticatedProvidersNameRouteImport.update({
-    id: '/providers/$name',
-    path: '/providers/$name',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedProjectsNewRoute =
-  AuthenticatedProjectsNewRouteImport.update({
-    id: '/new',
-    path: '/new',
-    getParentRoute: () => AuthenticatedProjectsRoute,
-  } as any)
-const AuthenticatedProjectsNameRoute =
-  AuthenticatedProjectsNameRouteImport.update({
-    id: '/$name',
-    path: '/$name',
-    getParentRoute: () => AuthenticatedProjectsRoute,
-  } as any)
-const AuthenticatedPricingNewRoute = AuthenticatedPricingNewRouteImport.update({
-  id: '/new',
-  path: '/new',
-  getParentRoute: () => AuthenticatedPricingRoute,
-} as any)
-const AuthenticatedPricingNameRoute =
-  AuthenticatedPricingNameRouteImport.update({
-    id: '/$name',
-    path: '/$name',
-    getParentRoute: () => AuthenticatedPricingRoute,
-  } as any)
-const AuthenticatedPolicyBindingsNewRoute =
-  AuthenticatedPolicyBindingsNewRouteImport.update({
-    id: '/new',
-    path: '/new',
-    getParentRoute: () => AuthenticatedPolicyBindingsRoute,
-  } as any)
-const AuthenticatedPolicyBindingsNameRoute =
-  AuthenticatedPolicyBindingsNameRouteImport.update({
-    id: '/$name',
-    path: '/$name',
-    getParentRoute: () => AuthenticatedPolicyBindingsRoute,
-  } as any)
-const AuthenticatedPoliciesNewRoute =
-  AuthenticatedPoliciesNewRouteImport.update({
-    id: '/new',
-    path: '/new',
-    getParentRoute: () => AuthenticatedPoliciesRoute,
-  } as any)
-const AuthenticatedPoliciesNameRoute =
-  AuthenticatedPoliciesNameRouteImport.update({
-    id: '/$name',
-    path: '/$name',
-    getParentRoute: () => AuthenticatedPoliciesRoute,
-  } as any)
-const AuthenticatedModelsNewRoute = AuthenticatedModelsNewRouteImport.update({
-  id: '/new',
-  path: '/new',
-  getParentRoute: () => AuthenticatedModelsRoute,
-} as any)
-const AuthenticatedModelsNameRoute = AuthenticatedModelsNameRouteImport.update({
-  id: '/$name',
-  path: '/$name',
-  getParentRoute: () => AuthenticatedModelsRoute,
-} as any)
-const AuthenticatedLogsRequestIdRoute =
-  AuthenticatedLogsRequestIdRouteImport.update({
-    id: '/logs/$requestId',
-    path: '/logs/$requestId',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedKeysNewRoute = AuthenticatedKeysNewRouteImport.update({
-  id: '/keys_/new',
-  path: '/keys/new',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
-const AuthenticatedKeysNameRoute = AuthenticatedKeysNameRouteImport.update({
-  id: '/keys_/$name',
-  path: '/keys/$name',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
-const AuthenticatedHostsNameRoute = AuthenticatedHostsNameRouteImport.update({
-  id: '/hosts/$name',
-  path: '/hosts/$name',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
-const AuthenticatedHostKeysNewRoute =
-  AuthenticatedHostKeysNewRouteImport.update({
-    id: '/new',
-    path: '/new',
+const AuthenticatedHostKeysIndexRoute =
+  AuthenticatedHostKeysIndexRouteImport.update({
+    id: '/',
+    path: '/',
     getParentRoute: () => AuthenticatedHostKeysRoute,
   } as any)
 const AuthenticatedHostKeysNameRoute =
@@ -462,62 +229,277 @@ const AuthenticatedHostKeysNameRoute =
     path: '/$name',
     getParentRoute: () => AuthenticatedHostKeysRoute,
   } as any)
-const AuthenticatedGroupsNewRoute = AuthenticatedGroupsNewRouteImport.update({
-  id: '/new',
-  path: '/new',
-  getParentRoute: () => AuthenticatedGroupsRoute,
+const AuthenticatedHostKeysNewRoute =
+  AuthenticatedHostKeysNewRouteImport.update({
+    id: '/new',
+    path: '/new',
+    getParentRoute: () => AuthenticatedHostKeysRoute,
+  } as any)
+const AuthenticatedHostsNameRoute = AuthenticatedHostsNameRouteImport.update({
+  id: '/hosts/$name',
+  path: '/hosts/$name',
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedGroupsNameRoute = AuthenticatedGroupsNameRouteImport.update({
+const AuthenticatedKeysNameRoute = AuthenticatedKeysNameRouteImport.update({
+  id: '/keys_/$name',
+  path: '/keys/$name',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedKeysNewRoute = AuthenticatedKeysNewRouteImport.update({
+  id: '/keys_/new',
+  path: '/keys/new',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedLogsIndexRoute = AuthenticatedLogsIndexRouteImport.update({
+  id: '/logs/',
+  path: '/logs/',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedLogsRequestIdRoute =
+  AuthenticatedLogsRequestIdRouteImport.update({
+    id: '/logs/$requestId',
+    path: '/logs/$requestId',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedModelsIndexRoute =
+  AuthenticatedModelsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedModelsRoute,
+  } as any)
+const AuthenticatedModelsNameRoute = AuthenticatedModelsNameRouteImport.update({
   id: '/$name',
   path: '/$name',
-  getParentRoute: () => AuthenticatedGroupsRoute,
+  getParentRoute: () => AuthenticatedModelsRoute,
 } as any)
-const AuthenticatedTeamsNameEditRoute =
-  AuthenticatedTeamsNameEditRouteImport.update({
-    id: '/$name_/edit',
-    path: '/$name/edit',
-    getParentRoute: () => AuthenticatedTeamsRoute,
+const AuthenticatedModelsNewRoute = AuthenticatedModelsNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => AuthenticatedModelsRoute,
+} as any)
+const AuthenticatedPoliciesIndexRoute =
+  AuthenticatedPoliciesIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedPoliciesRoute,
   } as any)
-const AuthenticatedServiceAccountsNameEditRoute =
-  AuthenticatedServiceAccountsNameEditRouteImport.update({
-    id: '/$name_/edit',
-    path: '/$name/edit',
-    getParentRoute: () => AuthenticatedServiceAccountsRoute,
+const AuthenticatedPoliciesNameRoute =
+  AuthenticatedPoliciesNameRouteImport.update({
+    id: '/$name',
+    path: '/$name',
+    getParentRoute: () => AuthenticatedPoliciesRoute,
   } as any)
-const AuthenticatedRolesNameEditRoute =
-  AuthenticatedRolesNameEditRouteImport.update({
-    id: '/$name_/edit',
-    path: '/$name/edit',
-    getParentRoute: () => AuthenticatedRolesRoute,
+const AuthenticatedPoliciesNewRoute =
+  AuthenticatedPoliciesNewRouteImport.update({
+    id: '/new',
+    path: '/new',
+    getParentRoute: () => AuthenticatedPoliciesRoute,
   } as any)
-const AuthenticatedRoleBindingsNameEditRoute =
-  AuthenticatedRoleBindingsNameEditRouteImport.update({
-    id: '/$name_/edit',
-    path: '/$name/edit',
-    getParentRoute: () => AuthenticatedRoleBindingsRoute,
-  } as any)
-const AuthenticatedProjectsNameEditRoute =
-  AuthenticatedProjectsNameEditRouteImport.update({
-    id: '/$name_/edit',
-    path: '/$name/edit',
-    getParentRoute: () => AuthenticatedProjectsRoute,
-  } as any)
-const AuthenticatedPricingNameEditRoute =
-  AuthenticatedPricingNameEditRouteImport.update({
-    id: '/$name_/edit',
-    path: '/$name/edit',
-    getParentRoute: () => AuthenticatedPricingRoute,
-  } as any)
-const AuthenticatedPolicyBindingsNameEditRoute =
-  AuthenticatedPolicyBindingsNameEditRouteImport.update({
-    id: '/$name_/edit',
-    path: '/$name/edit',
+const AuthenticatedPolicyBindingsIndexRoute =
+  AuthenticatedPolicyBindingsIndexRouteImport.update({
+    id: '/',
+    path: '/',
     getParentRoute: () => AuthenticatedPolicyBindingsRoute,
   } as any)
-const AuthenticatedPoliciesRateLimitsNewRoute =
-  AuthenticatedPoliciesRateLimitsNewRouteImport.update({
-    id: '/rate-limits/new',
-    path: '/rate-limits/new',
+const AuthenticatedPolicyBindingsNameRoute =
+  AuthenticatedPolicyBindingsNameRouteImport.update({
+    id: '/$name',
+    path: '/$name',
+    getParentRoute: () => AuthenticatedPolicyBindingsRoute,
+  } as any)
+const AuthenticatedPolicyBindingsNewRoute =
+  AuthenticatedPolicyBindingsNewRouteImport.update({
+    id: '/new',
+    path: '/new',
+    getParentRoute: () => AuthenticatedPolicyBindingsRoute,
+  } as any)
+const AuthenticatedPricingIndexRoute =
+  AuthenticatedPricingIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedPricingRoute,
+  } as any)
+const AuthenticatedPricingNameRoute =
+  AuthenticatedPricingNameRouteImport.update({
+    id: '/$name',
+    path: '/$name',
+    getParentRoute: () => AuthenticatedPricingRoute,
+  } as any)
+const AuthenticatedPricingNewRoute = AuthenticatedPricingNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => AuthenticatedPricingRoute,
+} as any)
+const AuthenticatedProjectsIndexRoute =
+  AuthenticatedProjectsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedProjectsRoute,
+  } as any)
+const AuthenticatedProjectsNameRoute =
+  AuthenticatedProjectsNameRouteImport.update({
+    id: '/$name',
+    path: '/$name',
+    getParentRoute: () => AuthenticatedProjectsRoute,
+  } as any)
+const AuthenticatedProjectsNewRoute =
+  AuthenticatedProjectsNewRouteImport.update({
+    id: '/new',
+    path: '/new',
+    getParentRoute: () => AuthenticatedProjectsRoute,
+  } as any)
+const AuthenticatedProvidersNameRoute =
+  AuthenticatedProvidersNameRouteImport.update({
+    id: '/providers/$name',
+    path: '/providers/$name',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedRoleBindingsIndexRoute =
+  AuthenticatedRoleBindingsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedRoleBindingsRoute,
+  } as any)
+const AuthenticatedRoleBindingsNameRoute =
+  AuthenticatedRoleBindingsNameRouteImport.update({
+    id: '/$name',
+    path: '/$name',
+    getParentRoute: () => AuthenticatedRoleBindingsRoute,
+  } as any)
+const AuthenticatedRoleBindingsNewRoute =
+  AuthenticatedRoleBindingsNewRouteImport.update({
+    id: '/new',
+    path: '/new',
+    getParentRoute: () => AuthenticatedRoleBindingsRoute,
+  } as any)
+const AuthenticatedRolesIndexRoute = AuthenticatedRolesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedRolesRoute,
+} as any)
+const AuthenticatedRolesNameRoute = AuthenticatedRolesNameRouteImport.update({
+  id: '/$name',
+  path: '/$name',
+  getParentRoute: () => AuthenticatedRolesRoute,
+} as any)
+const AuthenticatedRolesNewRoute = AuthenticatedRolesNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => AuthenticatedRolesRoute,
+} as any)
+const AuthenticatedServiceAccountsIndexRoute =
+  AuthenticatedServiceAccountsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedServiceAccountsRoute,
+  } as any)
+const AuthenticatedServiceAccountsNameRoute =
+  AuthenticatedServiceAccountsNameRouteImport.update({
+    id: '/$name',
+    path: '/$name',
+    getParentRoute: () => AuthenticatedServiceAccountsRoute,
+  } as any)
+const AuthenticatedServiceAccountsNewRoute =
+  AuthenticatedServiceAccountsNewRouteImport.update({
+    id: '/new',
+    path: '/new',
+    getParentRoute: () => AuthenticatedServiceAccountsRoute,
+  } as any)
+const AuthenticatedSettingsIndexRoute =
+  AuthenticatedSettingsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedSettingsRoute,
+  } as any)
+const AuthenticatedSettingsLicenseRoute =
+  AuthenticatedSettingsLicenseRouteImport.update({
+    id: '/license',
+    path: '/license',
+    getParentRoute: () => AuthenticatedSettingsRoute,
+  } as any)
+const AuthenticatedSettingsPayloadLoggingRoute =
+  AuthenticatedSettingsPayloadLoggingRouteImport.update({
+    id: '/payload-logging',
+    path: '/payload-logging',
+    getParentRoute: () => AuthenticatedSettingsRoute,
+  } as any)
+const AuthenticatedSettingsPermissionsRoute =
+  AuthenticatedSettingsPermissionsRouteImport.update({
+    id: '/permissions',
+    path: '/permissions',
+    getParentRoute: () => AuthenticatedSettingsRoute,
+  } as any)
+const AuthenticatedSettingsProxyModeRoute =
+  AuthenticatedSettingsProxyModeRouteImport.update({
+    id: '/proxy-mode',
+    path: '/proxy-mode',
+    getParentRoute: () => AuthenticatedSettingsRoute,
+  } as any)
+const AuthenticatedSettingsRateLimitsRoute =
+  AuthenticatedSettingsRateLimitsRouteImport.update({
+    id: '/rate-limits',
+    path: '/rate-limits',
+    getParentRoute: () => AuthenticatedSettingsRoute,
+  } as any)
+const AuthenticatedSettingsSsoRoute =
+  AuthenticatedSettingsSsoRouteImport.update({
+    id: '/sso',
+    path: '/sso',
+    getParentRoute: () => AuthenticatedSettingsRoute,
+  } as any)
+const AuthenticatedTeamsIndexRoute = AuthenticatedTeamsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedTeamsRoute,
+} as any)
+const AuthenticatedTeamsNameRoute = AuthenticatedTeamsNameRouteImport.update({
+  id: '/$name',
+  path: '/$name',
+  getParentRoute: () => AuthenticatedTeamsRoute,
+} as any)
+const AuthenticatedTeamsNewRoute = AuthenticatedTeamsNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => AuthenticatedTeamsRoute,
+} as any)
+const AuthenticatedUsersIndexRoute = AuthenticatedUsersIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedUsersRoute,
+} as any)
+const AuthenticatedUsersIdRoute = AuthenticatedUsersIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AuthenticatedUsersRoute,
+} as any)
+const AuthenticatedGroupsNameEditRoute =
+  AuthenticatedGroupsNameEditRouteImport.update({
+    id: '/$name_/edit',
+    path: '/$name/edit',
+    getParentRoute: () => AuthenticatedGroupsRoute,
+  } as any)
+const AuthenticatedHostKeysNameEditRoute =
+  AuthenticatedHostKeysNameEditRouteImport.update({
+    id: '/$name_/edit',
+    path: '/$name/edit',
+    getParentRoute: () => AuthenticatedHostKeysRoute,
+  } as any)
+const AuthenticatedKeysNameEditRoute =
+  AuthenticatedKeysNameEditRouteImport.update({
+    id: '/keys_/$name_/edit',
+    path: '/keys/$name/edit',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedModelsNameEditRoute =
+  AuthenticatedModelsNameEditRouteImport.update({
+    id: '/edit',
+    path: '/edit',
+    getParentRoute: () => AuthenticatedModelsNameRoute,
+  } as any)
+const AuthenticatedPoliciesNameEditRoute =
+  AuthenticatedPoliciesNameEditRouteImport.update({
+    id: '/$name_/edit',
+    path: '/$name/edit',
     getParentRoute: () => AuthenticatedPoliciesRoute,
   } as any)
 const AuthenticatedPoliciesRateLimitsNameRoute =
@@ -526,35 +508,53 @@ const AuthenticatedPoliciesRateLimitsNameRoute =
     path: '/rate-limits/$name',
     getParentRoute: () => AuthenticatedPoliciesRoute,
   } as any)
-const AuthenticatedPoliciesNameEditRoute =
-  AuthenticatedPoliciesNameEditRouteImport.update({
-    id: '/$name_/edit',
-    path: '/$name/edit',
+const AuthenticatedPoliciesRateLimitsNewRoute =
+  AuthenticatedPoliciesRateLimitsNewRouteImport.update({
+    id: '/rate-limits/new',
+    path: '/rate-limits/new',
     getParentRoute: () => AuthenticatedPoliciesRoute,
   } as any)
-const AuthenticatedModelsNameEditRoute =
-  AuthenticatedModelsNameEditRouteImport.update({
-    id: '/edit',
-    path: '/edit',
-    getParentRoute: () => AuthenticatedModelsNameRoute,
-  } as any)
-const AuthenticatedKeysNameEditRoute =
-  AuthenticatedKeysNameEditRouteImport.update({
-    id: '/keys_/$name_/edit',
-    path: '/keys/$name/edit',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedHostKeysNameEditRoute =
-  AuthenticatedHostKeysNameEditRouteImport.update({
+const AuthenticatedPolicyBindingsNameEditRoute =
+  AuthenticatedPolicyBindingsNameEditRouteImport.update({
     id: '/$name_/edit',
     path: '/$name/edit',
-    getParentRoute: () => AuthenticatedHostKeysRoute,
+    getParentRoute: () => AuthenticatedPolicyBindingsRoute,
   } as any)
-const AuthenticatedGroupsNameEditRoute =
-  AuthenticatedGroupsNameEditRouteImport.update({
+const AuthenticatedPricingNameEditRoute =
+  AuthenticatedPricingNameEditRouteImport.update({
     id: '/$name_/edit',
     path: '/$name/edit',
-    getParentRoute: () => AuthenticatedGroupsRoute,
+    getParentRoute: () => AuthenticatedPricingRoute,
+  } as any)
+const AuthenticatedProjectsNameEditRoute =
+  AuthenticatedProjectsNameEditRouteImport.update({
+    id: '/$name_/edit',
+    path: '/$name/edit',
+    getParentRoute: () => AuthenticatedProjectsRoute,
+  } as any)
+const AuthenticatedRoleBindingsNameEditRoute =
+  AuthenticatedRoleBindingsNameEditRouteImport.update({
+    id: '/$name_/edit',
+    path: '/$name/edit',
+    getParentRoute: () => AuthenticatedRoleBindingsRoute,
+  } as any)
+const AuthenticatedRolesNameEditRoute =
+  AuthenticatedRolesNameEditRouteImport.update({
+    id: '/$name_/edit',
+    path: '/$name/edit',
+    getParentRoute: () => AuthenticatedRolesRoute,
+  } as any)
+const AuthenticatedServiceAccountsNameEditRoute =
+  AuthenticatedServiceAccountsNameEditRouteImport.update({
+    id: '/$name_/edit',
+    path: '/$name/edit',
+    getParentRoute: () => AuthenticatedServiceAccountsRoute,
+  } as any)
+const AuthenticatedTeamsNameEditRoute =
+  AuthenticatedTeamsNameEditRouteImport.update({
+    id: '/$name_/edit',
+    path: '/$name/edit',
+    getParentRoute: () => AuthenticatedTeamsRoute,
   } as any)
 const AuthenticatedPoliciesRateLimitsNameEditRoute =
   AuthenticatedPoliciesRateLimitsNameEditRouteImport.update({
@@ -1061,11 +1061,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/setup': {
-      id: '/setup'
-      path: '/setup'
-      fullPath: '/setup'
-      preLoaderRoute: typeof SetupRouteImport
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -1075,11 +1075,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated': {
-      id: '/_authenticated'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof AuthenticatedRouteImport
+    '/setup': {
+      id: '/setup'
+      path: '/setup'
+      fullPath: '/setup'
+      preLoaderRoute: typeof SetupRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/': {
@@ -1089,109 +1089,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/users': {
-      id: '/_authenticated/users'
-      path: '/users'
-      fullPath: '/users'
-      preLoaderRoute: typeof AuthenticatedUsersRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/usage': {
-      id: '/_authenticated/usage'
-      path: '/usage'
-      fullPath: '/usage'
-      preLoaderRoute: typeof AuthenticatedUsageRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/teams': {
-      id: '/_authenticated/teams'
-      path: '/teams'
-      fullPath: '/teams'
-      preLoaderRoute: typeof AuthenticatedTeamsRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/settings': {
-      id: '/_authenticated/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof AuthenticatedSettingsRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/service-accounts': {
-      id: '/_authenticated/service-accounts'
-      path: '/service-accounts'
-      fullPath: '/service-accounts'
-      preLoaderRoute: typeof AuthenticatedServiceAccountsRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/roles': {
-      id: '/_authenticated/roles'
-      path: '/roles'
-      fullPath: '/roles'
-      preLoaderRoute: typeof AuthenticatedRolesRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/role-bindings': {
-      id: '/_authenticated/role-bindings'
-      path: '/role-bindings'
-      fullPath: '/role-bindings'
-      preLoaderRoute: typeof AuthenticatedRoleBindingsRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/projects': {
-      id: '/_authenticated/projects'
-      path: '/projects'
-      fullPath: '/projects'
-      preLoaderRoute: typeof AuthenticatedProjectsRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/pricing': {
-      id: '/_authenticated/pricing'
-      path: '/pricing'
-      fullPath: '/pricing'
-      preLoaderRoute: typeof AuthenticatedPricingRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/policy-bindings': {
-      id: '/_authenticated/policy-bindings'
-      path: '/policy-bindings'
-      fullPath: '/policy-bindings'
-      preLoaderRoute: typeof AuthenticatedPolicyBindingsRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/policies': {
-      id: '/_authenticated/policies'
-      path: '/policies'
-      fullPath: '/policies'
-      preLoaderRoute: typeof AuthenticatedPoliciesRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/models': {
-      id: '/_authenticated/models'
-      path: '/models'
-      fullPath: '/models'
-      preLoaderRoute: typeof AuthenticatedModelsRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/keys': {
-      id: '/_authenticated/keys'
-      path: '/keys'
-      fullPath: '/keys'
-      preLoaderRoute: typeof AuthenticatedKeysRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/host-keys': {
-      id: '/_authenticated/host-keys'
-      path: '/host-keys'
-      fullPath: '/host-keys'
-      preLoaderRoute: typeof AuthenticatedHostKeysRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/groups': {
-      id: '/_authenticated/groups'
-      path: '/groups'
-      fullPath: '/groups'
-      preLoaderRoute: typeof AuthenticatedGroupsRouteImport
+    '/_authenticated/audit': {
+      id: '/_authenticated/audit'
+      path: '/audit'
+      fullPath: '/audit'
+      preLoaderRoute: typeof AuthenticatedAuditRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/bootstrap': {
@@ -1201,340 +1103,116 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedBootstrapRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/audit': {
-      id: '/_authenticated/audit'
-      path: '/audit'
-      fullPath: '/audit'
-      preLoaderRoute: typeof AuthenticatedAuditRouteImport
+    '/_authenticated/groups': {
+      id: '/_authenticated/groups'
+      path: '/groups'
+      fullPath: '/groups'
+      preLoaderRoute: typeof AuthenticatedGroupsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/users/': {
-      id: '/_authenticated/users/'
-      path: '/'
-      fullPath: '/users/'
-      preLoaderRoute: typeof AuthenticatedUsersIndexRouteImport
-      parentRoute: typeof AuthenticatedUsersRoute
-    }
-    '/_authenticated/teams/': {
-      id: '/_authenticated/teams/'
-      path: '/'
-      fullPath: '/teams/'
-      preLoaderRoute: typeof AuthenticatedTeamsIndexRouteImport
-      parentRoute: typeof AuthenticatedTeamsRoute
-    }
-    '/_authenticated/settings/': {
-      id: '/_authenticated/settings/'
-      path: '/'
-      fullPath: '/settings/'
-      preLoaderRoute: typeof AuthenticatedSettingsIndexRouteImport
-      parentRoute: typeof AuthenticatedSettingsRoute
-    }
-    '/_authenticated/service-accounts/': {
-      id: '/_authenticated/service-accounts/'
-      path: '/'
-      fullPath: '/service-accounts/'
-      preLoaderRoute: typeof AuthenticatedServiceAccountsIndexRouteImport
-      parentRoute: typeof AuthenticatedServiceAccountsRoute
-    }
-    '/_authenticated/roles/': {
-      id: '/_authenticated/roles/'
-      path: '/'
-      fullPath: '/roles/'
-      preLoaderRoute: typeof AuthenticatedRolesIndexRouteImport
-      parentRoute: typeof AuthenticatedRolesRoute
-    }
-    '/_authenticated/role-bindings/': {
-      id: '/_authenticated/role-bindings/'
-      path: '/'
-      fullPath: '/role-bindings/'
-      preLoaderRoute: typeof AuthenticatedRoleBindingsIndexRouteImport
-      parentRoute: typeof AuthenticatedRoleBindingsRoute
-    }
-    '/_authenticated/projects/': {
-      id: '/_authenticated/projects/'
-      path: '/'
-      fullPath: '/projects/'
-      preLoaderRoute: typeof AuthenticatedProjectsIndexRouteImport
-      parentRoute: typeof AuthenticatedProjectsRoute
-    }
-    '/_authenticated/pricing/': {
-      id: '/_authenticated/pricing/'
-      path: '/'
-      fullPath: '/pricing/'
-      preLoaderRoute: typeof AuthenticatedPricingIndexRouteImport
-      parentRoute: typeof AuthenticatedPricingRoute
-    }
-    '/_authenticated/policy-bindings/': {
-      id: '/_authenticated/policy-bindings/'
-      path: '/'
-      fullPath: '/policy-bindings/'
-      preLoaderRoute: typeof AuthenticatedPolicyBindingsIndexRouteImport
-      parentRoute: typeof AuthenticatedPolicyBindingsRoute
-    }
-    '/_authenticated/policies/': {
-      id: '/_authenticated/policies/'
-      path: '/'
-      fullPath: '/policies/'
-      preLoaderRoute: typeof AuthenticatedPoliciesIndexRouteImport
-      parentRoute: typeof AuthenticatedPoliciesRoute
-    }
-    '/_authenticated/models/': {
-      id: '/_authenticated/models/'
-      path: '/'
-      fullPath: '/models/'
-      preLoaderRoute: typeof AuthenticatedModelsIndexRouteImport
-      parentRoute: typeof AuthenticatedModelsRoute
-    }
-    '/_authenticated/logs/': {
-      id: '/_authenticated/logs/'
-      path: '/logs'
-      fullPath: '/logs/'
-      preLoaderRoute: typeof AuthenticatedLogsIndexRouteImport
+    '/_authenticated/host-keys': {
+      id: '/_authenticated/host-keys'
+      path: '/host-keys'
+      fullPath: '/host-keys'
+      preLoaderRoute: typeof AuthenticatedHostKeysRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/host-keys/': {
-      id: '/_authenticated/host-keys/'
-      path: '/'
-      fullPath: '/host-keys/'
-      preLoaderRoute: typeof AuthenticatedHostKeysIndexRouteImport
-      parentRoute: typeof AuthenticatedHostKeysRoute
+    '/_authenticated/keys': {
+      id: '/_authenticated/keys'
+      path: '/keys'
+      fullPath: '/keys'
+      preLoaderRoute: typeof AuthenticatedKeysRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/models': {
+      id: '/_authenticated/models'
+      path: '/models'
+      fullPath: '/models'
+      preLoaderRoute: typeof AuthenticatedModelsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/policies': {
+      id: '/_authenticated/policies'
+      path: '/policies'
+      fullPath: '/policies'
+      preLoaderRoute: typeof AuthenticatedPoliciesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/policy-bindings': {
+      id: '/_authenticated/policy-bindings'
+      path: '/policy-bindings'
+      fullPath: '/policy-bindings'
+      preLoaderRoute: typeof AuthenticatedPolicyBindingsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/pricing': {
+      id: '/_authenticated/pricing'
+      path: '/pricing'
+      fullPath: '/pricing'
+      preLoaderRoute: typeof AuthenticatedPricingRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/projects': {
+      id: '/_authenticated/projects'
+      path: '/projects'
+      fullPath: '/projects'
+      preLoaderRoute: typeof AuthenticatedProjectsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/role-bindings': {
+      id: '/_authenticated/role-bindings'
+      path: '/role-bindings'
+      fullPath: '/role-bindings'
+      preLoaderRoute: typeof AuthenticatedRoleBindingsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/roles': {
+      id: '/_authenticated/roles'
+      path: '/roles'
+      fullPath: '/roles'
+      preLoaderRoute: typeof AuthenticatedRolesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/service-accounts': {
+      id: '/_authenticated/service-accounts'
+      path: '/service-accounts'
+      fullPath: '/service-accounts'
+      preLoaderRoute: typeof AuthenticatedServiceAccountsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/settings': {
+      id: '/_authenticated/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthenticatedSettingsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/teams': {
+      id: '/_authenticated/teams'
+      path: '/teams'
+      fullPath: '/teams'
+      preLoaderRoute: typeof AuthenticatedTeamsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/usage': {
+      id: '/_authenticated/usage'
+      path: '/usage'
+      fullPath: '/usage'
+      preLoaderRoute: typeof AuthenticatedUsageRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/users': {
+      id: '/_authenticated/users'
+      path: '/users'
+      fullPath: '/users'
+      preLoaderRoute: typeof AuthenticatedUsersRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/groups/': {
       id: '/_authenticated/groups/'
       path: '/'
       fullPath: '/groups/'
       preLoaderRoute: typeof AuthenticatedGroupsIndexRouteImport
-      parentRoute: typeof AuthenticatedGroupsRoute
-    }
-    '/_authenticated/users/$id': {
-      id: '/_authenticated/users/$id'
-      path: '/$id'
-      fullPath: '/users/$id'
-      preLoaderRoute: typeof AuthenticatedUsersIdRouteImport
-      parentRoute: typeof AuthenticatedUsersRoute
-    }
-    '/_authenticated/teams/new': {
-      id: '/_authenticated/teams/new'
-      path: '/new'
-      fullPath: '/teams/new'
-      preLoaderRoute: typeof AuthenticatedTeamsNewRouteImport
-      parentRoute: typeof AuthenticatedTeamsRoute
-    }
-    '/_authenticated/teams/$name': {
-      id: '/_authenticated/teams/$name'
-      path: '/$name'
-      fullPath: '/teams/$name'
-      preLoaderRoute: typeof AuthenticatedTeamsNameRouteImport
-      parentRoute: typeof AuthenticatedTeamsRoute
-    }
-    '/_authenticated/settings/sso': {
-      id: '/_authenticated/settings/sso'
-      path: '/sso'
-      fullPath: '/settings/sso'
-      preLoaderRoute: typeof AuthenticatedSettingsSsoRouteImport
-      parentRoute: typeof AuthenticatedSettingsRoute
-    }
-    '/_authenticated/settings/rate-limits': {
-      id: '/_authenticated/settings/rate-limits'
-      path: '/rate-limits'
-      fullPath: '/settings/rate-limits'
-      preLoaderRoute: typeof AuthenticatedSettingsRateLimitsRouteImport
-      parentRoute: typeof AuthenticatedSettingsRoute
-    }
-    '/_authenticated/settings/proxy-mode': {
-      id: '/_authenticated/settings/proxy-mode'
-      path: '/proxy-mode'
-      fullPath: '/settings/proxy-mode'
-      preLoaderRoute: typeof AuthenticatedSettingsProxyModeRouteImport
-      parentRoute: typeof AuthenticatedSettingsRoute
-    }
-    '/_authenticated/settings/permissions': {
-      id: '/_authenticated/settings/permissions'
-      path: '/permissions'
-      fullPath: '/settings/permissions'
-      preLoaderRoute: typeof AuthenticatedSettingsPermissionsRouteImport
-      parentRoute: typeof AuthenticatedSettingsRoute
-    }
-    '/_authenticated/settings/payload-logging': {
-      id: '/_authenticated/settings/payload-logging'
-      path: '/payload-logging'
-      fullPath: '/settings/payload-logging'
-      preLoaderRoute: typeof AuthenticatedSettingsPayloadLoggingRouteImport
-      parentRoute: typeof AuthenticatedSettingsRoute
-    }
-    '/_authenticated/settings/license': {
-      id: '/_authenticated/settings/license'
-      path: '/license'
-      fullPath: '/settings/license'
-      preLoaderRoute: typeof AuthenticatedSettingsLicenseRouteImport
-      parentRoute: typeof AuthenticatedSettingsRoute
-    }
-    '/_authenticated/service-accounts/new': {
-      id: '/_authenticated/service-accounts/new'
-      path: '/new'
-      fullPath: '/service-accounts/new'
-      preLoaderRoute: typeof AuthenticatedServiceAccountsNewRouteImport
-      parentRoute: typeof AuthenticatedServiceAccountsRoute
-    }
-    '/_authenticated/service-accounts/$name': {
-      id: '/_authenticated/service-accounts/$name'
-      path: '/$name'
-      fullPath: '/service-accounts/$name'
-      preLoaderRoute: typeof AuthenticatedServiceAccountsNameRouteImport
-      parentRoute: typeof AuthenticatedServiceAccountsRoute
-    }
-    '/_authenticated/roles/new': {
-      id: '/_authenticated/roles/new'
-      path: '/new'
-      fullPath: '/roles/new'
-      preLoaderRoute: typeof AuthenticatedRolesNewRouteImport
-      parentRoute: typeof AuthenticatedRolesRoute
-    }
-    '/_authenticated/roles/$name': {
-      id: '/_authenticated/roles/$name'
-      path: '/$name'
-      fullPath: '/roles/$name'
-      preLoaderRoute: typeof AuthenticatedRolesNameRouteImport
-      parentRoute: typeof AuthenticatedRolesRoute
-    }
-    '/_authenticated/role-bindings/new': {
-      id: '/_authenticated/role-bindings/new'
-      path: '/new'
-      fullPath: '/role-bindings/new'
-      preLoaderRoute: typeof AuthenticatedRoleBindingsNewRouteImport
-      parentRoute: typeof AuthenticatedRoleBindingsRoute
-    }
-    '/_authenticated/role-bindings/$name': {
-      id: '/_authenticated/role-bindings/$name'
-      path: '/$name'
-      fullPath: '/role-bindings/$name'
-      preLoaderRoute: typeof AuthenticatedRoleBindingsNameRouteImport
-      parentRoute: typeof AuthenticatedRoleBindingsRoute
-    }
-    '/_authenticated/providers/$name': {
-      id: '/_authenticated/providers/$name'
-      path: '/providers/$name'
-      fullPath: '/providers/$name'
-      preLoaderRoute: typeof AuthenticatedProvidersNameRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/projects/new': {
-      id: '/_authenticated/projects/new'
-      path: '/new'
-      fullPath: '/projects/new'
-      preLoaderRoute: typeof AuthenticatedProjectsNewRouteImport
-      parentRoute: typeof AuthenticatedProjectsRoute
-    }
-    '/_authenticated/projects/$name': {
-      id: '/_authenticated/projects/$name'
-      path: '/$name'
-      fullPath: '/projects/$name'
-      preLoaderRoute: typeof AuthenticatedProjectsNameRouteImport
-      parentRoute: typeof AuthenticatedProjectsRoute
-    }
-    '/_authenticated/pricing/new': {
-      id: '/_authenticated/pricing/new'
-      path: '/new'
-      fullPath: '/pricing/new'
-      preLoaderRoute: typeof AuthenticatedPricingNewRouteImport
-      parentRoute: typeof AuthenticatedPricingRoute
-    }
-    '/_authenticated/pricing/$name': {
-      id: '/_authenticated/pricing/$name'
-      path: '/$name'
-      fullPath: '/pricing/$name'
-      preLoaderRoute: typeof AuthenticatedPricingNameRouteImport
-      parentRoute: typeof AuthenticatedPricingRoute
-    }
-    '/_authenticated/policy-bindings/new': {
-      id: '/_authenticated/policy-bindings/new'
-      path: '/new'
-      fullPath: '/policy-bindings/new'
-      preLoaderRoute: typeof AuthenticatedPolicyBindingsNewRouteImport
-      parentRoute: typeof AuthenticatedPolicyBindingsRoute
-    }
-    '/_authenticated/policy-bindings/$name': {
-      id: '/_authenticated/policy-bindings/$name'
-      path: '/$name'
-      fullPath: '/policy-bindings/$name'
-      preLoaderRoute: typeof AuthenticatedPolicyBindingsNameRouteImport
-      parentRoute: typeof AuthenticatedPolicyBindingsRoute
-    }
-    '/_authenticated/policies/new': {
-      id: '/_authenticated/policies/new'
-      path: '/new'
-      fullPath: '/policies/new'
-      preLoaderRoute: typeof AuthenticatedPoliciesNewRouteImport
-      parentRoute: typeof AuthenticatedPoliciesRoute
-    }
-    '/_authenticated/policies/$name': {
-      id: '/_authenticated/policies/$name'
-      path: '/$name'
-      fullPath: '/policies/$name'
-      preLoaderRoute: typeof AuthenticatedPoliciesNameRouteImport
-      parentRoute: typeof AuthenticatedPoliciesRoute
-    }
-    '/_authenticated/models/new': {
-      id: '/_authenticated/models/new'
-      path: '/new'
-      fullPath: '/models/new'
-      preLoaderRoute: typeof AuthenticatedModelsNewRouteImport
-      parentRoute: typeof AuthenticatedModelsRoute
-    }
-    '/_authenticated/models/$name': {
-      id: '/_authenticated/models/$name'
-      path: '/$name'
-      fullPath: '/models/$name'
-      preLoaderRoute: typeof AuthenticatedModelsNameRouteImport
-      parentRoute: typeof AuthenticatedModelsRoute
-    }
-    '/_authenticated/logs/$requestId': {
-      id: '/_authenticated/logs/$requestId'
-      path: '/logs/$requestId'
-      fullPath: '/logs/$requestId'
-      preLoaderRoute: typeof AuthenticatedLogsRequestIdRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/keys_/new': {
-      id: '/_authenticated/keys_/new'
-      path: '/keys/new'
-      fullPath: '/keys/new'
-      preLoaderRoute: typeof AuthenticatedKeysNewRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/keys_/$name': {
-      id: '/_authenticated/keys_/$name'
-      path: '/keys/$name'
-      fullPath: '/keys/$name'
-      preLoaderRoute: typeof AuthenticatedKeysNameRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/hosts/$name': {
-      id: '/_authenticated/hosts/$name'
-      path: '/hosts/$name'
-      fullPath: '/hosts/$name'
-      preLoaderRoute: typeof AuthenticatedHostsNameRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/host-keys/new': {
-      id: '/_authenticated/host-keys/new'
-      path: '/new'
-      fullPath: '/host-keys/new'
-      preLoaderRoute: typeof AuthenticatedHostKeysNewRouteImport
-      parentRoute: typeof AuthenticatedHostKeysRoute
-    }
-    '/_authenticated/host-keys/$name': {
-      id: '/_authenticated/host-keys/$name'
-      path: '/$name'
-      fullPath: '/host-keys/$name'
-      preLoaderRoute: typeof AuthenticatedHostKeysNameRouteImport
-      parentRoute: typeof AuthenticatedHostKeysRoute
-    }
-    '/_authenticated/groups/new': {
-      id: '/_authenticated/groups/new'
-      path: '/new'
-      fullPath: '/groups/new'
-      preLoaderRoute: typeof AuthenticatedGroupsNewRouteImport
       parentRoute: typeof AuthenticatedGroupsRoute
     }
     '/_authenticated/groups/$name': {
@@ -1544,60 +1222,361 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedGroupsNameRouteImport
       parentRoute: typeof AuthenticatedGroupsRoute
     }
-    '/_authenticated/teams/$name_/edit': {
-      id: '/_authenticated/teams/$name_/edit'
-      path: '/$name/edit'
-      fullPath: '/teams/$name/edit'
-      preLoaderRoute: typeof AuthenticatedTeamsNameEditRouteImport
-      parentRoute: typeof AuthenticatedTeamsRoute
+    '/_authenticated/groups/new': {
+      id: '/_authenticated/groups/new'
+      path: '/new'
+      fullPath: '/groups/new'
+      preLoaderRoute: typeof AuthenticatedGroupsNewRouteImport
+      parentRoute: typeof AuthenticatedGroupsRoute
     }
-    '/_authenticated/service-accounts/$name_/edit': {
-      id: '/_authenticated/service-accounts/$name_/edit'
-      path: '/$name/edit'
-      fullPath: '/service-accounts/$name/edit'
-      preLoaderRoute: typeof AuthenticatedServiceAccountsNameEditRouteImport
-      parentRoute: typeof AuthenticatedServiceAccountsRoute
+    '/_authenticated/host-keys/': {
+      id: '/_authenticated/host-keys/'
+      path: '/'
+      fullPath: '/host-keys/'
+      preLoaderRoute: typeof AuthenticatedHostKeysIndexRouteImport
+      parentRoute: typeof AuthenticatedHostKeysRoute
     }
-    '/_authenticated/roles/$name_/edit': {
-      id: '/_authenticated/roles/$name_/edit'
-      path: '/$name/edit'
-      fullPath: '/roles/$name/edit'
-      preLoaderRoute: typeof AuthenticatedRolesNameEditRouteImport
-      parentRoute: typeof AuthenticatedRolesRoute
+    '/_authenticated/host-keys/$name': {
+      id: '/_authenticated/host-keys/$name'
+      path: '/$name'
+      fullPath: '/host-keys/$name'
+      preLoaderRoute: typeof AuthenticatedHostKeysNameRouteImport
+      parentRoute: typeof AuthenticatedHostKeysRoute
     }
-    '/_authenticated/role-bindings/$name_/edit': {
-      id: '/_authenticated/role-bindings/$name_/edit'
-      path: '/$name/edit'
-      fullPath: '/role-bindings/$name/edit'
-      preLoaderRoute: typeof AuthenticatedRoleBindingsNameEditRouteImport
-      parentRoute: typeof AuthenticatedRoleBindingsRoute
+    '/_authenticated/host-keys/new': {
+      id: '/_authenticated/host-keys/new'
+      path: '/new'
+      fullPath: '/host-keys/new'
+      preLoaderRoute: typeof AuthenticatedHostKeysNewRouteImport
+      parentRoute: typeof AuthenticatedHostKeysRoute
     }
-    '/_authenticated/projects/$name_/edit': {
-      id: '/_authenticated/projects/$name_/edit'
-      path: '/$name/edit'
-      fullPath: '/projects/$name/edit'
-      preLoaderRoute: typeof AuthenticatedProjectsNameEditRouteImport
-      parentRoute: typeof AuthenticatedProjectsRoute
+    '/_authenticated/hosts/$name': {
+      id: '/_authenticated/hosts/$name'
+      path: '/hosts/$name'
+      fullPath: '/hosts/$name'
+      preLoaderRoute: typeof AuthenticatedHostsNameRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/pricing/$name_/edit': {
-      id: '/_authenticated/pricing/$name_/edit'
-      path: '/$name/edit'
-      fullPath: '/pricing/$name/edit'
-      preLoaderRoute: typeof AuthenticatedPricingNameEditRouteImport
-      parentRoute: typeof AuthenticatedPricingRoute
+    '/_authenticated/keys_/$name': {
+      id: '/_authenticated/keys_/$name'
+      path: '/keys/$name'
+      fullPath: '/keys/$name'
+      preLoaderRoute: typeof AuthenticatedKeysNameRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/policy-bindings/$name_/edit': {
-      id: '/_authenticated/policy-bindings/$name_/edit'
-      path: '/$name/edit'
-      fullPath: '/policy-bindings/$name/edit'
-      preLoaderRoute: typeof AuthenticatedPolicyBindingsNameEditRouteImport
+    '/_authenticated/keys_/new': {
+      id: '/_authenticated/keys_/new'
+      path: '/keys/new'
+      fullPath: '/keys/new'
+      preLoaderRoute: typeof AuthenticatedKeysNewRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/logs/': {
+      id: '/_authenticated/logs/'
+      path: '/logs'
+      fullPath: '/logs/'
+      preLoaderRoute: typeof AuthenticatedLogsIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/logs/$requestId': {
+      id: '/_authenticated/logs/$requestId'
+      path: '/logs/$requestId'
+      fullPath: '/logs/$requestId'
+      preLoaderRoute: typeof AuthenticatedLogsRequestIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/models/': {
+      id: '/_authenticated/models/'
+      path: '/'
+      fullPath: '/models/'
+      preLoaderRoute: typeof AuthenticatedModelsIndexRouteImport
+      parentRoute: typeof AuthenticatedModelsRoute
+    }
+    '/_authenticated/models/$name': {
+      id: '/_authenticated/models/$name'
+      path: '/$name'
+      fullPath: '/models/$name'
+      preLoaderRoute: typeof AuthenticatedModelsNameRouteImport
+      parentRoute: typeof AuthenticatedModelsRoute
+    }
+    '/_authenticated/models/new': {
+      id: '/_authenticated/models/new'
+      path: '/new'
+      fullPath: '/models/new'
+      preLoaderRoute: typeof AuthenticatedModelsNewRouteImport
+      parentRoute: typeof AuthenticatedModelsRoute
+    }
+    '/_authenticated/policies/': {
+      id: '/_authenticated/policies/'
+      path: '/'
+      fullPath: '/policies/'
+      preLoaderRoute: typeof AuthenticatedPoliciesIndexRouteImport
+      parentRoute: typeof AuthenticatedPoliciesRoute
+    }
+    '/_authenticated/policies/$name': {
+      id: '/_authenticated/policies/$name'
+      path: '/$name'
+      fullPath: '/policies/$name'
+      preLoaderRoute: typeof AuthenticatedPoliciesNameRouteImport
+      parentRoute: typeof AuthenticatedPoliciesRoute
+    }
+    '/_authenticated/policies/new': {
+      id: '/_authenticated/policies/new'
+      path: '/new'
+      fullPath: '/policies/new'
+      preLoaderRoute: typeof AuthenticatedPoliciesNewRouteImport
+      parentRoute: typeof AuthenticatedPoliciesRoute
+    }
+    '/_authenticated/policy-bindings/': {
+      id: '/_authenticated/policy-bindings/'
+      path: '/'
+      fullPath: '/policy-bindings/'
+      preLoaderRoute: typeof AuthenticatedPolicyBindingsIndexRouteImport
       parentRoute: typeof AuthenticatedPolicyBindingsRoute
     }
-    '/_authenticated/policies/rate-limits/new': {
-      id: '/_authenticated/policies/rate-limits/new'
-      path: '/rate-limits/new'
-      fullPath: '/policies/rate-limits/new'
-      preLoaderRoute: typeof AuthenticatedPoliciesRateLimitsNewRouteImport
+    '/_authenticated/policy-bindings/$name': {
+      id: '/_authenticated/policy-bindings/$name'
+      path: '/$name'
+      fullPath: '/policy-bindings/$name'
+      preLoaderRoute: typeof AuthenticatedPolicyBindingsNameRouteImport
+      parentRoute: typeof AuthenticatedPolicyBindingsRoute
+    }
+    '/_authenticated/policy-bindings/new': {
+      id: '/_authenticated/policy-bindings/new'
+      path: '/new'
+      fullPath: '/policy-bindings/new'
+      preLoaderRoute: typeof AuthenticatedPolicyBindingsNewRouteImport
+      parentRoute: typeof AuthenticatedPolicyBindingsRoute
+    }
+    '/_authenticated/pricing/': {
+      id: '/_authenticated/pricing/'
+      path: '/'
+      fullPath: '/pricing/'
+      preLoaderRoute: typeof AuthenticatedPricingIndexRouteImport
+      parentRoute: typeof AuthenticatedPricingRoute
+    }
+    '/_authenticated/pricing/$name': {
+      id: '/_authenticated/pricing/$name'
+      path: '/$name'
+      fullPath: '/pricing/$name'
+      preLoaderRoute: typeof AuthenticatedPricingNameRouteImport
+      parentRoute: typeof AuthenticatedPricingRoute
+    }
+    '/_authenticated/pricing/new': {
+      id: '/_authenticated/pricing/new'
+      path: '/new'
+      fullPath: '/pricing/new'
+      preLoaderRoute: typeof AuthenticatedPricingNewRouteImport
+      parentRoute: typeof AuthenticatedPricingRoute
+    }
+    '/_authenticated/projects/': {
+      id: '/_authenticated/projects/'
+      path: '/'
+      fullPath: '/projects/'
+      preLoaderRoute: typeof AuthenticatedProjectsIndexRouteImport
+      parentRoute: typeof AuthenticatedProjectsRoute
+    }
+    '/_authenticated/projects/$name': {
+      id: '/_authenticated/projects/$name'
+      path: '/$name'
+      fullPath: '/projects/$name'
+      preLoaderRoute: typeof AuthenticatedProjectsNameRouteImport
+      parentRoute: typeof AuthenticatedProjectsRoute
+    }
+    '/_authenticated/projects/new': {
+      id: '/_authenticated/projects/new'
+      path: '/new'
+      fullPath: '/projects/new'
+      preLoaderRoute: typeof AuthenticatedProjectsNewRouteImport
+      parentRoute: typeof AuthenticatedProjectsRoute
+    }
+    '/_authenticated/providers/$name': {
+      id: '/_authenticated/providers/$name'
+      path: '/providers/$name'
+      fullPath: '/providers/$name'
+      preLoaderRoute: typeof AuthenticatedProvidersNameRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/role-bindings/': {
+      id: '/_authenticated/role-bindings/'
+      path: '/'
+      fullPath: '/role-bindings/'
+      preLoaderRoute: typeof AuthenticatedRoleBindingsIndexRouteImport
+      parentRoute: typeof AuthenticatedRoleBindingsRoute
+    }
+    '/_authenticated/role-bindings/$name': {
+      id: '/_authenticated/role-bindings/$name'
+      path: '/$name'
+      fullPath: '/role-bindings/$name'
+      preLoaderRoute: typeof AuthenticatedRoleBindingsNameRouteImport
+      parentRoute: typeof AuthenticatedRoleBindingsRoute
+    }
+    '/_authenticated/role-bindings/new': {
+      id: '/_authenticated/role-bindings/new'
+      path: '/new'
+      fullPath: '/role-bindings/new'
+      preLoaderRoute: typeof AuthenticatedRoleBindingsNewRouteImport
+      parentRoute: typeof AuthenticatedRoleBindingsRoute
+    }
+    '/_authenticated/roles/': {
+      id: '/_authenticated/roles/'
+      path: '/'
+      fullPath: '/roles/'
+      preLoaderRoute: typeof AuthenticatedRolesIndexRouteImport
+      parentRoute: typeof AuthenticatedRolesRoute
+    }
+    '/_authenticated/roles/$name': {
+      id: '/_authenticated/roles/$name'
+      path: '/$name'
+      fullPath: '/roles/$name'
+      preLoaderRoute: typeof AuthenticatedRolesNameRouteImport
+      parentRoute: typeof AuthenticatedRolesRoute
+    }
+    '/_authenticated/roles/new': {
+      id: '/_authenticated/roles/new'
+      path: '/new'
+      fullPath: '/roles/new'
+      preLoaderRoute: typeof AuthenticatedRolesNewRouteImport
+      parentRoute: typeof AuthenticatedRolesRoute
+    }
+    '/_authenticated/service-accounts/': {
+      id: '/_authenticated/service-accounts/'
+      path: '/'
+      fullPath: '/service-accounts/'
+      preLoaderRoute: typeof AuthenticatedServiceAccountsIndexRouteImport
+      parentRoute: typeof AuthenticatedServiceAccountsRoute
+    }
+    '/_authenticated/service-accounts/$name': {
+      id: '/_authenticated/service-accounts/$name'
+      path: '/$name'
+      fullPath: '/service-accounts/$name'
+      preLoaderRoute: typeof AuthenticatedServiceAccountsNameRouteImport
+      parentRoute: typeof AuthenticatedServiceAccountsRoute
+    }
+    '/_authenticated/service-accounts/new': {
+      id: '/_authenticated/service-accounts/new'
+      path: '/new'
+      fullPath: '/service-accounts/new'
+      preLoaderRoute: typeof AuthenticatedServiceAccountsNewRouteImport
+      parentRoute: typeof AuthenticatedServiceAccountsRoute
+    }
+    '/_authenticated/settings/': {
+      id: '/_authenticated/settings/'
+      path: '/'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof AuthenticatedSettingsIndexRouteImport
+      parentRoute: typeof AuthenticatedSettingsRoute
+    }
+    '/_authenticated/settings/license': {
+      id: '/_authenticated/settings/license'
+      path: '/license'
+      fullPath: '/settings/license'
+      preLoaderRoute: typeof AuthenticatedSettingsLicenseRouteImport
+      parentRoute: typeof AuthenticatedSettingsRoute
+    }
+    '/_authenticated/settings/payload-logging': {
+      id: '/_authenticated/settings/payload-logging'
+      path: '/payload-logging'
+      fullPath: '/settings/payload-logging'
+      preLoaderRoute: typeof AuthenticatedSettingsPayloadLoggingRouteImport
+      parentRoute: typeof AuthenticatedSettingsRoute
+    }
+    '/_authenticated/settings/permissions': {
+      id: '/_authenticated/settings/permissions'
+      path: '/permissions'
+      fullPath: '/settings/permissions'
+      preLoaderRoute: typeof AuthenticatedSettingsPermissionsRouteImport
+      parentRoute: typeof AuthenticatedSettingsRoute
+    }
+    '/_authenticated/settings/proxy-mode': {
+      id: '/_authenticated/settings/proxy-mode'
+      path: '/proxy-mode'
+      fullPath: '/settings/proxy-mode'
+      preLoaderRoute: typeof AuthenticatedSettingsProxyModeRouteImport
+      parentRoute: typeof AuthenticatedSettingsRoute
+    }
+    '/_authenticated/settings/rate-limits': {
+      id: '/_authenticated/settings/rate-limits'
+      path: '/rate-limits'
+      fullPath: '/settings/rate-limits'
+      preLoaderRoute: typeof AuthenticatedSettingsRateLimitsRouteImport
+      parentRoute: typeof AuthenticatedSettingsRoute
+    }
+    '/_authenticated/settings/sso': {
+      id: '/_authenticated/settings/sso'
+      path: '/sso'
+      fullPath: '/settings/sso'
+      preLoaderRoute: typeof AuthenticatedSettingsSsoRouteImport
+      parentRoute: typeof AuthenticatedSettingsRoute
+    }
+    '/_authenticated/teams/': {
+      id: '/_authenticated/teams/'
+      path: '/'
+      fullPath: '/teams/'
+      preLoaderRoute: typeof AuthenticatedTeamsIndexRouteImport
+      parentRoute: typeof AuthenticatedTeamsRoute
+    }
+    '/_authenticated/teams/$name': {
+      id: '/_authenticated/teams/$name'
+      path: '/$name'
+      fullPath: '/teams/$name'
+      preLoaderRoute: typeof AuthenticatedTeamsNameRouteImport
+      parentRoute: typeof AuthenticatedTeamsRoute
+    }
+    '/_authenticated/teams/new': {
+      id: '/_authenticated/teams/new'
+      path: '/new'
+      fullPath: '/teams/new'
+      preLoaderRoute: typeof AuthenticatedTeamsNewRouteImport
+      parentRoute: typeof AuthenticatedTeamsRoute
+    }
+    '/_authenticated/users/': {
+      id: '/_authenticated/users/'
+      path: '/'
+      fullPath: '/users/'
+      preLoaderRoute: typeof AuthenticatedUsersIndexRouteImport
+      parentRoute: typeof AuthenticatedUsersRoute
+    }
+    '/_authenticated/users/$id': {
+      id: '/_authenticated/users/$id'
+      path: '/$id'
+      fullPath: '/users/$id'
+      preLoaderRoute: typeof AuthenticatedUsersIdRouteImport
+      parentRoute: typeof AuthenticatedUsersRoute
+    }
+    '/_authenticated/groups/$name_/edit': {
+      id: '/_authenticated/groups/$name_/edit'
+      path: '/$name/edit'
+      fullPath: '/groups/$name/edit'
+      preLoaderRoute: typeof AuthenticatedGroupsNameEditRouteImport
+      parentRoute: typeof AuthenticatedGroupsRoute
+    }
+    '/_authenticated/host-keys/$name_/edit': {
+      id: '/_authenticated/host-keys/$name_/edit'
+      path: '/$name/edit'
+      fullPath: '/host-keys/$name/edit'
+      preLoaderRoute: typeof AuthenticatedHostKeysNameEditRouteImport
+      parentRoute: typeof AuthenticatedHostKeysRoute
+    }
+    '/_authenticated/keys_/$name_/edit': {
+      id: '/_authenticated/keys_/$name_/edit'
+      path: '/keys/$name/edit'
+      fullPath: '/keys/$name/edit'
+      preLoaderRoute: typeof AuthenticatedKeysNameEditRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/models/$name/edit': {
+      id: '/_authenticated/models/$name/edit'
+      path: '/edit'
+      fullPath: '/models/$name/edit'
+      preLoaderRoute: typeof AuthenticatedModelsNameEditRouteImport
+      parentRoute: typeof AuthenticatedModelsNameRoute
+    }
+    '/_authenticated/policies/$name_/edit': {
+      id: '/_authenticated/policies/$name_/edit'
+      path: '/$name/edit'
+      fullPath: '/policies/$name/edit'
+      preLoaderRoute: typeof AuthenticatedPoliciesNameEditRouteImport
       parentRoute: typeof AuthenticatedPoliciesRoute
     }
     '/_authenticated/policies/rate-limits/$name': {
@@ -1607,40 +1586,61 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPoliciesRateLimitsNameRouteImport
       parentRoute: typeof AuthenticatedPoliciesRoute
     }
-    '/_authenticated/policies/$name_/edit': {
-      id: '/_authenticated/policies/$name_/edit'
-      path: '/$name/edit'
-      fullPath: '/policies/$name/edit'
-      preLoaderRoute: typeof AuthenticatedPoliciesNameEditRouteImport
+    '/_authenticated/policies/rate-limits/new': {
+      id: '/_authenticated/policies/rate-limits/new'
+      path: '/rate-limits/new'
+      fullPath: '/policies/rate-limits/new'
+      preLoaderRoute: typeof AuthenticatedPoliciesRateLimitsNewRouteImport
       parentRoute: typeof AuthenticatedPoliciesRoute
     }
-    '/_authenticated/models/$name/edit': {
-      id: '/_authenticated/models/$name/edit'
-      path: '/edit'
-      fullPath: '/models/$name/edit'
-      preLoaderRoute: typeof AuthenticatedModelsNameEditRouteImport
-      parentRoute: typeof AuthenticatedModelsNameRoute
-    }
-    '/_authenticated/keys_/$name_/edit': {
-      id: '/_authenticated/keys_/$name_/edit'
-      path: '/keys/$name/edit'
-      fullPath: '/keys/$name/edit'
-      preLoaderRoute: typeof AuthenticatedKeysNameEditRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/host-keys/$name_/edit': {
-      id: '/_authenticated/host-keys/$name_/edit'
+    '/_authenticated/policy-bindings/$name_/edit': {
+      id: '/_authenticated/policy-bindings/$name_/edit'
       path: '/$name/edit'
-      fullPath: '/host-keys/$name/edit'
-      preLoaderRoute: typeof AuthenticatedHostKeysNameEditRouteImport
-      parentRoute: typeof AuthenticatedHostKeysRoute
+      fullPath: '/policy-bindings/$name/edit'
+      preLoaderRoute: typeof AuthenticatedPolicyBindingsNameEditRouteImport
+      parentRoute: typeof AuthenticatedPolicyBindingsRoute
     }
-    '/_authenticated/groups/$name_/edit': {
-      id: '/_authenticated/groups/$name_/edit'
+    '/_authenticated/pricing/$name_/edit': {
+      id: '/_authenticated/pricing/$name_/edit'
       path: '/$name/edit'
-      fullPath: '/groups/$name/edit'
-      preLoaderRoute: typeof AuthenticatedGroupsNameEditRouteImport
-      parentRoute: typeof AuthenticatedGroupsRoute
+      fullPath: '/pricing/$name/edit'
+      preLoaderRoute: typeof AuthenticatedPricingNameEditRouteImport
+      parentRoute: typeof AuthenticatedPricingRoute
+    }
+    '/_authenticated/projects/$name_/edit': {
+      id: '/_authenticated/projects/$name_/edit'
+      path: '/$name/edit'
+      fullPath: '/projects/$name/edit'
+      preLoaderRoute: typeof AuthenticatedProjectsNameEditRouteImport
+      parentRoute: typeof AuthenticatedProjectsRoute
+    }
+    '/_authenticated/role-bindings/$name_/edit': {
+      id: '/_authenticated/role-bindings/$name_/edit'
+      path: '/$name/edit'
+      fullPath: '/role-bindings/$name/edit'
+      preLoaderRoute: typeof AuthenticatedRoleBindingsNameEditRouteImport
+      parentRoute: typeof AuthenticatedRoleBindingsRoute
+    }
+    '/_authenticated/roles/$name_/edit': {
+      id: '/_authenticated/roles/$name_/edit'
+      path: '/$name/edit'
+      fullPath: '/roles/$name/edit'
+      preLoaderRoute: typeof AuthenticatedRolesNameEditRouteImport
+      parentRoute: typeof AuthenticatedRolesRoute
+    }
+    '/_authenticated/service-accounts/$name_/edit': {
+      id: '/_authenticated/service-accounts/$name_/edit'
+      path: '/$name/edit'
+      fullPath: '/service-accounts/$name/edit'
+      preLoaderRoute: typeof AuthenticatedServiceAccountsNameEditRouteImport
+      parentRoute: typeof AuthenticatedServiceAccountsRoute
+    }
+    '/_authenticated/teams/$name_/edit': {
+      id: '/_authenticated/teams/$name_/edit'
+      path: '/$name/edit'
+      fullPath: '/teams/$name/edit'
+      preLoaderRoute: typeof AuthenticatedTeamsNameEditRouteImport
+      parentRoute: typeof AuthenticatedTeamsRoute
     }
     '/_authenticated/policies/rate-limits/$name_/edit': {
       id: '/_authenticated/policies/rate-limits/$name_/edit'

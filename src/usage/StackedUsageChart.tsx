@@ -148,7 +148,7 @@ export function StackedUsageChart({
 						key={key}
 						dataKey={key}
 						stackId="usage"
-						fill={`var(--color-${key})`}
+						fill={config[key]?.color}
 						maxBarSize={56}
 						radius={isLast(key, data.series) ? [3, 3, 0, 0] : undefined}
 						isAnimationActive={false}

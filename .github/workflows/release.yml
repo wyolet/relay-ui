@@ -6,21 +6,27 @@ on:
       - 'v*'
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
-  release:
+  # Runs dependency and build code with a read-only token; only the tarball
+  # crosses into the job that can write releases.
+  build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-
-      - uses: oven-sh/setup-bun@v2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          bun-version: latest
+          persist-credentials: false
+
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version-file: package.json
+          # Release builds never restore a cache another workflow could have written.
+          no-cache: true
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
@@ -35,6 +41,9 @@ jobs:
       - name: Test
         run: bun run test
 
+      - name: Audit runtime dependencies
+        run: bun audit --prod --audit-level=high
+
       - name: Build
         run: bun run build
         env:
@@ -42,43 +51,70 @@ jobs:
 
       # The tarball is the prebuilt SPA only — contents of dist/, nothing else.
       # The relay backend extracts this into its //go:embed dir at the pinned tag.
-      - name: Package + checksum
+      - name: Package
         run: |
-          VERSION="${GITHUB_REF_NAME}"
-          TARBALL="relay-ui-${VERSION}.tar.gz"
-          tar -czf "${TARBALL}" -C dist .
+          mkdir out
+          tar -czf "out/relay-ui-${GITHUB_REF_NAME}.tar.gz" -C dist .
+          cp "out/relay-ui-${GITHUB_REF_NAME}.tar.gz" out/relay-ui-latest.tar.gz
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: tarballs
+          path: out/
+          retention-days: 1
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: tarballs
+
+      - name: Checksum
+        run: |
+          TARBALL="relay-ui-${GITHUB_REF_NAME}.tar.gz"
           sha256sum "${TARBALL}" > "${TARBALL}.sha256"
-          # Stable, version-agnostic aliases for consumers that always want the tip.
-          cp "${TARBALL}" relay-ui-latest.tar.gz
           sha256sum relay-ui-latest.tar.gz > relay-ui-latest.tar.gz.sha256
-          echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
           echo "TARBALL=${TARBALL}" >> "$GITHUB_ENV"
           {
-            echo "## relay-ui ${VERSION}"
+            echo "## relay-ui ${GITHUB_REF_NAME}"
             echo
             echo '```'
             cat "${TARBALL}.sha256"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v3
+      # Consumers verify with: gh attestation verify <tarball> --repo wyolet/relay-ui
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
-          name: "relay-ui ${{ env.VERSION }}"
-          generate_release_notes: true
-          files: |
-            ${{ env.TARBALL }}
-            ${{ env.TARBALL }}.sha256
+          subject-path: ${{ env.TARBALL }}
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            --verify-tag \
+            --title "relay-ui ${GITHUB_REF_NAME}" \
+            --generate-notes \
+            "${TARBALL}" "${TARBALL}.sha256"
 
       # Moving "latest" release that always points at the most recent tag.
       # Backend pins exact tags; this is a convenience alias only.
       - name: Update latest alias release
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
         run: |
           gh release delete latest --yes --cleanup-tag 2>/dev/null || true
           gh release create latest \
-            --title "relay-ui (latest → ${VERSION})" \
-            --notes "Moving alias for the most recent release: ${VERSION}." \
+            --title "relay-ui (latest → ${GITHUB_REF_NAME})" \
+            --notes "Moving alias for the most recent release: ${GITHUB_REF_NAME}." \
             --latest=false \
             relay-ui-latest.tar.gz relay-ui-latest.tar.gz.sha256

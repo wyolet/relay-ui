@@ -38,6 +38,15 @@ Until a stable release line is established, security fixes are applied to
 the `main` branch. Pin to a tagged release and watch the repository for
 advisories.
 
+## Verifying releases
+
+Each release tarball carries a build provenance attestation from this
+repository's release workflow:
+
+```sh
+gh attestation verify relay-ui-vX.Y.Z.tar.gz --repo wyolet/relay-ui
+```
+
 ## Disclosure
 
 We follow coordinated disclosure: we'll work with you on a fix and a
