@@ -1,7 +1,12 @@
-import { queryOptions, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+	hashKey,
+	type QueryClient,
+	queryOptions,
+	useQuery,
+	useQueryClient,
+} from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { apiClient } from "./client";
-import { CAPABILITIES_KEY } from "./hooks/capabilities";
 
 interface Whoami {
 	authenticated: boolean;
@@ -43,6 +48,16 @@ export const whoamiQueryOptions = queryOptions({
 	retry: false,
 });
 
+/**
+ * Drop every cached query except whoami, so data fetched under one session can
+ * never render for the next account signing in on the same tab.
+ */
+export function removeAccountQueries(queryClient: QueryClient): void {
+	queryClient.removeQueries({
+		predicate: (q) => q.queryHash !== hashKey(whoamiQueryOptions.queryKey),
+	});
+}
+
 export function useAuth() {
 	const queryClient = useQueryClient();
 	const navigate = useNavigate();
@@ -63,11 +78,10 @@ export function useAuth() {
 			// Backend returns a structured error with a human-readable message.
 			throw new AuthError(error.error.message || "Login failed.");
 		}
+		removeAccountQueries(queryClient);
 		await queryClient.invalidateQueries({
 			queryKey: whoamiQueryOptions.queryKey,
 		});
-		// Capability probes answer per actor; the next session must re-probe.
-		queryClient.removeQueries({ queryKey: [CAPABILITIES_KEY] });
 	}
 
 	async function logout(): Promise<void> {

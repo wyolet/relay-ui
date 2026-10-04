@@ -2,14 +2,19 @@ import { motion } from "motion/react";
 import { useMemo, useState } from "react";
 import { highlight } from "sugar-high";
 import { Button } from "@/components/ui/button";
-import { MODEL_PLACEHOLDER, MSG_PLACEHOLDER } from "./snippets";
+import {
+	fillSnippet,
+	MODEL_PLACEHOLDER,
+	MSG_PLACEHOLDER,
+	type Snippet,
+	snippetLiteral,
+} from "./snippets";
 
 interface CodeBlockProps {
-	/** Snippet code with the model/prompt placeholders. */
-	template: string;
-	/** Current model pointer (rendered as a quoted string). */
+	snippet: Snippet;
+	/** Current model pointer. */
 	model: string;
-	/** Current prompt (rendered as a JSON string). */
+	/** Current prompt. */
 	message: string;
 }
 
@@ -77,15 +82,16 @@ function ValueSpan({ text }: { text: string }) {
 }
 
 /** Read-only snippet with syntax highlighting; only the model/prompt animate. */
-export function CodeBlock({ template, model, message }: CodeBlockProps) {
+export function CodeBlock({ snippet, model, message }: CodeBlockProps) {
 	const [copied, setCopied] = useState(false);
-	const segments = useMemo(() => segmentize(template), [template]);
+	const segments = useMemo(
+		() => segmentize(snippet.template),
+		[snippet.template],
+	);
 
-	const modelText = `"${model}"`;
-	const messageText = JSON.stringify(message);
-	const fullCode = template
-		.replace(MODEL_PLACEHOLDER, modelText)
-		.replace(MSG_PLACEHOLDER, messageText);
+	const modelText = snippetLiteral(snippet.id, model);
+	const messageText = snippetLiteral(snippet.id, message);
+	const fullCode = fillSnippet(snippet, model, message);
 
 	async function copy() {
 		try {

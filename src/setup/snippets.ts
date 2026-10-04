@@ -3,8 +3,8 @@ import { INFERENCE_API_URL } from "@/api/client";
 /**
  * Placeholders the snippet template leaves for the (rotating) model pointer and
  * prompt. Bare identifiers so sugar-high renders each as a single span we can
- * splice an animated value into — see CodeBlock. The renderer supplies the
- * surrounding quotes.
+ * splice an animated value into — see CodeBlock. {@link snippetLiteral}
+ * supplies the quoting.
  */
 export const MODEL_PLACEHOLDER = "RELAYMODEL";
 export const MSG_PLACEHOLDER = "RELAYMSG";
@@ -27,6 +27,27 @@ export interface Snippet {
  */
 export function relayBaseUrl(adapter: string): string {
 	return `${INFERENCE_API_URL.replace(/\/$/, "")}/${adapter}/v1`;
+}
+
+/**
+ * `value` as a string literal valid in every snippet language. The curl body
+ * sits in shell single quotes, so a `'` there must close, escape, and reopen.
+ */
+export function snippetLiteral(id: Snippet["id"], value: string): string {
+	const json = JSON.stringify(value);
+	return id === "curl" ? json.replaceAll("'", "'\\''") : json;
+}
+
+/** The copyable snippet with model and prompt filled in as safe literals. */
+export function fillSnippet(
+	snippet: Snippet,
+	model: string,
+	message: string,
+): string {
+	// Function replacers: a string replacement would expand `$'`/`$&` in values.
+	return snippet.template
+		.replace(MODEL_PLACEHOLDER, () => snippetLiteral(snippet.id, model))
+		.replace(MSG_PLACEHOLDER, () => snippetLiteral(snippet.id, message));
 }
 
 export function buildSnippets(apiKey: string, adapter: string): Snippet[] {

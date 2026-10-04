@@ -79,9 +79,13 @@ function ChartContainer({
   )
 }
 
+// Config keys can be server data (e.g. usage group values); only identifier-safe
+// keys become CSS variables, so a key can never inject rules into the <style>.
+const CSS_VAR_KEY = /^[A-Za-z0-9_-]+$/
+
 const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
   const colorConfig = Object.entries(config).filter(
-    ([, config]) => config.theme ?? config.color
+    ([key, config]) => CSS_VAR_KEY.test(key) && (config.theme ?? config.color)
   )
 
   if (!colorConfig.length) {

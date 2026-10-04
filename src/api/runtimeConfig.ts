@@ -28,7 +28,10 @@ function pageOrigin(): string {
 }
 
 function configUrl(): string {
-	const override = import.meta.env.VITE_RUNTIME_CONFIG_URL;
+	// Dev-only: a release bundle must never send credentials to a build-time host.
+	const override = import.meta.env.DEV
+		? import.meta.env.VITE_RUNTIME_CONFIG_URL
+		: undefined;
 	return override ? override : `${pageOrigin()}/config.json`;
 }
 
@@ -74,7 +77,9 @@ const trimSlash = (u: string): string => u.replace(/\/$/, "");
  * still returns the bare origin.
  */
 export function controlApiUrl(): string {
-	const override = import.meta.env.VITE_CONTROL_API_URL;
+	const override = import.meta.env.DEV
+		? import.meta.env.VITE_CONTROL_API_URL
+		: undefined;
 	if (override) return trimSlash(override);
 	return trimSlash(loaded.controlApiUrl ?? configOrigin());
 }
