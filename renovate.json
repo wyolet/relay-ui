@@ -22,6 +22,16 @@
     "minimumReleaseAge": null,
     "schedule": ["at any time"]
   },
+  "customManagers": [
+    {
+      "description": "cdxgen version the release workflow runs via npx",
+      "customType": "regex",
+      "managerFilePatterns": ["/^\\.github/workflows/release\\.yml$/"],
+      "matchStrings": ["@cyclonedx/cdxgen@(?<currentValue>\\d+\\.\\d+\\.\\d+)"],
+      "depNameTemplate": "@cyclonedx/cdxgen",
+      "datasourceTemplate": "npm"
+    }
+  ],
   "packageRules": [
     {
       "description": "One weekly PR for non-major package updates past 1.0",
