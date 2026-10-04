@@ -11,6 +11,7 @@
   "commitMessageTopic": "{{depName}}",
   "commitMessageExtra": "from {{{currentVersion}}} to {{{newVersion}}}",
   "minimumReleaseAge": "3 days",
+  "osvVulnerabilityAlerts": true,
   "internalChecksFilter": "strict",
   "lockFileMaintenance": {
     "enabled": true,
