@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { EMPTY_GRAPH, mockApi } from "./fixtures/mockApi";
+import { EMPTY_GRAPH, hostBinding, mockApi } from "./fixtures/mockApi";
 
 const provider = {
 	metadata: { id: "prov-openai", name: "openai" },
@@ -15,11 +15,9 @@ const model = {
 		name: "gpt-4o",
 		owner: { kind: "provider", id: "prov-openai" },
 	},
-	spec: {
-		enabled: true,
-		hosts: [{ hostId: "host-1", upstreamName: "gpt-4o", adapter: "openai", enabled: true }],
-	},
+	spec: { enabled: true },
 };
+const binding = hostBinding("model-gpt", "host-1", "gpt-4o");
 const hostKey = {
 	metadata: { id: "hk-1", name: "openai-prod", owner: { kind: "user" } },
 	spec: { hostId: "host-1", policyId: "policy-1", enabled: true, valueFrom: { kind: "stored" } },
@@ -63,6 +61,7 @@ test.describe("Diagnostics — Policies", () => {
 			hostKeys: [],
 			hosts: [host],
 			models: [model],
+			hostBindings: [binding],
 			providers: [provider],
 		});
 
@@ -74,7 +73,7 @@ test.describe("Diagnostics — Policies", () => {
 
 		await page.goto("/policies/broken-policy");
 		await expect(
-			page.getByText("No host keys attached", { exact: false }),
+			page.getByText("No credentials attached", { exact: false }),
 		).toBeVisible();
 	});
 
@@ -95,6 +94,7 @@ test.describe("Diagnostics — Policies", () => {
 			hostKeys: [hostKey],
 			hosts: [host],
 			models: [model],
+			hostBindings: [binding],
 			providers: [provider],
 			keys: [key],
 		});
@@ -129,6 +129,7 @@ test.describe("Diagnostics — Policies", () => {
 			hostKeys: [hostKey],
 			hosts: [host],
 			models: [model],
+			hostBindings: [binding],
 			providers: [provider],
 			rateLimits: [disabledRL],
 		});
