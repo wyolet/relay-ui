@@ -6,8 +6,9 @@ import {
 	useCreateRoleBinding,
 	useUpdateRoleBinding,
 } from "@/api/hooks/roleBindings";
-import { ApiError } from "@/api/types/errors";
 import type { RoleBinding } from "@/api/types/roleBinding";
+import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
+import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
 import { randomSuffix, slugify } from "@/lib/slug";
 import {
@@ -126,6 +127,11 @@ export function useRoleBindingForm({
 	const isEdit = binding !== undefined;
 	const createBinding = useCreateRoleBinding();
 	const updateBinding = useUpdateRoleBinding();
+	const toastSaveError = useSaveErrorToast();
+	const loaded = useLoadedResourceVersion(
+		`${open}:${binding?.metadata.id ?? ""}`,
+		binding?.metadata.resourceVersion,
+	);
 
 	const initial = useMemo<RoleBindingFormValues>(
 		() => (binding ? toValues(binding) : emptyValues(scopeKind, scopeId)),
@@ -178,6 +184,7 @@ export function useRoleBindingForm({
 						body: {
 							metadata: {
 								...binding.metadata,
+								resourceVersion: loaded.version,
 								displayName,
 								description,
 								labels,
@@ -186,6 +193,7 @@ export function useRoleBindingForm({
 							spec,
 						},
 					});
+					loaded.markSaved(saved.metadata.resourceVersion);
 					toast("success", `Role binding "${displayName}" updated.`);
 					onSaved(saved.metadata.name);
 				} else {
@@ -203,19 +211,18 @@ export function useRoleBindingForm({
 					onSaved(created.metadata.name);
 				}
 			} catch (err) {
-				toast(
-					"error",
-					err instanceof ApiError
-						? err.body.message
-						: isEdit
-							? "Failed to update role binding."
-							: "Failed to create role binding.",
+				toastSaveError(
+					err,
+					isEdit
+						? "Failed to update role binding."
+						: "Failed to create role binding.",
+					loaded.reload,
 				);
 			}
 		},
 	});
 
-	const resetKey = `${open}:${binding?.metadata.id ?? ""}`;
+	const resetKey = loaded.resetKey;
 	const lastResetKey = useRef<string | null>(null);
 	useEffect(() => {
 		if (lastResetKey.current === resetKey) return;

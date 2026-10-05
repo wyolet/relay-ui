@@ -18,6 +18,7 @@ import { policiesListQueryOptions } from "@/api/hooks/policies";
 import { providersListQueryOptions } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
 import { ApiError } from "@/api/types/errors";
+import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { type HostDetailTab, HostDetailView } from "@/hosts/HostDetailView";
 import { displayLabel } from "@/lib/displayLabel";
 import { confirm } from "@/shared/ConfirmDialog";
@@ -69,6 +70,7 @@ function HostDetailInner() {
 	const navigate = useNavigate({ from: "/hosts/$name" });
 	const { data: host } = useHost(name);
 	const updateHost = useUpdateHost();
+	const toastSaveError = useSaveErrorToast();
 	const deleteHost = useDeleteHost();
 
 	async function handleDelete() {
@@ -104,10 +106,7 @@ function HostDetailInner() {
 			});
 			toast("success", next ? "Host enabled." : "Host disabled.");
 		} catch (err) {
-			toast(
-				"error",
-				err instanceof ApiError ? err.body.message : "Failed to toggle host.",
-			);
+			toastSaveError(err, "Failed to toggle host.");
 		}
 	}
 

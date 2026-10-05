@@ -18,6 +18,7 @@ import {
 } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
 import { ApiError } from "@/api/types/errors";
+import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
 import {
 	type ProviderDetailTab,
@@ -57,6 +58,7 @@ function ProviderDetailInner() {
 	const navigate = useNavigate({ from: "/providers/$name" });
 	const { data: provider } = useProvider(name);
 	const updateProvider = useUpdateProvider();
+	const toastSaveError = useSaveErrorToast();
 	const deleteProvider = useDeleteProvider();
 
 	async function handleDelete() {
@@ -97,12 +99,7 @@ function ProviderDetailInner() {
 			});
 			toast("success", next ? "Provider enabled." : "Provider disabled.");
 		} catch (err) {
-			toast(
-				"error",
-				err instanceof ApiError
-					? err.body.message
-					: "Failed to toggle provider.",
-			);
+			toastSaveError(err, "Failed to toggle provider.");
 		}
 	}
 

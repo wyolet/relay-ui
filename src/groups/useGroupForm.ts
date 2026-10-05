@@ -3,8 +3,9 @@ import { useStore } from "@tanstack/react-store";
 import { useEffect, useMemo, useRef } from "react";
 import { z } from "zod";
 import { useCreateGroup, useUpdateGroup } from "@/api/hooks/groups";
-import { ApiError } from "@/api/types/errors";
 import type { Group } from "@/api/types/group";
+import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
+import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
 import { randomSuffix, slugify } from "@/lib/slug";
 import { toast } from "@/shared/Toast";
@@ -65,6 +66,11 @@ export function useGroupForm({
 	const isEdit = group !== undefined;
 	const createGroup = useCreateGroup();
 	const updateGroup = useUpdateGroup();
+	const toastSaveError = useSaveErrorToast();
+	const loaded = useLoadedResourceVersion(
+		`${open}:${group?.metadata.id ?? ""}`,
+		group?.metadata.resourceVersion,
+	);
 
 	const initial = useMemo<GroupFormValues>(
 		() => (group ? toValues(group) : emptyValues()),
@@ -107,12 +113,14 @@ export function useGroupForm({
 						body: {
 							metadata: {
 								...group.metadata,
+								resourceVersion: loaded.version,
 								displayName,
 								description: value.description.trim(),
 							},
 							spec,
 						},
 					});
+					loaded.markSaved(saved.metadata.resourceVersion);
 					toast("success", `Group "${displayName}" updated.`);
 					onSaved(saved.metadata.name);
 				} else {
@@ -129,19 +137,16 @@ export function useGroupForm({
 					onSaved(created.metadata.name);
 				}
 			} catch (err) {
-				toast(
-					"error",
-					err instanceof ApiError
-						? err.body.message
-						: isEdit
-							? "Failed to update group."
-							: "Failed to create group.",
+				toastSaveError(
+					err,
+					isEdit ? "Failed to update group." : "Failed to create group.",
+					loaded.reload,
 				);
 			}
 		},
 	});
 
-	const resetKey = `${open}:${group?.metadata.id ?? ""}`;
+	const resetKey = loaded.resetKey;
 	const lastResetKey = useRef<string | null>(null);
 	useEffect(() => {
 		if (lastResetKey.current === resetKey) return;

@@ -1,6 +1,6 @@
 import { useId, useState } from "react";
 import { useUpdateHostKey } from "@/api/hooks/hostkeys";
-import { ApiError } from "@/api/types/errors";
+import { ApiError, isStaleResourceVersion } from "@/api/types/errors";
 import type { HostKey } from "@/api/types/hostkey";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,6 +12,10 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import {
+	STALE_SAVE_MESSAGE,
+	useReloadQueries,
+} from "@/hooks/useSaveErrorToast";
 import { AlertBanner } from "@/shared/AlertBanner";
 import { toast } from "@/shared/Toast";
 
@@ -23,8 +27,10 @@ interface SecretRotateDialogProps {
 export function SecretRotateDialog({ hk, onClose }: SecretRotateDialogProps) {
 	const [value, setValue] = useState("");
 	const [inlineError, setInlineError] = useState<string | undefined>();
+	const [stale, setStale] = useState(false);
 	const inputId = useId();
 	const updateHostKey = useUpdateHostKey();
+	const reloadQueries = useReloadQueries();
 
 	async function handleConfirm() {
 		if (!value.trim()) {
@@ -32,6 +38,7 @@ export function SecretRotateDialog({ hk, onClose }: SecretRotateDialogProps) {
 			return;
 		}
 		setInlineError(undefined);
+		setStale(false);
 		try {
 			await updateHostKey.mutateAsync({
 				id: hk.metadata.id ?? "",
@@ -48,6 +55,10 @@ export function SecretRotateDialog({ hk, onClose }: SecretRotateDialogProps) {
 			toast("success", "Credential rotated.");
 			onClose();
 		} catch (err) {
+			if (isStaleResourceVersion(err)) {
+				setStale(true);
+				return;
+			}
 			setInlineError(
 				err instanceof ApiError
 					? err.body.message
@@ -77,6 +88,22 @@ export function SecretRotateDialog({ hk, onClose }: SecretRotateDialogProps) {
 
 				{inlineError && (
 					<AlertBanner severity="error">{inlineError}</AlertBanner>
+				)}
+				{stale && (
+					<AlertBanner severity="error" title={STALE_SAVE_MESSAGE}>
+						<Button
+							type="button"
+							variant="outline"
+							size="sm"
+							className="mt-2"
+							onClick={() => {
+								setStale(false);
+								reloadQueries();
+							}}
+						>
+							Reload
+						</Button>
+					</AlertBanner>
 				)}
 
 				<div>

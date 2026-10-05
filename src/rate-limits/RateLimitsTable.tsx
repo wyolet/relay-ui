@@ -6,11 +6,11 @@ import {
 	useRateLimits,
 	useUpdateRateLimit,
 } from "@/api/hooks/ratelimits";
-import { ApiError } from "@/api/types/errors";
 import type { RateLimit } from "@/api/types/ratelimit";
 import { buttonVariants } from "@/components/ui/button";
 import { DiagnosticDot } from "@/diagnostics/DiagnosticDot";
 import { useRateLimitDiagnostics } from "@/diagnostics/useDiagnostics";
+import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { compactNumber } from "@/lib/rateLimitFormat";
 import { windowShort } from "@/lib/timeWindow";
@@ -168,6 +168,7 @@ function RateLimitRow({
 	onDelete: () => void;
 }) {
 	const updateRL = useUpdateRateLimit();
+	const toastSaveError = useSaveErrorToast();
 	const diagnostics = useRateLimitDiagnostics(rl.metadata.id);
 	const enabled = rl.spec.enabled !== false;
 	async function toggleEnabled(next: boolean) {
@@ -177,12 +178,7 @@ function RateLimitRow({
 				body: { metadata: rl.metadata, spec: { ...rl.spec, enabled: next } },
 			});
 		} catch (err) {
-			toast(
-				"error",
-				err instanceof ApiError
-					? err.body.message
-					: "Failed to update rate limit.",
-			);
+			toastSaveError(err, "Failed to update rate limit.");
 		}
 	}
 	return (

@@ -15,6 +15,8 @@ export interface MockGraph {
 	providers: unknown[];
 	hostBindings?: unknown[];
 	proxyMode?: { value: { enabled: boolean; allowUnauthenticated: boolean } };
+	/** whoami roles; none means a signed-in non-admin. */
+	roles?: string[];
 }
 
 export const EMPTY_GRAPH: MockGraph = {
@@ -53,7 +55,7 @@ interface Resource {
 // gaining a new query never falls through to the dev-server proxy.
 const GRAPH_COLLECTIONS: Record<
 	string,
-	keyof Omit<MockGraph, "proxyMode">
+	keyof Omit<MockGraph, "proxyMode" | "roles">
 > = {
 	policies: "policies",
 	"host-keys": "hostKeys",
@@ -99,7 +101,11 @@ export async function mockApi(page: Page, graph: MockGraph): Promise<void> {
 		const path = new URL(route.request().url()).pathname.replace(/^.*?\/api\//, "");
 		if (path === "auth/whoami") {
 			// fetchWhoami treats `user_id` truthy as authenticated.
-			return fulfillJson(route, { user_id: "test-user", username: "test" });
+			return fulfillJson(route, {
+				user_id: "test-user",
+				username: "test",
+				roles: graph.roles ?? [],
+			});
 		}
 		if (path === "settings/proxy-mode") {
 			return fulfillJson(route, graph.proxyMode ?? EMPTY_GRAPH.proxyMode);

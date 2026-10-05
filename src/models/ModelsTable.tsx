@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { DiagnosticDot } from "@/diagnostics/DiagnosticDot";
 import { useModelDiagnostics } from "@/diagnostics/useDiagnostics";
+import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { HostLogo } from "@/hosts/HostLogo";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { resolveMutability } from "@/lib/ownership";
@@ -137,6 +138,7 @@ function ModelRow({
 }) {
 	const enabled = m.spec.enabled !== false;
 	const updateModel = useUpdateModel();
+	const toastSaveError = useSaveErrorToast();
 	const deleteModel = useDeleteModel();
 	const diagnostics = useModelDiagnostics(m.metadata.id);
 	const gov = useGovernance("model");
@@ -148,10 +150,7 @@ function ModelRow({
 				body: { metadata: m.metadata, spec: { ...m.spec, enabled: next } },
 			});
 		} catch (err) {
-			toast(
-				"error",
-				err instanceof ApiError ? err.body.message : "Failed to update model.",
-			);
+			toastSaveError(err, "Failed to update model.");
 		}
 	}
 	async function handleDelete() {

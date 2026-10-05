@@ -16,6 +16,7 @@ import {
 	useUpdateRateLimit,
 } from "@/api/hooks/ratelimits";
 import { ApiError } from "@/api/types/errors";
+import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
 import { RateLimitDetailView } from "@/rate-limits/RateLimitDetailView";
 import { confirm } from "@/shared/ConfirmDialog";
@@ -48,6 +49,7 @@ function RateLimitDetailInner() {
 	const { data: rateLimit } = useRateLimit(name);
 	const deleteRL = useDeleteRateLimit();
 	const updateRL = useUpdateRateLimit();
+	const toastSaveError = useSaveErrorToast();
 
 	async function handleDelete() {
 		const ok = await confirm({
@@ -83,12 +85,7 @@ function RateLimitDetailInner() {
 			});
 			toast("success", next ? "Rate limit enabled." : "Rate limit disabled.");
 		} catch (err) {
-			toast(
-				"error",
-				err instanceof ApiError
-					? err.body.message
-					: "Failed to toggle rate limit.",
-			);
+			toastSaveError(err, "Failed to toggle rate limit.");
 		}
 	}
 

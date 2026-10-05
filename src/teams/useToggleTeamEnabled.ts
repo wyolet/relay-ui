@@ -1,11 +1,12 @@
 import { useUpdateTeam } from "@/api/hooks/teams";
-import { ApiError } from "@/api/types/errors";
 import type { Team } from "@/api/types/team";
+import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
 import { toast } from "@/shared/Toast";
 
 export function useToggleTeamEnabled() {
 	const updateTeam = useUpdateTeam();
+	const toastSaveError = useSaveErrorToast();
 
 	async function setEnabled(team: Team, nextEnabled: boolean) {
 		try {
@@ -23,10 +24,7 @@ export function useToggleTeamEnabled() {
 				}.`,
 			);
 		} catch (err) {
-			toast(
-				"error",
-				err instanceof ApiError ? err.body.message : "Failed to update team.",
-			);
+			toastSaveError(err, "Failed to update team.");
 		}
 	}
 

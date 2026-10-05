@@ -6,8 +6,9 @@ import {
 	useCreatePolicyBinding,
 	useUpdatePolicyBinding,
 } from "@/api/hooks/policyBindings";
-import { ApiError } from "@/api/types/errors";
 import type { PolicyBinding } from "@/api/types/policyBinding";
+import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
+import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
 import { randomSuffix, slugify } from "@/lib/slug";
 import {
@@ -122,6 +123,11 @@ export function usePolicyBindingForm({
 	const isEdit = binding !== undefined;
 	const createBinding = useCreatePolicyBinding();
 	const updateBinding = useUpdatePolicyBinding();
+	const toastSaveError = useSaveErrorToast();
+	const loaded = useLoadedResourceVersion(
+		`${open}:${binding?.metadata.id ?? ""}`,
+		binding?.metadata.resourceVersion,
+	);
 
 	const initial = useMemo<PolicyBindingFormValues>(
 		() => (binding ? toValues(binding) : emptyValues(projectId)),
@@ -173,6 +179,7 @@ export function usePolicyBindingForm({
 						body: {
 							metadata: {
 								...binding.metadata,
+								resourceVersion: loaded.version,
 								displayName,
 								description,
 								labels,
@@ -181,6 +188,7 @@ export function usePolicyBindingForm({
 							spec,
 						},
 					});
+					loaded.markSaved(saved.metadata.resourceVersion);
 					toast("success", `Policy binding "${displayName}" updated.`);
 					onSaved(saved.metadata.name);
 				} else {
@@ -198,19 +206,18 @@ export function usePolicyBindingForm({
 					onSaved(created.metadata.name);
 				}
 			} catch (err) {
-				toast(
-					"error",
-					err instanceof ApiError
-						? err.body.message
-						: isEdit
-							? "Failed to update policy binding."
-							: "Failed to create policy binding.",
+				toastSaveError(
+					err,
+					isEdit
+						? "Failed to update policy binding."
+						: "Failed to create policy binding.",
+					loaded.reload,
 				);
 			}
 		},
 	});
 
-	const resetKey = `${open}:${binding?.metadata.id ?? ""}`;
+	const resetKey = loaded.resetKey;
 	const lastResetKey = useRef<string | null>(null);
 	useEffect(() => {
 		if (lastResetKey.current === resetKey) return;

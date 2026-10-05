@@ -1,11 +1,12 @@
 import { useUpdateKey } from "@/api/hooks/keys";
-import { ApiError } from "@/api/types/errors";
 import type { Key } from "@/api/types/key";
+import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
 import { toast } from "@/shared/Toast";
 
 export function useToggleKeyEnabled() {
 	const updateKey = useUpdateKey();
+	const toastSaveError = useSaveErrorToast();
 
 	async function setEnabled(rk: Key, nextEnabled: boolean) {
 		try {
@@ -23,10 +24,7 @@ export function useToggleKeyEnabled() {
 				}.`,
 			);
 		} catch (err) {
-			toast(
-				"error",
-				err instanceof ApiError ? err.body.message : "Failed to update key.",
-			);
+			toastSaveError(err, "Failed to update key.");
 		}
 	}
 

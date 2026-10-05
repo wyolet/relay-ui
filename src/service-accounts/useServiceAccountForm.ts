@@ -6,8 +6,9 @@ import {
 	useCreateServiceAccount,
 	useUpdateServiceAccount,
 } from "@/api/hooks/serviceAccounts";
-import { ApiError } from "@/api/types/errors";
 import type { ServiceAccount } from "@/api/types/serviceAccount";
+import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
+import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
 import { randomSuffix, slugify } from "@/lib/slug";
 import { toast } from "@/shared/Toast";
@@ -66,6 +67,11 @@ export function useServiceAccountForm({
 	const isEdit = serviceAccount !== undefined;
 	const createServiceAccount = useCreateServiceAccount();
 	const updateServiceAccount = useUpdateServiceAccount();
+	const toastSaveError = useSaveErrorToast();
+	const loaded = useLoadedResourceVersion(
+		`${open}:${serviceAccount?.metadata.id ?? ""}`,
+		serviceAccount?.metadata.resourceVersion,
+	);
 
 	const initial = useMemo<ServiceAccountFormValues>(
 		() => (serviceAccount ? toValues(serviceAccount) : emptyValues()),
@@ -110,12 +116,14 @@ export function useServiceAccountForm({
 						body: {
 							metadata: {
 								...serviceAccount.metadata,
+								resourceVersion: loaded.version,
 								displayName,
 								description,
 							},
 							spec,
 						},
 					});
+					loaded.markSaved(saved.metadata.resourceVersion);
 					toast("success", `Service account "${displayName}" updated.`);
 					onSaved(saved.metadata.name);
 				} else {
@@ -133,19 +141,18 @@ export function useServiceAccountForm({
 					onSaved(created.metadata.name);
 				}
 			} catch (err) {
-				toast(
-					"error",
-					err instanceof ApiError
-						? err.body.message
-						: isEdit
-							? "Failed to update service account."
-							: "Failed to create service account.",
+				toastSaveError(
+					err,
+					isEdit
+						? "Failed to update service account."
+						: "Failed to create service account.",
+					loaded.reload,
 				);
 			}
 		},
 	});
 
-	const resetKey = `${open}:${serviceAccount?.metadata.id ?? ""}`;
+	const resetKey = loaded.resetKey;
 	const lastResetKey = useRef<string | null>(null);
 	useEffect(() => {
 		if (lastResetKey.current === resetKey) return;

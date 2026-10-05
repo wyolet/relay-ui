@@ -17,6 +17,7 @@ import { useKeyDiagnostics } from "@/diagnostics/useDiagnostics";
 import { FilterBar } from "@/filters/FilterBar";
 import { activeFilterCount } from "@/filters/toQueryParams";
 import type { FilterDef, FilterState } from "@/filters/types";
+import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { OwnerLink } from "@/projects/OwnerLink";
 import { confirm } from "@/shared/ConfirmDialog";
@@ -147,6 +148,7 @@ export function KeysTable() {
 	const { data: accountsData } = useServiceAccounts();
 	const { data: policiesData } = usePolicies();
 	const updateKey = useUpdateKey();
+	const toastSaveError = useSaveErrorToast();
 	const deleteKey = useDeleteKey();
 
 	const policyLabels = new Map<string, string>();
@@ -183,10 +185,7 @@ export function KeysTable() {
 				`Key "${displayLabel(rk.metadata)}" ${nextEnabled ? "enabled" : "disabled"}.`,
 			);
 		} catch (err) {
-			toast(
-				"error",
-				err instanceof ApiError ? err.body.message : "Failed to update key.",
-			);
+			toastSaveError(err, "Failed to update key.");
 		}
 	}
 

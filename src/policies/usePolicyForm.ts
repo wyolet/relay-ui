@@ -3,13 +3,14 @@ import { useStore } from "@tanstack/react-store";
 import { useEffect, useMemo, useRef } from "react";
 import { z } from "zod";
 import { useCreatePolicy, useUpdatePolicy } from "@/api/hooks/policies";
-import { ApiError } from "@/api/types/errors";
 import type { Policy, PolicyCreate, PolicyUpdate } from "@/api/types/policy";
 import {
 	DEFAULT_KEY_SELECTION,
 	KEY_SELECTION_VALUES,
 	type KeySelection,
 } from "@/config/policy";
+import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
+import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
 import { randomSuffix, slugify } from "@/lib/slug";
 import { toast } from "@/shared/Toast";
@@ -135,6 +136,11 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 	const isEdit = policy !== undefined;
 	const createPolicy = useCreatePolicy();
 	const updatePolicy = useUpdatePolicy();
+	const toastSaveError = useSaveErrorToast();
+	const loaded = useLoadedResourceVersion(
+		`${open}:${policy?.metadata.id ?? ""}`,
+		policy?.metadata.resourceVersion,
+	);
 
 	const initial = useMemo<PolicyFormValues>(
 		() => (policy ? policyToValues(policy) : emptyValues()),
@@ -198,6 +204,7 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 					const payload: PolicyUpdate = {
 						metadata: {
 							...policy.metadata,
+							resourceVersion: loaded.version,
 							displayName,
 							...(description
 								? { description }
@@ -207,10 +214,11 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 						},
 						spec: { ...policy.spec, ...spec },
 					};
-					await updatePolicy.mutateAsync({
+					const saved = await updatePolicy.mutateAsync({
 						id: policy.metadata.id ?? "",
 						body: payload,
 					});
+					loaded.markSaved(saved.metadata.resourceVersion);
 					toast("success", `Policy "${displayName}" updated.`);
 				} else {
 					const name = computeSlug(displayName);
@@ -227,22 +235,19 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 				}
 				onSaved();
 			} catch (err) {
-				toast(
-					"error",
-					err instanceof ApiError
-						? err.body.message
-						: isEdit
-							? "Failed to update policy."
-							: "Failed to create policy.",
+				toastSaveError(
+					err,
+					isEdit ? "Failed to update policy." : "Failed to create policy.",
+					loaded.reload,
 				);
 			}
 		},
 	});
 
-	// Reset only when the form opens/closes or the edited resource changes — not
-	// on every `initial` identity change, so a background refetch can't wipe an
-	// open draft.
-	const resetKey = `${open}:${policy?.metadata.id ?? ""}`;
+	// Reset only when the form opens/closes, the edited resource changes, or the
+	// user reloads it — not on every `initial` identity change, so a background
+	// refetch can't wipe an open draft.
+	const resetKey = loaded.resetKey;
 	const lastResetKey = useRef<string | null>(null);
 	useEffect(() => {
 		if (lastResetKey.current === resetKey) return;

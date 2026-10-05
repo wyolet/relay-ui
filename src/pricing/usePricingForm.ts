@@ -1,15 +1,16 @@
 import { useForm } from "@tanstack/react-form";
 import { useStore } from "@tanstack/react-store";
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { z } from "zod";
 import { useCreatePricing, useUpdatePricing } from "@/api/hooks/pricings";
-import { ApiError } from "@/api/types/errors";
 import type {
 	Pricing,
 	PricingCreate,
 	PricingRate,
 	PricingUpdate,
 } from "@/api/types/pricing";
+import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
+import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
 import { randomSuffix, slugify } from "@/lib/slug";
 import { PRICING_METERS } from "@/lib/usage-math/pricing";
@@ -137,6 +138,11 @@ export function usePricingForm({ pricing, onSaved }: UsePricingFormOptions) {
 	const isEdit = pricing !== undefined;
 	const createPricing = useCreatePricing();
 	const updatePricing = useUpdatePricing();
+	const toastSaveError = useSaveErrorToast();
+	const loaded = useLoadedResourceVersion(
+		pricing?.metadata.id ?? "",
+		pricing?.metadata.resourceVersion,
+	);
 
 	const initial = useMemo<PricingFormValues>(
 		() => (pricing ? pricingToValues(pricing) : emptyValues()),
@@ -199,6 +205,7 @@ export function usePricingForm({ pricing, onSaved }: UsePricingFormOptions) {
 					const payload: PricingUpdate = {
 						metadata: {
 							...pricing.metadata,
+							resourceVersion: loaded.version,
 							name,
 							displayName,
 							owner,
@@ -210,10 +217,11 @@ export function usePricingForm({ pricing, onSaved }: UsePricingFormOptions) {
 						},
 						spec: { ...spec, enabled: pricing.spec.enabled },
 					};
-					await updatePricing.mutateAsync({
+					const saved = await updatePricing.mutateAsync({
 						id: pricing.metadata.id ?? "",
 						body: payload,
 					});
+					loaded.markSaved(saved.metadata.resourceVersion);
 					toast("success", `Pricing "${displayName}" updated.`);
 				} else {
 					const payload: PricingCreate = {
@@ -230,17 +238,22 @@ export function usePricingForm({ pricing, onSaved }: UsePricingFormOptions) {
 				}
 				onSaved(name);
 			} catch (err) {
-				toast(
-					"error",
-					err instanceof ApiError
-						? err.body.message
-						: isEdit
-							? "Failed to update pricing."
-							: "Failed to create pricing.",
+				toastSaveError(
+					err,
+					isEdit ? "Failed to update pricing." : "Failed to create pricing.",
+					loaded.reload,
 				);
 			}
 		},
 	});
+
+	// The draft is only replaced when the user reloads after a conflict.
+	const lastResetKey = useRef(loaded.resetKey);
+	useEffect(() => {
+		if (lastResetKey.current === loaded.resetKey) return;
+		lastResetKey.current = loaded.resetKey;
+		form.reset(initial);
+	}, [loaded.resetKey, initial, form]);
 
 	const values = useStore(form.store, (s) => s.values);
 	const slugPreview = computeSlug(values.displayName);
