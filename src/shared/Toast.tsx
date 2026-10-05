@@ -1,8 +1,9 @@
 import { X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { IconButton } from "@/components/ui/icon-button";
 import { type ToastKind, useToastStore } from "@/stores/toast";
 
-export type { ToastKind, ToastMessage } from "@/stores/toast";
+export type { ToastAction, ToastKind, ToastMessage } from "@/stores/toast";
 // Re-export the imperative helper so existing call sites stay working.
 export { toast } from "@/stores/toast";
 
@@ -28,6 +29,20 @@ export function ToastContainer() {
 					className={`px-4 py-3 rounded-lg shadow-lg text-sm font-medium flex items-center gap-3 ${KIND_CLASSES[t.kind]}`}
 				>
 					<span className="flex-1">{t.message}</span>
+					{t.action && (
+						<Button
+							type="button"
+							variant="outline"
+							size="sm"
+							className="border-current text-current hover:bg-transparent hover:text-current hover:opacity-80"
+							onClick={() => {
+								dismiss(t.id);
+								t.action?.onClick();
+							}}
+						>
+							{t.action.label}
+						</Button>
+					)}
 					<IconButton
 						icon={X}
 						weight="bare"

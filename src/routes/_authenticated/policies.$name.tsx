@@ -19,6 +19,7 @@ import {
 import { providersListQueryOptions } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
 import { ApiError } from "@/api/types/errors";
+import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
 import {
 	type PolicyDetailTab,
@@ -66,6 +67,7 @@ function PolicyDetailInner() {
 	const { data: policy } = usePolicy(name);
 	const deletePolicy = useDeletePolicy();
 	const updatePolicy = useUpdatePolicy();
+	const toastSaveError = useSaveErrorToast();
 
 	async function handleDelete() {
 		const ok = await confirm({
@@ -97,10 +99,7 @@ function PolicyDetailInner() {
 			});
 			toast("success", next ? "Policy enabled." : "Policy disabled.");
 		} catch (err) {
-			toast(
-				"error",
-				err instanceof ApiError ? err.body.message : "Failed to toggle policy.",
-			);
+			toastSaveError(err, "Failed to toggle policy.");
 		}
 	}
 

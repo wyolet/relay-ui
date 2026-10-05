@@ -17,3 +17,12 @@ export class ApiError extends Error {
 		this.body = body;
 	}
 }
+
+/** An update refused because the row changed after the caller loaded it. */
+export function isStaleResourceVersion(err: unknown): err is ApiError {
+	return (
+		err instanceof ApiError &&
+		err.status === 409 &&
+		err.body.code === "stale_resource_version"
+	);
+}

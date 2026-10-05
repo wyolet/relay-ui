@@ -5,13 +5,14 @@ import { z } from "zod";
 import { useCreateHostKey, useUpdateHostKey } from "@/api/hooks/hostkeys";
 import { useHosts } from "@/api/hooks/hosts";
 import { useDetachHostKeyFromPolicy, usePolicies } from "@/api/hooks/policies";
-import { ApiError } from "@/api/types/errors";
 import type {
 	HostKey,
 	HostKeyCreate,
 	HostKeyKind,
 	HostKeyUpdate,
 } from "@/api/types/hostkey";
+import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
+import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
 import { randomSuffix, slugify } from "@/lib/slug";
 import { toast } from "@/shared/Toast";
@@ -124,6 +125,11 @@ export function useHostKeyForm({
 	const createHostKey = useCreateHostKey();
 	const updateHostKey = useUpdateHostKey();
 	const { detach, isPending: isDetachPending } = useDetachHostKeyFromPolicy();
+	const toastSaveError = useSaveErrorToast();
+	const loaded = useLoadedResourceVersion(
+		`${open}:${hostKey?.metadata.id ?? ""}`,
+		hostKey?.metadata.resourceVersion,
+	);
 
 	const initial = useMemo<HostKeyFormValues>(
 		() => (hostKey ? hostKeyToValues(hostKey) : emptyValues()),
@@ -180,6 +186,7 @@ export function useHostKeyForm({
 					const payload: HostKeyUpdate = {
 						metadata: {
 							...hostKey.metadata,
+							resourceVersion: loaded.version,
 							displayName,
 							...(description
 								? { description }
@@ -193,6 +200,7 @@ export function useHostKeyForm({
 						id: hostKey.metadata.id ?? "",
 						body: payload,
 					});
+					loaded.markSaved(saved.metadata.resourceVersion);
 					toast("success", `Credential "${displayName}" updated.`);
 					onSaved(saved.metadata.name);
 				} else {
@@ -219,22 +227,21 @@ export function useHostKeyForm({
 					onSaved(saved.metadata.name);
 				}
 			} catch (err) {
-				toast(
-					"error",
-					err instanceof ApiError
-						? err.body.message
-						: isEdit
-							? "Failed to update credential."
-							: "Failed to create credential.",
+				toastSaveError(
+					err,
+					isEdit
+						? "Failed to update credential."
+						: "Failed to create credential.",
+					loaded.reload,
 				);
 			}
 		},
 	});
 
-	// Reset only when the form opens/closes or the edited resource changes — not
-	// on every `initial` identity change, so a background refetch can't wipe an
-	// open draft.
-	const resetKey = `${open}:${hostKey?.metadata.id ?? ""}`;
+	// Reset only when the form opens/closes, the edited resource changes, or the
+	// user reloads it — not on every `initial` identity change, so a background
+	// refetch can't wipe an open draft.
+	const resetKey = loaded.resetKey;
 	const lastResetKey = useRef<string | null>(null);
 	useEffect(() => {
 		if (lastResetKey.current === resetKey) return;

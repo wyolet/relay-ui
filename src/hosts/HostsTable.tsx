@@ -1,15 +1,14 @@
 import { Link } from "@tanstack/react-router";
 import { useUpdateHost } from "@/api/hooks/hosts";
-import { ApiError } from "@/api/types/errors";
 import type { Host } from "@/api/types/host";
 import { DiagnosticDot } from "@/diagnostics/DiagnosticDot";
 import { useHostDiagnostics } from "@/diagnostics/useDiagnostics";
 import { HostCell } from "@/hosts/HostCell";
 import { useHostReferences } from "@/hosts/useHostReferences";
+import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
 import { Switch } from "@/shared/Switch";
 import { Th } from "@/shared/Th";
-import { toast } from "@/shared/Toast";
 
 export type HostsSortKey = "name";
 export type HostsSortDir = "asc" | "desc";
@@ -51,6 +50,7 @@ export function applyHostSort(
 function HostRow({ h }: { h: Host }) {
 	const enabled = h.spec.enabled !== false;
 	const update = useUpdateHost();
+	const toastSaveError = useSaveErrorToast();
 	const diagnostics = useHostDiagnostics(h.metadata.id);
 	const refs = useHostReferences(h);
 	const enabledModels = refs.enabledModels.length;
@@ -65,10 +65,7 @@ function HostRow({ h }: { h: Host }) {
 				body: { metadata: h.metadata, spec: { ...h.spec, enabled: next } },
 			});
 		} catch (err) {
-			toast(
-				"error",
-				err instanceof ApiError ? err.body.message : "Failed to update host.",
-			);
+			toastSaveError(err, "Failed to update host.");
 		}
 	}
 

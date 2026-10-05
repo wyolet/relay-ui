@@ -1,6 +1,6 @@
 import { useForm } from "@tanstack/react-form";
 import { useStore } from "@tanstack/react-store";
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { z } from "zod";
 import {
 	useCreateRateLimit,
@@ -8,13 +8,14 @@ import {
 	useUpdateRateLimit,
 } from "@/api/hooks/ratelimits";
 import { useProxyMode } from "@/api/hooks/settings";
-import { ApiError } from "@/api/types/errors";
 import type {
 	RateLimit,
 	RateLimitCreate,
 	RateLimitRule,
 	RateLimitUpdate,
 } from "@/api/types/ratelimit";
+import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
+import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
 import {
 	type SystemReqCap,
@@ -166,6 +167,11 @@ export function useRateLimitForm({
 	const isEdit = rateLimit !== undefined;
 	const createRL = useCreateRateLimit();
 	const updateRL = useUpdateRateLimit();
+	const toastSaveError = useSaveErrorToast();
+	const loaded = useLoadedResourceVersion(
+		rateLimit?.metadata.id ?? "",
+		rateLimit?.metadata.resourceVersion,
+	);
 	const systemRLs = useSystemRateLimits();
 	const { data: proxyEnvelope } = useProxyMode();
 	const proxyCtx = proxyEnvelope.value;
@@ -233,6 +239,7 @@ export function useRateLimitForm({
 					const payload: RateLimitUpdate = {
 						metadata: {
 							...rateLimit.metadata,
+							resourceVersion: loaded.version,
 							name,
 							displayName,
 							...(description
@@ -243,10 +250,11 @@ export function useRateLimitForm({
 						},
 						spec,
 					};
-					await updateRL.mutateAsync({
+					const saved = await updateRL.mutateAsync({
 						id: rateLimit.metadata.id ?? "",
 						body: payload,
 					});
+					loaded.markSaved(saved.metadata.resourceVersion);
 					toast("success", `Rate limit "${displayName}" updated.`);
 				} else {
 					const payload: RateLimitCreate = {
@@ -263,17 +271,24 @@ export function useRateLimitForm({
 				}
 				onSaved();
 			} catch (err) {
-				toast(
-					"error",
-					err instanceof ApiError
-						? err.body.message
-						: isEdit
-							? "Failed to update rate limit."
-							: "Failed to create rate limit.",
+				toastSaveError(
+					err,
+					isEdit
+						? "Failed to update rate limit."
+						: "Failed to create rate limit.",
+					loaded.reload,
 				);
 			}
 		},
 	});
+
+	// The draft is only replaced when the user reloads after a conflict.
+	const lastResetKey = useRef(loaded.resetKey);
+	useEffect(() => {
+		if (lastResetKey.current === loaded.resetKey) return;
+		lastResetKey.current = loaded.resetKey;
+		form.reset(initial);
+	}, [loaded.resetKey, initial, form]);
 
 	const values = useStore(form.store, (s) => s.values);
 	const slugPreview = computeSlug(values.displayName);

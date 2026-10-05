@@ -1,6 +1,6 @@
 import { useUpdateHostKey } from "@/api/hooks/hostkeys";
-import { ApiError } from "@/api/types/errors";
 import type { HostKey } from "@/api/types/hostkey";
+import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
 import { toast } from "@/shared/Toast";
 
@@ -10,6 +10,7 @@ import { toast } from "@/shared/Toast";
  */
 export function useToggleHostKeyEnabled() {
 	const updateHostKey = useUpdateHostKey();
+	const toastSaveError = useSaveErrorToast();
 
 	async function setEnabled(hk: HostKey, nextEnabled: boolean) {
 		try {
@@ -27,12 +28,7 @@ export function useToggleHostKeyEnabled() {
 				}.`,
 			);
 		} catch (err) {
-			toast(
-				"error",
-				err instanceof ApiError
-					? err.body.message
-					: "Failed to update credential.",
-			);
+			toastSaveError(err, "Failed to update credential.");
 		}
 	}
 

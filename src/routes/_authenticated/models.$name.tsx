@@ -20,6 +20,7 @@ import { policiesListQueryOptions } from "@/api/hooks/policies";
 import { providersListQueryOptions } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
 import { ApiError } from "@/api/types/errors";
+import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
 import { type ModelDetailTab, ModelDetailView } from "@/models/ModelDetailView";
 import { confirm } from "@/shared/ConfirmDialog";
@@ -69,6 +70,7 @@ function ModelDetailInner() {
 	const navigate = useNavigate({ from: "/models/$name" });
 	const { data: model } = useModel(name);
 	const updateModel = useUpdateModel();
+	const toastSaveError = useSaveErrorToast();
 	const deleteModel = useDeleteModel();
 
 	async function handleDelete() {
@@ -104,10 +106,7 @@ function ModelDetailInner() {
 			});
 			toast("success", next ? "Model enabled." : "Model disabled.");
 		} catch (err) {
-			toast(
-				"error",
-				err instanceof ApiError ? err.body.message : "Failed to toggle model.",
-			);
+			toastSaveError(err, "Failed to toggle model.");
 		}
 	}
 

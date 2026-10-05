@@ -1,11 +1,12 @@
 import { useUpdateGroup } from "@/api/hooks/groups";
-import { ApiError } from "@/api/types/errors";
 import type { Group } from "@/api/types/group";
+import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
 import { toast } from "@/shared/Toast";
 
 export function useToggleGroupEnabled() {
 	const updateGroup = useUpdateGroup();
+	const toastSaveError = useSaveErrorToast();
 
 	async function setEnabled(g: Group, nextEnabled: boolean) {
 		try {
@@ -23,10 +24,7 @@ export function useToggleGroupEnabled() {
 				}.`,
 			);
 		} catch (err) {
-			toast(
-				"error",
-				err instanceof ApiError ? err.body.message : "Failed to update group.",
-			);
+			toastSaveError(err, "Failed to update group.");
 		}
 	}
 

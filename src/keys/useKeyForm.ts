@@ -3,8 +3,9 @@ import { useStore } from "@tanstack/react-store";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 import { useCreateKey, useUpdateKey } from "@/api/hooks/keys";
-import { ApiError } from "@/api/types/errors";
 import type { CreateKeyInput, Key } from "@/api/types/key";
+import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
+import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
 import { randomSuffix, slugify } from "@/lib/slug";
 import { toast } from "@/shared/Toast";
@@ -98,6 +99,11 @@ export function useKeyForm({
 	const isEdit = apiKey !== undefined;
 	const createKey = useCreateKey();
 	const updateKey = useUpdateKey();
+	const toastSaveError = useSaveErrorToast();
+	const loaded = useLoadedResourceVersion(
+		`${open}:${apiKey?.metadata.id ?? ""}`,
+		apiKey?.metadata.resourceVersion,
+	);
 
 	const initial = useMemo<KeyFormValues>(
 		() => (apiKey ? keyToValues(apiKey) : emptyValues()),
@@ -141,6 +147,7 @@ export function useKeyForm({
 					const payload: Key = {
 						metadata: {
 							...apiKey.metadata,
+							resourceVersion: loaded.version,
 							displayName,
 							...(description
 								? { description }
@@ -161,6 +168,7 @@ export function useKeyForm({
 						id: apiKey.metadata.id ?? "",
 						body: payload,
 					});
+					loaded.markSaved(saved.metadata.resourceVersion);
 					toast("success", `Key "${displayName}" updated.`);
 					onSaved(saved.metadata.name);
 				} else {
@@ -197,22 +205,19 @@ export function useKeyForm({
 					onSaved(created.metadata.name);
 				}
 			} catch (err) {
-				toast(
-					"error",
-					err instanceof ApiError
-						? err.body.message
-						: isEdit
-							? "Failed to update key."
-							: "Failed to create key.",
+				toastSaveError(
+					err,
+					isEdit ? "Failed to update key." : "Failed to create key.",
+					loaded.reload,
 				);
 			}
 		},
 	});
 
-	// Reset only when the form opens/closes or the edited resource changes — not
-	// on every `initial` identity change, so a background refetch can't wipe an
-	// open draft.
-	const resetKey = `${open}:${apiKey?.metadata.id ?? ""}`;
+	// Reset only when the form opens/closes, the edited resource changes, or the
+	// user reloads it — not on every `initial` identity change, so a background
+	// refetch can't wipe an open draft.
+	const resetKey = loaded.resetKey;
 	const lastResetKey = useRef<string | null>(null);
 	useEffect(() => {
 		if (lastResetKey.current === resetKey) return;

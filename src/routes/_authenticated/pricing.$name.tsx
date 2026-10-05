@@ -10,6 +10,7 @@ import {
 	useUpdatePricing,
 } from "@/api/hooks/pricings";
 import { ApiError } from "@/api/types/errors";
+import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
 import { PricingDetailView } from "@/pricing/PricingDetailView";
 import { confirm } from "@/shared/ConfirmDialog";
@@ -34,6 +35,7 @@ function PricingDetailInner() {
 	const { data: pricing } = usePricing(name);
 	const deletePricing = useDeletePricing();
 	const updatePricing = useUpdatePricing();
+	const toastSaveError = useSaveErrorToast();
 
 	async function handleDelete() {
 		const ok = await confirm({
@@ -67,12 +69,7 @@ function PricingDetailInner() {
 			});
 			toast("success", next ? "Pricing enabled." : "Pricing disabled.");
 		} catch (err) {
-			toast(
-				"error",
-				err instanceof ApiError
-					? err.body.message
-					: "Failed to toggle pricing.",
-			);
+			toastSaveError(err, "Failed to toggle pricing.");
 		}
 	}
 

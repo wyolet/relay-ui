@@ -3,8 +3,9 @@ import { useStore } from "@tanstack/react-store";
 import { useEffect, useMemo, useRef } from "react";
 import { z } from "zod";
 import { useCreateProject, useUpdateProject } from "@/api/hooks/projects";
-import { ApiError } from "@/api/types/errors";
 import type { Project } from "@/api/types/project";
+import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
+import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
 import { randomSuffix, slugify } from "@/lib/slug";
 import {
@@ -73,6 +74,11 @@ export function useProjectForm({
 	const isEdit = project !== undefined;
 	const createProject = useCreateProject();
 	const updateProject = useUpdateProject();
+	const toastSaveError = useSaveErrorToast();
+	const loaded = useLoadedResourceVersion(
+		`${open}:${project?.metadata.id ?? ""}`,
+		project?.metadata.resourceVersion,
+	);
 
 	const initial = useMemo<ProjectFormValues>(
 		() => (project ? toValues(project) : emptyValues(teamId)),
@@ -120,6 +126,7 @@ export function useProjectForm({
 						body: {
 							metadata: {
 								...project.metadata,
+								resourceVersion: loaded.version,
 								displayName,
 								description,
 								labels,
@@ -127,6 +134,7 @@ export function useProjectForm({
 							spec,
 						},
 					});
+					loaded.markSaved(saved.metadata.resourceVersion);
 					toast("success", `Project "${displayName}" updated.`);
 					onSaved(saved.metadata.name);
 				} else {
@@ -145,19 +153,16 @@ export function useProjectForm({
 					onSaved(created.metadata.name);
 				}
 			} catch (err) {
-				toast(
-					"error",
-					err instanceof ApiError
-						? err.body.message
-						: isEdit
-							? "Failed to update project."
-							: "Failed to create project.",
+				toastSaveError(
+					err,
+					isEdit ? "Failed to update project." : "Failed to create project.",
+					loaded.reload,
 				);
 			}
 		},
 	});
 
-	const resetKey = `${open}:${project?.metadata.id ?? ""}`;
+	const resetKey = loaded.resetKey;
 	const lastResetKey = useRef<string | null>(null);
 	useEffect(() => {
 		if (lastResetKey.current === resetKey) return;

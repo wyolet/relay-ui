@@ -24,7 +24,6 @@ import {
 	useRateLimits,
 } from "@/api/hooks/ratelimits";
 import { proxyModeQueryOptions, useProxyMode } from "@/api/hooks/settings";
-import { ApiError } from "@/api/types/errors";
 import type { RateLimit, RateLimitRule } from "@/api/types/ratelimit";
 import { unwrap } from "@/api/unwrap";
 import { Button } from "@/components/ui/button";
@@ -36,6 +35,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import {
 	isSystemRateLimitName,
 	SYSTEM_RL_CONTROL,
@@ -132,6 +132,26 @@ function buildInitial(rls: Map<string, RateLimit>): FormState {
 	};
 }
 
+function systemRateLimitsByName(list: {
+	items?: RateLimit[] | null;
+}): Map<string, RateLimit> {
+	const map = new Map<string, RateLimit>();
+	for (const rl of list.items ?? []) {
+		if (isSystemRateLimitName(rl.metadata.name)) {
+			map.set(rl.metadata.name, rl);
+		}
+	}
+	return map;
+}
+
+function resourceVersionsByName(
+	rls: Map<string, RateLimit>,
+): Map<string, string | undefined> {
+	const versions = new Map<string, string | undefined>();
+	for (const [name, rl] of rls) versions.set(name, rl.metadata.resourceVersion);
+	return versions;
+}
+
 function rulesEqual(a: RateLimitRule[], b: RateLimitRule[]): boolean {
 	if (a.length !== b.length) return false;
 	for (let i = 0; i < a.length; i++) {
@@ -154,20 +174,19 @@ function SystemRateLimitsInner() {
 	const allowProxy = proxyEnvelope.value.enabled;
 	const allowUnauthenticated = proxyEnvelope.value.allowUnauthenticated;
 
-	const rlByName = useMemo(() => {
-		const map = new Map<string, RateLimit>();
-		for (const rl of data.items ?? []) {
-			if (isSystemRateLimitName(rl.metadata.name)) {
-				map.set(rl.metadata.name, rl);
-			}
-		}
-		return map;
-	}, [data]);
+	const rlByName = useMemo(() => systemRateLimitsByName(data), [data]);
 
 	const initial = useMemo(() => buildInitial(rlByName), [rlByName]);
 	const [state, setState] = useState<FormState>(initial);
+	// Versions of the rows the draft was built from; a background refetch
+	// doesn't move them, so a concurrent change fails the save instead of
+	// being overwritten.
+	const [loadedVersions, setLoadedVersions] = useState(() =>
+		resourceVersionsByName(rlByName),
+	);
 
 	const queryClient = useQueryClient();
+	const toastSaveError = useSaveErrorToast();
 	const updateRL = useMutation({
 		mutationFn: async ({
 			id,
@@ -267,14 +286,29 @@ function SystemRateLimitsInner() {
 
 		const payload: RateLimit = {
 			...rl,
+			metadata: { ...rl.metadata, resourceVersion: loadedVersions.get(name) },
 			spec: {
 				...rl.spec,
 				enabled: section.enabled,
 				rules: nextRules,
 			},
 		};
-		await updateRL.mutateAsync({ id, body: payload });
+		const saved = await updateRL.mutateAsync({ id, body: payload });
+		setLoadedVersions((prev) =>
+			new Map(prev).set(name, saved.metadata.resourceVersion),
+		);
 		return true;
+	}
+
+	async function reload() {
+		const fresh = systemRateLimitsByName(
+			await queryClient.fetchQuery({
+				...rateLimitsListQueryOptions,
+				staleTime: 0,
+			}),
+		);
+		setState(buildInitial(fresh));
+		setLoadedVersions(resourceVersionsByName(fresh));
 	}
 
 	async function handleSave() {
@@ -306,15 +340,13 @@ function SystemRateLimitsInner() {
 				);
 			}
 		} catch (err) {
-			toast(
-				"error",
-				err instanceof ApiError ? err.body.message : "Failed to save changes.",
-			);
+			toastSaveError(err, "Failed to save changes.", () => void reload());
 		}
 	}
 
 	function reset() {
 		setState(initial);
+		setLoadedVersions(resourceVersionsByName(rlByName));
 	}
 
 	const proxyDisabledReason = !allowProxy

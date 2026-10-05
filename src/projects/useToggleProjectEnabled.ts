@@ -1,11 +1,12 @@
 import { useUpdateProject } from "@/api/hooks/projects";
-import { ApiError } from "@/api/types/errors";
 import type { Project } from "@/api/types/project";
+import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
 import { toast } from "@/shared/Toast";
 
 export function useToggleProjectEnabled() {
 	const updateProject = useUpdateProject();
+	const toastSaveError = useSaveErrorToast();
 
 	async function setEnabled(project: Project, nextEnabled: boolean) {
 		try {
@@ -23,12 +24,7 @@ export function useToggleProjectEnabled() {
 				}.`,
 			);
 		} catch (err) {
-			toast(
-				"error",
-				err instanceof ApiError
-					? err.body.message
-					: "Failed to update project.",
-			);
+			toastSaveError(err, "Failed to update project.");
 		}
 	}
 

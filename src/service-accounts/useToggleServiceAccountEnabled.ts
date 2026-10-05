@@ -1,11 +1,12 @@
 import { useUpdateServiceAccount } from "@/api/hooks/serviceAccounts";
-import { ApiError } from "@/api/types/errors";
 import type { ServiceAccount } from "@/api/types/serviceAccount";
+import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
 import { toast } from "@/shared/Toast";
 
 export function useToggleServiceAccountEnabled() {
 	const updateServiceAccount = useUpdateServiceAccount();
+	const toastSaveError = useSaveErrorToast();
 
 	async function setEnabled(sa: ServiceAccount, nextEnabled: boolean) {
 		try {
@@ -23,12 +24,7 @@ export function useToggleServiceAccountEnabled() {
 				}.`,
 			);
 		} catch (err) {
-			toast(
-				"error",
-				err instanceof ApiError
-					? err.body.message
-					: "Failed to update service account.",
-			);
+			toastSaveError(err, "Failed to update service account.");
 		}
 	}
 

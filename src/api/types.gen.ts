@@ -309,7 +309,10 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Update group by id */
+        /**
+         * Update group by id
+         * @description Replaces the group. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional.
+         */
         put: operations["update_group"];
         post?: never;
         /** Delete group by id */
@@ -399,7 +402,10 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Update host-binding by id */
+        /**
+         * Update host-binding by id
+         * @description Replaces the host-binding. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional.
+         */
         put: operations["update_host-binding"];
         post?: never;
         /** Delete host-binding by id */
@@ -452,7 +458,10 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Update host-key by id */
+        /**
+         * Update host-key by id
+         * @description Replaces the host-key. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional.
+         */
         put: operations["update_host-key"];
         post?: never;
         /** Delete host-key by id */
@@ -576,7 +585,10 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Update host by id */
+        /**
+         * Update host by id
+         * @description Replaces the host. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional.
+         */
         put: operations["update_host"];
         post?: never;
         /** Delete host by id */
@@ -720,7 +732,10 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Update key by id */
+        /**
+         * Update key by id
+         * @description Replaces the key. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional.
+         */
         put: operations["update_key"];
         post?: never;
         /** Delete key by id */
@@ -897,7 +912,10 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Update model by id */
+        /**
+         * Update model by id
+         * @description Replaces the model. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional.
+         */
         put: operations["update_model"];
         post?: never;
         /** Delete model by id */
@@ -1057,7 +1075,10 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Update policy by id */
+        /**
+         * Update policy by id
+         * @description Replaces the policy. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional.
+         */
         put: operations["update_policy"];
         post?: never;
         /** Delete policy by id */
@@ -1222,7 +1243,10 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Update policy-binding by id */
+        /**
+         * Update policy-binding by id
+         * @description Replaces the policy-binding. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional.
+         */
         put: operations["update_policy-binding"];
         post?: never;
         /** Delete policy-binding by id */
@@ -1275,7 +1299,10 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Update pricing by id */
+        /**
+         * Update pricing by id
+         * @description Replaces the pricing. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional.
+         */
         put: operations["update_pricing"];
         post?: never;
         /** Delete pricing by id */
@@ -1365,7 +1392,10 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Update project by id */
+        /**
+         * Update project by id
+         * @description Replaces the project. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional.
+         */
         put: operations["update_project"];
         post?: never;
         /** Delete project by id */
@@ -1455,7 +1485,10 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Update provider by id */
+        /**
+         * Update provider by id
+         * @description Replaces the provider. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional.
+         */
         put: operations["update_provider"];
         post?: never;
         /** Delete provider by id */
@@ -1545,7 +1578,10 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Update rate-limit by id */
+        /**
+         * Update rate-limit by id
+         * @description Replaces the rate-limit. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional.
+         */
         put: operations["update_rate-limit"];
         post?: never;
         /** Delete rate-limit by id */
@@ -1655,7 +1691,10 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Update role-binding by id */
+        /**
+         * Update role-binding by id
+         * @description Replaces the role-binding. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional.
+         */
         put: operations["update_role-binding"];
         post?: never;
         /** Delete role-binding by id */
@@ -1708,7 +1747,10 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Update role by id */
+        /**
+         * Update role by id
+         * @description Replaces the role. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional.
+         */
         put: operations["update_role"];
         post?: never;
         /** Delete role by id */
@@ -1798,7 +1840,10 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Update service-account by id */
+        /**
+         * Update service-account by id
+         * @description Replaces the service-account. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional.
+         */
         put: operations["update_service-account"];
         post?: never;
         /** Delete service-account by id */
@@ -1891,12 +1936,12 @@ export interface paths {
         };
         /**
          * Get settings section: auth:oidc
-         * @description Inbound OpenID Connect login for the control plane. Generic OIDC (issuer discovery + authorization-code flow); disabled by default. registration=open auto-provisions a user on first login. The client secret is referenced by env var name, never stored here.
+         * @description Inbound OpenID Connect login for the control plane. Generic OIDC (issuer discovery + authorization-code flow); disabled by default. registration=open auto-provisions a user on first login. The client secret is referenced by env var name (RELAY_OIDC_* or WYOLET_OIDC_*), never stored here; the issuer must be https. Admin only.
          */
         get: operations["get_settings_auth_oidc"];
         /**
          * Update settings section: auth:oidc
-         * @description Inbound OpenID Connect login for the control plane. Generic OIDC (issuer discovery + authorization-code flow); disabled by default. registration=open auto-provisions a user on first login. The client secret is referenced by env var name, never stored here.
+         * @description Inbound OpenID Connect login for the control plane. Generic OIDC (issuer discovery + authorization-code flow); disabled by default. registration=open auto-provisions a user on first login. The client secret is referenced by env var name (RELAY_OIDC_* or WYOLET_OIDC_*), never stored here; the issuer must be https. Admin only.
          */
         put: operations["update_settings_auth_oidc"];
         post?: never;
@@ -2083,12 +2128,12 @@ export interface paths {
         };
         /**
          * Get settings section: payload-logging
-         * @description Request/response body capture sink config. Hot-reloaded — toggle, backend (file|s3), size cap, and S3 settings (with secret-ref credentials) take effect without a restart.
+         * @description Request/response body capture sink config. Hot-reloaded — toggle, backend (file|s3), size cap, and S3 settings (with secret-ref credentials: env RELAY_PAYLOAD_S3_* or stored payload-logging:*; useSSL required) take effect without a restart. Admin only.
          */
         get: operations["get_settings_payload-logging"];
         /**
          * Update settings section: payload-logging
-         * @description Request/response body capture sink config. Hot-reloaded — toggle, backend (file|s3), size cap, and S3 settings (with secret-ref credentials) take effect without a restart.
+         * @description Request/response body capture sink config. Hot-reloaded — toggle, backend (file|s3), size cap, and S3 settings (with secret-ref credentials: env RELAY_PAYLOAD_S3_* or stored payload-logging:*; useSSL required) take effect without a restart. Admin only.
          */
         put: operations["update_settings_payload-logging"];
         post?: never;
@@ -2168,7 +2213,10 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Update team by id */
+        /**
+         * Update team by id
+         * @description Replaces the team. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional.
+         */
         put: operations["update_team"];
         post?: never;
         /** Delete team by id */
@@ -2917,6 +2965,8 @@ export interface components {
             };
             name: string;
             owner?: components["schemas"]["Owner"];
+            /** @description Opaque version of the stored row; changes on every write. Send the value you read on update: a mismatch fails with 409 stale_resource_version. Omit to update unconditionally. */
+            resourceVersion?: string;
             /** Format: date-time */
             updatedAt?: string;
         };
@@ -5398,6 +5448,15 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
             /** @description Unprocessable Entity */
             422: {
                 headers: {
@@ -5878,6 +5937,15 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
             /** @description Unprocessable Entity */
             422: {
                 headers: {
@@ -6240,6 +6308,15 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
             /** @description Unprocessable Entity */
             422: {
                 headers: {
@@ -6573,6 +6650,15 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
             /** @description Unprocessable Entity */
             422: {
                 headers: {
@@ -6851,6 +6937,15 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -7525,6 +7620,15 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -8395,6 +8499,15 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -9273,6 +9386,15 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
             /** @description Unprocessable Entity */
             422: {
                 headers: {
@@ -9488,6 +9610,15 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -10090,6 +10221,15 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
             /** @description Unprocessable Entity */
             422: {
                 headers: {
@@ -10447,6 +10587,15 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -10913,6 +11062,15 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -11392,6 +11550,15 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
             /** @description Unprocessable Entity */
             422: {
                 headers: {
@@ -11857,6 +12024,15 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -12383,6 +12559,15 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
             /** @description Unprocessable Entity */
             422: {
                 headers: {
@@ -12722,6 +12907,15 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -13197,6 +13391,15 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
             /** @description Unprocessable Entity */
             422: {
                 headers: {
@@ -13585,6 +13788,15 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
             /** @description Unprocessable Entity */
             422: {
                 headers: {
@@ -13676,6 +13888,15 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -13781,6 +14002,15 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
             /** @description Unprocessable Entity */
             422: {
                 headers: {
@@ -13872,6 +14102,15 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -13977,6 +14216,15 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
             /** @description Unprocessable Entity */
             422: {
                 headers: {
@@ -14068,6 +14316,15 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -14173,6 +14430,15 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
             /** @description Unprocessable Entity */
             422: {
                 headers: {
@@ -14264,6 +14530,15 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -14369,6 +14644,15 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
             /** @description Unprocessable Entity */
             422: {
                 headers: {
@@ -14460,6 +14744,15 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -14710,6 +15003,15 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -3,8 +3,9 @@ import { useStore } from "@tanstack/react-store";
 import { useEffect, useMemo, useRef } from "react";
 import { z } from "zod";
 import { useCreateTeam, useUpdateTeam } from "@/api/hooks/teams";
-import { ApiError } from "@/api/types/errors";
 import type { Team } from "@/api/types/team";
+import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
+import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
 import { randomSuffix, slugify } from "@/lib/slug";
 import {
@@ -61,6 +62,11 @@ export function useTeamForm({
 	const isEdit = team !== undefined;
 	const createTeam = useCreateTeam();
 	const updateTeam = useUpdateTeam();
+	const toastSaveError = useSaveErrorToast();
+	const loaded = useLoadedResourceVersion(
+		`${open}:${team?.metadata.id ?? ""}`,
+		team?.metadata.resourceVersion,
+	);
 
 	const initial = useMemo<TeamFormValues>(
 		() => (team ? toValues(team) : emptyValues()),
@@ -102,10 +108,17 @@ export function useTeamForm({
 					const saved = await updateTeam.mutateAsync({
 						id: team.metadata.id ?? "",
 						body: {
-							metadata: { ...team.metadata, displayName, description, labels },
+							metadata: {
+								...team.metadata,
+								resourceVersion: loaded.version,
+								displayName,
+								description,
+								labels,
+							},
 							spec,
 						},
 					});
+					loaded.markSaved(saved.metadata.resourceVersion);
 					toast("success", `Team "${displayName}" updated.`);
 					onSaved(saved.metadata.name);
 				} else {
@@ -123,19 +136,16 @@ export function useTeamForm({
 					onSaved(created.metadata.name);
 				}
 			} catch (err) {
-				toast(
-					"error",
-					err instanceof ApiError
-						? err.body.message
-						: isEdit
-							? "Failed to update team."
-							: "Failed to create team.",
+				toastSaveError(
+					err,
+					isEdit ? "Failed to update team." : "Failed to create team.",
+					loaded.reload,
 				);
 			}
 		},
 	});
 
-	const resetKey = `${open}:${team?.metadata.id ?? ""}`;
+	const resetKey = loaded.resetKey;
 	const lastResetKey = useRef<string | null>(null);
 	useEffect(() => {
 		if (lastResetKey.current === resetKey) return;

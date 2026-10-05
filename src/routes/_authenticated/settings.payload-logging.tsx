@@ -1,8 +1,11 @@
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ChevronLeft, Ruler, ScrollText } from "lucide-react";
 import { Suspense, useMemo, useState } from "react";
+import { useAuth } from "@/api/auth";
 import {
 	type PayloadLogging,
+	type PayloadLoggingEnvelope,
 	payloadLoggingQueryOptions,
 	usePayloadLogging,
 	useUpdatePayloadLogging,
@@ -11,6 +14,8 @@ import { ApiError } from "@/api/types/errors";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { AlertBanner } from "@/shared/AlertBanner";
+import { NoAccessState } from "@/shared/RouteError";
 import { SettingsSection } from "@/shared/SettingsSection";
 import { PageLoader } from "@/shared/Spinner";
 import { toast } from "@/shared/Toast";
@@ -18,13 +23,22 @@ import { toast } from "@/shared/Toast";
 export const Route = createFileRoute(
 	"/_authenticated/settings/payload-logging",
 )({
+	// A refused read must not reach the route error boundary: the page shows
+	// non-admins a no-access state, and an admin's error rethrows from the query.
 	loader: ({ context }) =>
-		context.queryClient.ensureQueryData(payloadLoggingQueryOptions),
+		context.queryClient
+			.ensureQueryData(payloadLoggingQueryOptions)
+			.catch(() => undefined),
 	component: PayloadLoggingSettingsPage,
 });
 
-function PayloadLoggingSettingsInner() {
-	const { data: envelope } = usePayloadLogging();
+function PayloadLoggingSettingsForm({
+	envelope,
+	readOnly = false,
+}: {
+	envelope: PayloadLoggingEnvelope;
+	readOnly?: boolean;
+}) {
 	const update = useUpdatePayloadLogging();
 
 	// Preserve the storage backend config (file/s3/clickhouse) on save —
@@ -79,6 +93,14 @@ function PayloadLoggingSettingsInner() {
 				</p>
 			</div>
 
+			{readOnly && (
+				<AlertBanner
+					className="mt-4"
+					severity="info"
+					title="Only an admin can change payload logging"
+				/>
+			)}
+
 			<div className="mt-6 divide-y divide-border">
 				<SettingsSection
 					icon={ScrollText}
@@ -89,6 +111,7 @@ function PayloadLoggingSettingsInner() {
 						<Switch
 							checked={state.enabled}
 							onCheckedChange={(c) => patch({ enabled: c })}
+							disabled={readOnly}
 							aria-label="Enable payload logging"
 						/>
 						<span className="text-sm text-foreground">
@@ -110,7 +133,7 @@ function PayloadLoggingSettingsInner() {
 							onChange={(e) =>
 								patch({ maxBytes: Math.max(0, Number(e.target.value) || 0) })
 							}
-							disabled={!state.enabled}
+							disabled={readOnly || !state.enabled}
 							className="w-40 tabular-nums"
 						/>
 						<span className="text-xs text-muted-foreground">bytes</span>
@@ -118,33 +141,61 @@ function PayloadLoggingSettingsInner() {
 				</SettingsSection>
 			</div>
 
-			<div className="sticky bottom-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-t border-border mt-6 -mx-6 px-6 py-3 flex items-center justify-end gap-2">
-				<Button
-					type="button"
-					variant="outline"
-					size="lg"
-					onClick={() => setState(initial)}
-				>
-					Reset
-				</Button>
-				<Button
-					type="button"
-					variant="cta"
-					size="lg"
-					onClick={handleSave}
-					disabled={update.isPending}
-				>
-					{update.isPending ? "Saving…" : "Save changes"}
-				</Button>
-			</div>
+			{!readOnly && (
+				<div className="sticky bottom-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-t border-border mt-6 -mx-6 px-6 py-3 flex items-center justify-end gap-2">
+					<Button
+						type="button"
+						variant="outline"
+						size="lg"
+						onClick={() => setState(initial)}
+					>
+						Reset
+					</Button>
+					<Button
+						type="button"
+						variant="cta"
+						size="lg"
+						onClick={handleSave}
+						disabled={update.isPending}
+					>
+						{update.isPending ? "Saving…" : "Save changes"}
+					</Button>
+				</div>
+			)}
 		</div>
 	);
 }
 
+function PayloadLoggingSettingsEditor() {
+	const { data } = usePayloadLogging();
+	return <PayloadLoggingSettingsForm envelope={data} />;
+}
+
+function PayloadLoggingSettingsReadOnly() {
+	const { data, isPending } = useQuery(payloadLoggingQueryOptions);
+	if (isPending) return <PageLoader />;
+	if (!data) {
+		return (
+			<NoAccessState
+				title="Only admins can view payload logging"
+				description="Ask an admin to review or change body capture."
+			/>
+		);
+	}
+	return <PayloadLoggingSettingsForm envelope={data} readOnly />;
+}
+
+// Writing payload-logging takes an admin: its S3 settings resolve credentials
+// and send captured bodies to a destination the section itself names.
 function PayloadLoggingSettingsPage() {
+	const { isAdmin } = useAuth();
 	return (
 		<Suspense fallback={<PageLoader />}>
-			<PayloadLoggingSettingsInner />
+			{isAdmin ? (
+				<PayloadLoggingSettingsEditor />
+			) : (
+				<PayloadLoggingSettingsReadOnly />
+			)}
 		</Suspense>
 	);
 }

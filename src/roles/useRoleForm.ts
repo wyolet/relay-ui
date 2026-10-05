@@ -3,8 +3,9 @@ import { useStore } from "@tanstack/react-store";
 import { useEffect, useMemo, useRef } from "react";
 import { z } from "zod";
 import { useCreateRole, useUpdateRole } from "@/api/hooks/roles";
-import { ApiError } from "@/api/types/errors";
 import type { Role } from "@/api/types/role";
+import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
+import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
 import { randomSuffix, slugify } from "@/lib/slug";
 import {
@@ -87,6 +88,11 @@ export function useRoleForm({
 	const isEdit = role !== undefined;
 	const createRole = useCreateRole();
 	const updateRole = useUpdateRole();
+	const toastSaveError = useSaveErrorToast();
+	const loaded = useLoadedResourceVersion(
+		`${open}:${role?.metadata.id ?? ""}`,
+		role?.metadata.resourceVersion,
+	);
 
 	const initial = useMemo<RoleFormValues>(
 		() => (role ? toValues(role) : emptyValues()),
@@ -126,10 +132,17 @@ export function useRoleForm({
 					const saved = await updateRole.mutateAsync({
 						id: role.metadata.id ?? "",
 						body: {
-							metadata: { ...role.metadata, displayName, description, labels },
+							metadata: {
+								...role.metadata,
+								resourceVersion: loaded.version,
+								displayName,
+								description,
+								labels,
+							},
 							spec,
 						},
 					});
+					loaded.markSaved(saved.metadata.resourceVersion);
 					toast("success", `Role "${displayName}" updated.`);
 					onSaved(saved.metadata.name);
 				} else {
@@ -147,19 +160,16 @@ export function useRoleForm({
 					onSaved(created.metadata.name);
 				}
 			} catch (err) {
-				toast(
-					"error",
-					err instanceof ApiError
-						? err.body.message
-						: isEdit
-							? "Failed to update role."
-							: "Failed to create role.",
+				toastSaveError(
+					err,
+					isEdit ? "Failed to update role." : "Failed to create role.",
+					loaded.reload,
 				);
 			}
 		},
 	});
 
-	const resetKey = `${open}:${role?.metadata.id ?? ""}`;
+	const resetKey = loaded.resetKey;
 	const lastResetKey = useRef<string | null>(null);
 	useEffect(() => {
 		if (lastResetKey.current === resetKey) return;

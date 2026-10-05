@@ -8,12 +8,12 @@ import {
 	useUpdatePolicy,
 } from "@/api/hooks/policies";
 import { useAttachableRateLimits } from "@/api/hooks/ratelimits";
-import { ApiError } from "@/api/types/errors";
 import type { Policy } from "@/api/types/policy";
 import type { RateLimit } from "@/api/types/ratelimit";
 import { buttonVariants } from "@/components/ui/button";
 import { DiagnosticDot } from "@/diagnostics/DiagnosticDot";
 import { usePolicyDiagnostics } from "@/diagnostics/useDiagnostics";
+import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { resolveMutability } from "@/lib/ownership";
 import { OwnerLink } from "@/projects/OwnerLink";
@@ -196,6 +196,7 @@ function PolicyRow({
 	onDelete: () => void;
 }) {
 	const updatePolicy = useUpdatePolicy();
+	const toastSaveError = useSaveErrorToast();
 	const diagnostics = usePolicyDiagnostics(policy.metadata.id);
 	const catalog = describeCatalog(policy);
 	const enabled = policy.spec.enabled !== false;
@@ -215,10 +216,7 @@ function PolicyRow({
 				},
 			});
 		} catch (err) {
-			toast(
-				"error",
-				err instanceof ApiError ? err.body.message : "Failed to update policy.",
-			);
+			toastSaveError(err, "Failed to update policy.");
 		}
 	}
 

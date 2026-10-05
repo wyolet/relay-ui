@@ -1,9 +1,12 @@
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ChevronLeft, KeyRound, LogIn, UserPlus } from "lucide-react";
 import { Suspense, useMemo, useState } from "react";
+import { useAuth } from "@/api/auth";
 import { isLicenseRequired } from "@/api/hooks/license";
 import {
 	type AuthOIDC,
+	type AuthOIDCEnvelope,
 	authOIDCQueryOptions,
 	useAuthOIDC,
 	useUpdateAuthOIDC,
@@ -21,13 +24,18 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { AlertBanner } from "@/shared/AlertBanner";
+import { NoAccessState } from "@/shared/RouteError";
 import { SettingsSection } from "@/shared/SettingsSection";
 import { PageLoader } from "@/shared/Spinner";
 import { toast } from "@/shared/Toast";
 
 export const Route = createFileRoute("/_authenticated/settings/sso")({
+	// A refused read must not reach the route error boundary: the page shows
+	// non-admins a no-access state, and an admin's error rethrows from the query.
 	loader: ({ context }) =>
-		context.queryClient.ensureQueryData(authOIDCQueryOptions),
+		context.queryClient
+			.ensureQueryData(authOIDCQueryOptions)
+			.catch(() => undefined),
 	component: SsoSettingsPage,
 });
 
@@ -58,8 +66,13 @@ function toState(value: AuthOIDC): FormState {
 	};
 }
 
-function SsoSettingsInner() {
-	const { data: envelope } = useAuthOIDC();
+function SsoSettingsForm({
+	envelope,
+	readOnly = false,
+}: {
+	envelope: AuthOIDCEnvelope;
+	readOnly?: boolean;
+}) {
 	const update = useUpdateAuthOIDC();
 
 	const initial = useMemo(() => toState(envelope.value), [envelope]);
@@ -107,6 +120,14 @@ function SsoSettingsInner() {
 				</p>
 			</div>
 
+			{readOnly && (
+				<AlertBanner
+					className="mt-4"
+					severity="info"
+					title="Only an admin can change SSO settings"
+				/>
+			)}
+
 			{licenseNeeded && (
 				<AlertBanner
 					className="mt-4"
@@ -136,6 +157,7 @@ function SsoSettingsInner() {
 						<Switch
 							checked={state.enabled}
 							onCheckedChange={(c) => patch({ enabled: c })}
+							disabled={readOnly}
 							aria-label="Enable SSO login"
 						/>
 						<span className="text-sm text-foreground">
@@ -155,12 +177,14 @@ function SsoSettingsInner() {
 							label="Issuer URL"
 							value={state.issuer}
 							placeholder="https://idp.example.com"
+							readOnly={readOnly}
 							onChange={(v) => patch({ issuer: v })}
 						/>
 						<Field
 							id="clientId"
 							label="Client id"
 							value={state.clientId}
+							readOnly={readOnly}
 							onChange={(v) => patch({ clientId: v })}
 						/>
 						<Field
@@ -168,6 +192,7 @@ function SsoSettingsInner() {
 							label="Client secret env var"
 							value={state.clientSecretEnv}
 							placeholder="RELAY_OIDC_CLIENT_SECRET"
+							readOnly={readOnly}
 							onChange={(v) => patch({ clientSecretEnv: v })}
 						/>
 						<Field
@@ -175,6 +200,7 @@ function SsoSettingsInner() {
 							label="Callback URL"
 							value={state.redirectUrl}
 							placeholder="https://relay.example.com/api/auth/oidc/callback"
+							readOnly={readOnly}
 							onChange={(v) => patch({ redirectUrl: v })}
 						/>
 						<Field
@@ -182,6 +208,7 @@ function SsoSettingsInner() {
 							label="Post-login URL"
 							value={state.postLoginUrl}
 							placeholder="Empty — stay on this origin"
+							readOnly={readOnly}
 							onChange={(v) => patch({ postLoginUrl: v })}
 						/>
 					</div>
@@ -196,6 +223,7 @@ function SsoSettingsInner() {
 						value={state.registration}
 						items={REGISTRATION}
 						onValueChange={(v) => patch({ registration: v ?? "closed" })}
+						disabled={readOnly}
 					>
 						<SelectTrigger className="w-full max-w-md">
 							<SelectValue />
@@ -211,25 +239,27 @@ function SsoSettingsInner() {
 				</SettingsSection>
 			</div>
 
-			<div className="sticky bottom-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-t border-border mt-6 -mx-6 px-6 py-3 flex items-center justify-end gap-2">
-				<Button
-					type="button"
-					variant="outline"
-					size="lg"
-					onClick={() => setState(initial)}
-				>
-					Reset
-				</Button>
-				<Button
-					type="button"
-					variant="cta"
-					size="lg"
-					onClick={handleSave}
-					disabled={update.isPending}
-				>
-					{update.isPending ? "Saving…" : "Save changes"}
-				</Button>
-			</div>
+			{!readOnly && (
+				<div className="sticky bottom-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-t border-border mt-6 -mx-6 px-6 py-3 flex items-center justify-end gap-2">
+					<Button
+						type="button"
+						variant="outline"
+						size="lg"
+						onClick={() => setState(initial)}
+					>
+						Reset
+					</Button>
+					<Button
+						type="button"
+						variant="cta"
+						size="lg"
+						onClick={handleSave}
+						disabled={update.isPending}
+					>
+						{update.isPending ? "Saving…" : "Save changes"}
+					</Button>
+				</div>
+			)}
 		</div>
 	);
 }
@@ -239,12 +269,14 @@ function Field({
 	label,
 	value,
 	placeholder,
+	readOnly,
 	onChange,
 }: {
 	id: string;
 	label: string;
 	value: string;
 	placeholder?: string;
+	readOnly: boolean;
 	onChange: (value: string) => void;
 }) {
 	return (
@@ -255,16 +287,39 @@ function Field({
 				value={value}
 				placeholder={placeholder}
 				spellCheck={false}
+				readOnly={readOnly}
 				onChange={(e) => onChange(e.target.value)}
 			/>
 		</div>
 	);
 }
 
+function SsoSettingsEditor() {
+	const { data } = useAuthOIDC();
+	return <SsoSettingsForm envelope={data} />;
+}
+
+function SsoSettingsReadOnly() {
+	const { data, isPending } = useQuery(authOIDCQueryOptions);
+	if (isPending) return <PageLoader />;
+	if (!data) {
+		return (
+			<NoAccessState
+				title="Only admins can view SSO settings"
+				description="Ask an admin to review or change how operators sign in."
+			/>
+		);
+	}
+	return <SsoSettingsForm envelope={data} readOnly />;
+}
+
+// Writing auth:oidc takes an admin: it names where the client secret is read
+// from, which a non-admin could otherwise point at another credential.
 function SsoSettingsPage() {
+	const { isAdmin } = useAuth();
 	return (
 		<Suspense fallback={<PageLoader />}>
-			<SsoSettingsInner />
+			{isAdmin ? <SsoSettingsEditor /> : <SsoSettingsReadOnly />}
 		</Suspense>
 	);
 }
