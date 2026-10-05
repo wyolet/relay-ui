@@ -12,6 +12,8 @@ import {
 	useLogsFilterOptions,
 } from "@/logs/useLogsFilterOptions";
 import { PageLoader } from "@/shared/Spinner";
+import { StaleContent } from "@/shared/StaleContent";
+import { useDeferredSearch } from "@/shared/useDeferredSearch";
 
 const SLOW_LABEL = `Slow >${SLOW_MS / 1000}s`;
 
@@ -57,8 +59,9 @@ export const Route = createFileRoute("/_authenticated/logs/")({
 });
 
 function LogsPage() {
-	const search = Route.useSearch();
-	const { expand } = search;
+	const live = Route.useSearch();
+	const { search, isStale } = useDeferredSearch(live);
+	const { expand } = live;
 	const navigate = useNavigate();
 	const options = useLogsFilterOptions();
 	const labelFor = useLogLabeler();
@@ -74,7 +77,7 @@ function LogsPage() {
 				patch({ status_class: value });
 			return;
 		}
-		const cur = search[key];
+		const cur = live[key];
 		if (!cur.includes(value)) patch({ [key]: [...cur, value] });
 	};
 
@@ -88,31 +91,33 @@ function LogsPage() {
 				</p>
 			</div>
 
-			<LogsHistogram filter={filter} />
+			<LogsHistogram filter={toLogsFilter(live)} />
 
 			<LogsFilters
-				values={search}
+				values={live}
 				options={options}
 				slowLabel={SLOW_LABEL}
 				onChange={patch}
 			/>
 
-			<Suspense fallback={<Loading />}>
-				<LogsTable
-					expandedId={expand ?? null}
-					onToggle={(id) => patch({ expand: expand === id ? undefined : id })}
-					onOpenRequest={(id) =>
-						void navigate({
-							to: "/logs/$requestId",
-							params: { requestId: id },
-						})
-					}
-					onFilter={addFilter}
-					labelFor={labelFor}
-					query={search.q}
-					filter={filter}
-				/>
-			</Suspense>
+			<StaleContent stale={isStale}>
+				<Suspense fallback={<Loading />}>
+					<LogsTable
+						expandedId={expand ?? null}
+						onToggle={(id) => patch({ expand: expand === id ? undefined : id })}
+						onOpenRequest={(id) =>
+							void navigate({
+								to: "/logs/$requestId",
+								params: { requestId: id },
+							})
+						}
+						onFilter={addFilter}
+						labelFor={labelFor}
+						query={search.q}
+						filter={filter}
+					/>
+				</Suspense>
+			</StaleContent>
 		</div>
 	);
 }

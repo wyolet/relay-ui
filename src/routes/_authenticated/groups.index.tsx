@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { z } from "zod";
 import { groupsListQuery } from "@/api/hooks/groups";
 import { GroupsTable, toGroupsParams } from "@/groups/GroupsTable";
+import { awaitOnEnter } from "@/lib/awaitOnEnter";
 import { PageLoader } from "@/shared/Spinner";
 
 const searchSchema = z.object({
@@ -13,8 +14,13 @@ const searchSchema = z.object({
 export const Route = createFileRoute("/_authenticated/groups/")({
 	validateSearch: searchSchema,
 	loaderDeps: ({ search }) => ({ q: search.q, enabled: search.enabled }),
-	loader: ({ context, deps }) =>
-		context.queryClient.ensureQueryData(groupsListQuery(toGroupsParams(deps))),
+	loader: ({ context, deps, cause }) =>
+		awaitOnEnter(
+			cause,
+			context.queryClient.ensureQueryData(
+				groupsListQuery(toGroupsParams(deps)),
+			),
+		),
 	component: GroupsPage,
 });
 

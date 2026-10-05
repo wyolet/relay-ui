@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { z } from "zod";
 import { projectsListQuery } from "@/api/hooks/projects";
 import { teamsListQueryOptions } from "@/api/hooks/teams";
+import { awaitOnEnter } from "@/lib/awaitOnEnter";
 import { ProjectsTable, toProjectsParams } from "@/projects/ProjectsTable";
 import { PageLoader } from "@/shared/Spinner";
 
@@ -19,13 +20,16 @@ export const Route = createFileRoute("/_authenticated/projects/")({
 		enabled: search.enabled,
 		team_id: search.team_id,
 	}),
-	loader: ({ context, deps }) =>
-		Promise.all([
-			context.queryClient.ensureQueryData(
-				projectsListQuery(toProjectsParams(deps)),
-			),
-			context.queryClient.ensureQueryData(teamsListQueryOptions),
-		]),
+	loader: ({ context, deps, cause }) =>
+		awaitOnEnter(
+			cause,
+			Promise.all([
+				context.queryClient.ensureQueryData(
+					projectsListQuery(toProjectsParams(deps)),
+				),
+				context.queryClient.ensureQueryData(teamsListQueryOptions),
+			]),
+		),
 	component: ProjectsPage,
 });
 

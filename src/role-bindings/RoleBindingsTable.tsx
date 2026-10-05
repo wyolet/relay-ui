@@ -20,9 +20,11 @@ import { subjectLabel } from "@/role-bindings/SubjectsEditor";
 import { Chip } from "@/shared/Chip";
 import { confirm } from "@/shared/ConfirmDialog";
 import { RowMenu } from "@/shared/RowMenu";
+import { StaleContent } from "@/shared/StaleContent";
 import { TableToolbar } from "@/shared/TableToolbar";
 import { Th } from "@/shared/Th";
 import { toast } from "@/shared/Toast";
+import { useDeferredSearch } from "@/shared/useDeferredSearch";
 
 export interface RoleBindingsSearch {
 	q: string;
@@ -80,7 +82,8 @@ export function toRoleBindingsParams(
 
 export function RoleBindingsTable() {
 	const navigate = useNavigate({ from: "/role-bindings" });
-	const search = useSearch({ from: "/_authenticated/role-bindings/" });
+	const live = useSearch({ from: "/_authenticated/role-bindings/" });
+	const { search, isStale } = useDeferredSearch(live);
 	const { data } = useRoleBindingsList(toRoleBindingsParams(search));
 	const { data: rolesData } = useRoles();
 	const { data: teamsData } = useTeams();
@@ -163,7 +166,7 @@ export function RoleBindingsTable() {
 		<div>
 			<TableToolbar
 				search={
-					<FilterBar defs={filters} state={{ ...search }} onChange={patch} />
+					<FilterBar defs={filters} state={{ ...live }} onChange={patch} />
 				}
 				actions={
 					<Link
@@ -176,131 +179,133 @@ export function RoleBindingsTable() {
 				}
 			/>
 
-			{items.length === 0 ? (
-				<div className="rounded-lg border border-dashed border-input bg-card px-6 py-14 text-center">
-					<ShieldCheck className="w-6 h-6 mx-auto mb-3 text-muted-foreground/50" />
-					{!filtered ? (
-						<>
-							<p className="text-sm font-medium text-foreground mb-1">
-								No role bindings yet
+			<StaleContent stale={isStale}>
+				{items.length === 0 ? (
+					<div className="rounded-lg border border-dashed border-input bg-card px-6 py-14 text-center">
+						<ShieldCheck className="w-6 h-6 mx-auto mb-3 text-muted-foreground/50" />
+						{!filtered ? (
+							<>
+								<p className="text-sm font-medium text-foreground mb-1">
+									No role bindings yet
+								</p>
+								<p className="text-sm text-muted-foreground mb-5 max-w-sm mx-auto">
+									A role binding grants one role to a set of subjects at one
+									scope — global, a team, or a project.
+								</p>
+								<Link
+									to="/role-bindings/new"
+									className={buttonVariants({ variant: "default", size: "lg" })}
+								>
+									<Plus className="w-4 h-4" />
+									Create role binding
+								</Link>
+							</>
+						) : (
+							<p className="text-sm text-muted-foreground">
+								No role bindings match this filter.
 							</p>
-							<p className="text-sm text-muted-foreground mb-5 max-w-sm mx-auto">
-								A role binding grants one role to a set of subjects at one scope
-								— global, a team, or a project.
-							</p>
-							<Link
-								to="/role-bindings/new"
-								className={buttonVariants({ variant: "default", size: "lg" })}
-							>
-								<Plus className="w-4 h-4" />
-								Create role binding
-							</Link>
-						</>
-					) : (
-						<p className="text-sm text-muted-foreground">
-							No role bindings match this filter.
-						</p>
-					)}
-				</div>
-			) : (
-				<div className="overflow-x-auto rounded-lg border border-border bg-card">
-					<table className="w-full border-collapse">
-						<thead className="bg-muted/40">
-							<tr>
-								<Th variant="column">Name</Th>
-								<Th variant="column">Role</Th>
-								<Th variant="column">Scope</Th>
-								<Th variant="column">Subjects</Th>
-								<th
-									scope="col"
-									className="w-10 px-3 py-2"
-									aria-label="Actions"
-								/>
-							</tr>
-						</thead>
-						<tbody>
-							{items.map((binding) => {
-								const role = roleNames.get(binding.spec.roleId);
-								return (
-									<tr
-										key={binding.metadata.name}
-										className="border-t border-border transition-colors hover:bg-muted/40"
-									>
-										<td className="px-3 py-2">
-											<Link
-												to="/role-bindings/$name"
-												params={{ name: binding.metadata.name }}
-												className="text-sm font-medium text-foreground hover:underline"
-											>
-												{displayLabel(binding.metadata)}
-											</Link>
-											{hasDisplayName(binding.metadata) && (
-												<div className="font-mono text-[11px] text-muted-foreground">
-													{binding.metadata.name}
-												</div>
-											)}
-										</td>
-										<td className="px-3 py-2 text-xs">
-											{role ? (
+						)}
+					</div>
+				) : (
+					<div className="overflow-x-auto rounded-lg border border-border bg-card">
+						<table className="w-full border-collapse">
+							<thead className="bg-muted/40">
+								<tr>
+									<Th variant="column">Name</Th>
+									<Th variant="column">Role</Th>
+									<Th variant="column">Scope</Th>
+									<Th variant="column">Subjects</Th>
+									<th
+										scope="col"
+										className="w-10 px-3 py-2"
+										aria-label="Actions"
+									/>
+								</tr>
+							</thead>
+							<tbody>
+								{items.map((binding) => {
+									const role = roleNames.get(binding.spec.roleId);
+									return (
+										<tr
+											key={binding.metadata.name}
+											className="border-t border-border transition-colors hover:bg-muted/40"
+										>
+											<td className="px-3 py-2">
 												<Link
-													to="/roles/$name"
-													params={{ name: role.name }}
-													className="text-foreground hover:underline"
+													to="/role-bindings/$name"
+													params={{ name: binding.metadata.name }}
+													className="text-sm font-medium text-foreground hover:underline"
 												>
-													{role.label}
+													{displayLabel(binding.metadata)}
 												</Link>
-											) : (
-												<code className="font-mono text-[11px]">
-													{binding.spec.roleId.slice(0, 8)}…
-												</code>
-											)}
-										</td>
-										<td className="px-3 py-2 text-xs">
-											{binding.spec.scope.kind === "system" ? (
-												<span className="text-muted-foreground">Global</span>
-											) : (
-												<OwnerLink owner={binding.spec.scope} />
-											)}
-										</td>
-										<td className="px-3 py-2">
-											<div className="flex flex-wrap gap-1">
-												{(binding.spec.subjects ?? []).map((s) => (
-													<Chip
-														key={subjectLabel(s)}
-														label={subjectLabel(s)}
-														mono
-														shape="box"
-													/>
-												))}
-											</div>
-										</td>
-										<td className="px-3 py-2 text-right">
-											<RowMenu
-												actions={[
-													{
-														label: "Edit",
-														render: (
-															<Link
-																to="/role-bindings/$name/edit"
-																params={{ name: binding.metadata.name }}
-															/>
-														),
-													},
-													{
-														label: "Delete",
-														danger: true,
-														onClick: () => void handleDelete(binding),
-													},
-												]}
-											/>
-										</td>
-									</tr>
-								);
-							})}
-						</tbody>
-					</table>
-				</div>
-			)}
+												{hasDisplayName(binding.metadata) && (
+													<div className="font-mono text-[11px] text-muted-foreground">
+														{binding.metadata.name}
+													</div>
+												)}
+											</td>
+											<td className="px-3 py-2 text-xs">
+												{role ? (
+													<Link
+														to="/roles/$name"
+														params={{ name: role.name }}
+														className="text-foreground hover:underline"
+													>
+														{role.label}
+													</Link>
+												) : (
+													<code className="font-mono text-[11px]">
+														{binding.spec.roleId.slice(0, 8)}…
+													</code>
+												)}
+											</td>
+											<td className="px-3 py-2 text-xs">
+												{binding.spec.scope.kind === "system" ? (
+													<span className="text-muted-foreground">Global</span>
+												) : (
+													<OwnerLink owner={binding.spec.scope} />
+												)}
+											</td>
+											<td className="px-3 py-2">
+												<div className="flex flex-wrap gap-1">
+													{(binding.spec.subjects ?? []).map((s) => (
+														<Chip
+															key={subjectLabel(s)}
+															label={subjectLabel(s)}
+															mono
+															shape="box"
+														/>
+													))}
+												</div>
+											</td>
+											<td className="px-3 py-2 text-right">
+												<RowMenu
+													actions={[
+														{
+															label: "Edit",
+															render: (
+																<Link
+																	to="/role-bindings/$name/edit"
+																	params={{ name: binding.metadata.name }}
+																/>
+															),
+														},
+														{
+															label: "Delete",
+															danger: true,
+															onClick: () => void handleDelete(binding),
+														},
+													]}
+												/>
+											</td>
+										</tr>
+									);
+								})}
+							</tbody>
+						</table>
+					</div>
+				)}
+			</StaleContent>
 		</div>
 	);
 }

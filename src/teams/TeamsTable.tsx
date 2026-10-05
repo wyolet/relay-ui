@@ -14,10 +14,12 @@ import type { FilterDef, FilterState } from "@/filters/types";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { confirm } from "@/shared/ConfirmDialog";
 import { RowMenu } from "@/shared/RowMenu";
+import { StaleContent } from "@/shared/StaleContent";
 import { Switch } from "@/shared/Switch";
 import { TableToolbar } from "@/shared/TableToolbar";
 import { Th } from "@/shared/Th";
 import { toast } from "@/shared/Toast";
+import { useDeferredSearch } from "@/shared/useDeferredSearch";
 import { budgetSummary } from "@/teams/budget";
 import { useToggleTeamEnabled } from "@/teams/useToggleTeamEnabled";
 
@@ -57,7 +59,8 @@ export function toTeamsParams(search: {
 
 export function TeamsTable() {
 	const navigate = useNavigate({ from: "/teams" });
-	const search = useSearch({ from: "/_authenticated/teams/" });
+	const live = useSearch({ from: "/_authenticated/teams/" });
+	const { search, isStale } = useDeferredSearch(live);
 	const { data } = useTeamsList(toTeamsParams(search));
 	const deleteTeam = useDeleteTeam();
 	const { setEnabled } = useToggleTeamEnabled();
@@ -94,7 +97,7 @@ export function TeamsTable() {
 				search={
 					<FilterBar
 						defs={TEAM_FILTERS}
-						state={{ q: search.q, enabled: search.enabled }}
+						state={{ q: live.q, enabled: live.enabled }}
 						onChange={patch}
 					/>
 				}
@@ -109,116 +112,118 @@ export function TeamsTable() {
 				}
 			/>
 
-			{items.length === 0 ? (
-				<div className="rounded-lg border border-dashed border-input bg-card px-6 py-14 text-center">
-					<Users className="w-6 h-6 mx-auto mb-3 text-muted-foreground/50" />
-					{!filtered ? (
-						<>
-							<p className="text-sm font-medium text-foreground mb-1">
-								No teams yet
-							</p>
-							<p className="text-sm text-muted-foreground mb-5 max-w-sm mx-auto">
-								A team is the outer tenancy scope. It owns projects, and
-								membership is granted by a role binding at team scope.
-							</p>
-							<Link
-								to="/teams/new"
-								className={buttonVariants({ variant: "default", size: "lg" })}
-							>
-								<Plus className="w-4 h-4" />
-								Create team
-							</Link>
-						</>
-					) : (
-						<p className="text-sm text-muted-foreground">
-							No teams match this filter.
-						</p>
-					)}
-				</div>
-			) : (
-				<div className="overflow-x-auto rounded-lg border border-border bg-card">
-					<table className="w-full border-collapse">
-						<thead className="bg-muted/40">
-							<tr>
-								<Th variant="column">Name</Th>
-								<Th variant="column">Budget</Th>
-								<th
-									scope="col"
-									className="w-12 px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground"
+			<StaleContent stale={isStale}>
+				{items.length === 0 ? (
+					<div className="rounded-lg border border-dashed border-input bg-card px-6 py-14 text-center">
+						<Users className="w-6 h-6 mx-auto mb-3 text-muted-foreground/50" />
+						{!filtered ? (
+							<>
+								<p className="text-sm font-medium text-foreground mb-1">
+									No teams yet
+								</p>
+								<p className="text-sm text-muted-foreground mb-5 max-w-sm mx-auto">
+									A team is the outer tenancy scope. It owns projects, and
+									membership is granted by a role binding at team scope.
+								</p>
+								<Link
+									to="/teams/new"
+									className={buttonVariants({ variant: "default", size: "lg" })}
 								>
-									On
-								</th>
-								<th
-									scope="col"
-									className="w-10 px-3 py-2"
-									aria-label="Actions"
-								/>
-							</tr>
-						</thead>
-						<tbody>
-							{items.map((team) => {
-								const enabled = team.spec.enabled ?? true;
-								return (
-									<tr
-										key={team.metadata.name}
-										className={[
-											"border-t border-border transition-colors",
-											enabled
-												? "hover:bg-muted/40"
-												: "bg-muted/30 text-muted-foreground/70",
-										].join(" ")}
+									<Plus className="w-4 h-4" />
+									Create team
+								</Link>
+							</>
+						) : (
+							<p className="text-sm text-muted-foreground">
+								No teams match this filter.
+							</p>
+						)}
+					</div>
+				) : (
+					<div className="overflow-x-auto rounded-lg border border-border bg-card">
+						<table className="w-full border-collapse">
+							<thead className="bg-muted/40">
+								<tr>
+									<Th variant="column">Name</Th>
+									<Th variant="column">Budget</Th>
+									<th
+										scope="col"
+										className="w-12 px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground"
 									>
-										<td className="px-3 py-2">
-											<Link
-												to="/teams/$name"
-												params={{ name: team.metadata.name }}
-												className="text-sm font-medium text-foreground hover:underline"
-											>
-												{displayLabel(team.metadata)}
-											</Link>
-											{hasDisplayName(team.metadata) && (
-												<div className="font-mono text-[11px] text-muted-foreground">
-													{team.metadata.name}
-												</div>
-											)}
-										</td>
-										<td className="px-3 py-2 text-xs text-foreground">
-											{budgetSummary(team.spec.budget) ?? "—"}
-										</td>
-										<td className="px-3 py-2">
-											<Switch
-												checked={enabled}
-												onChange={(next) => void setEnabled(team, next)}
-												label={`Toggle ${team.metadata.name}`}
-											/>
-										</td>
-										<td className="px-3 py-2 text-right">
-											<RowMenu
-												actions={[
-													{
-														label: "Edit",
-														render: (
-															<Link
-																to="/teams/$name/edit"
-																params={{ name: team.metadata.name }}
-															/>
-														),
-													},
-													{
-														label: "Delete",
-														danger: true,
-														onClick: () => void handleDelete(team),
-													},
-												]}
-											/>
-										</td>
-									</tr>
-								);
-							})}
-						</tbody>
-					</table>
-				</div>
-			)}
+										On
+									</th>
+									<th
+										scope="col"
+										className="w-10 px-3 py-2"
+										aria-label="Actions"
+									/>
+								</tr>
+							</thead>
+							<tbody>
+								{items.map((team) => {
+									const enabled = team.spec.enabled ?? true;
+									return (
+										<tr
+											key={team.metadata.name}
+											className={[
+												"border-t border-border transition-colors",
+												enabled
+													? "hover:bg-muted/40"
+													: "bg-muted/30 text-muted-foreground/70",
+											].join(" ")}
+										>
+											<td className="px-3 py-2">
+												<Link
+													to="/teams/$name"
+													params={{ name: team.metadata.name }}
+													className="text-sm font-medium text-foreground hover:underline"
+												>
+													{displayLabel(team.metadata)}
+												</Link>
+												{hasDisplayName(team.metadata) && (
+													<div className="font-mono text-[11px] text-muted-foreground">
+														{team.metadata.name}
+													</div>
+												)}
+											</td>
+											<td className="px-3 py-2 text-xs text-foreground">
+												{budgetSummary(team.spec.budget) ?? "—"}
+											</td>
+											<td className="px-3 py-2">
+												<Switch
+													checked={enabled}
+													onChange={(next) => void setEnabled(team, next)}
+													label={`Toggle ${team.metadata.name}`}
+												/>
+											</td>
+											<td className="px-3 py-2 text-right">
+												<RowMenu
+													actions={[
+														{
+															label: "Edit",
+															render: (
+																<Link
+																	to="/teams/$name/edit"
+																	params={{ name: team.metadata.name }}
+																/>
+															),
+														},
+														{
+															label: "Delete",
+															danger: true,
+															onClick: () => void handleDelete(team),
+														},
+													]}
+												/>
+											</td>
+										</tr>
+									);
+								})}
+							</tbody>
+						</table>
+					</div>
+				)}
+			</StaleContent>
 		</div>
 	);
 }

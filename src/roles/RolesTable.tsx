@@ -22,9 +22,11 @@ import { isBuiltinRole } from "@/roles/vocabulary";
 import { Chip } from "@/shared/Chip";
 import { confirm } from "@/shared/ConfirmDialog";
 import { RowMenu } from "@/shared/RowMenu";
+import { StaleContent } from "@/shared/StaleContent";
 import { TableToolbar } from "@/shared/TableToolbar";
 import { Th } from "@/shared/Th";
 import { toast } from "@/shared/Toast";
+import { useDeferredSearch } from "@/shared/useDeferredSearch";
 
 /** Filters rendered above the table, all served by GET /roles. */
 export const ROLE_FILTERS = [
@@ -62,7 +64,8 @@ export function toRolesParams(search: {
 
 export function RolesTable() {
 	const navigate = useNavigate({ from: "/roles" });
-	const search = useSearch({ from: "/_authenticated/roles/" });
+	const live = useSearch({ from: "/_authenticated/roles/" });
+	const { search, isStale } = useDeferredSearch(live);
 	const { data } = useRolesList(toRolesParams(search));
 	const canAuthor = useHasLicenseFeature(FEATURE_CUSTOM_ROLES);
 	const deleteRole = useDeleteRole();
@@ -99,7 +102,7 @@ export function RolesTable() {
 				search={
 					<FilterBar
 						defs={ROLE_FILTERS}
-						state={{ q: search.q, enabled: search.enabled }}
+						state={{ q: live.q, enabled: live.enabled }}
 						onChange={patch}
 					/>
 				}
@@ -127,84 +130,86 @@ export function RolesTable() {
 				</div>
 			)}
 
-			{items.length === 0 ? (
-				<div className="rounded-lg border border-dashed border-input bg-card px-6 py-14 text-center">
-					<ShieldCheck className="w-6 h-6 mx-auto mb-3 text-muted-foreground/50" />
-					<p className="text-sm text-muted-foreground">
-						{filtered ? "No roles match this filter." : "No roles yet."}
-					</p>
-				</div>
-			) : (
-				<div className="overflow-x-auto rounded-lg border border-border bg-card">
-					<table className="w-full border-collapse">
-						<thead className="bg-muted/40">
-							<tr>
-								<Th variant="column">Name</Th>
-								<Th variant="column">Rules</Th>
-								<th
-									scope="col"
-									className="w-10 px-3 py-2"
-									aria-label="Actions"
-								/>
-							</tr>
-						</thead>
-						<tbody>
-							{items.map((role) => {
-								const builtin = isBuiltinRole(role.metadata.owner?.kind);
-								return (
-									<tr
-										key={role.metadata.name}
-										className="border-t border-border transition-colors hover:bg-muted/40"
-									>
-										<td className="px-3 py-2">
-											<div className="flex items-center gap-2">
-												<Link
-													to="/roles/$name"
-													params={{ name: role.metadata.name }}
-													className="text-sm font-medium text-foreground hover:underline"
-												>
-													{displayLabel(role.metadata)}
-												</Link>
-												{builtin && <Chip label="built-in" shape="box" />}
-											</div>
-											{hasDisplayName(role.metadata) && (
-												<div className="font-mono text-[11px] text-muted-foreground">
-													{role.metadata.name}
+			<StaleContent stale={isStale}>
+				{items.length === 0 ? (
+					<div className="rounded-lg border border-dashed border-input bg-card px-6 py-14 text-center">
+						<ShieldCheck className="w-6 h-6 mx-auto mb-3 text-muted-foreground/50" />
+						<p className="text-sm text-muted-foreground">
+							{filtered ? "No roles match this filter." : "No roles yet."}
+						</p>
+					</div>
+				) : (
+					<div className="overflow-x-auto rounded-lg border border-border bg-card">
+						<table className="w-full border-collapse">
+							<thead className="bg-muted/40">
+								<tr>
+									<Th variant="column">Name</Th>
+									<Th variant="column">Rules</Th>
+									<th
+										scope="col"
+										className="w-10 px-3 py-2"
+										aria-label="Actions"
+									/>
+								</tr>
+							</thead>
+							<tbody>
+								{items.map((role) => {
+									const builtin = isBuiltinRole(role.metadata.owner?.kind);
+									return (
+										<tr
+											key={role.metadata.name}
+											className="border-t border-border transition-colors hover:bg-muted/40"
+										>
+											<td className="px-3 py-2">
+												<div className="flex items-center gap-2">
+													<Link
+														to="/roles/$name"
+														params={{ name: role.metadata.name }}
+														className="text-sm font-medium text-foreground hover:underline"
+													>
+														{displayLabel(role.metadata)}
+													</Link>
+													{builtin && <Chip label="built-in" shape="box" />}
 												</div>
-											)}
-										</td>
-										<td className="px-3 py-2 text-xs text-muted-foreground">
-											{ruleSummary(role.spec.rules)}
-										</td>
-										<td className="px-3 py-2 text-right">
-											{builtin ? null : (
-												<RowMenu
-													actions={[
-														{
-															label: "Edit",
-															render: (
-																<Link
-																	to="/roles/$name/edit"
-																	params={{ name: role.metadata.name }}
-																/>
-															),
-														},
-														{
-															label: "Delete",
-															danger: true,
-															onClick: () => void handleDelete(role),
-														},
-													]}
-												/>
-											)}
-										</td>
-									</tr>
-								);
-							})}
-						</tbody>
-					</table>
-				</div>
-			)}
+												{hasDisplayName(role.metadata) && (
+													<div className="font-mono text-[11px] text-muted-foreground">
+														{role.metadata.name}
+													</div>
+												)}
+											</td>
+											<td className="px-3 py-2 text-xs text-muted-foreground">
+												{ruleSummary(role.spec.rules)}
+											</td>
+											<td className="px-3 py-2 text-right">
+												{builtin ? null : (
+													<RowMenu
+														actions={[
+															{
+																label: "Edit",
+																render: (
+																	<Link
+																		to="/roles/$name/edit"
+																		params={{ name: role.metadata.name }}
+																	/>
+																),
+															},
+															{
+																label: "Delete",
+																danger: true,
+																onClick: () => void handleDelete(role),
+															},
+														]}
+													/>
+												)}
+											</td>
+										</tr>
+									);
+								})}
+							</tbody>
+						</table>
+					</div>
+				)}
+			</StaleContent>
 		</div>
 	);
 }

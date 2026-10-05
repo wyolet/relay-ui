@@ -4,6 +4,7 @@ import { z } from "zod";
 import { policiesListQueryOptions } from "@/api/hooks/policies";
 import { projectsListQueryOptions } from "@/api/hooks/projects";
 import { serviceAccountsListQuery } from "@/api/hooks/serviceAccounts";
+import { awaitOnEnter } from "@/lib/awaitOnEnter";
 import {
 	ServiceAccountsTable,
 	toServiceAccountsParams,
@@ -23,14 +24,17 @@ export const Route = createFileRoute("/_authenticated/service-accounts/")({
 		enabled: search.enabled,
 		project_id: search.project_id,
 	}),
-	loader: ({ context, deps }) =>
-		Promise.all([
-			context.queryClient.ensureQueryData(
-				serviceAccountsListQuery(toServiceAccountsParams(deps)),
-			),
-			context.queryClient.ensureQueryData(projectsListQueryOptions),
-			context.queryClient.ensureQueryData(policiesListQueryOptions),
-		]),
+	loader: ({ context, deps, cause }) =>
+		awaitOnEnter(
+			cause,
+			Promise.all([
+				context.queryClient.ensureQueryData(
+					serviceAccountsListQuery(toServiceAccountsParams(deps)),
+				),
+				context.queryClient.ensureQueryData(projectsListQueryOptions),
+				context.queryClient.ensureQueryData(policiesListQueryOptions),
+			]),
+		),
 	component: ServiceAccountsPage,
 });
 

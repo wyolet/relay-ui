@@ -11,8 +11,11 @@ import {
 } from "@/api/hooks/pricings";
 import { FilterBar } from "@/filters/FilterBar";
 import type { FilterDef } from "@/filters/types";
+import { awaitOnEnter } from "@/lib/awaitOnEnter";
 import { PricingsTable } from "@/pricing/PricingsTable";
 import { PageLoader } from "@/shared/Spinner";
+import { StaleContent } from "@/shared/StaleContent";
+import { useDeferredSearch } from "@/shared/useDeferredSearch";
 
 type EnabledFilter = "all" | "enabled" | "disabled";
 
@@ -57,19 +60,23 @@ function toParams(q: string, enabled: EnabledFilter): PricingsListParams {
 export const Route = createFileRoute("/_authenticated/pricing/")({
 	validateSearch: searchSchema,
 	loaderDeps: ({ search }) => ({ q: search.q, enabled: search.enabled }),
-	loader: ({ context, deps }) =>
-		Promise.all([
-			context.queryClient.ensureQueryData(
-				pricingsListQuery(toParams(deps.q, deps.enabled)),
-			),
-			context.queryClient.ensureQueryData(modelsListQueryOptions),
-			context.queryClient.ensureQueryData(hostsListQueryOptions),
-		]),
+	loader: ({ context, deps, cause }) =>
+		awaitOnEnter(
+			cause,
+			Promise.all([
+				context.queryClient.ensureQueryData(
+					pricingsListQuery(toParams(deps.q, deps.enabled)),
+				),
+				context.queryClient.ensureQueryData(modelsListQueryOptions),
+				context.queryClient.ensureQueryData(hostsListQueryOptions),
+			]),
+		),
 	component: PricingsPage,
 });
 
 function PricingsList() {
-	const search = Route.useSearch();
+	const live = Route.useSearch();
+	const { search, isStale } = useDeferredSearch(live);
 	const navigate = useNavigate({ from: "/pricing" });
 	const { data } = usePricingsList(toParams(search.q, search.enabled));
 	const items = data.items ?? [];
@@ -82,35 +89,37 @@ function PricingsList() {
 		<div>
 			<FilterBar
 				defs={PRICING_FILTERS}
-				state={{ q: search.q, enabled: search.enabled }}
+				state={{ q: live.q, enabled: live.enabled }}
 				onChange={patch}
 				className="mb-3"
 			/>
 
-			<div className="mb-2 text-[11px] text-muted-foreground">
-				{items.length} of {data.total} pricing{data.total === 1 ? "" : "s"}
-			</div>
-
-			{items.length === 0 ? (
-				<div className="rounded-lg border border-dashed border-input bg-card px-6 py-14 text-center">
-					<Banknote className="w-6 h-6 mx-auto mb-3 text-muted-foreground/50" />
-					<p className="text-sm text-muted-foreground">
-						{data.total === 0
-							? "No pricings configured. Rates attached to host bindings power every cost estimate."
-							: "No pricings match the current filter."}
-					</p>
+			<StaleContent stale={isStale}>
+				<div className="mb-2 text-[11px] text-muted-foreground">
+					{items.length} of {data.total} pricing{data.total === 1 ? "" : "s"}
 				</div>
-			) : (
-				<>
-					<PricingsTable items={items} />
-					{truncated && (
-						<p className="mt-2 text-[11px] text-muted-foreground">
-							Showing the first {items.length} of {data.total}. Refine your
-							search to narrow the list.
+
+				{items.length === 0 ? (
+					<div className="rounded-lg border border-dashed border-input bg-card px-6 py-14 text-center">
+						<Banknote className="w-6 h-6 mx-auto mb-3 text-muted-foreground/50" />
+						<p className="text-sm text-muted-foreground">
+							{data.total === 0
+								? "No pricings configured. Rates attached to host bindings power every cost estimate."
+								: "No pricings match the current filter."}
 						</p>
-					)}
-				</>
-			)}
+					</div>
+				) : (
+					<>
+						<PricingsTable items={items} />
+						{truncated && (
+							<p className="mt-2 text-[11px] text-muted-foreground">
+								Showing the first {items.length} of {data.total}. Refine your
+								search to narrow the list.
+							</p>
+						)}
+					</>
+				)}
+			</StaleContent>
 		</div>
 	);
 }
