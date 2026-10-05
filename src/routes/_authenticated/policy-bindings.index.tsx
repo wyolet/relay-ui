@@ -4,6 +4,7 @@ import { z } from "zod";
 import { policiesListQueryOptions } from "@/api/hooks/policies";
 import { policyBindingsListQuery } from "@/api/hooks/policyBindings";
 import { projectsListQueryOptions } from "@/api/hooks/projects";
+import { awaitOnEnter } from "@/lib/awaitOnEnter";
 import {
 	PolicyBindingsTable,
 	toPolicyBindingsParams,
@@ -20,14 +21,17 @@ const searchSchema = z.object({
 export const Route = createFileRoute("/_authenticated/policy-bindings/")({
 	validateSearch: searchSchema,
 	loaderDeps: ({ search }) => ({ ...search }),
-	loader: ({ context, deps }) =>
-		Promise.all([
-			context.queryClient.ensureQueryData(
-				policyBindingsListQuery(toPolicyBindingsParams(deps)),
-			),
-			context.queryClient.ensureQueryData(projectsListQueryOptions),
-			context.queryClient.ensureQueryData(policiesListQueryOptions),
-		]),
+	loader: ({ context, deps, cause }) =>
+		awaitOnEnter(
+			cause,
+			Promise.all([
+				context.queryClient.ensureQueryData(
+					policyBindingsListQuery(toPolicyBindingsParams(deps)),
+				),
+				context.queryClient.ensureQueryData(projectsListQueryOptions),
+				context.queryClient.ensureQueryData(policiesListQueryOptions),
+			]),
+		),
 	component: PolicyBindingsPage,
 });
 

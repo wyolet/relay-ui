@@ -19,9 +19,11 @@ import { subjectLabel } from "@/role-bindings/SubjectsEditor";
 import { Chip } from "@/shared/Chip";
 import { confirm } from "@/shared/ConfirmDialog";
 import { RowMenu } from "@/shared/RowMenu";
+import { StaleContent } from "@/shared/StaleContent";
 import { TableToolbar } from "@/shared/TableToolbar";
 import { Th } from "@/shared/Th";
 import { toast } from "@/shared/Toast";
+import { useDeferredSearch } from "@/shared/useDeferredSearch";
 
 export interface PolicyBindingsSearch {
 	q: string;
@@ -66,7 +68,8 @@ export function toPolicyBindingsParams(
 
 export function PolicyBindingsTable() {
 	const navigate = useNavigate({ from: "/policy-bindings" });
-	const search = useSearch({ from: "/_authenticated/policy-bindings/" });
+	const live = useSearch({ from: "/_authenticated/policy-bindings/" });
+	const { search, isStale } = useDeferredSearch(live);
 	const { data } = usePolicyBindingsList(toPolicyBindingsParams(search));
 	const { data: projectsData } = useProjects();
 	const { data: policiesData } = usePolicies();
@@ -144,7 +147,7 @@ export function PolicyBindingsTable() {
 		<div>
 			<TableToolbar
 				search={
-					<FilterBar defs={filters} state={{ ...search }} onChange={patch} />
+					<FilterBar defs={filters} state={{ ...live }} onChange={patch} />
 				}
 				actions={
 					<Link
@@ -157,136 +160,138 @@ export function PolicyBindingsTable() {
 				}
 			/>
 
-			{items.length === 0 ? (
-				<div className="rounded-lg border border-dashed border-input bg-card px-6 py-14 text-center">
-					<ShieldCheck className="w-6 h-6 mx-auto mb-3 text-muted-foreground/50" />
-					{!filtered ? (
-						<>
-							<p className="text-sm font-medium text-foreground mb-1">
-								No policy bindings yet
+			<StaleContent stale={isStale}>
+				{items.length === 0 ? (
+					<div className="rounded-lg border border-dashed border-input bg-card px-6 py-14 text-center">
+						<ShieldCheck className="w-6 h-6 mx-auto mb-3 text-muted-foreground/50" />
+						{!filtered ? (
+							<>
+								<p className="text-sm font-medium text-foreground mb-1">
+									No policy bindings yet
+								</p>
+								<p className="text-sm text-muted-foreground mb-5 max-w-sm mx-auto">
+									A policy binding points the callers inside one project at one
+									policy. The lowest priority wins.
+								</p>
+								<Link
+									to="/policy-bindings/new"
+									className={buttonVariants({ variant: "default", size: "lg" })}
+								>
+									<Plus className="w-4 h-4" />
+									Create policy binding
+								</Link>
+							</>
+						) : (
+							<p className="text-sm text-muted-foreground">
+								No policy bindings match this filter.
 							</p>
-							<p className="text-sm text-muted-foreground mb-5 max-w-sm mx-auto">
-								A policy binding points the callers inside one project at one
-								policy. The lowest priority wins.
-							</p>
-							<Link
-								to="/policy-bindings/new"
-								className={buttonVariants({ variant: "default", size: "lg" })}
-							>
-								<Plus className="w-4 h-4" />
-								Create policy binding
-							</Link>
-						</>
-					) : (
-						<p className="text-sm text-muted-foreground">
-							No policy bindings match this filter.
-						</p>
-					)}
-				</div>
-			) : (
-				<div className="overflow-x-auto rounded-lg border border-border bg-card">
-					<table className="w-full border-collapse">
-						<thead className="bg-muted/40">
-							<tr>
-								<Th variant="column">Name</Th>
-								<Th variant="column">Project</Th>
-								<Th variant="column">Policy</Th>
-								<Th variant="column">Priority</Th>
-								<Th variant="column">Subjects</Th>
-								<th
-									scope="col"
-									className="w-10 px-3 py-2"
-									aria-label="Actions"
-								/>
-							</tr>
-						</thead>
-						<tbody>
-							{items.map((binding) => {
-								const policy = policyNames.get(binding.spec.policyId);
-								return (
-									<tr
-										key={binding.metadata.name}
-										className="border-t border-border transition-colors hover:bg-muted/40"
-									>
-										<td className="px-3 py-2">
-											<Link
-												to="/policy-bindings/$name"
-												params={{ name: binding.metadata.name }}
-												className="text-sm font-medium text-foreground hover:underline"
-											>
-												{displayLabel(binding.metadata)}
-											</Link>
-											{hasDisplayName(binding.metadata) && (
-												<div className="font-mono text-[11px] text-muted-foreground">
-													{binding.metadata.name}
-												</div>
-											)}
-										</td>
-										<td className="px-3 py-2 text-xs">
-											<OwnerLink
-												owner={{
-													kind: "project",
-													id: binding.spec.projectId,
-												}}
-											/>
-										</td>
-										<td className="px-3 py-2 text-xs">
-											{policy ? (
+						)}
+					</div>
+				) : (
+					<div className="overflow-x-auto rounded-lg border border-border bg-card">
+						<table className="w-full border-collapse">
+							<thead className="bg-muted/40">
+								<tr>
+									<Th variant="column">Name</Th>
+									<Th variant="column">Project</Th>
+									<Th variant="column">Policy</Th>
+									<Th variant="column">Priority</Th>
+									<Th variant="column">Subjects</Th>
+									<th
+										scope="col"
+										className="w-10 px-3 py-2"
+										aria-label="Actions"
+									/>
+								</tr>
+							</thead>
+							<tbody>
+								{items.map((binding) => {
+									const policy = policyNames.get(binding.spec.policyId);
+									return (
+										<tr
+											key={binding.metadata.name}
+											className="border-t border-border transition-colors hover:bg-muted/40"
+										>
+											<td className="px-3 py-2">
 												<Link
-													to="/policies/$name"
-													params={{ name: policy.name }}
-													className="text-foreground hover:underline"
+													to="/policy-bindings/$name"
+													params={{ name: binding.metadata.name }}
+													className="text-sm font-medium text-foreground hover:underline"
 												>
-													{policy.label}
+													{displayLabel(binding.metadata)}
 												</Link>
-											) : (
-												<code className="font-mono text-[11px]">
-													{binding.spec.policyId.slice(0, 8)}…
-												</code>
-											)}
-										</td>
-										<td className="px-3 py-2 text-xs text-muted-foreground">
-											{binding.spec.priority ?? "—"}
-										</td>
-										<td className="px-3 py-2">
-											<div className="flex flex-wrap gap-1">
-												{(binding.spec.subjects ?? []).map((s) => (
-													<Chip
-														key={subjectLabel(s)}
-														label={subjectLabel(s)}
-														mono
-														shape="box"
-													/>
-												))}
-											</div>
-										</td>
-										<td className="px-3 py-2 text-right">
-											<RowMenu
-												actions={[
-													{
-														label: "Edit",
-														render: (
-															<Link
-																to="/policy-bindings/$name/edit"
-																params={{ name: binding.metadata.name }}
-															/>
-														),
-													},
-													{
-														label: "Delete",
-														danger: true,
-														onClick: () => void handleDelete(binding),
-													},
-												]}
-											/>
-										</td>
-									</tr>
-								);
-							})}
-						</tbody>
-					</table>
-				</div>
-			)}
+												{hasDisplayName(binding.metadata) && (
+													<div className="font-mono text-[11px] text-muted-foreground">
+														{binding.metadata.name}
+													</div>
+												)}
+											</td>
+											<td className="px-3 py-2 text-xs">
+												<OwnerLink
+													owner={{
+														kind: "project",
+														id: binding.spec.projectId,
+													}}
+												/>
+											</td>
+											<td className="px-3 py-2 text-xs">
+												{policy ? (
+													<Link
+														to="/policies/$name"
+														params={{ name: policy.name }}
+														className="text-foreground hover:underline"
+													>
+														{policy.label}
+													</Link>
+												) : (
+													<code className="font-mono text-[11px]">
+														{binding.spec.policyId.slice(0, 8)}…
+													</code>
+												)}
+											</td>
+											<td className="px-3 py-2 text-xs text-muted-foreground">
+												{binding.spec.priority ?? "—"}
+											</td>
+											<td className="px-3 py-2">
+												<div className="flex flex-wrap gap-1">
+													{(binding.spec.subjects ?? []).map((s) => (
+														<Chip
+															key={subjectLabel(s)}
+															label={subjectLabel(s)}
+															mono
+															shape="box"
+														/>
+													))}
+												</div>
+											</td>
+											<td className="px-3 py-2 text-right">
+												<RowMenu
+													actions={[
+														{
+															label: "Edit",
+															render: (
+																<Link
+																	to="/policy-bindings/$name/edit"
+																	params={{ name: binding.metadata.name }}
+																/>
+															),
+														},
+														{
+															label: "Delete",
+															danger: true,
+															onClick: () => void handleDelete(binding),
+														},
+													]}
+												/>
+											</td>
+										</tr>
+									);
+								})}
+							</tbody>
+						</table>
+					</div>
+				)}
+			</StaleContent>
 		</div>
 	);
 }

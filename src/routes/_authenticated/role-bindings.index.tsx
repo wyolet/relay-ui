@@ -5,6 +5,7 @@ import { projectsListQueryOptions } from "@/api/hooks/projects";
 import { roleBindingsListQuery } from "@/api/hooks/roleBindings";
 import { rolesListQueryOptions } from "@/api/hooks/roles";
 import { teamsListQueryOptions } from "@/api/hooks/teams";
+import { awaitOnEnter } from "@/lib/awaitOnEnter";
 import {
 	RoleBindingsTable,
 	toRoleBindingsParams,
@@ -25,15 +26,18 @@ const searchSchema = z.object({
 export const Route = createFileRoute("/_authenticated/role-bindings/")({
 	validateSearch: searchSchema,
 	loaderDeps: ({ search }) => ({ ...search }),
-	loader: ({ context, deps }) =>
-		Promise.all([
-			context.queryClient.ensureQueryData(
-				roleBindingsListQuery(toRoleBindingsParams(deps)),
-			),
-			context.queryClient.ensureQueryData(rolesListQueryOptions),
-			context.queryClient.ensureQueryData(teamsListQueryOptions),
-			context.queryClient.ensureQueryData(projectsListQueryOptions),
-		]),
+	loader: ({ context, deps, cause }) =>
+		awaitOnEnter(
+			cause,
+			Promise.all([
+				context.queryClient.ensureQueryData(
+					roleBindingsListQuery(toRoleBindingsParams(deps)),
+				),
+				context.queryClient.ensureQueryData(rolesListQueryOptions),
+				context.queryClient.ensureQueryData(teamsListQueryOptions),
+				context.queryClient.ensureQueryData(projectsListQueryOptions),
+			]),
+		),
 	component: RoleBindingsPage,
 });
 

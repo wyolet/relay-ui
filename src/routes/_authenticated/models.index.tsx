@@ -26,6 +26,7 @@ import {
 	type HostsSortKey,
 	HostsTable,
 } from "@/hosts/HostsTable";
+import { awaitOnEnter } from "@/lib/awaitOnEnter";
 import {
 	type ModelsSortDir,
 	type ModelsSortKey,
@@ -33,15 +34,20 @@ import {
 } from "@/models/ModelsTable";
 import { SearchBox } from "@/shared/SearchBox";
 import { PageLoader } from "@/shared/Spinner";
+import { StaleContent } from "@/shared/StaleContent";
 import { TablePager } from "@/shared/TablePager";
 import { TableToolbar } from "@/shared/TableToolbar";
+import { useDeferredSearch } from "@/shared/useDeferredSearch";
 
-type Tab = "models" | "hosts";
+type Tab = "featured" | "models" | "hosts";
 
 type ModelStatus = "active" | "deprecated" | "all";
 
 const searchSchema = z.object({
-	tab: z.enum(["models", "hosts"]).default("models"),
+	tab: z
+		.enum(["featured", "models", "hosts"])
+		.catch("featured")
+		.default("featured"),
 	q: z.string().default(""),
 	deprecated: z.enum(["active", "deprecated", "all"]).default("active"),
 	// Sorting is server-side now (the page window depends on it); "provider"
@@ -81,12 +87,19 @@ const MODELS_PAGE_SIZE = 50;
 /** Map the UI filter/sort/page state to GET /models query params. Filtering,
  * sorting, and windowing all happen server-side; the response's `total` is
  * the pre-window match count the pager renders from. */
-function toModelsParams(
-	q: string,
-	status: ModelStatus,
-	dir: ModelsSortDir,
-	page: number,
-): ModelsListParams {
+function toModelsParams({
+	featured,
+	q,
+	status,
+	dir,
+	page,
+}: {
+	featured: boolean;
+	q: string;
+	status: ModelStatus;
+	dir: ModelsSortDir;
+	page: number;
+}): ModelsListParams {
 	const params: ModelsListParams = {
 		limit: MODELS_PAGE_SIZE,
 		offset: (page - 1) * MODELS_PAGE_SIZE,
@@ -97,6 +110,7 @@ function toModelsParams(
 	};
 	const trimmed = q.trim();
 	if (trimmed) params.q = trimmed;
+	if (featured) params.label = ["featured=true"];
 	if (status === "active") params.deprecated = false;
 	else if (status === "deprecated") params.deprecated = true;
 	return params;
@@ -105,12 +119,13 @@ function toModelsParams(
 export const Route = createFileRoute("/_authenticated/models/")({
 	validateSearch: searchSchema,
 	loaderDeps: ({ search }) => ({
+		featured: search.tab === "featured",
 		q: search.q,
 		deprecated: search.deprecated,
 		dir: search.dir,
 		page: search.page,
 	}),
-	loader: ({ context, deps }) => {
+	loader: ({ context, deps, cause }) => {
 		const { queryClient } = context;
 		// Non-blocking: warm the full lists the diagnostics graph and hover
 		// preloads need without gating the table's first paint.
@@ -120,24 +135,33 @@ export const Route = createFileRoute("/_authenticated/models/")({
 		void queryClient.prefetchQuery(rateLimitsListQueryOptions);
 		void queryClient.prefetchQuery(keysListQueryOptions);
 		void queryClient.prefetchQuery(providersListQueryOptions);
-		return Promise.all([
-			queryClient.ensureQueryData(
-				modelsListQuery(
-					toModelsParams(deps.q, deps.deprecated, deps.dir, deps.page),
+		return awaitOnEnter(
+			cause,
+			Promise.all([
+				queryClient.ensureQueryData(
+					modelsListQuery(toModelsParams({ ...deps, status: deps.deprecated })),
 				),
-			),
-			queryClient.ensureQueryData(hostsListQueryOptions),
-			queryClient.ensureQueryData(bindingsListQueryOptions),
-			queryClient.ensureQueryData(governanceQueryOptions("model")),
-		]);
+				queryClient.ensureQueryData(hostsListQueryOptions),
+				queryClient.ensureQueryData(bindingsListQueryOptions),
+				queryClient.ensureQueryData(governanceQueryOptions("model")),
+			]),
+		);
 	},
 	component: ModelsPage,
 });
 
 function ModelsList() {
-	const search = Route.useSearch();
+	const live = Route.useSearch();
+	const { search, isStale } = useDeferredSearch(live);
+	const featured = search.tab === "featured";
 	const { data } = useModelsList(
-		toModelsParams(search.q, search.deprecated, search.dir, search.page),
+		toModelsParams({
+			featured,
+			q: search.q,
+			status: search.deprecated,
+			dir: search.dir,
+			page: search.page,
+		}),
 	);
 	const { data: hostsData } = useHosts();
 	const navigate = useNavigate({ from: "/models" });
@@ -166,41 +190,46 @@ function ModelsList() {
 		<div>
 			<FilterBar
 				defs={MODEL_FILTERS}
-				state={{ q: search.q, deprecated: search.deprecated }}
+				state={{ q: live.q, deprecated: live.deprecated }}
 				onChange={(next) => patch({ ...next, page: 1 })}
 				className="mb-3"
 			/>
 
-			<div className="mb-2 text-[11px] text-muted-foreground">
-				{data.total} model{data.total === 1 ? "" : "s"}
-			</div>
-
-			{items.length === 0 ? (
-				<div className="rounded-lg border border-dashed border-input bg-card px-6 py-14 text-center">
-					<Boxes className="w-6 h-6 mx-auto mb-3 text-muted-foreground/50" />
-					<p className="text-sm text-muted-foreground">
-						{data.total === 0
-							? "No models configured."
-							: "No models match the current filter."}
-					</p>
+			<StaleContent stale={isStale}>
+				<div className="mb-2 text-[11px] text-muted-foreground">
+					{data.total} {featured ? "featured " : ""}model
+					{data.total === 1 ? "" : "s"}
 				</div>
-			) : (
-				<>
-					<ModelsTable
-						items={items}
-						sort={search.sort}
-						dir={search.dir}
-						onSort={toggleSort}
-						hostsById={hostsById}
-					/>
-					<TablePager
-						page={search.page}
-						pageSize={MODELS_PAGE_SIZE}
-						total={data.total}
-						onPage={(page) => patch({ page })}
-					/>
-				</>
-			)}
+
+				{items.length === 0 ? (
+					<div className="rounded-lg border border-dashed border-input bg-card px-6 py-14 text-center">
+						<Boxes className="w-6 h-6 mx-auto mb-3 text-muted-foreground/50" />
+						<p className="text-sm text-muted-foreground">
+							{featured
+								? "No featured models match. Browse the full catalog under All models."
+								: data.total === 0
+									? "No models configured."
+									: "No models match the current filter."}
+						</p>
+					</div>
+				) : (
+					<>
+						<ModelsTable
+							items={items}
+							sort={search.sort}
+							dir={search.dir}
+							onSort={toggleSort}
+							hostsById={hostsById}
+						/>
+						<TablePager
+							page={search.page}
+							pageSize={MODELS_PAGE_SIZE}
+							total={data.total}
+							onPage={(page) => patch({ page })}
+						/>
+					</>
+				)}
+			</StaleContent>
 		</div>
 	);
 }
@@ -263,7 +292,7 @@ function ModelsPage() {
 	const search = Route.useSearch();
 
 	function setTab(tab: Tab) {
-		void navigate({ search: (prev) => ({ ...prev, tab }) });
+		void navigate({ search: (prev) => ({ ...prev, tab, page: 1 }) });
 	}
 
 	return (
@@ -277,12 +306,15 @@ function ModelsPage() {
 
 			<Tabs
 				value={search.tab}
-				onValueChange={(v) => setTab((v ?? "models") as Tab)}
+				onValueChange={(v) => setTab((v ?? "featured") as Tab)}
 				className="mb-4"
 			>
 				<TabsList variant="underline">
+					<TabsTrigger value="featured" className="px-3 h-9">
+						Featured
+					</TabsTrigger>
 					<TabsTrigger value="models" className="px-3 h-9">
-						Models
+						All models
 					</TabsTrigger>
 					<TabsTrigger value="hosts" className="px-3 h-9">
 						Hosts
@@ -291,7 +323,7 @@ function ModelsPage() {
 			</Tabs>
 
 			<Suspense fallback={<PageLoader />}>
-				{search.tab === "models" ? <ModelsList /> : <HostsList />}
+				{search.tab === "hosts" ? <HostsList /> : <ModelsList />}
 			</Suspense>
 		</div>
 	);

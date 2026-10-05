@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { z } from "zod";
 import { licenseQueryOptions } from "@/api/hooks/license";
 import { rolesListQuery } from "@/api/hooks/roles";
+import { awaitOnEnter } from "@/lib/awaitOnEnter";
 import { RolesTable, toRolesParams } from "@/roles/RolesTable";
 import { PageLoader } from "@/shared/Spinner";
 
@@ -14,10 +15,11 @@ const searchSchema = z.object({
 export const Route = createFileRoute("/_authenticated/roles/")({
 	validateSearch: searchSchema,
 	loaderDeps: ({ search }) => ({ q: search.q, enabled: search.enabled }),
-	loader: ({ context, deps }) => {
+	loader: ({ context, deps, cause }) => {
 		void context.queryClient.prefetchQuery(licenseQueryOptions);
-		return context.queryClient.ensureQueryData(
-			rolesListQuery(toRolesParams(deps)),
+		return awaitOnEnter(
+			cause,
+			context.queryClient.ensureQueryData(rolesListQuery(toRolesParams(deps))),
 		);
 	},
 	component: RolesPage,

@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { z } from "zod";
 import { teamsListQuery } from "@/api/hooks/teams";
+import { awaitOnEnter } from "@/lib/awaitOnEnter";
 import { PageLoader } from "@/shared/Spinner";
 import { TeamsTable, toTeamsParams } from "@/teams/TeamsTable";
 
@@ -13,8 +14,11 @@ const searchSchema = z.object({
 export const Route = createFileRoute("/_authenticated/teams/")({
 	validateSearch: searchSchema,
 	loaderDeps: ({ search }) => ({ q: search.q, enabled: search.enabled }),
-	loader: ({ context, deps }) =>
-		context.queryClient.ensureQueryData(teamsListQuery(toTeamsParams(deps))),
+	loader: ({ context, deps, cause }) =>
+		awaitOnEnter(
+			cause,
+			context.queryClient.ensureQueryData(teamsListQuery(toTeamsParams(deps))),
+		),
 	component: TeamsPage,
 });
 

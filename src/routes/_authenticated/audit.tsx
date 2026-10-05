@@ -8,14 +8,17 @@ import {
 } from "@/api/hooks/audit";
 import { projectsListQueryOptions } from "@/api/hooks/projects";
 import { teamsListQueryOptions } from "@/api/hooks/teams";
-import { type AuditFilterValues, AuditFilters } from "@/audit/AuditFilters";
+import { AuditFilters, type AuditFilterValues } from "@/audit/AuditFilters";
 import { type AuditFilterKey, AuditTable } from "@/audit/AuditTable";
 import {
 	RANGE_VALUES,
 	rangeBounds,
 	STATUS_VALUES,
 } from "@/audit/auditFilterConfig";
+import { awaitOnEnter } from "@/lib/awaitOnEnter";
 import { PageLoader } from "@/shared/Spinner";
+import { StaleContent } from "@/shared/StaleContent";
+import { useDeferredSearch } from "@/shared/useDeferredSearch";
 
 const searchSchema = z.object({
 	span: z.enum(RANGE_VALUES).catch("24h").default("24h"),
@@ -48,25 +51,27 @@ function toAuditFilter(s: AuditSearch): AuditFilter {
 export const Route = createFileRoute("/_authenticated/audit")({
 	validateSearch: searchSchema,
 	loaderDeps: ({ search }) => search,
-	loader: ({ context, deps }) =>
-		Promise.all([
-			context.queryClient.ensureInfiniteQueryData(
-				auditInfiniteQueryOptions(toAuditFilter(deps)),
-			),
-			context.queryClient.ensureQueryData(teamsListQueryOptions),
-			context.queryClient.ensureQueryData(projectsListQueryOptions),
-		]),
+	loader: ({ context, deps, cause }) =>
+		awaitOnEnter(
+			cause,
+			Promise.all([
+				context.queryClient.ensureInfiniteQueryData(
+					auditInfiniteQueryOptions(toAuditFilter(deps)),
+				),
+				context.queryClient.ensureQueryData(teamsListQueryOptions),
+				context.queryClient.ensureQueryData(projectsListQueryOptions),
+			]),
+		),
 	component: AuditPage,
 });
 
 function AuditPage() {
-	const search = Route.useSearch();
-	const { expand } = search;
+	const live = Route.useSearch();
+	const { search, isStale } = useDeferredSearch(live);
+	const { expand } = live;
 	const navigate = useNavigate();
 	const filter = toAuditFilter(search);
-	const facets = useAuditFacets(
-		rangeBounds(search.span, search.from, search.to),
-	);
+	const facets = useAuditFacets(rangeBounds(live.span, live.from, live.to));
 
 	const patch = (next: Partial<AuditSearch>) =>
 		void navigate({ to: "/audit", search: (prev) => ({ ...prev, ...next }) });
@@ -88,7 +93,7 @@ function AuditPage() {
 			patch({ actor: value });
 			return;
 		}
-		const cur = search[key];
+		const cur = live[key];
 		if (!cur.includes(value)) patch({ [key]: [...cur, value] });
 	};
 
@@ -105,28 +110,30 @@ function AuditPage() {
 
 			<AuditFilters
 				values={{
-					range: search.span,
-					status: search.outcome,
-					from: search.from,
-					to: search.to,
-					actor: search.actor,
-					action: search.action,
-					kind: search.kind,
-					scope: search.scope,
+					range: live.span,
+					status: live.outcome,
+					from: live.from,
+					to: live.to,
+					actor: live.actor,
+					action: live.action,
+					kind: live.kind,
+					scope: live.scope,
 				}}
 				actions={facets.actions}
 				kinds={facets.kinds}
 				onChange={patchFilters}
 			/>
 
-			<Suspense fallback={<Loading />}>
-				<AuditTable
-					filter={filter}
-					expandedId={expand ?? null}
-					onToggle={(id) => patch({ expand: expand === id ? undefined : id })}
-					onFilter={addFilter}
-				/>
-			</Suspense>
+			<StaleContent stale={isStale}>
+				<Suspense fallback={<Loading />}>
+					<AuditTable
+						filter={filter}
+						expandedId={expand ?? null}
+						onToggle={(id) => patch({ expand: expand === id ? undefined : id })}
+						onFilter={addFilter}
+					/>
+				</Suspense>
+			</StaleContent>
 		</div>
 	);
 }
