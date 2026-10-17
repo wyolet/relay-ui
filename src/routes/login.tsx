@@ -6,6 +6,7 @@ import { AnimatePresence, MotionConfig, motion } from "motion/react";
 import { useState } from "react";
 import { z } from "zod";
 import { AuthError, useAuth, whoamiQueryOptions } from "@/api/auth";
+import { CONTROL_API_URL } from "@/api/client";
 import { feature } from "@/api/runtimeConfig";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,9 +15,9 @@ import {
 } from "@/components/ui/field-focus";
 import { IconButton } from "@/components/ui/icon-button";
 import { Label } from "@/components/ui/label";
+import { oidcStartUrl } from "@/lib/oidcStart";
 import { cn } from "@/lib/utils";
 import { BrandMark } from "@/shared/BrandMark";
-import { startOidcSignIn } from "@/sign-in/startOidcSignIn";
 import { useSignInNotice } from "@/sign-in/useSignInNotice";
 
 const searchSchema = z.object({
@@ -428,7 +429,11 @@ function LoginPage() {
 												type="button"
 												variant="outline"
 												className="h-10 w-full rounded-lg text-sm"
-												onClick={() => void startOidcSignIn()}
+												onClick={() =>
+													window.location.assign(
+														oidcStartUrl(CONTROL_API_URL, window.location.href),
+													)
+												}
 											>
 												Continue with SSO
 											</Button>

@@ -51,13 +51,12 @@ test.describe("Sign-in errors", () => {
 		const starts: string[] = [];
 		await page.route("**/api/auth/oidc/start**", (route) => {
 			const url = new URL(route.request().url());
-			starts.push(`${route.request().resourceType()} ${url.search}`);
+			starts.push(url.search);
 			const returnTo = url.searchParams.get("return_to") ?? "";
-			const location =
-				route.request().resourceType() === "document"
-					? `${returnTo}?error=state_mismatch`
-					: "https://idp.example.test/authorize";
-			return route.fulfill({ status: 302, headers: { location } });
+			return route.fulfill({
+				status: 302,
+				headers: { location: `${returnTo}?error=state_mismatch` },
+			});
 		});
 
 		await page.goto("/login");
@@ -69,41 +68,6 @@ test.describe("Sign-in errors", () => {
 		await expect(page).toHaveURL(/\/login$/);
 		const returnTo = new URL("/login", page.url()).href;
 		const query = `?${new URLSearchParams({ return_to: returnTo })}`;
-		expect(starts).toEqual([`fetch ${query}`, `document ${query}`]);
-	});
-
-	test("a refused return_to falls back to a plain SSO start", async ({
-		page,
-	}) => {
-		await signedOutWithSso(page);
-		const navigations: string[] = [];
-		await page.route("**/api/auth/oidc/start**", (route) => {
-			if (route.request().resourceType() !== "document") {
-				return route.fulfill({
-					status: 400,
-					contentType: "application/json",
-					body: JSON.stringify({
-						error: {
-							type: "invalid_request_error",
-							code: "invalid_return_to",
-							message: "return_to is not an allowed origin",
-						},
-					}),
-				});
-			}
-			navigations.push(new URL(route.request().url()).search);
-			return route.fulfill({ status: 200, body: "identity provider" });
-		});
-		const logged = page.waitForEvent(
-			"console",
-			(m) => m.type() === "error" && m.text().includes("return_to"),
-		);
-
-		await page.goto("/login");
-		await page.getByRole("button", { name: "Continue with SSO" }).click();
-
-		expect((await logged).text()).toContain("invalid_return_to");
-		await expect(page.getByText("identity provider")).toBeVisible();
-		expect(navigations).toEqual([""]);
+		expect(starts).toEqual([query]);
 	});
 });
