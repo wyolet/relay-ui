@@ -7,10 +7,13 @@ import {
 	LogOut,
 	Monitor,
 	Moon,
+	ShieldQuestion,
 	Sun,
 } from "lucide-react";
 import { type ComponentType, useState } from "react";
+import { AccessCheckDialog } from "@/access-review/AccessCheckDialog";
 import { useAuth } from "@/api/auth";
+import { useAccessReviewAvailable } from "@/api/hooks/accessReview";
 import { versionQueryOptions } from "@/api/queries/dashboard";
 import { feature } from "@/api/runtimeConfig";
 import {
@@ -99,6 +102,8 @@ export function AccountMenu() {
 	const { logout, username, userId } = useAuth();
 	const { data: versionData } = useQuery(versionQueryOptions);
 	const [tokensOpen, setTokensOpen] = useState(false);
+	const [accessOpen, setAccessOpen] = useState(false);
+	const canCheckAccess = useAccessReviewAvailable();
 	// No signing key wired means nothing to mint; the endpoint 503s.
 	const tokensEnabled = feature("tokens");
 	const label = username ?? "Account";
@@ -149,6 +154,13 @@ export function AccountMenu() {
 						</DropdownMenuItem>
 					)}
 
+					{canCheckAccess && (
+						<DropdownMenuItem onClick={() => setAccessOpen(true)}>
+							<ShieldQuestion />
+							Check my access
+						</DropdownMenuItem>
+					)}
+
 					<DropdownMenuItem render={<Link to="/settings" />}>
 						<Cog />
 						Settings
@@ -174,6 +186,7 @@ export function AccountMenu() {
 				</DropdownMenuContent>
 			</DropdownMenu>
 			{tokensOpen && <TokenDialog onClose={() => setTokensOpen(false)} />}
+			{accessOpen && <AccessCheckDialog onClose={() => setAccessOpen(false)} />}
 		</>
 	);
 }

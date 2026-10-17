@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Bot, ChevronLeft, Link2, ShieldCheck } from "lucide-react";
 import { useState } from "react";
+import { CheckAccessButton } from "@/access-review/CheckAccessButton";
 import { usePolicies } from "@/api/hooks/policies";
 import { useProjects } from "@/api/hooks/projects";
 import {
@@ -104,7 +105,13 @@ export function ServiceAccountDetailView({ name }: { name: string }) {
 							{content}
 						</Link>
 					)}
-				/>
+				>
+					<CheckAccessButton
+						subject={{ kind: "serviceaccount", name: sa.metadata.name }}
+						subjectLabel={displayLabel(sa.metadata)}
+						size="lg"
+					/>
+				</DetailHeaderActions>
 			</header>
 
 			<Card title="Configuration" icon={ShieldCheck}>

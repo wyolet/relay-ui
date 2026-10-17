@@ -6,6 +6,7 @@ import {
 	UserRound,
 	UsersRound,
 } from "lucide-react";
+import { CheckAccessButton } from "@/access-review/CheckAccessButton";
 import { useGroups } from "@/api/hooks/groups";
 import { useRoleBindingsList } from "@/api/hooks/roleBindings";
 import { useRevokeUserTokens, useUser } from "@/api/hooks/users";
@@ -73,15 +74,21 @@ export function UserDetailView({ id }: { id: string }) {
 						</p>
 					</div>
 				</div>
-				<Button
-					type="button"
-					variant="outline"
-					onClick={() => void handleRevoke()}
-					disabled={revokeTokens.isPending}
-				>
-					<ShieldOff className="h-3.5 w-3.5" />
-					{revokeTokens.isPending ? "Revoking…" : "Revoke all tokens"}
-				</Button>
+				<div className="flex shrink-0 items-center gap-2">
+					<CheckAccessButton
+						subject={{ kind: "user", id: user.id }}
+						subjectLabel={user.username}
+					/>
+					<Button
+						type="button"
+						variant="outline"
+						onClick={() => void handleRevoke()}
+						disabled={revokeTokens.isPending}
+					>
+						<ShieldOff className="h-3.5 w-3.5" />
+						{revokeTokens.isPending ? "Revoking…" : "Revoke all tokens"}
+					</Button>
+				</div>
 			</header>
 
 			<DetailCard title="Account" icon={UserRound}>
