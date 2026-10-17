@@ -21,6 +21,8 @@ export interface MockGraph {
 	/** Answers POST /access-review from the request body; absent = 404, a
 	 * relay without the endpoint. */
 	accessReview?: (body: AccessReviewBody) => MockResponse;
+	/** Runtime-config feature flags; absent = no config document. */
+	features?: Record<string, boolean>;
 }
 
 export interface AccessReviewBody {
@@ -70,7 +72,7 @@ interface Resource {
 // gaining a new query never falls through to the dev-server proxy.
 const GRAPH_COLLECTIONS: Record<
 	string,
-	keyof Omit<MockGraph, "proxyMode" | "roles" | "accessReview">
+	keyof Omit<MockGraph, "proxyMode" | "roles" | "accessReview" | "features">
 > = {
 	policies: "policies",
 	"host-keys": "hostKeys",
@@ -111,6 +113,12 @@ const NOT_FOUND = { error: { type: "invalid_request_error", message: "not found"
  * this; Playwright runs the latest matching route first.
  */
 export async function mockApi(page: Page, graph: MockGraph): Promise<void> {
+	const { features } = graph;
+	if (features) {
+		await page.route("**/*config.json", (route) =>
+			fulfillJson(route, { features }),
+		);
+	}
 	await page.route("**/api/**", (route) => {
 		if (!isApi(route)) return route.fallback();
 		const path = new URL(route.request().url()).pathname.replace(/^.*?\/api\//, "");

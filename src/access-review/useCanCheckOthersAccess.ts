@@ -1,9 +1,8 @@
 import { useAuth } from "@/api/auth";
-import { useAccessReviewAvailable } from "@/api/hooks/accessReview";
+import { feature } from "@/api/runtimeConfig";
 
 /** Checking another user or service account takes an admin. */
 export function useCanCheckOthersAccess(): boolean {
 	const { isAdmin } = useAuth();
-	const available = useAccessReviewAvailable();
-	return isAdmin && available;
+	return isAdmin && feature("accessReview");
 }

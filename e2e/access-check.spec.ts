@@ -12,34 +12,14 @@ const serviceAccount = {
 	spec: { projectId: "p-1", enabled: true },
 };
 
-const PROBE_OK: MockResponse = {
-	body: {
-		allowed: true,
-		reason: "rule",
-		rule: "system-role-read",
-		action: "roles.list",
-		resource: { kind: "roles" },
-		subject: { kind: "user", name: "test", admin: false },
-	},
-};
+const ACCESS_REVIEW = { accessReview: true };
 
-const SINGLE_MODE: MockResponse = {
-	status: 501,
-	body: {
-		error: {
-			type: "not_implemented",
-			message: "access review needs RELAY_AUTHZ=rbac",
-		},
-	},
-};
-
-/** Answers the availability probe, then hands every real check to `check`. */
+/** Records every check and answers it with `check`. */
 function rbac(
 	check: (body: AccessReviewBody) => MockResponse,
 	requests: AccessReviewBody[] = [],
 ): MockGraph["accessReview"] {
 	return (body) => {
-		if (!body.subject && body.action === "roles.list") return PROBE_OK;
 		requests.push(body);
 		return check(body);
 	};
@@ -68,6 +48,7 @@ test.describe("Access check", () => {
 			...EMPTY_GRAPH,
 			roles: ["admin"],
 			serviceAccounts: [serviceAccount],
+			features: ACCESS_REVIEW,
 			accessReview: rbac(
 				(body) => ({
 					body: {
@@ -118,6 +99,7 @@ test.describe("Access check", () => {
 		const requests: AccessReviewBody[] = [];
 		await mockApi(page, {
 			...EMPTY_GRAPH,
+			features: ACCESS_REVIEW,
 			accessReview: rbac(
 				(body) => ({
 					body: {
@@ -145,6 +127,7 @@ test.describe("Access check", () => {
 			...EMPTY_GRAPH,
 			roles: ["admin"],
 			serviceAccounts: [serviceAccount],
+			features: ACCESS_REVIEW,
 			accessReview: rbac((body) => ({
 				body: {
 					allowed: false,
@@ -178,6 +161,7 @@ test.describe("Access check", () => {
 	}) => {
 		await mockApi(page, {
 			...EMPTY_GRAPH,
+			features: ACCESS_REVIEW,
 			accessReview: rbac(() => ({
 				status: 404,
 				body: {
@@ -193,17 +177,19 @@ test.describe("Access check", () => {
 		await expect(page.getByText("key ghost not found")).toBeVisible();
 	});
 
-	test("under single authz the entry points are hidden", async ({ page }) => {
+	test("without the accessReview flag the entry points are hidden", async ({
+		page,
+	}) => {
+		const requests: AccessReviewBody[] = [];
 		await mockApi(page, {
 			...EMPTY_GRAPH,
 			roles: ["admin"],
 			serviceAccounts: [serviceAccount],
-			accessReview: () => SINGLE_MODE,
+			features: {},
+			accessReview: rbac(() => ({ body: {} }), requests),
 		});
 
-		const probed = page.waitForResponse("**/api/access-review");
 		await page.goto("/service-accounts/ci-deployer");
-		await probed;
 		await expect(
 			page.getByRole("heading", { name: /CI deployer/ }),
 		).toBeVisible();
@@ -216,18 +202,17 @@ test.describe("Access check", () => {
 		await expect(
 			page.getByRole("menuitem", { name: "Check my access" }),
 		).toHaveCount(0);
+		expect(requests).toEqual([]);
 	});
 
 	test("a non-admin cannot check a service account", async ({ page }) => {
 		await mockApi(page, {
 			...EMPTY_GRAPH,
 			serviceAccounts: [serviceAccount],
-			accessReview: rbac(() => PROBE_OK),
+			features: ACCESS_REVIEW,
 		});
 
-		const probed = page.waitForResponse("**/api/access-review");
 		await page.goto("/service-accounts/ci-deployer");
-		await probed;
 		await expect(
 			page.getByRole("heading", { name: /CI deployer/ }),
 		).toBeVisible();

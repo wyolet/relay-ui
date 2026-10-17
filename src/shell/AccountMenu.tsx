@@ -13,7 +13,6 @@ import {
 import { type ComponentType, useState } from "react";
 import { AccessCheckDialog } from "@/access-review/AccessCheckDialog";
 import { useAuth } from "@/api/auth";
-import { useAccessReviewAvailable } from "@/api/hooks/accessReview";
 import { versionQueryOptions } from "@/api/queries/dashboard";
 import { feature } from "@/api/runtimeConfig";
 import {
@@ -103,7 +102,8 @@ export function AccountMenu() {
 	const { data: versionData } = useQuery(versionQueryOptions);
 	const [tokensOpen, setTokensOpen] = useState(false);
 	const [accessOpen, setAccessOpen] = useState(false);
-	const canCheckAccess = useAccessReviewAvailable();
+	// Off under RELAY_AUTHZ=single and on relays predating access reviews.
+	const canCheckAccess = feature("accessReview");
 	// No signing key wired means nothing to mint; the endpoint 503s.
 	const tokensEnabled = feature("tokens");
 	const label = username ?? "Account";
