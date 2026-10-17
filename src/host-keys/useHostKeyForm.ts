@@ -16,6 +16,7 @@ import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
 import { randomSuffix, slugify } from "@/lib/slug";
 import { toast } from "@/shared/Toast";
+import { reservedEnvPrefix } from "./reservedEnv";
 import { isHostTierPolicy } from "./tierPolicy";
 
 export interface SelectOption {
@@ -278,6 +279,9 @@ export function useHostKeyForm({
 		for (const e of errs) if (typeof e === "string") return e;
 		return undefined;
 	});
+	const envVarReservedPrefix = useStore(form.store, (s) =>
+		s.values.kind === "env" ? reservedEnvPrefix(s.values.envVar) : undefined,
+	);
 	const valueError = useStore(form.store, (s) => {
 		const errs = s.fieldMeta?.value?.errors ?? [];
 		for (const e of errs) if (typeof e === "string") return e;
@@ -364,6 +368,7 @@ export function useHostKeyForm({
 		hostIdError,
 		policyIdError,
 		envVarError,
+		envVarReservedPrefix,
 		valueError,
 		hostOptions,
 		policyOptions,

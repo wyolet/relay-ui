@@ -2,8 +2,10 @@ import { QueryCache, QueryClient } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
 import ReactDOM from "react-dom/client";
 import { removeAccountQueries, whoamiQueryOptions } from "@/api/auth";
-import { ApiError } from "@/api/types/errors";
+import { onAccountDisabled } from "@/api/client";
+import { ApiError, isAccountDisabled } from "@/api/types/errors";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { ACCOUNT_DISABLED } from "@/lib/signInError";
 import { applyTheme, useThemeStore } from "@/stores/theme";
 import { getRouter } from "./router";
 
@@ -16,23 +18,29 @@ export function mountApp(): void {
 	// Apply theme before React mounts to avoid flash.
 	applyTheme(useThemeStore.getState().theme);
 
+	// The whoami probe never throws (it maps non-OK to `{authenticated:false}`),
+	// so this can't loop through the auth guard; the pathname guard covers the
+	// already-on-/login case.
+	function dropSession(error?: string): void {
+		if (router.state.location.pathname === "/login") return;
+		queryClient.setQueryData(whoamiQueryOptions.queryKey, {
+			authenticated: false,
+			roles: [],
+			scopes: [],
+		});
+		void router
+			.navigate({ to: "/login", search: { error } })
+			.then(() => removeAccountQueries(queryClient));
+	}
+
 	// A session-expiry (401) from any query drops auth state and routes to
-	// /login. The whoami probe itself never throws (it maps non-OK to
-	// `{authenticated:false}`), so this can't loop through the auth guard; the
-	// pathname guard covers the already-on-/login case.
+	// /login; a disabled account does the same from any call, with a notice.
 	const queryClient = new QueryClient({
 		queryCache: new QueryCache({
 			onError: (error) => {
 				if (!(error instanceof ApiError) || error.status !== 401) return;
-				if (router.state.location.pathname === "/login") return;
-				queryClient.setQueryData(whoamiQueryOptions.queryKey, {
-					authenticated: false,
-					roles: [],
-					scopes: [],
-				});
-				void router
-					.navigate({ to: "/login" })
-					.then(() => removeAccountQueries(queryClient));
+				if (isAccountDisabled(error)) return;
+				dropSession();
 			},
 		}),
 		defaultOptions: {
@@ -43,6 +51,7 @@ export function mountApp(): void {
 	});
 
 	const router = getRouter(queryClient);
+	onAccountDisabled(() => dropSession(ACCOUNT_DISABLED));
 	const rootElement = document.getElementById("app");
 
 	if (rootElement && !rootElement.innerHTML) {

@@ -4,22 +4,27 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/shared/Toast";
 
 /**
- * Reveal-once secret row: the plaintext shown alongside a copy affordance.
- * Used after a key is created or rotated — the server never returns the
- * plaintext again.
+ * A value shown in full beside a copy affordance: a reveal-once secret the
+ * server never returns again, or a URL to paste into another system.
  */
-export function SecretReveal({ secret }: { secret: string }) {
+export function CopyableValue({
+	value,
+	copyLabel = "Copy",
+}: {
+	value: string;
+	copyLabel?: string;
+}) {
 	return (
 		<div className="flex items-center gap-2 rounded-md border border-border bg-muted/30 px-3 py-2">
 			<code className="flex-1 text-xs font-mono text-foreground break-all">
-				{secret}
+				{value}
 			</code>
-			<CopyButton text={secret} />
+			<CopyButton text={value} label={copyLabel} />
 		</div>
 	);
 }
 
-function CopyButton({ text }: { text: string }) {
+function CopyButton({ text, label }: { text: string; label: string }) {
 	const [copied, setCopied] = useState(false);
 	async function handleCopy() {
 		try {
@@ -36,7 +41,7 @@ function CopyButton({ text }: { text: string }) {
 			variant="ghost"
 			size="icon-lg"
 			onClick={() => void handleCopy()}
-			aria-label="Copy"
+			aria-label={label}
 			className="text-muted-foreground"
 		>
 			{copied ? (

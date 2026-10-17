@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { BadgeCheck, ChevronLeft, KeySquare } from "lucide-react";
+import { createFileRoute } from "@tanstack/react-router";
+import { BadgeCheck, KeySquare } from "lucide-react";
 import { Suspense, useState } from "react";
 import {
 	type LicenseInfo,
@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { fmtTs } from "@/lib/format";
 import { AlertBanner } from "@/shared/AlertBanner";
 import { Chip } from "@/shared/Chip";
+import { SettingsPageHeader } from "@/shared/SettingsPage";
 import { SettingsSection } from "@/shared/SettingsSection";
 import { PageLoader } from "@/shared/Spinner";
 import { toast } from "@/shared/Toast";
@@ -135,21 +136,10 @@ function InstallLicense() {
 function LicenseSettingsPage() {
 	return (
 		<div className="flex flex-col">
-			<div>
-				<Link
-					to="/settings"
-					className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-				>
-					<ChevronLeft className="w-3.5 h-3.5" />
-					Settings
-				</Link>
-				<h1 className="mt-2 text-xl font-semibold text-foreground">License</h1>
-				<p className="mt-1 text-xs text-muted-foreground max-w-2xl">
-					Relay runs unlicensed by default. A license unlocks the gated features
-					— SSO login and authoring roles of your own — and nothing else
-					changes.
-				</p>
-			</div>
+			<SettingsPageHeader title="License">
+				Relay runs unlicensed by default. A license unlocks the gated features —
+				SSO login and authoring roles of your own — and nothing else changes.
+			</SettingsPageHeader>
 
 			<div className="mt-6 divide-y divide-border">
 				<SettingsSection

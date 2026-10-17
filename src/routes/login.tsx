@@ -15,10 +15,17 @@ import {
 } from "@/components/ui/field-focus";
 import { IconButton } from "@/components/ui/icon-button";
 import { Label } from "@/components/ui/label";
+import { oidcStartUrl } from "@/lib/oidcStart";
 import { cn } from "@/lib/utils";
 import { BrandMark } from "@/shared/BrandMark";
+import { useSignInNotice } from "@/sign-in/useSignInNotice";
+
+const searchSchema = z.object({
+	error: z.string().optional().catch(undefined),
+});
 
 export const Route = createFileRoute("/login")({
+	validateSearch: searchSchema,
 	async beforeLoad({ context }) {
 		const whoami =
 			await context.queryClient.ensureQueryData(whoamiQueryOptions);
@@ -174,6 +181,7 @@ function FieldRow({
 function LoginPage() {
 	const navigate = useNavigate();
 	const { login } = useAuth();
+	const notice = useSignInNotice();
 	const [serverError, setServerError] = useState<string | null>(null);
 	const [success, setSuccess] = useState(false);
 
@@ -322,6 +330,16 @@ function LoginPage() {
 										className="flex flex-col gap-4"
 										aria-label="Sign in"
 									>
+										{notice && serverError === null && (
+											<motion.div
+												variants={rise}
+												role="status"
+												className="rounded-lg border border-border bg-muted/60 px-3 py-2 text-xs text-foreground"
+											>
+												{notice}
+											</motion.div>
+										)}
+
 										<motion.div variants={rise}>
 											<form.Field name="username">
 												{(field) => (
@@ -411,11 +429,11 @@ function LoginPage() {
 												type="button"
 												variant="outline"
 												className="h-10 w-full rounded-lg text-sm"
-												onClick={() => {
+												onClick={() =>
 													window.location.assign(
-														`${CONTROL_API_URL}/auth/oidc/start`,
-													);
-												}}
+														oidcStartUrl(CONTROL_API_URL, window.location.href),
+													)
+												}
 											>
 												Continue with SSO
 											</Button>

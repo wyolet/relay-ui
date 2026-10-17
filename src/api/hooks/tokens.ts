@@ -28,3 +28,13 @@ export function useRevokeAllTokens() {
 		},
 	});
 }
+
+/** Starts signing new tokens with a fresh key. The outgoing key stays on the
+ * verifier, so tokens already minted keep working until they expire. */
+export function useRotateTokenSigningKey() {
+	return useMutation({
+		mutationFn: async (): Promise<void> => {
+			unwrap(await apiClient.POST("/auth/token/keys/rotate"));
+		},
+	});
+}

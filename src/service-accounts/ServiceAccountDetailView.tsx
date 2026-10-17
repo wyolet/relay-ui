@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Bot, ChevronLeft, Link2, ShieldCheck } from "lucide-react";
 import { useState } from "react";
+import { CheckAccessButton } from "@/access-review/CheckAccessButton";
 import { usePolicies } from "@/api/hooks/policies";
 import { useProjects } from "@/api/hooks/projects";
 import {
@@ -10,6 +11,7 @@ import {
 } from "@/api/hooks/serviceAccounts";
 import { ApiError } from "@/api/types/errors";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
+import { EraseBodiesButton } from "@/logs/EraseBodiesButton";
 import { useToggleServiceAccountEnabled } from "@/service-accounts/useToggleServiceAccountEnabled";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
@@ -104,7 +106,23 @@ export function ServiceAccountDetailView({ name }: { name: string }) {
 							{content}
 						</Link>
 					)}
-				/>
+				>
+					<CheckAccessButton
+						subject={{ kind: "serviceaccount", name: sa.metadata.name }}
+						subjectLabel={displayLabel(sa.metadata)}
+						size="lg"
+					/>
+					<EraseBodiesButton
+						scope={{
+							principal: {
+								id: sa.metadata.id ?? "",
+								name: sa.metadata.name,
+								label: displayLabel(sa.metadata),
+								kind: "service account",
+							},
+						}}
+					/>
+				</DetailHeaderActions>
 			</header>
 
 			<Card title="Configuration" icon={ShieldCheck}>

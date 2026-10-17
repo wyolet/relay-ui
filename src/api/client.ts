@@ -1,4 +1,6 @@
 import createClient from "openapi-fetch";
+import { z } from "zod";
+import { ACCOUNT_DISABLED } from "@/lib/signInError";
 import { controlApiUrl, inferenceApiUrl } from "./runtimeConfig";
 import type { paths } from "./types.gen";
 
@@ -21,4 +23,27 @@ export const INFERENCE_API_URL: string = inferenceApiUrl();
 export const apiClient = createClient<paths>({
 	baseUrl: CONTROL_API_URL,
 	credentials: "include",
+});
+
+const errorCodeSchema = z.object({ error: z.object({ code: z.string() }) });
+
+let accountDisabledListener: () => void = () => {};
+
+/** What to do when any control call answers that the account is disabled. */
+export function onAccountDisabled(listener: () => void): void {
+	accountDisabledListener = listener;
+}
+
+apiClient.use({
+	async onResponse({ response }) {
+		if (response.ok) return;
+		const body: unknown = await response
+			.clone()
+			.json()
+			.catch(() => undefined);
+		const parsed = errorCodeSchema.safeParse(body);
+		if (parsed.success && parsed.data.error.code === ACCOUNT_DISABLED) {
+			accountDisabledListener();
+		}
+	},
 });

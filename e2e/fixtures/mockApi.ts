@@ -14,9 +14,26 @@ export interface MockGraph {
 	keys: unknown[];
 	providers: unknown[];
 	hostBindings?: unknown[];
+	serviceAccounts?: unknown[];
 	proxyMode?: { value: { enabled: boolean; allowUnauthenticated: boolean } };
 	/** whoami roles; none means a signed-in non-admin. */
 	roles?: string[];
+	/** Answers POST /access-review from the request body; absent = 404, a
+	 * relay without the endpoint. */
+	accessReview?: (body: AccessReviewBody) => MockResponse;
+	/** Runtime-config feature flags; absent = no config document. */
+	features?: Record<string, boolean>;
+}
+
+export interface AccessReviewBody {
+	subject?: { kind: string; name?: string; id?: string };
+	action: string;
+	resource: { kind: string; name?: string; owner?: { kind: string; name?: string } };
+}
+
+export interface MockResponse {
+	status?: number;
+	body: unknown;
 }
 
 export const EMPTY_GRAPH: MockGraph = {
@@ -55,7 +72,7 @@ interface Resource {
 // gaining a new query never falls through to the dev-server proxy.
 const GRAPH_COLLECTIONS: Record<
 	string,
-	keyof Omit<MockGraph, "proxyMode" | "roles">
+	keyof Omit<MockGraph, "proxyMode" | "roles" | "accessReview" | "features">
 > = {
 	policies: "policies",
 	"host-keys": "hostKeys",
@@ -65,6 +82,7 @@ const GRAPH_COLLECTIONS: Record<
 	keys: "keys",
 	providers: "providers",
 	"host-bindings": "hostBindings",
+	"service-accounts": "serviceAccounts",
 };
 const EMPTY_COLLECTIONS = new Set([
 	"groups",
@@ -73,7 +91,6 @@ const EMPTY_COLLECTIONS = new Set([
 	"projects",
 	"role-bindings",
 	"roles",
-	"service-accounts",
 	"teams",
 	"users",
 	"tokens",
@@ -96,6 +113,12 @@ const NOT_FOUND = { error: { type: "invalid_request_error", message: "not found"
  * this; Playwright runs the latest matching route first.
  */
 export async function mockApi(page: Page, graph: MockGraph): Promise<void> {
+	const { features } = graph;
+	if (features) {
+		await page.route("**/*config.json", (route) =>
+			fulfillJson(route, { features }),
+		);
+	}
 	await page.route("**/api/**", (route) => {
 		if (!isApi(route)) return route.fallback();
 		const path = new URL(route.request().url()).pathname.replace(/^.*?\/api\//, "");
@@ -115,6 +138,10 @@ export async function mockApi(page: Page, graph: MockGraph): Promise<void> {
 				section: path.slice("settings/".length),
 				value: { allowEdit: true, allowDelete: true },
 			});
+		}
+		if (path === "access-review" && graph.accessReview) {
+			const res = graph.accessReview(route.request().postDataJSON());
+			return fulfillJson(route, res.body, res.status);
 		}
 		if (path === "version") return fulfillJson(route, { version: "test" });
 		if (path === "catalog/graph") {
@@ -148,4 +175,16 @@ export async function mockApi(page: Page, graph: MockGraph): Promise<void> {
 		}
 		return fulfillJson(route, NOT_FOUND, 404);
 	});
+}
+
+/** whoami answers 401, as it does for a browser with no session. Call after
+ * {@link mockApi}; the later route wins. */
+export async function mockSignedOut(page: Page): Promise<void> {
+	await page.route("**/api/auth/whoami", (route) =>
+		fulfillJson(
+			route,
+			{ error: { type: "authentication_error", message: "no session" } },
+			401,
+		),
+	);
 }
