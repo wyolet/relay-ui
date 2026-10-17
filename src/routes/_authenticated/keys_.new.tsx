@@ -4,7 +4,7 @@ import { Suspense, useState } from "react";
 import { policiesListQueryOptions } from "@/api/hooks/policies";
 import { Button } from "@/components/ui/button";
 import { KeyForm } from "@/keys/KeyForm";
-import { SecretReveal } from "@/shared/SecretReveal";
+import { CopyableValue } from "@/shared/CopyableValue";
 import { PageLoader } from "@/shared/Spinner";
 
 export const Route = createFileRoute("/_authenticated/keys_/new")({
@@ -28,7 +28,7 @@ function NewKeyInner() {
 						stored.
 					</p>
 				</div>
-				<SecretReveal secret={plaintext} />
+				<CopyableValue value={plaintext} />
 				<div className="flex justify-end gap-2">
 					<Button
 						type="button"

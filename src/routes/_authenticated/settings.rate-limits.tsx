@@ -5,9 +5,8 @@ import { PageLoader } from "@/shared/Spinner";
  */
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import {
-	ChevronLeft,
 	Globe,
 	Lock,
 	type LucideIcon,
@@ -45,6 +44,7 @@ import {
 	type SystemRateLimitName,
 } from "@/lib/systemRateLimits";
 import { WINDOW_PRESETS } from "@/lib/timeWindow";
+import { SettingsPageHeader, SettingsSaveBar } from "@/shared/SettingsPage";
 import { Switch } from "@/shared/Switch";
 import { toast } from "@/shared/Toast";
 
@@ -360,23 +360,11 @@ function SystemRateLimitsInner() {
 
 	return (
 		<div className="flex flex-col">
-			<div>
-				<Link
-					to="/settings"
-					className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-				>
-					<ChevronLeft className="w-3.5 h-3.5" />
-					Settings
-				</Link>
-				<h1 className="mt-2 text-xl font-semibold text-foreground">
-					System rate limits
-				</h1>
-				<p className="mt-1 text-xs text-muted-foreground max-w-2xl">
-					Throttling for Relay's own surfaces — the control API and the
-					inference API. Only request rates are configurable here; meter and
-					strategy are managed by the backend.
-				</p>
-			</div>
+			<SettingsPageHeader title="System rate limits">
+				Throttling for Relay's own surfaces — the control API and the inference
+				API. Only request rates are configurable here; meter and strategy are
+				managed by the backend.
+			</SettingsPageHeader>
 
 			<div className="mt-6 divide-y divide-border">
 				<ControlSection
@@ -435,20 +423,11 @@ function SystemRateLimitsInner() {
 				/>
 			</div>
 
-			<div className="sticky bottom-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-t border-border mt-6 -mx-6 px-6 py-3 flex items-center justify-end gap-2">
-				<Button type="button" variant="outline" size="lg" onClick={reset}>
-					Reset
-				</Button>
-				<Button
-					type="button"
-					variant="cta"
-					size="lg"
-					onClick={handleSave}
-					disabled={updateRL.isPending}
-				>
-					{updateRL.isPending ? "Saving…" : "Save changes"}
-				</Button>
-			</div>
+			<SettingsSaveBar
+				onReset={reset}
+				onSave={handleSave}
+				saving={updateRL.isPending}
+			/>
 		</div>
 	);
 }
