@@ -42,6 +42,7 @@ export function HostKeyForm({ hostKey, onSaved, onCancel }: HostKeyFormProps) {
 		hostIdError,
 		policyIdError,
 		envVarError,
+		envVarReservedPrefix,
 		valueError,
 		hostOptions,
 		policyOptions,
@@ -214,6 +215,13 @@ export function HostKeyForm({ hostKey, onSaved, onCancel }: HostKeyFormProps) {
 									{envVarError && (
 										<p className="mt-1.5 text-[11px] text-destructive">
 											{envVarError}
+										</p>
+									)}
+									{!envVarError && envVarReservedPrefix && (
+										<p className="mt-1.5 text-[11px] text-warning">
+											Names starting with {envVarReservedPrefix} are reserved
+											for relay's own configuration, and relay refuses them.
+											Pick another name.
 										</p>
 									)}
 									<p className="mt-1.5 text-[11px] text-muted-foreground">

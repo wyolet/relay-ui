@@ -2,7 +2,9 @@ import {
 	type InfiniteData,
 	infiniteQueryOptions,
 	queryOptions,
+	useMutation,
 	useQuery,
+	useQueryClient,
 	useSuspenseInfiniteQuery,
 	useSuspenseQuery,
 } from "@tanstack/react-query";
@@ -18,6 +20,9 @@ export type LogListPage = components["schemas"]["logsListOutputBody"];
 /** Full capture: the event plus (when opted in) request/response bodies. */
 export type LogDetail = components["schemas"]["logGetOutputBody"];
 export type LogPayload = components["schemas"]["logPayload"];
+/** Whose captured bodies to erase: a project, a principal, or both (that
+ * principal within that project). */
+export type EraseScope = components["schemas"]["logsEraseInputBody"];
 
 /** Server-side filters accepted by GET /logs (minus pagination, which we own). */
 export type LogsFilter = Omit<
@@ -197,4 +202,21 @@ export function useLogDetail(requestId: string) {
 
 function flattenEvents(data: InfiniteData<LogListPage>): LogEvent[] {
 	return data.pages.flatMap((page) => page.logs ?? []);
+}
+
+/**
+ * Deletes captured request/response bodies for a scope and answers how many
+ * requests matched. Usage rows stay; cached details drop their bodies.
+ */
+export function useEraseLogBodies() {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: async (scope: EraseScope): Promise<number> => {
+			const data = unwrap(await apiClient.POST("/logs/erase", { body: scope }));
+			return data.requests;
+		},
+		onSuccess: () => {
+			void queryClient.invalidateQueries({ queryKey: ["logs", "detail"] });
+		},
+	});
 }
