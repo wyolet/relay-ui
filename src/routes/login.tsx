@@ -5,7 +5,12 @@ import { Eye, EyeOff, Lock, User } from "lucide-react";
 import { AnimatePresence, MotionConfig, motion } from "motion/react";
 import { useState } from "react";
 import { z } from "zod";
-import { AuthError, useAuth, whoamiQueryOptions } from "@/api/auth";
+import {
+	ACCOUNT_DISABLED_NOTICE,
+	AuthError,
+	useAuth,
+	whoamiQueryOptions,
+} from "@/api/auth";
 import { CONTROL_API_URL } from "@/api/client";
 import { feature } from "@/api/runtimeConfig";
 import { Button } from "@/components/ui/button";
@@ -18,7 +23,12 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { BrandMark } from "@/shared/BrandMark";
 
+const searchSchema = z.object({
+	notice: z.enum(["account_disabled"]).optional().catch(undefined),
+});
+
 export const Route = createFileRoute("/login")({
+	validateSearch: searchSchema,
 	async beforeLoad({ context }) {
 		const whoami =
 			await context.queryClient.ensureQueryData(whoamiQueryOptions);
@@ -174,6 +184,7 @@ function FieldRow({
 function LoginPage() {
 	const navigate = useNavigate();
 	const { login } = useAuth();
+	const { notice } = Route.useSearch();
 	const [serverError, setServerError] = useState<string | null>(null);
 	const [success, setSuccess] = useState(false);
 
@@ -322,6 +333,16 @@ function LoginPage() {
 										className="flex flex-col gap-4"
 										aria-label="Sign in"
 									>
+										{notice === "account_disabled" && serverError === null && (
+											<motion.div
+												variants={rise}
+												role="status"
+												className="rounded-lg border border-border bg-muted/60 px-3 py-2 text-xs text-foreground"
+											>
+												{ACCOUNT_DISABLED_NOTICE}
+											</motion.div>
+										)}
+
 										<motion.div variants={rise}>
 											<form.Field name="username">
 												{(field) => (

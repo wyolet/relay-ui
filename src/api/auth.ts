@@ -7,6 +7,10 @@ import {
 } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { apiClient } from "./client";
+import { ACCOUNT_DISABLED } from "./types/errors";
+
+export const ACCOUNT_DISABLED_NOTICE =
+	"Your account is disabled. Contact your administrator.";
 
 interface Whoami {
 	authenticated: boolean;
@@ -74,6 +78,9 @@ export function useAuth() {
 		const { error } = await apiClient.POST("/auth/login", {
 			body: { username, password },
 		});
+		if (error?.error.code === ACCOUNT_DISABLED) {
+			throw new AuthError(ACCOUNT_DISABLED_NOTICE);
+		}
 		if (error) {
 			// Backend returns a structured error with a human-readable message.
 			throw new AuthError(error.error.message || "Login failed.");

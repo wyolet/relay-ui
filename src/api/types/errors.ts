@@ -18,6 +18,13 @@ export class ApiError extends Error {
 	}
 }
 
+export const ACCOUNT_DISABLED = "account_disabled";
+
+/** Relay refused the signed-in account itself; it has already ended the session. */
+export function isAccountDisabled(err: unknown): err is ApiError {
+	return err instanceof ApiError && err.body.code === ACCOUNT_DISABLED;
+}
+
 /** An update refused because the row changed after the caller loaded it. */
 export function isStaleResourceVersion(err: unknown): err is ApiError {
 	return (
