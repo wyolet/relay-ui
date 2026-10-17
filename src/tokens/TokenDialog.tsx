@@ -23,7 +23,7 @@ import {
 import { displayLabel } from "@/lib/displayLabel";
 import { AlertBanner } from "@/shared/AlertBanner";
 import { confirm } from "@/shared/ConfirmDialog";
-import { SecretReveal } from "@/shared/SecretReveal";
+import { CopyableValue } from "@/shared/CopyableValue";
 import { Segmented } from "@/shared/Segmented";
 import { toast } from "@/shared/Toast";
 
@@ -110,7 +110,7 @@ export function TokenDialog({ onClose }: { onClose: () => void }) {
 				)}
 
 				{token ? (
-					<SecretReveal secret={token} />
+					<CopyableValue value={token} />
 				) : (
 					<div className="flex flex-col gap-3">
 						<div className="flex flex-col gap-1.5">

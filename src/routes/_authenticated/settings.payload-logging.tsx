@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { ChevronLeft, Ruler, ScrollText } from "lucide-react";
+import { createFileRoute } from "@tanstack/react-router";
+import { Ruler, ScrollText } from "lucide-react";
 import { Suspense, useMemo, useState } from "react";
 import { useAuth } from "@/api/auth";
 import {
@@ -11,11 +11,11 @@ import {
 	useUpdatePayloadLogging,
 } from "@/api/hooks/settings";
 import { ApiError } from "@/api/types/errors";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { AlertBanner } from "@/shared/AlertBanner";
 import { NoAccessState } from "@/shared/RouteError";
+import { SettingsPageHeader, SettingsSaveBar } from "@/shared/SettingsPage";
 import { SettingsSection } from "@/shared/SettingsSection";
 import { PageLoader } from "@/shared/Spinner";
 import { toast } from "@/shared/Toast";
@@ -73,25 +73,13 @@ function PayloadLoggingSettingsForm({
 
 	return (
 		<div className="flex flex-col">
-			<div>
-				<Link
-					to="/settings"
-					className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-				>
-					<ChevronLeft className="w-3.5 h-3.5" />
-					Settings
-				</Link>
-				<h1 className="mt-2 text-xl font-semibold text-foreground">
-					Payload logging
-				</h1>
-				<p className="mt-1 text-xs text-muted-foreground max-w-2xl">
-					Capture full request and response bodies for inspection under Logs.
-					This is the global default — it overrides the per-policy and per-key
-					toggles (global › policy › key). Bodies are stored via the{" "}
-					<code className="font-mono">{base.backend || "—"}</code> backend
-					configured on the relay.
-				</p>
-			</div>
+			<SettingsPageHeader title="Payload logging">
+				Capture full request and response bodies for inspection under Logs. This
+				is the global default — it overrides the per-policy and per-key toggles
+				(global › policy › key). Bodies are stored via the{" "}
+				<code className="font-mono">{base.backend || "—"}</code> backend
+				configured on the relay.
+			</SettingsPageHeader>
 
 			{readOnly && (
 				<AlertBanner
@@ -142,25 +130,11 @@ function PayloadLoggingSettingsForm({
 			</div>
 
 			{!readOnly && (
-				<div className="sticky bottom-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-t border-border mt-6 -mx-6 px-6 py-3 flex items-center justify-end gap-2">
-					<Button
-						type="button"
-						variant="outline"
-						size="lg"
-						onClick={() => setState(initial)}
-					>
-						Reset
-					</Button>
-					<Button
-						type="button"
-						variant="cta"
-						size="lg"
-						onClick={handleSave}
-						disabled={update.isPending}
-					>
-						{update.isPending ? "Saving…" : "Save changes"}
-					</Button>
-				</div>
+				<SettingsSaveBar
+					onReset={() => setState(initial)}
+					onSave={handleSave}
+					saving={update.isPending}
+				/>
 			)}
 		</div>
 	);

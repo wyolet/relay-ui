@@ -1,5 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { ChevronLeft, ShieldCheck } from "lucide-react";
+import { createFileRoute } from "@tanstack/react-router";
+import { ShieldCheck } from "lucide-react";
 import { Suspense } from "react";
 import {
 	type GovernanceSection,
@@ -14,6 +14,7 @@ import {
 	type PermissionLevel,
 } from "@/lib/ownership";
 import { PermissionLevelSwitch } from "@/shared/PermissionLevelSwitch";
+import { SettingsPageHeader } from "@/shared/SettingsPage";
 import { PageLoader } from "@/shared/Spinner";
 import { toast } from "@/shared/Toast";
 
@@ -61,24 +62,12 @@ export const Route = createFileRoute("/_authenticated/settings/permissions")({
 function PermissionsSettingsPage() {
 	return (
 		<div className="flex flex-col">
-			<div>
-				<Link
-					to="/settings"
-					className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-				>
-					<ChevronLeft className="w-3.5 h-3.5" />
-					Settings
-				</Link>
-				<h1 className="mt-2 text-xl font-semibold text-foreground">
-					Edit permissions
-				</h1>
-				<p className="mt-1 text-xs text-muted-foreground max-w-2xl">
-					Server-managed resources guard against accidental edits and deletes so
-					you don't clobber synced or host-owned state. Unlock per category
-					here. System-owned rows stay protected regardless; these flags apply
-					to catalog-managed rows and are enforced by the relay.
-				</p>
-			</div>
+			<SettingsPageHeader title="Edit permissions">
+				Server-managed resources guard against accidental edits and deletes so
+				you don't clobber synced or host-owned state. Unlock per category here.
+				System-owned rows stay protected regardless; these flags apply to
+				catalog-managed rows and are enforced by the relay.
+			</SettingsPageHeader>
 
 			<div className="mt-6 divide-y divide-border">
 				<Suspense fallback={<PageLoader />}>

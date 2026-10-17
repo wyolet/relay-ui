@@ -11,8 +11,8 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import { SecretReveal } from "@/shared/SecretReveal";
 import { AlertBanner } from "@/shared/AlertBanner";
+import { CopyableValue } from "@/shared/CopyableValue";
 import { Segmented } from "@/shared/Segmented";
 import { toast } from "@/shared/Toast";
 
@@ -81,7 +81,7 @@ export function KeyRotateDialog({ rk, onClose }: KeyRotateDialogProps) {
 				)}
 
 				{rotated ? (
-					<SecretReveal secret={plaintext} />
+					<CopyableValue value={plaintext} />
 				) : (
 					<div className="flex flex-col gap-1.5">
 						<span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">

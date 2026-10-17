@@ -9,6 +9,7 @@ import {
 	KeySquare,
 	LayoutDashboard,
 	Link2,
+	Network,
 	ScrollText,
 	ShieldCheck,
 	UserRound,
@@ -16,6 +17,7 @@ import {
 	UsersRound,
 } from "lucide-react";
 import type { ComponentType } from "react";
+import { useAuth } from "@/api/auth";
 import { type Capability, useCapabilities } from "@/api/hooks/capabilities";
 import {
 	SidebarContent,
@@ -47,13 +49,16 @@ interface NavItem {
 		| "/role-bindings"
 		| "/policy-bindings"
 		| "/audit"
-		| "/users";
+		| "/users"
+		| "/scim-clients";
 	label: string;
 	icon: ComponentType<{ className?: string }>;
 	prefix: string;
 	/** Entry hides when the actor may not list this kind. Observe views have
 	 * none — they degrade to their own empty states instead. */
 	capability?: Capability;
+	/** Entry hides from non-admins: the kind takes an admin in every authz mode. */
+	adminOnly?: boolean;
 }
 
 interface NavGroup {
@@ -134,6 +139,13 @@ const NAV_GROUPS: NavGroup[] = [
 				prefix: "/groups",
 				capability: "groups",
 			},
+			{
+				to: "/scim-clients",
+				label: "SCIM clients",
+				icon: Network,
+				prefix: "/scim-clients",
+				adminOnly: true,
+			},
 		],
 	},
 	{
@@ -204,8 +216,10 @@ function NavMenuItem({ item, active }: { item: NavItem; active: boolean }) {
 export function Sidebar() {
 	const path = useRouterState({ select: (s) => s.location.pathname });
 	const capabilities = useCapabilities();
+	const { isAdmin } = useAuth();
 	const visible = (item: NavItem) =>
-		!item.capability || capabilities[item.capability];
+		(!item.adminOnly || isAdmin) &&
+		(!item.capability || capabilities[item.capability]);
 
 	return (
 		<SidebarRoot collapsible="icon">

@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ChevronLeft, KeyRound, LogIn, UserPlus } from "lucide-react";
+import { KeyRound, LogIn, UserPlus } from "lucide-react";
 import { Suspense, useMemo, useState } from "react";
 import { useAuth } from "@/api/auth";
 import { isLicenseRequired } from "@/api/hooks/license";
@@ -12,7 +12,6 @@ import {
 	useUpdateAuthOIDC,
 } from "@/api/hooks/settings";
 import { ApiError } from "@/api/types/errors";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -25,6 +24,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { AlertBanner } from "@/shared/AlertBanner";
 import { NoAccessState } from "@/shared/RouteError";
+import { SettingsPageHeader, SettingsSaveBar } from "@/shared/SettingsPage";
 import { SettingsSection } from "@/shared/SettingsSection";
 import { PageLoader } from "@/shared/Spinner";
 import { toast } from "@/shared/Toast";
@@ -104,21 +104,11 @@ function SsoSettingsForm({
 
 	return (
 		<div className="flex flex-col">
-			<div>
-				<Link
-					to="/settings"
-					className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-				>
-					<ChevronLeft className="w-3.5 h-3.5" />
-					Settings
-				</Link>
-				<h1 className="mt-2 text-xl font-semibold text-foreground">SSO</h1>
-				<p className="mt-1 text-xs text-muted-foreground max-w-2xl">
-					Sign operators in through your identity provider (generic OIDC: issuer
-					discovery plus the authorization-code flow). Password login keeps
-					working alongside it.
-				</p>
-			</div>
+			<SettingsPageHeader title="SSO">
+				Sign operators in through your identity provider (generic OIDC: issuer
+				discovery plus the authorization-code flow). Password login keeps
+				working alongside it.
+			</SettingsPageHeader>
 
 			{readOnly && (
 				<AlertBanner
@@ -240,25 +230,11 @@ function SsoSettingsForm({
 			</div>
 
 			{!readOnly && (
-				<div className="sticky bottom-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-t border-border mt-6 -mx-6 px-6 py-3 flex items-center justify-end gap-2">
-					<Button
-						type="button"
-						variant="outline"
-						size="lg"
-						onClick={() => setState(initial)}
-					>
-						Reset
-					</Button>
-					<Button
-						type="button"
-						variant="cta"
-						size="lg"
-						onClick={handleSave}
-						disabled={update.isPending}
-					>
-						{update.isPending ? "Saving…" : "Save changes"}
-					</Button>
-				</div>
+				<SettingsSaveBar
+					onReset={() => setState(initial)}
+					onSave={handleSave}
+					saving={update.isPending}
+				/>
 			)}
 		</div>
 	);

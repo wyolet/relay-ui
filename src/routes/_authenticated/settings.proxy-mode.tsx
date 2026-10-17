@@ -1,5 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { ChevronLeft, Forward, ShieldOff } from "lucide-react";
+import { createFileRoute } from "@tanstack/react-router";
+import { Forward, ShieldOff } from "lucide-react";
 import { Suspense, useMemo, useState } from "react";
 import {
 	type ProxyMode,
@@ -8,8 +8,8 @@ import {
 	useUpdateProxyMode,
 } from "@/api/hooks/settings";
 import { ApiError } from "@/api/types/errors";
-import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { SettingsPageHeader, SettingsSaveBar } from "@/shared/SettingsPage";
 import { SettingsSection } from "@/shared/SettingsSection";
 import { PageLoader } from "@/shared/Spinner";
 import { toast } from "@/shared/Toast";
@@ -68,23 +68,11 @@ function ProxyModeSettingsInner() {
 
 	return (
 		<div className="flex flex-col">
-			<div>
-				<Link
-					to="/settings"
-					className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-				>
-					<ChevronLeft className="w-3.5 h-3.5" />
-					Settings
-				</Link>
-				<h1 className="mt-2 text-xl font-semibold text-foreground">
-					Proxy mode
-				</h1>
-				<p className="mt-1 text-xs text-muted-foreground max-w-2xl">
-					Accept requests where the caller brings their own upstream
-					credentials. Relay still tracks usage and applies rate limits, but
-					doesn't manage the secret.
-				</p>
-			</div>
+			<SettingsPageHeader title="Proxy mode">
+				Accept requests where the caller brings their own upstream credentials.
+				Relay still tracks usage and applies rate limits, but doesn't manage the
+				secret.
+			</SettingsPageHeader>
 
 			<div className="mt-6 divide-y divide-border">
 				<SettingsSection
@@ -123,20 +111,11 @@ function ProxyModeSettingsInner() {
 				</SettingsSection>
 			</div>
 
-			<div className="sticky bottom-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-t border-border mt-6 -mx-6 px-6 py-3 flex items-center justify-end gap-2">
-				<Button type="button" variant="outline" size="lg" onClick={handleReset}>
-					Reset
-				</Button>
-				<Button
-					type="button"
-					variant="cta"
-					size="lg"
-					onClick={handleSave}
-					disabled={updateProxyMode.isPending}
-				>
-					{updateProxyMode.isPending ? "Saving…" : "Save changes"}
-				</Button>
-			</div>
+			<SettingsSaveBar
+				onReset={handleReset}
+				onSave={handleSave}
+				saving={updateProxyMode.isPending}
+			/>
 		</div>
 	);
 }

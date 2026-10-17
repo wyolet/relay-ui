@@ -5,6 +5,7 @@ import {
 	Gauge,
 	LogIn,
 	type LucideIcon,
+	Network,
 	ScrollText,
 	ShieldCheck,
 } from "lucide-react";
@@ -20,6 +21,7 @@ interface SettingItem {
 		| "/settings/payload-logging"
 		| "/settings/permissions"
 		| "/settings/sso"
+		| "/settings/scim"
 		| "/settings/license";
 	label: string;
 	description: string;
@@ -54,6 +56,13 @@ const ITEMS: SettingItem[] = [
 		description:
 			"Sign operators in through your identity provider (OIDC). Licensed feature; password login always works.",
 		icon: LogIn,
+	},
+	{
+		to: "/settings/scim",
+		label: "SCIM provisioning",
+		description:
+			"Let an identity provider (Entra ID, Okta) provision users and groups through SCIM 2.0.",
+		icon: Network,
 	},
 	{
 		to: "/settings/license",
