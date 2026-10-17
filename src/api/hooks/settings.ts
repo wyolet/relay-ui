@@ -12,6 +12,8 @@ export type ProxyMode = components["schemas"]["ProxyMode"];
 export type ProxyModeEnvelope = components["schemas"]["ProxyModeEnvelope"];
 export type AuthOIDC = components["schemas"]["AuthOIDC"];
 export type AuthOIDCEnvelope = components["schemas"]["AuthOIDCEnvelope"];
+export type AuthSCIM = components["schemas"]["AuthSCIM"];
+export type AuthSCIMEnvelope = components["schemas"]["AuthSCIMEnvelope"];
 export type PayloadLogging = components["schemas"]["PayloadLogging"];
 export type PayloadLoggingEnvelope =
 	components["schemas"]["PayloadLoggingEnvelope"];
@@ -100,6 +102,35 @@ export function useUpdateAuthOIDC() {
 		mutationFn: async (value: AuthOIDC): Promise<AuthOIDCEnvelope> => {
 			const data = unwrap(
 				await apiClient.PUT("/settings/auth:oidc", { body: value }),
+			);
+			return data;
+		},
+		onSuccess: () => {
+			void queryClient.invalidateQueries({ queryKey: ["settings"] });
+		},
+	});
+}
+
+export const authSCIMQueryOptions = queryOptions({
+	queryKey: ["settings", "auth:scim"] as const,
+	queryFn: async (): Promise<AuthSCIMEnvelope> => {
+		const data = unwrap(await apiClient.GET("/settings/auth:scim"));
+		return data;
+	},
+	staleTime: 30_000,
+	gcTime: 5 * 60_000,
+});
+
+export function useAuthSCIM() {
+	return useSuspenseQuery(authSCIMQueryOptions);
+}
+
+export function useUpdateAuthSCIM() {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: async (value: AuthSCIM): Promise<AuthSCIMEnvelope> => {
+			const data = unwrap(
+				await apiClient.PUT("/settings/auth:scim", { body: value }),
 			);
 			return data;
 		},

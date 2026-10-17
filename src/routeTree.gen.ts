@@ -25,6 +25,7 @@ import { Route as AuthenticatedPricingRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedProjectsRouteImport } from './routes/_authenticated/projects'
 import { Route as AuthenticatedRoleBindingsRouteImport } from './routes/_authenticated/role-bindings'
 import { Route as AuthenticatedRolesRouteImport } from './routes/_authenticated/roles'
+import { Route as AuthenticatedScimClientsRouteImport } from './routes/_authenticated/scim-clients'
 import { Route as AuthenticatedServiceAccountsRouteImport } from './routes/_authenticated/service-accounts'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedTeamsRouteImport } from './routes/_authenticated/teams'
@@ -72,6 +73,7 @@ import { Route as AuthenticatedSettingsPayloadLoggingRouteImport } from './route
 import { Route as AuthenticatedSettingsPermissionsRouteImport } from './routes/_authenticated/settings.permissions'
 import { Route as AuthenticatedSettingsProxyModeRouteImport } from './routes/_authenticated/settings.proxy-mode'
 import { Route as AuthenticatedSettingsRateLimitsRouteImport } from './routes/_authenticated/settings.rate-limits'
+import { Route as AuthenticatedSettingsScimRouteImport } from './routes/_authenticated/settings.scim'
 import { Route as AuthenticatedSettingsSsoRouteImport } from './routes/_authenticated/settings.sso'
 import { Route as AuthenticatedTeamsIndexRouteImport } from './routes/_authenticated/teams.index'
 import { Route as AuthenticatedTeamsNameRouteImport } from './routes/_authenticated/teams.$name'
@@ -175,6 +177,12 @@ const AuthenticatedRolesRoute = AuthenticatedRolesRouteImport.update({
   path: '/roles',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedScimClientsRoute =
+  AuthenticatedScimClientsRouteImport.update({
+    id: '/scim-clients',
+    path: '/scim-clients',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedServiceAccountsRoute =
   AuthenticatedServiceAccountsRouteImport.update({
     id: '/service-accounts',
@@ -441,6 +449,12 @@ const AuthenticatedSettingsRateLimitsRoute =
     path: '/rate-limits',
     getParentRoute: () => AuthenticatedSettingsRoute,
   } as any)
+const AuthenticatedSettingsScimRoute =
+  AuthenticatedSettingsScimRouteImport.update({
+    id: '/scim',
+    path: '/scim',
+    getParentRoute: () => AuthenticatedSettingsRoute,
+  } as any)
 const AuthenticatedSettingsSsoRoute =
   AuthenticatedSettingsSsoRouteImport.update({
     id: '/sso',
@@ -579,6 +593,7 @@ export interface FileRoutesByFullPath {
   '/projects': typeof AuthenticatedProjectsRouteWithChildren
   '/role-bindings': typeof AuthenticatedRoleBindingsRouteWithChildren
   '/roles': typeof AuthenticatedRolesRouteWithChildren
+  '/scim-clients': typeof AuthenticatedScimClientsRoute
   '/service-accounts': typeof AuthenticatedServiceAccountsRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRouteWithChildren
   '/teams': typeof AuthenticatedTeamsRouteWithChildren
@@ -614,6 +629,7 @@ export interface FileRoutesByFullPath {
   '/settings/permissions': typeof AuthenticatedSettingsPermissionsRoute
   '/settings/proxy-mode': typeof AuthenticatedSettingsProxyModeRoute
   '/settings/rate-limits': typeof AuthenticatedSettingsRateLimitsRoute
+  '/settings/scim': typeof AuthenticatedSettingsScimRoute
   '/settings/sso': typeof AuthenticatedSettingsSsoRoute
   '/teams/$name': typeof AuthenticatedTeamsNameRoute
   '/teams/new': typeof AuthenticatedTeamsNewRoute
@@ -654,6 +670,7 @@ export interface FileRoutesByTo {
   '/audit': typeof AuthenticatedAuditRoute
   '/bootstrap': typeof AuthenticatedBootstrapRoute
   '/keys': typeof AuthenticatedKeysRoute
+  '/scim-clients': typeof AuthenticatedScimClientsRoute
   '/usage': typeof AuthenticatedUsageRoute
   '/': typeof AuthenticatedIndexRoute
   '/groups/$name': typeof AuthenticatedGroupsNameRoute
@@ -686,6 +703,7 @@ export interface FileRoutesByTo {
   '/settings/permissions': typeof AuthenticatedSettingsPermissionsRoute
   '/settings/proxy-mode': typeof AuthenticatedSettingsProxyModeRoute
   '/settings/rate-limits': typeof AuthenticatedSettingsRateLimitsRoute
+  '/settings/scim': typeof AuthenticatedSettingsScimRoute
   '/settings/sso': typeof AuthenticatedSettingsSsoRoute
   '/teams/$name': typeof AuthenticatedTeamsNameRoute
   '/teams/new': typeof AuthenticatedTeamsNewRoute
@@ -737,6 +755,7 @@ export interface FileRoutesById {
   '/_authenticated/projects': typeof AuthenticatedProjectsRouteWithChildren
   '/_authenticated/role-bindings': typeof AuthenticatedRoleBindingsRouteWithChildren
   '/_authenticated/roles': typeof AuthenticatedRolesRouteWithChildren
+  '/_authenticated/scim-clients': typeof AuthenticatedScimClientsRoute
   '/_authenticated/service-accounts': typeof AuthenticatedServiceAccountsRouteWithChildren
   '/_authenticated/settings': typeof AuthenticatedSettingsRouteWithChildren
   '/_authenticated/teams': typeof AuthenticatedTeamsRouteWithChildren
@@ -773,6 +792,7 @@ export interface FileRoutesById {
   '/_authenticated/settings/permissions': typeof AuthenticatedSettingsPermissionsRoute
   '/_authenticated/settings/proxy-mode': typeof AuthenticatedSettingsProxyModeRoute
   '/_authenticated/settings/rate-limits': typeof AuthenticatedSettingsRateLimitsRoute
+  '/_authenticated/settings/scim': typeof AuthenticatedSettingsScimRoute
   '/_authenticated/settings/sso': typeof AuthenticatedSettingsSsoRoute
   '/_authenticated/teams/$name': typeof AuthenticatedTeamsNameRoute
   '/_authenticated/teams/new': typeof AuthenticatedTeamsNewRoute
@@ -825,6 +845,7 @@ export interface FileRouteTypes {
     | '/projects'
     | '/role-bindings'
     | '/roles'
+    | '/scim-clients'
     | '/service-accounts'
     | '/settings'
     | '/teams'
@@ -860,6 +881,7 @@ export interface FileRouteTypes {
     | '/settings/permissions'
     | '/settings/proxy-mode'
     | '/settings/rate-limits'
+    | '/settings/scim'
     | '/settings/sso'
     | '/teams/$name'
     | '/teams/new'
@@ -900,6 +922,7 @@ export interface FileRouteTypes {
     | '/audit'
     | '/bootstrap'
     | '/keys'
+    | '/scim-clients'
     | '/usage'
     | '/'
     | '/groups/$name'
@@ -932,6 +955,7 @@ export interface FileRouteTypes {
     | '/settings/permissions'
     | '/settings/proxy-mode'
     | '/settings/rate-limits'
+    | '/settings/scim'
     | '/settings/sso'
     | '/teams/$name'
     | '/teams/new'
@@ -982,6 +1006,7 @@ export interface FileRouteTypes {
     | '/_authenticated/projects'
     | '/_authenticated/role-bindings'
     | '/_authenticated/roles'
+    | '/_authenticated/scim-clients'
     | '/_authenticated/service-accounts'
     | '/_authenticated/settings'
     | '/_authenticated/teams'
@@ -1018,6 +1043,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings/permissions'
     | '/_authenticated/settings/proxy-mode'
     | '/_authenticated/settings/rate-limits'
+    | '/_authenticated/settings/scim'
     | '/_authenticated/settings/sso'
     | '/_authenticated/teams/$name'
     | '/_authenticated/teams/new'
@@ -1171,6 +1197,13 @@ declare module '@tanstack/react-router' {
       path: '/roles'
       fullPath: '/roles'
       preLoaderRoute: typeof AuthenticatedRolesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/scim-clients': {
+      id: '/_authenticated/scim-clients'
+      path: '/scim-clients'
+      fullPath: '/scim-clients'
+      preLoaderRoute: typeof AuthenticatedScimClientsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/service-accounts': {
@@ -1500,6 +1533,13 @@ declare module '@tanstack/react-router' {
       path: '/rate-limits'
       fullPath: '/settings/rate-limits'
       preLoaderRoute: typeof AuthenticatedSettingsRateLimitsRouteImport
+      parentRoute: typeof AuthenticatedSettingsRoute
+    }
+    '/_authenticated/settings/scim': {
+      id: '/_authenticated/settings/scim'
+      path: '/scim'
+      fullPath: '/settings/scim'
+      preLoaderRoute: typeof AuthenticatedSettingsScimRouteImport
       parentRoute: typeof AuthenticatedSettingsRoute
     }
     '/_authenticated/settings/sso': {
@@ -1870,6 +1910,7 @@ interface AuthenticatedSettingsRouteChildren {
   AuthenticatedSettingsPermissionsRoute: typeof AuthenticatedSettingsPermissionsRoute
   AuthenticatedSettingsProxyModeRoute: typeof AuthenticatedSettingsProxyModeRoute
   AuthenticatedSettingsRateLimitsRoute: typeof AuthenticatedSettingsRateLimitsRoute
+  AuthenticatedSettingsScimRoute: typeof AuthenticatedSettingsScimRoute
   AuthenticatedSettingsSsoRoute: typeof AuthenticatedSettingsSsoRoute
   AuthenticatedSettingsIndexRoute: typeof AuthenticatedSettingsIndexRoute
 }
@@ -1881,6 +1922,7 @@ const AuthenticatedSettingsRouteChildren: AuthenticatedSettingsRouteChildren = {
   AuthenticatedSettingsPermissionsRoute: AuthenticatedSettingsPermissionsRoute,
   AuthenticatedSettingsProxyModeRoute: AuthenticatedSettingsProxyModeRoute,
   AuthenticatedSettingsRateLimitsRoute: AuthenticatedSettingsRateLimitsRoute,
+  AuthenticatedSettingsScimRoute: AuthenticatedSettingsScimRoute,
   AuthenticatedSettingsSsoRoute: AuthenticatedSettingsSsoRoute,
   AuthenticatedSettingsIndexRoute: AuthenticatedSettingsIndexRoute,
 }
@@ -1933,6 +1975,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedProjectsRoute: typeof AuthenticatedProjectsRouteWithChildren
   AuthenticatedRoleBindingsRoute: typeof AuthenticatedRoleBindingsRouteWithChildren
   AuthenticatedRolesRoute: typeof AuthenticatedRolesRouteWithChildren
+  AuthenticatedScimClientsRoute: typeof AuthenticatedScimClientsRoute
   AuthenticatedServiceAccountsRoute: typeof AuthenticatedServiceAccountsRouteWithChildren
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRouteWithChildren
   AuthenticatedTeamsRoute: typeof AuthenticatedTeamsRouteWithChildren
@@ -1962,6 +2005,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedProjectsRoute: AuthenticatedProjectsRouteWithChildren,
   AuthenticatedRoleBindingsRoute: AuthenticatedRoleBindingsRouteWithChildren,
   AuthenticatedRolesRoute: AuthenticatedRolesRouteWithChildren,
+  AuthenticatedScimClientsRoute: AuthenticatedScimClientsRoute,
   AuthenticatedServiceAccountsRoute:
     AuthenticatedServiceAccountsRouteWithChildren,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRouteWithChildren,
