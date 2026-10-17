@@ -16,6 +16,7 @@ import {
 	type UsageSummaryFilter,
 	type UsageWindow,
 	usageComparisonWindows,
+	usageNow,
 	usageSummaryQueryOptions,
 	usageTotalsQueryOptions,
 	useStackedTimeline,
@@ -66,7 +67,7 @@ export const Route = createFileRoute("/_authenticated/usage")({
 		const win = resolveWindow(deps.range, deps.from, deps.to);
 		const filter = usageScopeFilter(deps);
 		// Same windows the KPI/leaderboard hooks derive → same cache entries.
-		const { previous } = usageComparisonWindows(win);
+		const { previous } = usageComparisonWindows(win, usageNow());
 		void queryClient.ensureQueryData(
 			usageSummaryQueryOptions(deps.group_by, win, filter),
 		);

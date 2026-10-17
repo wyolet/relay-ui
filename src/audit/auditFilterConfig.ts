@@ -37,14 +37,17 @@ const RANGE_MS: Partial<Record<AuditRange, number>> = {
 	"30d": 30 * 24 * 60 * 60_000,
 };
 
+/** Step `now` is floored to for a relative range: recomputing it on every
+ * render would otherwise mint a new query key each time. */
+export const RANGE_NOW_STEP_MS = 60_000;
+
 /** The absolute bounds a range resolves to, as the RFC3339 the server wants.
- * A relative window's lower bound is floored to the minute: recomputing "now"
- * on every render would otherwise mint a new query key each time and refetch
- * the whole feed. */
+ * `now` is quantizedNow(RANGE_NOW_STEP_MS), or its deferred hook in render. */
 export function rangeBounds(
 	range: AuditRange,
 	customFrom: string,
 	customTo: string,
+	now: number,
 ): { from?: string; to?: string } {
 	if (range === "all") return {};
 	if (range === "custom") {
@@ -55,8 +58,7 @@ export function rangeBounds(
 	}
 	const span = RANGE_MS[range];
 	if (span === undefined) return {};
-	const floored = Math.floor((Date.now() - span) / 60_000) * 60_000;
-	return { from: new Date(floored).toISOString() };
+	return { from: new Date(now - span).toISOString() };
 }
 
 /** `<input type="datetime-local">` value (local wall time, no zone) → RFC3339. */

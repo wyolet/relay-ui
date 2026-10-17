@@ -1,6 +1,7 @@
 import {
 	type InfiniteData,
 	infiniteQueryOptions,
+	keepPreviousData,
 	queryOptions,
 	useQuery,
 	useSuspenseInfiniteQuery,
@@ -112,9 +113,13 @@ export function auditFacetsQueryOptions(window: {
 	});
 }
 
-/** Non-suspending facet options — the filter bar renders before they land. */
+/** Non-suspending facet options — the filter bar renders before they land.
+ * A new window keeps the previous options until its own arrive. */
 export function useAuditFacets(window: { from?: string; to?: string }) {
-	const { data } = useQuery(auditFacetsQueryOptions(window));
+	const { data } = useQuery({
+		...auditFacetsQueryOptions(window),
+		placeholderData: keepPreviousData,
+	});
 	return data ?? { actions: [], kinds: [] };
 }
 
@@ -156,6 +161,9 @@ export function deniedAuditCountQueryOptions(from: string) {
 /** Denied control-plane requests since `from`. Non-suspending and never
  * retried: the tile hides rather than failing the dashboard. */
 export function useDeniedAuditCount(from: string): DeniedCount | null {
-	const { data } = useQuery(deniedAuditCountQueryOptions(from));
+	const { data } = useQuery({
+		...deniedAuditCountQueryOptions(from),
+		placeholderData: keepPreviousData,
+	});
 	return data ?? null;
 }

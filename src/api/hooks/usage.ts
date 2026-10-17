@@ -28,10 +28,11 @@ import {
 	USAGE_INTERVALS,
 	type UsageInterval,
 } from "@/lib/usage-math/window";
+import { quantizedNow, useQuantizedNow } from "@/shared/useQuantizedNow";
 
+export type { StackedPoint, UsageInterval };
 // Re-exported so chart components keep a single import site for usage shapes.
 export { OTHER_KEY, USAGE_INTERVALS };
-export type { StackedPoint, UsageInterval };
 
 // --- Schema-derived types ---
 
@@ -257,8 +258,14 @@ function intervalForSpan(spanMs: number): UsageInterval {
  * only advances once per 5 minutes.
  */
 const NOW_QUANTUM_MS = 5 * 60_000;
-function quantizedNow(): Date {
-	return new Date(Math.floor(Date.now() / NOW_QUANTUM_MS) * NOW_QUANTUM_MS);
+export function usageNow(): string {
+	return new Date(quantizedNow(NOW_QUANTUM_MS)).toISOString();
+}
+
+/** {@link usageNow} for render; a rollover keeps the old data until the next
+ * window loads (see useQuantizedNow). */
+export function useUsageNow(): string {
+	return new Date(useQuantizedNow(NOW_QUANTUM_MS)).toISOString();
 }
 
 /**
@@ -273,8 +280,8 @@ export function resolveWindow(
 ): ResolvedWindow {
 	if (range === "custom" && customFrom) {
 		const fromMs = Date.parse(customFrom);
-		const toMs = customTo ? Date.parse(customTo) : quantizedNow().getTime();
-		const safeTo = Number.isNaN(toMs) ? quantizedNow().getTime() : toMs;
+		const toMs = customTo ? Date.parse(customTo) : quantizedNow(NOW_QUANTUM_MS);
+		const safeTo = Number.isNaN(toMs) ? quantizedNow(NOW_QUANTUM_MS) : toMs;
 		// Malformed `from` (hand-edited or truncated URL) falls through to the
 		// preset default below — new Date(NaN).toISOString() would throw and
 		// take down the whole route loader.
@@ -318,13 +325,13 @@ export function resolveWindow(
  * Rolling rather than calendar-aligned, unlike resolveWindow's presets —
  * for "right now"-flavored widgets like the ops block and resource cards.
  */
-export function rollingUsageWindow(hours: number): UsageWindow {
-	return rollingWindow(quantizedNow().toISOString(), hours);
+export function useRollingUsageWindow(hours: number): UsageWindow {
+	return rollingWindow(useUsageNow(), hours);
 }
 
 /** The ops block's trailing-24h window. */
-export function rolling24hWindow(): UsageWindow {
-	return rollingUsageWindow(24);
+export function useRolling24hWindow(): UsageWindow {
+	return useRollingUsageWindow(24);
 }
 
 // --- Stacked-by-dimension timeline ---
@@ -591,12 +598,11 @@ export function useUsageOverview(
 }
 
 /**
- * Current + previous comparison windows for a usage window, with "now"
- * quantized so query keys stay byte-stable across renders (see quantizedNow).
- * Shared by the deltas hook and route loaders so both hit the same cache entry.
+ * Current + previous comparison windows for a usage window, with `now` from
+ * usageNow (loaders) or useUsageNow (hooks) so both hit the same cache entry.
  */
-export function usageComparisonWindows(win: UsageWindow) {
-	return comparisonWindows(win, quantizedNow().toISOString());
+export function usageComparisonWindows(win: UsageWindow, now: string) {
+	return comparisonWindows(win, now);
 }
 
 /** Period-over-period movement for each KPI, plus whether a baseline exists. */
@@ -622,7 +628,7 @@ export function useUsageOverviewWithDeltas(
 	win: UsageWindow,
 	filter?: UsageSummaryFilter,
 ) {
-	const { previous } = usageComparisonWindows(win);
+	const { previous } = usageComparisonWindows(win, useUsageNow());
 	const [current, prior] = useSuspenseQueries({
 		queries: [
 			usageSummaryQueryOptions(groupBy, win, filter),

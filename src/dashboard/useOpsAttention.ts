@@ -8,7 +8,10 @@ import {
 	hostKeyHealthQueryOptions,
 	hostKeysListQueryOptions,
 } from "@/api/hooks/hostkeys";
-import { rolling24hWindow, usageSummaryQueryOptions } from "@/api/hooks/usage";
+import {
+	usageSummaryQueryOptions,
+	useRolling24hWindow,
+} from "@/api/hooks/usage";
 import { displayLabel } from "@/lib/displayLabel";
 import {
 	type BreakerStatus,
@@ -42,7 +45,7 @@ export function useRejections(): {
 	buckets: RejectionBuckets;
 	topKeys: VolumeLeader[];
 } {
-	const win = rolling24hWindow();
+	const win = useRolling24hWindow();
 	const [all, throttled, auth] = useSuspenseQueries({
 		queries: [
 			{
@@ -76,8 +79,9 @@ export function useRejections(): {
 
 /** Hosts over the degraded thresholds in the trailing 24h, worst first. */
 export function useDegradedHosts(): HostErrorStat[] {
+	const win = useRolling24hWindow();
 	const { data } = useSuspenseQuery({
-		...usageSummaryQueryOptions("host_id", rolling24hWindow()),
+		...usageSummaryQueryOptions("host_id", win),
 		refetchInterval: OPS_REFETCH_MS,
 	});
 	const stats = (data.rows ?? []).map((r) => ({
