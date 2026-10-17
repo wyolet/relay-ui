@@ -64,6 +64,32 @@ test.describe("Disabled account", () => {
 		await expect(page.getByText("account is disabled; contact")).toHaveCount(0);
 	});
 
+	test("on page load: the whoami answer carries the notice", async ({
+		page,
+	}) => {
+		await mockApi(page, { ...EMPTY_GRAPH, roles: ["admin"] });
+		let answered = false;
+		await page.route("**/api/auth/whoami", (route) => {
+			// relay answers account_disabled once, then the session is gone.
+			if (answered) {
+				return route.fulfill({
+					status: 401,
+					contentType: "application/json",
+					body: JSON.stringify({
+						error: { type: "authentication_error", message: "no session" },
+					}),
+				});
+			}
+			answered = true;
+			return accountDisabled(route);
+		});
+
+		await page.goto("/logs");
+
+		await expect(page).toHaveURL(/\/login$/);
+		await expect(page.getByRole("status")).toHaveText(NOTICE);
+	});
+
 	test("at login: the attempt shows the notice", async ({ page }) => {
 		await mockApi(page, EMPTY_GRAPH);
 		await mockSignedOut(page);
