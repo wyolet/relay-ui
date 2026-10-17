@@ -5,6 +5,7 @@ import { removeAccountQueries, whoamiQueryOptions } from "@/api/auth";
 import { onAccountDisabled } from "@/api/client";
 import { ApiError, isAccountDisabled } from "@/api/types/errors";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { ACCOUNT_DISABLED } from "@/lib/signInError";
 import { applyTheme, useThemeStore } from "@/stores/theme";
 import { getRouter } from "./router";
 
@@ -20,7 +21,7 @@ export function mountApp(): void {
 	// The whoami probe never throws (it maps non-OK to `{authenticated:false}`),
 	// so this can't loop through the auth guard; the pathname guard covers the
 	// already-on-/login case.
-	function dropSession(notice?: "account_disabled"): void {
+	function dropSession(error?: string): void {
 		if (router.state.location.pathname === "/login") return;
 		queryClient.setQueryData(whoamiQueryOptions.queryKey, {
 			authenticated: false,
@@ -28,7 +29,7 @@ export function mountApp(): void {
 			scopes: [],
 		});
 		void router
-			.navigate({ to: "/login", search: { notice } })
+			.navigate({ to: "/login", search: { error } })
 			.then(() => removeAccountQueries(queryClient));
 	}
 
@@ -50,7 +51,7 @@ export function mountApp(): void {
 	});
 
 	const router = getRouter(queryClient);
-	onAccountDisabled(() => dropSession("account_disabled"));
+	onAccountDisabled(() => dropSession(ACCOUNT_DISABLED));
 	const rootElement = document.getElementById("app");
 
 	if (rootElement && !rootElement.innerHTML) {

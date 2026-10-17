@@ -176,3 +176,15 @@ export async function mockApi(page: Page, graph: MockGraph): Promise<void> {
 		return fulfillJson(route, NOT_FOUND, 404);
 	});
 }
+
+/** whoami answers 401, as it does for a browser with no session. Call after
+ * {@link mockApi}; the later route wins. */
+export async function mockSignedOut(page: Page): Promise<void> {
+	await page.route("**/api/auth/whoami", (route) =>
+		fulfillJson(
+			route,
+			{ error: { type: "authentication_error", message: "no session" } },
+			401,
+		),
+	);
+}

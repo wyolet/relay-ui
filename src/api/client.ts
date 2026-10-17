@@ -1,7 +1,7 @@
 import createClient from "openapi-fetch";
 import { z } from "zod";
+import { ACCOUNT_DISABLED } from "@/lib/signInError";
 import { controlApiUrl, inferenceApiUrl } from "./runtimeConfig";
-import { ACCOUNT_DISABLED } from "./types/errors";
 import type { paths } from "./types.gen";
 
 /**

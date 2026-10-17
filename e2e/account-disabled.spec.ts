@@ -1,5 +1,5 @@
 import { expect, type Page, type Route, test } from "@playwright/test";
-import { EMPTY_GRAPH, mockApi } from "./fixtures/mockApi";
+import { EMPTY_GRAPH, mockApi, mockSignedOut } from "./fixtures/mockApi";
 
 const NOTICE = "Your account is disabled. Contact your administrator.";
 
@@ -40,7 +40,7 @@ test.describe("Disabled account", () => {
 		await page.route(/\/api\/keys(\?.*)?$/, accountDisabled);
 		await page.getByRole("link", { name: "Keys", exact: true }).click();
 
-		await expect(page).toHaveURL(/\/login\?notice=account_disabled/);
+		await expect(page).toHaveURL(/\/login$/);
 		await expect(page.getByRole("status")).toHaveText(NOTICE);
 		await expect(page.getByText("account is disabled; contact")).toHaveCount(0);
 		expect(logout).toEqual([]);
@@ -59,22 +59,14 @@ test.describe("Disabled account", () => {
 			.getByRole("button", { name: "Rotate key" })
 			.click();
 
-		await expect(page).toHaveURL(/\/login\?notice=account_disabled/);
+		await expect(page).toHaveURL(/\/login$/);
 		await expect(page.getByRole("status")).toHaveText(NOTICE);
 		await expect(page.getByText("account is disabled; contact")).toHaveCount(0);
 	});
 
 	test("at login: the attempt shows the notice", async ({ page }) => {
 		await mockApi(page, EMPTY_GRAPH);
-		await page.route("**/api/auth/whoami", (route) =>
-			route.fulfill({
-				status: 401,
-				contentType: "application/json",
-				body: JSON.stringify({
-					error: { type: "authentication_error", message: "no session" },
-				}),
-			}),
-		);
+		await mockSignedOut(page);
 		await page.route("**/api/auth/login", accountDisabled);
 		const logout = await trackLogout(page);
 

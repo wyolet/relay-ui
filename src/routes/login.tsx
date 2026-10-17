@@ -5,13 +5,7 @@ import { Eye, EyeOff, Lock, User } from "lucide-react";
 import { AnimatePresence, MotionConfig, motion } from "motion/react";
 import { useState } from "react";
 import { z } from "zod";
-import {
-	ACCOUNT_DISABLED_NOTICE,
-	AuthError,
-	useAuth,
-	whoamiQueryOptions,
-} from "@/api/auth";
-import { CONTROL_API_URL } from "@/api/client";
+import { AuthError, useAuth, whoamiQueryOptions } from "@/api/auth";
 import { feature } from "@/api/runtimeConfig";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,9 +16,11 @@ import { IconButton } from "@/components/ui/icon-button";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { BrandMark } from "@/shared/BrandMark";
+import { startOidcSignIn } from "@/sign-in/startOidcSignIn";
+import { useSignInNotice } from "@/sign-in/useSignInNotice";
 
 const searchSchema = z.object({
-	notice: z.enum(["account_disabled"]).optional().catch(undefined),
+	error: z.string().optional().catch(undefined),
 });
 
 export const Route = createFileRoute("/login")({
@@ -184,7 +180,7 @@ function FieldRow({
 function LoginPage() {
 	const navigate = useNavigate();
 	const { login } = useAuth();
-	const { notice } = Route.useSearch();
+	const notice = useSignInNotice();
 	const [serverError, setServerError] = useState<string | null>(null);
 	const [success, setSuccess] = useState(false);
 
@@ -333,13 +329,13 @@ function LoginPage() {
 										className="flex flex-col gap-4"
 										aria-label="Sign in"
 									>
-										{notice === "account_disabled" && serverError === null && (
+										{notice && serverError === null && (
 											<motion.div
 												variants={rise}
 												role="status"
 												className="rounded-lg border border-border bg-muted/60 px-3 py-2 text-xs text-foreground"
 											>
-												{ACCOUNT_DISABLED_NOTICE}
+												{notice}
 											</motion.div>
 										)}
 
@@ -432,11 +428,7 @@ function LoginPage() {
 												type="button"
 												variant="outline"
 												className="h-10 w-full rounded-lg text-sm"
-												onClick={() => {
-													window.location.assign(
-														`${CONTROL_API_URL}/auth/oidc/start`,
-													);
-												}}
+												onClick={() => void startOidcSignIn()}
 											>
 												Continue with SSO
 											</Button>
