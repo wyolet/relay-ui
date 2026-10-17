@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { z } from "zod";
 import { type LogsFilter, logsInfiniteQueryOptions } from "@/api/hooks/logs";
+import { EraseBodiesButton } from "@/logs/EraseBodiesButton";
 import { LogsFilters } from "@/logs/LogsFilters";
 import { LogsHistogram } from "@/logs/LogsHistogram";
 import { type LogFilterKey, LogsTable } from "@/logs/LogsTable";
@@ -83,12 +84,15 @@ function LogsPage() {
 
 	return (
 		<div className="flex flex-col gap-4">
-			<div>
-				<h1 className="text-xl font-semibold text-foreground">Logs</h1>
-				<p className="text-xs text-muted-foreground">
-					Requests through the relay, newest first. Expand a row for its
-					summary; open the request page for captured bodies.
-				</p>
+			<div className="flex items-start justify-between gap-4">
+				<div>
+					<h1 className="text-xl font-semibold text-foreground">Logs</h1>
+					<p className="text-xs text-muted-foreground">
+						Requests through the relay, newest first. Expand a row for its
+						summary; open the request page for captured bodies.
+					</p>
+				</div>
+				<EraseBodiesButton />
 			</div>
 
 			<LogsHistogram filter={toLogsFilter(live)} />

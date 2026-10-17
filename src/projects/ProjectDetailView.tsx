@@ -23,6 +23,7 @@ import { useTeams } from "@/api/hooks/teams";
 import { resolveWindow, useScopeSpend } from "@/api/hooks/usage";
 import { ApiError } from "@/api/types/errors";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
+import { EraseBodiesButton } from "@/logs/EraseBodiesButton";
 import { useToggleProjectEnabled } from "@/projects/useToggleProjectEnabled";
 import { subjectLabel } from "@/role-bindings/SubjectsEditor";
 import { Chip } from "@/shared/Chip";
@@ -137,7 +138,18 @@ export function ProjectDetailView({ name }: { name: string }) {
 							{content}
 						</Link>
 					)}
-				/>
+				>
+					<EraseBodiesButton
+						scope={{
+							project: {
+								id: projectId,
+								name: project.metadata.name,
+								label: displayLabel(project.metadata),
+								kind: "project",
+							},
+						}}
+					/>
+				</DetailHeaderActions>
 			</header>
 
 			<DetailCard title="Configuration" icon={Users}>

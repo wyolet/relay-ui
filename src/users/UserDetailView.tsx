@@ -13,6 +13,7 @@ import { useRevokeUserTokens, useUser } from "@/api/hooks/users";
 import { ApiError } from "@/api/types/errors";
 import { Button } from "@/components/ui/button";
 import { displayLabel } from "@/lib/displayLabel";
+import { EraseBodiesButton } from "@/logs/EraseBodiesButton";
 import { OwnerLink } from "@/projects/OwnerLink";
 import { Chip } from "@/shared/Chip";
 import { confirm } from "@/shared/ConfirmDialog";
@@ -78,10 +79,22 @@ export function UserDetailView({ id }: { id: string }) {
 					<CheckAccessButton
 						subject={{ kind: "user", id: user.id }}
 						subjectLabel={user.username}
+						size="lg"
+					/>
+					<EraseBodiesButton
+						scope={{
+							principal: {
+								id: user.id,
+								name: user.username,
+								label: user.username,
+								kind: "user",
+							},
+						}}
 					/>
 					<Button
 						type="button"
 						variant="outline"
+						size="lg"
 						onClick={() => void handleRevoke()}
 						disabled={revokeTokens.isPending}
 					>

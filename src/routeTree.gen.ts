@@ -75,6 +75,7 @@ import { Route as AuthenticatedSettingsProxyModeRouteImport } from './routes/_au
 import { Route as AuthenticatedSettingsRateLimitsRouteImport } from './routes/_authenticated/settings.rate-limits'
 import { Route as AuthenticatedSettingsScimRouteImport } from './routes/_authenticated/settings.scim'
 import { Route as AuthenticatedSettingsSsoRouteImport } from './routes/_authenticated/settings.sso'
+import { Route as AuthenticatedSettingsTokensRouteImport } from './routes/_authenticated/settings.tokens'
 import { Route as AuthenticatedTeamsIndexRouteImport } from './routes/_authenticated/teams.index'
 import { Route as AuthenticatedTeamsNameRouteImport } from './routes/_authenticated/teams.$name'
 import { Route as AuthenticatedTeamsNewRouteImport } from './routes/_authenticated/teams.new'
@@ -461,6 +462,12 @@ const AuthenticatedSettingsSsoRoute =
     path: '/sso',
     getParentRoute: () => AuthenticatedSettingsRoute,
   } as any)
+const AuthenticatedSettingsTokensRoute =
+  AuthenticatedSettingsTokensRouteImport.update({
+    id: '/tokens',
+    path: '/tokens',
+    getParentRoute: () => AuthenticatedSettingsRoute,
+  } as any)
 const AuthenticatedTeamsIndexRoute = AuthenticatedTeamsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -631,6 +638,7 @@ export interface FileRoutesByFullPath {
   '/settings/rate-limits': typeof AuthenticatedSettingsRateLimitsRoute
   '/settings/scim': typeof AuthenticatedSettingsScimRoute
   '/settings/sso': typeof AuthenticatedSettingsSsoRoute
+  '/settings/tokens': typeof AuthenticatedSettingsTokensRoute
   '/teams/$name': typeof AuthenticatedTeamsNameRoute
   '/teams/new': typeof AuthenticatedTeamsNewRoute
   '/users/$id': typeof AuthenticatedUsersIdRoute
@@ -705,6 +713,7 @@ export interface FileRoutesByTo {
   '/settings/rate-limits': typeof AuthenticatedSettingsRateLimitsRoute
   '/settings/scim': typeof AuthenticatedSettingsScimRoute
   '/settings/sso': typeof AuthenticatedSettingsSsoRoute
+  '/settings/tokens': typeof AuthenticatedSettingsTokensRoute
   '/teams/$name': typeof AuthenticatedTeamsNameRoute
   '/teams/new': typeof AuthenticatedTeamsNewRoute
   '/users/$id': typeof AuthenticatedUsersIdRoute
@@ -794,6 +803,7 @@ export interface FileRoutesById {
   '/_authenticated/settings/rate-limits': typeof AuthenticatedSettingsRateLimitsRoute
   '/_authenticated/settings/scim': typeof AuthenticatedSettingsScimRoute
   '/_authenticated/settings/sso': typeof AuthenticatedSettingsSsoRoute
+  '/_authenticated/settings/tokens': typeof AuthenticatedSettingsTokensRoute
   '/_authenticated/teams/$name': typeof AuthenticatedTeamsNameRoute
   '/_authenticated/teams/new': typeof AuthenticatedTeamsNewRoute
   '/_authenticated/users/$id': typeof AuthenticatedUsersIdRoute
@@ -883,6 +893,7 @@ export interface FileRouteTypes {
     | '/settings/rate-limits'
     | '/settings/scim'
     | '/settings/sso'
+    | '/settings/tokens'
     | '/teams/$name'
     | '/teams/new'
     | '/users/$id'
@@ -957,6 +968,7 @@ export interface FileRouteTypes {
     | '/settings/rate-limits'
     | '/settings/scim'
     | '/settings/sso'
+    | '/settings/tokens'
     | '/teams/$name'
     | '/teams/new'
     | '/users/$id'
@@ -1045,6 +1057,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings/rate-limits'
     | '/_authenticated/settings/scim'
     | '/_authenticated/settings/sso'
+    | '/_authenticated/settings/tokens'
     | '/_authenticated/teams/$name'
     | '/_authenticated/teams/new'
     | '/_authenticated/users/$id'
@@ -1549,6 +1562,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsSsoRouteImport
       parentRoute: typeof AuthenticatedSettingsRoute
     }
+    '/_authenticated/settings/tokens': {
+      id: '/_authenticated/settings/tokens'
+      path: '/tokens'
+      fullPath: '/settings/tokens'
+      preLoaderRoute: typeof AuthenticatedSettingsTokensRouteImport
+      parentRoute: typeof AuthenticatedSettingsRoute
+    }
     '/_authenticated/teams/': {
       id: '/_authenticated/teams/'
       path: '/'
@@ -1912,6 +1932,7 @@ interface AuthenticatedSettingsRouteChildren {
   AuthenticatedSettingsRateLimitsRoute: typeof AuthenticatedSettingsRateLimitsRoute
   AuthenticatedSettingsScimRoute: typeof AuthenticatedSettingsScimRoute
   AuthenticatedSettingsSsoRoute: typeof AuthenticatedSettingsSsoRoute
+  AuthenticatedSettingsTokensRoute: typeof AuthenticatedSettingsTokensRoute
   AuthenticatedSettingsIndexRoute: typeof AuthenticatedSettingsIndexRoute
 }
 
@@ -1924,6 +1945,7 @@ const AuthenticatedSettingsRouteChildren: AuthenticatedSettingsRouteChildren = {
   AuthenticatedSettingsRateLimitsRoute: AuthenticatedSettingsRateLimitsRoute,
   AuthenticatedSettingsScimRoute: AuthenticatedSettingsScimRoute,
   AuthenticatedSettingsSsoRoute: AuthenticatedSettingsSsoRoute,
+  AuthenticatedSettingsTokensRoute: AuthenticatedSettingsTokensRoute,
   AuthenticatedSettingsIndexRoute: AuthenticatedSettingsIndexRoute,
 }
 

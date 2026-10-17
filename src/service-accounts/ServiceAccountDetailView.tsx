@@ -11,6 +11,7 @@ import {
 } from "@/api/hooks/serviceAccounts";
 import { ApiError } from "@/api/types/errors";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
+import { EraseBodiesButton } from "@/logs/EraseBodiesButton";
 import { useToggleServiceAccountEnabled } from "@/service-accounts/useToggleServiceAccountEnabled";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
@@ -110,6 +111,16 @@ export function ServiceAccountDetailView({ name }: { name: string }) {
 						subject={{ kind: "serviceaccount", name: sa.metadata.name }}
 						subjectLabel={displayLabel(sa.metadata)}
 						size="lg"
+					/>
+					<EraseBodiesButton
+						scope={{
+							principal: {
+								id: sa.metadata.id ?? "",
+								name: sa.metadata.name,
+								label: displayLabel(sa.metadata),
+								kind: "service account",
+							},
+						}}
 					/>
 				</DetailHeaderActions>
 			</header>

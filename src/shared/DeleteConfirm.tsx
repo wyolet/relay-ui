@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -8,7 +8,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+import { TypedConfirmField } from "@/shared/TypedConfirmField";
 
 interface DeleteConfirmProps {
 	resourceName: string;
@@ -24,7 +24,6 @@ export function DeleteConfirm({
 	isPending = false,
 }: DeleteConfirmProps) {
 	const [typed, setTyped] = useState("");
-	const inputId = useId();
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: reset typed value when the dialog targets a different resource
 	useEffect(() => {
@@ -44,24 +43,12 @@ export function DeleteConfirm({
 						to confirm.
 					</DialogDescription>
 				</DialogHeader>
-				<div>
-					<label
-						htmlFor={inputId}
-						className="block text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-1"
-					>
-						Resource name
-					</label>
-					<Input
-						id={inputId}
-						type="text"
-						value={typed}
-						onChange={(e) => setTyped(e.currentTarget.value)}
-						placeholder={resourceName}
-						autoFocus
-						autoComplete="off"
-						className="font-mono"
-					/>
-				</div>
+				<TypedConfirmField
+					expected={resourceName}
+					value={typed}
+					onChange={setTyped}
+					label="Resource name"
+				/>
 				<DialogFooter>
 					<Button
 						type="button"

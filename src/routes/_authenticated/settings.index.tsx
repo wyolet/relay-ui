@@ -3,6 +3,7 @@ import {
 	BadgeCheck,
 	Forward,
 	Gauge,
+	KeyRound,
 	LogIn,
 	type LucideIcon,
 	Network,
@@ -22,6 +23,7 @@ interface SettingItem {
 		| "/settings/permissions"
 		| "/settings/sso"
 		| "/settings/scim"
+		| "/settings/tokens"
 		| "/settings/license";
 	label: string;
 	description: string;
@@ -63,6 +65,12 @@ const ITEMS: SettingItem[] = [
 		description:
 			"Let an identity provider (Entra ID, Okta) provision users and groups through SCIM 2.0.",
 		icon: Network,
+	},
+	{
+		to: "/settings/tokens",
+		label: "Inference tokens",
+		description: "Rotate the key short-lived inference tokens are signed with.",
+		icon: KeyRound,
 	},
 	{
 		to: "/settings/license",
