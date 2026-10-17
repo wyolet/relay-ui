@@ -14,9 +14,24 @@ export interface MockGraph {
 	keys: unknown[];
 	providers: unknown[];
 	hostBindings?: unknown[];
+	serviceAccounts?: unknown[];
 	proxyMode?: { value: { enabled: boolean; allowUnauthenticated: boolean } };
 	/** whoami roles; none means a signed-in non-admin. */
 	roles?: string[];
+	/** Answers POST /access-review from the request body; absent = 404, a
+	 * relay without the endpoint. */
+	accessReview?: (body: AccessReviewBody) => MockResponse;
+}
+
+export interface AccessReviewBody {
+	subject?: { kind: string; name?: string; id?: string };
+	action: string;
+	resource: { kind: string; name?: string; owner?: { kind: string; name?: string } };
+}
+
+export interface MockResponse {
+	status?: number;
+	body: unknown;
 }
 
 export const EMPTY_GRAPH: MockGraph = {
@@ -55,7 +70,7 @@ interface Resource {
 // gaining a new query never falls through to the dev-server proxy.
 const GRAPH_COLLECTIONS: Record<
 	string,
-	keyof Omit<MockGraph, "proxyMode" | "roles">
+	keyof Omit<MockGraph, "proxyMode" | "roles" | "accessReview">
 > = {
 	policies: "policies",
 	"host-keys": "hostKeys",
@@ -65,6 +80,7 @@ const GRAPH_COLLECTIONS: Record<
 	keys: "keys",
 	providers: "providers",
 	"host-bindings": "hostBindings",
+	"service-accounts": "serviceAccounts",
 };
 const EMPTY_COLLECTIONS = new Set([
 	"groups",
@@ -73,7 +89,6 @@ const EMPTY_COLLECTIONS = new Set([
 	"projects",
 	"role-bindings",
 	"roles",
-	"service-accounts",
 	"teams",
 	"users",
 	"tokens",
@@ -115,6 +130,10 @@ export async function mockApi(page: Page, graph: MockGraph): Promise<void> {
 				section: path.slice("settings/".length),
 				value: { allowEdit: true, allowDelete: true },
 			});
+		}
+		if (path === "access-review" && graph.accessReview) {
+			const res = graph.accessReview(route.request().postDataJSON());
+			return fulfillJson(route, res.body, res.status);
 		}
 		if (path === "version") return fulfillJson(route, { version: "test" });
 		if (path === "catalog/graph") {

@@ -4,6 +4,26 @@
  */
 
 export interface paths {
+    "/access-review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check whether a subject may perform an action, and why
+         * @description Explains the authorization decision the real request would get, without performing it. Checking yourself is open to any signed-in caller; checking another user or a service account takes an admin and is audited.
+         */
+        post: operations["create_access_review"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/apply": {
         parameters: {
             query?: never;
@@ -820,6 +840,26 @@ export interface paths {
         get: operations["logs_list"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/logs/erase": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Erase captured bodies by project and/or principal
+         * @description Deletes the captured request/response bodies of a project, a principal, or one principal within a project, and returns once the backend has deleted them. Log records (usage, cost, timing) are kept. Admin only. 501 when the payload backend cannot erase.
+         */
+        post: operations["logs_erase"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1927,6 +1967,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/settings/audit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get settings section: audit
+         * @description Admin audit log retention. retentionDays bounds how long audit rows are kept (0 = keep forever). Hot-reloaded — the next hourly prune uses the new value. Admin only.
+         */
+        get: operations["get_settings_audit"];
+        /**
+         * Update settings section: audit
+         * @description Admin audit log retention. retentionDays bounds how long audit rows are kept (0 = keep forever). Hot-reloaded — the next hourly prune uses the new value. Admin only.
+         */
+        put: operations["update_settings_audit"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/settings/auth:oidc": {
         parameters: {
             query?: never;
@@ -1944,6 +2008,30 @@ export interface paths {
          * @description Inbound OpenID Connect login for the control plane. Generic OIDC (issuer discovery + authorization-code flow); disabled by default. registration=open auto-provisions a user on first login. The client secret is referenced by env var name (RELAY_OIDC_* or WYOLET_OIDC_*), never stored here; the issuer must be https. Admin only.
          */
         put: operations["update_settings_auth_oidc"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/settings/auth:scim": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get settings section: auth:scim
+         * @description SCIM 2.0 provisioning from an identity provider at /scim/v2 on the control listener; disabled by default, and the endpoint answers 404 while it is. Each identity provider authenticates with a token from /scim-clients. deleteDisables makes a SCIM DELETE of a user disable the account instead of deleting it. linkClaim names the id_token claim (default sub; oid for Entra) a first OIDC sign-in is matched on against a provisioned account's externalId, linking that account when it has no sign-in identity yet. Hot-reloaded. Admin only.
+         */
+        get: operations["get_settings_auth_scim"];
+        /**
+         * Update settings section: auth:scim
+         * @description SCIM 2.0 provisioning from an identity provider at /scim/v2 on the control listener; disabled by default, and the endpoint answers 404 while it is. Each identity provider authenticates with a token from /scim-clients. deleteDisables makes a SCIM DELETE of a user disable the account instead of deleting it. linkClaim names the id_token claim (default sub; oid for Entra) a first OIDC sign-in is matched on against a provisioned account's externalId, linking that account when it has no sign-in identity yet. Hot-reloaded. Admin only.
+         */
+        put: operations["update_settings_auth_scim"];
         post?: never;
         delete?: never;
         options?: never;
@@ -2095,6 +2183,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/settings/otlp-receiver": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get settings section: otlp-receiver
+         * @description OpenTelemetry receiver. When enabled, the inference listener accepts OTLP/HTTP exports at /otlp/v1/traces and /otlp/v1/logs and records the model calls they describe as usage events with source "otlp". Reported usage is self-declared: no policy grant and none of the rate limits of inference apply; export requests are capped per credential. captureContent also stores the message content clients report, in the payload store, while payload logging is enabled; for a credential governed by a policy, only when that policy has payloadLoggingEnabled. Both default off. Hot-reloaded.
+         */
+        get: operations["get_settings_otlp-receiver"];
+        /**
+         * Update settings section: otlp-receiver
+         * @description OpenTelemetry receiver. When enabled, the inference listener accepts OTLP/HTTP exports at /otlp/v1/traces and /otlp/v1/logs and records the model calls they describe as usage events with source "otlp". Reported usage is self-declared: no policy grant and none of the rate limits of inference apply; export requests are capped per credential. captureContent also stores the message content clients report, in the payload store, while payload logging is enabled; for a credential governed by a policy, only when that policy has payloadLoggingEnabled. Both default off. Hot-reloaded.
+         */
+        put: operations["update_settings_otlp-receiver"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/settings/parsing": {
         parameters: {
             query?: never;
@@ -2128,12 +2240,12 @@ export interface paths {
         };
         /**
          * Get settings section: payload-logging
-         * @description Request/response body capture sink config. Hot-reloaded — toggle, backend (file|s3), size cap, and S3 settings (with secret-ref credentials: env RELAY_PAYLOAD_S3_* or stored payload-logging:*; useSSL required) take effect without a restart. Admin only.
+         * @description Request/response body capture sink config. Hot-reloaded — toggle, backend (file|s3|clickhouse), size cap, retentionDays (clickhouse; 0 = keep forever, absent = 30), and S3 settings (with secret-ref credentials: env RELAY_PAYLOAD_S3_* or stored payload-logging:*; useSSL required) take effect without a restart. Admin only.
          */
         get: operations["get_settings_payload-logging"];
         /**
          * Update settings section: payload-logging
-         * @description Request/response body capture sink config. Hot-reloaded — toggle, backend (file|s3), size cap, and S3 settings (with secret-ref credentials: env RELAY_PAYLOAD_S3_* or stored payload-logging:*; useSSL required) take effect without a restart. Admin only.
+         * @description Request/response body capture sink config. Hot-reloaded — toggle, backend (file|s3|clickhouse), size cap, retentionDays (clickhouse; 0 = keep forever, absent = 30), and S3 settings (with secret-ref credentials: env RELAY_PAYLOAD_S3_* or stored payload-logging:*; useSSL required) take effect without a restart. Admin only.
          */
         put: operations["update_settings_payload-logging"];
         post?: never;
@@ -2180,6 +2292,30 @@ export interface paths {
          */
         get: operations["list_settings_sections"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/settings/usage-logging": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get settings section: usage-logging
+         * @description Usage event backend (file|clickhouse|postgres|valkey) and retentionDays (clickhouse and postgres; 0 = keep forever). A retention change is applied to the existing table; shortening it deletes older events. Hot-reloaded. Admin only.
+         */
+        get: operations["get_settings_usage-logging"];
+        /**
+         * Update settings section: usage-logging
+         * @description Usage event backend (file|clickhouse|postgres|valkey) and retentionDays (clickhouse and postgres; 0 = keep forever). A retention change is applied to the existing table; shortening it deletes older events. Hot-reloaded. Admin only.
+         */
+        put: operations["update_settings_usage-logging"];
         post?: never;
         delete?: never;
         options?: never;
@@ -2433,6 +2569,16 @@ export interface components {
             message: string;
             type: string;
         };
+        Audit: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Audit.json
+             */
+            readonly $schema?: string;
+            /** Format: int64 */
+            retentionDays: number;
+        };
         AuditActor: {
             id?: string;
             ip?: string;
@@ -2442,6 +2588,20 @@ export interface components {
         };
         AuditChange: {
             fields?: string[] | null;
+        };
+        AuditEnvelope: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/AuditEnvelope.json
+             */
+            readonly $schema?: string;
+            /**
+             * @description One of the relay's registered settings section keys.
+             * @enum {string}
+             */
+            section: "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            value: components["schemas"]["Audit"];
         };
         AuditEvent: {
             action: string;
@@ -2502,8 +2662,33 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            section: "audit" | "auth:oidc" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            section: "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
             value: components["schemas"]["AuthOIDC"];
+        };
+        AuthSCIM: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/AuthSCIM.json
+             */
+            readonly $schema?: string;
+            deleteDisables?: boolean;
+            enabled: boolean;
+            linkClaim?: string;
+        };
+        AuthSCIMEnvelope: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/AuthSCIMEnvelope.json
+             */
+            readonly $schema?: string;
+            /**
+             * @description One of the relay's registered settings section keys.
+             * @enum {string}
+             */
+            section: "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            value: components["schemas"]["AuthSCIM"];
         };
         Binding: {
             /**
@@ -2543,7 +2728,7 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            section: "audit" | "auth:oidc" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            section: "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
             value: components["schemas"]["CatalogSource"];
         };
         Counts: {
@@ -2668,7 +2853,7 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            section: "audit" | "auth:oidc" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            section: "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
             value: components["schemas"]["Governance"];
         };
         Group: {
@@ -2678,8 +2863,14 @@ export interface components {
              * @example https://example.com/schemas/Group.json
              */
             readonly $schema?: string;
+            /** @description The provisioning source (a SCIM client) that manages the group, and its id there. Only that source, or an apply with force, changes the group. */
+            readonly external?: components["schemas"]["GroupExternal"];
             metadata: components["schemas"]["Metadata"];
             spec: components["schemas"]["GroupSpec"];
+        };
+        GroupExternal: {
+            id?: string;
+            source: string;
         };
         GroupList: {
             /**
@@ -2875,7 +3066,7 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            section: "audit" | "auth:oidc" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            section: "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
             value: components["schemas"]["Inference"];
         };
         Info: {
@@ -2992,12 +3183,14 @@ export interface components {
             batch?: boolean;
             chat?: boolean;
             computerUse?: boolean;
+            defaultReasoningEffort?: string;
             embeddings?: boolean;
             fileInput?: boolean;
             jsonMode?: boolean;
             parallelTools?: boolean;
             promptCache?: boolean;
             reasoning?: boolean;
+            reasoningEfforts?: string[] | null;
             streaming?: boolean;
             structuredOutputs?: boolean;
             systemMessages?: boolean;
@@ -3086,6 +3279,30 @@ export interface components {
             tags?: string[] | null;
             version?: string;
         };
+        OTLPReceiver: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/OTLPReceiver.json
+             */
+            readonly $schema?: string;
+            captureContent?: boolean;
+            enabled: boolean;
+        };
+        OTLPReceiverEnvelope: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/OTLPReceiverEnvelope.json
+             */
+            readonly $schema?: string;
+            /**
+             * @description One of the relay's registered settings section keys.
+             * @enum {string}
+             */
+            section: "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            value: components["schemas"]["OTLPReceiver"];
+        };
         Owner: {
             id?: string;
             kind?: string;
@@ -3115,12 +3332,11 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            section: "audit" | "auth:oidc" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            section: "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
             value: components["schemas"]["Parsing"];
         };
         PayloadClickHouse: {
-            /** Format: int64 */
-            retentionDays?: number;
+            dedup?: boolean;
             walDir?: string;
         };
         PayloadFile: {
@@ -3139,6 +3355,8 @@ export interface components {
             file: components["schemas"]["PayloadFile"];
             /** Format: int64 */
             maxBytes: number;
+            /** Format: int64 */
+            retentionDays: number;
             s3: components["schemas"]["PayloadS3"];
         };
         PayloadLoggingEnvelope: {
@@ -3152,7 +3370,7 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            section: "audit" | "auth:oidc" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            section: "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
             value: components["schemas"]["PayloadLogging"];
         };
         PayloadS3: {
@@ -3287,6 +3505,7 @@ export interface components {
             /** Format: double */
             amount: number;
             meter: string;
+            serviceTier?: string;
             unit: string;
         };
         PricingSpec: {
@@ -3381,7 +3600,7 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            section: "audit" | "auth:oidc" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            section: "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
             value: components["schemas"]["ProxyMode"];
         };
         Rate: {
@@ -3390,6 +3609,7 @@ export interface components {
             /** Format: double */
             amount: number;
             meter: string;
+            serviceTier?: string;
             unit: string;
         };
         RateLimit: {
@@ -3693,6 +3913,77 @@ export interface components {
             /** Format: int64 */
             start: number;
         };
+        UsageClickHouse: {
+            walDir?: string;
+        };
+        UsageFile: {
+            path?: string;
+        };
+        UsageLogging: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/UsageLogging.json
+             */
+            readonly $schema?: string;
+            backend: string;
+            clickhouse: components["schemas"]["UsageClickHouse"];
+            file: components["schemas"]["UsageFile"];
+            /** Format: int64 */
+            retentionDays: number;
+        };
+        UsageLoggingEnvelope: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/UsageLoggingEnvelope.json
+             */
+            readonly $schema?: string;
+            /**
+             * @description One of the relay's registered settings section keys.
+             * @enum {string}
+             */
+            section: "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            value: components["schemas"]["UsageLogging"];
+        };
+        accessReview: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/accessReview.json
+             */
+            readonly $schema?: string;
+            action: string;
+            allowed: boolean;
+            /** @description The role binding that granted the action. */
+            binding?: components["schemas"]["reviewedBinding"];
+            /** @description The resource's scope chain, most specific first, when the decision read it. */
+            chain?: components["schemas"]["namedRef"][] | null;
+            /** @description The subject holds the permission but the credential's limits refuse it. */
+            credentialDenied?: boolean;
+            /**
+             * @description What decided. Only the first match is reported.
+             * @enum {string}
+             */
+            reason: "admin" | "rule" | "binding" | "credential" | "none";
+            resource: components["schemas"]["reviewedResource"];
+            /** @description The relay rule that decided: personal-row, catalog-read, shared-policy-read, system-role-read, scoped-list or parent-team-read. */
+            rule?: string;
+            subject: components["schemas"]["reviewedSubject"];
+        };
+        accessReviewInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/accessReviewInputBody.json
+             */
+            readonly $schema?: string;
+            /** @description The action a handler authorizes, e.g. keys.get. A bare verb takes the resource kind's plural. */
+            action: string;
+            resource: components["schemas"]["reviewResourceInput"];
+            /** @description Who to check. Omit to check yourself; anyone else takes an admin. */
+            subject?: components["schemas"]["reviewSubjectInput"];
+        };
         applyOutputBody: {
             /**
              * Format: uri
@@ -3977,6 +4268,31 @@ export interface components {
             /** @description Username (matches identity YAML spec.username). */
             username: string;
         };
+        logsEraseInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/logsEraseInputBody.json
+             */
+            readonly $schema?: string;
+            /** @description Erase bodies captured for this principal (user or service account) id. With projectId, only that principal's bodies in that project. */
+            principalId?: string;
+            /** @description Erase bodies captured for this project id. */
+            projectId?: string;
+        };
+        logsEraseOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/logsEraseOutputBody.json
+             */
+            readonly $schema?: string;
+            /**
+             * Format: int64
+             * @description Captured requests matched and erased.
+             */
+            requests: number;
+        };
         logsListOutputBody: {
             /**
              * Format: uri
@@ -4072,6 +4388,11 @@ export interface components {
             readonly $schema?: string;
             model: components["schemas"]["ModelRef"];
             pricing: components["schemas"]["ModelPriceRow"][] | null;
+        };
+        namedRef: {
+            id?: string;
+            kind: string;
+            name?: string;
         };
         overlayDeleteOutBody: {
             /**
@@ -4203,6 +4524,64 @@ export interface components {
             results: components["schemas"]["refResult"][] | null;
             unresolved: string[] | null;
         };
+        reviewOwnerInput: {
+            /** @description Owner id; used instead of name when both are set. */
+            id?: string;
+            /**
+             * @description Owner kind.
+             * @enum {string}
+             */
+            kind: "system" | "user" | "team" | "project" | "host" | "provider";
+            /** @description Owner slug or username. Omit for system. */
+            name?: string;
+        };
+        reviewResourceInput: {
+            /** @description Row id; used instead of name when both are set. */
+            id?: string;
+            /** @description API plural (keys, projects, usage, ...) or the singular a handler records. */
+            kind: string;
+            /** @description Row slug. Omit, with id, to ask about the collection (list, create). */
+            name?: string;
+            /** @description Owner of the row a create would make, or of the rows a list is limited to. A create without one takes the default POST stamps. */
+            owner?: components["schemas"]["reviewOwnerInput"];
+        };
+        reviewSubjectInput: {
+            /** @description Account id; used instead of name when both are set. */
+            id?: string;
+            /**
+             * @description What the subject is.
+             * @enum {string}
+             */
+            kind: "user" | "serviceaccount";
+            /** @description Username, or service account slug. */
+            name?: string;
+        };
+        reviewedBinding: {
+            id?: string;
+            name?: string;
+            role: components["schemas"]["namedRef"];
+            scope: components["schemas"]["namedRef"];
+            /** @description The binding subject the caller matched. */
+            subject: components["schemas"]["namedRef"];
+        };
+        reviewedResource: {
+            id?: string;
+            kind: string;
+            name?: string;
+            owner?: components["schemas"]["namedRef"];
+        };
+        reviewedSubject: {
+            /** @description Holds relay's admin identity, which passes every rule and binding. */
+            admin: boolean;
+            /** @description The account is disabled and cannot sign in; the decision is what it would hold if enabled. */
+            disabled?: boolean;
+            id?: string;
+            /** @description user, serviceaccount or admin-token. */
+            kind: string;
+            name?: string;
+            /** @description Binding subjects the decision was evaluated under. */
+            subjects?: string[] | null;
+        };
         revokeTokenInputBody: {
             /**
              * Format: uri
@@ -4249,7 +4628,7 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            name: "audit" | "auth:oidc" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            name: "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
             /** @description OpenAPI component name for this section's typed value. */
             schemaRef?: string;
         };
@@ -4267,7 +4646,7 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            section: "audit" | "auth:oidc" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            section: "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
             value: unknown;
         };
         settingsListOutputBody: {
@@ -4346,12 +4725,99 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    create_access_review: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["accessReviewInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["accessReview"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Not Implemented */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
     apply: {
         parameters: {
             query?: {
                 /** @description Plan only; write nothing. */
                 dryRun?: boolean;
-                /** @description Write over operator-edited (dirty) rows. */
+                /** @description Write over operator-edited (dirty) rows and groups a provisioning source manages. */
                 force?: boolean;
                 /** @description Delete selected rows the bundle omits. Requires selector. */
                 prune?: boolean;
@@ -5192,6 +5658,8 @@ export interface operations {
                 scope?: string;
                 /** @description yaml (default) or json. */
                 format?: string;
+                /** @description Also include system-owned rows, and catalog rows an operator has edited (dirty). */
+                includeSystem?: boolean;
             };
             header?: never;
             path?: never;
@@ -8023,7 +8491,7 @@ export interface operations {
                 host_id?: string[] | null;
                 /** @description Match any of "pipeline" | "proxy" | "ws" | "batch". */
                 source?: string[] | null;
-                /** @description Match any of "stop" | "length" | "tool_calls" | "content_filter" | "refusal". */
+                /** @description Match any of "stop" | "length" | "tool_calls" | "content_filter" | "refusal" | "other". */
                 finish_reason?: string[] | null;
                 /** @description Match any of the given error_kind values. */
                 error_kind?: string[] | null;
@@ -8114,6 +8582,84 @@ export interface operations {
             };
             /** @description Internal Server Error */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    logs_erase: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["logsEraseInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["logsEraseOutputBody"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Not Implemented */
+            501: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -13710,6 +14256,113 @@ export interface operations {
             };
         };
     };
+    get_settings_audit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditEnvelope"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    update_settings_audit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Audit"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditEnvelope"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
     get_settings_auth_oidc: {
         parameters: {
             query?: never;
@@ -13768,6 +14421,113 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AuthOIDCEnvelope"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    get_settings_auth_scim: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthSCIMEnvelope"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    update_settings_auth_scim: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AuthSCIM"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthSCIMEnvelope"];
                 };
             };
             /** @description Bad Request */
@@ -14459,6 +15219,113 @@ export interface operations {
             };
         };
     };
+    "get_settings_otlp-receiver": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OTLPReceiverEnvelope"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    "update_settings_otlp-receiver": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OTLPReceiver"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OTLPReceiverEnvelope"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
     get_settings_parsing: {
         parameters: {
             query?: never;
@@ -14800,6 +15667,113 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    "get_settings_usage-logging": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UsageLoggingEnvelope"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    "update_settings_usage-logging": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UsageLogging"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UsageLoggingEnvelope"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -15318,7 +16292,7 @@ export interface operations {
                 host_id?: string[] | null;
                 /** @description Match any of "pipeline" | "proxy" | "ws" | "batch". */
                 source?: string[] | null;
-                /** @description Match any of "stop" | "length" | "tool_calls" | "content_filter" | "refusal". */
+                /** @description Match any of "stop" | "length" | "tool_calls" | "content_filter" | "refusal" | "other". */
                 finish_reason?: string[] | null;
                 /** @description Match any of the given error_kind values. */
                 error_kind?: string[] | null;
@@ -15445,7 +16419,7 @@ export interface operations {
                 host_id?: string[] | null;
                 /** @description Match any of "pipeline" | "proxy" | "ws" | "batch". */
                 source?: string[] | null;
-                /** @description Match any of "stop" | "length" | "tool_calls" | "content_filter" | "refusal". */
+                /** @description Match any of "stop" | "length" | "tool_calls" | "content_filter" | "refusal" | "other". */
                 finish_reason?: string[] | null;
                 /** @description Match any of the given error_kind values. */
                 error_kind?: string[] | null;
@@ -15570,7 +16544,7 @@ export interface operations {
                 host_id?: string[] | null;
                 /** @description Match any of "pipeline" | "proxy" | "ws" | "batch". */
                 source?: string[] | null;
-                /** @description Match any of "stop" | "length" | "tool_calls" | "content_filter" | "refusal". */
+                /** @description Match any of "stop" | "length" | "tool_calls" | "content_filter" | "refusal" | "other". */
                 finish_reason?: string[] | null;
                 /** @description Match any of the given error_kind values. */
                 error_kind?: string[] | null;
