@@ -6,9 +6,11 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { failureAttribution } from "./attribution";
 import { FailureLayerBadge } from "./FailureLayerBadge";
-import { fmtInt, fmtMs, fmtTs, sumTokens } from "./format";
+import { Field } from "./Field";
+import { fmtInt, fmtLogTime, fmtMs, fmtTs, sumTokens } from "./format";
 import { LogsEmpty } from "./LogsEmpty";
 import { isErrorEvent } from "./predicates";
+import { statusDot, statusTone } from "./statusStyle";
 import type { LogLabeler } from "./useLogsFilterOptions";
 
 /** Which dimension a click-to-filter affordance targets. */
@@ -18,23 +20,18 @@ const COLUMN_COUNT = 9;
 
 /** Case-insensitive match across the fields a row exposes. */
 function matchesQuery(e: LogEvent, needle: string): boolean {
-	return [e.model_id, e.requested_model, e.source, e.request_id].some((v) =>
-		v?.toLowerCase().includes(needle),
-	);
+	return [
+		e.model_id,
+		e.requested_model,
+		e.source,
+		e.request_id,
+		e.relay_key,
+	].some((v) => v?.toLowerCase().includes(needle));
 }
 
 function statusBand(status: number): string {
 	return `${Math.floor(status / 100)}xx`;
 }
-function statusTone(e: LogEvent): string {
-	if (!isErrorEvent(e)) return "text-success";
-	return e.status >= 500 ? "text-destructive" : "text-warning";
-}
-function statusDot(e: LogEvent): string {
-	if (!isErrorEvent(e)) return "bg-success";
-	return e.status >= 500 ? "bg-destructive" : "bg-warning";
-}
-
 /**
  * The request feed: a dense table whose rows expand in place to show a summary.
  * Structured filters apply server-side via `filter`; `query` is a client-side
@@ -63,7 +60,7 @@ export function LogsTable({
 	filter?: LogsFilter;
 	emptyBody?: string;
 }) {
-	const { events, fetchNextPage, hasNextPage, isFetchingNextPage } =
+	const { events, matching, fetchNextPage, hasNextPage, isFetchingNextPage } =
 		useLogs(filter);
 
 	const needle = query.trim().toLowerCase();
@@ -85,19 +82,25 @@ export function LogsTable({
 
 	return (
 		<div className="flex flex-col gap-2">
-			<div className="overflow-hidden rounded-lg border border-border bg-card">
-				<table className="w-full text-xs">
+			{matching !== undefined && (
+				<p className="text-meta text-ink-3 tabular-nums">
+					{matching} matching {matching === "1" ? "request" : "requests"} ·{" "}
+					{fmtInt(events.length)} loaded
+				</p>
+			)}
+			<div className="overflow-x-auto">
+				<table className="w-full text-meta">
 					<thead>
-						<tr className="border-b border-border text-left text-[10px] uppercase tracking-wide text-muted-foreground">
-							<th className="w-8" />
-							<th className="px-3 py-2 font-medium">Time</th>
-							<th className="px-3 py-2 font-medium">Status</th>
-							<th className="px-3 py-2 font-medium">Model</th>
-							<th className="px-3 py-2 font-medium">Host</th>
-							<th className="px-3 py-2 font-medium">Instance</th>
-							<th className="px-3 py-2 text-right font-medium">Latency</th>
-							<th className="px-3 py-2 text-right font-medium">Tokens</th>
-							<th className="px-3 py-2 font-medium">Finish</th>
+						<tr className="border-b border-rule text-left text-ink-3">
+							<th className="w-7" />
+							<th className="px-3 pb-2 font-normal">Time</th>
+							<th className="px-3 pb-2 font-normal">Status</th>
+							<th className="px-3 pb-2 font-normal">Model</th>
+							<th className="px-3 pb-2 font-normal">Host</th>
+							<th className="px-3 pb-2 font-normal">Key</th>
+							<th className="px-3 pb-2 text-right font-normal">Latency</th>
+							<th className="px-3 pb-2 text-right font-normal">Tokens</th>
+							<th className="px-3 pb-2 font-normal">Finish</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -113,8 +116,8 @@ export function LogsTable({
 										onFilter={onFilter}
 									/>
 									{expanded && (
-										<tr className="border-b border-border/60">
-											<td colSpan={COLUMN_COUNT} className="bg-muted/20 p-0">
+										<tr className="border-b border-rule">
+											<td colSpan={COLUMN_COUNT} className="bg-grid p-0">
 												<ExpandedDetail
 													event={e}
 													labelFor={labelFor}
@@ -168,30 +171,43 @@ function LogRow({
 		<tr
 			onClick={onToggle}
 			className={cn(
-				"cursor-pointer border-b border-border/60 last:border-0 hover:bg-muted/40",
-				expanded && "bg-muted/40",
+				"cursor-pointer border-b border-rule hover:bg-grid",
+				expanded && "bg-grid",
 			)}
 		>
-			<td className="pl-3">
+			<td className="pl-1">
 				<ChevronRight
 					className={cn(
-						"size-3.5 text-muted-foreground transition-transform",
+						"size-3.5 text-ink-3 transition-transform",
 						expanded && "rotate-90",
 					)}
 					aria-hidden="true"
 				/>
 			</td>
-			<td className="whitespace-nowrap px-3 py-2 font-mono tabular-nums text-muted-foreground">
-				{fmtTs(event.ts)}
+			<td
+				className="whitespace-nowrap px-3 py-2.5 tabular-nums text-ink-2"
+				title={fmtTs(event.ts)}
+			>
+				{fmtLogTime(event.ts)}
 			</td>
-			<td className="px-3 py-2">
+			<td className="px-3 py-2.5">
 				<Filterable
 					value={statusBand(event.status)}
 					onFilter={onFilter && ((v) => onFilter("status_class", v))}
 				>
 					<span className="inline-flex items-center gap-1.5">
-						<span className={cn("size-1.5 rounded-full", statusDot(event))} />
-						<span className={cn("font-mono tabular-nums", statusTone(event))}>
+						<span
+							className={cn(
+								"size-1.5 rounded-full",
+								statusDot(event.status, isErrorEvent(event)),
+							)}
+						/>
+						<span
+							className={cn(
+								"tabular-nums",
+								statusTone(event.status, isErrorEvent(event)),
+							)}
+						>
 							{event.status}
 						</span>
 					</span>
@@ -206,7 +222,7 @@ function LogRow({
 							: undefined
 					}
 				>
-					<span className="block max-w-[14rem] truncate font-mono text-foreground">
+					<span className="block max-w-[16rem] truncate text-foreground">
 						{modelLabel}
 					</span>
 				</Filterable>
@@ -220,20 +236,20 @@ function LogRow({
 							: undefined
 					}
 				>
-					<span className="block max-w-[10rem] truncate font-mono text-muted-foreground">
+					<span className="block max-w-[12rem] truncate text-ink-2">
 						{hostLabel}
 					</span>
 				</Filterable>
 			</td>
 			<td className="px-3 py-2">
-				<span className="block max-w-[10rem] truncate font-mono text-muted-foreground">
-					{event.extras?.instance ?? "—"}
+				<span className="block max-w-[10rem] truncate text-ink-2">
+					{event.relay_key || "—"}
 				</span>
 			</td>
-			<td className="px-3 py-2 text-right font-mono tabular-nums text-muted-foreground">
+			<td className="px-3 py-2.5 text-right tabular-nums text-ink-2">
 				{fmtMs(event.duration_ms)}
 			</td>
-			<td className="px-3 py-2 text-right font-mono tabular-nums text-muted-foreground">
+			<td className="px-3 py-2.5 text-right tabular-nums text-ink-2">
 				{fmtInt(sumTokens(event.tokens))}
 			</td>
 			<td className="px-3 py-2">
@@ -248,11 +264,7 @@ function LogRow({
 function FinishCell({ event }: { event: LogEvent }) {
 	const attribution = failureAttribution(event);
 	if (!attribution) {
-		return (
-			<span className="text-muted-foreground">
-				{event.finish_reason ?? "—"}
-			</span>
-		);
+		return <span className="text-ink-3">{event.finish_reason ?? "—"}</span>;
 	}
 	return (
 		<span className="inline-flex items-center gap-1.5">
@@ -277,44 +289,41 @@ function ExpandedDetail({
 }) {
 	const attribution = failureAttribution(event);
 	return (
-		<div className="flex flex-col gap-3 px-4 py-3">
-			<div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs sm:grid-cols-4">
-				<KV label="Latency">{fmtMs(event.duration_ms)}</KV>
-				<KV label="Tokens">{fmtInt(sumTokens(event.tokens))}</KV>
-				<KV label="Finish">{event.finish_reason ?? "—"}</KV>
-				<KV label="Runner">{event.source}</KV>
-				<KV label="Instance">{event.extras?.instance ?? "—"}</KV>
-				<KV label="Client IP">{event.extras?.client_ip ?? "—"}</KV>
+		<div className="flex flex-col gap-3 px-8 py-4">
+			<div className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-4">
+				<Field label="Latency">{fmtMs(event.duration_ms)}</Field>
+				<Field label="Tokens">{fmtInt(sumTokens(event.tokens))}</Field>
+				<Field label="Finish">{event.finish_reason ?? "—"}</Field>
+				<Field label="Runner">{event.source}</Field>
+				<Field label="Key">{event.relay_key || "—"}</Field>
+				<Field label="Instance">{event.extras?.instance ?? "—"}</Field>
+				<Field label="Client IP">{event.extras?.client_ip ?? "—"}</Field>
 				{attribution && (
-					<KV label="Failed layer">
+					<Field label="Failed layer">
 						<FailureLayerBadge layer={attribution.layer} />
-					</KV>
+					</Field>
 				)}
 				{event.requested_model && (
-					<KV label="Requested">{event.requested_model}</KV>
+					<Field label="Requested">{event.requested_model}</Field>
 				)}
 				{event.policy_id && (
-					<KV label="Policy">
+					<Field label="Policy">
 						{labelFor?.("policy", event.policy_id) ?? event.policy_id}
-					</KV>
+					</Field>
 				)}
 				{event.attempts !== undefined && event.attempts > 1 && (
-					<KV label="Attempts">{String(event.attempts)}</KV>
+					<Field label="Attempts">{String(event.attempts)}</Field>
 				)}
-				{event.streamed && <KV label="Streamed">yes</KV>}
+				{event.streamed && <Field label="Streamed">yes</Field>}
 			</div>
 
 			{attribution && (
-				<p className="text-[11px] text-muted-foreground">
-					{attribution.reason}
-				</p>
+				<p className="text-meta text-ink-2">{attribution.reason}</p>
 			)}
 			{event.error_message && (
-				<p className="text-[11px] text-destructive">{event.error_message}</p>
+				<p className="text-meta text-destructive">{event.error_message}</p>
 			)}
-			<code className="font-mono text-[11px] text-muted-foreground">
-				{event.request_id}
-			</code>
+			<code className="font-mono text-meta text-ink-3">{event.request_id}</code>
 
 			<Suspense
 				fallback={
@@ -359,17 +368,6 @@ function PayloadAffordance({
 	);
 }
 
-function KV({ label, children }: { label: string; children: React.ReactNode }) {
-	return (
-		<div className="min-w-0">
-			<dt className="text-[10px] uppercase tracking-wide text-muted-foreground">
-				{label}
-			</dt>
-			<dd className="truncate font-mono text-xs text-foreground">{children}</dd>
-		</div>
-	);
-}
-
 /** Wraps a cell value; when `onFilter` is set, clicking adds a facet (and
  * doesn't toggle the row). Otherwise renders the value inert. */
 function Filterable({
@@ -390,7 +388,7 @@ function Filterable({
 				ev.stopPropagation();
 				onFilter(value);
 			}}
-			className="-mx-1 rounded px-1 text-left hover:bg-primary/10 hover:text-primary"
+			className="-mx-1 inline-flex max-w-full rounded px-1 align-middle text-left hover:bg-primary/10 hover:text-primary"
 		>
 			{children}
 		</button>

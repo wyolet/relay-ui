@@ -22,44 +22,47 @@ type Labelable = { name: string; displayName?: string };
  */
 export function useGroupLabeler(
 	groupBy: UsageGroupBy,
+	/** Names the usage response carried; when present no catalog list is
+	 * fetched, and they win over catalog names. */
+	served?: Record<string, string>,
 ): (value: string) => string {
 	const models = useQuery({
 		...modelsListQueryOptions,
-		enabled: groupBy === "model_id",
+		enabled: groupBy === "model_id" && !served,
 	});
 	const hosts = useQuery({
 		...hostsListQueryOptions,
-		enabled: groupBy === "host_id",
+		enabled: groupBy === "host_id" && !served,
 	});
 	const policies = useQuery({
 		...policiesListQueryOptions,
-		enabled: groupBy === "policy_id",
+		enabled: groupBy === "policy_id" && !served,
 	});
 	const hostKeys = useQuery({
 		...hostKeysListQueryOptions,
-		enabled: groupBy === "host_key_id",
+		enabled: groupBy === "host_key_id" && !served,
 	});
 	const keys = useQuery({
 		...keysListQueryOptions,
-		enabled: groupBy === "relay_key_hash",
+		enabled: groupBy === "relay_key_hash" && !served,
 	});
 	const teams = useQuery({
 		...teamsListQueryOptions,
-		enabled: groupBy === "team_id",
+		enabled: groupBy === "team_id" && !served,
 	});
 	const projects = useQuery({
 		...projectsListQueryOptions,
-		enabled: groupBy === "project_id",
+		enabled: groupBy === "project_id" && !served,
 	});
 	// A principal id is either a service account or a user account, so both
 	// lists are needed to name one.
 	const serviceAccounts = useQuery({
 		...serviceAccountsListQueryOptions,
-		enabled: groupBy === "principal_id",
+		enabled: groupBy === "principal_id" && !served,
 	});
 	const users = useQuery({
 		...usersListQueryOptions,
-		enabled: groupBy === "principal_id",
+		enabled: groupBy === "principal_id" && !served,
 	});
 
 	return useMemo(() => {
@@ -129,9 +132,10 @@ export function useGroupLabeler(
 				map.set(u.id, u.username || u.email || u.id);
 		}
 
-		return (value: string) => map?.get(value) ?? value;
+		return (value: string) => served?.[value] || map?.get(value) || value;
 	}, [
 		groupBy,
+		served,
 		models.data,
 		hosts.data,
 		policies.data,

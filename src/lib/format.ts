@@ -33,7 +33,7 @@ export function fmtCompact(n: number): string {
 	if (n >= 1_000_000)
 		return `${(n / 1_000_000).toLocaleString(undefined, { maximumFractionDigits: 1 })}M`;
 	if (n >= 1_000)
-		return `${(n / 1_000).toLocaleString(undefined, { maximumFractionDigits: 1 })}k`;
+		return `${(n / 1_000).toLocaleString(undefined, { maximumFractionDigits: 1 })}K`;
 	return n.toLocaleString();
 }
 
@@ -44,4 +44,16 @@ export function sumTokens(
 	let total = 0;
 	for (const v of Object.values(tokens)) total += v;
 	return total;
+}
+
+/** How long before `now` an instant was: "just now", "5m ago", "3h ago", "2d ago". */
+export function fmtAgo(iso: string, now: number = Date.now()): string {
+	const at = Date.parse(iso);
+	if (Number.isNaN(at)) return "—";
+	const minutes = Math.floor((now - at) / 60_000);
+	if (minutes < 1) return "just now";
+	if (minutes < 60) return `${minutes}m ago`;
+	const hours = Math.floor(minutes / 60);
+	if (hours < 48) return `${hours}h ago`;
+	return `${Math.floor(hours / 24)}d ago`;
 }

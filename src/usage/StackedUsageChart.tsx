@@ -1,6 +1,13 @@
 import { BarChart3 } from "lucide-react";
 import { useMemo } from "react";
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import {
+	Bar,
+	BarChart,
+	CartesianGrid,
+	ReferenceDot,
+	XAxis,
+	YAxis,
+} from "recharts";
 import {
 	OTHER_KEY,
 	type StackedTimeline,
@@ -15,9 +22,21 @@ import {
 	ChartTooltip,
 	ChartTooltipContent,
 } from "@/components/ui/chart";
+import { outlierCap } from "@/lib/usage-math/stack";
 import {
+	AXIS_PROPS,
+	BAR_MAX,
+	BAR_RADIUS,
+	DENSE_POINTS,
+	DENSE_RADIUS,
+	SEGMENT_GAP,
+	Y_TICK_COUNT,
+} from "./chartMarks";
+import {
+	dayStartTicks,
 	dimensionLabel,
 	fmtBucket,
+	fmtBucketTick,
 	fmtCompact,
 	fmtMoney,
 	fmtMoneyCompact,
@@ -54,7 +73,7 @@ export function StackedUsageChart({
 	bare?: boolean;
 	height?: string;
 }) {
-	const labelFor = useGroupLabeler(groupBy);
+	const labelFor = useGroupLabeler(groupBy, data.labels);
 
 	const config = useMemo<ChartConfig>(() => {
 		const c: ChartConfig = {};
@@ -97,28 +116,59 @@ export function StackedUsageChart({
 		);
 	}
 
+	// One runaway column would flatten the rest: cap the axis and label it.
+	const cap = outlierCap(data.points, data.series);
+
+	// An hourly axis over several days ticks once per day.
+	const dense = data.points.length > DENSE_POINTS;
+	const dayTicks =
+		dense && data.interval !== "1d"
+			? dayStartTicks(data.points.map((p) => p.bucket))
+			: undefined;
+
 	const plot = (
 		<ChartContainer config={config} className={`${height} w-full`}>
-			<BarChart data={data.points} margin={{ left: 4, right: 8, top: 8 }}>
+			<BarChart
+				data={data.points}
+				margin={{ left: 4, right: 8, top: cap ? 22 : 8 }}
+			>
 				<CartesianGrid vertical={false} />
 				<XAxis
 					dataKey="bucket"
-					tickLine={false}
-					axisLine={false}
-					tickMargin={8}
+					{...AXIS_PROPS}
 					minTickGap={32}
-					tickFormatter={fmtBucket}
+					ticks={dayTicks}
+					tickFormatter={(v: string) =>
+						fmtBucketTick(v, dayTicks ? "1d" : data.interval)
+					}
 				/>
 				<YAxis
-					tickLine={false}
-					axisLine={false}
+					{...AXIS_PROPS}
 					width={isCost ? 56 : 44}
+					tickCount={Y_TICK_COUNT}
 					tickFormatter={tickFormatter}
+					domain={cap ? [0, cap.max] : undefined}
+					allowDataOverflow={cap !== null}
 				/>
+				{cap && (
+					<ReferenceDot
+						x={cap.peak.bucket}
+						y={cap.max}
+						r={0}
+						ifOverflow="visible"
+						label={{
+							value: `${tickFormatter(cap.peak.total)} at ${fmtBucket(cap.peak.bucket, data.interval)}`,
+							position: "top",
+							fill: "var(--ink)",
+							fontSize: 12.5,
+							fontWeight: 600,
+						}}
+					/>
+				)}
 				<ChartTooltip
 					content={
 						<ChartTooltipContent
-							labelFormatter={(v) => fmtBucket(String(v))}
+							labelFormatter={(v) => fmtBucket(String(v), data.interval)}
 							formatter={
 								isCost
 									? (value, name, item) => (
@@ -149,8 +199,15 @@ export function StackedUsageChart({
 						dataKey={key}
 						stackId="usage"
 						fill={config[key]?.color}
-						maxBarSize={56}
-						radius={isLast(key, data.series) ? [3, 3, 0, 0] : undefined}
+						{...(dense ? {} : SEGMENT_GAP)}
+						maxBarSize={BAR_MAX}
+						radius={
+							isLast(key, data.series)
+								? dense
+									? DENSE_RADIUS
+									: BAR_RADIUS
+								: undefined
+						}
 						isAnimationActive={false}
 					/>
 				))}

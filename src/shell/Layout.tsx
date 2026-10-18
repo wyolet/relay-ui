@@ -26,7 +26,7 @@ export function Layout() {
 					<AccountMenu />
 				</header>
 				<main className="min-h-0 flex-1 overflow-auto">
-					<div className="mx-auto max-w-7xl px-6 py-5">
+					<div className="mx-auto max-w-[90rem] px-6 pt-5 pb-40">
 						<Outlet />
 					</div>
 				</main>

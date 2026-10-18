@@ -1,7 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import {
 	MAX_SERIES,
+	niceCeil,
 	OTHER_KEY,
+	outlierCap,
 	type SeriesSample,
 	stackSamples,
 } from "@/lib/usage-math/stack";
@@ -70,4 +72,30 @@ describe("stackSamples", () => {
 		expect(points).toHaveLength(2);
 		expect(points[0]).toEqual({ bucket: day(1) });
 	});
+});
+
+describe("outlierCap", () => {
+	const point = (bucket: string, a: number) => ({ bucket, a });
+
+	test("caps the axis under a runaway column and names it", () => {
+		const points = [
+			...Array.from({ length: 20 }, (_, i) => point(`b${i}`, 10)),
+			point("spike", 5000),
+		];
+		expect(outlierCap(points, ["a"])).toEqual({
+			max: 20,
+			peak: { bucket: "spike", total: 5000 },
+		});
+	});
+
+	test("leaves an even series alone", () => {
+		const points = Array.from({ length: 20 }, (_, i) => point(`b${i}`, 10 + i));
+		expect(outlierCap(points, ["a"])).toBeNull();
+	});
+});
+
+test("niceCeil rounds up to 1, 2, 2.5 or 5 times a power of ten", () => {
+	expect([0.7, 15, 127.5, 240, 3100].map(niceCeil)).toEqual([
+		1, 20, 200, 250, 5000,
+	]);
 });

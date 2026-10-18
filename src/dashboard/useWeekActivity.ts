@@ -1,0 +1,114 @@
+import {
+	type ResolvedWindow,
+	resolveWindow,
+	useStackedSeries,
+} from "@/api/hooks/usage";
+import type { HeatRow } from "@/shared/HourHeatmap";
+import { fmtCompact, fmtInt } from "@/usage/format";
+
+const HOURS = 24;
+const LEVELS = 5;
+
+const hh = (h: number) => `${String(h).padStart(2, "0")}:00`;
+
+/** This week in hourly buckets: the dashboard chart and heatmap share it. */
+export function weekByHour(): ResolvedWindow {
+	return { ...resolveWindow("week"), interval: "1h" };
+}
+
+function localMidnight(ms: number): number {
+	const d = new Date(ms);
+	d.setHours(0, 0, 0, 0);
+	return d.getTime();
+}
+
+/** Each day's total this week, Monday first; days not yet reached are null. */
+export function dailyTotals(
+	points: { bucket: string; [series: string]: number | string }[],
+	series: string[],
+): (number | null)[] {
+	const start = localMidnight(Date.parse(resolveWindow("week").from));
+	const today = localMidnight(Date.now());
+	const totals = Array.from({ length: 7 }, (_, i): number | null => {
+		const d = new Date(start);
+		d.setDate(d.getDate() + i);
+		return d.getTime() > today ? null : 0;
+	});
+	for (const p of points) {
+		const at = Date.parse(p.bucket);
+		const i = Math.round((localMidnight(at) - start) / 86_400_000);
+		const prev = totals[i];
+		if (prev === null || prev === undefined) continue;
+		totals[i] = prev + series.reduce((sum, k) => sum + Number(p[k] ?? 0), 0);
+	}
+	return totals;
+}
+
+/** Per-day values from daily (UTC) buckets placed on this week's local days.
+ * A bucket's midday lands on the right local date for any offset within ±12h. */
+export function dailyValues(
+	points: { bucket: string; value: number }[],
+): (number | null)[] {
+	return dailyTotals(
+		points.map((p) => ({
+			bucket: new Date(Date.parse(p.bucket) + 12 * 3_600_000).toISOString(),
+			value: p.value,
+		})),
+		["value"],
+	);
+}
+
+/** Requests per hour of each day this week, on a five-step ramp, with the
+ * current hour marked. */
+export function useWeekActivity(): { rows: HeatRow[]; hours: string[] } {
+	const { points, series } = useStackedSeries(
+		"model_id",
+		weekByHour(),
+		"requests",
+	);
+	const start = localMidnight(Date.parse(resolveWindow("week").from));
+
+	const days = Array.from({ length: 7 }, (_, i) => {
+		const d = new Date(start);
+		d.setDate(d.getDate() + i);
+		return { midnight: d.getTime(), counts: new Array<number>(HOURS).fill(0) };
+	});
+	for (const p of points) {
+		const at = Date.parse(p.bucket);
+		const day = days.find((d) => d.midnight === localMidnight(at));
+		if (!day) continue;
+		const count = series.reduce((sum, k) => sum + Number(p[k] ?? 0), 0);
+		day.counts[new Date(at).getHours()] += count;
+	}
+
+	// Log steps: one runaway hour must not flatten every other hour to step 1.
+	const logMax = Math.log1p(Math.max(1, ...days.flatMap((d) => d.counts)));
+	const level = (n: number) =>
+		n === 0 ? 0 : Math.max(1, Math.ceil((Math.log1p(n) / logMax) * LEVELS));
+	const now = new Date();
+	const today = localMidnight(now.getTime());
+	const nowHour = now.getHours();
+	const rows = days.map((d) => {
+		const date = new Date(d.midnight);
+		const day = `${date.toLocaleDateString(undefined, { weekday: "short" })} ${date.getDate()}`;
+		return {
+			key: String(d.midnight),
+			day,
+			cells: d.counts.map((n, h) => {
+				const current = d.midnight === today && h === nowHour;
+				return {
+					key: String(h),
+					level: level(n),
+					value: `${fmtInt(n)} request${n === 1 ? "" : "s"}`,
+					when: `${day} · ${hh(h)}`,
+					current,
+				};
+			}),
+			total: fmtCompact(d.counts.reduce((a, b) => a + b, 0)),
+		};
+	});
+	const hours = Array.from({ length: HOURS }, (_, h) =>
+		h % 3 === 0 ? String(h).padStart(2, "0") : "",
+	);
+	return { rows, hours };
+}

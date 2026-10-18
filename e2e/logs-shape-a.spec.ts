@@ -173,8 +173,8 @@ test("capture logs Explorer", async ({ page }) => {
 	await page.waitForTimeout(500);
 	await page.screenshot({ path: "e2e/__shots__/shape-a-filtered.png", fullPage: true });
 
-	// Open the Filters panel to check control uniformity.
-	await page.getByRole("button", { name: "Filters" }).click();
+	// Open the More panel to check control uniformity.
+	await page.getByRole("button", { name: "More" }).click();
 	await page.waitForTimeout(300);
 	await page.screenshot({ path: "e2e/__shots__/shape-a-panel.png", fullPage: true });
 });
