@@ -32,7 +32,7 @@ export function SetupWizard() {
 			{/* ambient brand glows behind the card */}
 			<div aria-hidden className="pointer-events-none absolute inset-0">
 				<div className="absolute left-1/2 top-0 size-[42rem] -translate-x-1/2 -translate-y-1/3 rounded-full bg-brand-500/10 blur-[120px]" />
-				<div className="absolute bottom-0 right-0 size-[32rem] translate-x-1/4 translate-y-1/4 rounded-full bg-accent-500/10 blur-[120px]" />
+				<div className="absolute bottom-0 right-0 size-[32rem] translate-x-1/4 translate-y-1/4 rounded-full bg-brand-500/10 blur-[120px]" />
 			</div>
 			<div className="relative w-full max-w-xl rounded-3xl border border-border/70 bg-card/95 p-8 shadow-2xl shadow-black/10 ring-1 ring-black/5 backdrop-blur-sm dark:shadow-black/40 dark:ring-white/5">
 				<div className="mb-6 flex items-center justify-between">

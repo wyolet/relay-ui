@@ -40,7 +40,7 @@ function StatusDot({ tone, label }: { tone: StatusTone; label: string }) {
 	const cls = {
 		active:
 			"bg-success shadow-[0_0_6px_color-mix(in_oklab,var(--success)_70%,transparent)]",
-		muted: "bg-neutral-400 dark:bg-neutral-600",
+		muted: "bg-ink-3",
 		danger:
 			"bg-destructive shadow-[0_0_6px_color-mix(in_oklab,var(--destructive)_70%,transparent)]",
 		warn: "bg-warning shadow-[0_0_6px_color-mix(in_oklab,var(--warning)_70%,transparent)]",

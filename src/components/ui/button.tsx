@@ -15,7 +15,7 @@ const buttonVariants = cva(
         // Attach). Everything else stays quieter still.
         default:
           "bg-input-wash text-field-accent hover:bg-btn-tonal-hover aria-expanded:bg-btn-tonal-hover",
-        cta: "text-white [background-image:var(--btn-cta)] [box-shadow:inset_0_1px_0_var(--btn-cta-highlight)] hover:brightness-[1.05] active:brightness-[0.97]",
+        cta: "text-primary-foreground [background-image:var(--btn-cta)] [box-shadow:inset_0_1px_0_var(--btn-cta-highlight)] hover:brightness-[1.05] active:brightness-[0.97]",
         outline:
           "border-border bg-transparent hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/60",
         secondary:

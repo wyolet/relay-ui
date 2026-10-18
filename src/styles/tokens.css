@@ -1,0 +1,136 @@
+/*
+ * Design tokens, after the Ledger system: pure black or white ground, grey ink,
+ * one accent (the Wyolet violet). Edit the Ledger tokens; every semantic token
+ * below derives from them, so both themes stay in step.
+ */
+
+/* The brand scale; `static` keeps every step emitted for var() use in code. */
+@theme static {
+  --color-brand-50: oklch(0.975 0.008 290);
+  --color-brand-100: oklch(0.955 0.018 290);
+  --color-brand-200: oklch(0.91 0.04 290);
+  --color-brand-300: oklch(0.84 0.07 290);
+  --color-brand-400: oklch(0.74 0.11 290);
+  --color-brand-500: oklch(0.62 0.14 290);
+  --color-brand-600: oklch(0.54 0.15 290);
+  --color-brand-700: oklch(0.45 0.14 290);
+  --color-brand-800: oklch(0.36 0.11 290);
+  --color-brand-900: oklch(0.27 0.08 290);
+  --color-brand-950: oklch(0.19 0.05 290);
+}
+
+:root {
+  /* Ledger, light */
+  --bg: #ffffff;
+  --ink: #0b0b0b;
+  --ink-2: #5b5b5b;
+  --ink-3: #8e8e8e;
+  --rule: #e6e6e6;
+  --grid: #f1f1f1;
+  --track: #efefef;
+  --accent-ink: var(--color-brand-600);
+  --accent-ink-2: var(--color-brand-400);
+  --n1: #1f1f1f;
+  --n2: #8a8a8a;
+  --n3: #bcbcbc;
+  --n4: #dcdcdc;
+  --good: #1d7a3e;
+  --warn: #a15c00;
+  --q0: #f3f3f3;
+  --q1: var(--color-brand-100);
+  --q2: var(--color-brand-300);
+  --q3: var(--color-brand-500);
+  --q4: var(--color-brand-600);
+  --q5: var(--color-brand-800);
+  --tip-bg: #0b0b0b;
+  --tip-ink: #ffffff;
+  --tip-rule: #0b0b0b;
+  --field-line: #d6d6d6;
+  --danger: oklch(0.577 0.245 27.325);
+}
+
+.dark {
+  --bg: #000000;
+  --ink: #f4f4f4;
+  --ink-2: #a1a1a1;
+  --ink-3: #6c6c6c;
+  --rule: #1e1e1e;
+  --grid: #141414;
+  --track: #1a1a1a;
+  --accent-ink: var(--color-brand-400);
+  --accent-ink-2: var(--color-brand-300);
+  --n1: #ececec;
+  --n2: #8d8d8d;
+  --n3: #4b4b4b;
+  --n4: #2c2c2c;
+  --good: #4cc27a;
+  --warn: #e0a24a;
+  --q0: #121212;
+  --q1: var(--color-brand-950);
+  --q2: var(--color-brand-800);
+  --q3: var(--color-brand-600);
+  --q4: var(--color-brand-400);
+  --q5: var(--color-brand-200);
+  --tip-bg: #1b1b1b;
+  --tip-ink: #f4f4f4;
+  --tip-rule: #2e2e2e;
+  --field-line: #2e2e2e;
+  --danger: oklch(0.704 0.191 22.216);
+}
+
+/* shadcn semantic tokens. Ledger has no boxes: cards sit on the ground and a
+   hairline separates them; popovers take the tooltip's surface. */
+:root {
+  --background: var(--bg);
+  --foreground: var(--ink);
+  --card: var(--bg);
+  --card-foreground: var(--ink);
+  --popover: var(--tip-bg);
+  --popover-foreground: var(--tip-ink);
+  --primary: var(--accent-ink);
+  --primary-foreground: var(--bg);
+  --secondary: var(--track);
+  --secondary-foreground: var(--ink);
+  --muted: var(--track);
+  --muted-foreground: var(--ink-2);
+  --accent: var(--track);
+  --accent-foreground: var(--ink);
+  --destructive: var(--danger);
+  --destructive-foreground: var(--bg);
+  --border: var(--rule);
+  --input: var(--field-line);
+  --ring: var(--accent-ink);
+  --radius: 0.5rem;
+
+  --sidebar: var(--bg);
+  --sidebar-foreground: var(--ink);
+  --sidebar-primary: var(--accent-ink);
+  --sidebar-primary-foreground: var(--bg);
+  --sidebar-accent: var(--track);
+  --sidebar-accent-foreground: var(--ink);
+  --sidebar-border: var(--rule);
+  --sidebar-ring: var(--accent-ink);
+
+  /* Series: the accent marks the one that matters, neutrals carry the rest. */
+  --chart-1: var(--accent-ink);
+  --chart-2: var(--n1);
+  --chart-3: var(--n2);
+  --chart-4: var(--n3);
+  --chart-5: var(--n4);
+
+  /* Status always comes with a word; color only supports it. */
+  --success: var(--good);
+  --success-soft: color-mix(in oklch, var(--good) 12%, var(--bg));
+  --warning: var(--warn);
+  --warning-soft: color-mix(in oklch, var(--warn) 12%, var(--bg));
+  --info: var(--ink-2);
+  --info-soft: var(--track);
+
+  --field-accent: var(--accent-ink);
+  --field-rest: transparent;
+  --field-border: var(--field-line);
+  --input-wash: color-mix(in oklch, var(--accent-ink) 9%, transparent);
+  --btn-tonal-hover: color-mix(in oklch, var(--accent-ink) 15%, transparent);
+  --btn-cta: linear-gradient(var(--accent-ink), var(--accent-ink));
+  --btn-cta-highlight: transparent;
+}

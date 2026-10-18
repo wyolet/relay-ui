@@ -1,104 +1,11 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "@fontsource-variable/inter";
 /*
- * shadcn-managed tokens + base resets.
- *
- * Semantic tokens (--background, --foreground, --primary, --ring, etc.) and
- * the brand/neutral scales come from @wyolet/design/theme.css — don't
- * duplicate them here. Use this file for:
- *   - shadcn add commands that may write extra tokens
- *   - sidebar / chart tokens shadcn references but theme.css doesn't define
- *   - the @layer base resets shadcn expects
+ * Tailwind names for the tokens in tokens.css, plus the base resets shadcn
+ * expects. Values live in tokens.css only.
  */
-/*
- ---break---
- */
-@custom-variant dark (&:is(.dark *));
-
-:root {
-  /* sidebar — mirrors neutral/brand */
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0.008 326);
-  --sidebar-primary: oklch(0.212 0.019 322.12);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.96 0.003 325.6);
-  --sidebar-accent-foreground: oklch(0.212 0.019 322.12);
-  --sidebar-border: oklch(0.922 0.005 325.62);
-  --sidebar-ring: oklch(0.711 0.019 323.02);
-
-  /* chart palette — brand + accent rotation */
-  --chart-1: oklch(0.865 0.012 325.68);
-  --chart-2: oklch(0.542 0.034 322.5);
-  --chart-3: oklch(0.435 0.029 321.78);
-  --chart-4: oklch(0.364 0.029 323.89);
-  --chart-5: oklch(0.263 0.024 320.12);
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0.008 326);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0.008 326);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0.008 326);
-  --primary: oklch(0.212 0.019 322.12);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.96 0.003 325.6);
-  --secondary-foreground: oklch(0.212 0.019 322.12);
-  --muted: oklch(0.96 0.003 325.6);
-  --muted-foreground: oklch(0.542 0.034 322.5);
-  --accent: oklch(0.96 0.003 325.6);
-  --accent-foreground: oklch(0.212 0.019 322.12);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0.005 325.62);
-  --input: oklch(0.922 0.005 325.62);
-  --ring: oklch(0.711 0.019 323.02);
-  --radius: 0.625rem;
-
-  /* status tokens — success/warning/info status states (light).
-     `*` is the readable text/dot tone; `*-soft` is the tinted fill.
-     Values track tailwind emerald/amber/sky so the palette sweep is a
-     visual no-op. */
-  --success: oklch(0.596 0.145 163.225); /* emerald-600 */
-  --success-soft: oklch(0.979 0.021 166.113); /* emerald-50 */
-  --warning: oklch(0.666 0.179 58.318); /* amber-600 */
-  --warning-soft: oklch(0.987 0.022 95.277); /* amber-50 */
-  --info: oklch(0.588 0.158 241.966); /* sky-600 */
-  --info-soft: oklch(0.977 0.013 236.62); /* sky-50 */
-
-  /* field & button accents — the app's mauve (318, darkened) with real chroma, so the
-     wash reads as color while staying in the same hue family as the neutral
-     scale. --field-accent is the focus border + tonal text tone;
-     --input-wash is that accent as a translucent fill; --btn-cta is the
-     rationed loud gradient. */
-  --field-accent: oklch(0.52 0.105 318);
-  --field-rest: oklch(0.52 0.105 318 / 0.03);
-  --field-border: oklch(0.52 0.105 318 / 0.24);
-  --input-wash: oklch(0.52 0.105 318 / 0.07);
-  --btn-tonal-hover: oklch(0.52 0.105 318 / 0.13);
-  --btn-cta: linear-gradient(180deg, oklch(0.575 0.1 318), oklch(0.485 0.115 318));
-  --btn-cta-highlight: oklch(1 0 0 / 0.16);
-}
-
-.dark,
-[data-theme="dark"] {
-  --sidebar: var(--color-neutral-900);
-  --sidebar-foreground: var(--color-neutral-100);
-  --sidebar-primary: var(--color-brand-400);
-  --sidebar-primary-foreground: var(--color-neutral-950);
-  --sidebar-accent: var(--color-neutral-800);
-  --sidebar-accent-foreground: var(--color-neutral-100);
-  --sidebar-border: var(--color-neutral-800);
-  --sidebar-ring: var(--color-brand-400);
-
-  --chart-1: var(--color-brand-400);
-  --chart-2: var(--color-accent-400);
-  --chart-3: var(--color-brand-200);
-  --chart-4: var(--color-accent-200);
-  --chart-5: var(--color-neutral-400);
-}
 
 @theme inline {
-  /* semantic tokens — declared in @wyolet/design/theme.css, mirrored here
-     so tailwind v4 generates bg-background, border-border, ring-ring, etc. */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -153,6 +60,28 @@
     }
   }
 
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-rule: var(--rule);
+  --color-grid: var(--grid);
+  --color-track: var(--track);
+  --color-n1: var(--n1);
+  --color-n2: var(--n2);
+  --color-n3: var(--n3);
+  --color-n4: var(--n4);
+  --color-q0: var(--q0);
+  --color-q1: var(--q1);
+  --color-q2: var(--q2);
+  --color-q3: var(--q3);
+  --color-q4: var(--q4);
+  --color-q5: var(--q5);
+  --color-good: var(--good);
+  --color-warn: var(--warn);
+  --color-tip-bg: var(--tip-bg);
+  --color-tip-ink: var(--tip-ink);
+  --color-tip-rule: var(--tip-rule);
+
   --color-success: var(--success);
   --color-success-soft: var(--success-soft);
   --color-warning: var(--warning);
@@ -160,8 +89,27 @@
   --color-info: var(--info);
   --color-info-soft: var(--info-soft);
 
-  --font-heading: var(--font-sans);
-  --font-sans: 'Inter Variable', sans-serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", system-ui, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", system-ui, sans-serif;
+  --font-heading: var(--font-display);
+  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace;
+
+  --text-title: 52px; --text-title--line-height: 1.02; --text-title--letter-spacing: -0.035em; --text-title--font-weight: 700;
+  --text-figure: 50px; --text-figure--line-height: 1; --text-figure--letter-spacing: -0.04em; --text-figure--font-weight: 700;
+  --text-mini-figure: 28px; --text-mini-figure--line-height: 1; --text-mini-figure--letter-spacing: -0.025em; --text-mini-figure--font-weight: 700;
+  --text-lede: 21px; --text-lede--line-height: 1.4; --text-lede--letter-spacing: -0.01em; --text-lede--font-weight: 500;
+  --text-section: 21px; --text-section--line-height: 1.25; --text-section--letter-spacing: -0.015em; --text-section--font-weight: 650;
+  --text-body: 15px; --text-body--line-height: 1.5;
+  --text-tab: 14.5px; --text-tab--line-height: 1.5; --text-tab--font-weight: 500;
+  --text-label: 14px; --text-label--line-height: 1.35;
+  --text-meta: 13px; --text-meta--line-height: 1.5;
+  --text-foot: 12.5px; --text-foot--line-height: 1.5;
+
+  --radius-bar: 4px;
+  --radius-cell: 3px;
+  --radius-tip: 8px;
+  --shadow-tip: 0 6px 24px rgb(0 0 0 / 0.35);
+  --container-content: 1160px;
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -214,60 +162,4 @@
   html {
     @apply font-sans;
   }
-}
-
-/*
- ---break---
- */
-
-.dark {
-  --background: oklch(0.145 0.008 326);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.212 0.019 322.12);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.212 0.019 322.12);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0.005 325.62);
-  --primary-foreground: oklch(0.212 0.019 322.12);
-  --secondary: oklch(0.263 0.024 320.12);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.263 0.024 320.12);
-  --muted-foreground: oklch(0.711 0.019 323.02);
-  --accent: oklch(0.263 0.024 320.12);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.542 0.034 322.5);
-  --chart-1: oklch(0.865 0.012 325.68);
-  --chart-2: oklch(0.542 0.034 322.5);
-  --chart-3: oklch(0.435 0.029 321.78);
-  --chart-4: oklch(0.364 0.029 323.89);
-  --chart-5: oklch(0.263 0.024 320.12);
-  --sidebar: oklch(0.212 0.019 322.12);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.263 0.024 320.12);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.542 0.034 322.5);
-
-  /* status tokens (dark) — brighter tones for contrast on dark surfaces */
-  --success: oklch(0.765 0.177 163.223); /* emerald-400 */
-  --success-soft: oklch(0.262 0.051 172.552); /* emerald-950 */
-  --warning: oklch(0.828 0.189 84.429); /* amber-400 */
-  --warning-soft: oklch(0.279 0.077 45.635); /* amber-950 */
-  --info: oklch(0.746 0.16 232.661); /* sky-400 */
-  --info-soft: oklch(0.293 0.066 243.157); /* sky-950 */
-
-  /* field & button accents (dark) — lighter mauve, a touch more alpha so
-     the tint stays visible on dark ground. */
-  --field-accent: oklch(0.72 0.08 318);
-  --field-rest: oklch(0.72 0.08 318 / 0.06);
-  --field-border: oklch(0.72 0.08 318 / 0.24);
-  --input-wash: oklch(0.72 0.08 318 / 0.1);
-  --btn-tonal-hover: oklch(0.72 0.08 318 / 0.16);
-  --btn-cta: linear-gradient(180deg, oklch(0.73 0.075 318), oklch(0.64 0.09 318));
-  --btn-cta-highlight: oklch(1 0 0 / 0.16);
 }
