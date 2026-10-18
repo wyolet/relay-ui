@@ -1,6 +1,6 @@
 /*
- * Design tokens, after the Ledger system: pure black or white ground, grey ink,
- * one accent (the Wyolet violet). Edit the Ledger tokens; every semantic token
+ * Design tokens, after the Ledger system on the app's mauve: a tinted ground,
+ * mauve-grey ink, one mauve accent. Edit the Ledger tokens; every semantic token
  * below derives from them, so both themes stay in step.
  */
 
@@ -20,73 +20,71 @@
 }
 
 :root {
-  /* Ledger, light. The ground carries a faint brand tint and raised surfaces
-     are white, so light mode has depth instead of one flat sheet. */
-  --bg: oklch(0.985 0.003 290);
+  /* Ledger, light. A faint mauve ground under white raised surfaces, so light
+     mode has depth instead of one flat sheet. */
+  --bg: oklch(0.985 0.003 325);
   --raised: #ffffff;
-  --chrome: oklch(0.965 0.006 290);
-  --ink: #0b0b0b;
-  --ink-2: #5b5b5b;
-  --ink-3: #8e8e8e;
-  --rule: #e6e6e6;
-  --grid: #f1f1f1;
-  --track: #efefef;
-  --accent-ink: var(--color-brand-600);
-  --accent-ink-2: var(--color-brand-400);
-  --n1: #1f1f1f;
-  --n2: #8a8a8a;
-  --n3: #bcbcbc;
-  --n4: #dcdcdc;
+  --chrome: oklch(0.965 0.006 325);
+  --ink: oklch(0.17 0.01 326);
+  --ink-2: oklch(0.45 0.03 322);
+  --ink-3: oklch(0.6 0.025 322);
+  --rule: oklch(0.922 0.005 325);
+  --grid: oklch(0.96 0.004 325);
+  --track: oklch(0.95 0.006 325);
+  --accent-ink: oklch(0.52 0.105 318);
+  --accent-ink-2: oklch(0.68 0.09 318);
+  --n1: oklch(0.25 0.02 322);
+  --n2: oklch(0.55 0.03 322);
+  --n3: oklch(0.75 0.02 323);
+  --n4: oklch(0.87 0.01 324);
   --good: #1d7a3e;
   --warn: #a15c00;
-  --q0: #f3f3f3;
-  --q1: var(--color-brand-100);
-  --q2: var(--color-brand-300);
-  --q3: var(--color-brand-500);
-  --q4: var(--color-brand-600);
-  --q5: var(--color-brand-800);
-  --tip-bg: #0b0b0b;
+  --tip-bg: oklch(0.212 0.019 322);
   --tip-ink: #ffffff;
-  --tip-rule: #0b0b0b;
+  --tip-rule: oklch(0.212 0.019 322);
   --menu: #ffffff;
-  --field-line: #d6d6d6;
+  --field-line: oklch(0.88 0.008 325);
   --danger: oklch(0.577 0.245 27.325);
 }
 
 .dark {
-  --bg: #000000;
-  --raised: #000000;
-  --chrome: #000000;
-  --ink: #f4f4f4;
-  --ink-2: #a1a1a1;
-  --ink-3: #6c6c6c;
-  --rule: #1e1e1e;
-  --grid: #141414;
-  --track: #1a1a1a;
-  --accent-ink: var(--color-brand-400);
-  --accent-ink-2: var(--color-brand-300);
-  --n1: #ececec;
-  --n2: #8d8d8d;
-  --n3: #4b4b4b;
-  --n4: #2c2c2c;
+  --bg: oklch(0.145 0.008 326);
+  --raised: oklch(0.175 0.012 324);
+  --chrome: oklch(0.165 0.011 325);
+  --ink: oklch(0.97 0.004 326);
+  --ink-2: oklch(0.711 0.019 323);
+  --ink-3: oklch(0.55 0.02 323);
+  --rule: oklch(0.25 0.015 323);
+  --grid: oklch(0.18 0.012 324);
+  --track: oklch(0.22 0.015 323);
+  --accent-ink: oklch(0.72 0.08 318);
+  --accent-ink-2: oklch(0.82 0.06 318);
+  --n1: oklch(0.9 0.008 325);
+  --n2: oklch(0.68 0.02 323);
+  --n3: oklch(0.48 0.025 322);
+  --n4: oklch(0.34 0.022 322);
   --good: #4cc27a;
   --warn: #e0a24a;
-  --q0: #121212;
-  --q1: var(--color-brand-950);
-  --q2: var(--color-brand-800);
-  --q3: var(--color-brand-600);
-  --q4: var(--color-brand-400);
-  --q5: var(--color-brand-200);
-  --tip-bg: #1b1b1b;
-  --tip-ink: #f4f4f4;
-  --tip-rule: #2e2e2e;
-  --menu: #1b1b1b;
-  --field-line: #2e2e2e;
+  --tip-bg: oklch(0.235 0.02 322);
+  --tip-ink: oklch(0.97 0.004 326);
+  --tip-rule: oklch(0.32 0.02 322);
+  --menu: oklch(0.235 0.02 322);
+  --field-line: oklch(0.3 0.018 323);
   --danger: oklch(0.704 0.191 22.216);
 }
 
-/* shadcn semantic tokens. Ledger has no boxes: in dark, cards sit on the
-   ground and a hairline separates them; in light they lift to white. */
+/* The heat ramp steps from the ground toward the accent. */
+:root {
+  --q0: var(--grid);
+  --q1: color-mix(in oklch, var(--accent-ink) 20%, var(--bg));
+  --q2: color-mix(in oklch, var(--accent-ink) 40%, var(--bg));
+  --q3: color-mix(in oklch, var(--accent-ink) 60%, var(--bg));
+  --q4: color-mix(in oklch, var(--accent-ink) 80%, var(--bg));
+  --q5: var(--accent-ink);
+}
+
+/* shadcn semantic tokens. Raised surfaces lift one step off the ground and a
+   hairline separates them. */
 :root {
   --background: var(--bg);
   --foreground: var(--ink);
