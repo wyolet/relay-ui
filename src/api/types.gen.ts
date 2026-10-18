@@ -3918,6 +3918,27 @@ export interface components {
             policyId?: string;
             principal: components["schemas"]["KeyPrincipal"];
         };
+        SummaryPrevious: {
+            /** Format: int64 */
+            cost_nanos: number;
+            duration_ms: components["schemas"]["DurationStats"];
+            /** Format: int64 */
+            error_count: number;
+            /** Format: int64 */
+            errors_4xx: number;
+            /** Format: int64 */
+            errors_5xx: number;
+            /** Format: int64 */
+            requests: number;
+            /** Format: int64 */
+            throttled: number;
+            tokens: {
+                [key: string]: number;
+            };
+            ttft_ms?: components["schemas"]["DurationStats"];
+            /** Format: int64 */
+            unpriced: number;
+        };
         SummaryResult: {
             /**
              * Format: uri
@@ -3927,6 +3948,10 @@ export interface components {
             readonly $schema?: string;
             /** Format: date-time */
             from: string;
+            /** Format: date-time */
+            previous_from?: string;
+            /** Format: date-time */
+            previous_to?: string;
             rows: components["schemas"]["SummaryRow"][] | null;
             /** Format: date-time */
             to: string;
@@ -3948,6 +3973,7 @@ export interface components {
             };
             /** Format: date-time */
             last_seen: string;
+            previous?: components["schemas"]["SummaryPrevious"];
             /** Format: int64 */
             requests: number;
             /** Format: int64 */
@@ -16981,6 +17007,8 @@ export interface operations {
                 tag?: string[] | null;
                 /** @description "source" (default) | "none" (one row over the whole filtered set, group {}) | "model" | "host" | "policy" | "provider" | "project" | "team" | "principal" | "relay_key" (event-time slugs) | "model_id" | "host_id" | "policy_id" | "project_id" | "team_id" | "principal_id" | "credential_id" | "relay_key_hash" | "host_key_id" | "finish_reason" | "error_kind" | "tags.<key>" (group by a caller tag's value). */
                 group_by?: string;
+                /** @description "previous" (the only accepted value) adds each row's numbers over the window of equal length just before this one as previous, and that window's bounds as previous_from/previous_to (previous_to exclusive). Rows stay those of the requested window: a group without traffic in the previous window has no previous, and a group seen only there has no row. The window is resolved once (since counts back from the request time, an open to becomes that time); one with no start or a start after its end is a 400. */
+                compare?: string;
             };
             header?: never;
             path?: never;
