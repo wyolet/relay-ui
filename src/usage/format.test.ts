@@ -1,5 +1,11 @@
 import { describe, expect, it } from "bun:test";
-import { fmtCompact, fmtMs, fmtPct, sumTokens } from "@/usage/format";
+import {
+	fmtCompact,
+	fmtMoneyCompact,
+	fmtMs,
+	fmtPct,
+	sumTokens,
+} from "@/usage/format";
 
 describe("fmtPct", () => {
 	it("renders integer percents without decimals", () => {
@@ -48,5 +54,17 @@ describe("sumTokens", () => {
 	it("treats missing/empty maps as zero", () => {
 		expect(sumTokens(undefined)).toBe(0);
 		expect(sumTokens({})).toBe(0);
+	});
+});
+
+describe("fmtMoneyCompact", () => {
+	it("never shows more than cents", () => {
+		expect(fmtMoneyCompact(0.2531, "USD")).toMatch(/0[.,]25$/);
+		expect(fmtMoneyCompact(148, "USD")).toMatch(/148$/);
+	});
+
+	it("floors sub-cent amounts to <$0.01", () => {
+		expect(fmtMoneyCompact(0.0042, "USD")).toMatch(/^<.*0[.,]01$/);
+		expect(fmtMoneyCompact(0, "USD")).toMatch(/\$0$/);
 	});
 });

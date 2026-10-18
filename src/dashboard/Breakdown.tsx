@@ -8,18 +8,20 @@ import {
 	type BreakdownDimension,
 	useBreakdown,
 } from "./useBreakdown";
+import { useDashboardWindow } from "./useDashboardWindow";
 
 const GRID =
-	"grid grid-cols-[minmax(0,12rem)_minmax(4rem,1fr)_5rem_4.5rem] items-center gap-x-5 md:grid-cols-[minmax(0,14rem)_minmax(4rem,1fr)_5rem_4.5rem_5rem_5rem_5.5rem]";
+	"grid grid-cols-[minmax(0,12rem)_minmax(4rem,1fr)_5rem_4.5rem] items-center gap-x-5 md:grid-cols-[minmax(0,14rem)_minmax(4rem,1fr)_5rem_4.5rem_5rem_5rem_6.5rem]";
 const WIDE = "hidden md:block";
 
-/** This week by model, host, team, project or key: one table, top rows by spend. */
+/** The period by model, host, team, project or key: one table, top rows by spend. */
 export function Breakdown() {
 	const [groupBy, setGroupBy] = useState<BreakdownDimension>("model_id");
+	const { period } = useDashboardWindow();
 	return (
 		<Section
 			title="Breakdown"
-			meta="this week, by spend"
+			meta={`${period}, by spend`}
 			aside={
 				<Segmented
 					variant="underline"
@@ -38,8 +40,9 @@ export function Breakdown() {
 
 function BreakdownTable({ groupBy }: { groupBy: BreakdownDimension }) {
 	const { rows, more, total } = useBreakdown(groupBy);
+	const { period, vs } = useDashboardWindow();
 	if (rows.length === 0) {
-		return <p className="text-label text-ink-2">No traffic this week.</p>;
+		return <p className="text-label text-ink-2">No traffic {period}.</p>;
 	}
 	return (
 		<div className="grid">
@@ -50,7 +53,7 @@ function BreakdownTable({ groupBy }: { groupBy: BreakdownDimension }) {
 				<span className="text-right">Requests</span>
 				<span className={`${WIDE} text-right`}>Failed</span>
 				<span className={`${WIDE} text-right`}>Tokens</span>
-				<span className={`${WIDE} text-right`}>vs last week</span>
+				<span className={`${WIDE} text-right`}>{vs}</span>
 			</div>
 			{rows.map((r) => (
 				<div

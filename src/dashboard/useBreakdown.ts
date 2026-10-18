@@ -1,5 +1,4 @@
 import {
-	resolveWindow,
 	type UsageGroupBy,
 	type UsageGroupStat,
 	useUsageOverviewWithDeltas,
@@ -13,6 +12,7 @@ import {
 	fmtSignedPct,
 } from "@/usage/format";
 import { useGroupLabeler } from "@/usage/useGroupLabeler";
+import { useDashboardWindow } from "./useDashboardWindow";
 
 export type BreakdownDimension = Extract<
 	UsageGroupBy,
@@ -50,14 +50,14 @@ function weight(g: UsageGroupStat, priced: boolean): number {
 	return priced ? (g.cost.usd ?? 0) : g.requests;
 }
 
-/** This week's top rows in one dimension, ranked by spend, with last week's
- * movement. `more` counts the rows past the limit. */
+/** The period's top rows in one dimension, ranked by spend, with movement
+ * against the previous period. `more` counts the rows past the limit. */
 export function useBreakdown(groupBy: BreakdownDimension): {
 	rows: BreakdownRow[];
 	more: number;
 	total: string;
 } {
-	const win = resolveWindow("week");
+	const { win } = useDashboardWindow();
 	const {
 		groups,
 		previousGroups: before,

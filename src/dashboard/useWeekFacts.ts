@@ -1,56 +1,47 @@
 import { useCostKpi } from "@/api/hooks/cost";
 import {
-	resolveWindow,
 	useStackedSeries,
 	useUsageOverview,
 	useUsageOverviewWithDeltas,
 } from "@/api/hooks/usage";
+import { daySliceStarts, totalsBySlice } from "@/lib/usage-math/window";
 import type { FigureData } from "@/shared/FigureRow";
-import { fmtBucket, fmtCompact, fmtMoney, fmtPct } from "@/usage/format";
+import { fmtBucket, fmtCompact, fmtMoneyCompact, fmtPct } from "@/usage/format";
 import { useGroupLabeler } from "@/usage/useGroupLabeler";
-import { dailyTotals, weekByHour } from "./useWeekActivity";
+import { pointTotals, useDashboardWindow } from "./useDashboardWindow";
 
-const DAY_NAMES = [
-	"Monday",
-	"Tuesday",
-	"Wednesday",
-	"Thursday",
-	"Friday",
-	"Saturday",
-	"Sunday",
-];
+/** "Friday 16": a weekday-first date in any locale. */
+function fmtWeekday(d: Date): string {
+	return `${d.toLocaleDateString(undefined, { weekday: "long" })} ${d.getDate()}`;
+}
 
-/** The week's less obvious facts: when it peaked, what a request costs and
+/** The period's less obvious facts: when it peaked, what a request costs and
  * carries, and how concentrated the traffic is. */
 export function useWeekFacts(): FigureData[] {
-	const win = resolveWindow("week");
-	const { kpis } = useUsageOverviewWithDeltas("source", win);
-	const cost = useCostKpi(win);
-	const { points, series } = useStackedSeries(
-		"model_id",
-		weekByHour(),
-		"requests",
-	);
+	const dw = useDashboardWindow();
+	const { kpis } = useUsageOverviewWithDeltas("source", dw.win);
+	const cost = useCostKpi(dw.win);
+	const requestsByHour = useStackedSeries("model_id", dw.hourly, "requests");
 	const { groups: models, labels: modelNames } = useUsageOverview(
 		"model_id",
-		win,
+		dw.win,
 	);
-	const { groups: hosts } = useUsageOverview("host_id", win);
+	const { groups: hosts } = useUsageOverview("host_id", dw.win);
 	const modelLabel = useGroupLabeler("model_id", modelNames);
 
-	const hourly = points.map((p) => ({
-		bucket: p.bucket,
-		total: series.reduce((sum, k) => sum + Number(p[k] ?? 0), 0),
-	}));
-	const peakHour = hourly.reduce((a, b) => (b.total > a.total ? b : a), {
-		bucket: "",
-		total: 0,
+	const hourly = pointTotals(requestsByHour);
+	const peakHour = hourly.reduce((a, b) => (b.value > a.value ? b : a), {
+		at: 0,
+		value: 0,
 	});
-	const days = dailyTotals(points, series);
+	// Calendar days even for the rolling period: "busiest day" names a date.
+	const dayStarts = daySliceStarts(dw.hourly, false);
+	const days = totalsBySlice(hourly, dayStarts, dw.nowMs);
 	const peakDay = days.reduce<number>(
 		(best, v, i) => ((v ?? 0) > (days[best] ?? 0) ? i : best),
 		0,
 	);
+	const peakDayStart = dayStarts[peakDay];
 	const perRequest = (n: number) => (kpis.requests > 0 ? n / kpis.requests : 0);
 	const topModel = models[0];
 
@@ -58,13 +49,19 @@ export function useWeekFacts(): FigureData[] {
 		{
 			key: "peak-hour",
 			label: "Busiest hour",
-			value: peakHour.total > 0 ? fmtBucket(peakHour.bucket, "1h") : "—",
-			note: `${fmtCompact(peakHour.total)} requests`,
+			value:
+				peakHour.value > 0
+					? fmtBucket(new Date(peakHour.at).toISOString(), "1h")
+					: "—",
+			note: `${fmtCompact(peakHour.value)} requests`,
 		},
 		{
 			key: "peak-day",
 			label: "Busiest day",
-			value: (days[peakDay] ?? 0) > 0 ? (DAY_NAMES[peakDay] ?? "—") : "—",
+			value:
+				(days[peakDay] ?? 0) > 0 && peakDayStart !== undefined
+					? fmtWeekday(new Date(peakDayStart))
+					: "—",
 			note: `${fmtCompact(days[peakDay] ?? 0)} requests`,
 		},
 		{
@@ -72,11 +69,11 @@ export function useWeekFacts(): FigureData[] {
 			label: "Cost per request",
 			value:
 				cost.current.usd != null
-					? fmtMoney(perRequest(cost.current.usd), "USD")
+					? fmtMoneyCompact(perRequest(cost.current.usd), "USD")
 					: "—",
 			note:
 				cost.current.usd != null
-					? `${fmtMoney(perRequest(cost.current.usd) * 1000, "USD")} per 1K`
+					? `${fmtMoneyCompact(perRequest(cost.current.usd) * 1000, "USD")} per 1K`
 					: undefined,
 		},
 		{

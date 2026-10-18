@@ -103,7 +103,11 @@ export function StackedUsageChart({
 			? "Tokens"
 			: "Requests";
 	const tickFormatter = isCost
-		? (n: number) => fmtMoneyCompact(n, currency)
+		? // Axis steps can sit below a cent; keep their precision.
+			(n: number) =>
+				n !== 0 && Math.abs(n) < 1
+					? fmtMoney(n, currency)
+					: fmtMoneyCompact(n, currency)
 		: fmtCompact;
 
 	if (!hasTraffic) {

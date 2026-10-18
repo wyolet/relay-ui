@@ -5,6 +5,7 @@ import { keysListQueryOptions } from "@/api/hooks/keys";
 import { buttonVariants } from "@/components/ui/button";
 import { AttentionList } from "@/dashboard/AttentionList";
 import { Breakdown } from "@/dashboard/Breakdown";
+import { DashboardRange } from "@/dashboard/DashboardRange";
 import { Headline } from "@/dashboard/Headline";
 import { ReleaseReadiness } from "@/dashboard/ReleaseReadiness";
 import { ScopedHome } from "@/dashboard/ScopedHome";
@@ -85,10 +86,13 @@ function AdminHome() {
 	return (
 		<div className="grid gap-14">
 			<ReleaseReadiness />
-			<Suspense fallback={<div className="h-28" />}>
-				<Headline />
-			</Suspense>
-			<Suspense fallback={<Pending title="This week in numbers" />}>
+			<div className="grid gap-6">
+				<DashboardRange />
+				<Suspense fallback={<div className="h-28" />}>
+					<Headline />
+				</Suspense>
+			</div>
+			<Suspense fallback={<Pending title="In numbers" />}>
 				<WeekFacts />
 			</Suspense>
 			<div className="grid gap-14 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">

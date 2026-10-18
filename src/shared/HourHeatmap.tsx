@@ -11,6 +11,8 @@ export interface HeatCell {
 	when: string;
 	/** The block holding the current time: drawn with a ring. */
 	current?: boolean;
+	/** Outside the period shown (not yet reached, or before it began): blank. */
+	outside?: boolean;
 }
 
 export interface HeatRow {
@@ -49,7 +51,7 @@ export function HourHeatmap({
 				<div className="grid gap-1" style={columns}>
 					{hours.map((h, i) => (
 						// biome-ignore lint/suspicious/noArrayIndexKey: fixed hour axis
-						<span key={i} className="text-[11.5px] text-ink-3 tabular-nums">
+						<span key={i} className="text-foot text-ink-3 tabular-nums">
 							{h}
 						</span>
 					))}
@@ -59,23 +61,27 @@ export function HourHeatmap({
 					<div key={r.key} className="contents">
 						<span className="self-center text-meta text-ink-2">{r.day}</span>
 						<div className="grid gap-1" style={columns}>
-							{r.cells.map((c) => (
-								<span
-									key={c.key}
-									role="img"
-									aria-label={`${c.when}: ${c.value}`}
-									onPointerEnter={(e) => {
-										const r = e.currentTarget.getBoundingClientRect();
-										setTip({ cell: c, x: r.left + r.width / 2, y: r.top });
-									}}
-									onPointerLeave={() => setTip(undefined)}
-									className={cn(
-										"h-5 rounded-cell",
-										LEVEL_BG[c.level] ?? LEVEL_BG[0],
-										c.current && "ring-[1.5px] ring-foreground ring-inset",
-									)}
-								/>
-							))}
+							{r.cells.map((c) =>
+								c.outside ? (
+									<span key={c.key} className="h-5" aria-hidden />
+								) : (
+									<span
+										key={c.key}
+										role="img"
+										aria-label={`${c.when}: ${c.value}`}
+										onPointerEnter={(e) => {
+											const r = e.currentTarget.getBoundingClientRect();
+											setTip({ cell: c, x: r.left + r.width / 2, y: r.top });
+										}}
+										onPointerLeave={() => setTip(undefined)}
+										className={cn(
+											"h-5 rounded-cell",
+											LEVEL_BG[c.level] ?? LEVEL_BG[0],
+											c.current && "ring-[1.5px] ring-foreground ring-inset",
+										)}
+									/>
+								),
+							)}
 						</div>
 						<span className="self-center text-right text-meta font-medium text-foreground tabular-nums">
 							{r.total}
