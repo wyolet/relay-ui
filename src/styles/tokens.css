@@ -37,6 +37,11 @@
   --n2: oklch(0.55 0.03 322);
   --n3: oklch(0.75 0.02 323);
   --n4: oklch(0.87 0.01 324);
+  --data-1: #d4613a;
+  --data-2: #eba283;
+  --data-3: #a94e2c;
+  --data-4: #6b311d;
+  --data-other: oklch(0.8 0.012 323);
   --good: #1d7a3e;
   --warn: #a15c00;
   --tip-bg: oklch(0.212 0.019 322);
@@ -63,6 +68,11 @@
   --n2: oklch(0.68 0.02 323);
   --n3: oklch(0.48 0.025 322);
   --n4: oklch(0.34 0.022 322);
+  --data-1: #e8825e;
+  --data-2: #f3b598;
+  --data-3: #a94e2c;
+  --data-4: #6b311d;
+  --data-other: oklch(0.4 0.02 322);
   --good: #4cc27a;
   --warn: #e0a24a;
   --tip-bg: oklch(0.235 0.02 322);
@@ -73,14 +83,16 @@
   --danger: oklch(0.704 0.191 22.216);
 }
 
-/* The heat ramp steps from the ground toward the accent. */
+/* Data is Ledger's orange, apart from the mauve UI accent: the lead series in
+   data-1, its shades after, the folded tail in data-other. The heat ramp
+   steps from the ground toward data-1. */
 :root {
   --q0: var(--grid);
-  --q1: color-mix(in oklch, var(--accent-ink) 20%, var(--bg));
-  --q2: color-mix(in oklch, var(--accent-ink) 40%, var(--bg));
-  --q3: color-mix(in oklch, var(--accent-ink) 60%, var(--bg));
-  --q4: color-mix(in oklch, var(--accent-ink) 80%, var(--bg));
-  --q5: var(--accent-ink);
+  --q1: color-mix(in oklch, var(--data-1) 20%, var(--bg));
+  --q2: color-mix(in oklch, var(--data-1) 40%, var(--bg));
+  --q3: color-mix(in oklch, var(--data-1) 60%, var(--bg));
+  --q4: color-mix(in oklch, var(--data-1) 80%, var(--bg));
+  --q5: var(--data-1);
 }
 
 /* shadcn semantic tokens. Raised surfaces lift one step off the ground and a
@@ -116,12 +128,11 @@
   --sidebar-border: var(--rule);
   --sidebar-ring: var(--accent-ink);
 
-  /* Series: the accent marks the one that matters, neutrals carry the rest. */
-  --chart-1: var(--accent-ink);
-  --chart-2: var(--n1);
-  --chart-3: var(--n2);
-  --chart-4: var(--n3);
-  --chart-5: var(--n4);
+  --chart-1: var(--data-1);
+  --chart-2: var(--data-2);
+  --chart-3: var(--data-3);
+  --chart-4: var(--data-4);
+  --chart-5: var(--data-other);
 
   /* Status always comes with a word; color only supports it. */
   --success: var(--good);

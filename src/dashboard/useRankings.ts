@@ -32,7 +32,7 @@ export function useSpendRanking(groupBy: UsageGroupBy): TrackRow[] {
 			label: labelFor(g.key) || "Unassigned",
 			value: g.cost.usd ?? 0,
 			display: g.cost.usd != null ? fmtMoneyCompact(g.cost.usd, "USD") : "—",
-			color: i === 0 ? "var(--accent-ink)" : undefined,
+			color: i === 0 ? "var(--chart-1)" : undefined,
 			detail: detail(g),
 		}));
 }
@@ -46,7 +46,7 @@ export function useTopKeys(): TrackRow[] {
 		label: labelFor(g.key),
 		value: g.requests,
 		display: fmtCompact(g.requests),
-		color: i === 0 ? "var(--accent-ink)" : undefined,
+		color: i === 0 ? "var(--chart-1)" : undefined,
 		detail: detail(g),
 	}));
 }

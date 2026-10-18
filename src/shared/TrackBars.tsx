@@ -28,7 +28,7 @@ export function TrackBars({ rows }: { rows: TrackRow[] }) {
 							className="block h-full rounded-bar"
 							style={{
 								width: `${r.value > 0 ? Math.max((r.value / max) * 100, 2) : 0}%`,
-								backgroundColor: r.color ?? "var(--n2)",
+								backgroundColor: r.color ?? "var(--chart-2)",
 							}}
 						/>
 					</span>
