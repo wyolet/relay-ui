@@ -2,19 +2,17 @@ import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { useAuth, whoamiQueryOptions } from "@/api/auth";
 import { keysListQueryOptions } from "@/api/hooks/keys";
-import { resolveWindow, useStackedTimeline } from "@/api/hooks/usage";
 import { buttonVariants } from "@/components/ui/button";
-import { DashboardKpis } from "@/dashboard/DashboardKpis";
-import { ErrorHotspots } from "@/dashboard/ErrorHotspots";
-import { OpsAttention } from "@/dashboard/OpsAttention";
+import { AttentionList } from "@/dashboard/AttentionList";
+import { Headline } from "@/dashboard/Headline";
+import { SpendByModel, SpendByTeam, TopKeys } from "@/dashboard/Rankings";
 import { ReleaseReadiness } from "@/dashboard/ReleaseReadiness";
 import { ScopedHome } from "@/dashboard/ScopedHome";
-import { TenancyOverview } from "@/dashboard/TenancyOverview";
+import { TrafficChart } from "@/dashboard/TrafficChart";
 import { useCatalogEmpty } from "@/dashboard/useCatalogEmpty";
+import { Section } from "@/shared/Section";
 import { PageLoader } from "@/shared/Spinner";
 import { useSetupStore } from "@/stores/setup";
-import { StackedUsageChart } from "@/usage/StackedUsageChart";
-import { UsageTopGroups } from "@/usage/UsageTopGroups";
 
 export const Route = createFileRoute("/_authenticated/")({
 	// First-run: a relay with no issued keys can't route anything yet, so steer
@@ -55,88 +53,64 @@ function WelcomePanel() {
 	);
 }
 
-function TrafficSkeleton() {
+/** A block's place while its data loads: same rhythm, no spinner. */
+function Pending({
+	title,
+	height = "h-24",
+}: {
+	title: string;
+	height?: string;
+}) {
 	return (
-		<div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-			{["Requests", "Error rate", "Avg latency", "Tokens"].map((l) => (
-				<div
-					key={l}
-					className="rounded-lg border border-border bg-card px-4 py-3"
-				>
-					<div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-						{l}
-					</div>
-					<div className="mt-1 text-2xl font-semibold tabular-nums text-muted-foreground">
-						…
-					</div>
-				</div>
-			))}
-		</div>
-	);
-}
-
-function TrafficBand() {
-	// The whole traffic band reads "this week" — KPIs, chart, leaderboards,
-	// hotspots — so the numbers agree with each other at a glance.
-	const win = resolveWindow("week");
-	return (
-		<section className="grid gap-4 xl:grid-cols-[2fr_1fr]">
-			<div className="flex flex-col gap-4">
-				<DashboardKpis />
-				<div className="rounded-lg border border-border bg-card p-4">
-					<div className="mb-3 flex items-center justify-between">
-						<h2 className="text-sm font-medium text-foreground">
-							Requests by model · this week
-						</h2>
-						<Link
-							to="/usage"
-							className="text-[11px] text-muted-foreground hover:text-foreground"
-						>
-							View usage →
-						</Link>
-					</div>
-					<DashboardTraffic />
-				</div>
-			</div>
-			<aside className="flex flex-col gap-4">
-				<UsageTopGroups groupBy="model_id" limit={5} win={win} />
-				<UsageTopGroups groupBy="host_id" limit={5} win={win} />
-				<ErrorHotspots />
-			</aside>
-		</section>
-	);
-}
-
-function DashboardTraffic() {
-	const data = useStackedTimeline("model_id", "week", "requests");
-	return (
-		<StackedUsageChart
-			data={data}
-			groupBy="model_id"
-			metric="requests"
-			bare
-			height="h-[240px]"
-		/>
+		<Section title={title}>
+			<div className={`${height} rounded-bar bg-grid`} />
+		</Section>
 	);
 }
 
 function AdminHome() {
 	const catalogEmpty = useCatalogEmpty();
 
+	if (catalogEmpty) {
+		return (
+			<div className="flex flex-col gap-6">
+				<ReleaseReadiness />
+				<WelcomePanel />
+			</div>
+		);
+	}
+
 	return (
-		<div className="flex flex-col gap-6">
+		<div className="grid gap-14">
 			<ReleaseReadiness />
-			{catalogEmpty && <WelcomePanel />}
-
-			{!catalogEmpty && <OpsAttention />}
-
-			{!catalogEmpty && (
-				<Suspense fallback={<TrafficSkeleton />}>
-					<TrafficBand />
+			<Suspense fallback={<div className="h-28" />}>
+				<Headline />
+			</Suspense>
+			<div className="grid gap-14 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+				<Suspense
+					fallback={<Pending title="Traffic by model" height="h-[260px]" />}
+				>
+					<TrafficChart />
 				</Suspense>
-			)}
-
-			{!catalogEmpty && <TenancyOverview />}
+				<Section title="Needs attention" meta="last 24h">
+					<Suspense
+						fallback={<p className="text-label text-ink-3">Checking…</p>}
+					>
+						<AttentionList />
+					</Suspense>
+				</Section>
+			</div>
+			<div className="grid gap-14 md:grid-cols-2 xl:grid-cols-3">
+				<Suspense fallback={<Pending title="Spend by model" />}>
+					<SpendByModel />
+				</Suspense>
+				<Suspense fallback={<Pending title="Spend by team" />}>
+					<SpendByTeam />
+				</Suspense>
+				<Suspense fallback={<Pending title="Top keys" />}>
+					<TopKeys />
+				</Suspense>
+			</div>
 		</div>
 	);
 }

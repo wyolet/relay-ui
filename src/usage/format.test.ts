@@ -22,7 +22,7 @@ describe("fmtCompact", () => {
 	});
 
 	it("suffixes thousands and millions", () => {
-		expect(fmtCompact(2000)).toBe("2k");
+		expect(fmtCompact(2000)).toBe("2K");
 		expect(fmtCompact(1_000_000)).toBe("1M");
 		expect(fmtCompact(4_100_000)).toMatch(/^4[.,]1M$/);
 	});

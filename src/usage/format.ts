@@ -50,7 +50,7 @@ export function fmtMoneyCompact(amount: number, currency: string): string {
 			style: "currency",
 			currency,
 			notation: "compact",
-			maximumFractionDigits: amount < 100 ? 2 : 1,
+			maximumFractionDigits: amount < 10 ? 2 : amount < 1000 ? 0 : 1,
 		}).format(amount);
 	} catch {
 		return `${amount.toFixed(2)} ${currency}`;

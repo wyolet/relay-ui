@@ -33,7 +33,7 @@ export function fmtCompact(n: number): string {
 	if (n >= 1_000_000)
 		return `${(n / 1_000_000).toLocaleString(undefined, { maximumFractionDigits: 1 })}M`;
 	if (n >= 1_000)
-		return `${(n / 1_000).toLocaleString(undefined, { maximumFractionDigits: 1 })}k`;
+		return `${(n / 1_000).toLocaleString(undefined, { maximumFractionDigits: 1 })}K`;
 	return n.toLocaleString();
 }
 
