@@ -37,11 +37,18 @@
   --n2: oklch(0.55 0.03 322);
   --n3: oklch(0.75 0.02 323);
   --n4: oklch(0.87 0.01 324);
-  --data-1: #d4613a;
-  --data-2: #eba283;
-  --data-3: #a94e2c;
-  --data-4: #6b311d;
-  --data-other: oklch(0.8 0.012 323);
+  /* Data scale, light: pale lavender to deep mauve; a higher step is more. */
+  --scale-1: oklch(0.955 0.018 318);
+  --scale-2: oklch(0.915 0.032 316);
+  --scale-3: oklch(0.87 0.048 313);
+  --scale-4: oklch(0.82 0.064 310);
+  --scale-5: oklch(0.765 0.08 307);
+  --scale-6: oklch(0.705 0.094 304);
+  --scale-7: oklch(0.64 0.104 302);
+  --scale-8: oklch(0.575 0.11 300);
+  --scale-9: oklch(0.51 0.108 298);
+  --scale-10: oklch(0.44 0.1 296);
+  --data-other: oklch(0.86 0.008 323);
   --good: #1d7a3e;
   --warn: #a15c00;
   --tip-bg: oklch(0.212 0.019 322);
@@ -68,11 +75,18 @@
   --n2: oklch(0.68 0.02 323);
   --n3: oklch(0.48 0.025 322);
   --n4: oklch(0.34 0.022 322);
-  --data-1: #e8825e;
-  --data-2: #f3b598;
-  --data-3: #a94e2c;
-  --data-4: #6b311d;
-  --data-other: oklch(0.4 0.02 322);
+  /* Data scale, dark: deep mauve to pale lavender; a higher step is more. */
+  --scale-1: oklch(0.24 0.028 320);
+  --scale-2: oklch(0.3 0.04 318);
+  --scale-3: oklch(0.37 0.054 315);
+  --scale-4: oklch(0.44 0.068 312);
+  --scale-5: oklch(0.51 0.08 309);
+  --scale-6: oklch(0.585 0.09 306);
+  --scale-7: oklch(0.66 0.094 303);
+  --scale-8: oklch(0.73 0.09 300);
+  --scale-9: oklch(0.8 0.076 298);
+  --scale-10: oklch(0.87 0.056 296);
+  --data-other: oklch(0.38 0.018 322);
   --good: #4cc27a;
   --warn: #e0a24a;
   --tip-bg: oklch(0.235 0.02 322);
@@ -83,16 +97,19 @@
   --danger: oklch(0.704 0.191 22.216);
 }
 
-/* Data is Ledger's orange, apart from the mauve UI accent: the lead series in
-   data-1, its shades after, the folded tail in data-other. The heat ramp
-   steps from the ground toward data-1. */
+/* Series take well-separated steps so stacked neighbours stay apart; the
+   heat ramp walks the scale evenly from the ground. */
 :root {
+  --data-1: var(--scale-8);
+  --data-2: var(--scale-5);
+  --data-3: var(--scale-10);
+  --data-4: var(--scale-3);
   --q0: var(--grid);
-  --q1: color-mix(in srgb, var(--data-1) 34%, var(--bg));
-  --q2: color-mix(in srgb, var(--data-1) 50%, var(--bg));
-  --q3: color-mix(in srgb, var(--data-1) 66%, var(--bg));
-  --q4: color-mix(in srgb, var(--data-1) 83%, var(--bg));
-  --q5: var(--data-1);
+  --q1: var(--scale-2);
+  --q2: var(--scale-4);
+  --q3: var(--scale-6);
+  --q4: var(--scale-8);
+  --q5: var(--scale-10);
 }
 
 /* shadcn semantic tokens. Raised surfaces lift one step off the ground and a

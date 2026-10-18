@@ -4,12 +4,13 @@ import { useAuth, whoamiQueryOptions } from "@/api/auth";
 import { keysListQueryOptions } from "@/api/hooks/keys";
 import { buttonVariants } from "@/components/ui/button";
 import { AttentionList } from "@/dashboard/AttentionList";
+import { Breakdown } from "@/dashboard/Breakdown";
 import { Headline } from "@/dashboard/Headline";
-import { SpendByModel, SpendByTeam, TopKeys } from "@/dashboard/Rankings";
 import { ReleaseReadiness } from "@/dashboard/ReleaseReadiness";
 import { ScopedHome } from "@/dashboard/ScopedHome";
 import { TrafficChart } from "@/dashboard/TrafficChart";
 import { useCatalogEmpty } from "@/dashboard/useCatalogEmpty";
+import { WeekFacts } from "@/dashboard/WeekFacts";
 import { WeekHeatmap } from "@/dashboard/WeekHeatmap";
 import { Section } from "@/shared/Section";
 import { PageLoader } from "@/shared/Spinner";
@@ -104,17 +105,10 @@ function AdminHome() {
 			<Suspense fallback={<Pending title="Activity" height="h-48" />}>
 				<WeekHeatmap />
 			</Suspense>
-			<div className="grid gap-14 md:grid-cols-2 xl:grid-cols-3">
-				<Suspense fallback={<Pending title="Spend by model" />}>
-					<SpendByModel />
-				</Suspense>
-				<Suspense fallback={<Pending title="Spend by team" />}>
-					<SpendByTeam />
-				</Suspense>
-				<Suspense fallback={<Pending title="Top keys" />}>
-					<TopKeys />
-				</Suspense>
-			</div>
+			<Suspense fallback={<Pending title="This week in numbers" />}>
+				<WeekFacts />
+			</Suspense>
+			<Breakdown />
 		</div>
 	);
 }

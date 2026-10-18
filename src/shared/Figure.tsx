@@ -6,18 +6,25 @@ export function Figure({
 	label,
 	note,
 	trend,
+	size = "hero",
 }: {
 	value: string;
 	label: string;
 	note?: string;
 	/** Oldest first; null marks a period not reached yet. */
 	trend?: (number | null)[];
+	/** `mini` for a row of secondary figures under the headline ones. */
+	size?: "hero" | "mini";
 }) {
 	return (
 		// Bottom-aligned, so figures with and without a trend line up in a row.
 		<div className="grid min-w-0 content-end gap-1.5">
 			{trend && <Trend values={trend} />}
-			<span className="truncate font-display text-mini-figure text-foreground tabular-nums lg:text-figure">
+			{/* Joined by hand: tailwind-merge reads text-mini-figure as a color and
+			    would drop it against text-foreground. */}
+			<span
+				className={`truncate font-display text-mini-figure text-foreground tabular-nums ${size === "hero" ? "lg:text-figure" : ""}`}
+			>
 				{value}
 			</span>
 			<span className="truncate text-label text-ink-2">{label}</span>
