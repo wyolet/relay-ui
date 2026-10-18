@@ -29,9 +29,14 @@ test.describe("Dashboard health", () => {
 	test("a degraded backend shows in Needs attention", async ({ page }) => {
 		await dashboard(page, {
 			status: 503,
-			body: { status: "degraded", backends: { pg: "error", redis: "ok" } },
+			body: {
+				status: "degraded",
+				backends: { pg: "error", redis: "ok" },
+				master_key_configured: false,
+			},
 		});
 		await expect(page.getByText("Database is down")).toBeVisible();
+		await expect(page.getByText("No master key configured")).toBeVisible();
 		await expect(page.getByText("Session & rate-limit store is down")).toHaveCount(0);
 	});
 
@@ -42,5 +47,7 @@ test.describe("Dashboard health", () => {
 		});
 		await expect(page.getByRole("heading", { name: "Needs attention" })).toBeVisible();
 		await expect(page.getByText(/is down/)).toHaveCount(0);
+		// An absent flag is unknown, not "no master key".
+		await expect(page.getByText("No master key configured")).toHaveCount(0);
 	});
 });

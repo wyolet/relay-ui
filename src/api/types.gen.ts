@@ -2834,6 +2834,8 @@ export interface components {
             backends: {
                 [key: string]: string;
             };
+            /** @description Whether a master key is set, so stored host keys can be encrypted. Present for authenticated callers only. */
+            master_key_configured?: boolean;
             /**
              * @description Overall health verdict.
              * @enum {string}
@@ -2922,6 +2924,7 @@ export interface components {
             project_id?: string;
             provider?: string;
             reasoning?: components["schemas"]["ReasoningTiming"];
+            relay_key?: string;
             relay_key_hash?: string;
             request_id: string;
             requested_model?: string;
@@ -8746,6 +8749,8 @@ export interface operations {
                 policy?: string[] | null;
                 /** @description Match any of the given provider slugs (event-time, denormalized). */
                 provider?: string[] | null;
+                /** @description Match any of the given relay key slugs (event-time metadata.name, denormalized). */
+                relay_key?: string[] | null;
                 /** @description Match any of these exact HTTP status codes. */
                 status?: number[] | null;
                 /** @description Convenience status band: "2xx" | "4xx" | "5xx". Sets status_min/max. */
@@ -16813,6 +16818,8 @@ export interface operations {
                 policy?: string[] | null;
                 /** @description Match any of the given provider slugs (event-time, denormalized). */
                 provider?: string[] | null;
+                /** @description Match any of the given relay key slugs (event-time metadata.name, denormalized). */
+                relay_key?: string[] | null;
                 /** @description Match any of these exact HTTP status codes. */
                 status?: number[] | null;
                 /** @description Convenience status band: "2xx" | "4xx" | "5xx". Sets status_min/max. */
@@ -16940,6 +16947,8 @@ export interface operations {
                 policy?: string[] | null;
                 /** @description Match any of the given provider slugs (event-time, denormalized). */
                 provider?: string[] | null;
+                /** @description Match any of the given relay key slugs (event-time metadata.name, denormalized). */
+                relay_key?: string[] | null;
                 /** @description Match any of these exact HTTP status codes. */
                 status?: number[] | null;
                 /** @description Convenience status band: "2xx" | "4xx" | "5xx". Sets status_min/max. */
@@ -16962,7 +16971,7 @@ export interface operations {
                 q?: string;
                 /** @description Caller-tag filter as "key:value" (repeatable). Same key repeated matches any of its values; different keys must all match. */
                 tag?: string[] | null;
-                /** @description "source" (default) | "model" | "host" | "policy" | "provider" | "project" | "team" | "principal" (event-time slugs) | "model_id" | "host_id" | "policy_id" | "project_id" | "team_id" | "principal_id" | "credential_id" | "relay_key_hash" | "host_key_id" | "finish_reason" | "error_kind" | "tags.<key>" (group by a caller tag's value). */
+                /** @description "source" (default) | "model" | "host" | "policy" | "provider" | "project" | "team" | "principal" | "relay_key" (event-time slugs) | "model_id" | "host_id" | "policy_id" | "project_id" | "team_id" | "principal_id" | "credential_id" | "relay_key_hash" | "host_key_id" | "finish_reason" | "error_kind" | "tags.<key>" (group by a caller tag's value). */
                 group_by?: string;
             };
             header?: never;
@@ -17065,6 +17074,8 @@ export interface operations {
                 policy?: string[] | null;
                 /** @description Match any of the given provider slugs (event-time, denormalized). */
                 provider?: string[] | null;
+                /** @description Match any of the given relay key slugs (event-time metadata.name, denormalized). */
+                relay_key?: string[] | null;
                 /** @description Match any of these exact HTTP status codes. */
                 status?: number[] | null;
                 /** @description Convenience status band: "2xx" | "4xx" | "5xx". Sets status_min/max. */
@@ -17089,7 +17100,7 @@ export interface operations {
                 tag?: string[] | null;
                 /** @description Bucket width (e.g. "5m", "1h", "1d"). Required. */
                 interval?: string;
-                /** @description Optional dimension to split series by: "source" | "model" | "host" | "policy" | "provider" | "project" | "team" | "principal" (event-time slugs) | "model_id" | "host_id" | "policy_id" | "project_id" | "team_id" | "principal_id" | "credential_id" | "relay_key_hash" | "host_key_id" | "finish_reason" | "error_kind" | "tags.<key>". Empty returns a single series. */
+                /** @description Optional dimension to split series by: "source" | "model" | "host" | "policy" | "provider" | "project" | "team" | "principal" | "relay_key" (event-time slugs) | "model_id" | "host_id" | "policy_id" | "project_id" | "team_id" | "principal_id" | "credential_id" | "relay_key_hash" | "host_key_id" | "finish_reason" | "error_kind" | "tags.<key>". Empty returns a single series. */
                 group_by?: string;
             };
             header?: never;

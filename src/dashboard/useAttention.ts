@@ -56,6 +56,14 @@ export function useAttention(): { items: AttentionItem[]; checking: boolean } {
 			target: { kind: "none" },
 		});
 	}
+	if (health.masterKeyConfigured === false) {
+		items.push({
+			key: "master-key",
+			tone: "warn",
+			text: "No master key configured",
+			target: { kind: "none" },
+		});
+	}
 	for (const k of breakers.attention) {
 		items.push({
 			key: `breaker-${k.id}`,

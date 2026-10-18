@@ -128,6 +128,7 @@ function PanelBody({
 						</Field>
 					)}
 					<Field label="Runner">{log.source}</Field>
+					{log.relay_key && <Field label="Key">{log.relay_key}</Field>}
 					{log.attempts !== undefined && log.attempts > 1 && (
 						<Field label="Attempts">{String(log.attempts)}</Field>
 					)}

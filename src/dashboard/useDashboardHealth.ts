@@ -22,6 +22,8 @@ export interface BackendHealth {
  */
 export function useDashboardHealth(): {
 	backends: BackendHealth[];
+	/** Undefined when unknown (older relay, or not signed in). */
+	masterKeyConfigured?: boolean;
 	version?: string;
 } {
 	const { data: health } = useQuery(healthzQueryOptions);
@@ -32,6 +34,7 @@ export function useDashboardHealth(): {
 			label: BACKEND_LABELS[key] ?? key,
 			ok: status === "ok",
 		})),
+		masterKeyConfigured: health?.master_key_configured,
 		version: version?.version,
 	};
 }
