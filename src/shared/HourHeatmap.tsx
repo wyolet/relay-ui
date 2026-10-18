@@ -21,7 +21,7 @@ const LEVEL_BG = [
 	"bg-q5",
 ] as const;
 
-/** A day-by-hour grid on the heat ramp, with each day's total at the right. */
+/** A day-by-hour-block grid on the heat ramp, each day's total at the right. */
 export function HourHeatmap({
 	rows,
 	hours,
@@ -29,12 +29,15 @@ export function HourHeatmap({
 	rows: HeatRow[];
 	hours: string[];
 }) {
+	const columns = {
+		gridTemplateColumns: `repeat(${hours.length}, minmax(0, 1fr))`,
+	};
 	return (
 		<div className="grid grid-cols-[3.5rem_minmax(0,1fr)_3.5rem] gap-x-3 gap-y-1">
 			<span />
-			<div className="grid grid-cols-24 gap-1">
+			<div className="grid gap-1" style={columns}>
 				{hours.map((h, i) => (
-					// biome-ignore lint/suspicious/noArrayIndexKey: fixed 24-hour axis
+					// biome-ignore lint/suspicious/noArrayIndexKey: fixed hour axis
 					<span key={i} className="text-[11.5px] text-ink-3 tabular-nums">
 						{h}
 					</span>
@@ -44,7 +47,7 @@ export function HourHeatmap({
 			{rows.map((r) => (
 				<div key={r.key} className="contents">
 					<span className="self-center text-meta text-ink-2">{r.day}</span>
-					<div className="grid grid-cols-24 gap-1">
+					<div className="grid gap-1" style={columns}>
 						{r.cells.map((c) => (
 							<span
 								key={c.key}
