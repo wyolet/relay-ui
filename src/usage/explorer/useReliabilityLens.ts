@@ -3,7 +3,7 @@ import {
 	type UsageGroupBy,
 	type UsageSummaryFilter,
 	usageComparisonWindows,
-	useErrorSplit,
+	useErrorTimeline,
 	useUsageNow,
 	useUsageOverview,
 	useUsageOverviewWithDeltas,
@@ -23,8 +23,6 @@ export const RELIABILITY_COLUMNS: ExplorerColumn[] = [
 	{ key: "requests", label: "Requests" },
 	{ key: "change", label: "vs previous" },
 ];
-
-const THROTTLED = [429];
 
 function rankRows(
 	groups: { key: string; requests: number }[],
@@ -49,11 +47,7 @@ export function useReliabilityLens(
 	const { kpis, groups } = useUsageOverviewWithDeltas(groupBy, win, filter);
 	const { previous } = usageComparisonWindows(win, useUsageNow());
 	const { groups: before } = useUsageOverview(groupBy, previous, filter);
-	const split = useErrorSplit(groupBy, win, filter);
-	const throttled = useUsageOverview("source", win, {
-		...filter,
-		status: THROTTLED,
-	}).kpis.requests;
+	const timeline = useErrorTimeline(groupBy, win, filter);
 	const kinds = useUsageOverview("error_kind", win, {
 		...filter,
 		error: "true",
@@ -61,12 +55,7 @@ export function useReliabilityLens(
 	const finishes = useUsageOverview("finish_reason", win, filter);
 	const labelFor = useGroupLabeler(groupBy);
 
-	let server = 0;
-	let client = 0;
-	for (const s of split.byGroup.values()) {
-		server += s.server;
-		client += s.client;
-	}
+	const { serverErrors: server, clientErrors: client, throttled } = kpis;
 	const of = (n: number) =>
 		`${fmtPct(kpis.requests > 0 ? n / kpis.requests : 0)} of requests`;
 	const figures: FigureData[] = [
@@ -102,7 +91,7 @@ export function useReliabilityLens(
 	const top = Math.max(1, ...ranked.map((g) => g.errorCount));
 	const previousBy = new Map(before.map((g) => [g.key, g]));
 	const rows: ExplorerRow[] = ranked.map((g, i) => {
-		const s = split.byGroup.get(g.key) ?? { client: 0, server: 0 };
+		const s = { server: g.serverErrors, client: g.clientErrors };
 		return {
 			key: g.key,
 			label: g.key === UNSET_KEY ? "Unassigned" : labelFor(g.key),
@@ -130,7 +119,7 @@ export function useReliabilityLens(
 
 	return {
 		figures,
-		timeline: split.timeline,
+		timeline,
 		hasErrors: server + client > 0,
 		rows,
 		errorKinds: rankRows(kinds.groups, kinds.kpis.requests),

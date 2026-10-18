@@ -2537,7 +2537,7 @@ export interface paths {
         };
         /**
          * Aggregated usage rows grouped by a chosen dimension
-         * @description Filters the post-flight stream, groups by group_by, and returns per-group totals (requests, tokens, latency percentiles, TTFT percentiles when available, error count). Rows sorted by request count descending. Requests rejected before reaching an upstream (status 0 with an error kind) are excluded — see /usage/events or /logs for those.
+         * @description Filters the post-flight stream, groups by group_by, and returns per-group totals (requests, tokens, latency percentiles, TTFT percentiles when available, error count with 4xx/5xx and throttled (429) counts). Rows sorted by request count descending. Requests rejected before reaching an upstream (status 0 with an error kind) are excluded — see /usage/events or /logs for those.
          */
         get: operations["usage_summary"];
         put?: never;
@@ -2557,7 +2557,7 @@ export interface paths {
         };
         /**
          * Time-bucketed usage aggregates for charting
-         * @description Buckets the filtered stream by `interval` (epoch-aligned) and returns per-bucket requests, error_count (with a 4xx/5xx split), token sums, duration_ms percentiles, and ttft_ms percentiles (omitted when no event in the bucket has upstream timing). With `group_by` set, returns one series per dimension value for stacked charts; empty returns a single series. Empty buckets are omitted — zero-fill against the returned from/to range.
+         * @description Buckets the filtered stream by `interval` (epoch-aligned) and returns per-bucket requests, error_count (with 4xx/5xx and throttled counts), token sums, duration_ms percentiles, and ttft_ms percentiles (omitted when no event in the bucket has upstream timing). With `group_by` set, returns one series per dimension value for stacked charts; empty returns a single series. Empty buckets are omitted — zero-fill against the returned from/to range.
          */
         get: operations["usage_timeseries"];
         put?: never;
@@ -3937,6 +3937,10 @@ export interface components {
             duration_ms: components["schemas"]["DurationStats"];
             /** Format: int64 */
             error_count: number;
+            /** Format: int64 */
+            errors_4xx: number;
+            /** Format: int64 */
+            errors_5xx: number;
             /** Format: date-time */
             first_seen: string;
             group: {
@@ -3946,6 +3950,8 @@ export interface components {
             last_seen: string;
             /** Format: int64 */
             requests: number;
+            /** Format: int64 */
+            throttled: number;
             tokens: {
                 [key: string]: number;
             };
@@ -4001,6 +4007,8 @@ export interface components {
             errors_5xx: number;
             /** Format: int64 */
             requests: number;
+            /** Format: int64 */
+            throttled: number;
             tokens: {
                 [key: string]: number;
             };
@@ -16971,7 +16979,7 @@ export interface operations {
                 q?: string;
                 /** @description Caller-tag filter as "key:value" (repeatable). Same key repeated matches any of its values; different keys must all match. */
                 tag?: string[] | null;
-                /** @description "source" (default) | "model" | "host" | "policy" | "provider" | "project" | "team" | "principal" | "relay_key" (event-time slugs) | "model_id" | "host_id" | "policy_id" | "project_id" | "team_id" | "principal_id" | "credential_id" | "relay_key_hash" | "host_key_id" | "finish_reason" | "error_kind" | "tags.<key>" (group by a caller tag's value). */
+                /** @description "source" (default) | "none" (one row over the whole filtered set, group {}) | "model" | "host" | "policy" | "provider" | "project" | "team" | "principal" | "relay_key" (event-time slugs) | "model_id" | "host_id" | "policy_id" | "project_id" | "team_id" | "principal_id" | "credential_id" | "relay_key_hash" | "host_key_id" | "finish_reason" | "error_kind" | "tags.<key>" (group by a caller tag's value). */
                 group_by?: string;
             };
             header?: never;
@@ -17100,7 +17108,7 @@ export interface operations {
                 tag?: string[] | null;
                 /** @description Bucket width (e.g. "5m", "1h", "1d"). Required. */
                 interval?: string;
-                /** @description Optional dimension to split series by: "source" | "model" | "host" | "policy" | "provider" | "project" | "team" | "principal" | "relay_key" (event-time slugs) | "model_id" | "host_id" | "policy_id" | "project_id" | "team_id" | "principal_id" | "credential_id" | "relay_key_hash" | "host_key_id" | "finish_reason" | "error_kind" | "tags.<key>". Empty returns a single series. */
+                /** @description Optional dimension to split series by: "source" | "model" | "host" | "policy" | "provider" | "project" | "team" | "principal" | "relay_key" (event-time slugs) | "model_id" | "host_id" | "policy_id" | "project_id" | "team_id" | "principal_id" | "credential_id" | "relay_key_hash" | "host_key_id" | "finish_reason" | "error_kind" | "tags.<key>". Empty returns a single series; "none" returns that series with group {}. */
                 group_by?: string;
             };
             header?: never;

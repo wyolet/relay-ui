@@ -453,31 +453,22 @@ export function useStackedSeries(
 	return { from: win.from, to: win.to, interval: win.interval, points, series };
 }
 
-/** Per-group 4xx/5xx totals and the slice's 4xx/5xx over time, from the same
- * timeseries the stacked chart reads (no extra request). */
-export function useErrorSplit(
+/** The slice's 4xx and 5xx over time, from the same timeseries the stacked
+ * chart reads (no extra request). */
+export function useErrorTimeline(
 	groupBy: UsageGroupBy,
 	win: ResolvedWindow,
 	filter?: UsageSummaryFilter,
-): {
-	byGroup: Map<string, { client: number; server: number }>;
-	timeline: StackedTimeline;
-} {
+): StackedTimeline {
 	const { data } = useSuspenseQuery(
 		stackedTimeseriesQueryOptions(groupBy, win, filter),
 	);
-	const byGroup = new Map<string, { client: number; server: number }>();
 	const samples: SeriesSample[] = [];
 	for (const row of data.rows ?? []) {
-		const key = row.group?.[groupBy]?.trim() || "—";
-		const sums = byGroup.get(key) ?? { client: 0, server: 0 };
 		for (const p of row.points ?? []) {
-			sums.client += p.errors_4xx;
-			sums.server += p.errors_5xx;
 			samples.push({ key: "5xx", bucket: p.bucket, value: p.errors_5xx });
 			samples.push({ key: "4xx", bucket: p.bucket, value: p.errors_4xx });
 		}
-		byGroup.set(key, sums);
 	}
 	const { points, series } = stackSamples(
 		samples,
@@ -486,16 +477,7 @@ export function useErrorSplit(
 		win.interval,
 		false,
 	);
-	return {
-		byGroup,
-		timeline: {
-			from: win.from,
-			to: win.to,
-			interval: win.interval,
-			points,
-			series,
-		},
-	};
+	return { from: win.from, to: win.to, interval: win.interval, points, series };
 }
 
 /** The slice's tokens over time split by meter (input, output, cache, …),
@@ -586,6 +568,12 @@ export interface UsageKpis {
 	requests: number;
 	errors: number;
 	errorRate: number; // 0..1
+	/** Responses ≥500. */
+	serverErrors: number;
+	/** 4xx responses, throttled included. */
+	clientErrors: number;
+	/** 429s. */
+	throttled: number;
 	avgMs: number; // request-weighted mean latency
 	/** All meters summed — the billable volume (cache reads included). */
 	tokens: number;
@@ -601,6 +589,9 @@ export interface UsageGroupStat {
 	requests: number;
 	errorCount: number;
 	errorRate: number; // 0..1
+	serverErrors: number;
+	clientErrors: number;
+	throttled: number;
 	duration: UsageDurationStats;
 	tokens: number;
 	share: number; // requests / max(requests), 0..1
@@ -623,10 +614,17 @@ export interface UsageTimelinePoint {
 function deriveKpis(rows: UsageSummaryRow[]): UsageKpis {
 	let requests = 0;
 	let errors = 0;
+	let serverErrors = 0;
+	let clientErrors = 0;
+	let throttled = 0;
 	let weightedMs = 0;
 	for (const r of rows) {
 		requests += r.requests;
 		errors += r.error_count;
+		// Relays before the status split omit these counts.
+		serverErrors += r.errors_5xx ?? 0;
+		clientErrors += r.errors_4xx ?? 0;
+		throttled += r.throttled ?? 0;
 		weightedMs += r.duration_ms.avg * r.requests;
 	}
 	const split = splitTokens(mergeMeters(rows.map((r) => r.tokens)));
@@ -634,6 +632,9 @@ function deriveKpis(rows: UsageSummaryRow[]): UsageKpis {
 		requests,
 		errors,
 		errorRate: requests > 0 ? errors / requests : 0,
+		serverErrors,
+		clientErrors,
+		throttled,
 		avgMs: requests > 0 ? weightedMs / requests : 0,
 		tokens: split.total,
 		rawInput: split.input - split.cached,
@@ -652,6 +653,9 @@ function deriveGroupStats(
 			requests: r.requests,
 			errorCount: r.error_count,
 			errorRate: r.requests > 0 ? r.error_count / r.requests : 0,
+			serverErrors: r.errors_5xx ?? 0,
+			clientErrors: r.errors_4xx ?? 0,
+			throttled: r.throttled ?? 0,
 			duration: r.duration_ms,
 			tokens: sumTokens(r.tokens),
 			share: peak > 0 ? r.requests / peak : 0,
@@ -821,7 +825,10 @@ export function usageTotalsQueryOptions(
 		queryFn: async (): Promise<UsageSummaryResult> => {
 			const data = unwrap(
 				await apiClient.GET("/usage/summary", {
-					params: { query: { ...filter, from: win.from, to: win.to } },
+					// One row for the whole slice, so its percentiles are exact.
+					params: {
+						query: { ...filter, group_by: "none", from: win.from, to: win.to },
+					},
 				}),
 			);
 			return data;
