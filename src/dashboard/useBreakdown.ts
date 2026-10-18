@@ -2,9 +2,7 @@ import {
 	resolveWindow,
 	type UsageGroupBy,
 	type UsageGroupStat,
-	usageComparisonWindows,
-	useUsageNow,
-	useUsageOverview,
+	useUsageOverviewWithDeltas,
 } from "@/api/hooks/usage";
 import { compareValue } from "@/lib/usage-math/delta";
 import type { SegmentedOption } from "@/shared/Segmented";
@@ -60,9 +58,10 @@ export function useBreakdown(groupBy: BreakdownDimension): {
 	total: string;
 } {
 	const win = resolveWindow("week");
-	const { previous } = usageComparisonWindows(win, useUsageNow());
-	const { groups } = useUsageOverview(groupBy, win);
-	const { groups: before } = useUsageOverview(groupBy, previous);
+	const { groups, previousGroups: before } = useUsageOverviewWithDeltas(
+		groupBy,
+		win,
+	);
 	const labelFor = useGroupLabeler(groupBy);
 
 	const priced = groups.some((g) => (g.cost.usd ?? 0) > 0);

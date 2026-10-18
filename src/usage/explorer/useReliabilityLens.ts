@@ -2,9 +2,7 @@ import {
 	type ResolvedWindow,
 	type UsageGroupBy,
 	type UsageSummaryFilter,
-	usageComparisonWindows,
 	useErrorTimeline,
-	useUsageNow,
 	useUsageOverview,
 	useUsageOverviewWithDeltas,
 } from "@/api/hooks/usage";
@@ -44,9 +42,11 @@ export function useReliabilityLens(
 	win: ResolvedWindow,
 	filter: UsageSummaryFilter,
 ) {
-	const { kpis, groups } = useUsageOverviewWithDeltas(groupBy, win, filter);
-	const { previous } = usageComparisonWindows(win, useUsageNow());
-	const { groups: before } = useUsageOverview(groupBy, previous, filter);
+	const {
+		kpis,
+		groups,
+		previousGroups: before,
+	} = useUsageOverviewWithDeltas(groupBy, win, filter);
 	const timeline = useErrorTimeline(groupBy, win, filter);
 	const kinds = useUsageOverview("error_kind", win, {
 		...filter,

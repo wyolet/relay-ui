@@ -3,9 +3,7 @@ import {
 	type ResolvedWindow,
 	type UsageGroupBy,
 	type UsageSummaryFilter,
-	usageComparisonWindows,
-	useUsageNow,
-	useUsageOverview,
+	useUsageOverviewWithDeltas,
 } from "@/api/hooks/usage";
 import type { FigureData } from "@/shared/FigureRow";
 import {
@@ -41,9 +39,11 @@ export function useSpendLens(
 	compareLabel: string = RANGE_COMPARE_LABELS.custom,
 ) {
 	const cost = useCostKpi(win, filter);
-	const { kpis, groups } = useUsageOverview(groupBy, win, filter);
-	const { previous } = usageComparisonWindows(win, useUsageNow());
-	const { groups: before } = useUsageOverview(groupBy, previous, filter);
+	const {
+		kpis,
+		groups,
+		previousGroups: before,
+	} = useUsageOverviewWithDeltas(groupBy, win, filter);
 	const series = useCostSeries(groupBy, win, filter);
 	const labelFor = useGroupLabeler(groupBy);
 

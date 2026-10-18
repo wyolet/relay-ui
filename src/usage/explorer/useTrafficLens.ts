@@ -2,9 +2,7 @@ import {
 	type ResolvedWindow,
 	type UsageGroupBy,
 	type UsageSummaryFilter,
-	usageComparisonWindows,
 	useStackedSeries,
-	useUsageNow,
 	useUsageOverview,
 	useUsageOverviewWithDeltas,
 } from "@/api/hooks/usage";
@@ -38,13 +36,12 @@ export function useTrafficLens(
 	filter: UsageSummaryFilter,
 	compareLabel: string = RANGE_COMPARE_LABELS.custom,
 ) {
-	const { kpis, deltas, groups } = useUsageOverviewWithDeltas(
-		groupBy,
-		win,
-		filter,
-	);
-	const { previous } = usageComparisonWindows(win, useUsageNow());
-	const { groups: before } = useUsageOverview(groupBy, previous, filter);
+	const {
+		kpis,
+		deltas,
+		groups,
+		previousGroups: before,
+	} = useUsageOverviewWithDeltas(groupBy, win, filter);
 	const { groups: keys } = useUsageOverview("relay_key_hash", win, filter);
 	const series = useStackedSeries(groupBy, win, "requests", filter);
 	const labelFor = useGroupLabeler(groupBy);

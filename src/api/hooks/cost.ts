@@ -1,5 +1,6 @@
-import { useSuspenseQueries, useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import {
+	previousRows,
 	type ResolvedWindow,
 	resolveWindow,
 	stackedTimeseriesQueryOptions,
@@ -7,9 +8,9 @@ import {
 	type UsageRange,
 	type UsageSummaryFilter,
 	type UsageWindow,
+	usageCompareQueryOptions,
 	usageComparisonWindows,
 	usageSummaryQueryOptions,
-	usageTotalsQueryOptions,
 	useRollingUsageWindow,
 	useUsageNow,
 } from "@/api/hooks/usage";
@@ -51,14 +52,12 @@ export function useCostKpi(
 	filter?: UsageSummaryFilter,
 ): CostKpi {
 	const { previous } = usageComparisonWindows(win, useUsageNow());
-	const [current, prior] = useSuspenseQueries({
-		queries: [
-			usageTotalsQueryOptions(win, filter),
-			usageTotalsQueryOptions(previous, filter),
-		],
-	});
-	const sum = sumCostRows(current.data.rows ?? []);
-	const prevSum = sumCostRows(prior.data.rows ?? []);
+	const { data } = useSuspenseQuery(
+		usageCompareQueryOptions("none", win, previous, filter),
+	);
+	const rows = data.rows ?? [];
+	const sum = sumCostRows(rows);
+	const prevSum = sumCostRows(previousRows(rows));
 	return {
 		current: sum,
 		delta:

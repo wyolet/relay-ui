@@ -53,6 +53,18 @@ test.describe("Usage explorer", () => {
 		});
 	}
 
+	test("deltas come from one call with an explicit previous window", async ({
+		page,
+	}) => {
+		const summaries = await mockUsage(page);
+		await page.goto("/usage");
+		await expect(page.getByRole("heading", { name: "Breakdown" })).toBeVisible();
+		const compared = summaries.filter((q) => q.get("compare_from"));
+		expect(compared.length).toBeGreaterThan(0);
+		for (const q of compared) expect(q.get("compare_to")).toBeTruthy();
+		expect(compared.some((q) => q.get("group_by") === "none")).toBe(true);
+	});
+
 	test("a picked filter reaches the server and shows as a chip", async ({
 		page,
 	}) => {

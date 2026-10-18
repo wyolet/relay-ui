@@ -758,6 +758,58 @@ export function usageComparisonWindows(win: UsageWindow, now: string) {
 	return comparisonWindows(win, now);
 }
 
+/**
+ * A summary whose rows also carry their numbers over `previous` (an explicit
+ * window, so "this week to date" compares with last week to the same point).
+ * `"none"` gives one row for the whole slice.
+ */
+export function usageCompareQueryOptions(
+	groupBy: UsageGroupBy | "none",
+	win: UsageWindow,
+	previous: UsageWindow,
+	filter?: UsageSummaryFilter,
+) {
+	return queryOptions({
+		queryKey: [
+			"usage",
+			"compare",
+			groupBy,
+			win.from,
+			win.to,
+			previous.from,
+			previous.to,
+			filter ?? {},
+		] as const,
+		queryFn: async (): Promise<UsageSummaryResult> =>
+			unwrap(
+				await apiClient.GET("/usage/summary", {
+					params: {
+						query: {
+							...filter,
+							group_by: groupBy,
+							from: win.from,
+							to: win.to,
+							compare_from: previous.from,
+							compare_to: previous.to,
+						},
+					},
+				}),
+			),
+		staleTime: 15_000,
+		gcTime: 5 * 60_000,
+	});
+}
+
+/** Each row's previous-window numbers as a row of its own, so the same
+ * derivations apply; rows without previous traffic drop out. */
+export function previousRows(rows: UsageSummaryRow[]): UsageSummaryRow[] {
+	return rows.flatMap((r) =>
+		r.previous
+			? [{ ...r.previous, group: r.group, first_seen: "", last_seen: "" }]
+			: [],
+	);
+}
+
 /** Period-over-period movement for each KPI, plus whether a baseline exists. */
 export interface UsageKpiDeltas {
 	/** False when the previous window saw no traffic — hide deltas, don't show "+∞". */
@@ -782,15 +834,17 @@ export function useUsageOverviewWithDeltas(
 	filter?: UsageSummaryFilter,
 ) {
 	const { previous } = usageComparisonWindows(win, useUsageNow());
-	const [current, prior] = useSuspenseQueries({
+	const [totals, grouped] = useSuspenseQueries({
 		queries: [
-			usageSummaryQueryOptions(groupBy, win, filter),
-			usageSummaryQueryOptions(groupBy, previous, filter),
+			usageCompareQueryOptions("none", win, previous, filter),
+			usageCompareQueryOptions(groupBy, win, previous, filter),
 		],
 	});
-	const rows = current.data.rows ?? [];
-	const kpis = deriveKpis(rows);
-	const prevKpis = deriveKpis(prior.data.rows ?? []);
+	// Totals come from the ungrouped row: a group seen only last period has no
+	// grouped row, but still counts toward last period's total.
+	const totalRows = totals.data.rows ?? [];
+	const kpis = deriveKpis(totalRows);
+	const prevKpis = deriveKpis(previousRows(totalRows));
 	const deltas: UsageKpiDeltas = {
 		hasBaseline: prevKpis.requests > 0,
 		requests: compareValue(kpis.requests, prevKpis.requests),
@@ -800,11 +854,15 @@ export function useUsageOverviewWithDeltas(
 		tokens: compareValue(kpis.tokens, prevKpis.tokens),
 		previous,
 	};
+	const rows = grouped.data.rows ?? [];
 	return {
-		from: current.data.from,
-		to: current.data.to,
+		from: grouped.data.from,
+		to: grouped.data.to,
 		kpis,
 		groups: deriveGroupStats(rows, groupBy),
+		/** Last period's stats for the groups present now; a group missing
+		 * here is new this period. */
+		previousGroups: deriveGroupStats(previousRows(rows), groupBy),
 		deltas,
 	};
 }
