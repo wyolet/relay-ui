@@ -85,7 +85,8 @@ export function useWeekActivity(): { rows: HeatRow[]; hours: string[] } {
 				return {
 					key: String(h),
 					level: level(n),
-					title: `${day} · ${hh(h)} · ${fmtInt(n)} requests${current ? " · now" : ""}`,
+					value: `${fmtInt(n)} request${n === 1 ? "" : "s"}`,
+					when: `${day} · ${hh(h)}`,
 					current,
 				};
 			}),
