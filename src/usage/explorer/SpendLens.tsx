@@ -2,12 +2,13 @@ import { dimensionLabel, RANGE_COMPARE_LABELS } from "@/usage/format";
 import { StackedUsageChart } from "@/usage/StackedUsageChart";
 import { ExplorerTable } from "./ExplorerTable";
 import { LensLayout } from "./LensLayout";
-import { isFilterDimension } from "./search";
 import { useExplorer } from "./useExplorer";
+import { useRowActions } from "./useRowActions";
 import { SPEND_COLUMNS, useSpendLens } from "./useSpendLens";
 
 export function SpendLens() {
-	const { search, win, filter, toggle } = useExplorer();
+	const { search, win, filter } = useExplorer();
+	const actions = useRowActions();
 	const groupBy = search.group_by;
 	const { figures, series, rows } = useSpendLens(
 		groupBy,
@@ -28,17 +29,7 @@ export function SpendLens() {
 					height="h-[280px]"
 				/>
 			}
-			table={
-				<ExplorerTable
-					columns={SPEND_COLUMNS}
-					rows={rows}
-					onDrill={
-						isFilterDimension(groupBy)
-							? (key) => toggle(groupBy, key)
-							: undefined
-					}
-				/>
-			}
+			table={<ExplorerTable columns={SPEND_COLUMNS} rows={rows} {...actions} />}
 		/>
 	);
 }

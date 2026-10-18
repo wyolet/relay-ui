@@ -1,4 +1,5 @@
 import { ArrowDown, ArrowUp } from "lucide-react";
+import type { ReactNode } from "react";
 import { ShareBar } from "@/shared/ShareBar";
 import { useSortedRows } from "./useSortedRows";
 
@@ -29,14 +30,17 @@ export function ExplorerTable({
 	columns,
 	rows,
 	onDrill,
+	rowAction,
 }: {
 	columns: ExplorerColumn[];
 	rows: ExplorerRow[];
 	onDrill?: (key: string) => void;
+	/** A trailing per-row affordance, e.g. a link to the row's requests. */
+	rowAction?: (key: string) => ReactNode;
 }) {
 	const sorted = useSortedRows(rows);
 	const grid = {
-		gridTemplateColumns: `minmax(10rem, 16rem) minmax(5rem, 1fr) repeat(${columns.length}, minmax(5.5rem, auto))`,
+		gridTemplateColumns: `minmax(10rem, 16rem) minmax(5rem, 1fr) repeat(${columns.length}, minmax(5.5rem, auto))${rowAction ? " 2.25rem" : ""}`,
 	};
 
 	if (rows.length === 0) {
@@ -65,6 +69,7 @@ export function ExplorerTable({
 								))}
 						</button>
 					))}
+					{rowAction && <span className="border-b border-rule pb-2" />}
 				</div>
 				{sorted.rows.map((r) => (
 					<div key={r.key} className="group contents text-label tabular-nums">
@@ -97,6 +102,11 @@ export function ExplorerTable({
 								{r.cells[c.key] ?? "—"}
 							</span>
 						))}
+						{rowAction && (
+							<span className="flex items-center justify-end border-b border-rule py-2.5">
+								{r.drillable && rowAction(r.key)}
+							</span>
+						)}
 					</div>
 				))}
 			</div>

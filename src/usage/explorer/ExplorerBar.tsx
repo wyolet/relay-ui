@@ -10,6 +10,9 @@ import { useExplorer } from "./useExplorer";
 const LENS_OPTIONS: SegmentedOption<Lens>[] = [
 	{ value: "traffic", label: "Traffic" },
 	{ value: "spend", label: "Spend" },
+	{ value: "tokens", label: "Tokens" },
+	{ value: "reliability", label: "Reliability" },
+	{ value: "latency", label: "Latency" },
 ];
 
 const GROUP_BY_OPTIONS = USAGE_GROUP_BY.map((g) => ({

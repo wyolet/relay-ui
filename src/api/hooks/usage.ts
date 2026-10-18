@@ -11,6 +11,7 @@ import { type CostTotal, costTotal, sumCostRows } from "@/lib/usage-math/cost";
 import { compareValue, type DeltaResult } from "@/lib/usage-math/delta";
 import { type LatencyRung, latencyLadder } from "@/lib/usage-math/latency";
 import {
+	MAX_SERIES,
 	OTHER_KEY,
 	type SeriesSample,
 	type StackedPoint,
@@ -55,6 +56,8 @@ export const USAGE_GROUP_BY = [
 	"team_id",
 	"project_id",
 	"principal_id",
+	"error_kind",
+	"finish_reason",
 	"extras.instance",
 ] as const;
 export type UsageGroupBy = (typeof USAGE_GROUP_BY)[number];
@@ -450,6 +453,132 @@ export function useStackedSeries(
 	return { from: win.from, to: win.to, interval: win.interval, points, series };
 }
 
+/** Per-group 4xx/5xx totals and the slice's 4xx/5xx over time, from the same
+ * timeseries the stacked chart reads (no extra request). */
+export function useErrorSplit(
+	groupBy: UsageGroupBy,
+	win: ResolvedWindow,
+	filter?: UsageSummaryFilter,
+): {
+	byGroup: Map<string, { client: number; server: number }>;
+	timeline: StackedTimeline;
+} {
+	const { data } = useSuspenseQuery(
+		stackedTimeseriesQueryOptions(groupBy, win, filter),
+	);
+	const byGroup = new Map<string, { client: number; server: number }>();
+	const samples: SeriesSample[] = [];
+	for (const row of data.rows ?? []) {
+		const key = row.group?.[groupBy]?.trim() || "—";
+		const sums = byGroup.get(key) ?? { client: 0, server: 0 };
+		for (const p of row.points ?? []) {
+			sums.client += p.errors_4xx;
+			sums.server += p.errors_5xx;
+			samples.push({ key: "5xx", bucket: p.bucket, value: p.errors_5xx });
+			samples.push({ key: "4xx", bucket: p.bucket, value: p.errors_4xx });
+		}
+		byGroup.set(key, sums);
+	}
+	const { points, series } = stackSamples(
+		samples,
+		win.from,
+		win.to,
+		win.interval,
+		false,
+	);
+	return {
+		byGroup,
+		timeline: {
+			from: win.from,
+			to: win.to,
+			interval: win.interval,
+			points,
+			series,
+		},
+	};
+}
+
+/** The slice's tokens over time split by meter (input, output, cache, …),
+ * from the same timeseries the stacked chart reads. */
+export function useMeterSeries(
+	groupBy: UsageGroupBy,
+	win: ResolvedWindow,
+	filter?: UsageSummaryFilter,
+): StackedTimeline {
+	const { data } = useSuspenseQuery(
+		stackedTimeseriesQueryOptions(groupBy, win, filter),
+	);
+	const samples: SeriesSample[] = [];
+	for (const row of data.rows ?? []) {
+		for (const p of row.points ?? []) {
+			for (const [meter, value] of Object.entries(p.tokens)) {
+				samples.push({ key: meter, bucket: p.bucket, value });
+			}
+		}
+	}
+	const { points, series } = stackSamples(
+		samples,
+		win.from,
+		win.to,
+		win.interval,
+		false,
+	);
+	return { from: win.from, to: win.to, interval: win.interval, points, series };
+}
+
+/** p95 latency per bucket for the busiest groups; a bucket without traffic
+ * is null so the line breaks instead of dropping to zero. */
+export function useLatencySeries(
+	groupBy: UsageGroupBy,
+	win: ResolvedWindow,
+	filter?: UsageSummaryFilter,
+): { points: Record<string, number | string | null>[]; series: string[] } {
+	const { data } = useSuspenseQuery(
+		stackedTimeseriesQueryOptions(groupBy, win, filter),
+	);
+	const rows = (data.rows ?? [])
+		.map((row) => ({
+			key: row.group?.[groupBy]?.trim() || "—",
+			points: row.points ?? [],
+			requests: (row.points ?? []).reduce((n, p) => n + p.requests, 0),
+		}))
+		.sort((a, b) => b.requests - a.requests)
+		.slice(0, MAX_SERIES);
+	const series = rows.map((r) => r.key);
+	const byBucket = new Map<string, Record<string, number | string | null>>();
+	for (const r of rows) {
+		for (const p of r.points) {
+			const at = new Date(p.bucket).toISOString();
+			const point = byBucket.get(at) ?? { bucket: at };
+			point[r.key] = p.requests > 0 ? p.duration_ms.p95 : null;
+			byBucket.set(at, point);
+		}
+	}
+	const points = [...byBucket.values()].sort((a, b) =>
+		String(a.bucket).localeCompare(String(b.bucket)),
+	);
+	return { points, series };
+}
+
+/** Latency and time to first byte across the whole slice. */
+export function useLatencyTotals(
+	win: UsageWindow,
+	filter?: UsageSummaryFilter,
+): {
+	duration: UsageDurationStats;
+	ttft?: UsageDurationStats;
+	requests: number;
+} | null {
+	const { data } = useSuspenseQuery(usageTotalsQueryOptions(win, filter));
+	const row = (data.rows ?? [])[0];
+	if (!row || row.requests === 0) return null;
+	return {
+		duration: row.duration_ms,
+		ttft: row.ttft_ms,
+		requests: row.requests,
+	};
+}
+
 // --- Derived overview shapes ---
 
 /** Top-line KPIs for the selected window, aggregated across all groups. */
@@ -479,6 +608,9 @@ export interface UsageGroupStat {
 	cost: CostTotal;
 	firstSeen: string;
 	lastSeen: string;
+	tokenSplit: TokenSplit;
+	/** Upstream time to first byte; absent when no event had upstream timing. */
+	ttft?: UsageDurationStats;
 }
 
 /** A single aggregated time bucket across every group. */
@@ -526,6 +658,8 @@ function deriveGroupStats(
 			cost: costTotal(r.cost_nanos, r.unpriced, r.requests),
 			firstSeen: r.first_seen,
 			lastSeen: r.last_seen,
+			tokenSplit: splitTokens(r.tokens),
+			ttft: r.ttft_ms,
 		}))
 		.sort((a, b) => b.requests - a.requests);
 }

@@ -142,7 +142,13 @@ export function useCostSeries(
 // resource card.
 export type CostResourceDimension = Exclude<
 	UsageGroupBy,
-	"source" | "team_id" | "project_id" | "principal_id" | `extras.${string}`
+	| "source"
+	| "team_id"
+	| "project_id"
+	| "principal_id"
+	| "error_kind"
+	| "finish_reason"
+	| `extras.${string}`
 >;
 
 export interface ResourceSpend {

@@ -44,6 +44,15 @@ async function mockUsage(page: Page) {
 }
 
 test.describe("Usage explorer", () => {
+	for (const lens of ["traffic", "spend", "tokens", "reliability", "latency"]) {
+		test(`the ${lens} lens renders its table`, async ({ page }) => {
+			await mockUsage(page);
+			await page.goto(`/usage?lens=${lens}`);
+			await expect(page.getByRole("heading", { name: "Breakdown" })).toBeVisible();
+			await expect(page.getByRole("button", { name: "opus", exact: true })).toBeVisible();
+		});
+	}
+
 	test("a picked filter reaches the server and shows as a chip", async ({
 		page,
 	}) => {

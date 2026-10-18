@@ -2,12 +2,13 @@ import { dimensionLabel, RANGE_COMPARE_LABELS } from "@/usage/format";
 import { StackedUsageChart } from "@/usage/StackedUsageChart";
 import { ExplorerTable } from "./ExplorerTable";
 import { LensLayout } from "./LensLayout";
-import { isFilterDimension } from "./search";
 import { useExplorer } from "./useExplorer";
+import { useRowActions } from "./useRowActions";
 import { TRAFFIC_COLUMNS, useTrafficLens } from "./useTrafficLens";
 
 export function TrafficLens() {
-	const { search, win, filter, toggle } = useExplorer();
+	const { search, win, filter } = useExplorer();
+	const actions = useRowActions();
 	const groupBy = search.group_by;
 	const { figures, series, rows } = useTrafficLens(
 		groupBy,
@@ -29,15 +30,7 @@ export function TrafficLens() {
 				/>
 			}
 			table={
-				<ExplorerTable
-					columns={TRAFFIC_COLUMNS}
-					rows={rows}
-					onDrill={
-						isFilterDimension(groupBy)
-							? (key) => toggle(groupBy, key)
-							: undefined
-					}
-				/>
+				<ExplorerTable columns={TRAFFIC_COLUMNS} rows={rows} {...actions} />
 			}
 		/>
 	);

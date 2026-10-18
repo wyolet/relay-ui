@@ -9,7 +9,13 @@ import {
 } from "@/api/hooks/usage";
 import { STATUS_CLASS_VALUES } from "@/logs/logFilterConfig";
 
-export const LENSES = ["traffic", "spend"] as const;
+export const LENSES = [
+	"traffic",
+	"spend",
+	"tokens",
+	"reliability",
+	"latency",
+] as const;
 export type Lens = (typeof LENSES)[number];
 
 /** Dimensions the explorer filters on: id lists the summary endpoint matches. */

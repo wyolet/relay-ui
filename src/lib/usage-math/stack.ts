@@ -34,6 +34,8 @@ export function stackSamples(
 	from: string,
 	to: string,
 	interval: UsageInterval,
+	/** False keeps small series too (a rare 5xx must not fold into Others). */
+	foldSmall = true,
 ): StackedSeries {
 	// Total per series across the window → decide who survives vs folds to Others.
 	const totals = new Map<string, number>();
@@ -47,7 +49,7 @@ export function stackSamples(
 	const keep = new Set<string>();
 	for (const [key, total] of ranked) {
 		if (keep.size >= MAX_SERIES) break;
-		if (grand > 0 && total / grand < OTHER_SHARE) break;
+		if (foldSmall && grand > 0 && total / grand < OTHER_SHARE) break;
 		keep.add(key);
 	}
 	const hasOther = keep.size < totals.size;

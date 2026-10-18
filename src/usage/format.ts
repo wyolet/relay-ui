@@ -14,6 +14,8 @@ const DIMENSION_LABELS: Record<UsageGroupBy, string> = {
 	team_id: "Team",
 	project_id: "Project",
 	principal_id: "Principal",
+	error_kind: "Error kind",
+	finish_reason: "Finish reason",
 	"extras.instance": "Instance",
 };
 

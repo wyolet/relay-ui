@@ -9,11 +9,14 @@ export function LensLayout({
 	figures,
 	chartTitle,
 	chart,
+	extra,
 	table,
 }: {
 	figures: FigureData[];
 	chartTitle: string;
 	chart: ReactNode;
+	/** Sections between the chart and the table. */
+	extra?: ReactNode;
 	table: ReactNode;
 }) {
 	const { stale } = useExplorer();
@@ -22,6 +25,7 @@ export function LensLayout({
 			<div className="grid gap-14">
 				<FigureRow figures={figures} />
 				<Section title={chartTitle}>{chart}</Section>
+				{extra}
 				<Section title="Breakdown">{table}</Section>
 			</div>
 		</StaleContent>
