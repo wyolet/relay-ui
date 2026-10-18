@@ -4475,6 +4475,13 @@ export interface components {
             readonly $schema?: string;
             logs: components["schemas"]["Event"][] | null;
             next_cursor?: string;
+            /**
+             * Format: int64
+             * @description Number of records matching the filters across all pages, capped at 10000. Present only with count=true.
+             */
+            total?: number;
+            /** @description True when more than 10000 records match, so total is the cap rather than the exact count. Present only with count=true. */
+            total_capped?: boolean;
         };
         masterKeyGenerateOutputBody: {
             /**
@@ -8811,6 +8818,8 @@ export interface operations {
                 limit?: number;
                 /** @description Opaque pagination cursor from a previous response's next_cursor. Returns the next (older) page. */
                 cursor?: string;
+                /** @description When true, the response adds total and total_capped: the size of the whole filtered result set, counted regardless of cursor and limit. */
+                count?: boolean;
             };
             header?: never;
             path?: never;

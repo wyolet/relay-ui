@@ -11,6 +11,7 @@ import {
 import { apiClient } from "@/api/client";
 import type { components, operations } from "@/api/types.gen";
 import { unwrap } from "@/api/unwrap";
+import { fmtInt } from "@/lib/format";
 
 // --- Schema-derived types ---
 
@@ -27,7 +28,7 @@ export type EraseScope = components["schemas"]["logsEraseInputBody"];
 /** Server-side filters accepted by GET /logs (minus pagination, which we own). */
 export type LogsFilter = Omit<
 	NonNullable<operations["logs_list"]["parameters"]["query"]>,
-	"limit" | "cursor"
+	"limit" | "cursor" | "count"
 >;
 
 const LIST_PAGE_SIZE = 100;
@@ -43,6 +44,8 @@ export function logsInfiniteQueryOptions(filter: LogsFilter = {}) {
 							...filter,
 							limit: LIST_PAGE_SIZE,
 							cursor: pageParam || undefined,
+							// The match count spans all pages; ask once.
+							count: pageParam ? undefined : true,
 						},
 					},
 				}),
@@ -187,8 +190,14 @@ export function logDetailQueryOptions(requestId: string) {
  */
 export function useLogs(filter: LogsFilter = {}) {
 	const query = useSuspenseInfiniteQuery(logsInfiniteQueryOptions(filter));
+	const first = query.data.pages[0];
 	return {
 		events: flattenEvents(query.data),
+		/** "1,234" or "10,000+"; undefined when the relay doesn't count. */
+		matching:
+			first?.total === undefined
+				? undefined
+				: `${fmtInt(first.total)}${first.total_capped ? "+" : ""}`,
 		fetchNextPage: query.fetchNextPage,
 		hasNextPage: query.hasNextPage,
 		isFetchingNextPage: query.isFetchingNextPage,

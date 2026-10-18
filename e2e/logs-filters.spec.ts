@@ -6,7 +6,15 @@ test("a Logs dimension filter reaches the feed request", async ({ page }) => {
 	const feeds: URLSearchParams[] = [];
 	await page.route(/\/api\/logs(\?|$)/, (route) => {
 		feeds.push(new URL(route.request().url()).searchParams);
-		return route.fulfill({ json: { logs: [] } });
+		return route.fulfill({
+			json: {
+				logs: [
+					{ request_id: "r1", ts: new Date().toISOString(), status: 200, duration_ms: 5, source: "pipeline" },
+				],
+				total: 10000,
+				total_capped: true,
+			},
+		});
 	});
 	await page.route(/\/api\/usage\/summary/, (route) => {
 		const g = new URL(route.request().url()).searchParams.get("group_by");
@@ -33,6 +41,9 @@ test("a Logs dimension filter reaches the feed request", async ({ page }) => {
 	);
 
 	await page.goto("/logs");
+	// The first page asks for the match count; a capped answer reads "10,000+".
+	await expect(page.getByText("10,000+ matching requests · 1 loaded")).toBeVisible();
+	expect(feeds[0]?.get("count")).toBe("true");
 	await page.getByRole("button", { name: "Filter", exact: true }).click();
 	await page.getByRole("button", { name: "Team" }).click();
 	await page.getByText("t-research · 12").click();

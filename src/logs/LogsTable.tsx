@@ -60,7 +60,7 @@ export function LogsTable({
 	filter?: LogsFilter;
 	emptyBody?: string;
 }) {
-	const { events, fetchNextPage, hasNextPage, isFetchingNextPage } =
+	const { events, matching, fetchNextPage, hasNextPage, isFetchingNextPage } =
 		useLogs(filter);
 
 	const needle = query.trim().toLowerCase();
@@ -82,6 +82,12 @@ export function LogsTable({
 
 	return (
 		<div className="flex flex-col gap-2">
+			{matching !== undefined && (
+				<p className="text-meta text-ink-3 tabular-nums">
+					{matching} matching {matching === "1" ? "request" : "requests"} ·{" "}
+					{fmtInt(events.length)} loaded
+				</p>
+			)}
 			<div className="overflow-x-auto">
 				<table className="w-full text-meta">
 					<thead>
