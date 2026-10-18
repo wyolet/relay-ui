@@ -93,11 +93,11 @@ function LogsPage() {
 	};
 
 	return (
-		<div className="flex flex-col gap-4">
+		<div className="flex flex-col gap-6">
 			<div className="flex items-start justify-between gap-4">
 				<div>
-					<h1 className="text-xl font-semibold text-foreground">Logs</h1>
-					<p className="text-xs text-muted-foreground">
+					<h1 className="text-2xl font-bold text-foreground">Logs</h1>
+					<p className="mt-1 text-label text-ink-2">
 						Requests through the relay, newest first. Expand a row for its
 						summary; open the request page for captured bodies.
 					</p>

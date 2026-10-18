@@ -21,9 +21,9 @@ const WINDOW_LABEL: Record<string, string> = {
 type Metric = "requests" | "tokens";
 
 const CONFIG: ChartConfig = {
-	ok: { label: "ok", color: "var(--chart-1)" },
+	ok: { label: "ok", color: "var(--chart-2)" },
 	errors: { label: "error", color: "var(--destructive)" },
-	tokens: { label: "Tokens", color: "var(--chart-1)" },
+	tokens: { label: "Tokens", color: "var(--chart-2)" },
 };
 
 /** Bucket start as a compact local label — time of day, or date for day buckets. */
@@ -65,8 +65,8 @@ export function LogsHistogram({ filter }: { filter: LogsFilter }) {
 	);
 
 	return (
-		<div className="rounded-lg border border-border bg-card p-3">
-			<div className="mb-2 flex items-center justify-between text-[11px] text-muted-foreground">
+		<div>
+			<div className="mb-3 flex items-center justify-between text-meta text-ink-3">
 				<span>
 					{metric === "tokens" ? "Tokens" : "Requests"} over time ·{" "}
 					{windowLabel}
@@ -75,10 +75,10 @@ export function LogsHistogram({ filter }: { filter: LogsFilter }) {
 					{metric === "requests" && (
 						<span className="inline-flex items-center gap-3">
 							<span className="inline-flex items-center gap-1">
-								<span className="size-2 rounded-sm bg-[var(--chart-1)]" /> ok
+								<span className="size-2 rounded-full bg-chart-2" /> ok
 							</span>
 							<span className="inline-flex items-center gap-1">
-								<span className="size-2 rounded-sm bg-destructive" /> error
+								<span className="size-2 rounded-full bg-destructive" /> error
 							</span>
 						</span>
 					)}
@@ -94,11 +94,11 @@ export function LogsHistogram({ filter }: { filter: LogsFilter }) {
 			</div>
 
 			{isLoading || !hasData ? (
-				<div className="flex h-20 items-center justify-center text-xs text-muted-foreground">
+				<div className="flex h-24 items-center justify-center text-meta text-ink-3">
 					{isLoading ? "Loading…" : "No traffic in this window."}
 				</div>
 			) : (
-				<ChartContainer config={CONFIG} className="h-20 w-full">
+				<ChartContainer config={CONFIG} className="h-24 w-full">
 					<BarChart data={data} margin={{ top: 4 }} barCategoryGap="20%">
 						<XAxis dataKey="bucket" hide />
 						<ChartTooltip
