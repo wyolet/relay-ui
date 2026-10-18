@@ -65,6 +65,37 @@ test.describe("Usage explorer", () => {
 		expect(compared.some((q) => q.get("group_by") === "none")).toBe(true);
 	});
 
+	test("filter choices come from one facets call with server names", async ({
+		page,
+	}) => {
+		const summaries = await mockUsage(page);
+		const facetCalls: URLSearchParams[] = [];
+		await page.route(/\/api\/usage\/facets/, (route) => {
+			facetCalls.push(new URL(route.request().url()).searchParams);
+			return route.fulfill({
+				json: {
+					from: "",
+					to: "",
+					facets: {
+						team_id: [
+							{ value: "t-research", label: "Research", requests: 40 },
+							{ value: "", requests: 3 },
+						],
+					},
+				},
+			});
+		});
+		await page.goto("/usage");
+		await page.getByRole("button", { name: "Filter" }).click();
+		await page.getByRole("button", { name: "Team" }).click();
+
+		await expect(page.getByText("Research · 40")).toBeVisible();
+		// Unattributed traffic can't be filtered on, so it isn't offered.
+		await expect(page.getByText("· 3")).toHaveCount(0);
+		expect(facetCalls[0]?.getAll("dims")).toContain("team_id");
+		expect(summaries.some((q) => q.get("group_by") === "team_id")).toBe(false);
+	});
+
 	test("a picked filter reaches the server and shows as a chip", async ({
 		page,
 	}) => {

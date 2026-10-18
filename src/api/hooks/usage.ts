@@ -808,6 +808,38 @@ export function usageCompareQueryOptions(
 	});
 }
 
+export type UsageFacets = components["schemas"]["FacetsResult"]["facets"];
+
+/** Top values per dimension in one call, each counted with every filter but
+ * its own, with the server's best name for each value. */
+export function usageFacetsQueryOptions(
+	dims: readonly UsageGroupBy[],
+	win: UsageWindow,
+	filter?: UsageSummaryFilter,
+) {
+	return queryOptions({
+		queryKey: [
+			"usage",
+			"facets",
+			dims,
+			win.from,
+			win.to,
+			filter ?? {},
+		] as const,
+		queryFn: async (): Promise<UsageFacets> =>
+			unwrap(
+				await apiClient.GET("/usage/facets", {
+					params: {
+						query: { ...filter, dims: [...dims], from: win.from, to: win.to },
+					},
+				}),
+			).facets,
+		staleTime: 15_000,
+		gcTime: 5 * 60_000,
+		retry: false,
+	});
+}
+
 /** The slice's totals with last period's, and its active keys; every view
  * that shows totals or deltas reads this one request. */
 export function usageTotalsCompareQueryOptions(

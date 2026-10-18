@@ -2528,6 +2528,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/usage/facets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Top values per dimension for filter dropdowns
+         * @description For each dimension in `dims`, returns its most frequent values over the filtered stream with request counts, ordered by requests descending then value. Each dimension ignores its own filter and keeps every other one, so model_id values honour host_id= but not model_id=. Rows are counted like /usage/summary: requests rejected before reaching an upstream are excluded. An id value carries a `label`: its latest non-empty slug in the window, else its current catalog name, else (user principals) the username. `from`/`to` echo the requested window.
+         */
+        get: operations["usage_facets"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/usage/summary": {
         parameters: {
             query?: never;
@@ -2943,6 +2963,27 @@ export interface components {
             /** Format: date-time */
             ts: string;
             upstream?: components["schemas"]["UpstreamTiming"];
+        };
+        FacetValue: {
+            label?: string;
+            /** Format: int64 */
+            requests: number;
+            value: string;
+        };
+        FacetsResult: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/FacetsResult.json
+             */
+            readonly $schema?: string;
+            facets: {
+                [key: string]: components["schemas"]["FacetValue"][] | null;
+            };
+            /** Format: date-time */
+            from: string;
+            /** Format: date-time */
+            to: string;
         };
         Governance: {
             /**
@@ -16915,6 +16956,135 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["usageEventsOutputBody"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    usage_facets: {
+        parameters: {
+            query?: {
+                /** @description Relative window (e.g. "1h", "24h", "7d"). Default "1h". Ignored when from is set. */
+                since?: string;
+                /** @description Absolute lower bound (RFC3339). Overrides since. */
+                from?: string;
+                /** @description Absolute upper bound (RFC3339). */
+                to?: string;
+                /** @description Exact match on a single request id (deep-link one event). */
+                request_id?: string;
+                /** @description Match any of the given sha256 hashes of the inbound bearer. */
+                relay_key_hash?: string[] | null;
+                /** @description Match any of the given Policy.metadata.id values. */
+                policy_id?: string[] | null;
+                /** @description Match any of the given Project.metadata.id values. */
+                project_id?: string[] | null;
+                /** @description Match any of the given Team.metadata.id values. */
+                team_id?: string[] | null;
+                /** @description Match any of the given principal ids (ServiceAccount.metadata.id or user id). */
+                principal_id?: string[] | null;
+                /** @description Match any of the given Model.metadata.id values. */
+                model_id?: string[] | null;
+                /** @description Match any of the given Host.metadata.id values. */
+                host_id?: string[] | null;
+                /** @description Match any of "pipeline" | "proxy" | "ws" | "batch". */
+                source?: string[] | null;
+                /** @description Match any of "stop" | "length" | "tool_calls" | "content_filter" | "refusal" | "other". */
+                finish_reason?: string[] | null;
+                /** @description Match any of the given error_kind values. */
+                error_kind?: string[] | null;
+                /** @description Minimum HTTP status to include. */
+                status_min?: number;
+                /** @description Maximum HTTP status to include. */
+                status_max?: number;
+                /** @description Match any of the given HostKey.metadata.id values. */
+                host_key_id?: string[] | null;
+                /** @description Match any of the model strings as the caller sent them. */
+                requested_model?: string[] | null;
+                /** @description Match any of the given model slugs (event-time metadata.name, denormalized). */
+                model?: string[] | null;
+                /** @description Match any of the given host slugs (event-time metadata.name, denormalized). */
+                host?: string[] | null;
+                /** @description Match any of the given policy slugs (event-time metadata.name, denormalized). */
+                policy?: string[] | null;
+                /** @description Match any of the given provider slugs (event-time, denormalized). */
+                provider?: string[] | null;
+                /** @description Match any of the given relay key slugs (event-time metadata.name, denormalized). */
+                relay_key?: string[] | null;
+                /** @description Match any of these exact HTTP status codes. */
+                status?: number[] | null;
+                /** @description Convenience status band: "2xx" | "4xx" | "5xx". Sets status_min/max. */
+                status_class?: string;
+                /** @description true = only streamed responses, false = only non-streamed. */
+                streamed?: "true" | "false";
+                /** @description true = only errors (status>=400 or error_kind set), false = only successes. */
+                error?: "true" | "false";
+                /** @description Minimum upstream try count (failover) — finds retried requests. */
+                attempts_min?: number;
+                /** @description Minimum total duration in ms (slow-request filter). */
+                duration_ms_min?: number;
+                /** @description Maximum total duration in ms. */
+                duration_ms_max?: number;
+                /** @description Minimum upstream time-to-first-byte (ms); excludes requests with no upstream timing. */
+                ttft_ms_min?: number;
+                /** @description Maximum upstream time-to-first-byte (ms). */
+                ttft_ms_max?: number;
+                /** @description Free-text substring across request_id, model_id, requested_model, source. */
+                q?: string;
+                /** @description Caller-tag filter as "key:value" (repeatable). Same key repeated matches any of its values; different keys must all match. */
+                tag?: string[] | null;
+                /** @description Required. Comma-separated dimensions to list values for, at most 16, no duplicates: any group_by value except "none" (e.g. "model_id,host_id,tags.env"). */
+                dims?: string[] | null;
+                /** @description Values returned per dimension. Default 50, max 200. */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FacetsResult"];
                 };
             };
             /** @description Bad Request */
