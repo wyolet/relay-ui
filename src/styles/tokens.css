@@ -37,17 +37,18 @@
   --n2: oklch(0.55 0.03 322);
   --n3: oklch(0.75 0.02 323);
   --n4: oklch(0.87 0.01 324);
-  /* Data scale, light: pale lavender to deep mauve; a higher step is more. */
-  --scale-1: oklch(0.955 0.018 318);
-  --scale-2: oklch(0.915 0.032 316);
-  --scale-3: oklch(0.87 0.048 313);
-  --scale-4: oklch(0.82 0.064 310);
-  --scale-5: oklch(0.765 0.08 307);
-  --scale-6: oklch(0.705 0.094 304);
-  --scale-7: oklch(0.64 0.104 302);
-  --scale-8: oklch(0.575 0.11 300);
-  --scale-9: oklch(0.51 0.108 298);
-  --scale-10: oklch(0.44 0.1 296);
+  /* Data scale, light: pale lavender to soft mauve; a higher step is more.
+     Chroma stays low so the busiest values never glare. */
+  --scale-1: oklch(0.955 0.014 320);
+  --scale-2: oklch(0.904 0.021 318);
+  --scale-3: oklch(0.854 0.029 316);
+  --scale-4: oklch(0.803 0.036 313);
+  --scale-5: oklch(0.753 0.043 311);
+  --scale-6: oklch(0.702 0.051 309);
+  --scale-7: oklch(0.652 0.058 307);
+  --scale-8: oklch(0.601 0.065 304);
+  --scale-9: oklch(0.551 0.073 302);
+  --scale-10: oklch(0.500 0.080 300);
   --data-other: oklch(0.86 0.008 323);
   --good: #1d7a3e;
   --warn: #a15c00;
@@ -75,17 +76,17 @@
   --n2: oklch(0.68 0.02 323);
   --n3: oklch(0.48 0.025 322);
   --n4: oklch(0.34 0.022 322);
-  /* Data scale, dark: deep mauve to pale lavender; a higher step is more. */
-  --scale-1: oklch(0.24 0.028 320);
-  --scale-2: oklch(0.3 0.04 318);
-  --scale-3: oklch(0.37 0.054 315);
-  --scale-4: oklch(0.44 0.068 312);
-  --scale-5: oklch(0.51 0.08 309);
-  --scale-6: oklch(0.585 0.09 306);
-  --scale-7: oklch(0.66 0.094 303);
-  --scale-8: oklch(0.73 0.09 300);
-  --scale-9: oklch(0.8 0.076 298);
-  --scale-10: oklch(0.87 0.056 296);
+  /* Data scale, dark: deep mauve to soft lavender, capped well below white. */
+  --scale-1: oklch(0.260 0.030 322);
+  --scale-2: oklch(0.319 0.035 320);
+  --scale-3: oklch(0.378 0.040 318);
+  --scale-4: oklch(0.437 0.045 315);
+  --scale-5: oklch(0.496 0.050 313);
+  --scale-6: oklch(0.554 0.055 311);
+  --scale-7: oklch(0.613 0.060 309);
+  --scale-8: oklch(0.672 0.065 306);
+  --scale-9: oklch(0.731 0.070 304);
+  --scale-10: oklch(0.790 0.075 302);
   --data-other: oklch(0.38 0.018 322);
   --good: #4cc27a;
   --warn: #e0a24a;
