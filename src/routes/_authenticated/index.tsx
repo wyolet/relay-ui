@@ -123,7 +123,7 @@ function DashboardInner() {
 function DashboardPage() {
 	return (
 		<div>
-			<h1 className="mb-6 text-2xl font-bold text-foreground">Dashboard</h1>
+			<h1 className="sr-only">Dashboard</h1>
 			<Suspense fallback={<PageLoader />}>
 				<DashboardInner />
 			</Suspense>
