@@ -58,11 +58,12 @@ export function useBreakdown(groupBy: BreakdownDimension): {
 	total: string;
 } {
 	const win = resolveWindow("week");
-	const { groups, previousGroups: before } = useUsageOverviewWithDeltas(
-		groupBy,
-		win,
-	);
-	const labelFor = useGroupLabeler(groupBy);
+	const {
+		groups,
+		previousGroups: before,
+		labels,
+	} = useUsageOverviewWithDeltas(groupBy, win);
+	const labelFor = useGroupLabeler(groupBy, labels);
 
 	const priced = groups.some((g) => (g.cost.usd ?? 0) > 0);
 	const ranked = [...groups].sort(

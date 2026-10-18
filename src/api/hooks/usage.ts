@@ -354,6 +354,8 @@ export interface StackedTimeline {
 	points: StackedPoint[];
 	/** Ordered series keys present in the data (largest first, OTHER_KEY last). */
 	series: string[];
+	/** Names for the series keys, when the server sent them. */
+	labels?: Record<string, string>;
 }
 
 export function stackedTimeseriesQueryOptions(
@@ -450,7 +452,14 @@ export function useStackedSeries(
 		win.to,
 		win.interval,
 	);
-	return { from: win.from, to: win.to, interval: win.interval, points, series };
+	return {
+		from: win.from,
+		to: win.to,
+		interval: win.interval,
+		points,
+		series,
+		labels: data.labels,
+	};
 }
 
 /** The slice's 4xx and 5xx over time, from the same timeseries the stacked
@@ -514,7 +523,11 @@ export function useLatencySeries(
 	groupBy: UsageGroupBy,
 	win: ResolvedWindow,
 	filter?: UsageSummaryFilter,
-): { points: Record<string, number | string | null>[]; series: string[] } {
+): {
+	points: Record<string, number | string | null>[];
+	series: string[];
+	labels?: Record<string, string>;
+} {
 	const { data } = useSuspenseQuery(
 		stackedTimeseriesQueryOptions(groupBy, win, filter),
 	);
@@ -539,7 +552,7 @@ export function useLatencySeries(
 	const points = [...byBucket.values()].sort((a, b) =>
 		String(a.bucket).localeCompare(String(b.bucket)),
 	);
-	return { points, series };
+	return { points, series, labels: data.labels };
 }
 
 /** Latency and time to first byte across the whole slice. */
@@ -751,6 +764,7 @@ export function useUsageOverview(
 		to: data.to,
 		kpis: deriveKpis(rows),
 		groups: deriveGroupStats(rows, groupBy),
+		labels: data.labels,
 	};
 }
 
@@ -979,6 +993,7 @@ export function useUsageOverviewWithDeltas(
 		 * here is new this period. */
 		previousGroups: deriveGroupStats(previousRows(rows), groupBy),
 		deltas,
+		labels: grouped.data.labels,
 	};
 }
 

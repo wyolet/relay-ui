@@ -96,6 +96,37 @@ test.describe("Usage explorer", () => {
 		expect(summaries.some((q) => q.get("group_by") === "team_id")).toBe(false);
 	});
 
+	test("rows take their names from the response, not the catalog", async ({
+		page,
+	}) => {
+		await mockUsage(page);
+		const catalogFetches: string[] = [];
+		page.on("request", (r) => {
+			if (/\/api\/models(\?|$)/.test(r.url())) catalogFetches.push(r.url());
+		});
+		await page.route(/\/api\/usage\/summary/, (route) => {
+			const q = new URL(route.request().url()).searchParams;
+			if (q.get("group_by") !== "model_id") return route.fallback();
+			return route.fulfill({
+				json: {
+					from: "",
+					to: "",
+					rows: [row({ model_id: "m-gone" }, 30)],
+					labels: { "m-gone": "retired-model" },
+				},
+			});
+		});
+		// The server names timeseries groups too.
+		await page.route(/\/api\/usage\/timeseries/, (route) =>
+			route.fulfill({
+				json: { from: "", to: "", interval: "1h", rows: [], labels: {} },
+			}),
+		);
+		await page.goto("/usage?lens=traffic&group_by=model_id");
+		await expect(page.getByRole("button", { name: "retired-model", exact: true })).toBeVisible();
+		expect(catalogFetches).toEqual([]);
+	});
+
 	test("a picked filter reaches the server and shows as a chip", async ({
 		page,
 	}) => {

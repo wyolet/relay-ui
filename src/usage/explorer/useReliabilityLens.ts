@@ -46,6 +46,7 @@ export function useReliabilityLens(
 		kpis,
 		groups,
 		previousGroups: before,
+		labels,
 	} = useUsageOverviewWithDeltas(groupBy, win, filter);
 	const timeline = useErrorTimeline(groupBy, win, filter);
 	const kinds = useUsageOverview("error_kind", win, {
@@ -53,7 +54,7 @@ export function useReliabilityLens(
 		error: "true",
 	});
 	const finishes = useUsageOverview("finish_reason", win, filter);
-	const labelFor = useGroupLabeler(groupBy);
+	const labelFor = useGroupLabeler(groupBy, labels);
 
 	const { serverErrors: server, clientErrors: client, throttled } = kpis;
 	const of = (n: number) =>

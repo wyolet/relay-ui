@@ -20,6 +20,7 @@ export function LatencyLens() {
 					series={lines.series}
 					groupBy={search.group_by}
 					interval={win.interval}
+					labels={lines.labels}
 				/>
 			}
 			table={

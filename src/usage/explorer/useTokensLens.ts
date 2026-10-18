@@ -34,9 +34,10 @@ export function useTokensLens(
 		deltas,
 		groups,
 		previousGroups: before,
+		labels,
 	} = useUsageOverviewWithDeltas(groupBy, win, filter);
 	const meters = useMeterSeries(groupBy, win, filter);
-	const labelFor = useGroupLabeler(groupBy);
+	const labelFor = useGroupLabeler(groupBy, labels);
 
 	const cached = Math.max(kpis.tokens - kpis.rawInput - kpis.rawOutput, 0);
 	const per = (n: number) => (kpis.requests > 0 ? n / kpis.requests : 0);

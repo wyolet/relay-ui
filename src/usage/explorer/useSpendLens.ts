@@ -43,9 +43,10 @@ export function useSpendLens(
 		kpis,
 		groups,
 		previousGroups: before,
+		labels,
 	} = useUsageOverviewWithDeltas(groupBy, win, filter);
 	const series = useCostSeries(groupBy, win, filter);
-	const labelFor = useGroupLabeler(groupBy);
+	const labelFor = useGroupLabeler(groupBy, labels);
 
 	const total = cost.current.usd;
 	const figures: FigureData[] = [

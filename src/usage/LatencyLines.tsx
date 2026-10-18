@@ -19,15 +19,18 @@ export function LatencyLines({
 	series,
 	groupBy,
 	interval,
+	labels,
 	height = "h-[280px]",
 }: {
 	points: Record<string, number | string | null>[];
 	series: string[];
+	/** Names for the series keys, when the server sent them. */
+	labels?: Record<string, string>;
 	groupBy: UsageGroupBy;
 	interval: UsageInterval;
 	height?: string;
 }) {
-	const labelFor = useGroupLabeler(groupBy);
+	const labelFor = useGroupLabeler(groupBy, labels);
 	const config: ChartConfig = Object.fromEntries(
 		series.map((key, i) => [
 			key,

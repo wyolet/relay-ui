@@ -2557,7 +2557,7 @@ export interface paths {
         };
         /**
          * Aggregated usage rows grouped by a chosen dimension
-         * @description Filters the post-flight stream, groups by group_by, and returns per-group totals (requests, tokens, latency percentiles, TTFT percentiles when available, error count with 4xx/5xx and throttled (429) counts). Rows sorted by request count descending. Requests rejected before reaching an upstream (status 0 with an error kind) are excluded — see /usage/events or /logs for those.
+         * @description Filters the post-flight stream, groups by group_by, and returns per-group totals (requests, tokens, latency percentiles, TTFT percentiles when available, error count with 4xx/5xx and throttled (429) counts). Rows sorted by request count descending. With an id group_by, `labels` maps each group value to its latest slug in the window, else its current catalog name, else (user principals) the username. Requests rejected before reaching an upstream (status 0 with an error kind) are excluded — see /usage/events or /logs for those.
          */
         get: operations["usage_summary"];
         put?: never;
@@ -2577,7 +2577,7 @@ export interface paths {
         };
         /**
          * Time-bucketed usage aggregates for charting
-         * @description Buckets the filtered stream by `interval` (epoch-aligned) and returns per-bucket requests, error_count (with 4xx/5xx and throttled counts), token sums, duration_ms percentiles, and ttft_ms percentiles (omitted when no event in the bucket has upstream timing). With `group_by` set, returns one series per dimension value for stacked charts; empty returns a single series. Empty buckets are omitted — zero-fill against the returned from/to range.
+         * @description Buckets the filtered stream by `interval` (epoch-aligned) and returns per-bucket requests, error_count (with 4xx/5xx and throttled counts), token sums, duration_ms percentiles, and ttft_ms percentiles (omitted when no event in the bucket has upstream timing). With `group_by` set, returns one series per dimension value for stacked charts; empty returns a single series. With an id group_by, `labels` names each series as /usage/summary does. Empty buckets are omitted — zero-fill against the returned from/to range.
          */
         get: operations["usage_timeseries"];
         put?: never;
@@ -3991,6 +3991,9 @@ export interface components {
             readonly $schema?: string;
             /** Format: date-time */
             from: string;
+            labels?: {
+                [key: string]: string;
+            };
             /** Format: date-time */
             previous_from?: string;
             /** Format: date-time */
@@ -4105,6 +4108,9 @@ export interface components {
             /** Format: date-time */
             from: string;
             interval: string;
+            labels?: {
+                [key: string]: string;
+            };
             rows: components["schemas"]["TimeSeriesRow"][] | null;
             /** Format: date-time */
             to: string;
@@ -17067,7 +17073,7 @@ export interface operations {
                 q?: string;
                 /** @description Caller-tag filter as "key:value" (repeatable). Same key repeated matches any of its values; different keys must all match. */
                 tag?: string[] | null;
-                /** @description Required. Comma-separated dimensions to list values for, at most 16, no duplicates: any group_by value except "none" (e.g. "model_id,host_id,tags.env"). */
+                /** @description Required. Dimensions to list values for, repeated (dims=model_id&dims=host_id) or comma-separated, at most 16, no duplicates: any group_by value except "none". */
                 dims?: string[] | null;
                 /** @description Values returned per dimension. Default 50, max 200. */
                 limit?: number;

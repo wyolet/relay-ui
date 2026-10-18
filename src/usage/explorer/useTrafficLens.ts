@@ -40,9 +40,10 @@ export function useTrafficLens(
 		deltas,
 		groups,
 		previousGroups: before,
+		labels,
 	} = useUsageOverviewWithDeltas(groupBy, win, filter);
 	const series = useStackedSeries(groupBy, win, "requests", filter);
-	const labelFor = useGroupLabeler(groupBy);
+	const labelFor = useGroupLabeler(groupBy, labels);
 
 	const peak = series.points.reduce<{ bucket: string; total: number }>(
 		(best, p) => {

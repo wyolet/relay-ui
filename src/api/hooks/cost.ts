@@ -75,6 +75,8 @@ export interface CostTimeline extends StackedSeries {
 	/** Events excluded from the $ stacks for lack of a cost stamp, and the
 	 * group keys that saw them. */
 	unpriced: { events: number; groups: string[] };
+	/** Names for the series keys, when the server sent them. */
+	labels?: Record<string, string>;
 }
 
 /** Stacked estimated spend per bucket, split by any usage dimension. Shares
@@ -131,6 +133,7 @@ export function useCostSeries(
 		to: win.to,
 		interval: win.interval,
 		unpriced: { events: unpricedEvents, groups: [...unpricedGroups] },
+		labels: data.labels,
 	};
 }
 

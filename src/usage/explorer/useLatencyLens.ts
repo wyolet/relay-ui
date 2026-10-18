@@ -32,9 +32,9 @@ export function useLatencyLens(
 	filter: UsageSummaryFilter,
 ) {
 	const totals = useLatencyTotals(win, filter);
-	const { groups } = useUsageOverview(groupBy, win, filter);
+	const { groups, labels } = useUsageOverview(groupBy, win, filter);
 	const lines = useLatencySeries(groupBy, win, filter);
-	const labelFor = useGroupLabeler(groupBy);
+	const labelFor = useGroupLabeler(groupBy, labels);
 
 	const d = totals?.duration;
 	const figures: FigureData[] = [

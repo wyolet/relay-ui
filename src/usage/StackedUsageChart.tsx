@@ -73,7 +73,7 @@ export function StackedUsageChart({
 	bare?: boolean;
 	height?: string;
 }) {
-	const labelFor = useGroupLabeler(groupBy);
+	const labelFor = useGroupLabeler(groupBy, data.labels);
 
 	const config = useMemo<ChartConfig>(() => {
 		const c: ChartConfig = {};
