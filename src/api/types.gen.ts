@@ -396,6 +396,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/healthz": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Readiness: process + backend health */
+        get: operations["control_healthz"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/host-bindings": {
         parameters: {
             query?: never;
@@ -819,6 +836,23 @@ export interface paths {
          * @description Verifies the value offline and, on success, stores it in the `license` settings section and makes it live. A value that does not verify is rejected and the previous license stays in place. RELAY_LICENSE_FILE / RELAY_LICENSE still win when set.
          */
         put: operations["put_license"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/livez": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Process liveness (no backend dependency) */
+        get: operations["control_livez"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -2494,6 +2528,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/usage/facets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Top values per dimension for filter dropdowns
+         * @description For each dimension in `dims`, returns its most frequent values over the filtered stream with request counts, ordered by requests descending then value. Each dimension ignores its own filter and keeps every other one, so model_id values honour host_id= but not model_id=. Rows are counted like /usage/summary: requests rejected before reaching an upstream are excluded. An id value carries a `label`: its latest non-empty slug in the window, else its current catalog name, else (user principals) the username. `from`/`to` echo the requested window.
+         */
+        get: operations["usage_facets"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/usage/summary": {
         parameters: {
             query?: never;
@@ -2503,7 +2557,7 @@ export interface paths {
         };
         /**
          * Aggregated usage rows grouped by a chosen dimension
-         * @description Filters the post-flight stream, groups by group_by, and returns per-group totals (requests, tokens, latency percentiles, TTFT percentiles when available, error count). Rows sorted by request count descending. Requests rejected before reaching an upstream (status 0 with an error kind) are excluded — see /usage/events or /logs for those.
+         * @description Filters the post-flight stream, groups by group_by, and returns per-group totals (requests, tokens, latency percentiles, TTFT percentiles when available, error count with 4xx/5xx and throttled (429) counts). Rows sorted by request count descending. With an id group_by, `labels` maps each group value to its latest slug in the window, else its current catalog name, else (user principals) the username. Requests rejected before reaching an upstream (status 0 with an error kind) are excluded — see /usage/events or /logs for those.
          */
         get: operations["usage_summary"];
         put?: never;
@@ -2523,7 +2577,7 @@ export interface paths {
         };
         /**
          * Time-bucketed usage aggregates for charting
-         * @description Buckets the filtered stream by `interval` (epoch-aligned) and returns per-bucket requests, error_count (with a 4xx/5xx split), token sums, duration_ms percentiles, and ttft_ms percentiles (omitted when no event in the bucket has upstream timing). With `group_by` set, returns one series per dimension value for stacked charts; empty returns a single series. Empty buckets are omitted — zero-fill against the returned from/to range.
+         * @description Buckets the filtered stream by `interval` (epoch-aligned) and returns per-bucket requests, error_count (with 4xx/5xx and throttled counts), token sums, duration_ms percentiles, and ttft_ms percentiles (omitted when no event in the bucket has upstream timing). With `group_by` set, returns one series per dimension value for stacked charts; empty returns a single series. With an id group_by, `labels` names each series as /usage/summary does. Empty buckets are omitted — zero-fill against the returned from/to range.
          */
         get: operations["usage_timeseries"];
         put?: never;
@@ -2789,6 +2843,25 @@ export interface components {
             section: "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
             value: components["schemas"]["CatalogSource"];
         };
+        ControlHealth: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/ControlHealth.json
+             */
+            readonly $schema?: string;
+            /** @description Status per backend, keyed pg (the database) and redis (sessions and rate limits, absent when state is in memory). Each value is "ok" or "error". */
+            backends: {
+                [key: string]: string;
+            };
+            /** @description Whether a master key is set, so stored host keys can be encrypted. Present for authenticated callers only. */
+            master_key_configured?: boolean;
+            /**
+             * @description Overall health verdict.
+             * @enum {string}
+             */
+            status: "ok" | "degraded";
+        };
         Counts: {
             /** Format: int64 */
             conflict: number;
@@ -2871,6 +2944,7 @@ export interface components {
             project_id?: string;
             provider?: string;
             reasoning?: components["schemas"]["ReasoningTiming"];
+            relay_key?: string;
             relay_key_hash?: string;
             request_id: string;
             requested_model?: string;
@@ -2889,6 +2963,27 @@ export interface components {
             /** Format: date-time */
             ts: string;
             upstream?: components["schemas"]["UpstreamTiming"];
+        };
+        FacetValue: {
+            label?: string;
+            /** Format: int64 */
+            requests: number;
+            value: string;
+        };
+        FacetsResult: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/FacetsResult.json
+             */
+            readonly $schema?: string;
+            facets: {
+                [key: string]: components["schemas"]["FacetValue"][] | null;
+            };
+            /** Format: date-time */
+            from: string;
+            /** Format: date-time */
+            to: string;
         };
         Governance: {
             /**
@@ -3864,6 +3959,29 @@ export interface components {
             policyId?: string;
             principal: components["schemas"]["KeyPrincipal"];
         };
+        SummaryPrevious: {
+            /** Format: int64 */
+            cost_nanos: number;
+            /** Format: int64 */
+            distinct?: number;
+            duration_ms: components["schemas"]["DurationStats"];
+            /** Format: int64 */
+            error_count: number;
+            /** Format: int64 */
+            errors_4xx: number;
+            /** Format: int64 */
+            errors_5xx: number;
+            /** Format: int64 */
+            requests: number;
+            /** Format: int64 */
+            throttled: number;
+            tokens: {
+                [key: string]: number;
+            };
+            ttft_ms?: components["schemas"]["DurationStats"];
+            /** Format: int64 */
+            unpriced: number;
+        };
         SummaryResult: {
             /**
              * Format: uri
@@ -3873,6 +3991,13 @@ export interface components {
             readonly $schema?: string;
             /** Format: date-time */
             from: string;
+            labels?: {
+                [key: string]: string;
+            };
+            /** Format: date-time */
+            previous_from?: string;
+            /** Format: date-time */
+            previous_to?: string;
             rows: components["schemas"]["SummaryRow"][] | null;
             /** Format: date-time */
             to: string;
@@ -3880,9 +4005,18 @@ export interface components {
         SummaryRow: {
             /** Format: int64 */
             cost_nanos: number;
+            /**
+             * Format: int64
+             * @description Number of distinct non-empty values of the distinct dimension among this row's events (keyless traffic is not a key). Present only with distinct set.
+             */
+            distinct?: number;
             duration_ms: components["schemas"]["DurationStats"];
             /** Format: int64 */
             error_count: number;
+            /** Format: int64 */
+            errors_4xx: number;
+            /** Format: int64 */
+            errors_5xx: number;
             /** Format: date-time */
             first_seen: string;
             group: {
@@ -3890,8 +4024,11 @@ export interface components {
             };
             /** Format: date-time */
             last_seen: string;
+            previous?: components["schemas"]["SummaryPrevious"];
             /** Format: int64 */
             requests: number;
+            /** Format: int64 */
+            throttled: number;
             tokens: {
                 [key: string]: number;
             };
@@ -3938,6 +4075,11 @@ export interface components {
             bucket: string;
             /** Format: int64 */
             cost_nanos: number;
+            /**
+             * Format: int64
+             * @description Number of distinct non-empty values of the distinct dimension among this bucket's events. Per-bucket values cannot be summed across buckets; use /usage/summary for a window total. Present only with distinct set.
+             */
+            distinct?: number;
             duration_ms: components["schemas"]["DurationStats"];
             /** Format: int64 */
             error_count: number;
@@ -3947,6 +4089,8 @@ export interface components {
             errors_5xx: number;
             /** Format: int64 */
             requests: number;
+            /** Format: int64 */
+            throttled: number;
             tokens: {
                 [key: string]: number;
             };
@@ -3964,6 +4108,9 @@ export interface components {
             /** Format: date-time */
             from: string;
             interval: string;
+            labels?: {
+                [key: string]: string;
+            };
             rows: components["schemas"]["TimeSeriesRow"][] | null;
             /** Format: date-time */
             to: string;
@@ -4312,6 +4459,19 @@ export interface components {
             /** Format: int64 */
             total: number;
         };
+        livezOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/livezOutputBody.json
+             */
+            readonly $schema?: string;
+            /**
+             * @description Process liveness.
+             * @enum {string}
+             */
+            status: "ok";
+        };
         logGetOutputBody: {
             /**
              * Format: uri
@@ -4374,6 +4534,13 @@ export interface components {
             readonly $schema?: string;
             logs: components["schemas"]["Event"][] | null;
             next_cursor?: string;
+            /**
+             * Format: int64
+             * @description Number of records matching the filters across all pages, capped at 10000. Present only with count=true.
+             */
+            total?: number;
+            /** @description True when more than 10000 records match, so total is the cap rather than the exact count. Present only with count=true. */
+            total_capped?: boolean;
         };
         masterKeyGenerateOutputBody: {
             /**
@@ -6306,6 +6473,35 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    control_healthz: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ControlHealth"];
+                };
+            };
+            /** @description A backend is unreachable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ControlHealth"];
                 };
             };
         };
@@ -8577,6 +8773,35 @@ export interface operations {
             };
         };
     };
+    control_livez: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["livezOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
     logs_list: {
         parameters: {
             query?: {
@@ -8624,6 +8849,8 @@ export interface operations {
                 policy?: string[] | null;
                 /** @description Match any of the given provider slugs (event-time, denormalized). */
                 provider?: string[] | null;
+                /** @description Match any of the given relay key slugs (event-time metadata.name, denormalized). */
+                relay_key?: string[] | null;
                 /** @description Match any of these exact HTTP status codes. */
                 status?: number[] | null;
                 /** @description Convenience status band: "2xx" | "4xx" | "5xx". Sets status_min/max. */
@@ -8650,6 +8877,8 @@ export interface operations {
                 limit?: number;
                 /** @description Opaque pagination cursor from a previous response's next_cursor. Returns the next (older) page. */
                 cursor?: string;
+                /** @description When true, the response adds total and total_capped: the size of the whole filtered result set, counted regardless of cursor and limit. */
+                count?: boolean;
             };
             header?: never;
             path?: never;
@@ -16691,6 +16920,8 @@ export interface operations {
                 policy?: string[] | null;
                 /** @description Match any of the given provider slugs (event-time, denormalized). */
                 provider?: string[] | null;
+                /** @description Match any of the given relay key slugs (event-time metadata.name, denormalized). */
+                relay_key?: string[] | null;
                 /** @description Match any of these exact HTTP status codes. */
                 status?: number[] | null;
                 /** @description Convenience status band: "2xx" | "4xx" | "5xx". Sets status_min/max. */
@@ -16731,6 +16962,135 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["usageEventsOutputBody"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    usage_facets: {
+        parameters: {
+            query?: {
+                /** @description Relative window (e.g. "1h", "24h", "7d"). Default "1h". Ignored when from is set. */
+                since?: string;
+                /** @description Absolute lower bound (RFC3339). Overrides since. */
+                from?: string;
+                /** @description Absolute upper bound (RFC3339). */
+                to?: string;
+                /** @description Exact match on a single request id (deep-link one event). */
+                request_id?: string;
+                /** @description Match any of the given sha256 hashes of the inbound bearer. */
+                relay_key_hash?: string[] | null;
+                /** @description Match any of the given Policy.metadata.id values. */
+                policy_id?: string[] | null;
+                /** @description Match any of the given Project.metadata.id values. */
+                project_id?: string[] | null;
+                /** @description Match any of the given Team.metadata.id values. */
+                team_id?: string[] | null;
+                /** @description Match any of the given principal ids (ServiceAccount.metadata.id or user id). */
+                principal_id?: string[] | null;
+                /** @description Match any of the given Model.metadata.id values. */
+                model_id?: string[] | null;
+                /** @description Match any of the given Host.metadata.id values. */
+                host_id?: string[] | null;
+                /** @description Match any of "pipeline" | "proxy" | "ws" | "batch". */
+                source?: string[] | null;
+                /** @description Match any of "stop" | "length" | "tool_calls" | "content_filter" | "refusal" | "other". */
+                finish_reason?: string[] | null;
+                /** @description Match any of the given error_kind values. */
+                error_kind?: string[] | null;
+                /** @description Minimum HTTP status to include. */
+                status_min?: number;
+                /** @description Maximum HTTP status to include. */
+                status_max?: number;
+                /** @description Match any of the given HostKey.metadata.id values. */
+                host_key_id?: string[] | null;
+                /** @description Match any of the model strings as the caller sent them. */
+                requested_model?: string[] | null;
+                /** @description Match any of the given model slugs (event-time metadata.name, denormalized). */
+                model?: string[] | null;
+                /** @description Match any of the given host slugs (event-time metadata.name, denormalized). */
+                host?: string[] | null;
+                /** @description Match any of the given policy slugs (event-time metadata.name, denormalized). */
+                policy?: string[] | null;
+                /** @description Match any of the given provider slugs (event-time, denormalized). */
+                provider?: string[] | null;
+                /** @description Match any of the given relay key slugs (event-time metadata.name, denormalized). */
+                relay_key?: string[] | null;
+                /** @description Match any of these exact HTTP status codes. */
+                status?: number[] | null;
+                /** @description Convenience status band: "2xx" | "4xx" | "5xx". Sets status_min/max. */
+                status_class?: string;
+                /** @description true = only streamed responses, false = only non-streamed. */
+                streamed?: "true" | "false";
+                /** @description true = only errors (status>=400 or error_kind set), false = only successes. */
+                error?: "true" | "false";
+                /** @description Minimum upstream try count (failover) — finds retried requests. */
+                attempts_min?: number;
+                /** @description Minimum total duration in ms (slow-request filter). */
+                duration_ms_min?: number;
+                /** @description Maximum total duration in ms. */
+                duration_ms_max?: number;
+                /** @description Minimum upstream time-to-first-byte (ms); excludes requests with no upstream timing. */
+                ttft_ms_min?: number;
+                /** @description Maximum upstream time-to-first-byte (ms). */
+                ttft_ms_max?: number;
+                /** @description Free-text substring across request_id, model_id, requested_model, source. */
+                q?: string;
+                /** @description Caller-tag filter as "key:value" (repeatable). Same key repeated matches any of its values; different keys must all match. */
+                tag?: string[] | null;
+                /** @description Required. Dimensions to list values for, repeated (dims=model_id&dims=host_id) or comma-separated, at most 16, no duplicates: any group_by value except "none". */
+                dims?: string[] | null;
+                /** @description Values returned per dimension. Default 50, max 200. */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FacetsResult"];
                 };
             };
             /** @description Bad Request */
@@ -16818,6 +17178,8 @@ export interface operations {
                 policy?: string[] | null;
                 /** @description Match any of the given provider slugs (event-time, denormalized). */
                 provider?: string[] | null;
+                /** @description Match any of the given relay key slugs (event-time metadata.name, denormalized). */
+                relay_key?: string[] | null;
                 /** @description Match any of these exact HTTP status codes. */
                 status?: number[] | null;
                 /** @description Convenience status band: "2xx" | "4xx" | "5xx". Sets status_min/max. */
@@ -16840,8 +17202,16 @@ export interface operations {
                 q?: string;
                 /** @description Caller-tag filter as "key:value" (repeatable). Same key repeated matches any of its values; different keys must all match. */
                 tag?: string[] | null;
-                /** @description "source" (default) | "model" | "host" | "policy" | "provider" | "project" | "team" | "principal" (event-time slugs) | "model_id" | "host_id" | "policy_id" | "project_id" | "team_id" | "principal_id" | "credential_id" | "relay_key_hash" | "host_key_id" | "finish_reason" | "error_kind" | "tags.<key>" (group by a caller tag's value). */
+                /** @description "source" (default) | "none" (one row over the whole filtered set, group {}) | "model" | "host" | "policy" | "provider" | "project" | "team" | "principal" | "relay_key" (event-time slugs) | "model_id" | "host_id" | "policy_id" | "project_id" | "team_id" | "principal_id" | "credential_id" | "relay_key_hash" | "host_key_id" | "finish_reason" | "error_kind" | "tags.<key>" (group by a caller tag's value). */
                 group_by?: string;
+                /** @description "previous" (the only accepted value) adds each row's numbers over the window of equal length just before this one as previous, and that window's bounds as previous_from/previous_to (previous_to exclusive). Rows stay those of the requested window: a group without traffic in the previous window has no previous, and a group seen only there has no row. The window is resolved once (since counts back from the request time, an open to becomes that time); one with no start or a start after its end is a 400. Not combinable with compare_from/compare_to. */
+                compare?: string;
+                /** @description Start (RFC3339, inclusive) of an explicit window to compare rows with, instead of compare=previous; needs compare_to. Rows gain previous exactly as with compare=previous, and previous_from/previous_to echo this window. Its length may differ from the requested window's and it may overlap it: the caller picks it. */
+                compare_from?: string;
+                /** @description End (RFC3339, exclusive) of the explicit compare window; needs compare_from and must be after it. */
+                compare_to?: string;
+                /** @description Adds distinct to each row: the number of distinct non-empty values of this dimension among the row's events. One of "relay_key_hash" | "relay_key" | "principal_id" | "credential_id" | "project_id" | "team_id" | "model_id" | "host_id". Omitted means no distinct count. */
+                distinct?: string;
             };
             header?: never;
             path?: never;
@@ -16943,6 +17313,8 @@ export interface operations {
                 policy?: string[] | null;
                 /** @description Match any of the given provider slugs (event-time, denormalized). */
                 provider?: string[] | null;
+                /** @description Match any of the given relay key slugs (event-time metadata.name, denormalized). */
+                relay_key?: string[] | null;
                 /** @description Match any of these exact HTTP status codes. */
                 status?: number[] | null;
                 /** @description Convenience status band: "2xx" | "4xx" | "5xx". Sets status_min/max. */
@@ -16967,8 +17339,10 @@ export interface operations {
                 tag?: string[] | null;
                 /** @description Bucket width (e.g. "5m", "1h", "1d"). Required. */
                 interval?: string;
-                /** @description Optional dimension to split series by: "source" | "model" | "host" | "policy" | "provider" | "project" | "team" | "principal" (event-time slugs) | "model_id" | "host_id" | "policy_id" | "project_id" | "team_id" | "principal_id" | "credential_id" | "relay_key_hash" | "host_key_id" | "finish_reason" | "error_kind" | "tags.<key>". Empty returns a single series. */
+                /** @description Optional dimension to split series by: "source" | "model" | "host" | "policy" | "provider" | "project" | "team" | "principal" | "relay_key" (event-time slugs) | "model_id" | "host_id" | "policy_id" | "project_id" | "team_id" | "principal_id" | "credential_id" | "relay_key_hash" | "host_key_id" | "finish_reason" | "error_kind" | "tags.<key>". Empty returns a single series; "none" returns that series with group {}. */
                 group_by?: string;
+                /** @description Adds distinct to each point: the number of distinct non-empty values of this dimension among the bucket's events. Per-bucket values cannot be summed across buckets (a value seen in two buckets counts in each); use /usage/summary for a window total. One of "relay_key_hash" | "relay_key" | "principal_id" | "credential_id" | "project_id" | "team_id" | "model_id" | "host_id". Omitted means no distinct count. */
+                distinct?: string;
             };
             header?: never;
             path?: never;

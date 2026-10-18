@@ -44,6 +44,20 @@ export function dailyTotals(
 	return totals;
 }
 
+/** Per-day values from daily (UTC) buckets placed on this week's local days.
+ * A bucket's midday lands on the right local date for any offset within ±12h. */
+export function dailyValues(
+	points: { bucket: string; value: number }[],
+): (number | null)[] {
+	return dailyTotals(
+		points.map((p) => ({
+			bucket: new Date(Date.parse(p.bucket) + 12 * 3_600_000).toISOString(),
+			value: p.value,
+		})),
+		["value"],
+	);
+}
+
 /** Requests per hour of each day this week, on a five-step ramp, with the
  * current hour marked. */
 export function useWeekActivity(): { rows: HeatRow[]; hours: string[] } {

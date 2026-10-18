@@ -1,16 +1,9 @@
 import { queryOptions } from "@tanstack/react-query";
-import { apiClient, CONTROL_API_URL } from "@/api/client";
-import type { HealthzResponse, VersionResponse } from "@/api/dashboard-types";
+import { apiClient } from "@/api/client";
+import type { VersionResponse } from "@/api/dashboard-types";
+import type { components } from "@/api/types.gen";
 
 export type { VersionResponse };
-
-async function fetchJson<T>(path: string): Promise<T> {
-	const res = await fetch(`${CONTROL_API_URL}${path}`, {
-		credentials: "include",
-	});
-	if (!res.ok) throw new Error(`${path} failed: ${res.status}`);
-	return res.json() as Promise<T>;
-}
 
 export const versionQueryOptions = queryOptions({
 	queryKey: ["admin", "version"] as const,
@@ -23,16 +16,22 @@ export const versionQueryOptions = queryOptions({
 	gcTime: 10 * 60_000,
 });
 
-// /healthz has content?: never in the spec but the real backend returns JSON.
-// Use raw fetch with the hand-written HealthzResponse shape.
+export type ControlHealth = components["schemas"]["ControlHealth"];
+
 export const healthzQueryOptions = queryOptions({
 	queryKey: ["healthz"] as const,
-	queryFn: () => fetchJson<HealthzResponse>("/healthz"),
+	queryFn: async (): Promise<ControlHealth> => {
+		const { data, error, response } = await apiClient.GET("/healthz");
+		if (data) return data;
+		// A degraded control plane answers 503 with the same body: which
+		// backends failed, not that the relay is unreachable.
+		if (response.status === 503 && error) return error;
+		throw new Error(`/healthz failed: ${response.status}`);
+	},
 	staleTime: 0,
 	gcTime: 60_000,
-	// Poll every 5s while healthy; back off to 60s once it fails. A
-	// control-plane-only deployment (no /healthz) otherwise hammers a 404 every
-	// 5s, and each failed poll re-renders the dashboard (the "flicker"). The
-	// slow poll still lets an embedded relay recover after a restart.
+	// Poll every 5s while answering; back off to 60s once it fails. Relays
+	// predating the control /healthz answer 404, and each failed poll would
+	// otherwise re-render the dashboard every 5s.
 	refetchInterval: (query) => (query.state.status === "error" ? 60_000 : 5_000),
 });

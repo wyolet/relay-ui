@@ -1,5 +1,6 @@
-import { useSuspenseQueries, useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import {
+	previousRows,
 	type ResolvedWindow,
 	resolveWindow,
 	stackedTimeseriesQueryOptions,
@@ -9,7 +10,7 @@ import {
 	type UsageWindow,
 	usageComparisonWindows,
 	usageSummaryQueryOptions,
-	usageTotalsQueryOptions,
+	usageTotalsCompareQueryOptions,
 	useRollingUsageWindow,
 	useUsageNow,
 } from "@/api/hooks/usage";
@@ -51,14 +52,12 @@ export function useCostKpi(
 	filter?: UsageSummaryFilter,
 ): CostKpi {
 	const { previous } = usageComparisonWindows(win, useUsageNow());
-	const [current, prior] = useSuspenseQueries({
-		queries: [
-			usageTotalsQueryOptions(win, filter),
-			usageTotalsQueryOptions(previous, filter),
-		],
-	});
-	const sum = sumCostRows(current.data.rows ?? []);
-	const prevSum = sumCostRows(prior.data.rows ?? []);
+	const { data } = useSuspenseQuery(
+		usageTotalsCompareQueryOptions(win, previous, filter),
+	);
+	const rows = data.rows ?? [];
+	const sum = sumCostRows(rows);
+	const prevSum = sumCostRows(previousRows(rows));
 	return {
 		current: sum,
 		delta:
@@ -76,6 +75,8 @@ export interface CostTimeline extends StackedSeries {
 	/** Events excluded from the $ stacks for lack of a cost stamp, and the
 	 * group keys that saw them. */
 	unpriced: { events: number; groups: string[] };
+	/** Names for the series keys, when the server sent them. */
+	labels?: Record<string, string>;
 }
 
 /** Stacked estimated spend per bucket, split by any usage dimension. Shares
@@ -132,6 +133,7 @@ export function useCostSeries(
 		to: win.to,
 		interval: win.interval,
 		unpriced: { events: unpricedEvents, groups: [...unpricedGroups] },
+		labels: data.labels,
 	};
 }
 

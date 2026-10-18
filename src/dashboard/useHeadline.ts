@@ -3,8 +3,8 @@ import { useCostKpi, useCostSeries } from "@/api/hooks/cost";
 import { keysListQueryOptions } from "@/api/hooks/keys";
 import {
 	resolveWindow,
+	useDailyDistinct,
 	useStackedSeries,
-	useUsageOverview,
 	useUsageOverviewWithDeltas,
 } from "@/api/hooks/usage";
 import type { DeltaResult } from "@/lib/usage-math/delta";
@@ -16,7 +16,7 @@ import {
 	fmtSignedPct,
 	RANGE_COMPARE_LABELS,
 } from "@/usage/format";
-import { dailyTotals, weekByHour } from "./useWeekActivity";
+import { dailyTotals, dailyValues, weekByHour } from "./useWeekActivity";
 
 const VS = RANGE_COMPARE_LABELS.week;
 
@@ -31,7 +31,7 @@ export function useHeadline(): FigureData[] {
 	const win = resolveWindow("week");
 	const { kpis, deltas } = useUsageOverviewWithDeltas("source", win);
 	const cost = useCostKpi(win);
-	const { groups: activeKeys } = useUsageOverview("relay_key_hash", win);
+	const keysByDay = useDailyDistinct("relay_key_hash", win);
 	const { data: keyList } = useQuery(keysListQueryOptions);
 	const d = deltas.hasBaseline ? deltas : undefined;
 	const hourly = weekByHour();
@@ -79,9 +79,12 @@ export function useHeadline(): FigureData[] {
 		{
 			key: "keys",
 			label: "Active keys",
-			value: fmtCompact(activeKeys.length),
+			value: kpis.activeKeys !== undefined ? fmtCompact(kpis.activeKeys) : "—",
 			note:
 				issued !== undefined ? `of ${fmtCompact(issued)} issued` : undefined,
+			trend: dailyValues(
+				keysByDay.map((d) => ({ bucket: d.bucket, value: d.distinct })),
+			),
 		},
 	];
 }

@@ -2,10 +2,7 @@ import {
 	type ResolvedWindow,
 	type UsageGroupBy,
 	type UsageSummaryFilter,
-	usageComparisonWindows,
 	useMeterSeries,
-	useUsageNow,
-	useUsageOverview,
 	useUsageOverviewWithDeltas,
 } from "@/api/hooks/usage";
 import type { FigureData } from "@/shared/FigureRow";
@@ -32,15 +29,15 @@ export function useTokensLens(
 	filter: UsageSummaryFilter,
 	compareLabel: string,
 ) {
-	const { kpis, deltas, groups } = useUsageOverviewWithDeltas(
-		groupBy,
-		win,
-		filter,
-	);
-	const { previous } = usageComparisonWindows(win, useUsageNow());
-	const { groups: before } = useUsageOverview(groupBy, previous, filter);
+	const {
+		kpis,
+		deltas,
+		groups,
+		previousGroups: before,
+		labels,
+	} = useUsageOverviewWithDeltas(groupBy, win, filter);
 	const meters = useMeterSeries(groupBy, win, filter);
-	const labelFor = useGroupLabeler(groupBy);
+	const labelFor = useGroupLabeler(groupBy, labels);
 
 	const cached = Math.max(kpis.tokens - kpis.rawInput - kpis.rawOutput, 0);
 	const per = (n: number) => (kpis.requests > 0 ? n / kpis.requests : 0);

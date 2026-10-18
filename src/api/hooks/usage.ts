@@ -354,6 +354,8 @@ export interface StackedTimeline {
 	points: StackedPoint[];
 	/** Ordered series keys present in the data (largest first, OTHER_KEY last). */
 	series: string[];
+	/** Names for the series keys, when the server sent them. */
+	labels?: Record<string, string>;
 }
 
 export function stackedTimeseriesQueryOptions(
@@ -450,34 +452,32 @@ export function useStackedSeries(
 		win.to,
 		win.interval,
 	);
-	return { from: win.from, to: win.to, interval: win.interval, points, series };
+	return {
+		from: win.from,
+		to: win.to,
+		interval: win.interval,
+		points,
+		series,
+		labels: data.labels,
+	};
 }
 
-/** Per-group 4xx/5xx totals and the slice's 4xx/5xx over time, from the same
- * timeseries the stacked chart reads (no extra request). */
-export function useErrorSplit(
+/** The slice's 4xx and 5xx over time, from the same timeseries the stacked
+ * chart reads (no extra request). */
+export function useErrorTimeline(
 	groupBy: UsageGroupBy,
 	win: ResolvedWindow,
 	filter?: UsageSummaryFilter,
-): {
-	byGroup: Map<string, { client: number; server: number }>;
-	timeline: StackedTimeline;
-} {
+): StackedTimeline {
 	const { data } = useSuspenseQuery(
 		stackedTimeseriesQueryOptions(groupBy, win, filter),
 	);
-	const byGroup = new Map<string, { client: number; server: number }>();
 	const samples: SeriesSample[] = [];
 	for (const row of data.rows ?? []) {
-		const key = row.group?.[groupBy]?.trim() || "—";
-		const sums = byGroup.get(key) ?? { client: 0, server: 0 };
 		for (const p of row.points ?? []) {
-			sums.client += p.errors_4xx;
-			sums.server += p.errors_5xx;
 			samples.push({ key: "5xx", bucket: p.bucket, value: p.errors_5xx });
 			samples.push({ key: "4xx", bucket: p.bucket, value: p.errors_4xx });
 		}
-		byGroup.set(key, sums);
 	}
 	const { points, series } = stackSamples(
 		samples,
@@ -486,16 +486,7 @@ export function useErrorSplit(
 		win.interval,
 		false,
 	);
-	return {
-		byGroup,
-		timeline: {
-			from: win.from,
-			to: win.to,
-			interval: win.interval,
-			points,
-			series,
-		},
-	};
+	return { from: win.from, to: win.to, interval: win.interval, points, series };
 }
 
 /** The slice's tokens over time split by meter (input, output, cache, …),
@@ -532,7 +523,11 @@ export function useLatencySeries(
 	groupBy: UsageGroupBy,
 	win: ResolvedWindow,
 	filter?: UsageSummaryFilter,
-): { points: Record<string, number | string | null>[]; series: string[] } {
+): {
+	points: Record<string, number | string | null>[];
+	series: string[];
+	labels?: Record<string, string>;
+} {
 	const { data } = useSuspenseQuery(
 		stackedTimeseriesQueryOptions(groupBy, win, filter),
 	);
@@ -557,7 +552,7 @@ export function useLatencySeries(
 	const points = [...byBucket.values()].sort((a, b) =>
 		String(a.bucket).localeCompare(String(b.bucket)),
 	);
-	return { points, series };
+	return { points, series, labels: data.labels };
 }
 
 /** Latency and time to first byte across the whole slice. */
@@ -586,6 +581,14 @@ export interface UsageKpis {
 	requests: number;
 	errors: number;
 	errorRate: number; // 0..1
+	/** Responses ≥500. */
+	serverErrors: number;
+	/** 4xx responses, throttled included. */
+	clientErrors: number;
+	/** 429s. */
+	throttled: number;
+	/** Distinct keys that sent traffic; only on an ungrouped row that asked. */
+	activeKeys?: number;
 	avgMs: number; // request-weighted mean latency
 	/** All meters summed — the billable volume (cache reads included). */
 	tokens: number;
@@ -601,6 +604,9 @@ export interface UsageGroupStat {
 	requests: number;
 	errorCount: number;
 	errorRate: number; // 0..1
+	serverErrors: number;
+	clientErrors: number;
+	throttled: number;
 	duration: UsageDurationStats;
 	tokens: number;
 	share: number; // requests / max(requests), 0..1
@@ -623,10 +629,17 @@ export interface UsageTimelinePoint {
 function deriveKpis(rows: UsageSummaryRow[]): UsageKpis {
 	let requests = 0;
 	let errors = 0;
+	let serverErrors = 0;
+	let clientErrors = 0;
+	let throttled = 0;
 	let weightedMs = 0;
 	for (const r of rows) {
 		requests += r.requests;
 		errors += r.error_count;
+		// Relays before the status split omit these counts.
+		serverErrors += r.errors_5xx ?? 0;
+		clientErrors += r.errors_4xx ?? 0;
+		throttled += r.throttled ?? 0;
 		weightedMs += r.duration_ms.avg * r.requests;
 	}
 	const split = splitTokens(mergeMeters(rows.map((r) => r.tokens)));
@@ -634,6 +647,11 @@ function deriveKpis(rows: UsageSummaryRow[]): UsageKpis {
 		requests,
 		errors,
 		errorRate: requests > 0 ? errors / requests : 0,
+		serverErrors,
+		clientErrors,
+		throttled,
+		// Distinct counts don't add up across rows; only a single row carries one.
+		activeKeys: rows.length === 1 ? rows[0]?.distinct : undefined,
 		avgMs: requests > 0 ? weightedMs / requests : 0,
 		tokens: split.total,
 		rawInput: split.input - split.cached,
@@ -652,6 +670,9 @@ function deriveGroupStats(
 			requests: r.requests,
 			errorCount: r.error_count,
 			errorRate: r.requests > 0 ? r.error_count / r.requests : 0,
+			serverErrors: r.errors_5xx ?? 0,
+			clientErrors: r.errors_4xx ?? 0,
+			throttled: r.throttled ?? 0,
 			duration: r.duration_ms,
 			tokens: sumTokens(r.tokens),
 			share: peak > 0 ? r.requests / peak : 0,
@@ -743,6 +764,7 @@ export function useUsageOverview(
 		to: data.to,
 		kpis: deriveKpis(rows),
 		groups: deriveGroupStats(rows, groupBy),
+		labels: data.labels,
 	};
 }
 
@@ -754,6 +776,163 @@ export function usageComparisonWindows(win: UsageWindow, now: string) {
 	return comparisonWindows(win, now);
 }
 
+/**
+ * A summary whose rows also carry their numbers over `previous` (an explicit
+ * window, so "this week to date" compares with last week to the same point).
+ * `"none"` gives one row for the whole slice.
+ */
+export function usageCompareQueryOptions(
+	groupBy: UsageGroupBy | "none",
+	win: UsageWindow,
+	previous: UsageWindow,
+	filter?: UsageSummaryFilter,
+	/** Also count distinct values of this dimension per row. */
+	distinct?: DistinctDimension,
+) {
+	return queryOptions({
+		queryKey: [
+			"usage",
+			"compare",
+			groupBy,
+			win.from,
+			win.to,
+			previous.from,
+			previous.to,
+			filter ?? {},
+			distinct ?? "",
+		] as const,
+		queryFn: async (): Promise<UsageSummaryResult> =>
+			unwrap(
+				await apiClient.GET("/usage/summary", {
+					params: {
+						query: {
+							...filter,
+							group_by: groupBy,
+							from: win.from,
+							to: win.to,
+							compare_from: previous.from,
+							compare_to: previous.to,
+							distinct,
+						},
+					},
+				}),
+			),
+		staleTime: 15_000,
+		gcTime: 5 * 60_000,
+	});
+}
+
+export type UsageFacets = components["schemas"]["FacetsResult"]["facets"];
+
+/** Top values per dimension in one call, each counted with every filter but
+ * its own, with the server's best name for each value. */
+export function usageFacetsQueryOptions(
+	dims: readonly UsageGroupBy[],
+	win: UsageWindow,
+	filter?: UsageSummaryFilter,
+) {
+	return queryOptions({
+		queryKey: [
+			"usage",
+			"facets",
+			dims,
+			win.from,
+			win.to,
+			filter ?? {},
+		] as const,
+		queryFn: async (): Promise<UsageFacets> =>
+			unwrap(
+				await apiClient.GET("/usage/facets", {
+					params: {
+						query: { ...filter, dims: [...dims], from: win.from, to: win.to },
+					},
+				}),
+			).facets,
+		staleTime: 15_000,
+		gcTime: 5 * 60_000,
+		retry: false,
+	});
+}
+
+/** The slice's totals with last period's, and its active keys; every view
+ * that shows totals or deltas reads this one request. */
+export function usageTotalsCompareQueryOptions(
+	win: UsageWindow,
+	previous: UsageWindow,
+	filter?: UsageSummaryFilter,
+) {
+	return usageCompareQueryOptions(
+		"none",
+		win,
+		previous,
+		filter,
+		"relay_key_hash",
+	);
+}
+
+/** Dimensions the server can count distinct values of. */
+export type DistinctDimension =
+	| "relay_key_hash"
+	| "relay_key"
+	| "principal_id"
+	| "credential_id"
+	| "project_id"
+	| "team_id"
+	| "model_id"
+	| "host_id";
+
+/** Distinct values of `dim` per day over the window (ungrouped). */
+export function useDailyDistinct(
+	dim: DistinctDimension,
+	win: UsageWindow,
+	filter?: UsageSummaryFilter,
+): { bucket: string; distinct: number }[] {
+	const { data } = useSuspenseQuery(
+		queryOptions({
+			queryKey: [
+				"usage",
+				"distinct",
+				dim,
+				win.from,
+				win.to,
+				filter ?? {},
+			] as const,
+			queryFn: async (): Promise<UsageTimeSeriesResult> =>
+				unwrap(
+					await apiClient.GET("/usage/timeseries", {
+						params: {
+							query: {
+								...filter,
+								from: win.from,
+								to: win.to,
+								interval: "1d",
+								distinct: dim,
+							},
+						},
+					}),
+				),
+			staleTime: 15_000,
+			gcTime: 5 * 60_000,
+		}),
+	);
+	return (data.rows ?? []).flatMap((r) =>
+		(r.points ?? []).map((p) => ({
+			bucket: p.bucket,
+			distinct: p.distinct ?? 0,
+		})),
+	);
+}
+
+/** Each row's previous-window numbers as a row of its own, so the same
+ * derivations apply; rows without previous traffic drop out. */
+export function previousRows(rows: UsageSummaryRow[]): UsageSummaryRow[] {
+	return rows.flatMap((r) =>
+		r.previous
+			? [{ ...r.previous, group: r.group, first_seen: "", last_seen: "" }]
+			: [],
+	);
+}
+
 /** Period-over-period movement for each KPI, plus whether a baseline exists. */
 export interface UsageKpiDeltas {
 	/** False when the previous window saw no traffic — hide deltas, don't show "+∞". */
@@ -763,6 +942,8 @@ export interface UsageKpiDeltas {
 	errorRate: DeltaResult;
 	avgMs: DeltaResult;
 	tokens: DeltaResult;
+	/** Null when the relay doesn't count distinct keys. */
+	activeKeys: DeltaResult | null;
 	/** The window the comparison ran against (elapsed-matched, see usage-math). */
 	previous: UsageWindow;
 }
@@ -778,15 +959,17 @@ export function useUsageOverviewWithDeltas(
 	filter?: UsageSummaryFilter,
 ) {
 	const { previous } = usageComparisonWindows(win, useUsageNow());
-	const [current, prior] = useSuspenseQueries({
+	const [totals, grouped] = useSuspenseQueries({
 		queries: [
-			usageSummaryQueryOptions(groupBy, win, filter),
-			usageSummaryQueryOptions(groupBy, previous, filter),
+			usageTotalsCompareQueryOptions(win, previous, filter),
+			usageCompareQueryOptions(groupBy, win, previous, filter),
 		],
 	});
-	const rows = current.data.rows ?? [];
-	const kpis = deriveKpis(rows);
-	const prevKpis = deriveKpis(prior.data.rows ?? []);
+	// Totals come from the ungrouped row: a group seen only last period has no
+	// grouped row, but still counts toward last period's total.
+	const totalRows = totals.data.rows ?? [];
+	const kpis = deriveKpis(totalRows);
+	const prevKpis = deriveKpis(previousRows(totalRows));
 	const deltas: UsageKpiDeltas = {
 		hasBaseline: prevKpis.requests > 0,
 		requests: compareValue(kpis.requests, prevKpis.requests),
@@ -794,14 +977,23 @@ export function useUsageOverviewWithDeltas(
 		errorRate: compareValue(kpis.errorRate, prevKpis.errorRate),
 		avgMs: compareValue(kpis.avgMs, prevKpis.avgMs),
 		tokens: compareValue(kpis.tokens, prevKpis.tokens),
+		activeKeys:
+			kpis.activeKeys !== undefined && prevKpis.activeKeys !== undefined
+				? compareValue(kpis.activeKeys, prevKpis.activeKeys)
+				: null,
 		previous,
 	};
+	const rows = grouped.data.rows ?? [];
 	return {
-		from: current.data.from,
-		to: current.data.to,
+		from: grouped.data.from,
+		to: grouped.data.to,
 		kpis,
 		groups: deriveGroupStats(rows, groupBy),
+		/** Last period's stats for the groups present now; a group missing
+		 * here is new this period. */
+		previousGroups: deriveGroupStats(previousRows(rows), groupBy),
 		deltas,
+		labels: grouped.data.labels,
 	};
 }
 
@@ -821,7 +1013,10 @@ export function usageTotalsQueryOptions(
 		queryFn: async (): Promise<UsageSummaryResult> => {
 			const data = unwrap(
 				await apiClient.GET("/usage/summary", {
-					params: { query: { ...filter, from: win.from, to: win.to } },
+					// One row for the whole slice, so its percentiles are exact.
+					params: {
+						query: { ...filter, group_by: "none", from: win.from, to: win.to },
+					},
 				}),
 			);
 			return data;

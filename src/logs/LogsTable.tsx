@@ -20,9 +20,13 @@ const COLUMN_COUNT = 9;
 
 /** Case-insensitive match across the fields a row exposes. */
 function matchesQuery(e: LogEvent, needle: string): boolean {
-	return [e.model_id, e.requested_model, e.source, e.request_id].some((v) =>
-		v?.toLowerCase().includes(needle),
-	);
+	return [
+		e.model_id,
+		e.requested_model,
+		e.source,
+		e.request_id,
+		e.relay_key,
+	].some((v) => v?.toLowerCase().includes(needle));
 }
 
 function statusBand(status: number): string {
@@ -56,7 +60,7 @@ export function LogsTable({
 	filter?: LogsFilter;
 	emptyBody?: string;
 }) {
-	const { events, fetchNextPage, hasNextPage, isFetchingNextPage } =
+	const { events, matching, fetchNextPage, hasNextPage, isFetchingNextPage } =
 		useLogs(filter);
 
 	const needle = query.trim().toLowerCase();
@@ -78,6 +82,12 @@ export function LogsTable({
 
 	return (
 		<div className="flex flex-col gap-2">
+			{matching !== undefined && (
+				<p className="text-meta text-ink-3 tabular-nums">
+					{matching} matching {matching === "1" ? "request" : "requests"} ·{" "}
+					{fmtInt(events.length)} loaded
+				</p>
+			)}
 			<div className="overflow-x-auto">
 				<table className="w-full text-meta">
 					<thead>
@@ -87,7 +97,7 @@ export function LogsTable({
 							<th className="px-3 pb-2 font-normal">Status</th>
 							<th className="px-3 pb-2 font-normal">Model</th>
 							<th className="px-3 pb-2 font-normal">Host</th>
-							<th className="px-3 pb-2 font-normal">Instance</th>
+							<th className="px-3 pb-2 font-normal">Key</th>
 							<th className="px-3 pb-2 text-right font-normal">Latency</th>
 							<th className="px-3 pb-2 text-right font-normal">Tokens</th>
 							<th className="px-3 pb-2 font-normal">Finish</th>
@@ -232,8 +242,8 @@ function LogRow({
 				</Filterable>
 			</td>
 			<td className="px-3 py-2">
-				<span className="block max-w-[10rem] truncate text-ink-3">
-					{event.extras?.instance ?? "—"}
+				<span className="block max-w-[10rem] truncate text-ink-2">
+					{event.relay_key || "—"}
 				</span>
 			</td>
 			<td className="px-3 py-2.5 text-right tabular-nums text-ink-2">
@@ -285,6 +295,7 @@ function ExpandedDetail({
 				<Field label="Tokens">{fmtInt(sumTokens(event.tokens))}</Field>
 				<Field label="Finish">{event.finish_reason ?? "—"}</Field>
 				<Field label="Runner">{event.source}</Field>
+				<Field label="Key">{event.relay_key || "—"}</Field>
 				<Field label="Instance">{event.extras?.instance ?? "—"}</Field>
 				<Field label="Client IP">{event.extras?.client_ip ?? "—"}</Field>
 				{attribution && (

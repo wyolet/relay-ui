@@ -2,10 +2,7 @@ import {
 	type ResolvedWindow,
 	type UsageGroupBy,
 	type UsageSummaryFilter,
-	usageComparisonWindows,
 	useStackedSeries,
-	useUsageNow,
-	useUsageOverview,
 	useUsageOverviewWithDeltas,
 } from "@/api/hooks/usage";
 import { fmtAgo } from "@/lib/format";
@@ -38,16 +35,15 @@ export function useTrafficLens(
 	filter: UsageSummaryFilter,
 	compareLabel: string = RANGE_COMPARE_LABELS.custom,
 ) {
-	const { kpis, deltas, groups } = useUsageOverviewWithDeltas(
-		groupBy,
-		win,
-		filter,
-	);
-	const { previous } = usageComparisonWindows(win, useUsageNow());
-	const { groups: before } = useUsageOverview(groupBy, previous, filter);
-	const { groups: keys } = useUsageOverview("relay_key_hash", win, filter);
+	const {
+		kpis,
+		deltas,
+		groups,
+		previousGroups: before,
+		labels,
+	} = useUsageOverviewWithDeltas(groupBy, win, filter);
 	const series = useStackedSeries(groupBy, win, "requests", filter);
-	const labelFor = useGroupLabeler(groupBy);
+	const labelFor = useGroupLabeler(groupBy, labels);
 
 	const peak = series.points.reduce<{ bucket: string; total: number }>(
 		(best, p) => {
@@ -76,8 +72,11 @@ export function useTrafficLens(
 		{
 			key: "keys",
 			label: "Active keys",
-			value: fmtCompact(keys.length),
-			note: `${fmtCompact(groups.length)} ${groups.length === 1 ? "group" : "groups"} in view`,
+			value: kpis.activeKeys !== undefined ? fmtCompact(kpis.activeKeys) : "—",
+			note:
+				deltas.hasBaseline && deltas.activeKeys?.ratio != null
+					? `${fmtSignedPct(deltas.activeKeys.ratio)} ${compareLabel}`
+					: `${fmtCompact(groups.length)} ${groups.length === 1 ? "group" : "groups"} in view`,
 		},
 		{
 			key: "peak",

@@ -46,17 +46,11 @@ export function useRejections(): {
 	topKeys: VolumeLeader[];
 } {
 	const win = useRolling24hWindow();
-	const [all, throttled, auth] = useSuspenseQueries({
+	const [all, auth] = useSuspenseQueries({
 		queries: [
 			{
 				...usageSummaryQueryOptions("relay_key_hash", win, {
 					status_class: "4xx",
-				}),
-				refetchInterval: OPS_REFETCH_MS,
-			},
-			{
-				...usageSummaryQueryOptions("source", win, {
-					status: THROTTLED_STATUSES,
 				}),
 				refetchInterval: OPS_REFETCH_MS,
 			},
@@ -66,11 +60,13 @@ export function useRejections(): {
 			},
 		],
 	});
-	const byKey = volumeLeaders(all.data.rows ?? [], "relay_key_hash");
+	const rows = all.data.rows ?? [];
+	const byKey = volumeLeaders(rows, "relay_key_hash");
 	return {
 		buckets: rejectionBuckets(
 			byKey.total,
-			volumeLeaders(throttled.data.rows ?? [], "source").total,
+			// The 4xx rows already count their 429s.
+			rows.reduce((n, r) => n + (r.throttled ?? 0), 0),
 			volumeLeaders(auth.data.rows ?? [], "source").total,
 		),
 		topKeys: byKey.top,

@@ -31,9 +31,12 @@ export function useWeekFacts(): FigureData[] {
 		weekByHour(),
 		"requests",
 	);
-	const { groups: models } = useUsageOverview("model_id", win);
+	const { groups: models, labels: modelNames } = useUsageOverview(
+		"model_id",
+		win,
+	);
 	const { groups: hosts } = useUsageOverview("host_id", win);
-	const modelLabel = useGroupLabeler("model_id");
+	const modelLabel = useGroupLabeler("model_id", modelNames);
 
 	const hourly = points.map((p) => ({
 		bucket: p.bucket,
