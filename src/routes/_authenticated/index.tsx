@@ -10,6 +10,7 @@ import { ReleaseReadiness } from "@/dashboard/ReleaseReadiness";
 import { ScopedHome } from "@/dashboard/ScopedHome";
 import { TrafficChart } from "@/dashboard/TrafficChart";
 import { useCatalogEmpty } from "@/dashboard/useCatalogEmpty";
+import { WeekHeatmap } from "@/dashboard/WeekHeatmap";
 import { Section } from "@/shared/Section";
 import { PageLoader } from "@/shared/Spinner";
 import { useSetupStore } from "@/stores/setup";
@@ -100,6 +101,9 @@ function AdminHome() {
 					</Suspense>
 				</Section>
 			</div>
+			<Suspense fallback={<Pending title="Activity" height="h-48" />}>
+				<WeekHeatmap />
+			</Suspense>
 			<div className="grid gap-14 md:grid-cols-2 xl:grid-cols-3">
 				<Suspense fallback={<Pending title="Spend by model" />}>
 					<SpendByModel />

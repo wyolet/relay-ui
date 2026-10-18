@@ -1,8 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import { useCostKpi } from "@/api/hooks/cost";
+import { useCostKpi, useCostSeries } from "@/api/hooks/cost";
 import { keysListQueryOptions } from "@/api/hooks/keys";
 import {
 	resolveWindow,
+	useStackedSeries,
 	useUsageOverview,
 	useUsageOverviewWithDeltas,
 } from "@/api/hooks/usage";
@@ -14,12 +15,14 @@ import {
 	fmtSignedPct,
 	RANGE_COMPARE_LABELS,
 } from "@/usage/format";
+import { dailyTotals, weekByHour } from "./useWeekActivity";
 
 export interface HeadlineFigure {
 	key: string;
 	label: string;
 	value: string;
 	note?: string;
+	trend?: (number | null)[];
 }
 
 const VS = RANGE_COMPARE_LABELS.week;
@@ -38,6 +41,10 @@ export function useHeadline(): HeadlineFigure[] {
 	const { groups: activeKeys } = useUsageOverview("relay_key_hash", win);
 	const { data: keyList } = useQuery(keysListQueryOptions);
 	const d = deltas.hasBaseline ? deltas : undefined;
+	const hourly = weekByHour();
+	const requestsByHour = useStackedSeries("model_id", hourly, "requests");
+	const tokensByHour = useStackedSeries("model_id", hourly, "tokens");
+	const spendByHour = useCostSeries("model_id", hourly);
 
 	const { usd, unpricedShare } = cost.current;
 	const spendNote =
@@ -54,6 +61,7 @@ export function useHeadline(): HeadlineFigure[] {
 			label: "Est. spend",
 			value: usd != null ? fmtMoneyCompact(usd, "USD") : "—",
 			note: spendNote,
+			trend: dailyTotals(spendByHour.points, spendByHour.series),
 		},
 		{
 			key: "requests",
@@ -63,6 +71,7 @@ export function useHeadline(): HeadlineFigure[] {
 				kpis.errors > 0
 					? `${fmtCompact(kpis.errors)} failed (${fmtPct(kpis.errorRate)})`
 					: vsNote(d?.requests),
+			trend: dailyTotals(requestsByHour.points, requestsByHour.series),
 		},
 		{
 			key: "tokens",
@@ -72,6 +81,7 @@ export function useHeadline(): HeadlineFigure[] {
 				kpis.tokens > 0
 					? `${fmtPct(cached / kpis.tokens)} served from cache`
 					: undefined,
+			trend: dailyTotals(tokensByHour.points, tokensByHour.series),
 		},
 		{
 			key: "keys",

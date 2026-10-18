@@ -16,6 +16,16 @@ import {
 	ChartTooltipContent,
 } from "@/components/ui/chart";
 import {
+	AXIS_PROPS,
+	BAR_MAX,
+	BAR_RADIUS,
+	DENSE_POINTS,
+	DENSE_RADIUS,
+	SEGMENT_GAP,
+	Y_TICK_COUNT,
+} from "./chartMarks";
+import {
+	dayStartTicks,
 	dimensionLabel,
 	fmtBucket,
 	fmtBucketTick,
@@ -24,13 +34,6 @@ import {
 	fmtMoneyCompact,
 	fmtRange,
 } from "./format";
-import {
-	AXIS_PROPS,
-	BAR_MAX,
-	BAR_RADIUS,
-	SEGMENT_GAP,
-	Y_TICK_COUNT,
-} from "./chartMarks";
 import { OTHER_COLOR, USAGE_PALETTE } from "./palette";
 import { UsageEmpty } from "./UsageEmpty";
 import { useGroupLabeler } from "./useGroupLabeler";
@@ -105,6 +108,13 @@ export function StackedUsageChart({
 		);
 	}
 
+	// An hourly axis over several days ticks once per day.
+	const dense = data.points.length > DENSE_POINTS;
+	const dayTicks =
+		dense && data.interval !== "1d"
+			? dayStartTicks(data.points.map((p) => p.bucket))
+			: undefined;
+
 	const plot = (
 		<ChartContainer config={config} className={`${height} w-full`}>
 			<BarChart data={data.points} margin={{ left: 4, right: 8, top: 8 }}>
@@ -113,7 +123,10 @@ export function StackedUsageChart({
 					dataKey="bucket"
 					{...AXIS_PROPS}
 					minTickGap={32}
-					tickFormatter={(v: string) => fmtBucketTick(v, data.interval)}
+					ticks={dayTicks}
+					tickFormatter={(v: string) =>
+						fmtBucketTick(v, dayTicks ? "1d" : data.interval)
+					}
 				/>
 				<YAxis
 					{...AXIS_PROPS}
@@ -158,9 +171,15 @@ export function StackedUsageChart({
 						dataKey={key}
 						stackId="usage"
 						fill={config[key]?.color}
-						{...SEGMENT_GAP}
+						{...(dense ? {} : SEGMENT_GAP)}
 						maxBarSize={BAR_MAX}
-						radius={isLast(key, data.series) ? BAR_RADIUS : undefined}
+						radius={
+							isLast(key, data.series)
+								? dense
+									? DENSE_RADIUS
+									: BAR_RADIUS
+								: undefined
+						}
 						isAnimationActive={false}
 					/>
 				))}

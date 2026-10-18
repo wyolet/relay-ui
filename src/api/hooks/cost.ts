@@ -87,7 +87,19 @@ export function useCostTimeline(
 	customTo?: string,
 	filter?: UsageSummaryFilter,
 ): CostTimeline {
-	const win = resolveWindow(range, customFrom, customTo);
+	return useCostSeries(
+		groupBy,
+		resolveWindow(range, customFrom, customTo),
+		filter,
+	);
+}
+
+/** {@link useCostTimeline} over an already resolved window. */
+export function useCostSeries(
+	groupBy: UsageGroupBy,
+	win: ResolvedWindow,
+	filter?: UsageSummaryFilter,
+): CostTimeline {
 	const { data } = useSuspenseQuery(
 		stackedTimeseriesQueryOptions(groupBy, win, filter),
 	);

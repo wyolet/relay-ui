@@ -425,6 +425,17 @@ export function useStackedTimeline(
 ): StackedTimeline {
 	// Window resolution (quantized → stable key) lives here, not in the route.
 	const win = resolveWindow(range, customFrom, customTo);
+	return useStackedSeries(groupBy, win, metric, filter);
+}
+
+/** {@link useStackedTimeline} over an already resolved window, for callers
+ * that pick their own bucket width. */
+export function useStackedSeries(
+	groupBy: UsageGroupBy,
+	win: ResolvedWindow,
+	metric: StackableMetric,
+	filter?: UsageSummaryFilter,
+): StackedTimeline {
 	const { data } = useSuspenseQuery(
 		stackedTimeseriesQueryOptions(groupBy, win, filter),
 	);

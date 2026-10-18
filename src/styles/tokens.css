@@ -88,10 +88,10 @@
    steps from the ground toward data-1. */
 :root {
   --q0: var(--grid);
-  --q1: color-mix(in oklch, var(--data-1) 20%, var(--bg));
-  --q2: color-mix(in oklch, var(--data-1) 40%, var(--bg));
-  --q3: color-mix(in oklch, var(--data-1) 60%, var(--bg));
-  --q4: color-mix(in oklch, var(--data-1) 80%, var(--bg));
+  --q1: color-mix(in srgb, var(--data-1) 20%, var(--bg));
+  --q2: color-mix(in srgb, var(--data-1) 40%, var(--bg));
+  --q3: color-mix(in srgb, var(--data-1) 60%, var(--bg));
+  --q4: color-mix(in srgb, var(--data-1) 80%, var(--bg));
   --q5: var(--data-1);
 }
 

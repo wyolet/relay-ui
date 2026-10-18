@@ -1,9 +1,10 @@
 import { Suspense, useState } from "react";
-import { useCostTimeline } from "@/api/hooks/cost";
-import { type UsageMetric, useStackedTimeline } from "@/api/hooks/usage";
+import { useCostSeries } from "@/api/hooks/cost";
+import { type UsageMetric, useStackedSeries } from "@/api/hooks/usage";
 import { Section } from "@/shared/Section";
 import { Segmented } from "@/shared/Segmented";
 import { StackedUsageChart } from "@/usage/StackedUsageChart";
+import { weekByHour } from "./useWeekActivity";
 
 const METRICS: { value: UsageMetric; label: string }[] = [
 	{ value: "requests", label: "Requests" },
@@ -11,7 +12,7 @@ const METRICS: { value: UsageMetric; label: string }[] = [
 	{ value: "tokens", label: "Tokens" },
 ];
 
-/** This week by model, switchable between requests, spend and tokens. */
+/** This week by model and hour, switchable between requests, spend and tokens. */
 export function TrafficChart() {
 	const [metric, setMetric] = useState<UsageMetric>("requests");
 	return (
@@ -35,7 +36,7 @@ export function TrafficChart() {
 }
 
 function VolumePlot({ metric }: { metric: "requests" | "tokens" }) {
-	const data = useStackedTimeline("model_id", "week", metric);
+	const data = useStackedSeries("model_id", weekByHour(), metric);
 	return (
 		<StackedUsageChart
 			data={data}
@@ -48,7 +49,7 @@ function VolumePlot({ metric }: { metric: "requests" | "tokens" }) {
 }
 
 function SpendPlot() {
-	const data = useCostTimeline("model_id", "week");
+	const data = useCostSeries("model_id", weekByHour());
 	return (
 		<StackedUsageChart
 			data={data}

@@ -97,6 +97,14 @@ export function fmtBucket(ts: string, interval: string): string {
 	return interval === "1d" ? fmtDay(d) : `${fmtDay(d)}, ${fmtClock(d)}`;
 }
 
+/** Buckets that start a local day: the ticks for an hourly axis spanning days. */
+export function dayStartTicks(buckets: string[]): string[] {
+	return buckets.filter((b) => {
+		const d = new Date(b);
+		return d.getHours() === 0 && d.getMinutes() === 0;
+	});
+}
+
 function fmtDay(d: Date): string {
 	return `${d.toLocaleDateString(undefined, { weekday: "short" })} ${d.getDate()}`;
 }
