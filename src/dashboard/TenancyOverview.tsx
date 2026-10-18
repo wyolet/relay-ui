@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { ShieldX } from "lucide-react";
 import { Suspense } from "react";
 import { useDeniedAuditCount } from "@/api/hooks/audit";
-import { resolveWindow, rolling24hWindow } from "@/api/hooks/usage";
+import { resolveWindow, useRolling24hWindow } from "@/api/hooks/usage";
 import { PageLoader } from "@/shared/Spinner";
 import { fmtCompact } from "@/usage/format";
 import { UsageTopGroups } from "@/usage/UsageTopGroups";
@@ -27,7 +27,7 @@ export function TenancyOverview() {
 /** Denials over the trailing 24h — the one number that says whether RBAC is
  * biting. Hidden entirely when the audit log is unreadable or unwritten. */
 function DeniedRequestsCard() {
-	const from = rolling24hWindow().from;
+	const from = useRolling24hWindow().from;
 	const denied = useDeniedAuditCount(from);
 	if (!denied) return null;
 

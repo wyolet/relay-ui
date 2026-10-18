@@ -11,6 +11,7 @@ import { teamsListQueryOptions } from "@/api/hooks/teams";
 import { AuditFilters, type AuditFilterValues } from "@/audit/AuditFilters";
 import { type AuditFilterKey, AuditTable } from "@/audit/AuditTable";
 import {
+	RANGE_NOW_STEP_MS,
 	RANGE_VALUES,
 	rangeBounds,
 	STATUS_VALUES,
@@ -19,6 +20,7 @@ import { awaitOnEnter } from "@/lib/awaitOnEnter";
 import { PageLoader } from "@/shared/Spinner";
 import { StaleContent } from "@/shared/StaleContent";
 import { useDeferredSearch } from "@/shared/useDeferredSearch";
+import { quantizedNow, useQuantizedNow } from "@/shared/useQuantizedNow";
 
 const searchSchema = z.object({
 	span: z.enum(RANGE_VALUES).catch("24h").default("24h"),
@@ -37,8 +39,8 @@ type AuditSearch = z.infer<typeof searchSchema>;
 
 /** Map URL search onto the server-side /audit query. Every facet is a server
  * filter — nothing here is refined client-side. */
-function toAuditFilter(s: AuditSearch): AuditFilter {
-	const filter: AuditFilter = rangeBounds(s.span, s.from, s.to);
+function toAuditFilter(s: AuditSearch, now: number): AuditFilter {
+	const filter: AuditFilter = rangeBounds(s.span, s.from, s.to, now);
 	const actor = s.actor.trim();
 	if (actor) filter.actor_name = actor;
 	if (s.action.length) filter.action = s.action;
@@ -56,7 +58,9 @@ export const Route = createFileRoute("/_authenticated/audit")({
 			cause,
 			Promise.all([
 				context.queryClient.ensureInfiniteQueryData(
-					auditInfiniteQueryOptions(toAuditFilter(deps)),
+					auditInfiniteQueryOptions(
+						toAuditFilter(deps, quantizedNow(RANGE_NOW_STEP_MS)),
+					),
 				),
 				context.queryClient.ensureQueryData(teamsListQueryOptions),
 				context.queryClient.ensureQueryData(projectsListQueryOptions),
@@ -70,8 +74,11 @@ function AuditPage() {
 	const { search, isStale } = useDeferredSearch(live);
 	const { expand } = live;
 	const navigate = useNavigate();
-	const filter = toAuditFilter(search);
-	const facets = useAuditFacets(rangeBounds(live.span, live.from, live.to));
+	const now = useQuantizedNow(RANGE_NOW_STEP_MS);
+	const filter = toAuditFilter(search, now);
+	const facets = useAuditFacets(
+		rangeBounds(live.span, live.from, live.to, now),
+	);
 
 	const patch = (next: Partial<AuditSearch>) =>
 		void navigate({ to: "/audit", search: (prev) => ({ ...prev, ...next }) });
