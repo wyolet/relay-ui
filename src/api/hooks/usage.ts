@@ -477,6 +477,8 @@ export interface UsageGroupStat {
 	share: number; // requests / max(requests), 0..1
 	/** Server-stamped spend for the group (exact for every dimension). */
 	cost: CostTotal;
+	firstSeen: string;
+	lastSeen: string;
 }
 
 /** A single aggregated time bucket across every group. */
@@ -522,6 +524,8 @@ function deriveGroupStats(
 			tokens: sumTokens(r.tokens),
 			share: peak > 0 ? r.requests / peak : 0,
 			cost: costTotal(r.cost_nanos, r.unpriced, r.requests),
+			firstSeen: r.first_seen,
+			lastSeen: r.last_seen,
 		}))
 		.sort((a, b) => b.requests - a.requests);
 }

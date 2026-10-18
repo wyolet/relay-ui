@@ -62,7 +62,7 @@ export function MultiSelect({
 	);
 }
 
-function MultiCheckList({
+export function MultiCheckList({
 	options,
 	selected,
 	onToggle,

@@ -5,9 +5,9 @@ import {
 	useUsageOverview,
 	useUsageOverviewWithDeltas,
 } from "@/api/hooks/usage";
+import type { FigureData } from "@/shared/FigureRow";
 import { fmtBucket, fmtCompact, fmtMoney, fmtPct } from "@/usage/format";
 import { useGroupLabeler } from "@/usage/useGroupLabeler";
-import type { HeadlineFigure } from "./useHeadline";
 import { dailyTotals, weekByHour } from "./useWeekActivity";
 
 const DAY_NAMES = [
@@ -22,7 +22,7 @@ const DAY_NAMES = [
 
 /** The week's less obvious facts: when it peaked, what a request costs and
  * carries, and how concentrated the traffic is. */
-export function useWeekFacts(): HeadlineFigure[] {
+export function useWeekFacts(): FigureData[] {
 	const win = resolveWindow("week");
 	const { kpis } = useUsageOverviewWithDeltas("source", win);
 	const cost = useCostKpi(win);

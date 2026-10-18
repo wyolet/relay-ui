@@ -8,6 +8,7 @@ import {
 	useUsageOverviewWithDeltas,
 } from "@/api/hooks/usage";
 import type { DeltaResult } from "@/lib/usage-math/delta";
+import type { FigureData } from "@/shared/FigureRow";
 import {
 	fmtCompact,
 	fmtMoneyCompact,
@@ -16,14 +17,6 @@ import {
 	RANGE_COMPARE_LABELS,
 } from "@/usage/format";
 import { dailyTotals, weekByHour } from "./useWeekActivity";
-
-export interface HeadlineFigure {
-	key: string;
-	label: string;
-	value: string;
-	note?: string;
-	trend?: (number | null)[];
-}
 
 const VS = RANGE_COMPARE_LABELS.week;
 
@@ -34,7 +27,7 @@ function vsNote(delta: DeltaResult | null | undefined): string | undefined {
 
 /** This week's headline: spend, traffic, tokens and how many keys sent it,
  * each with one note that says what the number alone can't. */
-export function useHeadline(): HeadlineFigure[] {
+export function useHeadline(): FigureData[] {
 	const win = resolveWindow("week");
 	const { kpis, deltas } = useUsageOverviewWithDeltas("source", win);
 	const cost = useCostKpi(win);
