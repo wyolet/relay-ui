@@ -1,15 +1,22 @@
-import { readFileSync } from 'node:fs'
+import { execSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { defineConfig, loadEnv } from 'vite'
 import { tanstackRouter } from '@tanstack/router-plugin/vite'
 import viteReact from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
-const pkg = JSON.parse(readFileSync('./package.json', 'utf-8')) as { version?: string }
-
-// In CI the Release workflow sets RELAY_UI_VERSION to the git tag (e.g. v1.2.3).
-// Locally we fall back to package.json's version, then to "dev".
-const UI_VERSION = process.env.RELAY_UI_VERSION ?? pkg.version ?? 'dev'
+// The Release workflow sets RELAY_UI_VERSION to the git tag (e.g. v1.2.3).
+// Elsewhere: the nearest tag plus distance (v1.2.3-4-gabc1234), then "dev".
+function gitVersion(): string | undefined {
+  try {
+    return execSync('git describe --tags --always', { stdio: ['ignore', 'pipe', 'ignore'] })
+      .toString()
+      .trim()
+  } catch {
+    return undefined
+  }
+}
+const UI_VERSION = process.env.RELAY_UI_VERSION ?? gitVersion() ?? 'dev'
 
 // RELAY_* settings may live in the gitignored .env/.env.development too;
 // shell env wins over file values. (These only shape the dev server.)
