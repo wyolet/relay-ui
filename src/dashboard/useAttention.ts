@@ -47,20 +47,12 @@ export function useAttention(): { items: AttentionItem[]; checking: boolean } {
 	const { data: keyList } = useQuery(keysListQueryOptions);
 
 	const items: AttentionItem[] = [];
-	for (const s of health.subsystems) {
-		if (s.status === "ok") continue;
+	for (const b of health.backends) {
+		if (b.ok) continue;
 		items.push({
-			key: `subsystem-${s.key}`,
-			tone: s.status === "error" ? "alert" : "warn",
-			text: `${s.label} ${s.status === "error" ? "is down" : "is degraded"}`,
-			target: { kind: "none" },
-		});
-	}
-	if (health.masterKeyConfigured === false) {
-		items.push({
-			key: "master-key",
-			tone: "warn",
-			text: "No master key configured",
+			key: `backend-${b.key}`,
+			tone: "alert",
+			text: `${b.label} is down`,
 			target: { kind: "none" },
 		});
 	}

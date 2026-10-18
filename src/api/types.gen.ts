@@ -396,6 +396,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/healthz": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Readiness: process + backend health */
+        get: operations["control_healthz"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/host-bindings": {
         parameters: {
             query?: never;
@@ -819,6 +836,23 @@ export interface paths {
          * @description Verifies the value offline and, on success, stores it in the `license` settings section and makes it live. A value that does not verify is rejected and the previous license stays in place. RELAY_LICENSE_FILE / RELAY_LICENSE still win when set.
          */
         put: operations["put_license"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/livez": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Process liveness (no backend dependency) */
+        get: operations["control_livez"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -2789,6 +2823,23 @@ export interface components {
             section: "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
             value: components["schemas"]["CatalogSource"];
         };
+        ControlHealth: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/ControlHealth.json
+             */
+            readonly $schema?: string;
+            /** @description Status per backend, keyed pg (the database) and redis (sessions and rate limits, absent when state is in memory). Each value is "ok" or "error". */
+            backends: {
+                [key: string]: string;
+            };
+            /**
+             * @description Overall health verdict.
+             * @enum {string}
+             */
+            status: "ok" | "degraded";
+        };
         Counts: {
             /** Format: int64 */
             conflict: number;
@@ -4311,6 +4362,19 @@ export interface components {
             items: components["schemas"]["Binding"][] | null;
             /** Format: int64 */
             total: number;
+        };
+        livezOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/livezOutputBody.json
+             */
+            readonly $schema?: string;
+            /**
+             * @description Process liveness.
+             * @enum {string}
+             */
+            status: "ok";
         };
         logGetOutputBody: {
             /**
@@ -6306,6 +6370,35 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    control_healthz: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ControlHealth"];
+                };
+            };
+            /** @description A backend is unreachable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ControlHealth"];
                 };
             };
         };
@@ -8568,6 +8661,35 @@ export interface operations {
             };
             /** @description Internal Server Error */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    control_livez: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["livezOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
                 headers: {
                     [name: string]: unknown;
                 };
