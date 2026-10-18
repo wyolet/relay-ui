@@ -1,11 +1,7 @@
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useDeferredValue } from "react";
-import {
-	type ExplorerSearch,
-	explorerFilter,
-	explorerWindow,
-	type FilterDimension,
-} from "./search";
+import type { FilterDimension } from "@/usage/filters/dimensions";
+import { type ExplorerSearch, explorerFilter, explorerWindow } from "./search";
 
 /**
  * The explorer's state, read from and written to the URL. Controls read

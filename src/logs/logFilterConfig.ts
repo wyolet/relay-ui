@@ -22,11 +22,11 @@ export const STATUS_OPTIONS: readonly { value: StatusClass; label: string }[] =
 		{ value: "5xx", label: "5xx" },
 	];
 
-/** The dimensions exposed as multi-selects in the filter drawer. */
-export const LOG_DIMENSIONS = [
-	{ key: "model_id", label: "Model", chip: "Model" },
-	{ key: "host_id", label: "Host", chip: "Host" },
-	{ key: "policy_id", label: "Policy", chip: "Policy" },
-] as const;
-
-export type LogDimensionKey = (typeof LOG_DIMENSIONS)[number]["key"];
+/** Hours each window spans, for counting filter choices over the same slice. */
+export const SINCE_HOURS: Record<Since, number> = {
+	"1h": 1,
+	"6h": 6,
+	"24h": 24,
+	"7d": 7 * 24,
+	"30d": 30 * 24,
+};

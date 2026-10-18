@@ -1,5 +1,5 @@
+import { isFilterDimension } from "@/usage/filters/dimensions";
 import { LogsLink } from "./LogsLink";
-import { isFilterDimension } from "./search";
 import { useExplorer } from "./useExplorer";
 
 /** What a lens table row does: a click narrows the explorer to it, and the

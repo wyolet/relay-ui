@@ -2,6 +2,10 @@ import { Link } from "@tanstack/react-router";
 import { ScrollText } from "lucide-react";
 import type { UsageGroupBy, UsageRange } from "@/api/hooks/usage";
 import type { StatusClass } from "@/logs/logFilterConfig";
+import {
+	type FilterDimension,
+	isFilterDimension,
+} from "@/usage/filters/dimensions";
 
 /** The logs window that covers a usage range. */
 const SINCE: Record<UsageRange, "24h" | "7d" | "30d"> = {
@@ -11,8 +15,8 @@ const SINCE: Record<UsageRange, "24h" | "7d" | "30d"> = {
 	custom: "30d",
 };
 
-/** Opens the requests behind one table row, for the dimensions Logs filters
- * on; nothing for the rest. */
+/** Opens the requests behind one table row; nothing for dimensions Logs
+ * can't filter on (source, error kind, …). */
 export function LogsLink({
 	groupBy,
 	value,
@@ -24,15 +28,9 @@ export function LogsLink({
 	range: UsageRange;
 	statusClass: StatusClass;
 }) {
-	const scope =
-		groupBy === "model_id"
-			? { model_id: [value] }
-			: groupBy === "host_id"
-				? { host_id: [value] }
-				: groupBy === "policy_id"
-					? { policy_id: [value] }
-					: null;
-	if (!scope) return null;
+	if (!isFilterDimension(groupBy)) return null;
+	const scope: Partial<Record<FilterDimension, string[]>> = {};
+	scope[groupBy] = [value];
 	return (
 		<Link
 			to="/logs"

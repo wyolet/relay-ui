@@ -1,39 +1,48 @@
 import { ChevronDown, ListFilter, Search } from "lucide-react";
 import { useState } from "react";
 import {
+	type UsageSummaryFilter,
+	useRollingUsageWindow,
+} from "@/api/hooks/usage";
+import {
 	fieldFocusWithinClassName,
 	fieldFrameClassName,
 } from "@/components/ui/field-focus";
-import type { FilterOption } from "@/filters/types";
 import { cn } from "@/lib/utils";
 import { Chip } from "@/shared/Chip";
 import { FilterDropdown } from "@/shared/FilterDropdown";
+import { CountBadge, filterTriggerClassName } from "@/shared/MultiSelect";
+import { DimensionChips } from "@/usage/filters/DimensionChips";
 import {
-	CountBadge,
-	filterTriggerClassName,
-	MultiSelect,
-} from "@/shared/MultiSelect";
+	FILTER_DIMENSIONS,
+	type FilterDimension,
+} from "@/usage/filters/dimensions";
 import {
-	LOG_DIMENSIONS,
-	type LogDimensionKey,
+	SINCE_HOURS,
 	type Since,
 	STATUS_OPTIONS,
 	type StatusClass,
 	WINDOW_OPTIONS,
 } from "./logFilterConfig";
 
-export interface LogsFilterValues {
+export type LogsFilterValues = {
 	q: string;
 	since: Since;
 	status_class: StatusClass;
 	errors: boolean;
 	slow: boolean;
-	model_id: string[];
-	host_id: string[];
-	policy_id: string[];
-}
+} & Record<FilterDimension, string[]>;
 
-type DimensionOptions = Record<LogDimensionKey, FilterOption[]>;
+/** The usage slice matching the feed, so filter choices count the same rows. */
+function usageSlice(values: LogsFilterValues): UsageSummaryFilter {
+	const filter: UsageSummaryFilter = {};
+	for (const d of FILTER_DIMENSIONS) {
+		if (values[d].length) filter[d] = values[d];
+	}
+	if (values.status_class) filter.status_class = values.status_class;
+	if (values.errors) filter.error = "true";
+	return filter;
+}
 
 interface ActiveChip {
 	key: string;
@@ -48,26 +57,28 @@ interface ActiveChip {
  */
 export function LogsFilters({
 	values,
-	options,
 	slowLabel,
 	onChange,
 }: {
 	values: LogsFilterValues;
-	options: DimensionOptions;
 	slowLabel: string;
 	onChange: (patch: Partial<LogsFilterValues>) => void;
 }) {
 	const [open, setOpen] = useState(false);
+	const win = useRollingUsageWindow(SINCE_HOURS[values.since]);
 
-	const toggleDim = (key: LogDimensionKey, value: string) => {
-		const cur = values[key];
-		const next = cur.includes(value)
-			? cur.filter((v) => v !== value)
-			: [...cur, value];
-		if (key === "model_id") onChange({ model_id: next });
-		else if (key === "host_id") onChange({ host_id: next });
-		else onChange({ policy_id: next });
+	const setDim = (d: FilterDimension, next: string[]) => {
+		const patch: Partial<Record<FilterDimension, string[]>> = {};
+		patch[d] = next;
+		onChange(patch);
 	};
+	const toggleDim = (d: FilterDimension, value: string) =>
+		setDim(
+			d,
+			values[d].includes(value)
+				? values[d].filter((v) => v !== value)
+				: [...values[d], value],
+		);
 
 	const chips: ActiveChip[] = [];
 	if (values.status_class)
@@ -88,27 +99,11 @@ export function LogsFilters({
 			label: slowLabel,
 			onRemove: () => onChange({ slow: false }),
 		});
-	for (const dim of LOG_DIMENSIONS) {
-		for (const v of values[dim.key]) {
-			chips.push({
-				key: `${dim.key}:${v}`,
-				label: `${dim.chip}: ${labelFor(options[dim.key], v)}`,
-				onRemove: () => toggleDim(dim.key, v),
-			});
-		}
-	}
 
 	const advancedCount = chips.length;
 
 	const resetAll = () =>
-		onChange({
-			status_class: "",
-			errors: false,
-			slow: false,
-			model_id: [],
-			host_id: [],
-			policy_id: [],
-		});
+		onChange({ status_class: "", errors: false, slow: false });
 
 	return (
 		<div className="flex flex-col gap-2">
@@ -150,6 +145,16 @@ export function LogsFilters({
 					onChange={(v) => onChange({ since: v })}
 				/>
 
+				<DimensionChips
+					state={{
+						values,
+						toggle: toggleDim,
+						clear: (d) => setDim(d, []),
+						win,
+						filter: usageSlice(values),
+					}}
+				/>
+
 				<button
 					type="button"
 					onClick={() => setOpen((o) => !o)}
@@ -157,7 +162,7 @@ export function LogsFilters({
 					className={cn(filterTriggerClassName, open && "bg-muted")}
 				>
 					<ListFilter className="size-3.5" aria-hidden="true" />
-					Filters
+					More
 					{advancedCount > 0 && <CountBadge n={advancedCount} />}
 					<ChevronDown
 						className={cn(
@@ -188,15 +193,6 @@ export function LogsFilters({
 						pressed={values.slow}
 						onToggle={() => onChange({ slow: !values.slow })}
 					/>
-					{LOG_DIMENSIONS.map((dim) => (
-						<MultiSelect
-							key={dim.key}
-							label={dim.label}
-							options={options[dim.key]}
-							selected={values[dim.key]}
-							onToggle={(v) => toggleDim(dim.key, v)}
-						/>
-					))}
 					{advancedCount > 0 && (
 						<button
 							type="button"
@@ -234,8 +230,4 @@ function ToggleButton({
 			{label}
 		</button>
 	);
-}
-
-function labelFor(options: FilterOption[], value: string): string {
-	return options.find((o) => o.value === value)?.label ?? value;
 }

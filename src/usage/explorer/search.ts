@@ -4,10 +4,10 @@ import {
 	resolveWindow,
 	USAGE_GROUP_BY,
 	USAGE_RANGES,
-	type UsageGroupBy,
 	type UsageSummaryFilter,
 } from "@/api/hooks/usage";
 import { STATUS_CLASS_VALUES } from "@/logs/logFilterConfig";
+import { FILTER_DIMENSIONS } from "@/usage/filters/dimensions";
 
 export const LENSES = [
 	"traffic",
@@ -17,23 +17,6 @@ export const LENSES = [
 	"latency",
 ] as const;
 export type Lens = (typeof LENSES)[number];
-
-/** Dimensions the explorer filters on: id lists the summary endpoint matches. */
-export const FILTER_DIMENSIONS = [
-	"model_id",
-	"host_id",
-	"team_id",
-	"project_id",
-	"principal_id",
-	"relay_key_hash",
-	"policy_id",
-	"host_key_id",
-] as const satisfies readonly (keyof UsageSummaryFilter & UsageGroupBy)[];
-export type FilterDimension = (typeof FILTER_DIMENSIONS)[number];
-
-export function isFilterDimension(d: UsageGroupBy): d is FilterDimension {
-	return FILTER_DIMENSIONS.some((f) => f === d);
-}
 
 const ids = z.array(z.string()).default([]);
 

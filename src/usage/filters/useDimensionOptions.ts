@@ -7,7 +7,7 @@ import {
 import type { FilterOption } from "@/filters/types";
 import { fmtCompact } from "@/usage/format";
 import { useGroupLabeler } from "@/usage/useGroupLabeler";
-import type { FilterDimension } from "./search";
+import type { FilterDimension } from "./dimensions";
 
 /** Filter choices for one dimension: the values that saw traffic in the
  * window, busiest first, with their request counts. The dimension's own
