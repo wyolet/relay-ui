@@ -13,12 +13,10 @@ export const USAGE_PALETTE = [
 	"var(--chart-2)",
 	"var(--chart-3)",
 	"var(--chart-4)",
-	"var(--chart-5)",
-	"var(--color-brand-300)",
 ] as const;
 
 /** Tone for the folded long tail / un-ranked rows. */
-export const OTHER_COLOR = "var(--muted-foreground)";
+export const OTHER_COLOR = "var(--chart-5)";
 
 /** Color for a series or leaderboard row by its 0-based volume rank. */
 export function rankColor(rank: number): string {

@@ -10,7 +10,7 @@ import { advanceInterval, floorToInterval, type UsageInterval } from "./window";
 /** Series with less than this share of total volume fold into "Others". */
 export const OTHER_SHARE = 0.05;
 /** Hard cap on distinct series before the rest fold into "Others". */
-export const MAX_SERIES = 6;
+export const MAX_SERIES = 4;
 export const OTHER_KEY = "__other";
 
 /** One stacked bucket: epoch label plus a value per series key. */

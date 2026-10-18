@@ -83,15 +83,29 @@ export function fmtSignedPp(delta: number): string {
 	return `${sign}${abs.toLocaleString(undefined, { maximumFractionDigits: digits })} pp`;
 }
 
-/** Compact time for chart axis ticks. */
-export function fmtBucket(ts: string): string {
+/** Axis tick for a bucket: "Mon 14" for day buckets, "14:00" otherwise. */
+export function fmtBucketTick(ts: string, interval: string): string {
 	const d = new Date(ts);
 	if (Number.isNaN(d.getTime())) return ts;
-	return d.toLocaleString(undefined, {
-		month: "short",
-		day: "numeric",
+	return interval === "1d" ? fmtDay(d) : fmtClock(d);
+}
+
+/** Tooltip title for a bucket: the day, plus the time when under a day. */
+export function fmtBucket(ts: string, interval: string): string {
+	const d = new Date(ts);
+	if (Number.isNaN(d.getTime())) return ts;
+	return interval === "1d" ? fmtDay(d) : `${fmtDay(d)}, ${fmtClock(d)}`;
+}
+
+function fmtDay(d: Date): string {
+	return `${d.toLocaleDateString(undefined, { weekday: "short" })} ${d.getDate()}`;
+}
+
+function fmtClock(d: Date): string {
+	return d.toLocaleTimeString(undefined, {
 		hour: "2-digit",
 		minute: "2-digit",
+		hourCycle: "h23",
 	});
 }
 

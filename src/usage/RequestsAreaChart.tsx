@@ -9,7 +9,8 @@ import {
 	ChartTooltip,
 	ChartTooltipContent,
 } from "@/components/ui/chart";
-import { fmtBucket, fmtInt, fmtRange } from "./format";
+import { AXIS_PROPS, Y_TICK_COUNT } from "./chartMarks";
+import { fmtBucket, fmtBucketTick, fmtInt, fmtRange } from "./format";
 import { UsageEmpty } from "./UsageEmpty";
 
 const CONFIG: ChartConfig = {
@@ -60,26 +61,27 @@ export function RequestsAreaChart({
 						<CartesianGrid vertical={false} />
 						<XAxis
 							dataKey="bucket"
-							tickLine={false}
-							axisLine={false}
-							tickMargin={8}
+							{...AXIS_PROPS}
 							minTickGap={32}
-							tickFormatter={fmtBucket}
+							tickFormatter={(v: string) => fmtBucketTick(v, interval)}
 						/>
 						<YAxis
-							tickLine={false}
-							axisLine={false}
+							{...AXIS_PROPS}
 							width={44}
+							tickCount={Y_TICK_COUNT}
 							tickFormatter={fmtInt}
 						/>
 						<ChartTooltip
 							content={
 								<ChartTooltipContent
-									labelFormatter={(v) => fmtBucket(String(v))}
+									labelFormatter={(v) => fmtBucket(String(v), interval)}
 								/>
 							}
 						/>
-						<ChartLegend content={<ChartLegendContent />} />
+						<ChartLegend
+							verticalAlign="top"
+							content={<ChartLegendContent verticalAlign="top" />}
+						/>
 						<Area
 							dataKey="requests"
 							type="monotone"

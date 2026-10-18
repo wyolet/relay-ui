@@ -18,11 +18,19 @@ import {
 import {
 	dimensionLabel,
 	fmtBucket,
+	fmtBucketTick,
 	fmtCompact,
 	fmtMoney,
 	fmtMoneyCompact,
 	fmtRange,
 } from "./format";
+import {
+	AXIS_PROPS,
+	BAR_MAX,
+	BAR_RADIUS,
+	SEGMENT_GAP,
+	Y_TICK_COUNT,
+} from "./chartMarks";
 import { OTHER_COLOR, USAGE_PALETTE } from "./palette";
 import { UsageEmpty } from "./UsageEmpty";
 import { useGroupLabeler } from "./useGroupLabeler";
@@ -103,22 +111,20 @@ export function StackedUsageChart({
 				<CartesianGrid vertical={false} />
 				<XAxis
 					dataKey="bucket"
-					tickLine={false}
-					axisLine={false}
-					tickMargin={8}
+					{...AXIS_PROPS}
 					minTickGap={32}
-					tickFormatter={fmtBucket}
+					tickFormatter={(v: string) => fmtBucketTick(v, data.interval)}
 				/>
 				<YAxis
-					tickLine={false}
-					axisLine={false}
+					{...AXIS_PROPS}
 					width={isCost ? 56 : 44}
+					tickCount={Y_TICK_COUNT}
 					tickFormatter={tickFormatter}
 				/>
 				<ChartTooltip
 					content={
 						<ChartTooltipContent
-							labelFormatter={(v) => fmtBucket(String(v))}
+							labelFormatter={(v) => fmtBucket(String(v), data.interval)}
 							formatter={
 								isCost
 									? (value, name, item) => (
@@ -142,15 +148,19 @@ export function StackedUsageChart({
 						/>
 					}
 				/>
-				<ChartLegend content={<ChartLegendContent />} />
+				<ChartLegend
+					verticalAlign="top"
+					content={<ChartLegendContent verticalAlign="top" />}
+				/>
 				{data.series.map((key) => (
 					<Bar
 						key={key}
 						dataKey={key}
 						stackId="usage"
 						fill={config[key]?.color}
-						maxBarSize={56}
-						radius={isLast(key, data.series) ? [3, 3, 0, 0] : undefined}
+						{...SEGMENT_GAP}
+						maxBarSize={BAR_MAX}
+						radius={isLast(key, data.series) ? BAR_RADIUS : undefined}
 						isAnimationActive={false}
 					/>
 				))}

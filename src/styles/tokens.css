@@ -20,8 +20,11 @@
 }
 
 :root {
-  /* Ledger, light */
-  --bg: #ffffff;
+  /* Ledger, light. The ground carries a faint brand tint and raised surfaces
+     are white, so light mode has depth instead of one flat sheet. */
+  --bg: oklch(0.985 0.003 290);
+  --raised: #ffffff;
+  --chrome: oklch(0.965 0.006 290);
   --ink: #0b0b0b;
   --ink-2: #5b5b5b;
   --ink-3: #8e8e8e;
@@ -45,12 +48,15 @@
   --tip-bg: #0b0b0b;
   --tip-ink: #ffffff;
   --tip-rule: #0b0b0b;
+  --menu: #ffffff;
   --field-line: #d6d6d6;
   --danger: oklch(0.577 0.245 27.325);
 }
 
 .dark {
   --bg: #000000;
+  --raised: #000000;
+  --chrome: #000000;
   --ink: #f4f4f4;
   --ink-2: #a1a1a1;
   --ink-3: #6c6c6c;
@@ -74,19 +80,20 @@
   --tip-bg: #1b1b1b;
   --tip-ink: #f4f4f4;
   --tip-rule: #2e2e2e;
+  --menu: #1b1b1b;
   --field-line: #2e2e2e;
   --danger: oklch(0.704 0.191 22.216);
 }
 
-/* shadcn semantic tokens. Ledger has no boxes: cards sit on the ground and a
-   hairline separates them; popovers take the tooltip's surface. */
+/* shadcn semantic tokens. Ledger has no boxes: in dark, cards sit on the
+   ground and a hairline separates them; in light they lift to white. */
 :root {
   --background: var(--bg);
   --foreground: var(--ink);
-  --card: var(--bg);
+  --card: var(--raised);
   --card-foreground: var(--ink);
-  --popover: var(--tip-bg);
-  --popover-foreground: var(--tip-ink);
+  --popover: var(--menu);
+  --popover-foreground: var(--ink);
   --primary: var(--accent-ink);
   --primary-foreground: var(--bg);
   --secondary: var(--track);
@@ -102,7 +109,7 @@
   --ring: var(--accent-ink);
   --radius: 0.5rem;
 
-  --sidebar: var(--bg);
+  --sidebar: var(--chrome);
   --sidebar-foreground: var(--ink);
   --sidebar-primary: var(--accent-ink);
   --sidebar-primary-foreground: var(--bg);
@@ -127,7 +134,7 @@
   --info-soft: var(--track);
 
   --field-accent: var(--accent-ink);
-  --field-rest: transparent;
+  --field-rest: var(--raised);
   --field-border: var(--field-line);
   --input-wash: color-mix(in oklch, var(--accent-ink) 9%, transparent);
   --btn-tonal-hover: color-mix(in oklch, var(--accent-ink) 15%, transparent);
