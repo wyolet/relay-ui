@@ -574,6 +574,8 @@ export interface UsageKpis {
 	clientErrors: number;
 	/** 429s. */
 	throttled: number;
+	/** Distinct keys that sent traffic; only on an ungrouped row that asked. */
+	activeKeys?: number;
 	avgMs: number; // request-weighted mean latency
 	/** All meters summed — the billable volume (cache reads included). */
 	tokens: number;
@@ -635,6 +637,8 @@ function deriveKpis(rows: UsageSummaryRow[]): UsageKpis {
 		serverErrors,
 		clientErrors,
 		throttled,
+		// Distinct counts don't add up across rows; only a single row carries one.
+		activeKeys: rows.length === 1 ? rows[0]?.distinct : undefined,
 		avgMs: requests > 0 ? weightedMs / requests : 0,
 		tokens: split.total,
 		rawInput: split.input - split.cached,
@@ -768,6 +772,8 @@ export function usageCompareQueryOptions(
 	win: UsageWindow,
 	previous: UsageWindow,
 	filter?: UsageSummaryFilter,
+	/** Also count distinct values of this dimension per row. */
+	distinct?: DistinctDimension,
 ) {
 	return queryOptions({
 		queryKey: [
@@ -779,6 +785,7 @@ export function usageCompareQueryOptions(
 			previous.from,
 			previous.to,
 			filter ?? {},
+			distinct ?? "",
 		] as const,
 		queryFn: async (): Promise<UsageSummaryResult> =>
 			unwrap(
@@ -791,6 +798,7 @@ export function usageCompareQueryOptions(
 							to: win.to,
 							compare_from: previous.from,
 							compare_to: previous.to,
+							distinct,
 						},
 					},
 				}),
@@ -798,6 +806,75 @@ export function usageCompareQueryOptions(
 		staleTime: 15_000,
 		gcTime: 5 * 60_000,
 	});
+}
+
+/** The slice's totals with last period's, and its active keys; every view
+ * that shows totals or deltas reads this one request. */
+export function usageTotalsCompareQueryOptions(
+	win: UsageWindow,
+	previous: UsageWindow,
+	filter?: UsageSummaryFilter,
+) {
+	return usageCompareQueryOptions(
+		"none",
+		win,
+		previous,
+		filter,
+		"relay_key_hash",
+	);
+}
+
+/** Dimensions the server can count distinct values of. */
+export type DistinctDimension =
+	| "relay_key_hash"
+	| "relay_key"
+	| "principal_id"
+	| "credential_id"
+	| "project_id"
+	| "team_id"
+	| "model_id"
+	| "host_id";
+
+/** Distinct values of `dim` per day over the window (ungrouped). */
+export function useDailyDistinct(
+	dim: DistinctDimension,
+	win: UsageWindow,
+	filter?: UsageSummaryFilter,
+): { bucket: string; distinct: number }[] {
+	const { data } = useSuspenseQuery(
+		queryOptions({
+			queryKey: [
+				"usage",
+				"distinct",
+				dim,
+				win.from,
+				win.to,
+				filter ?? {},
+			] as const,
+			queryFn: async (): Promise<UsageTimeSeriesResult> =>
+				unwrap(
+					await apiClient.GET("/usage/timeseries", {
+						params: {
+							query: {
+								...filter,
+								from: win.from,
+								to: win.to,
+								interval: "1d",
+								distinct: dim,
+							},
+						},
+					}),
+				),
+			staleTime: 15_000,
+			gcTime: 5 * 60_000,
+		}),
+	);
+	return (data.rows ?? []).flatMap((r) =>
+		(r.points ?? []).map((p) => ({
+			bucket: p.bucket,
+			distinct: p.distinct ?? 0,
+		})),
+	);
 }
 
 /** Each row's previous-window numbers as a row of its own, so the same
@@ -819,6 +896,8 @@ export interface UsageKpiDeltas {
 	errorRate: DeltaResult;
 	avgMs: DeltaResult;
 	tokens: DeltaResult;
+	/** Null when the relay doesn't count distinct keys. */
+	activeKeys: DeltaResult | null;
 	/** The window the comparison ran against (elapsed-matched, see usage-math). */
 	previous: UsageWindow;
 }
@@ -836,7 +915,7 @@ export function useUsageOverviewWithDeltas(
 	const { previous } = usageComparisonWindows(win, useUsageNow());
 	const [totals, grouped] = useSuspenseQueries({
 		queries: [
-			usageCompareQueryOptions("none", win, previous, filter),
+			usageTotalsCompareQueryOptions(win, previous, filter),
 			usageCompareQueryOptions(groupBy, win, previous, filter),
 		],
 	});
@@ -852,6 +931,10 @@ export function useUsageOverviewWithDeltas(
 		errorRate: compareValue(kpis.errorRate, prevKpis.errorRate),
 		avgMs: compareValue(kpis.avgMs, prevKpis.avgMs),
 		tokens: compareValue(kpis.tokens, prevKpis.tokens),
+		activeKeys:
+			kpis.activeKeys !== undefined && prevKpis.activeKeys !== undefined
+				? compareValue(kpis.activeKeys, prevKpis.activeKeys)
+				: null,
 		previous,
 	};
 	const rows = grouped.data.rows ?? [];

@@ -3,7 +3,6 @@ import {
 	type UsageGroupBy,
 	type UsageSummaryFilter,
 	useStackedSeries,
-	useUsageOverview,
 	useUsageOverviewWithDeltas,
 } from "@/api/hooks/usage";
 import { fmtAgo } from "@/lib/format";
@@ -42,7 +41,6 @@ export function useTrafficLens(
 		groups,
 		previousGroups: before,
 	} = useUsageOverviewWithDeltas(groupBy, win, filter);
-	const { groups: keys } = useUsageOverview("relay_key_hash", win, filter);
 	const series = useStackedSeries(groupBy, win, "requests", filter);
 	const labelFor = useGroupLabeler(groupBy);
 
@@ -73,8 +71,11 @@ export function useTrafficLens(
 		{
 			key: "keys",
 			label: "Active keys",
-			value: fmtCompact(keys.length),
-			note: `${fmtCompact(groups.length)} ${groups.length === 1 ? "group" : "groups"} in view`,
+			value: kpis.activeKeys !== undefined ? fmtCompact(kpis.activeKeys) : "—",
+			note:
+				deltas.hasBaseline && deltas.activeKeys?.ratio != null
+					? `${fmtSignedPct(deltas.activeKeys.ratio)} ${compareLabel}`
+					: `${fmtCompact(groups.length)} ${groups.length === 1 ? "group" : "groups"} in view`,
 		},
 		{
 			key: "peak",

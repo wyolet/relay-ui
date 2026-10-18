@@ -3921,6 +3921,8 @@ export interface components {
         SummaryPrevious: {
             /** Format: int64 */
             cost_nanos: number;
+            /** Format: int64 */
+            distinct?: number;
             duration_ms: components["schemas"]["DurationStats"];
             /** Format: int64 */
             error_count: number;
@@ -3959,6 +3961,11 @@ export interface components {
         SummaryRow: {
             /** Format: int64 */
             cost_nanos: number;
+            /**
+             * Format: int64
+             * @description Number of distinct non-empty values of the distinct dimension among this row's events (keyless traffic is not a key). Present only with distinct set.
+             */
+            distinct?: number;
             duration_ms: components["schemas"]["DurationStats"];
             /** Format: int64 */
             error_count: number;
@@ -4024,6 +4031,11 @@ export interface components {
             bucket: string;
             /** Format: int64 */
             cost_nanos: number;
+            /**
+             * Format: int64
+             * @description Number of distinct non-empty values of the distinct dimension among this bucket's events. Per-bucket values cannot be summed across buckets; use /usage/summary for a window total. Present only with distinct set.
+             */
+            distinct?: number;
             duration_ms: components["schemas"]["DurationStats"];
             /** Format: int64 */
             error_count: number;
@@ -17022,6 +17034,8 @@ export interface operations {
                 compare_from?: string;
                 /** @description End (RFC3339, exclusive) of the explicit compare window; needs compare_from and must be after it. */
                 compare_to?: string;
+                /** @description Adds distinct to each row: the number of distinct non-empty values of this dimension among the row's events. One of "relay_key_hash" | "relay_key" | "principal_id" | "credential_id" | "project_id" | "team_id" | "model_id" | "host_id". Omitted means no distinct count. */
+                distinct?: string;
             };
             header?: never;
             path?: never;
@@ -17151,6 +17165,8 @@ export interface operations {
                 interval?: string;
                 /** @description Optional dimension to split series by: "source" | "model" | "host" | "policy" | "provider" | "project" | "team" | "principal" | "relay_key" (event-time slugs) | "model_id" | "host_id" | "policy_id" | "project_id" | "team_id" | "principal_id" | "credential_id" | "relay_key_hash" | "host_key_id" | "finish_reason" | "error_kind" | "tags.<key>". Empty returns a single series; "none" returns that series with group {}. */
                 group_by?: string;
+                /** @description Adds distinct to each point: the number of distinct non-empty values of this dimension among the bucket's events. Per-bucket values cannot be summed across buckets (a value seen in two buckets counts in each); use /usage/summary for a window total. One of "relay_key_hash" | "relay_key" | "principal_id" | "credential_id" | "project_id" | "team_id" | "model_id" | "host_id". Omitted means no distinct count. */
+                distinct?: string;
             };
             header?: never;
             path?: never;

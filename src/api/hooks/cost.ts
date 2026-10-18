@@ -8,9 +8,9 @@ import {
 	type UsageRange,
 	type UsageSummaryFilter,
 	type UsageWindow,
-	usageCompareQueryOptions,
 	usageComparisonWindows,
 	usageSummaryQueryOptions,
+	usageTotalsCompareQueryOptions,
 	useRollingUsageWindow,
 	useUsageNow,
 } from "@/api/hooks/usage";
@@ -53,7 +53,7 @@ export function useCostKpi(
 ): CostKpi {
 	const { previous } = usageComparisonWindows(win, useUsageNow());
 	const { data } = useSuspenseQuery(
-		usageCompareQueryOptions("none", win, previous, filter),
+		usageTotalsCompareQueryOptions(win, previous, filter),
 	);
 	const rows = data.rows ?? [];
 	const sum = sumCostRows(rows);
