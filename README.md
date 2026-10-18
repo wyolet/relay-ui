@@ -100,7 +100,8 @@ bun run ci           # typecheck + lint + test (runs in GitHub Actions on every 
 
 ## Releasing
 
-1. `make release VERSION=v1.2.3` — bumps `package.json`, tags, and pushes.
+1. `make release VERSION=v1.2.3` — tags the newest `main` commit with a green CI
+   run and pushes the tag. No release commit, so CI doesn't run again.
 2. GitHub Actions builds the project and uploads `relay-ui-v1.2.3.tar.gz` as a
    GitHub Release asset.
 3. The main `wyolet/relay` repo pins this tarball and embeds it at build time.

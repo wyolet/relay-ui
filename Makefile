@@ -39,17 +39,19 @@ typecheck: ## Run tsc --noEmit
 lint: ## Run biome lint
 	bun run lint
 
-release: ## Cut a release: make release VERSION=v1.2.3 (bumps package.json, tags, pushes)
+release: ## Tag the newest main commit with green CI and push the tag: make release VERSION=v1.2.3
 	@test -n "$(VERSION)" || { echo "Usage: make release VERSION=vX.Y.Z"; exit 1; }
 	@echo "$(VERSION)" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$$' || { echo "VERSION must look like vX.Y.Z (got '$(VERSION)')"; exit 1; }
-	@test -z "$$(git status --porcelain)" || { echo "Working tree is dirty — commit or stash first."; exit 1; }
-	@git rev-parse "$(VERSION)" >/dev/null 2>&1 && { echo "Tag $(VERSION) already exists."; exit 1; } || true
-	@echo "Running checks before tagging …"
-	@bun run ci
-	@echo "Bumping package.json to $(VERSION:v%=%) …"
-	@bun --eval 'const f="package.json";const p=JSON.parse(await Bun.file(f).text());const o={};for(const k of Object.keys(p)){o[k]=p[k];if(k==="name")o.version="$(VERSION:v%=%)";}o.version="$(VERSION:v%=%)";await Bun.write(f,JSON.stringify(o,null,2)+"\n");'
-	@git add package.json
-	@git commit -m "release: $(VERSION)"
-	@git tag -a "$(VERSION)" -m "relay-ui $(VERSION)"
-	@git push origin HEAD "$(VERSION)"
-	@echo "Pushed $(VERSION) — Release workflow will build, checksum, and publish the tarball."
+	@git fetch -q --tags origin main
+	@git rev-parse -q --verify "refs/tags/$(VERSION)" >/dev/null && { echo "Tag $(VERSION) already exists."; exit 1; } || true
+	@# No release commit: the build stamps the version from the tag, so a tag
+	@# push runs only the Release workflow, on a commit CI already passed.
+	@set -e; \
+	sha=$$(gh run list --workflow CI --branch main --event push --status success --limit 1 --json headSha -q '.[0].headSha'); \
+	test -n "$$sha" || { echo "No green CI run on main."; exit 1; }; \
+	if [ "$$sha" != "$$(git rev-parse origin/main)" ]; then \
+		echo "origin/main $$(git rev-parse --short origin/main) has no green CI yet; tagging $$(git rev-parse --short $$sha), the newest green commit."; \
+	fi; \
+	git tag -a "$(VERSION)" -m "relay-ui $(VERSION)" "$$sha"; \
+	git push -q origin "$(VERSION)"; \
+	echo "Pushed $(VERSION) at $$(git rev-parse --short $$sha) — Release workflow will build, checksum, and publish the tarball."

@@ -1,7 +1,7 @@
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
-	/** relay-ui release version, injected at build time (git tag, package.json, or "dev"). */
+	/** relay-ui release version, injected at build time (git tag, git describe, or "dev"). */
 	readonly VITE_UI_VERSION: string;
 	/**
 	 * Bootstrap override for *where* to fetch runtime config from. Dev only —

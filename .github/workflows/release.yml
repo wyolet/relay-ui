@@ -58,11 +58,13 @@ jobs:
           cp "out/relay-ui-${GITHUB_REF_NAME}.tar.gz" out/relay-ui-latest.tar.gz
 
       # Runtime dependencies only. cdxgen reads node_modules when present, which
-      # mislabels dev tooling, so it sees just the manifest and lockfile.
+      # mislabels dev tooling, so it sees just the manifest and lockfile. The
+      # manifest carries no version; the tag supplies it.
       - name: SBOM
         run: |
           mkdir sbom-src
-          cp package.json bun.lock sbom-src/
+          jq --arg v "${GITHUB_REF_NAME#v}" '.version = $v' package.json > sbom-src/package.json
+          cp bun.lock sbom-src/
           npx --yes @cyclonedx/cdxgen@12.8.5 -t js --required-only \
             --no-install-deps --no-recurse \
             -o "out/relay-ui-${GITHUB_REF_NAME}.cdx.json" sbom-src
