@@ -32,7 +32,14 @@ export function fmtPct(ratio: number): string {
 
 /** Money with adaptive precision; falls back when the code isn't ISO-valid. */
 export function fmtMoney(amount: number, currency: string): string {
-	const digits = amount !== 0 && Math.abs(amount) < 1 ? 4 : 2;
+	return currencyText(
+		amount,
+		currency,
+		amount !== 0 && Math.abs(amount) < 1 ? 4 : 2,
+	);
+}
+
+function currencyText(amount: number, currency: string, digits: number) {
 	try {
 		return new Intl.NumberFormat(undefined, {
 			style: "currency",
@@ -44,9 +51,15 @@ export function fmtMoney(amount: number, currency: string): string {
 	}
 }
 
-/** Compact money for KPI values and chart axes: "$1.2K", "$0.0042". */
+/** Compact money for figures and tables, never finer than a cent: "$1.2K",
+ * "$0.25", "<$0.01". */
 export function fmtMoneyCompact(amount: number, currency: string): string {
-	if (amount !== 0 && Math.abs(amount) < 1) return fmtMoney(amount, currency);
+	if (amount !== 0 && Math.abs(amount) < 0.01) {
+		return `<${currencyText(0.01, currency, 2)}`;
+	}
+	if (amount !== 0 && Math.abs(amount) < 1) {
+		return currencyText(amount, currency, 2);
+	}
 	try {
 		return new Intl.NumberFormat(undefined, {
 			style: "currency",

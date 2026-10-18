@@ -2,7 +2,6 @@ import { useQuery } from "@tanstack/react-query";
 import { useCostKpi, useCostSeries } from "@/api/hooks/cost";
 import { keysListQueryOptions } from "@/api/hooks/keys";
 import {
-	resolveWindow,
 	useDailyDistinct,
 	useStackedSeries,
 	useUsageOverviewWithDeltas,
@@ -14,30 +13,33 @@ import {
 	fmtMoneyCompact,
 	fmtPct,
 	fmtSignedPct,
-	RANGE_COMPARE_LABELS,
 } from "@/usage/format";
-import { dailyTotals, dailyValues, weekByHour } from "./useWeekActivity";
+import {
+	dayTrend,
+	pointTotals,
+	useDashboardWindow,
+} from "./useDashboardWindow";
 
-const VS = RANGE_COMPARE_LABELS.week;
+const HOUR_MS = 3_600_000;
 
-function vsNote(delta: DeltaResult | null | undefined): string | undefined {
-	if (!delta || delta.ratio === null) return undefined;
-	return `${fmtSignedPct(delta.ratio)} ${VS}`;
-}
-
-/** This week's headline: spend, traffic, tokens and how many keys sent it,
+/** The period's headline: spend, traffic, tokens and how many keys sent it,
  * each with one note that says what the number alone can't. */
 export function useHeadline(): FigureData[] {
-	const win = resolveWindow("week");
+	const dw = useDashboardWindow();
+	const { win, hourly } = dw;
 	const { kpis, deltas } = useUsageOverviewWithDeltas("source", win);
 	const cost = useCostKpi(win);
 	const keysByDay = useDailyDistinct("relay_key_hash", win);
 	const { data: keyList } = useQuery(keysListQueryOptions);
 	const d = deltas.hasBaseline ? deltas : undefined;
-	const hourly = weekByHour();
 	const requestsByHour = useStackedSeries("model_id", hourly, "requests");
 	const tokensByHour = useStackedSeries("model_id", hourly, "tokens");
 	const spendByHour = useCostSeries("model_id", hourly);
+
+	const vsNote = (delta: DeltaResult | null | undefined) =>
+		delta && delta.ratio !== null
+			? `${fmtSignedPct(delta.ratio)} ${dw.vs}`
+			: undefined;
 
 	const { usd, unpricedShare } = cost.current;
 	const spendNote =
@@ -54,7 +56,7 @@ export function useHeadline(): FigureData[] {
 			label: "Est. spend",
 			value: usd != null ? fmtMoneyCompact(usd, "USD") : "—",
 			note: spendNote,
-			trend: dailyTotals(spendByHour.points, spendByHour.series),
+			trend: dayTrend(dw, pointTotals(spendByHour)),
 		},
 		{
 			key: "requests",
@@ -64,7 +66,7 @@ export function useHeadline(): FigureData[] {
 				kpis.errors > 0
 					? `${fmtCompact(kpis.errors)} failed (${fmtPct(kpis.errorRate)})`
 					: vsNote(d?.requests),
-			trend: dailyTotals(requestsByHour.points, requestsByHour.series),
+			trend: dayTrend(dw, pointTotals(requestsByHour)),
 		},
 		{
 			key: "tokens",
@@ -74,7 +76,7 @@ export function useHeadline(): FigureData[] {
 				kpis.tokens > 0
 					? `${fmtPct(cached / kpis.tokens)} served from cache`
 					: undefined,
-			trend: dailyTotals(tokensByHour.points, tokensByHour.series),
+			trend: dayTrend(dw, pointTotals(tokensByHour)),
 		},
 		{
 			key: "keys",
@@ -82,8 +84,15 @@ export function useHeadline(): FigureData[] {
 			value: kpis.activeKeys !== undefined ? fmtCompact(kpis.activeKeys) : "—",
 			note:
 				issued !== undefined ? `of ${fmtCompact(issued)} issued` : undefined,
-			trend: dailyValues(
-				keysByDay.map((d) => ({ bucket: d.bucket, value: d.distinct })),
+			// Distinct counts come per UTC day and can't be summed; a bucket's
+			// midday picks its local day, and the larger count wins a shared slice.
+			trend: dayTrend(
+				dw,
+				keysByDay.map((k) => ({
+					at: Date.parse(k.bucket) + 12 * HOUR_MS,
+					value: k.distinct,
+				})),
+				Math.max,
 			),
 		},
 	];

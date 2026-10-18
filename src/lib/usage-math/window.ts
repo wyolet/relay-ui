@@ -92,3 +92,50 @@ export function comparisonWindows(
 		},
 	};
 }
+
+const DAY_MS = 86_400_000;
+
+/**
+ * Start of each day-long slice of `win`: local midnights for a calendar window
+ * (DST-safe), or 24h steps from `from` for a rolling one, so a trailing 7 days
+ * yields seven full slices instead of two ragged edge days.
+ */
+export function daySliceStarts(win: IsoWindow, rolling: boolean): number[] {
+	const fromMs = Date.parse(win.from);
+	const toMs = Date.parse(win.to);
+	if (!Number.isFinite(fromMs) || !Number.isFinite(toMs)) return [];
+	const starts: number[] = [];
+	if (rolling) {
+		for (let at = fromMs; at < toMs; at += DAY_MS) starts.push(at);
+		return starts;
+	}
+	const day = new Date(fromMs);
+	day.setHours(0, 0, 0, 0);
+	while (day.getTime() < toMs) {
+		starts.push(day.getTime());
+		day.setDate(day.getDate() + 1);
+	}
+	return starts;
+}
+
+/**
+ * Fold timestamped values into slices: each goes to the last slice starting at
+ * or before it (the first takes anything earlier). Slices that start after
+ * `nowMs` have not been reached and come back null.
+ */
+export function totalsBySlice(
+	values: { at: number; value: number }[],
+	starts: number[],
+	nowMs: number,
+	combine: (a: number, b: number) => number = (a, b) => a + b,
+): (number | null)[] {
+	const totals = starts.map((s): number | null => (s > nowMs ? null : 0));
+	for (const { at, value } of values) {
+		let i = 0;
+		while (i + 1 < starts.length && (starts[i + 1] ?? 0) <= at) i++;
+		const prev = totals[i];
+		if (prev === null || prev === undefined) continue;
+		totals[i] = combine(prev, value);
+	}
+	return totals;
+}

@@ -1,62 +1,39 @@
-import { Suspense, useState } from "react";
-import { useCostSeries } from "@/api/hooks/cost";
-import { type UsageMetric, useStackedSeries } from "@/api/hooks/usage";
 import { Section } from "@/shared/Section";
 import { Segmented } from "@/shared/Segmented";
+import { useDashboardStore } from "@/stores/dashboard";
 import { StackedUsageChart } from "@/usage/StackedUsageChart";
-import { weekByHour } from "./useWeekActivity";
+import {
+	DASHBOARD_METRICS,
+	useDashboardWindow,
+	useMetricSeries,
+} from "./useDashboardWindow";
 
-const METRICS: { value: UsageMetric; label: string }[] = [
-	{ value: "requests", label: "Requests" },
-	{ value: "cost", label: "Spend" },
-	{ value: "tokens", label: "Tokens" },
-];
-
-/** This week by model and hour, switchable between requests, spend and tokens. */
+/** The period by model, as spend or tokens. */
 export function TrafficChart() {
-	const [metric, setMetric] = useState<UsageMetric>("requests");
+	const metric = useDashboardStore((s) => s.chartMetric);
+	const setMetric = useDashboardStore((s) => s.setChartMetric);
+	const { period, win } = useDashboardWindow();
+	const data = useMetricSeries(metric, win);
 	return (
 		<Section
 			title="Traffic by model"
-			meta="this week"
+			meta={period}
 			aside={
 				<Segmented
 					variant="underline"
 					value={metric}
 					onChange={setMetric}
-					options={METRICS}
+					options={DASHBOARD_METRICS}
 				/>
 			}
 		>
-			<Suspense fallback={<div className="h-[260px]" />}>
-				{metric === "cost" ? <SpendPlot /> : <VolumePlot metric={metric} />}
-			</Suspense>
+			<StackedUsageChart
+				data={data}
+				groupBy="model_id"
+				metric={metric}
+				bare
+				height="h-[260px]"
+			/>
 		</Section>
-	);
-}
-
-function VolumePlot({ metric }: { metric: "requests" | "tokens" }) {
-	const data = useStackedSeries("model_id", weekByHour(), metric);
-	return (
-		<StackedUsageChart
-			data={data}
-			groupBy="model_id"
-			metric={metric}
-			bare
-			height="h-[260px]"
-		/>
-	);
-}
-
-function SpendPlot() {
-	const data = useCostSeries("model_id", weekByHour());
-	return (
-		<StackedUsageChart
-			data={data}
-			groupBy="model_id"
-			metric="cost"
-			bare
-			height="h-[260px]"
-		/>
 	);
 }

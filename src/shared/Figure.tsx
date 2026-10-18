@@ -44,12 +44,15 @@ function Trend({ values }: { values: (number | null)[] }) {
 		-1,
 	);
 	return (
-		<div className="mb-2 flex h-7 items-end gap-1" aria-hidden>
+		<div
+			className={`mb-2 flex h-7 items-end ${values.length > 14 ? "gap-0.5" : "gap-1"}`}
+			aria-hidden
+		>
 			{values.map((v, i) => (
 				<span
 					// biome-ignore lint/suspicious/noArrayIndexKey: fixed period slots
 					key={i}
-					className="w-2.5 rounded-t-[2px]"
+					className="min-w-0 max-w-2.5 flex-1 rounded-t-[2px]"
 					style={{
 						height: v === null ? 2 : `${Math.max((v / max) * 100, 7)}%`,
 						backgroundColor:

@@ -2,8 +2,10 @@ import { describe, expect, test } from "bun:test";
 import {
 	advanceInterval,
 	comparisonWindows,
+	daySliceStarts,
 	floorToInterval,
 	rollingWindow,
+	totalsBySlice,
 } from "@/lib/usage-math/window";
 
 describe("floorToInterval / advanceInterval", () => {
@@ -88,5 +90,65 @@ describe("comparisonWindows", () => {
 			"2026-06-10T00:00:00.000Z",
 		);
 		expect(previous.from).toBe(previous.to);
+	});
+});
+
+describe("daySliceStarts", () => {
+	test("rolling windows step 24h from `from`", () => {
+		const win = rollingWindow("2026-06-10T03:15:00.000Z", 7 * 24);
+		const starts = daySliceStarts(win, true);
+		expect(starts).toHaveLength(7);
+		expect(starts[0]).toBe(Date.parse(win.from));
+		expect(starts[6]).toBe(Date.parse("2026-06-09T03:15:00.000Z"));
+	});
+
+	test("calendar windows start at local midnights", () => {
+		const from = new Date(2026, 5, 8);
+		const to = new Date(2026, 5, 15);
+		const starts = daySliceStarts(
+			{ from: from.toISOString(), to: to.toISOString() },
+			false,
+		);
+		expect(starts).toHaveLength(7);
+		expect(starts[1]).toBe(new Date(2026, 5, 9).getTime());
+	});
+});
+
+describe("totalsBySlice", () => {
+	const starts = [0, 10, 20];
+
+	test("sums each value into the slice it falls in", () => {
+		const totals = totalsBySlice(
+			[
+				{ at: -5, value: 1 },
+				{ at: 3, value: 2 },
+				{ at: 10, value: 4 },
+				{ at: 25, value: 8 },
+			],
+			starts,
+			30,
+		);
+		expect(totals).toEqual([3, 4, 8]);
+	});
+
+	test("slices after now are null", () => {
+		expect(totalsBySlice([{ at: 5, value: 1 }], starts, 15)).toEqual([
+			1,
+			0,
+			null,
+		]);
+	});
+
+	test("takes a custom combine", () => {
+		const totals = totalsBySlice(
+			[
+				{ at: 1, value: 3 },
+				{ at: 2, value: 5 },
+			],
+			starts,
+			30,
+			Math.max,
+		);
+		expect(totals[0]).toBe(5);
 	});
 });
