@@ -9,10 +9,6 @@ import { fmtCompact, fmtInt } from "@/usage/format";
 const HOURS = 24;
 const LEVELS = 5;
 
-/** Hours per heatmap cell: each divides the day evenly. */
-const CELL_HOURS = { "1h": 1, "4h": 4, "6h": 6 } as const;
-export type CellSize = keyof typeof CELL_HOURS;
-
 const hh = (h: number) => `${String(h).padStart(2, "0")}:00`;
 
 /** This week in hourly buckets: the dashboard chart and heatmap share it. */
@@ -48,14 +44,9 @@ export function dailyTotals(
 	return totals;
 }
 
-/** Requests per block of `cellHours` for each day this week, on a five-step
- * ramp. Wider blocks suit lighter traffic, where single hours sit mostly empty. */
-export function useWeekActivity(size: CellSize): {
-	rows: HeatRow[];
-	hours: string[];
-} {
-	const cellHours = CELL_HOURS[size];
-	const cells = HOURS / cellHours;
+/** Requests per hour of each day this week, on a five-step ramp, with the
+ * current hour marked. */
+export function useWeekActivity(): { rows: HeatRow[]; hours: string[] } {
 	const { points, series } = useStackedSeries(
 		"model_id",
 		weekByHour(),
@@ -66,39 +57,43 @@ export function useWeekActivity(size: CellSize): {
 	const days = Array.from({ length: 7 }, (_, i) => {
 		const d = new Date(start);
 		d.setDate(d.getDate() + i);
-		return { midnight: d.getTime(), counts: new Array<number>(cells).fill(0) };
+		return { midnight: d.getTime(), counts: new Array<number>(HOURS).fill(0) };
 	});
 	for (const p of points) {
 		const at = Date.parse(p.bucket);
 		const day = days.find((d) => d.midnight === localMidnight(at));
 		if (!day) continue;
 		const count = series.reduce((sum, k) => sum + Number(p[k] ?? 0), 0);
-		day.counts[Math.floor(new Date(at).getHours() / cellHours)] += count;
+		day.counts[new Date(at).getHours()] += count;
 	}
 
-	const max = Math.max(1, ...days.flatMap((d) => d.counts));
+	// Log steps: one runaway hour must not flatten every other hour to step 1.
+	const logMax = Math.log1p(Math.max(1, ...days.flatMap((d) => d.counts)));
+	const level = (n: number) =>
+		n === 0 ? 0 : Math.max(1, Math.ceil((Math.log1p(n) / logMax) * LEVELS));
+	const now = new Date();
+	const today = localMidnight(now.getTime());
+	const nowHour = now.getHours();
 	const rows = days.map((d) => {
 		const date = new Date(d.midnight);
 		const day = `${date.toLocaleDateString(undefined, { weekday: "short" })} ${date.getDate()}`;
 		return {
 			key: String(d.midnight),
 			day,
-			cells: d.counts.map((n, i) => {
-				const from = i * cellHours;
-				const span =
-					cellHours === 1 ? hh(from) : `${hh(from)}–${hh(from + cellHours)}`;
+			cells: d.counts.map((n, h) => {
+				const current = d.midnight === today && h === nowHour;
 				return {
-					key: String(i),
-					level: n === 0 ? 0 : Math.max(1, Math.ceil((n / max) * LEVELS)),
-					title: `${day} · ${span} · ${fmtInt(n)} requests`,
+					key: String(h),
+					level: level(n),
+					title: `${day} · ${hh(h)} · ${fmtInt(n)} requests${current ? " · now" : ""}`,
+					current,
 				};
 			}),
 			total: fmtCompact(d.counts.reduce((a, b) => a + b, 0)),
 		};
 	});
-	// Hourly cells label every third hour; wider blocks label each block.
-	const hours = Array.from({ length: cells }, (_, i) =>
-		cellHours > 1 || i % 3 === 0 ? String(i * cellHours).padStart(2, "0") : "",
+	const hours = Array.from({ length: HOURS }, (_, h) =>
+		h % 3 === 0 ? String(h).padStart(2, "0") : "",
 	);
 	return { rows, hours };
 }

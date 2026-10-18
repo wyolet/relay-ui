@@ -81,3 +81,45 @@ export function stackSamples(
 	if (hasOther) series.push(OTHER_KEY);
 	return { points, series };
 }
+
+/** A column this many times taller than the 95th percentile is an outlier. */
+export const OUTLIER_RATIO = 3;
+
+export interface AxisCap {
+	/** Axis top: just above the ordinary columns. */
+	max: number;
+	/** The outlier column, labelled at the top instead of drawn to scale. */
+	peak: { bucket: string; total: number };
+}
+
+/**
+ * When one column dwarfs the rest, an axis cap that keeps the others readable;
+ * null when the data already fits. Columns above the cap run off the top.
+ */
+export function outlierCap(
+	points: StackedPoint[],
+	series: string[],
+): AxisCap | null {
+	const totals = points.map((p) => ({
+		bucket: p.bucket,
+		total: series.reduce((sum, k) => sum + Number(p[k] ?? 0), 0),
+	}));
+	const sorted = totals
+		.map((t) => t.total)
+		.filter((v) => v > 0)
+		.sort((a, b) => a - b);
+	if (sorted.length < 4) return null;
+	const p95 = sorted[Math.floor(0.95 * (sorted.length - 1))] ?? 0;
+	const peak = totals.reduce((a, b) => (b.total > a.total ? b : a));
+	if (p95 === 0 || peak.total < OUTLIER_RATIO * p95) return null;
+	return { max: niceCeil(p95 * 1.5), peak };
+}
+
+/** The next round number up (1, 2, 2.5 or 5 times a power of ten), so the
+ * capped axis ticks read cleanly. */
+export function niceCeil(n: number): number {
+	if (n <= 0) return 0;
+	const scale = 10 ** Math.floor(Math.log10(n));
+	const step = [1, 2, 2.5, 5, 10].find((s) => s * scale >= n) ?? 10;
+	return step * scale;
+}

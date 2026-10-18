@@ -1,6 +1,13 @@
 import { BarChart3 } from "lucide-react";
 import { useMemo } from "react";
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import {
+	Bar,
+	BarChart,
+	CartesianGrid,
+	ReferenceDot,
+	XAxis,
+	YAxis,
+} from "recharts";
 import {
 	OTHER_KEY,
 	type StackedTimeline,
@@ -15,6 +22,7 @@ import {
 	ChartTooltip,
 	ChartTooltipContent,
 } from "@/components/ui/chart";
+import { outlierCap } from "@/lib/usage-math/stack";
 import {
 	AXIS_PROPS,
 	BAR_MAX,
@@ -108,6 +116,9 @@ export function StackedUsageChart({
 		);
 	}
 
+	// One runaway column would flatten the rest: cap the axis and label it.
+	const cap = outlierCap(data.points, data.series);
+
 	// An hourly axis over several days ticks once per day.
 	const dense = data.points.length > DENSE_POINTS;
 	const dayTicks =
@@ -117,7 +128,10 @@ export function StackedUsageChart({
 
 	const plot = (
 		<ChartContainer config={config} className={`${height} w-full`}>
-			<BarChart data={data.points} margin={{ left: 4, right: 8, top: 8 }}>
+			<BarChart
+				data={data.points}
+				margin={{ left: 4, right: 8, top: cap ? 22 : 8 }}
+			>
 				<CartesianGrid vertical={false} />
 				<XAxis
 					dataKey="bucket"
@@ -133,7 +147,24 @@ export function StackedUsageChart({
 					width={isCost ? 56 : 44}
 					tickCount={Y_TICK_COUNT}
 					tickFormatter={tickFormatter}
+					domain={cap ? [0, cap.max] : undefined}
+					allowDataOverflow={cap !== null}
 				/>
+				{cap && (
+					<ReferenceDot
+						x={cap.peak.bucket}
+						y={cap.max}
+						r={0}
+						ifOverflow="visible"
+						label={{
+							value: `${tickFormatter(cap.peak.total)} at ${fmtBucket(cap.peak.bucket, data.interval)}`,
+							position: "top",
+							fill: "var(--ink)",
+							fontSize: 12.5,
+							fontWeight: 600,
+						}}
+					/>
+				)}
 				<ChartTooltip
 					content={
 						<ChartTooltipContent
@@ -161,10 +192,7 @@ export function StackedUsageChart({
 						/>
 					}
 				/>
-				<ChartLegend
-					verticalAlign="top"
-					content={<ChartLegendContent verticalAlign="top" />}
-				/>
+				<ChartLegend content={<ChartLegendContent />} />
 				{data.series.map((key) => (
 					<Bar
 						key={key}

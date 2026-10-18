@@ -1,8 +1,12 @@
+import { cn } from "@/lib/utils";
+
 export interface HeatCell {
 	key: string;
 	/** 0 for empty, 1..5 up the heat ramp. */
 	level: number;
 	title: string;
+	/** The block holding the current time: drawn with a ring. */
+	current?: boolean;
 }
 
 export interface HeatRow {
@@ -52,7 +56,11 @@ export function HourHeatmap({
 							<span
 								key={c.key}
 								title={c.title}
-								className={`h-5 rounded-cell ${LEVEL_BG[c.level] ?? LEVEL_BG[0]}`}
+								className={cn(
+									"h-5 rounded-cell",
+									LEVEL_BG[c.level] ?? LEVEL_BG[0],
+									c.current && "ring-[1.5px] ring-foreground ring-inset",
+								)}
 							/>
 						))}
 					</div>
