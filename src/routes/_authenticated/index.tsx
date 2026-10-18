@@ -88,6 +88,9 @@ function AdminHome() {
 			<Suspense fallback={<div className="h-28" />}>
 				<Headline />
 			</Suspense>
+			<Suspense fallback={<Pending title="This week in numbers" />}>
+				<WeekFacts />
+			</Suspense>
 			<div className="grid gap-14 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
 				<Suspense
 					fallback={<Pending title="Traffic by model" height="h-[260px]" />}
@@ -104,9 +107,6 @@ function AdminHome() {
 			</div>
 			<Suspense fallback={<Pending title="Activity" height="h-48" />}>
 				<WeekHeatmap />
-			</Suspense>
-			<Suspense fallback={<Pending title="This week in numbers" />}>
-				<WeekFacts />
 			</Suspense>
 			<Breakdown />
 		</div>
