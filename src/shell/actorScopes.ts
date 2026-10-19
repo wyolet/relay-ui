@@ -4,7 +4,7 @@ import { projectsListQueryOptions } from "@/api/hooks/projects";
 import { teamsListQueryOptions } from "@/api/hooks/teams";
 import type { Project } from "@/api/types/project";
 import type { Team } from "@/api/types/team";
-import { displayLabel } from "@/lib/displayLabel";
+import { scopeNames } from "@/lib/ownerScopes";
 
 export interface ScopeLabel {
 	/** The raw "team:<id>" / "project:<id>" string whoami reported. */
@@ -27,15 +27,7 @@ export function scopeLabels(
 	teams: readonly Team[],
 	projects: readonly Project[],
 ): ScopeLabel[] {
-	const names = new Map<string, string>();
-	for (const t of teams) {
-		if (t.metadata.id)
-			names.set(`team:${t.metadata.id}`, displayLabel(t.metadata));
-	}
-	for (const p of projects) {
-		if (p.metadata.id)
-			names.set(`project:${p.metadata.id}`, displayLabel(p.metadata));
-	}
+	const names = scopeNames(teams, projects);
 	return scopes.map((scope) => {
 		const sep = scope.indexOf(":");
 		const kind = sep < 0 ? scope : scope.slice(0, sep);

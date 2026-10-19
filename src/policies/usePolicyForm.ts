@@ -10,8 +10,10 @@ import {
 	type KeySelection,
 } from "@/config/policy";
 import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
+import { useOwnerOptions } from "@/hooks/useOwnerOptions";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
+import { ALL_OWNER_SCOPES, PERSONAL_OWNER } from "@/lib/ownerScopes";
 import { randomSuffix, slugify } from "@/lib/slug";
 import { toast } from "@/shared/Toast";
 
@@ -59,6 +61,7 @@ export function policyFromFormValues(
 export interface PolicyFormValues {
 	displayName: string;
 	description: string;
+	owner: string;
 	hostKeyIds: string[];
 	keySelection: KeySelection;
 	models: string[];
@@ -75,6 +78,7 @@ const schema = z.object({
 		.min(1, "Display name is required — the slug is generated from it")
 		.max(120, "Display name is too long"),
 	description: z.string().trim().max(500, "Description is too long"),
+	owner: z.string().min(1, "Pick who owns this policy."),
 	hostKeyIds: z.array(z.string()),
 	keySelection: z.enum(
 		KEY_SELECTION_VALUES as readonly [KeySelection, ...KeySelection[]],
@@ -91,10 +95,11 @@ const schema = z.object({
 	payloadLoggingEnabled: z.boolean(),
 });
 
-function emptyValues(): PolicyFormValues {
+function emptyValues(owner: string): PolicyFormValues {
 	return {
 		displayName: "",
 		description: "",
+		owner,
 		hostKeyIds: [],
 		keySelection: DEFAULT_KEY_SELECTION,
 		models: [],
@@ -105,7 +110,7 @@ function emptyValues(): PolicyFormValues {
 	};
 }
 
-function policyToValues(policy: Policy): PolicyFormValues {
+function policyToValues(policy: Policy, owner: string): PolicyFormValues {
 	const bindings: RLBindingValue[] = (policy.spec.rlBindings ?? []).map(
 		(b) => ({ rateLimitId: b.rateLimitId, models: b.models ?? [] }),
 	);
@@ -116,6 +121,7 @@ function policyToValues(policy: Policy): PolicyFormValues {
 	return {
 		displayName: displayLabel(policy.metadata),
 		description: policy.metadata.description ?? "",
+		owner,
 		hostKeyIds: policy.spec.hostKeyIds ?? [],
 		keySelection: policy.spec.keySelection ?? DEFAULT_KEY_SELECTION,
 		models: policy.spec.models ?? [],
@@ -142,9 +148,17 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 		policy?.metadata.resourceVersion,
 	);
 
+	const ownerPicker = useOwnerOptions({
+		kinds: ALL_OWNER_SCOPES,
+		owner: policy?.metadata.owner,
+		preset: PERSONAL_OWNER,
+	});
+	const { initialOwner } = ownerPicker;
+
 	const initial = useMemo<PolicyFormValues>(
-		() => (policy ? policyToValues(policy) : emptyValues()),
-		[policy],
+		() =>
+			policy ? policyToValues(policy, initialOwner) : emptyValues(initialOwner),
+		[policy, initialOwner],
 	);
 	const suffixRef = useRef<string>(
 		policy?.metadata.name.match(/-(\d{4,8})$/)?.[1] ?? randomSuffix(),
@@ -206,6 +220,7 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 							...policy.metadata,
 							resourceVersion: loaded.version,
 							displayName,
+							owner: ownerPicker.toOwner(value.owner),
 							...(description
 								? { description }
 								: policy.metadata.description !== undefined
@@ -226,6 +241,7 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 						metadata: {
 							name,
 							displayName,
+							owner: ownerPicker.toOwner(value.owner),
 							...(description ? { description } : {}),
 						},
 						spec,
@@ -252,8 +268,8 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 	useEffect(() => {
 		if (lastResetKey.current === resetKey) return;
 		lastResetKey.current = resetKey;
-		form.reset(open ? initial : emptyValues());
-	}, [resetKey, open, initial, form]);
+		form.reset(open ? initial : emptyValues(initialOwner));
+	}, [resetKey, open, initial, initialOwner, form]);
 
 	const values = useStore(form.store, (s) => s.values);
 	const slugPreview = isEdit
@@ -269,6 +285,11 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 		for (const e of errs) if (typeof e === "string") return e;
 		return undefined;
 	});
+	const ownerError = useStore(form.store, (s) => {
+		const errs = s.fieldMeta?.owner?.errors ?? [];
+		for (const e of errs) if (typeof e === "string") return e;
+		return undefined;
+	});
 
 	return {
 		form,
@@ -277,5 +298,7 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 		slugPreview,
 		displayNameError,
 		descriptionError,
+		ownerOptions: ownerPicker.options,
+		ownerError,
 	};
 }

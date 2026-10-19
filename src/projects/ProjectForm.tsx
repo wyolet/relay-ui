@@ -1,19 +1,11 @@
 import { Tags, ToggleLeft, Users } from "lucide-react";
-import { useTeams } from "@/api/hooks/teams";
 import type { Project } from "@/api/types/project";
 import { Button } from "@/components/ui/button";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
-import { displayLabel } from "@/lib/displayLabel";
 import { useProjectForm } from "@/projects/useProjectForm";
 import { FormSection } from "@/shared/FormSection";
 import { IdentitySection } from "@/shared/IdentitySection";
 import { LabelsEditor } from "@/shared/LabelsEditor";
+import { OwnerSection } from "@/shared/OwnerSection";
 import { ToggleSwitch } from "@/shared/ToggleSwitch";
 
 interface ProjectFormProps {
@@ -37,14 +29,9 @@ export function ProjectForm({
 		slugPreview,
 		displayNameError,
 		descriptionError,
-		teamIdError,
+		ownerOptions,
+		ownerError,
 	} = useProjectForm({ open: true, project, teamId, onSaved });
-
-	const { data: teamsData } = useTeams();
-	const teamOptions = (teamsData.items ?? []).map((t) => ({
-		value: t.metadata.id ?? "",
-		label: displayLabel(t.metadata),
-	}));
 
 	return (
 		<form
@@ -68,38 +55,16 @@ export function ProjectForm({
 					placeholder="ML Search"
 				/>
 
-				<FormSection
+				<OwnerSection
 					icon={Users}
 					title="Team"
 					description="The team that owns this project. Spend rolls up to it."
-				>
-					<div>
-						<Select
-							value={values.teamId}
-							items={teamOptions}
-							onValueChange={(v) => form.setFieldValue("teamId", v ?? "")}
-						>
-							<SelectTrigger
-								className="w-full max-w-md"
-								aria-invalid={teamIdError ? true : undefined}
-							>
-								<SelectValue placeholder="Pick a team…" />
-							</SelectTrigger>
-							<SelectContent>
-								{teamOptions.map((t) => (
-									<SelectItem key={t.value} value={t.value}>
-										{t.label}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-						{teamIdError && (
-							<p className="mt-1.5 text-[11px] text-destructive">
-								{teamIdError}
-							</p>
-						)}
-					</div>
-				</FormSection>
+					placeholder="Pick a team…"
+					options={ownerOptions}
+					value={values.owner}
+					onChange={(v) => form.setFieldValue("owner", v)}
+					error={ownerError}
+				/>
 
 				<FormSection
 					icon={Tags}

@@ -331,7 +331,7 @@ export interface paths {
         get?: never;
         /**
          * Update group by id
-         * @description Replaces the group. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional.
+         * @description Replaces the group. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field.
          */
         put: operations["update_group"];
         post?: never;
@@ -441,7 +441,7 @@ export interface paths {
         get?: never;
         /**
          * Update host-binding by id
-         * @description Replaces the host-binding. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional.
+         * @description Replaces the host-binding. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field.
          */
         put: operations["update_host-binding"];
         post?: never;
@@ -497,7 +497,7 @@ export interface paths {
         get?: never;
         /**
          * Update host-key by id
-         * @description Replaces the host-key. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional.
+         * @description Replaces the host-key. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field.
          */
         put: operations["update_host-key"];
         post?: never;
@@ -624,7 +624,7 @@ export interface paths {
         get?: never;
         /**
          * Update host by id
-         * @description Replaces the host. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional.
+         * @description Replaces the host. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field.
          */
         put: operations["update_host"];
         post?: never;
@@ -771,7 +771,7 @@ export interface paths {
         get?: never;
         /**
          * Update key by id
-         * @description Replaces the key. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional.
+         * @description Replaces the key. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field.
          */
         put: operations["update_key"];
         post?: never;
@@ -931,29 +931,9 @@ export interface paths {
         put?: never;
         /**
          * Generate a new 32-byte master key for stored-mode HostKey encryption
-         * @description Returns a candidate key — the server does NOT install it. Operator copies the value into RELAY_MASTER_KEY and restarts the deployment. Rotation requires re-encrypting all stored HostKey values.
+         * @description Returns a candidate key — the server does NOT install it. Use it as RELAY_MASTER_KEY for a new deployment, or as RELAY_MASTER_KEY_EXTRA when changing the key-encryption key.
          */
         post: operations["master_key_generate"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/master-key/rotate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Rotate the master key, re-encrypting every stored HostKey
-         * @description Generates a new 32-byte master key, re-encrypts every stored-mode HostKey row in a single transaction, and swaps the in-process key on success. The new key is returned once — the operator MUST persist it to RELAY_MASTER_KEY in the deployment env before the next restart, or the process will fail to decrypt stored rows on boot.
-         */
-        post: operations["master_key_rotate"];
         delete?: never;
         options?: never;
         head?: never;
@@ -988,7 +968,7 @@ export interface paths {
         get?: never;
         /**
          * Update model by id
-         * @description Replaces the model. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional.
+         * @description Replaces the model. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field.
          */
         put: operations["update_model"];
         post?: never;
@@ -1151,7 +1131,7 @@ export interface paths {
         get?: never;
         /**
          * Update policy by id
-         * @description Replaces the policy. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional.
+         * @description Replaces the policy. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field.
          */
         put: operations["update_policy"];
         post?: never;
@@ -1319,7 +1299,7 @@ export interface paths {
         get?: never;
         /**
          * Update policy-binding by id
-         * @description Replaces the policy-binding. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional.
+         * @description Replaces the policy-binding. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field.
          */
         put: operations["update_policy-binding"];
         post?: never;
@@ -1375,7 +1355,7 @@ export interface paths {
         get?: never;
         /**
          * Update pricing by id
-         * @description Replaces the pricing. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional.
+         * @description Replaces the pricing. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field.
          */
         put: operations["update_pricing"];
         post?: never;
@@ -1468,7 +1448,7 @@ export interface paths {
         get?: never;
         /**
          * Update project by id
-         * @description Replaces the project. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional.
+         * @description Replaces the project. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field.
          */
         put: operations["update_project"];
         post?: never;
@@ -1561,7 +1541,7 @@ export interface paths {
         get?: never;
         /**
          * Update provider by id
-         * @description Replaces the provider. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional.
+         * @description Replaces the provider. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field.
          */
         put: operations["update_provider"];
         post?: never;
@@ -1654,7 +1634,7 @@ export interface paths {
         get?: never;
         /**
          * Update rate-limit by id
-         * @description Replaces the rate-limit. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional.
+         * @description Replaces the rate-limit. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field.
          */
         put: operations["update_rate-limit"];
         post?: never;
@@ -1767,7 +1747,7 @@ export interface paths {
         get?: never;
         /**
          * Update role-binding by id
-         * @description Replaces the role-binding. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional.
+         * @description Replaces the role-binding. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field.
          */
         put: operations["update_role-binding"];
         post?: never;
@@ -1823,7 +1803,7 @@ export interface paths {
         get?: never;
         /**
          * Update role by id
-         * @description Replaces the role. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional.
+         * @description Replaces the role. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field.
          */
         put: operations["update_role"];
         post?: never;
@@ -1946,6 +1926,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/secret-keys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the data keys stored secrets are sealed under
+         * @description Data keys with their scope, state, wrapping KEK and row count; the target KEK; the KEKs this pod holds; the stored secrets still in the legacy master-key shape; and the ids of the stored secrets this pod cannot decrypt. Never returns key bytes.
+         */
+        get: operations["secret_keys_status"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/secret-keys/by-id/{id}/destroy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Destroy a demoted data key
+         * @description Refused (409) for a scope's Primary, while stored secrets still use the key, and within 24h of its demotion unless force is set. The key's row stays as a tombstone, so a value found under it later fails as destroyed.
+         */
+        post: operations["secret_keys_destroy"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/secret-keys/rewrap": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Wrap every data key under another master key
+         * @description Makes the KEK the target and rewraps every data key under it. Refused (409) unless this pod holds that KEK, and while stored secrets remain in the legacy master-key shape. Data keys this pod cannot unwrap are listed in skipped; rerun on a pod holding both their KEK and the target.
+         */
+        post: operations["secret_keys_rewrap"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/secret-keys/rotate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rotate a scope's data key, or every scope's
+         * @description The new key becomes the scope's Primary and the old one decrypt-only; values under the old key stay readable and are rewritten under the new one in the background. Body: {"scope": "..."} or {"all": true}.
+         */
+        post: operations["secret_keys_rotate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/service-accounts": {
         parameters: {
             query?: never;
@@ -1974,7 +2034,7 @@ export interface paths {
         get?: never;
         /**
          * Update service-account by id
-         * @description Replaces the service-account. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional.
+         * @description Replaces the service-account. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field.
          */
         put: operations["update_service-account"];
         post?: never;
@@ -2443,7 +2503,7 @@ export interface paths {
         get?: never;
         /**
          * Update team by id
-         * @description Replaces the team. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional.
+         * @description Replaces the team. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field.
          */
         put: operations["update_team"];
         post?: never;
@@ -2878,6 +2938,25 @@ export interface components {
             /** Format: int64 */
             update: number;
         };
+        DataKeyStatus: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/DataKeyStatus.json
+             */
+            readonly $schema?: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            demotedAt?: string;
+            id: string;
+            kek: string;
+            locked: boolean;
+            /** Format: int64 */
+            rows: number;
+            scope: string;
+            state: string;
+        };
         DeprecationView: {
             replacement?: string;
             status: string;
@@ -3284,6 +3363,20 @@ export interface components {
             /** Format: date-time */
             revokedAt?: string;
         };
+        KeyStatus: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/KeyStatus.json
+             */
+            readonly $schema?: string;
+            dataKeys: components["schemas"]["DataKeyStatus"][] | null;
+            heldKeks: string[] | null;
+            /** Format: int64 */
+            legacyRows: number;
+            targetKek?: string;
+            undecryptableRows: string[] | null;
+        };
         LicenseStruct: {
             error: string;
         };
@@ -3298,6 +3391,11 @@ export interface components {
             annotations?: {
                 [key: string]: string;
             };
+            /**
+             * Format: date-time
+             * @description Set when the catalog version this relay seeds no longer ships the row. The row keeps working and is governed as the operator's own. Server-managed; ignored on write.
+             */
+            catalogDetachedAt?: string;
             /** Format: date-time */
             createdAt?: string;
             description?: string;
@@ -3426,6 +3524,7 @@ export interface components {
             maxOutputTokens?: number;
             modalities?: components["schemas"]["ModelModalities"];
             pointer: string;
+            productLine?: string;
             providerModelPageURL?: string;
             releaseDate?: string;
             snapshots: components["schemas"]["ModelSnapshot"][] | null;
@@ -3821,6 +3920,18 @@ export interface components {
             kind: string;
             path?: string;
             provider?: string;
+        };
+        RewrapResult: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/RewrapResult.json
+             */
+            readonly $schema?: string;
+            /** Format: int64 */
+            rewrapped: number;
+            skipped: string[] | null;
+            target: string;
         };
         Role: {
             /**
@@ -4552,26 +4663,6 @@ export interface components {
             /** @description 32 random bytes, base64-encoded. Set as RELAY_MASTER_KEY in the deployment env. */
             key: string;
         };
-        masterKeyRotateOutputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example https://example.com/schemas/masterKeyRotateOutputBody.json
-             */
-            readonly $schema?: string;
-            /** @description New 32-byte master key, base64-encoded. Returned once — operator MUST update RELAY_MASTER_KEY in the deployment env before the next process restart. */
-            key: string;
-            /**
-             * Format: int32
-             * @description value_key_version assigned to every rotated row.
-             */
-            newVersion: number;
-            /**
-             * Format: int64
-             * @description Number of stored-mode HostKey rows re-encrypted.
-             */
-            rotated: number;
-        };
         mintTokenInputBody: {
             /**
              * Format: uri
@@ -4901,6 +4992,48 @@ export interface components {
              */
             readonly $schema?: string;
             clients: components["schemas"]["SCIMClientRow"][] | null;
+        };
+        secretKeyDestroyBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/secretKeyDestroyBody.json
+             */
+            readonly $schema?: string;
+            /** @description Skip the wait after demotion, for a compromised key. A Primary or a key in use is still refused. */
+            force?: boolean;
+        };
+        secretKeysRewrapInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/secretKeysRewrapInputBody.json
+             */
+            readonly $schema?: string;
+            /** @description The KEK id to wrap every data key under, from heldKeks in GET /secret-keys. */
+            to: string;
+        };
+        secretKeysRotateInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/secretKeysRotateInputBody.json
+             */
+            readonly $schema?: string;
+            /** @description Rotate every scope that has a data key. Exclusive with scope. */
+            all?: boolean;
+            /** @description The scope to rotate, as listed by GET /secret-keys (system, user:<id>, project:<id>). */
+            scope?: string;
+        };
+        secretKeysRotateOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/secretKeysRotateOutputBody.json
+             */
+            readonly $schema?: string;
+            /** @description The new Primary data keys. */
+            keys: components["schemas"]["DataKeyStatus"][] | null;
         };
         settingsCatalogItem: {
             description?: string;
@@ -9117,53 +9250,6 @@ export interface operations {
             };
         };
     };
-    master_key_rotate: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["masterKeyRotateOutputBody"];
-                };
-            };
-            /** @description Unauthorized */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIError"];
-                };
-            };
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIError"];
-                };
-            };
-            /** @description Internal Server Error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIError"];
-                };
-            };
-        };
-    };
     list_models: {
         parameters: {
             query?: {
@@ -9175,6 +9261,8 @@ export interface operations {
                 deprecated?: boolean;
                 /** @description Match any of the given family values. */
                 family?: string[];
+                /** @description Match any of the given product_line values. */
+                product_line?: string[];
                 /** @description Match license exactly. */
                 license?: string;
                 /** @description Match any of the given provider_id values. */
@@ -9214,7 +9302,7 @@ export interface operations {
                 /** @description Label selector key=value (repeatable, all must match). */
                 label?: string[];
                 /** @description Sort field; prefix with '-' for descending. */
-                sort?: "name" | "-name" | "family" | "-family" | "context_window" | "-context_window" | "released" | "-released" | "created" | "-created" | "updated" | "-updated";
+                sort?: "name" | "-name" | "family" | "-family" | "product_line" | "-product_line" | "context_window" | "-context_window" | "released" | "-released" | "created" | "-created" | "updated" | "-updated";
                 /** @description Max items to return (page size). Defaults to 100 when absent; pass 0 for the full set. */
                 limit?: number;
                 /** @description Items to skip before the page. */
@@ -14340,6 +14428,344 @@ export interface operations {
             };
             /** @description Internal Server Error */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    secret_keys_status: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KeyStatus"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    secret_keys_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Data key id (UUID). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["secretKeyDestroyBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataKeyStatus"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    secret_keys_rewrap: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["secretKeysRewrapInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RewrapResult"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    secret_keys_rotate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["secretKeysRotateInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["secretKeysRotateOutputBody"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };
