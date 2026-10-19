@@ -129,7 +129,6 @@ export function useGroupForm({
 							name: computeSlug(displayName),
 							displayName,
 							description: value.description.trim(),
-							owner: { kind: "user" },
 						},
 						spec,
 					});
