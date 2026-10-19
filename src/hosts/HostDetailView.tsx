@@ -14,7 +14,6 @@ import { Suspense, useMemo } from "react";
 import { useGovernance } from "@/api/hooks/governance";
 import type { Host } from "@/api/types/host";
 import type { HostKey } from "@/api/types/hostkey";
-import type { Model } from "@/api/types/model";
 import type { Policy } from "@/api/types/policy";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DiagnosticList } from "@/diagnostics/DiagnosticList";
@@ -25,9 +24,10 @@ import { useHostUsage } from "@/hosts/useHostUsage";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { resolveMutability } from "@/lib/ownership";
 import { ResourceLogs } from "@/logs/ResourceLogs";
+import { ModelsByFamily } from "@/models/ModelsByFamily";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
 import { PageLoader } from "@/shared/Spinner";
-import { OwnerBadge, StatusBadge } from "@/shared/StatusBadge";
+import { OwnerBadge, StatusBadge, StatusInline } from "@/shared/StatusBadge";
 import { Th } from "@/shared/Th";
 import {
 	ResourceSpendCard,
@@ -198,7 +198,18 @@ function HostKeysTabLoader({ host }: { host: Host }) {
 
 function ModelsTabLoader({ host }: { host: Host }) {
 	const refs = useHostReferences(host);
-	return <ModelsTable models={refs.models} />;
+	return (
+		<ModelsByFamily
+			models={refs.models}
+			empty={
+				<EmptyState
+					icon={Boxes}
+					title="No models on this host"
+					body="Models are typically synced from upstream. None resolve to this host yet."
+				/>
+			}
+		/>
+	);
 }
 
 /* ---------------- Header ---------------- */
@@ -747,92 +758,6 @@ function HostKeysTable({
 	);
 }
 
-/* ---------------- Models ---------------- */
-
-function ModelsTable({ models }: { models: Model[] }) {
-	const grouped = useMemo(() => groupByFamily(models), [models]);
-
-	if (models.length === 0) {
-		return (
-			<EmptyState
-				icon={Boxes}
-				title="No models on this host"
-				body="Models are typically synced from upstream. None resolve to this host yet."
-			/>
-		);
-	}
-
-	return (
-		<div className="mt-2 flex flex-col gap-3">
-			<div className="flex items-baseline justify-between gap-2">
-				<span className="text-[10px] uppercase tracking-wide text-muted-foreground">
-					{models.length} model{models.length === 1 ? "" : "s"} ·{" "}
-					{grouped.length} famil{grouped.length === 1 ? "y" : "ies"}
-				</span>
-			</div>
-			<div className="rounded-md border border-border bg-card overflow-hidden">
-				<ul className="divide-y divide-border">
-					{grouped.map((g) => (
-						<li key={g.family}>
-							<div className="flex items-center justify-between gap-2 px-3 py-2 bg-muted/20 border-b border-border">
-								<span className="text-[11px] font-semibold uppercase tracking-wide text-foreground">
-									{g.family}
-								</span>
-								<span className="text-[10px] text-muted-foreground tabular-nums">
-									{g.models.length}
-								</span>
-							</div>
-							<ul className="divide-y divide-border">
-								{g.models.map((m) => (
-									<li
-										key={m.metadata.name}
-										className="flex items-center justify-between gap-3 px-3 py-1.5 hover:bg-muted/30"
-									>
-										<Link
-											to="/models/$name"
-											params={{ name: m.metadata.name }}
-											className="text-sm text-foreground hover:underline truncate"
-										>
-											{displayLabel(m.metadata)}
-										</Link>
-										<code className="font-mono text-[10px] text-muted-foreground truncate">
-											{m.metadata.name}
-										</code>
-									</li>
-								))}
-							</ul>
-						</li>
-					))}
-				</ul>
-			</div>
-		</div>
-	);
-}
-
-interface ModelFamilyGroup {
-	family: string;
-	models: Model[];
-}
-
-function groupByFamily(models: readonly Model[]): ModelFamilyGroup[] {
-	const map = new Map<string, Model[]>();
-	for (const m of models) {
-		const family = m.spec.family?.trim() || "Other";
-		const arr = map.get(family) ?? [];
-		arr.push(m);
-		map.set(family, arr);
-	}
-	const out: ModelFamilyGroup[] = [];
-	for (const [family, ms] of map.entries()) {
-		ms.sort((a, b) =>
-			displayLabel(a.metadata).localeCompare(displayLabel(b.metadata)),
-		);
-		out.push({ family, models: ms });
-	}
-	out.sort((a, b) => b.models.length - a.models.length);
-	return out;
-}
-
 /* ---------------- Shared sub-components ---------------- */
 
 function Card({
@@ -882,14 +807,6 @@ function Td({
 	className?: string;
 }) {
 	return <td className={`px-3 py-2 align-middle ${className}`}>{children}</td>;
-}
-
-function StatusInline({ enabled }: { enabled: boolean }) {
-	return enabled ? (
-		<span className="text-[11px] text-success">Enabled</span>
-	) : (
-		<span className="text-[11px] text-muted-foreground">Disabled</span>
-	);
 }
 
 function StatCard({
