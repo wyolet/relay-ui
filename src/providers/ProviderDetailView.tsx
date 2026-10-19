@@ -1,12 +1,13 @@
 import { Link } from "@tanstack/react-router";
 import { Boxes, ExternalLink, LayoutGrid, Server } from "lucide-react";
 import { useGovernance } from "@/api/hooks/governance";
-import type { Model } from "@/api/types/model";
 import type { Provider } from "@/api/types/provider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { HostCell } from "@/hosts/HostCell";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { resolveMutability } from "@/lib/ownership";
+import { modelFamily } from "@/models/groupModelsByFamily";
+import { ModelsByFamily } from "@/models/ModelsByFamily";
 import { ProviderLogo } from "@/providers/ProviderLogo";
 import {
 	type ProviderReferences,
@@ -83,7 +84,16 @@ export function ProviderDetailView({
 					<OverviewTab refs={refs} />
 				</TabsContent>
 				<TabsContent value="models">
-					<ModelsTable models={refs.models} />
+					<ModelsByFamily
+						models={refs.models}
+						empty={
+							<EmptyState
+								icon={Boxes}
+								title="No models from this provider"
+								body="Once the provider's catalog syncs, models will appear here."
+							/>
+						}
+					/>
 				</TabsContent>
 				<TabsContent value="hosts">
 					<HostsTab refs={refs} />
@@ -197,9 +207,7 @@ function OverviewTab({ refs }: { refs: ProviderReferences }) {
 	const enabledModels = refs.models.filter(
 		(m) => m.spec.enabled !== false,
 	).length;
-	const families = new Set(
-		refs.models.map((m) => m.spec.family?.trim() || "Other"),
-	);
+	const families = new Set(refs.models.map(modelFamily));
 
 	return (
 		<div className="flex flex-col gap-6 pt-2">
@@ -229,94 +237,6 @@ function OverviewTab({ refs }: { refs: ProviderReferences }) {
 			</section>
 		</div>
 	);
-}
-
-/* ---------------- Models ---------------- */
-
-function ModelsTable({ models }: { models: Model[] }) {
-	if (models.length === 0) {
-		return (
-			<EmptyState
-				icon={Boxes}
-				title="No models from this provider"
-				body="Once the provider's catalog syncs, models will appear here."
-			/>
-		);
-	}
-	const grouped = groupByFamily(models);
-	return (
-		<div className="mt-2 flex flex-col gap-3">
-			<div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-				{models.length} model{models.length === 1 ? "" : "s"} · {grouped.length}{" "}
-				famil{grouped.length === 1 ? "y" : "ies"}
-			</div>
-			<div className="rounded-md border border-border bg-card overflow-hidden">
-				<ul className="divide-y divide-border">
-					{grouped.map((g) => (
-						<li key={g.family}>
-							<div className="flex items-center justify-between gap-2 px-3 py-2 bg-muted/20 border-b border-border">
-								<span className="text-[11px] font-semibold uppercase tracking-wide text-foreground">
-									{g.family}
-								</span>
-								<span className="text-[10px] text-muted-foreground tabular-nums">
-									{g.models.length}
-								</span>
-							</div>
-							<ul className="divide-y divide-border">
-								{g.models.map((m) => {
-									const enabled = m.spec.enabled !== false;
-									return (
-										<li
-											key={m.metadata.name}
-											className="flex items-center justify-between gap-3 px-3 py-1.5 hover:bg-muted/30"
-										>
-											<div className="min-w-0 flex items-center gap-2">
-												<Link
-													to="/models/$name"
-													params={{ name: m.metadata.name }}
-													className="text-sm text-foreground hover:underline truncate"
-												>
-													{displayLabel(m.metadata)}
-												</Link>
-												<code className="font-mono text-[10px] text-muted-foreground truncate">
-													{m.metadata.name}
-												</code>
-											</div>
-											<StatusInline enabled={enabled} />
-										</li>
-									);
-								})}
-							</ul>
-						</li>
-					))}
-				</ul>
-			</div>
-		</div>
-	);
-}
-
-interface FamilyGroup {
-	family: string;
-	models: Model[];
-}
-
-function groupByFamily(models: readonly Model[]): FamilyGroup[] {
-	const map = new Map<string, Model[]>();
-	for (const m of models) {
-		const family = m.spec.family?.trim() || "Other";
-		const arr = map.get(family) ?? [];
-		arr.push(m);
-		map.set(family, arr);
-	}
-	const out: FamilyGroup[] = [];
-	for (const [family, ms] of map.entries()) {
-		ms.sort((a, b) =>
-			displayLabel(a.metadata).localeCompare(displayLabel(b.metadata)),
-		);
-		out.push({ family, models: ms });
-	}
-	out.sort((a, b) => b.models.length - a.models.length);
-	return out;
 }
 
 /* ---------------- Hosts ---------------- */
@@ -379,14 +299,6 @@ function Td({
 	className?: string;
 }) {
 	return <td className={`px-3 py-2 align-middle ${className}`}>{children}</td>;
-}
-
-function StatusInline({ enabled }: { enabled: boolean }) {
-	return enabled ? (
-		<span className="text-[11px] text-success">Enabled</span>
-	) : (
-		<span className="text-[11px] text-muted-foreground">Disabled</span>
-	);
 }
 
 function StatCard({
