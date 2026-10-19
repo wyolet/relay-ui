@@ -42,8 +42,9 @@ lint: ## Run biome lint
 release: ## Tag the newest main commit with green CI and push the tag: make release VERSION=v1.2.3
 	@test -n "$(VERSION)" || { echo "Usage: make release VERSION=vX.Y.Z"; exit 1; }
 	@echo "$(VERSION)" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$$' || { echo "VERSION must look like vX.Y.Z (got '$(VERSION)')"; exit 1; }
-	@git fetch -q --tags origin main
-	@git rev-parse -q --verify "refs/tags/$(VERSION)" >/dev/null && { echo "Tag $(VERSION) already exists."; exit 1; } || true
+	@git fetch -q origin main
+	@# Asked of the remote: fetching tags trips over the moving "latest" tag.
+	@test -z "$$(git ls-remote --tags origin "refs/tags/$(VERSION)")" || { echo "Tag $(VERSION) already exists."; exit 1; }
 	@# No release commit: the build stamps the version from the tag, so a tag
 	@# push runs only the Release workflow, on a commit CI already passed.
 	@set -e; \
