@@ -30,6 +30,7 @@ import {
 	Server,
 	Settings2,
 	ShieldCheck,
+	Split,
 	TrendingDown,
 	Volume2,
 	Wrench,
@@ -49,6 +50,7 @@ import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { resolveMutability } from "@/lib/ownership";
 import { blendedRequestCost } from "@/lib/usage-math/pricing";
 import { ResourceLogs } from "@/logs/ResourceLogs";
+import { modelProductLine } from "@/models/groupModelsByFamily";
 import type { BindingUsage } from "@/models/useModelHostSpend";
 import { useModelHostSpend } from "@/models/useModelHostSpend";
 import { useModelHosts } from "@/models/useModelHosts";
@@ -61,7 +63,7 @@ import { useModelUsage } from "@/models/useModelUsage";
 import { fmtCost, MeterGrid } from "@/pricing/MeterGrid";
 import { ProviderLogo } from "@/providers/ProviderLogo";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
-import { OwnerBadge, StatusBadge } from "@/shared/StatusBadge";
+import { OwnerBadge, StatusBadge, StatusInline } from "@/shared/StatusBadge";
 import { Th } from "@/shared/Th";
 import {
 	ResourceSpendCard,
@@ -226,6 +228,7 @@ function Header({
 		gov,
 	);
 	const dep = deprecationNote(model);
+	const productLine = modelProductLine(model);
 
 	return (
 		<div className="flex flex-col gap-3">
@@ -294,6 +297,14 @@ function Header({
 									)}
 								</>
 							)}
+							{productLine && (
+								<>
+									{(provider.providerSlug || model.spec.family) && (
+										<span className="text-muted-foreground/50"> · </span>
+									)}
+									line <span className="text-foreground">{productLine}</span>
+								</>
+							)}
 						</p>
 						{model.metadata.description && (
 							<p className="mt-1.5 max-w-2xl text-sm text-muted-foreground">
@@ -347,6 +358,7 @@ function OverviewTab({
 }) {
 	const caps = activeCapabilities(model.spec.capabilities);
 	const tags = model.spec.tags ?? [];
+	const productLine = modelProductLine(model);
 	const enabledHosts = hostRows.filter((h) => h.binding.enabled).length;
 	const throttled = policyRows.filter(
 		(p) => (p.limits?.length ?? 0) > 0,
@@ -412,6 +424,9 @@ function OverviewTab({
 								: undefined
 						}
 					/>
+					{productLine && (
+						<IdentityTile icon={Split} label="Line" value={productLine} />
+					)}
 					<IdentityTile
 						icon={CalendarDays}
 						label="Released"
@@ -1144,14 +1159,6 @@ function Td({
 	className?: string;
 }) {
 	return <td className={`px-3 py-2 align-middle ${className}`}>{children}</td>;
-}
-
-function StatusInline({ enabled }: { enabled: boolean }) {
-	return enabled ? (
-		<span className="text-[11px] text-success">Enabled</span>
-	) : (
-		<span className="text-[11px] text-muted-foreground">Disabled</span>
-	);
 }
 
 function IdentityTile({

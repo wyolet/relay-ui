@@ -40,3 +40,12 @@ export function OwnerBadge({
 		</span>
 	);
 }
+
+/** Text-only enabled/disabled state for dense table rows. */
+export function StatusInline({ enabled }: { enabled: boolean }) {
+	return enabled ? (
+		<span className="text-[11px] text-success">Enabled</span>
+	) : (
+		<span className="text-[11px] text-muted-foreground">Disabled</span>
+	);
+}
