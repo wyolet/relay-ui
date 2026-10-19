@@ -26,6 +26,13 @@ export function fmtTs(ts: string): string {
 	return d.toLocaleString();
 }
 
+/** Absolute local date, e.g. "5/30/2026". */
+export function fmtDate(ts: string): string {
+	const d = new Date(ts);
+	if (Number.isNaN(d.getTime())) return ts;
+	return d.toLocaleDateString();
+}
+
 /** Large counts → "1.3B" / "4.1M" / "12.4k". */
 export function fmtCompact(n: number): string {
 	if (n >= 1_000_000_000)

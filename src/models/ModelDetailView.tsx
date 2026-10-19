@@ -63,7 +63,12 @@ import { useModelUsage } from "@/models/useModelUsage";
 import { fmtCost, MeterGrid } from "@/pricing/MeterGrid";
 import { ProviderLogo } from "@/providers/ProviderLogo";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
-import { OwnerBadge, StatusBadge, StatusInline } from "@/shared/StatusBadge";
+import {
+	CatalogDetachedBadge,
+	OwnerBadge,
+	StatusBadge,
+	StatusInline,
+} from "@/shared/StatusBadge";
 import { Th } from "@/shared/Th";
 import {
 	ResourceSpendCard,
@@ -223,10 +228,7 @@ function Header({
 	const enabled = model.spec.enabled !== false;
 	const isProviderOwned = model.metadata.owner?.kind === "provider";
 	const gov = useGovernance("model");
-	const { canEdit, canDelete } = resolveMutability(
-		model.metadata.owner?.kind,
-		gov,
-	);
+	const { canEdit, canDelete } = resolveMutability(model.metadata, gov);
 	const dep = deprecationNote(model);
 	const productLine = modelProductLine(model);
 
@@ -257,6 +259,9 @@ function Header({
 							{isProviderOwned && (
 								<OwnerBadge label="Provider" title="Provider-owned." />
 							)}
+							<CatalogDetachedBadge
+								detachedAt={model.metadata.catalogDetachedAt}
+							/>
 							{dep && (
 								<span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium uppercase tracking-wide bg-warning/10 text-warning border border-warning/30">
 									<AlertTriangle className="w-3 h-3" />

@@ -14,7 +14,11 @@ import {
 	useProviderReferences,
 } from "@/providers/useProviderReferences";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
-import { OwnerBadge, StatusBadge } from "@/shared/StatusBadge";
+import {
+	CatalogDetachedBadge,
+	OwnerBadge,
+	StatusBadge,
+} from "@/shared/StatusBadge";
 import { Th } from "@/shared/Th";
 
 export type ProviderDetailTab = "overview" | "models" | "hosts";
@@ -119,10 +123,7 @@ function Header({
 	const enabled = provider.spec.enabled !== false;
 	const system = provider.metadata.owner?.kind === "system";
 	const gov = useGovernance("provider");
-	const { canEdit, canDelete } = resolveMutability(
-		provider.metadata.owner?.kind,
-		gov,
-	);
+	const { canEdit, canDelete } = resolveMutability(provider.metadata, gov);
 
 	const links: { href: string | undefined; label: string }[] = [
 		{ href: provider.spec.docsURL, label: "Docs" },
@@ -149,6 +150,9 @@ function Header({
 						)}
 						<StatusBadge enabled={enabled} />
 						{system && <OwnerBadge label="System" title="System-managed." />}
+						<CatalogDetachedBadge
+							detachedAt={provider.metadata.catalogDetachedAt}
+						/>
 					</h1>
 					<p className="mt-1 text-xs text-muted-foreground font-mono truncate">
 						{provider.metadata.name}

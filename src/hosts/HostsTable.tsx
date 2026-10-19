@@ -3,10 +3,11 @@ import { useUpdateHost } from "@/api/hooks/hosts";
 import type { Host } from "@/api/types/host";
 import { DiagnosticDot } from "@/diagnostics/DiagnosticDot";
 import { useHostDiagnostics } from "@/diagnostics/useDiagnostics";
+import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { HostCell } from "@/hosts/HostCell";
 import { useHostReferences } from "@/hosts/useHostReferences";
-import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
+import { CatalogDetachedBadge } from "@/shared/StatusBadge";
 import { Switch } from "@/shared/Switch";
 import { Th } from "@/shared/Th";
 
@@ -79,7 +80,14 @@ function HostRow({ h }: { h: Host }) {
 				>
 					<HostCell
 						host={h}
-						accessory={<DiagnosticDot diagnostics={diagnostics} />}
+						accessory={
+							<>
+								<DiagnosticDot diagnostics={diagnostics} />
+								<CatalogDetachedBadge
+									detachedAt={h.metadata.catalogDetachedAt}
+								/>
+							</>
+						}
 					/>
 				</Link>
 			</td>

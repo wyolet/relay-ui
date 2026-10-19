@@ -21,7 +21,7 @@ import { PolicyOverviewTab } from "@/policies/PolicyOverviewTab";
 import { PolicyRateLimitsTab } from "@/policies/PolicyRateLimitsTab";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
 import { PageLoader } from "@/shared/Spinner";
-import { StatusBadge } from "@/shared/StatusBadge";
+import { CatalogDetachedBadge, StatusBadge } from "@/shared/StatusBadge";
 import { ResourceUsage } from "@/usage/ResourceUsage";
 
 export type PolicyDetailTab =
@@ -164,10 +164,7 @@ function Header({
 	const name = policy.metadata.name;
 	const isHostOwned = policy.metadata.owner?.kind === "host";
 	const gov = useGovernance("policy");
-	const { canEdit, canDelete } = resolveMutability(
-		policy.metadata.owner?.kind,
-		gov,
-	);
+	const { canEdit, canDelete } = resolveMutability(policy.metadata, gov);
 	return (
 		<div className="flex items-start justify-between gap-4">
 			<div className="min-w-0">
@@ -187,6 +184,9 @@ function Header({
 							Host-owned
 						</span>
 					)}
+					<CatalogDetachedBadge
+						detachedAt={policy.metadata.catalogDetachedAt}
+					/>
 				</h1>
 				<p className="mt-1 text-xs text-muted-foreground font-mono truncate">
 					{name}
