@@ -27,7 +27,11 @@ import { resolveMutability } from "@/lib/ownership";
 import { ResourceLogs } from "@/logs/ResourceLogs";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
 import { PageLoader } from "@/shared/Spinner";
-import { OwnerBadge, StatusBadge } from "@/shared/StatusBadge";
+import {
+	CatalogDetachedBadge,
+	OwnerBadge,
+	StatusBadge,
+} from "@/shared/StatusBadge";
 import { Th } from "@/shared/Th";
 import {
 	ResourceSpendCard,
@@ -219,10 +223,7 @@ function Header({
 	const enabled = host.spec.enabled !== false;
 	const system = host.metadata.owner?.kind === "system";
 	const gov = useGovernance("host");
-	const { canEdit, canDelete } = resolveMutability(
-		host.metadata.owner?.kind,
-		gov,
-	);
+	const { canEdit, canDelete } = resolveMutability(host.metadata, gov);
 
 	const links: { href: string | undefined; label: string }[] = [
 		{ href: host.spec.consoleURL, label: "Console" },
@@ -246,6 +247,9 @@ function Header({
 						)}
 						<StatusBadge enabled={enabled} />
 						{system && <OwnerBadge label="System" title="System-managed." />}
+						<CatalogDetachedBadge
+							detachedAt={host.metadata.catalogDetachedAt}
+						/>
 					</h1>
 					<p className="mt-1 text-xs text-muted-foreground font-mono truncate">
 						{host.metadata.name}

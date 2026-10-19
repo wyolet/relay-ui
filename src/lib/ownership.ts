@@ -1,3 +1,10 @@
+import type { components } from "@/api/types.gen";
+
+type OwnershipMetadata = Pick<
+	components["schemas"]["Metadata"],
+	"owner" | "catalogDetachedAt"
+>;
+
 /**
  * Resolves whether a catalog resource may be edited/deleted from the UI,
  * combining its owner kind with the server's governance guardrail.
@@ -7,13 +14,17 @@
  *  - user-owned (or unowned) → bypasses governance; always mutable.
  *  - catalog-managed (host/provider-synced) → gated by the governance flags.
  *
+ * A row the catalog no longer ships (`catalogDetachedAt`) keeps its stored
+ * owner but is governed as user-owned, as the relay does.
+ *
  * The server enforces this independently; the UI only mirrors it so buttons
  * that would fail don't show.
  */
 export function resolveMutability(
-	ownerKind: string | undefined,
+	metadata: OwnershipMetadata,
 	gov: { allowEdit: boolean; allowDelete: boolean },
 ): { canEdit: boolean; canDelete: boolean } {
+	const ownerKind = metadata.catalogDetachedAt ? "user" : metadata.owner?.kind;
 	if (ownerKind === "system") return { canEdit: false, canDelete: false };
 	if (!ownerKind || ownerKind === "user")
 		return { canEdit: true, canDelete: true };

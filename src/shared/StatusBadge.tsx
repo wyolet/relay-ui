@@ -1,3 +1,8 @@
+import { fmtDate } from "@/lib/format";
+
+const quietBadgeClass =
+	"inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground border border-border";
+
 /**
  * The canonical enabled/disabled pill and owner pill shared by every detail
  * view. `enabledLabel`/`disabledLabel` let a caller relabel the states (e.g.
@@ -18,9 +23,7 @@ export function StatusBadge({
 			{enabledLabel}
 		</span>
 	) : (
-		<span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground border border-border">
-			{disabledLabel}
-		</span>
+		<span className={quietBadgeClass}>{disabledLabel}</span>
 	);
 }
 
@@ -32,11 +35,25 @@ export function OwnerBadge({
 	title?: string;
 }) {
 	return (
-		<span
-			className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground border border-border"
-			title={title}
-		>
+		<span className={quietBadgeClass} title={title}>
 			{label}-owned
+		</span>
+	);
+}
+
+/** Marks a row a catalog upgrade stopped shipping; renders nothing otherwise. */
+export function CatalogDetachedBadge({
+	detachedAt,
+}: {
+	detachedAt: string | undefined;
+}) {
+	if (!detachedAt) return null;
+	return (
+		<span
+			className={`${quietBadgeClass} shrink-0 whitespace-nowrap`}
+			title={`Removed from catalog on ${fmtDate(detachedAt)}, yours to delete.`}
+		>
+			Removed from catalog
 		</span>
 	);
 }

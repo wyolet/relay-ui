@@ -25,6 +25,7 @@ import {
 } from "@/shared/OwnerFilter";
 import { RowMenu } from "@/shared/RowMenu";
 import { SearchBox } from "@/shared/SearchBox";
+import { CatalogDetachedBadge } from "@/shared/StatusBadge";
 import { Switch } from "@/shared/Switch";
 import { TableToolbar } from "@/shared/TableToolbar";
 import { Th } from "@/shared/Th";
@@ -201,10 +202,7 @@ function PolicyRow({
 	const catalog = describeCatalog(policy);
 	const enabled = policy.spec.enabled !== false;
 	const gov = useGovernance("policy");
-	const { canEdit, canDelete } = resolveMutability(
-		policy.metadata.owner?.kind,
-		gov,
-	);
+	const { canEdit, canDelete } = resolveMutability(policy.metadata, gov);
 
 	async function toggleEnabled(next: boolean) {
 		try {
@@ -236,6 +234,9 @@ function PolicyRow({
 							</span>
 						)}
 						<DiagnosticDot diagnostics={diagnostics} />
+						<CatalogDetachedBadge
+							detachedAt={policy.metadata.catalogDetachedAt}
+						/>
 					</div>
 					{hasDisplayName(policy.metadata) && (
 						<code className="font-mono text-[11px] text-muted-foreground">

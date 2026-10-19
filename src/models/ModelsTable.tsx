@@ -20,6 +20,7 @@ import { HostLogo } from "@/hosts/HostLogo";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { resolveMutability } from "@/lib/ownership";
 import { confirm } from "@/shared/ConfirmDialog";
+import { CatalogDetachedBadge } from "@/shared/StatusBadge";
 import { Switch } from "@/shared/Switch";
 import { Th } from "@/shared/Th";
 import { toast } from "@/shared/Toast";
@@ -142,7 +143,7 @@ function ModelRow({
 	const deleteModel = useDeleteModel();
 	const diagnostics = useModelDiagnostics(m.metadata.id);
 	const gov = useGovernance("model");
-	const { canEdit, canDelete } = resolveMutability(m.metadata.owner?.kind, gov);
+	const { canEdit, canDelete } = resolveMutability(m.metadata, gov);
 	async function toggleEnabled(next: boolean) {
 		try {
 			await updateModel.mutateAsync({
@@ -193,6 +194,7 @@ function ModelRow({
 							/>
 						)}
 						<DiagnosticDot diagnostics={diagnostics} />
+						<CatalogDetachedBadge detachedAt={m.metadata.catalogDetachedAt} />
 					</div>
 					{(hasDisplayName(m.metadata) || dep) && (
 						<div className="text-[11px] text-muted-foreground truncate">
