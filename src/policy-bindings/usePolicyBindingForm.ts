@@ -8,8 +8,10 @@ import {
 } from "@/api/hooks/policyBindings";
 import type { PolicyBinding } from "@/api/types/policyBinding";
 import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
+import { useOwnerOptions } from "@/hooks/useOwnerOptions";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
+import { ownerKeyId } from "@/lib/ownerScopes";
 import { randomSuffix, slugify } from "@/lib/slug";
 import {
 	fromSubjectRows,
@@ -39,7 +41,8 @@ function firstError(
 export interface PolicyBindingFormValues {
 	displayName: string;
 	description: string;
-	projectId: string;
+	/** "project:<id>"; spec.projectId is taken from it. */
+	owner: string;
 	policyId: string;
 	priority: number | null;
 	subjects: SubjectRow[];
@@ -47,11 +50,11 @@ export interface PolicyBindingFormValues {
 	labels: LabelPair[];
 }
 
-function emptyValues(projectId: string): PolicyBindingFormValues {
+function emptyValues(owner: string): PolicyBindingFormValues {
 	return {
 		displayName: "",
 		description: "",
-		projectId,
+		owner,
 		policyId: "",
 		priority: null,
 		subjects: [newSubjectRow()],
@@ -60,11 +63,14 @@ function emptyValues(projectId: string): PolicyBindingFormValues {
 	};
 }
 
-function toValues(binding: PolicyBinding): PolicyBindingFormValues {
+function toValues(
+	binding: PolicyBinding,
+	owner: string,
+): PolicyBindingFormValues {
 	return {
 		displayName: displayLabel(binding.metadata),
 		description: binding.metadata.description ?? "",
-		projectId: binding.spec.projectId,
+		owner,
 		policyId: binding.spec.policyId,
 		priority: binding.spec.priority ?? null,
 		subjects: toSubjectRows(binding.spec.subjects),
@@ -80,7 +86,7 @@ const schema = z.object({
 		.min(1, "Display name is required — the slug is generated from it")
 		.max(120, "Display name is too long"),
 	description: z.string().trim().max(500, "Description is too long"),
-	projectId: z.string().min(1, "Pick the project this binding lives in."),
+	owner: z.string().min(1, "Pick the project this binding lives in."),
 	policyId: z.string().min(1, "Pick the policy callers resolve to."),
 	priority: z
 		.number()
@@ -129,9 +135,19 @@ export function usePolicyBindingForm({
 		binding?.metadata.resourceVersion,
 	);
 
+	const ownerPicker = useOwnerOptions({
+		kinds: ["project"],
+		owner: binding
+			? { kind: "project", id: binding.spec.projectId }
+			: undefined,
+		preset: projectId ? `project:${projectId}` : "",
+	});
+	const { initialOwner } = ownerPicker;
+
 	const initial = useMemo<PolicyBindingFormValues>(
-		() => (binding ? toValues(binding) : emptyValues(projectId)),
-		[binding, projectId],
+		() =>
+			binding ? toValues(binding, initialOwner) : emptyValues(initialOwner),
+		[binding, initialOwner],
 	);
 	const suffixRef = useRef<string>(
 		binding?.metadata.name.match(/-(\d{4,8})$/)?.[1] ?? randomSuffix(),
@@ -163,9 +179,9 @@ export function usePolicyBindingForm({
 			const labels = fromLabelPairs(value.labels);
 			// The scope of a policy binding is always its project; the server
 			// re-derives the owner from spec.projectId.
-			const owner = { kind: "project", id: value.projectId };
+			const owner = ownerPicker.toOwner(value.owner);
 			const spec = {
-				projectId: value.projectId,
+				projectId: ownerKeyId(value.owner),
 				policyId: value.policyId,
 				// Absent, not 0: the server reads a missing priority as its default.
 				priority: value.priority ?? undefined,
@@ -222,8 +238,8 @@ export function usePolicyBindingForm({
 	useEffect(() => {
 		if (lastResetKey.current === resetKey) return;
 		lastResetKey.current = resetKey;
-		form.reset(open ? initial : emptyValues(projectId));
-	}, [resetKey, open, initial, projectId, form]);
+		form.reset(open ? initial : emptyValues(initialOwner));
+	}, [resetKey, open, initial, initialOwner, form]);
 
 	const values = useStore(form.store, (s) => s.values);
 	const slugPreview = isEdit
@@ -235,8 +251,8 @@ export function usePolicyBindingForm({
 	const descriptionError = useStore(form.store, (s) =>
 		firstError(s.fieldMeta?.description?.errors),
 	);
-	const projectIdError = useStore(form.store, (s) =>
-		firstError(s.fieldMeta?.projectId?.errors),
+	const ownerError = useStore(form.store, (s) =>
+		firstError(s.fieldMeta?.owner?.errors),
 	);
 	const policyIdError = useStore(form.store, (s) =>
 		firstError(s.fieldMeta?.policyId?.errors),
@@ -255,7 +271,8 @@ export function usePolicyBindingForm({
 		slugPreview,
 		displayNameError,
 		descriptionError,
-		projectIdError,
+		ownerOptions: ownerPicker.options,
+		ownerError,
 		policyIdError,
 		priorityError,
 		subjectsError,

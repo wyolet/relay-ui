@@ -8,34 +8,37 @@ import {
 } from "@/api/hooks/serviceAccounts";
 import type { ServiceAccount } from "@/api/types/serviceAccount";
 import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
+import { useOwnerOptions } from "@/hooks/useOwnerOptions";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
+import { ownerKeyId } from "@/lib/ownerScopes";
 import { randomSuffix, slugify } from "@/lib/slug";
 import { toast } from "@/shared/Toast";
 
 export interface ServiceAccountFormValues {
 	displayName: string;
 	description: string;
-	projectId: string;
+	/** "project:<id>"; spec.projectId is taken from it. */
+	owner: string;
 	policyId: string;
 	enabled: boolean;
 }
 
-function emptyValues(): ServiceAccountFormValues {
+function emptyValues(owner: string): ServiceAccountFormValues {
 	return {
 		displayName: "",
 		description: "",
-		projectId: "",
+		owner,
 		policyId: "",
 		enabled: true,
 	};
 }
 
-function toValues(sa: ServiceAccount): ServiceAccountFormValues {
+function toValues(sa: ServiceAccount, owner: string): ServiceAccountFormValues {
 	return {
 		displayName: displayLabel(sa.metadata),
 		description: sa.metadata.description ?? "",
-		projectId: sa.spec.projectId,
+		owner,
 		policyId: sa.spec.policyId ?? "",
 		enabled: sa.spec.enabled ?? true,
 	};
@@ -48,7 +51,7 @@ const schema = z.object({
 		.min(1, "Display name is required — the slug is generated from it")
 		.max(120, "Display name is too long"),
 	description: z.string().trim().max(500, "Description is too long"),
-	projectId: z.string().min(1, "Pick the project this account belongs to."),
+	owner: z.string().min(1, "Pick the project this account belongs to."),
 	policyId: z.string(),
 	enabled: z.boolean(),
 });
@@ -73,9 +76,20 @@ export function useServiceAccountForm({
 		serviceAccount?.metadata.resourceVersion,
 	);
 
+	const ownerPicker = useOwnerOptions({
+		kinds: ["project"],
+		owner: serviceAccount
+			? { kind: "project", id: serviceAccount.spec.projectId }
+			: undefined,
+	});
+	const { initialOwner } = ownerPicker;
+
 	const initial = useMemo<ServiceAccountFormValues>(
-		() => (serviceAccount ? toValues(serviceAccount) : emptyValues()),
-		[serviceAccount],
+		() =>
+			serviceAccount
+				? toValues(serviceAccount, initialOwner)
+				: emptyValues(initialOwner),
+		[serviceAccount, initialOwner],
 	);
 	const suffixRef = useRef<string>(
 		serviceAccount?.metadata.name.match(/-(\d{4,8})$/)?.[1] ?? randomSuffix(),
@@ -105,7 +119,7 @@ export function useServiceAccountForm({
 			const displayName = value.displayName.trim();
 			const description = value.description.trim();
 			const spec = {
-				projectId: value.projectId,
+				projectId: ownerKeyId(value.owner),
 				...(value.policyId ? { policyId: value.policyId } : {}),
 				enabled: value.enabled,
 			};
@@ -133,7 +147,7 @@ export function useServiceAccountForm({
 							displayName,
 							description,
 							// Owner is re-derived from spec.projectId server-side.
-							owner: { kind: "project", id: value.projectId },
+							owner: ownerPicker.toOwner(value.owner),
 						},
 						spec,
 					});
@@ -157,8 +171,8 @@ export function useServiceAccountForm({
 	useEffect(() => {
 		if (lastResetKey.current === resetKey) return;
 		lastResetKey.current = resetKey;
-		form.reset(open ? initial : emptyValues());
-	}, [resetKey, open, initial, form]);
+		form.reset(open ? initial : emptyValues(initialOwner));
+	}, [resetKey, open, initial, initialOwner, form]);
 
 	const values = useStore(form.store, (s) => s.values);
 	const slugPreview = isEdit
@@ -174,8 +188,8 @@ export function useServiceAccountForm({
 		for (const e of errs) if (typeof e === "string") return e;
 		return undefined;
 	});
-	const projectIdError = useStore(form.store, (s) => {
-		const errs = s.fieldMeta?.projectId?.errors ?? [];
+	const ownerError = useStore(form.store, (s) => {
+		const errs = s.fieldMeta?.owner?.errors ?? [];
 		for (const e of errs) if (typeof e === "string") return e;
 		return undefined;
 	});
@@ -187,6 +201,7 @@ export function useServiceAccountForm({
 		slugPreview,
 		displayNameError,
 		descriptionError,
-		projectIdError,
+		ownerOptions: ownerPicker.options,
+		ownerError,
 	};
 }
