@@ -22,6 +22,7 @@ import {
 } from "@/shared/OwnerFilter";
 import { RowMenu } from "@/shared/RowMenu";
 import { SearchBox } from "@/shared/SearchBox";
+import { CatalogDetachedBadge } from "@/shared/StatusBadge";
 import { Switch } from "@/shared/Switch";
 import { TableToolbar } from "@/shared/TableToolbar";
 import { Th } from "@/shared/Th";
@@ -198,6 +199,7 @@ function RateLimitRow({
 						)}
 					</Link>
 					<DiagnosticDot diagnostics={diagnostics} />
+					<CatalogDetachedBadge detachedAt={rl.metadata.catalogDetachedAt} />
 				</div>
 			</td>
 			<td className="px-3 py-2 text-sm">

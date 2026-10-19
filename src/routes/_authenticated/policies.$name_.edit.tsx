@@ -46,7 +46,7 @@ function EditPolicyInner() {
 	const { data: policy } = usePolicy(name);
 	const navigate = useNavigate();
 	const gov = useGovernance("policy");
-	const { canEdit } = resolveMutability(policy.metadata.owner?.kind, gov);
+	const { canEdit } = resolveMutability(policy.metadata, gov);
 
 	if (!canEdit) {
 		return (

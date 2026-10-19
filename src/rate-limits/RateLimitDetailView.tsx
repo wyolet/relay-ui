@@ -11,7 +11,11 @@ import { isProviderOwned, isSystemOwned } from "@/lib/systemRateLimits";
 import { windowLabel } from "@/lib/timeWindow";
 import { useRateLimitReferences } from "@/rate-limits/useRateLimitReferences";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
-import { OwnerBadge, StatusBadge } from "@/shared/StatusBadge";
+import {
+	CatalogDetachedBadge,
+	OwnerBadge,
+	StatusBadge,
+} from "@/shared/StatusBadge";
 import { Th } from "@/shared/Th";
 
 interface Props {
@@ -75,6 +79,9 @@ function Header({
 					<StatusBadge enabled={enabled} />
 					{system && <OwnerBadge label="System" />}
 					{provider && <OwnerBadge label="Provider" />}
+					<CatalogDetachedBadge
+						detachedAt={rateLimit.metadata.catalogDetachedAt}
+					/>
 				</h1>
 				<p className="mt-1 text-xs text-muted-foreground font-mono truncate">
 					{name}
