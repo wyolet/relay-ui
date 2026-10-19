@@ -5,6 +5,7 @@ import { summarizeRatesParts } from "@/lib/usage-math/pricing";
 import { fmtRate, prettyMeter, prettyUnit } from "@/pricing/MeterGrid";
 import { useHostOptionById } from "@/pricing/useHostOptions";
 import { useTargetModelLabeler } from "@/pricing/useTargetModelOptions";
+import { CatalogDetachedBadge } from "@/shared/StatusBadge";
 import { Th } from "@/shared/Th";
 
 export function PricingsTable({ items }: { items: Pricing[] }) {
@@ -55,13 +56,16 @@ function Row({
 		<tr className="hover:bg-muted/30 transition-colors">
 			<Td>
 				<div className="min-w-0">
-					<Link
-						to="/pricing/$name"
-						params={{ name }}
-						className="text-foreground hover:underline truncate font-medium"
-					>
-						{displayLabel(p.metadata)}
-					</Link>
+					<div className="flex items-center gap-2 min-w-0">
+						<Link
+							to="/pricing/$name"
+							params={{ name }}
+							className="text-foreground hover:underline truncate font-medium"
+						>
+							{displayLabel(p.metadata)}
+						</Link>
+						<CatalogDetachedBadge detachedAt={p.metadata.catalogDetachedAt} />
+					</div>
 					<div className="text-[11px] text-muted-foreground font-mono truncate">
 						{name}
 					</div>

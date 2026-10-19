@@ -1,6 +1,5 @@
 import { Boxes, ShieldCheck, ToggleLeft } from "lucide-react";
 import { usePolicies } from "@/api/hooks/policies";
-import { useProjects } from "@/api/hooks/projects";
 import type { ServiceAccount } from "@/api/types/serviceAccount";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,6 +13,7 @@ import { displayLabel } from "@/lib/displayLabel";
 import { useServiceAccountForm } from "@/service-accounts/useServiceAccountForm";
 import { FormSection } from "@/shared/FormSection";
 import { IdentitySection } from "@/shared/IdentitySection";
+import { OwnerSection } from "@/shared/OwnerSection";
 import { ToggleSwitch } from "@/shared/ToggleSwitch";
 
 interface ServiceAccountFormProps {
@@ -34,15 +34,11 @@ export function ServiceAccountForm({
 		slugPreview,
 		displayNameError,
 		descriptionError,
-		projectIdError,
+		ownerOptions,
+		ownerError,
 	} = useServiceAccountForm({ open: true, serviceAccount, onSaved });
 
-	const { data: projectsData } = useProjects();
 	const { data: policiesData } = usePolicies();
-	const projectOptions = (projectsData.items ?? []).map((p) => ({
-		value: p.metadata.id ?? "",
-		label: displayLabel(p.metadata),
-	}));
 	const policyOptions = (policiesData.items ?? []).map((p) => ({
 		value: p.metadata.id ?? "",
 		label: displayLabel(p.metadata),
@@ -70,38 +66,16 @@ export function ServiceAccountForm({
 					placeholder="search-indexer"
 				/>
 
-				<FormSection
+				<OwnerSection
 					icon={Boxes}
 					title="Project"
 					description="The project that owns this account. Its keys and spend are attributed here."
-				>
-					<div>
-						<Select
-							value={values.projectId}
-							items={projectOptions}
-							onValueChange={(v) => form.setFieldValue("projectId", v ?? "")}
-						>
-							<SelectTrigger
-								className="w-full max-w-md"
-								aria-invalid={projectIdError ? true : undefined}
-							>
-								<SelectValue placeholder="Pick a project…" />
-							</SelectTrigger>
-							<SelectContent>
-								{projectOptions.map((p) => (
-									<SelectItem key={p.value} value={p.value}>
-										{p.label}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-						{projectIdError && (
-							<p className="mt-1.5 text-[11px] text-destructive">
-								{projectIdError}
-							</p>
-						)}
-					</div>
-				</FormSection>
+					placeholder="Pick a project…"
+					options={ownerOptions}
+					value={values.owner}
+					onChange={(v) => form.setFieldValue("owner", v)}
+					error={ownerError}
+				/>
 
 				<FormSection
 					icon={ShieldCheck}

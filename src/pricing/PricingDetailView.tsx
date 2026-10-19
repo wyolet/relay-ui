@@ -6,7 +6,7 @@ import { MeterGrid } from "@/pricing/MeterGrid";
 import { useHostOptionById } from "@/pricing/useHostOptions";
 import { useTargetModelLabeler } from "@/pricing/useTargetModelOptions";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
-import { StatusBadge } from "@/shared/StatusBadge";
+import { CatalogDetachedBadge, StatusBadge } from "@/shared/StatusBadge";
 
 interface Props {
 	pricing: Pricing;
@@ -70,6 +70,9 @@ function Header({
 						{pricing.spec.currency || "USD"}
 					</span>
 					<StatusBadge enabled={enabled} />
+					<CatalogDetachedBadge
+						detachedAt={pricing.metadata.catalogDetachedAt}
+					/>
 				</h1>
 				<p className="mt-1 text-xs text-muted-foreground font-mono truncate">
 					{name}

@@ -5,8 +5,10 @@ import { z } from "zod";
 import { useCreateProject, useUpdateProject } from "@/api/hooks/projects";
 import type { Project } from "@/api/types/project";
 import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
+import { useOwnerOptions } from "@/hooks/useOwnerOptions";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
+import { ownerKeyId } from "@/lib/ownerScopes";
 import { randomSuffix, slugify } from "@/lib/slug";
 import {
 	fromLabelPairs,
@@ -18,26 +20,27 @@ import { toast } from "@/shared/Toast";
 export interface ProjectFormValues {
 	displayName: string;
 	description: string;
-	teamId: string;
+	/** "team:<id>"; spec.teamId is taken from it. */
+	owner: string;
 	enabled: boolean;
 	labels: LabelPair[];
 }
 
-function emptyValues(teamId: string): ProjectFormValues {
+function emptyValues(owner: string): ProjectFormValues {
 	return {
 		displayName: "",
 		description: "",
-		teamId,
+		owner,
 		enabled: true,
 		labels: [],
 	};
 }
 
-function toValues(project: Project): ProjectFormValues {
+function toValues(project: Project, owner: string): ProjectFormValues {
 	return {
 		displayName: displayLabel(project.metadata),
 		description: project.metadata.description ?? "",
-		teamId: project.spec.teamId,
+		owner,
 		enabled: project.spec.enabled ?? true,
 		labels: toLabelPairs(project.metadata.labels),
 	};
@@ -50,7 +53,7 @@ const schema = z.object({
 		.min(1, "Display name is required — the slug is generated from it")
 		.max(120, "Display name is too long"),
 	description: z.string().trim().max(500, "Description is too long"),
-	teamId: z.string().min(1, "Pick the team this project belongs to."),
+	owner: z.string().min(1, "Pick the team this project belongs to."),
 	enabled: z.boolean(),
 	labels: z.array(
 		z.object({ id: z.string(), key: z.string(), value: z.string() }),
@@ -80,9 +83,17 @@ export function useProjectForm({
 		project?.metadata.resourceVersion,
 	);
 
+	const ownerPicker = useOwnerOptions({
+		kinds: ["team"],
+		owner: project ? { kind: "team", id: project.spec.teamId } : undefined,
+		preset: teamId ? `team:${teamId}` : "",
+	});
+	const { initialOwner } = ownerPicker;
+
 	const initial = useMemo<ProjectFormValues>(
-		() => (project ? toValues(project) : emptyValues(teamId)),
-		[project, teamId],
+		() =>
+			project ? toValues(project, initialOwner) : emptyValues(initialOwner),
+		[project, initialOwner],
 	);
 	const suffixRef = useRef<string>(
 		project?.metadata.name.match(/-(\d{4,8})$/)?.[1] ?? randomSuffix(),
@@ -116,7 +127,7 @@ export function useProjectForm({
 			// value through so a save never clears it.
 			const spec = {
 				...(project?.spec ?? {}),
-				teamId: value.teamId,
+				teamId: ownerKeyId(value.owner),
 				enabled: value.enabled,
 			};
 			try {
@@ -145,7 +156,7 @@ export function useProjectForm({
 							displayName,
 							description,
 							labels,
-							owner: { kind: "team", id: value.teamId },
+							owner: ownerPicker.toOwner(value.owner),
 						},
 						spec,
 					});
@@ -167,8 +178,8 @@ export function useProjectForm({
 	useEffect(() => {
 		if (lastResetKey.current === resetKey) return;
 		lastResetKey.current = resetKey;
-		form.reset(open ? initial : emptyValues(teamId));
-	}, [resetKey, open, initial, teamId, form]);
+		form.reset(open ? initial : emptyValues(initialOwner));
+	}, [resetKey, open, initial, initialOwner, form]);
 
 	const values = useStore(form.store, (s) => s.values);
 	const slugPreview = isEdit
@@ -184,8 +195,8 @@ export function useProjectForm({
 		for (const e of errs) if (typeof e === "string") return e;
 		return undefined;
 	});
-	const teamIdError = useStore(form.store, (s) => {
-		const errs = s.fieldMeta?.teamId?.errors ?? [];
+	const ownerError = useStore(form.store, (s) => {
+		const errs = s.fieldMeta?.owner?.errors ?? [];
 		for (const e of errs) if (typeof e === "string") return e;
 		return undefined;
 	});
@@ -197,6 +208,7 @@ export function useProjectForm({
 		slugPreview,
 		displayNameError,
 		descriptionError,
-		teamIdError,
+		ownerOptions: ownerPicker.options,
+		ownerError,
 	};
 }

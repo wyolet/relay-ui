@@ -7,7 +7,6 @@ import {
 	Users,
 } from "lucide-react";
 import { usePolicies } from "@/api/hooks/policies";
-import { useProjects } from "@/api/hooks/projects";
 import type { PolicyBinding } from "@/api/types/policyBinding";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +26,7 @@ import { SubjectsEditor } from "@/role-bindings/SubjectsEditor";
 import { FormSection } from "@/shared/FormSection";
 import { IdentitySection } from "@/shared/IdentitySection";
 import { LabelsEditor } from "@/shared/LabelsEditor";
+import { OwnerSection } from "@/shared/OwnerSection";
 import { ToggleSwitch } from "@/shared/ToggleSwitch";
 
 interface PolicyBindingFormProps {
@@ -50,18 +50,14 @@ export function PolicyBindingForm({
 		slugPreview,
 		displayNameError,
 		descriptionError,
-		projectIdError,
+		ownerOptions,
+		ownerError,
 		policyIdError,
 		priorityError,
 		subjectsError,
 	} = usePolicyBindingForm({ open: true, binding, projectId, onSaved });
 
-	const { data: projectsData } = useProjects();
 	const { data: policiesData } = usePolicies();
-	const projectOptions = (projectsData.items ?? []).map((p) => ({
-		value: p.metadata.id ?? "",
-		label: displayLabel(p.metadata),
-	}));
 	const policyOptions = (policiesData.items ?? []).map((p) => ({
 		value: p.metadata.id ?? "",
 		label: displayLabel(p.metadata),
@@ -89,38 +85,16 @@ export function PolicyBindingForm({
 					placeholder="ML Search everyone"
 				/>
 
-				<FormSection
+				<OwnerSection
 					icon={Boxes}
 					title="Project"
 					description="A policy binding always lives in one project. Its subjects are the callers inside it."
-				>
-					<div>
-						<Select
-							value={values.projectId}
-							items={projectOptions}
-							onValueChange={(v) => form.setFieldValue("projectId", v ?? "")}
-						>
-							<SelectTrigger
-								className="w-full max-w-md"
-								aria-invalid={projectIdError ? true : undefined}
-							>
-								<SelectValue placeholder="Pick a project…" />
-							</SelectTrigger>
-							<SelectContent>
-								{projectOptions.map((o) => (
-									<SelectItem key={o.value} value={o.value}>
-										{o.label}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-						{projectIdError && (
-							<p className="mt-1.5 text-[11px] text-destructive">
-								{projectIdError}
-							</p>
-						)}
-					</div>
-				</FormSection>
+					placeholder="Pick a project…"
+					options={ownerOptions}
+					value={values.owner}
+					onChange={(v) => form.setFieldValue("owner", v)}
+					error={ownerError}
+				/>
 
 				<FormSection
 					icon={ShieldCheck}

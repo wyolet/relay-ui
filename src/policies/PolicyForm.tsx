@@ -32,6 +32,7 @@ import { PolicyRLPicker } from "@/policies/PolicyRLPicker";
 import { policyFromFormValues, usePolicyForm } from "@/policies/usePolicyForm";
 import { usePolicyHostRequirements } from "@/policies/usePolicyHostRequirements";
 import { IdentitySection } from "@/shared/IdentitySection";
+import { OwnerSection } from "@/shared/OwnerSection";
 import { ToggleSwitch } from "@/shared/ToggleSwitch";
 
 interface PolicyFormProps {
@@ -48,6 +49,8 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 		slugPreview,
 		displayNameError,
 		descriptionError,
+		ownerOptions,
+		ownerError,
 	} = usePolicyForm({
 		open: true,
 		policy,
@@ -95,6 +98,13 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 					descriptionError={descriptionError}
 					autoFocus={!isEdit}
 					placeholder="Default policy"
+				/>
+
+				<OwnerSection
+					options={ownerOptions}
+					value={values.owner}
+					onChange={(v) => form.setFieldValue("owner", v)}
+					error={ownerError}
 				/>
 
 				<Section

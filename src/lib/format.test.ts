@@ -1,5 +1,11 @@
 import { describe, expect, it } from "bun:test";
-import { fmtAgo } from "./format";
+import { fmtAgo, fmtDate } from "./format";
+
+describe("fmtDate", () => {
+	it("passes unparseable input through", () => {
+		expect(fmtDate("nope")).toBe("nope");
+	});
+});
 
 describe("fmtAgo", () => {
 	const now = Date.parse("2026-10-18T12:00:00Z");

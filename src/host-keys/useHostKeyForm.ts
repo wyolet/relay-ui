@@ -12,8 +12,10 @@ import type {
 	HostKeyUpdate,
 } from "@/api/types/hostkey";
 import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
+import { useOwnerOptions } from "@/hooks/useOwnerOptions";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
+import { ALL_OWNER_SCOPES, PERSONAL_OWNER } from "@/lib/ownerScopes";
 import { randomSuffix, slugify } from "@/lib/slug";
 import { toast } from "@/shared/Toast";
 import { reservedEnvPrefix } from "./reservedEnv";
@@ -35,6 +37,7 @@ export interface ReferencingPolicyView {
 export interface HostKeyFormValues {
 	displayName: string;
 	description: string;
+	owner: string;
 	hostId: string;
 	policyId: string;
 	kind: HostKeyKind;
@@ -43,10 +46,11 @@ export interface HostKeyFormValues {
 	enabled: boolean;
 }
 
-function emptyValues(): HostKeyFormValues {
+function emptyValues(owner: string): HostKeyFormValues {
 	return {
 		displayName: "",
 		description: "",
+		owner,
 		hostId: "",
 		policyId: "",
 		kind: "stored",
@@ -56,12 +60,13 @@ function emptyValues(): HostKeyFormValues {
 	};
 }
 
-function hostKeyToValues(hk: HostKey): HostKeyFormValues {
+function hostKeyToValues(hk: HostKey, owner: string): HostKeyFormValues {
 	const kind: HostKeyKind =
 		hk.spec.valueFrom.kind === "stored" ? "stored" : "env";
 	return {
 		displayName: displayLabel(hk.metadata),
 		description: hk.metadata.description ?? "",
+		owner,
 		hostId: hk.spec.hostId,
 		policyId: hk.spec.policyId,
 		kind,
@@ -80,6 +85,7 @@ function buildSchema(isEdit: boolean) {
 				.min(1, "Display name is required — the slug is generated from it")
 				.max(120, "Display name is too long"),
 			description: z.string().trim().max(500, "Description is too long"),
+			owner: z.string().min(1, "Pick who owns this credential."),
 			hostId: z
 				.string()
 				.min(1, "Pick the host this credential authenticates against."),
@@ -132,9 +138,19 @@ export function useHostKeyForm({
 		hostKey?.metadata.resourceVersion,
 	);
 
+	const ownerPicker = useOwnerOptions({
+		kinds: ALL_OWNER_SCOPES,
+		owner: hostKey?.metadata.owner,
+		preset: PERSONAL_OWNER,
+	});
+	const { initialOwner } = ownerPicker;
+
 	const initial = useMemo<HostKeyFormValues>(
-		() => (hostKey ? hostKeyToValues(hostKey) : emptyValues()),
-		[hostKey],
+		() =>
+			hostKey
+				? hostKeyToValues(hostKey, initialOwner)
+				: emptyValues(initialOwner),
+		[hostKey, initialOwner],
 	);
 	const suffixRef = useRef<string>(
 		hostKey?.metadata.name.match(/-(\d{4,8})$/)?.[1] ?? randomSuffix(),
@@ -189,6 +205,7 @@ export function useHostKeyForm({
 							...hostKey.metadata,
 							resourceVersion: loaded.version,
 							displayName,
+							owner: ownerPicker.toOwner(value.owner),
 							...(description
 								? { description }
 								: hostKey.metadata.description !== undefined
@@ -219,6 +236,7 @@ export function useHostKeyForm({
 						metadata: {
 							name,
 							displayName,
+							owner: ownerPicker.toOwner(value.owner),
 							...(description ? { description } : {}),
 						},
 						spec,
@@ -247,8 +265,8 @@ export function useHostKeyForm({
 	useEffect(() => {
 		if (lastResetKey.current === resetKey) return;
 		lastResetKey.current = resetKey;
-		form.reset(open ? initial : emptyValues());
-	}, [resetKey, open, initial, form]);
+		form.reset(open ? initial : emptyValues(initialOwner));
+	}, [resetKey, open, initial, initialOwner, form]);
 
 	const values = useStore(form.store, (s) => s.values);
 	const slugPreview = isEdit
@@ -261,6 +279,11 @@ export function useHostKeyForm({
 	});
 	const descriptionError = useStore(form.store, (s) => {
 		const errs = s.fieldMeta?.description?.errors ?? [];
+		for (const e of errs) if (typeof e === "string") return e;
+		return undefined;
+	});
+	const ownerError = useStore(form.store, (s) => {
+		const errs = s.fieldMeta?.owner?.errors ?? [];
 		for (const e of errs) if (typeof e === "string") return e;
 		return undefined;
 	});
@@ -365,6 +388,8 @@ export function useHostKeyForm({
 		slugPreview,
 		displayNameError,
 		descriptionError,
+		ownerOptions: ownerPicker.options,
+		ownerError,
 		hostIdError,
 		policyIdError,
 		envVarError,

@@ -18,7 +18,6 @@ import { providersListQueryOptions } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FilterBar } from "@/filters/FilterBar";
-import type { FilterDef } from "@/filters/types";
 import {
 	applyHostFilter,
 	applyHostSort,
@@ -32,6 +31,7 @@ import {
 	type ModelsSortKey,
 	ModelsTable,
 } from "@/models/ModelsTable";
+import { useModelFilters } from "@/models/useModelFilters";
 import { SearchBox } from "@/shared/SearchBox";
 import { PageLoader } from "@/shared/Spinner";
 import { StaleContent } from "@/shared/StaleContent";
@@ -50,6 +50,7 @@ const searchSchema = z.object({
 		.default("featured"),
 	q: z.string().default(""),
 	deprecated: z.enum(["active", "deprecated", "all"]).default("active"),
+	line: z.string().catch("").default(""),
 	// Sorting is server-side now (the page window depends on it); "provider"
 	// was accepted here but no column ever triggered it. catch() absorbs
 	// stale bookmarked URLs instead of failing validation.
@@ -60,28 +61,6 @@ const searchSchema = z.object({
 	hdir: z.enum(["asc", "desc"]).default("asc"),
 });
 
-/** Filters rendered above the Models table (server-side). */
-const MODEL_FILTERS = [
-	{
-		key: "q",
-		type: "search",
-		label: "Search",
-		placeholder: "Search models",
-		default: "",
-	},
-	{
-		key: "deprecated",
-		type: "select",
-		label: "Status",
-		default: "active",
-		options: [
-			{ value: "active", label: "Active only" },
-			{ value: "deprecated", label: "Deprecated only" },
-			{ value: "all", label: "All" },
-		],
-	},
-] as const satisfies readonly FilterDef[];
-
 const MODELS_PAGE_SIZE = 50;
 
 /** Map the UI filter/sort/page state to GET /models query params. Filtering,
@@ -91,25 +70,25 @@ function toModelsParams({
 	featured,
 	q,
 	status,
+	line,
 	dir,
 	page,
 }: {
 	featured: boolean;
 	q: string;
 	status: ModelStatus;
+	line: string;
 	dir: ModelsSortDir;
 	page: number;
 }): ModelsListParams {
 	const params: ModelsListParams = {
 		limit: MODELS_PAGE_SIZE,
 		offset: (page - 1) * MODELS_PAGE_SIZE,
-		// The engine accepts a "-" prefix for descending on every sortable
-		// field; the generated enum only lists the ascending names (relay
-		// OpenAPI gap), hence the cast.
-		sort: (dir === "desc" ? "-name" : "name") as ModelsListParams["sort"],
+		sort: dir === "desc" ? "-name" : "name",
 	};
 	const trimmed = q.trim();
 	if (trimmed) params.q = trimmed;
+	if (line) params.product_line = [line];
 	if (featured) params.label = ["featured=true"];
 	if (status === "active") params.deprecated = false;
 	else if (status === "deprecated") params.deprecated = true;
@@ -122,6 +101,7 @@ export const Route = createFileRoute("/_authenticated/models/")({
 		featured: search.tab === "featured",
 		q: search.q,
 		deprecated: search.deprecated,
+		line: search.line,
 		dir: search.dir,
 		page: search.page,
 	}),
@@ -159,10 +139,12 @@ function ModelsList() {
 			featured,
 			q: search.q,
 			status: search.deprecated,
+			line: search.line,
 			dir: search.dir,
 			page: search.page,
 		}),
 	);
+	const filters = useModelFilters();
 	const { data: hostsData } = useHosts();
 	const navigate = useNavigate({ from: "/models" });
 	// Server-filtered, -sorted, and -windowed: render as-is.
@@ -189,8 +171,8 @@ function ModelsList() {
 	return (
 		<div>
 			<FilterBar
-				defs={MODEL_FILTERS}
-				state={{ q: live.q, deprecated: live.deprecated }}
+				defs={filters}
+				state={{ q: live.q, deprecated: live.deprecated, line: live.line }}
 				onChange={(next) => patch({ ...next, page: 1 })}
 				className="mb-3"
 			/>
