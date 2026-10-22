@@ -4159,7 +4159,6 @@ export interface components {
         };
         TeamBudget: {
             amount: string;
-            onExceed?: string;
             period?: string;
         };
         TeamList: {
@@ -4500,13 +4499,13 @@ export interface components {
              * @description Seconds until a timed cooldown expires; absent when closed, indefinite, or already elapsed.
              */
             cooldown_remaining_seconds?: number;
-            /** @description False when no breaker record exists yet — the key has never failed (assumed healthy). */
+            /** @description False when no breaker record exists — the key has not failed within the record's 24 h lifetime (assumed healthy). */
             has_record: boolean;
             /** @description Open with no expiry (auth failure) until the key heals or rotates. */
             indefinite?: boolean;
             /**
              * Format: date-time
-             * @description Last state change; doubles as last-success time when state is closed.
+             * @description Last state change; when state is closed, when the key recovered from its last failure.
              */
             last_transition?: string;
             /**
