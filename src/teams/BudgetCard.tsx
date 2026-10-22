@@ -13,7 +13,6 @@ export function BudgetCard({ budget }: { budget: TeamBudget | undefined }) {
 					<span className="font-mono">${budget.amount}</span>
 				</DetailRow>
 				<DetailRow label="Period">{budget.period ?? "month"}</DetailRow>
-				<DetailRow label="On exceed">{budget.onExceed ?? "block"}</DetailRow>
 			</dl>
 		</DetailCard>
 	);
