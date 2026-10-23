@@ -65,7 +65,7 @@ jobs:
           mkdir sbom-src
           jq --arg v "${GITHUB_REF_NAME#v}" '.version = $v' package.json > sbom-src/package.json
           cp bun.lock sbom-src/
-          npx --yes @cyclonedx/cdxgen@12.8.5 -t js --required-only \
+          npx --yes @cyclonedx/cdxgen@12.8.7 -t js --required-only \
             --no-install-deps --no-recurse \
             -o "out/relay-ui-${GITHUB_REF_NAME}.cdx.json" sbom-src
 
