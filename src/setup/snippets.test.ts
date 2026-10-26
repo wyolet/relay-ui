@@ -31,7 +31,10 @@ describe("fillSnippet", () => {
 
 	it("round-trips a hostile model through the curl body", () => {
 		const filled = fillSnippet(snippet("curl"), hostile, "hi");
-		const body = filled.slice(filled.indexOf("-d '") + 4, filled.lastIndexOf("'"));
+		const body = filled.slice(
+			filled.indexOf("-d '") + 4,
+			filled.lastIndexOf("'"),
+		);
 		const shellDecoded = body.replaceAll("'\\''", "'");
 		expect(JSON.parse(shellDecoded).model).toBe(hostile);
 	});

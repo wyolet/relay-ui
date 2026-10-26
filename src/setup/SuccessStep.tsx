@@ -156,11 +156,7 @@ export function SuccessStep({
 					</TabsList>
 					{snippets.map((s) => (
 						<TabsContent key={s.id} value={s.id}>
-							<CodeBlock
-								snippet={s}
-								model={model}
-								message={message}
-							/>
+							<CodeBlock snippet={s} model={model} message={message} />
 						</TabsContent>
 					))}
 				</Tabs>

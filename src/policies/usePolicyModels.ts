@@ -6,7 +6,7 @@ import {
 	policyModelsQueryOptions,
 } from "@/api/hooks/policies";
 
-export type { PolicyModelView, PolicyModelExclusion };
+export type { PolicyModelExclusion, PolicyModelView };
 
 /** Models this policy grants (resolved server-side), with effective limits. */
 export function usePolicyModels(ref: string): PolicyModelView[] {

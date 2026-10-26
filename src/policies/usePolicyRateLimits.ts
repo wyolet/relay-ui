@@ -6,7 +6,7 @@ import {
 	type UnthrottledModel,
 } from "@/api/hooks/policies";
 
-export type { PolicyRateLimitView, UnthrottledModel, RateLimitOverlap };
+export type { PolicyRateLimitView, RateLimitOverlap, UnthrottledModel };
 
 export interface PolicyRateLimits {
 	rateLimits: PolicyRateLimitView[];
