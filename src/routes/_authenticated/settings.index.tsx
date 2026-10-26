@@ -69,7 +69,8 @@ const ITEMS: SettingItem[] = [
 	{
 		to: "/settings/tokens",
 		label: "Inference tokens",
-		description: "Rotate the key short-lived inference tokens are signed with.",
+		description:
+			"Turn inference tokens on or off, set their lifetimes, and rotate the signing key.",
 		icon: KeyRound,
 	},
 	{
