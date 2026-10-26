@@ -57,3 +57,10 @@ export function explorerWindow(s: ExplorerSearch): ResolvedWindow {
 	const win = resolveWindow(s.range, s.from, s.to);
 	return s.range === "week" ? { ...win, interval: "1h" } : win;
 }
+
+/** The same view with every filter dropped; range, lens and group-by stay. */
+export function clearFilters(s: ExplorerSearch): ExplorerSearch {
+	const cleared: ExplorerSearch = { ...s, status_class: "" };
+	for (const d of FILTER_DIMENSIONS) cleared[d] = [];
+	return cleared;
+}

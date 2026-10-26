@@ -1,8 +1,8 @@
 import { createFileRoute, stripSearchParams } from "@tanstack/react-router";
 import { Suspense } from "react";
-import { PageLoader } from "@/shared/Spinner";
 import { ExplorerBar } from "@/usage/explorer/ExplorerBar";
 import { LatencyLens } from "@/usage/explorer/LatencyLens";
+import { LensSkeleton } from "@/usage/explorer/LensLayout";
 import { ReliabilityLens } from "@/usage/explorer/ReliabilityLens";
 import { SpendLens } from "@/usage/explorer/SpendLens";
 import {
@@ -32,7 +32,7 @@ function UsagePage() {
 	return (
 		<div className="grid gap-10">
 			<ExplorerBar />
-			<Suspense fallback={<PageLoader />}>
+			<Suspense fallback={<LensSkeleton />}>
 				<LensView />
 			</Suspense>
 		</div>

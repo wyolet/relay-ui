@@ -1,3 +1,5 @@
+import { TextPlaceholder } from "./TextPlaceholder";
+
 /** A headline number: the figure, what it counts, one quiet note, and an
  * optional trend of small columns with the latest in the data accent. Every
  * line stays on one line; the full note is on hover when it truncates. */
@@ -65,6 +67,33 @@ function Trend({ values }: { values: (number | null)[] }) {
 					}}
 				/>
 			))}
+		</div>
+	);
+}
+
+/** A figure's place while it loads: the same lines at the same heights, so
+ * the row doesn't shift when the numbers arrive. */
+export function FigureSkeleton({
+	size = "hero",
+	trend = false,
+}: {
+	size?: "hero" | "mini";
+	trend?: boolean;
+}) {
+	return (
+		<div className="grid min-w-0 content-end gap-1.5" aria-hidden>
+			{trend && <Trend values={Array<null>(7).fill(null)} />}
+			<span
+				className={`font-display text-mini-figure ${size === "hero" ? "lg:text-figure" : ""}`}
+			>
+				<TextPlaceholder width="w-[2.2em]" />
+			</span>
+			<span className="text-label">
+				<TextPlaceholder width="w-24" />
+			</span>
+			<span className="text-meta">
+				<TextPlaceholder width="w-16" />
+			</span>
 		</div>
 	);
 }

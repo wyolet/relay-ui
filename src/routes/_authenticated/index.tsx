@@ -3,17 +3,14 @@ import { Suspense } from "react";
 import { useAuth, whoamiQueryOptions } from "@/api/auth";
 import { keysListQueryOptions } from "@/api/hooks/keys";
 import { buttonVariants } from "@/components/ui/button";
-import { AttentionList } from "@/dashboard/AttentionList";
-import { Breakdown } from "@/dashboard/Breakdown";
 import { DashboardRange } from "@/dashboard/DashboardRange";
-import { Headline } from "@/dashboard/Headline";
+import {
+	DashboardUsage,
+	DashboardUsageSkeleton,
+} from "@/dashboard/DashboardUsage";
 import { ReleaseReadiness } from "@/dashboard/ReleaseReadiness";
 import { ScopedHome } from "@/dashboard/ScopedHome";
-import { TrafficChart } from "@/dashboard/TrafficChart";
 import { useCatalogEmpty } from "@/dashboard/useCatalogEmpty";
-import { WeekFacts } from "@/dashboard/WeekFacts";
-import { WeekHeatmap } from "@/dashboard/WeekHeatmap";
-import { Section } from "@/shared/Section";
 import { PageLoader } from "@/shared/Spinner";
 import { useSetupStore } from "@/stores/setup";
 
@@ -56,21 +53,6 @@ function WelcomePanel() {
 	);
 }
 
-/** A block's place while its data loads: same rhythm, no spinner. */
-function Pending({
-	title,
-	height = "h-24",
-}: {
-	title: string;
-	height?: string;
-}) {
-	return (
-		<Section title={title}>
-			<div className={`${height} rounded-bar bg-grid`} />
-		</Section>
-	);
-}
-
 function AdminHome() {
 	const catalogEmpty = useCatalogEmpty();
 
@@ -88,31 +70,10 @@ function AdminHome() {
 			<ReleaseReadiness />
 			<div className="grid gap-6">
 				<DashboardRange />
-				<Suspense fallback={<div className="h-28" />}>
-					<Headline />
+				<Suspense fallback={<DashboardUsageSkeleton />}>
+					<DashboardUsage />
 				</Suspense>
 			</div>
-			<Suspense fallback={<Pending title="In numbers" />}>
-				<WeekFacts />
-			</Suspense>
-			<div className="grid gap-14 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-				<Suspense
-					fallback={<Pending title="Traffic by model" height="h-[260px]" />}
-				>
-					<TrafficChart />
-				</Suspense>
-				<Section title="Needs attention" meta="last 24h">
-					<Suspense
-						fallback={<p className="text-label text-ink-3">Checking…</p>}
-					>
-						<AttentionList />
-					</Suspense>
-				</Section>
-			</div>
-			<Suspense fallback={<Pending title="Activity" height="h-48" />}>
-				<WeekHeatmap />
-			</Suspense>
-			<Breakdown />
 		</div>
 	);
 }

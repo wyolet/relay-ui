@@ -948,6 +948,19 @@ export interface UsageKpiDeltas {
 	previous: UsageWindow;
 }
 
+/** Whether the slice saw any request. Reads the same totals request the
+ * overview does, so gating a page on it costs nothing extra. */
+export function useHasTraffic(
+	win: UsageWindow,
+	filter?: UsageSummaryFilter,
+): boolean {
+	const { previous } = usageComparisonWindows(win, useUsageNow());
+	const { data } = useSuspenseQuery(
+		usageTotalsCompareQueryOptions(win, previous, filter),
+	);
+	return deriveKpis(data.rows ?? []).requests > 0;
+}
+
 /**
  * useUsageOverview plus KPI deltas vs the preceding period. Fetches the two
  * windows in parallel; the current-window query is the same cache entry the
