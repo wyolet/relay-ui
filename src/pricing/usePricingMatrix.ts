@@ -13,11 +13,12 @@ import {
 	buildPricingMatrix,
 	filterPricingMatrix,
 	pricingCoverage,
+	rankPriceRows,
 } from "@/lib/pricingMatrix";
 import { sumCostRows } from "@/lib/usage-math/cost";
-import { rollingWindow } from "@/lib/usage-math/window";
 import type { FigureData } from "@/shared/FigureRow";
 import { fmtCompact, fmtPct } from "@/usage/format";
+import { useHostModelUsage, usePricingWindow } from "./useHostModelUsage";
 
 /** Generous page size; warn (never silently truncate) past it. */
 const PRICINGS_LIMIT = 500;
@@ -33,9 +34,8 @@ export const pricingsMatrixListQuery = pricingsListQuery({
  * loads or without traffic. Not suspending: a config page must not wait on,
  * or fail with, the usage store. */
 function useUnpricedShare(): number | null {
-	const now = useUsageNow();
-	const win = { ...rollingWindow(now, 7 * 24), interval: "1h" as const };
-	const { previous } = usageComparisonWindows(win, now);
+	const win = usePricingWindow();
+	const { previous } = usageComparisonWindows(win, useUsageNow());
 	const { data } = useQuery(usageTotalsCompareQueryOptions(win, previous));
 	const rows = data?.rows ?? [];
 	const requests = rows.reduce((n, r) => n + r.requests, 0);
@@ -99,6 +99,12 @@ export function usePricingMatrix(query: string, unpricedOnly: boolean) {
 		),
 	});
 
+	const usage = useHostModelUsage(matrix.map((h) => h.host.id));
+	const ranked = matrix.map((h) => ({
+		...h,
+		rows: rankPriceRows(h.rows, usage.get(h.host.id)),
+	}));
+
 	const { served, priced } = pricingCoverage(matrix);
 	const disabled = sheets.filter((p) => p.spec.enabled === false).length;
 	const figures: FigureData[] = [
@@ -123,7 +129,8 @@ export function usePricingMatrix(query: string, unpricedOnly: boolean) {
 	];
 
 	return {
-		hosts: filterPricingMatrix(matrix, query, unpricedOnly),
+		hosts: filterPricingMatrix(ranked, query, unpricedOnly),
+		filtered: query.trim() !== "" || unpricedOnly,
 		anyRows: matrix.length > 0,
 		figures,
 		truncated:

@@ -1,4 +1,6 @@
 import { Link } from "@tanstack/react-router";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
 	type HostPrices,
 	type PriceRow,
@@ -8,12 +10,25 @@ import {
 import { fmtRate } from "@/pricing/MeterGrid";
 import { Section } from "@/shared/Section";
 
+/** Rows a folded host shows: its unpriced and busiest models. */
+const FOLDED_ROWS = 5;
+
 const GRID =
 	"grid grid-cols-[minmax(10rem,1fr)_repeat(4,5.5rem)_minmax(8rem,14rem)] items-baseline gap-x-5";
 
-/** One host's models and the rates relay prices them at. */
-export function HostPricesSection({ prices }: { prices: HostPrices }) {
+/** One host's models and the rates relay prices them at, folded to the rows
+ * worth reading first unless `unfolded` (e.g. while filtering). */
+export function HostPricesSection({
+	prices,
+	unfolded = false,
+}: {
+	prices: HostPrices;
+	unfolded?: boolean;
+}) {
 	const { host, rows, unpriced } = prices;
+	const [expanded, setExpanded] = useState(false);
+	const showAll = unfolded || expanded || rows.length <= FOLDED_ROWS;
+	const visible = showAll ? rows : rows.slice(0, FOLDED_ROWS);
 	return (
 		<Section
 			title={host.label}
@@ -41,11 +56,28 @@ export function HostPricesSection({ prices }: { prices: HostPrices }) {
 						))}
 						<span>Rate sheet</span>
 					</div>
-					{rows.map((row) => (
+					{visible.map((row) => (
 						<PriceLine key={row.model.id} row={row} hostId={host.id} />
 					))}
 				</div>
 			</div>
+			{!unfolded && rows.length > FOLDED_ROWS && (
+				<div className="flex items-center gap-3 text-meta text-ink-3">
+					{!expanded && (
+						<span>
+							Unpriced and busiest first · {FOLDED_ROWS} of {rows.length}
+						</span>
+					)}
+					<Button
+						type="button"
+						variant="ghost"
+						size="sm"
+						onClick={() => setExpanded((v) => !v)}
+					>
+						{expanded ? "Show fewer" : `Show all ${rows.length} models`}
+					</Button>
+				</div>
+			)}
 		</Section>
 	);
 }

@@ -6,8 +6,9 @@ const md = (id: string, name: string, displayName: string) => ({
 	spec: {},
 });
 
-/** Anthropic serves opus (priced) and haiku (no sheet). */
-async function catalog(page: Page) {
+/** Anthropic serves opus (priced), haiku (no sheet) and `more` extra models. */
+async function catalog(page: Page, more = 0) {
+	const extra = Array.from({ length: more }, (_, i) => `m-extra-${i}`);
 	await mockApi(page, {
 		...EMPTY_GRAPH,
 		roles: ["admin"],
@@ -15,6 +16,7 @@ async function catalog(page: Page) {
 		models: [
 			md("m-opus", "claude-opus", "Claude Opus"),
 			md("m-haiku", "claude-haiku", "Claude Haiku"),
+			...extra.map((id) => md(id, id, id)),
 		],
 	});
 	await page.route(/\/api\/catalog\/graph/, (route) =>
@@ -22,7 +24,7 @@ async function catalog(page: Page) {
 			json: {
 				hosts: [],
 				providers: [],
-				models: ["m-opus", "m-haiku"].map((id) => ({
+				models: ["m-opus", "m-haiku", ...extra].map((id) => ({
 					id,
 					name: id,
 					providerId: "p",
@@ -79,5 +81,16 @@ test.describe("Pricing", () => {
 		await page.goto("/pricing?unpriced=true");
 		await expect(page.getByRole("link", { name: "Claude Haiku" })).toBeVisible();
 		await expect(page.getByRole("link", { name: "Claude Opus" })).toHaveCount(0);
+	});
+
+	test("a host past five models folds the rest behind show all", async ({
+		page,
+	}) => {
+		await catalog(page, 6);
+		await page.goto("/pricing");
+		const rows = page.getByRole("link", { name: /^(Claude|m-extra)/ });
+		await expect(rows).toHaveCount(5);
+		await page.getByRole("button", { name: "Show all 8 models" }).click();
+		await expect(rows).toHaveCount(8);
 	});
 });

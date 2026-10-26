@@ -183,3 +183,47 @@ export function pricingCoverage(matrix: readonly HostPrices[]) {
 	}
 	return { served, priced };
 }
+
+/** A model's traffic on one host over a window. `usd` is null when none of
+ * it was priced. */
+export interface ModelUsage {
+	requests: number;
+	usd: number | null;
+}
+
+/** Per-model usage from summary rows grouped by `model_id`. */
+export function usageByModel(
+	rows: readonly {
+		group: Record<string, string>;
+		requests: number;
+		cost_nanos: number;
+		unpriced: number;
+	}[],
+): Map<string, ModelUsage> {
+	const out = new Map<string, ModelUsage>();
+	for (const r of rows) {
+		const id = r.group.model_id;
+		if (!id) continue;
+		const priced = r.requests - r.unpriced;
+		out.set(id, {
+			requests: r.requests,
+			usd: priced > 0 ? r.cost_nanos / 1e9 : null,
+		});
+	}
+	return out;
+}
+
+/** Rows in the order worth reading: unpriced first (they need a sheet), then
+ * the busiest, then by name. */
+export function rankPriceRows(
+	rows: readonly PriceRow[],
+	usage: ReadonlyMap<string, ModelUsage> | undefined,
+): PriceRow[] {
+	const requests = (r: PriceRow) => usage?.get(r.model.id)?.requests ?? 0;
+	return [...rows].sort(
+		(a, b) =>
+			Number(b.unpriced) - Number(a.unpriced) ||
+			requests(b) - requests(a) ||
+			a.model.label.localeCompare(b.model.label),
+	);
+}

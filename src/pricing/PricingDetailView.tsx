@@ -1,13 +1,12 @@
 import { Link } from "@tanstack/react-router";
-import { Banknote, Server } from "lucide-react";
 import type { Pricing } from "@/api/types/pricing";
-import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
+import { displayLabel } from "@/lib/displayLabel";
 import { MeterGrid } from "@/pricing/MeterGrid";
-import { useHostOptionById } from "@/pricing/useHostOptions";
-import { usePricingTargets } from "@/pricing/usePricingTargets";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
+import { FigureRow } from "@/shared/FigureRow";
 import { Section } from "@/shared/Section";
-import { CatalogDetachedBadge, StatusBadge } from "@/shared/StatusBadge";
+import { CatalogDetachedBadge } from "@/shared/StatusBadge";
+import { type PricingTarget, usePricingDetail } from "./usePricingDetail";
 
 interface Props {
 	pricing: Pricing;
@@ -17,6 +16,9 @@ interface Props {
 	toggling?: boolean;
 }
 
+const MODEL_GRID =
+	"grid grid-cols-[minmax(10rem,1fr)_6rem_6rem] items-baseline gap-x-5";
+
 export function PricingDetailView({
 	pricing,
 	onDelete,
@@ -24,147 +26,127 @@ export function PricingDetailView({
 	deleting,
 	toggling,
 }: Props) {
+	const { host, targets, figures } = usePricingDetail(pricing);
+	const name = pricing.metadata.name;
+	const enabled = pricing.spec.enabled !== false;
+	const currency = pricing.spec.currency || "USD";
+	const rates = pricing.spec.rates ?? [];
+
 	return (
-		<div className="flex flex-col gap-12">
-			<Header
-				pricing={pricing}
-				onDelete={onDelete}
-				onToggleEnabled={onToggleEnabled}
-				deleting={deleting}
-				toggling={toggling}
-			/>
-			<RatesPanel pricing={pricing} />
-			<TargetModelsPanel pricing={pricing} />
+		<div className="grid gap-14">
+			<div className="flex items-start justify-between gap-4">
+				<div className="min-w-0">
+					<h1 className="truncate text-2xl font-bold text-foreground">
+						{displayLabel(pricing.metadata)}
+					</h1>
+					<p className="mt-1 flex flex-wrap items-baseline gap-x-2 text-label text-ink-2">
+						<span className="font-mono text-meta text-ink-3">{name}</span>
+						<span aria-hidden>·</span>
+						{host ? (
+							<Link
+								to="/hosts/$name"
+								params={{ name: host.slug }}
+								className="hover:text-foreground hover:underline"
+							>
+								Billed by {host.label}
+							</Link>
+						) : (
+							<span>No host</span>
+						)}
+						<span aria-hidden>·</span>
+						<span className={enabled ? undefined : "text-foreground"}>
+							{enabled ? "Enabled" : "Disabled: prices nothing"}
+						</span>
+						<CatalogDetachedBadge
+							detachedAt={pricing.metadata.catalogDetachedAt}
+						/>
+					</p>
+					{pricing.metadata.description && (
+						<p className="mt-2 max-w-2xl text-label text-ink-2">
+							{pricing.metadata.description}
+						</p>
+					)}
+				</div>
+				<DetailHeaderActions
+					enabled={enabled}
+					onToggle={onToggleEnabled}
+					toggling={toggling}
+					onDelete={onDelete}
+					deleting={deleting}
+					editLink={({ className, content }) => (
+						<Link
+							to="/pricing/$name/edit"
+							params={{ name }}
+							className={className}
+						>
+							{content}
+						</Link>
+					)}
+				/>
+			</div>
+
+			<FigureRow figures={figures} />
+
+			<Section title="Rates" meta={currency}>
+				{rates.length === 0 ? (
+					<p className="text-label text-ink-2">
+						No rates defined: usage on the bindings this sheet covers counts as
+						unpriced.
+					</p>
+				) : (
+					<MeterGrid rates={rates} currency={currency} />
+				)}
+			</Section>
+
+			<Section
+				title="Models"
+				meta={`${targets.length} model${targets.length === 1 ? "" : "s"}, last 7 days`}
+			>
+				{targets.length === 0 ? (
+					<p className="text-label text-ink-2">No target models.</p>
+				) : (
+					<div className="max-w-3xl">
+						<div
+							className={`${MODEL_GRID} border-b border-rule pb-2 text-meta text-ink-3`}
+						>
+							<span>Model</span>
+							<span className="text-right">Requests</span>
+							<span className="text-right">Est. spend</span>
+						</div>
+						{targets.map((t) => (
+							<TargetLine key={t.id} target={t} />
+						))}
+					</div>
+				)}
+			</Section>
+
 			<MetadataFooter pricing={pricing} />
 		</div>
 	);
 }
 
-function Header({
-	pricing,
-	onDelete,
-	onToggleEnabled,
-	deleting,
-	toggling,
-}: Props) {
-	const name = pricing.metadata.name;
-	const enabled = pricing.spec.enabled !== false;
-	const hostOf = useHostOptionById();
-	const host = pricing.metadata.owner?.id
-		? hostOf(pricing.metadata.owner.id)
-		: undefined;
+function TargetLine({ target }: { target: PricingTarget }) {
 	return (
-		<div className="flex items-start justify-between gap-4">
-			<div className="min-w-0">
-				<h1 className="text-xl font-semibold text-foreground truncate flex items-center gap-2">
-					<Banknote
-						className="w-4 h-4 text-muted-foreground shrink-0"
-						aria-hidden
-					/>
-					{displayLabel(pricing.metadata)}
-					{!hasDisplayName(pricing.metadata) && (
-						<span className="text-[11px] text-muted-foreground font-normal">
-							(no display name)
-						</span>
-					)}
-					<span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] uppercase text-muted-foreground">
-						{pricing.spec.currency || "USD"}
-					</span>
-					<StatusBadge enabled={enabled} />
-					<CatalogDetachedBadge
-						detachedAt={pricing.metadata.catalogDetachedAt}
-					/>
-				</h1>
-				<p className="mt-1 text-xs text-muted-foreground font-mono truncate">
-					{name}
-				</p>
-				{host && (
-					<p className="mt-1 text-xs text-muted-foreground">
-						<Link
-							to="/hosts/$name"
-							params={{ name: host.slug }}
-							className="inline-flex items-center gap-1 hover:text-foreground hover:underline"
-						>
-							<Server className="w-3 h-3" aria-hidden />
-							Billed by {host.label}
-						</Link>
-					</p>
-				)}
-				{pricing.metadata.description && (
-					<p className="mt-1.5 text-sm text-muted-foreground max-w-2xl">
-						{pricing.metadata.description}
-					</p>
-				)}
-			</div>
-			<DetailHeaderActions
-				enabled={enabled}
-				onToggle={onToggleEnabled}
-				toggling={toggling}
-				onDelete={onDelete}
-				deleting={deleting}
-				editLink={({ className, content }) => (
-					<Link
-						to="/pricing/$name/edit"
-						params={{ name }}
-						className={className}
-					>
-						{content}
-					</Link>
-				)}
-			/>
-		</div>
-	);
-}
-
-function RatesPanel({ pricing }: { pricing: Pricing }) {
-	const rates = pricing.spec.rates ?? [];
-	return (
-		<Section title="Rates" meta={pricing.spec.currency || "USD"}>
-			{rates.length === 0 ? (
-				<p className="text-label text-ink-2">
-					No rates defined: usage on the bindings this sheet covers counts as
-					unpriced.
-				</p>
-			) : (
-				<MeterGrid rates={rates} currency={pricing.spec.currency || "USD"} />
-			)}
-		</Section>
-	);
-}
-
-function TargetModelsPanel({ pricing }: { pricing: Pricing }) {
-	const targets = usePricingTargets(pricing);
-	return (
-		<Section
-			title="Models"
-			meta={`${targets.length} model${targets.length === 1 ? "" : "s"}`}
+		<div
+			className={`${MODEL_GRID} border-b border-rule py-2.5 text-label tabular-nums`}
 		>
-			{targets.length === 0 ? (
-				<p className="text-label text-ink-2">No target models.</p>
-			) : (
-				<ul className="grid max-w-2xl">
-					{targets.map((t) => (
-						<li
-							key={t.id}
-							className="flex items-baseline justify-between gap-4 border-b border-rule py-2.5 text-label last:border-b-0"
-						>
-							<Link
-								to="/models/$name"
-								params={{ name: t.slug }}
-								className="truncate text-foreground hover:underline"
-							>
-								{t.label}
-							</Link>
-							{!t.served && (
-								<span className="shrink-0 text-meta text-ink-3">
-									not served by this host
-								</span>
-							)}
-						</li>
-					))}
-				</ul>
-			)}
-		</Section>
+			<span className="flex min-w-0 items-baseline gap-2">
+				<Link
+					to="/models/$name"
+					params={{ name: target.slug }}
+					className="truncate text-foreground hover:underline"
+				>
+					{target.label}
+				</Link>
+				{!target.served && (
+					<span className="shrink-0 text-meta text-ink-3">
+						not served by this host
+					</span>
+				)}
+			</span>
+			<span className="text-right text-ink-2">{target.requests}</span>
+			<span className="text-right text-foreground">{target.spend}</span>
+		</div>
 	);
 }
 

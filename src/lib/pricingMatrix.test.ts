@@ -4,6 +4,8 @@ import {
 	filterPricingMatrix,
 	type MatrixPricing,
 	pricingCoverage,
+	rankPriceRows,
+	usageByModel,
 } from "@/lib/pricingMatrix";
 
 const hosts = [
@@ -125,5 +127,33 @@ describe("buildPricingMatrix", () => {
 				h.rows.map((r) => r.model.slug),
 			),
 		).toEqual(["haiku", "gpt"]);
+	});
+});
+
+describe("rankPriceRows", () => {
+	const row = (id: string, unpriced: boolean) => ({
+		model: { id, slug: id, label: id },
+		currency: "USD",
+		cells: {},
+		extra: 0,
+		served: true,
+		unpriced,
+	});
+	const usage = usageByModel([
+		{ group: { model_id: "b" }, requests: 50, cost_nanos: 2e9, unpriced: 0 },
+		{ group: { model_id: "c" }, requests: 10, cost_nanos: 0, unpriced: 10 },
+	]);
+
+	test("reads usage per model, null spend when nothing was priced", () => {
+		expect(usage.get("b")).toEqual({ requests: 50, usd: 2 });
+		expect(usage.get("c")).toEqual({ requests: 10, usd: null });
+	});
+
+	test("unpriced first, then busiest, then by name", () => {
+		const ranked = rankPriceRows(
+			[row("a", false), row("b", false), row("c", true), row("d", false)],
+			usage,
+		);
+		expect(ranked.map((r) => r.model.id)).toEqual(["c", "b", "a", "d"]);
 	});
 });

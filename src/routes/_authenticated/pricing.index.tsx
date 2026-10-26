@@ -54,7 +54,7 @@ function PricingMatrix() {
 	const live = Route.useSearch();
 	const { search, isStale } = useDeferredSearch(live);
 	const navigate = useNavigate({ from: "/pricing" });
-	const { hosts, anyRows, figures, truncated } = usePricingMatrix(
+	const { hosts, anyRows, filtered, figures, truncated } = usePricingMatrix(
 		search.q,
 		search.unpriced,
 	);
@@ -87,7 +87,11 @@ function PricingMatrix() {
 					) : (
 						<div className="grid gap-14">
 							{hosts.map((h) => (
-								<HostPricesSection key={h.host.id} prices={h} />
+								<HostPricesSection
+									key={h.host.id}
+									prices={h}
+									unfolded={filtered}
+								/>
 							))}
 							<p className="text-meta text-ink-3">
 								Base rates per 1M tokens. A + marks a meter that charges more
