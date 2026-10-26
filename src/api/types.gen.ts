@@ -2191,6 +2191,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/settings/auth:tokens": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get settings section: auth:tokens
+         * @description Relay-signed inference tokens a signed-in user mints for a project. defaultTTL applies when a mint names no ttl and maxTTL caps what it may ask for (both in nanoseconds); verifyCacheSize bounds each pod's verified-token cache (0 = default, negative = off). signingKey and previousSigningKey are set by relay and changed only by POST /auth/token/keys/rotate: a PUT that leaves them out keeps them, and one naming another secret is refused. Hot-reloaded. Admin only.
+         */
+        get: operations["get_settings_auth_tokens"];
+        /**
+         * Update settings section: auth:tokens
+         * @description Relay-signed inference tokens a signed-in user mints for a project. defaultTTL applies when a mint names no ttl and maxTTL caps what it may ask for (both in nanoseconds); verifyCacheSize bounds each pod's verified-token cache (0 = default, negative = off). signingKey and previousSigningKey are set by relay and changed only by POST /auth/token/keys/rotate: a PUT that leaves them out keeps them, and one naming another secret is refused. Hot-reloaded. Admin only.
+         */
+        put: operations["update_settings_auth_tokens"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/settings/catalog-source": {
         parameters: {
             query?: never;
@@ -2861,6 +2885,37 @@ export interface components {
              */
             section: "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
             value: components["schemas"]["AuthSCIM"];
+        };
+        AuthTokens: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/AuthTokens.json
+             */
+            readonly $schema?: string;
+            /** Format: int64 */
+            defaultTTL: number;
+            enabled: boolean;
+            /** Format: int64 */
+            maxTTL: number;
+            previousSigningKey?: components["schemas"]["Ref"];
+            signingKey?: components["schemas"]["Ref"];
+            /** Format: int64 */
+            verifyCacheSize?: number;
+        };
+        AuthTokensEnvelope: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/AuthTokensEnvelope.json
+             */
+            readonly $schema?: string;
+            /**
+             * @description One of the relay's registered settings section keys.
+             * @enum {string}
+             */
+            section: "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            value: components["schemas"]["AuthTokens"];
         };
         Binding: {
             /**
@@ -15561,6 +15616,113 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AuthSCIMEnvelope"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    get_settings_auth_tokens: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthTokensEnvelope"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    update_settings_auth_tokens: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AuthTokens"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthTokensEnvelope"];
                 };
             };
             /** @description Bad Request */

@@ -8,8 +8,8 @@ import {
 } from "@/api/hooks/policyBindings";
 import { ApiError } from "@/api/types/errors";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
-import { OwnerLink } from "@/projects/OwnerLink";
 import { DEFAULT_PRIORITY } from "@/policy-bindings/usePolicyBindingForm";
+import { OwnerLink } from "@/projects/OwnerLink";
 import { subjectLabel } from "@/role-bindings/SubjectsEditor";
 import { Chip } from "@/shared/Chip";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";

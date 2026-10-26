@@ -133,6 +133,13 @@ export async function mockApi(page: Page, graph: MockGraph): Promise<void> {
 		if (path === "settings/proxy-mode") {
 			return fulfillJson(route, graph.proxyMode ?? EMPTY_GRAPH.proxyMode);
 		}
+		if (path === "settings/auth:tokens") {
+			// relay's defaults: on, 1h default, 24h max (nanoseconds).
+			return fulfillJson(route, {
+				section: "auth:tokens",
+				value: { enabled: true, defaultTTL: 3.6e12, maxTTL: 8.64e13 },
+			});
+		}
 		if (path.startsWith("settings/governance:")) {
 			return fulfillJson(route, {
 				section: path.slice("settings/".length),

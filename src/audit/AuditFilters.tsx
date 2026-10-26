@@ -22,8 +22,8 @@ import {
 	type AuditStatus,
 	parseScope,
 	RANGE_OPTIONS,
-	scopeValue,
 	STATUS_OPTIONS,
+	scopeValue,
 } from "./auditFilterConfig";
 
 export interface AuditFilterValues {

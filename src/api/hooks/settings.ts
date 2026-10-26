@@ -14,6 +14,8 @@ export type AuthOIDC = components["schemas"]["AuthOIDC"];
 export type AuthOIDCEnvelope = components["schemas"]["AuthOIDCEnvelope"];
 export type AuthSCIM = components["schemas"]["AuthSCIM"];
 export type AuthSCIMEnvelope = components["schemas"]["AuthSCIMEnvelope"];
+export type AuthTokens = components["schemas"]["AuthTokens"];
+export type AuthTokensEnvelope = components["schemas"]["AuthTokensEnvelope"];
 export type PayloadLogging = components["schemas"]["PayloadLogging"];
 export type PayloadLoggingEnvelope =
 	components["schemas"]["PayloadLoggingEnvelope"];
@@ -131,6 +133,35 @@ export function useUpdateAuthSCIM() {
 		mutationFn: async (value: AuthSCIM): Promise<AuthSCIMEnvelope> => {
 			const data = unwrap(
 				await apiClient.PUT("/settings/auth:scim", { body: value }),
+			);
+			return data;
+		},
+		onSuccess: () => {
+			void queryClient.invalidateQueries({ queryKey: ["settings"] });
+		},
+	});
+}
+
+export const authTokensQueryOptions = queryOptions({
+	queryKey: ["settings", "auth:tokens"] as const,
+	queryFn: async (): Promise<AuthTokensEnvelope> => {
+		const data = unwrap(await apiClient.GET("/settings/auth:tokens"));
+		return data;
+	},
+	staleTime: 30_000,
+	gcTime: 5 * 60_000,
+});
+
+export function useAuthTokens() {
+	return useSuspenseQuery(authTokensQueryOptions);
+}
+
+export function useUpdateAuthTokens() {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: async (value: AuthTokens): Promise<AuthTokensEnvelope> => {
+			const data = unwrap(
+				await apiClient.PUT("/settings/auth:tokens", { body: value }),
 			);
 			return data;
 		},
