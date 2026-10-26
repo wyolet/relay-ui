@@ -1,11 +1,12 @@
 import { Link } from "@tanstack/react-router";
-import { Banknote, Boxes, Server } from "lucide-react";
+import { Banknote, Server } from "lucide-react";
 import type { Pricing } from "@/api/types/pricing";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { MeterGrid } from "@/pricing/MeterGrid";
 import { useHostOptionById } from "@/pricing/useHostOptions";
-import { useTargetModelLabeler } from "@/pricing/useTargetModelOptions";
+import { usePricingTargets } from "@/pricing/usePricingTargets";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
+import { Section } from "@/shared/Section";
 import { CatalogDetachedBadge, StatusBadge } from "@/shared/StatusBadge";
 
 interface Props {
@@ -24,7 +25,7 @@ export function PricingDetailView({
 	toggling,
 }: Props) {
 	return (
-		<div className="flex flex-col gap-6">
+		<div className="flex flex-col gap-12">
 			<Header
 				pricing={pricing}
 				onDelete={onDelete}
@@ -33,7 +34,7 @@ export function PricingDetailView({
 				toggling={toggling}
 			/>
 			<RatesPanel pricing={pricing} />
-			<TargetModelsPanel targetModels={pricing.spec.targetModels} />
+			<TargetModelsPanel pricing={pricing} />
 			<MetadataFooter pricing={pricing} />
 		</div>
 	);
@@ -118,59 +119,52 @@ function Header({
 function RatesPanel({ pricing }: { pricing: Pricing }) {
 	const rates = pricing.spec.rates ?? [];
 	return (
-		<section>
-			<SectionTitle>Rates</SectionTitle>
+		<Section title="Rates" meta={pricing.spec.currency || "USD"}>
 			{rates.length === 0 ? (
-				<div className="rounded-md border border-dashed border-border bg-muted/30 px-4 py-6 text-center">
-					<div className="text-sm font-medium text-foreground">
-						No rates defined
-					</div>
-					<div className="mt-0.5 text-xs text-muted-foreground">
-						Usage on bindings with this pricing will count as unpriced.
-					</div>
-				</div>
+				<p className="text-label text-ink-2">
+					No rates defined: usage on the bindings this sheet covers counts as
+					unpriced.
+				</p>
 			) : (
-				<div className="max-w-2xl">
-					<MeterGrid rates={rates} currency={pricing.spec.currency || "USD"} />
-				</div>
+				<MeterGrid rates={rates} currency={pricing.spec.currency || "USD"} />
 			)}
-		</section>
+		</Section>
 	);
 }
 
-function TargetModelsPanel({
-	targetModels,
-}: {
-	targetModels: string[] | null;
-}) {
-	const labelOf = useTargetModelLabeler();
+function TargetModelsPanel({ pricing }: { pricing: Pricing }) {
+	const targets = usePricingTargets(pricing);
 	return (
-		<section>
-			<SectionTitle>Target models</SectionTitle>
-			{!targetModels || targetModels.length === 0 ? (
-				<div className="rounded-md border border-dashed border-border bg-muted/30 px-4 py-6 text-center">
-					<Boxes
-						className="mx-auto w-5 h-5 text-muted-foreground/60 mb-1.5"
-						aria-hidden
-					/>
-					<div className="text-sm font-medium text-foreground">Unscoped</div>
-					<div className="mt-0.5 text-xs text-muted-foreground">
-						Not pinned to specific models — bindings reference it directly.
-					</div>
-				</div>
+		<Section
+			title="Models"
+			meta={`${targets.length} model${targets.length === 1 ? "" : "s"}`}
+		>
+			{targets.length === 0 ? (
+				<p className="text-label text-ink-2">No target models.</p>
 			) : (
-				<div className="flex flex-wrap gap-1.5">
-					{targetModels.map((id) => (
-						<span
-							key={id}
-							className="inline-flex items-center rounded border border-border bg-muted px-1.5 py-0.5 text-[11px] text-foreground"
+				<ul className="grid max-w-2xl">
+					{targets.map((t) => (
+						<li
+							key={t.id}
+							className="flex items-baseline justify-between gap-4 border-b border-rule py-2.5 text-label last:border-b-0"
 						>
-							{labelOf(id)}
-						</span>
+							<Link
+								to="/models/$name"
+								params={{ name: t.slug }}
+								className="truncate text-foreground hover:underline"
+							>
+								{t.label}
+							</Link>
+							{!t.served && (
+								<span className="shrink-0 text-meta text-ink-3">
+									not served by this host
+								</span>
+							)}
+						</li>
 					))}
-				</div>
+				</ul>
 			)}
-		</section>
+		</Section>
 	);
 }
 
@@ -178,18 +172,10 @@ function MetadataFooter({ pricing }: { pricing: Pricing }) {
 	const { createdAt, updatedAt } = pricing.metadata;
 	if (!createdAt && !updatedAt) return null;
 	return (
-		<p className="text-[11px] text-muted-foreground">
+		<p className="text-meta text-ink-3">
 			{createdAt && <>Created {new Date(createdAt).toLocaleString()}</>}
 			{createdAt && updatedAt && " · "}
 			{updatedAt && <>Updated {new Date(updatedAt).toLocaleString()}</>}
 		</p>
-	);
-}
-
-function SectionTitle({ children }: { children: React.ReactNode }) {
-	return (
-		<h2 className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-			{children}
-		</h2>
 	);
 }

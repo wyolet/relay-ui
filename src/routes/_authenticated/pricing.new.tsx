@@ -1,12 +1,18 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ChevronLeft } from "lucide-react";
 import { Suspense } from "react";
+import { z } from "zod";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
 import { modelsListQueryOptions } from "@/api/hooks/models";
 import { PricingForm } from "@/pricing/PricingForm";
 import { PageLoader } from "@/shared/Spinner";
 
 export const Route = createFileRoute("/_authenticated/pricing/new")({
+	// Prefill from an unpriced row on the index: its host and model.
+	validateSearch: z.object({
+		host: z.string().optional(),
+		model: z.string().optional(),
+	}),
 	loader: ({ context }) =>
 		Promise.all([
 			context.queryClient.ensureQueryData(modelsListQueryOptions),
@@ -17,6 +23,7 @@ export const Route = createFileRoute("/_authenticated/pricing/new")({
 
 function NewPricingInner() {
 	const navigate = useNavigate();
+	const { host, model } = Route.useSearch();
 	return (
 		<div className="flex flex-col gap-4">
 			<div>
@@ -36,6 +43,7 @@ function NewPricingInner() {
 				</p>
 			</div>
 			<PricingForm
+				prefill={{ host, targetModels: model ? [model] : undefined }}
 				onSaved={(name) =>
 					void navigate({ to: "/pricing/$name", params: { name } })
 				}
