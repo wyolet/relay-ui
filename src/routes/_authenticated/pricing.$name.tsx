@@ -13,6 +13,7 @@ import { ApiError } from "@/api/types/errors";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
 import { PricingDetailView } from "@/pricing/PricingDetailView";
+import { pricingGraphQuery } from "@/pricing/usePricingMatrix";
 import { confirm } from "@/shared/ConfirmDialog";
 import { PageLoader } from "@/shared/Spinner";
 import { toast } from "@/shared/Toast";
@@ -25,6 +26,7 @@ export const Route = createFileRoute("/_authenticated/pricing/$name")({
 			),
 			context.queryClient.ensureQueryData(modelsListQueryOptions),
 			context.queryClient.ensureQueryData(hostsListQueryOptions),
+			context.queryClient.ensureQueryData(pricingGraphQuery),
 		]),
 	component: PricingDetailPage,
 });

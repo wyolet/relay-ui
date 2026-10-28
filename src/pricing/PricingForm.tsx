@@ -9,16 +9,25 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { PRICING_METERS, PRICING_UNITS } from "@/lib/usage-math/pricing";
-import { prettyMeter, prettyUnit } from "@/pricing/MeterGrid";
+import {
+	PRICING_METERS,
+	PRICING_UNITS,
+	prettyMeter,
+} from "@/lib/usage-math/pricing";
+import { prettyUnit } from "@/pricing/MeterGrid";
 import { TargetModelsField } from "@/pricing/TargetModelsField";
 import { useHostOptions } from "@/pricing/useHostOptions";
-import { type RateDraft, usePricingForm } from "@/pricing/usePricingForm";
+import {
+	type PricingPrefill,
+	type RateDraft,
+	usePricingForm,
+} from "@/pricing/usePricingForm";
 import { FormSection } from "@/shared/FormSection";
 import { IdentitySection } from "@/shared/IdentitySection";
 
 interface PricingFormProps {
 	pricing?: Pricing;
+	prefill?: PricingPrefill;
 	onSaved: (name: string) => void;
 	onCancel: () => void;
 }
@@ -48,7 +57,12 @@ function decimalOnly(s: string): string {
 	);
 }
 
-export function PricingForm({ pricing, onSaved, onCancel }: PricingFormProps) {
+export function PricingForm({
+	pricing,
+	prefill,
+	onSaved,
+	onCancel,
+}: PricingFormProps) {
 	const {
 		form,
 		values,
@@ -64,7 +78,7 @@ export function PricingForm({ pricing, onSaved, onCancel }: PricingFormProps) {
 		removeRate,
 		updateRate,
 		setTargetModels,
-	} = usePricingForm({ pricing, onSaved });
+	} = usePricingForm({ pricing, prefill, onSaved });
 	const hostOptions = useHostOptions();
 
 	return (

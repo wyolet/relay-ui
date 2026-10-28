@@ -55,6 +55,20 @@ export function tokenKeyForMeter(meter: string): string {
 	return meter.startsWith("tokens.") ? meter.slice("tokens.".length) : meter;
 }
 
+/** Names that read better than the meter key; the rest are derived. */
+const METER_LABELS: Record<string, string> = {
+	cache_creation: "Cache write",
+};
+
+/** "tokens.cache_read" → "Cache read"; leaves unknown meters readable. */
+export function prettyMeter(meter: string): string {
+	const key = tokenKeyForMeter(meter);
+	const label = METER_LABELS[key];
+	if (label) return label;
+	const s = key.replace(/[_-]+/g, " ").trim();
+	return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
 /** Tokens one amount-unit covers; null for units we can't price honestly. */
 export function unitTokens(unit: string): number | null {
 	if (unit === "per_million") return 1_000_000;

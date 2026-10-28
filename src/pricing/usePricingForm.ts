@@ -97,13 +97,19 @@ export function emptyRate(meter: string = "tokens.input"): RateDraft {
 	return { meter, unit: "per_million", amount: "", aboveTokens: "" };
 }
 
-function emptyValues(): PricingFormValues {
+/** Fields a new pricing can start from, e.g. an unpriced binding. */
+export interface PricingPrefill {
+	host?: string;
+	targetModels?: string[];
+}
+
+function emptyValues(prefill: PricingPrefill = {}): PricingFormValues {
 	return {
 		displayName: "",
 		description: "",
-		host: "",
+		host: prefill.host ?? "",
 		currency: "USD",
-		targetModels: [],
+		targetModels: prefill.targetModels ?? [],
 		rates: [emptyRate("tokens.input"), emptyRate("tokens.output")],
 	};
 }
@@ -131,10 +137,15 @@ function pricingToValues(pricing: Pricing): PricingFormValues {
 
 interface UsePricingFormOptions {
 	pricing?: Pricing;
+	prefill?: PricingPrefill;
 	onSaved: (name: string) => void;
 }
 
-export function usePricingForm({ pricing, onSaved }: UsePricingFormOptions) {
+export function usePricingForm({
+	pricing,
+	prefill,
+	onSaved,
+}: UsePricingFormOptions) {
 	const isEdit = pricing !== undefined;
 	const createPricing = useCreatePricing();
 	const updatePricing = useUpdatePricing();
@@ -144,8 +155,11 @@ export function usePricingForm({ pricing, onSaved }: UsePricingFormOptions) {
 		pricing?.metadata.resourceVersion,
 	);
 
+	// The prefill only seeds a new form; later changes mustn't reset it.
+	const prefillRef = useRef(prefill);
 	const initial = useMemo<PricingFormValues>(
-		() => (pricing ? pricingToValues(pricing) : emptyValues()),
+		() =>
+			pricing ? pricingToValues(pricing) : emptyValues(prefillRef.current),
 		[pricing],
 	);
 	const suffixRef = useRef<string>(
