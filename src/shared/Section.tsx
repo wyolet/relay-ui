@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { TextPlaceholder } from "./TextPlaceholder";
 
 /** A titled block on a read page: space and the heading separate it, no box.
  * `aside` sits at the right of the heading (a legend or a toggle). */
@@ -27,6 +28,28 @@ export function Section({
 				{aside}
 			</div>
 			{children}
+		</section>
+	);
+}
+
+/** A block's place while its data loads: the heading and a quiet area of the
+ * content's height, no spinner. Untitled when the heading depends on data. */
+export function SectionSkeleton({
+	title,
+	height,
+}: {
+	title?: string;
+	/** A height class matching the loaded content, e.g. `h-[260px]`. */
+	height: string;
+}) {
+	const area = <div className={`${height} rounded-bar bg-grid`} aria-hidden />;
+	if (title) return <Section title={title}>{area}</Section>;
+	return (
+		<section className="grid min-w-0 content-start gap-4" aria-hidden>
+			<span className="font-display text-section">
+				<TextPlaceholder width="w-48" />
+			</span>
+			{area}
 		</section>
 	);
 }

@@ -72,6 +72,14 @@ export function fmtMoneyCompact(amount: number, currency: string): string {
 	}
 }
 
+/** The range named in a sentence: "No traffic this week". */
+export const RANGE_PERIOD_LABELS: Record<UsageRange, string> = {
+	today: "today",
+	week: "this week",
+	month: "this month",
+	custom: "in this range",
+};
+
 /** What a period-over-period delta is measured against, per range preset. */
 export const RANGE_COMPARE_LABELS: Record<UsageRange, string> = {
 	today: "vs yesterday",
