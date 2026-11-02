@@ -1,9 +1,9 @@
 import { Link } from "@tanstack/react-router";
 import { KeyRound, Plus } from "lucide-react";
 import { useState } from "react";
+import { useAccounts } from "@/api/hooks/accounts";
 import { useDeleteHostKey, useHostKeys } from "@/api/hooks/hostkeys";
 import { useHosts } from "@/api/hooks/hosts";
-import { usePolicies } from "@/api/hooks/policies";
 import { ApiError } from "@/api/types/errors";
 import type { Host } from "@/api/types/host";
 import type { HostKey } from "@/api/types/hostkey";
@@ -27,7 +27,7 @@ function HostKeyDiagDot({ id }: { id: string | undefined }) {
 export function HostKeysTable() {
 	const { data: hostKeysData } = useHostKeys();
 	const { data: hostsData } = useHosts();
-	const { data: policiesData } = usePolicies();
+	const { data: accountsData } = useAccounts();
 	const deleteHostKey = useDeleteHostKey();
 	const [q, setQ] = useState("");
 
@@ -39,10 +39,10 @@ export function HostKeysTable() {
 	for (const [id, h] of hostById.entries()) {
 		hostLabels.set(id, displayLabel(h.metadata));
 	}
-	const policyLabels = new Map<string, string>();
-	for (const p of policiesData.items ?? []) {
-		if (p.metadata.id)
-			policyLabels.set(p.metadata.id, displayLabel(p.metadata));
+	const accountLabels = new Map<string, string>();
+	for (const a of accountsData.items ?? []) {
+		if (a.metadata.id)
+			accountLabels.set(a.metadata.id, displayLabel(a.metadata));
 	}
 
 	const allItems = hostKeysData.items ?? [];
@@ -50,12 +50,12 @@ export function HostKeysTable() {
 	const items = needle
 		? allItems.filter((hk) => {
 				const hostLabel = hostLabels.get(hk.spec.hostId) ?? "";
-				const tierLabel = policyLabels.get(hk.spec.policyId) ?? "";
+				const accountLabel = accountLabels.get(hk.spec.accountId ?? "") ?? "";
 				return (
 					displayLabel(hk.metadata).toLowerCase().includes(needle) ||
 					hk.metadata.name.toLowerCase().includes(needle) ||
 					hostLabel.toLowerCase().includes(needle) ||
-					tierLabel.toLowerCase().includes(needle) ||
+					accountLabel.toLowerCase().includes(needle) ||
 					(hk.spec.valueFrom.env?.toLowerCase().includes(needle) ?? false)
 				);
 			})
@@ -79,7 +79,7 @@ export function HostKeysTable() {
 		}
 		const ok = await confirm({
 			title: `Delete credential ${displayLabel(hk.metadata)}?`,
-			description: "This credential is not attached to any user policy.",
+			description: "No policy links this credential.",
 			confirmLabel: "Delete",
 			danger: true,
 		});
@@ -151,7 +151,7 @@ export function HostKeysTable() {
 							<tr>
 								<Th variant="column">Name</Th>
 								<Th variant="column">Host</Th>
-								<Th variant="column">Host policy</Th>
+								<Th variant="column">Account</Th>
 								<Th variant="column">Source</Th>
 								<Th variant="column" align="right">
 									Used by
@@ -172,9 +172,10 @@ export function HostKeysTable() {
 								const hostLabel =
 									hostLabels.get(hk.spec.hostId) ??
 									`Unknown (${hk.spec.hostId.slice(0, 6)}…)`;
-								const tierLabel = hk.spec.policyId
-									? (policyLabels.get(hk.spec.policyId) ??
-										`Unknown (${hk.spec.policyId.slice(0, 6)}…)`)
+								const accountId = hk.spec.accountId;
+								const accountLabel = accountId
+									? (accountLabels.get(accountId) ??
+										`Unknown (${accountId.slice(0, 6)}…)`)
 									: null;
 								return (
 									<tr
@@ -211,9 +212,9 @@ export function HostKeysTable() {
 											/>
 										</td>
 										<td className="px-3 py-2">
-											{tierLabel ? (
+											{accountLabel ? (
 												<span className="inline-flex items-center rounded-md border border-border bg-muted px-1.5 py-0.5 text-[11px] font-medium text-foreground">
-													{tierLabel}
+													{accountLabel}
 												</span>
 											) : (
 												<span className="text-[11px] text-muted-foreground/70">

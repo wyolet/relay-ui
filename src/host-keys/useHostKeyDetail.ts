@@ -1,13 +1,14 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
+import { useAccounts } from "@/api/hooks/accounts";
 import { useDeleteHostKey, useHostKey } from "@/api/hooks/hostkeys";
 import { useHosts } from "@/api/hooks/hosts";
-import { useKeys } from "@/api/hooks/keys";
 import { useDetachHostKeyFromPolicy, usePolicies } from "@/api/hooks/policies";
 import { ApiError } from "@/api/types/errors";
 import type { Host } from "@/api/types/host";
 import { useToggleHostKeyEnabled } from "@/host-keys/useToggleHostKeyEnabled";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { toast } from "@/shared/Toast";
+import { linkedPolicyRows } from "./linkedPolicies";
 
 interface UseHostKeyDetailOptions {
 	name: string;
@@ -15,6 +16,13 @@ interface UseHostKeyDetailOptions {
 }
 
 export type HostKeyStatusTone = "active" | "warn" | "muted";
+
+export interface HostKeyAccountView {
+	label: string;
+	name: string;
+	orgId: string | undefined;
+	isDefault: boolean;
+}
 
 export interface HostKeyDetailView {
 	displayName: string;
@@ -37,29 +45,15 @@ export interface HostKeyDetailView {
 	/** Slug for linking to the host page; null if unresolved. */
 	hostName: string | null;
 
-	hostPolicyLabel: string | null;
-	hostPolicyName: string | null;
-}
-
-export interface AttachedPolicyRow {
-	id: string;
-	name: string;
-	label: string;
-	hasDisplayName: boolean;
-	description: string | undefined;
-	enabled: boolean;
-	hostOwned: boolean;
-	/** Count of host keys in this policy's hostKeyIds pool. */
-	poolSize: number;
-	/** API keys whose policyId === this policy id. */
-	keyCount: number;
+	/** Null when the key names no account; label is a short id when unresolved. */
+	account: HostKeyAccountView | null;
 }
 
 export function useHostKeyDetail({ name, onDeleted }: UseHostKeyDetailOptions) {
 	const { data: hk } = useHostKey(name);
 	const { data: hostsData } = useHosts();
 	const { data: policiesData } = usePolicies();
-	const { data: keysData } = useKeys();
+	const { data: accountsData } = useAccounts();
 	const deleteHostKey = useDeleteHostKey();
 	const { detach, isPending: isDetachPending } = useDetachHostKeyFromPolicy();
 	const { setEnabled: setEnabledMutation, isPending: isToggling } =
@@ -69,40 +63,14 @@ export function useHostKeyDetail({ name, onDeleted }: UseHostKeyDetailOptions) {
 	const [rotating, setRotating] = useState(false);
 
 	const refs = hk.policies ?? [];
-
-	const keyCountByPolicy = useMemo(() => {
-		const counts = new Map<string, number>();
-		for (const rk of keysData.items ?? []) {
-			const pid = rk.spec.policyId;
-			if (!pid) continue;
-			counts.set(pid, (counts.get(pid) ?? 0) + 1);
-		}
-		return counts;
-	}, [keysData]);
-
-	const attachedPolicies: AttachedPolicyRow[] = refs.map((ref) => {
-		const match = (policiesData.items ?? []).find(
-			(p) => p.metadata.id === ref.id,
-		);
-		const poolSize = match?.spec.hostKeyIds?.length ?? 0;
-		return {
-			id: ref.id,
-			name: ref.name,
-			label: match ? displayLabel(match.metadata) : ref.name,
-			hasDisplayName: match ? hasDisplayName(match.metadata) : false,
-			description: match?.metadata.description?.trim() || undefined,
-			enabled: match ? match.spec.enabled !== false : true,
-			hostOwned: match?.metadata.owner?.kind === "host",
-			poolSize,
-			keyCount: keyCountByPolicy.get(ref.id) ?? 0,
-		};
-	});
+	const attachedPolicies = linkedPolicyRows(hk, policiesData.items ?? []);
 
 	const matchedHost = (hostsData.items ?? []).find(
 		(h) => h.metadata.id === hk.spec.hostId,
 	);
-	const matchedHostPolicy = hk.spec.policyId
-		? (policiesData.items ?? []).find((p) => p.metadata.id === hk.spec.policyId)
+	const accountId = hk.spec.accountId;
+	const matchedAccount = accountId
+		? (accountsData.items ?? []).find((a) => a.metadata.id === accountId)
 		: undefined;
 
 	const enabled = hk.spec.enabled ?? true;
@@ -130,12 +98,21 @@ export function useHostKeyDetail({ name, onDeleted }: UseHostKeyDetailOptions) {
 			: `Unknown (${hk.spec.hostId.slice(0, 8)}…)`,
 		hostName: matchedHost?.metadata.name ?? null,
 
-		hostPolicyLabel: hk.spec.policyId
-			? matchedHostPolicy
-				? displayLabel(matchedHostPolicy.metadata)
-				: `Unknown (${hk.spec.policyId.slice(0, 8)}…)`
-			: null,
-		hostPolicyName: matchedHostPolicy?.metadata.name ?? null,
+		account: matchedAccount
+			? {
+					label: displayLabel(matchedAccount.metadata),
+					name: matchedAccount.metadata.name,
+					orgId: matchedAccount.spec.orgId?.trim() || undefined,
+					isDefault: matchedAccount.spec.default === true,
+				}
+			: accountId
+				? {
+						label: `Unknown (${accountId.slice(0, 8)}…)`,
+						name: accountId,
+						orgId: undefined,
+						isDefault: false,
+					}
+				: null,
 	};
 
 	function attemptDelete() {

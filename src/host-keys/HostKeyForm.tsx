@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Globe, KeyRound, Link2, ShieldCheck, Unlink2 } from "lucide-react";
+import { Building2, Globe, KeyRound, Link2, Unlink2 } from "lucide-react";
 import type { HostKey, HostKeyKind } from "@/api/types/hostkey";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,18 +43,18 @@ export function HostKeyForm({ hostKey, onSaved, onCancel }: HostKeyFormProps) {
 		ownerOptions,
 		ownerError,
 		hostIdError,
-		policyIdError,
 		envVarError,
 		envVarReservedPrefix,
 		valueError,
 		hostOptions,
-		policyOptions,
+		accountOptions,
 		hostSelected,
 		attachedPolicies,
 		detachFromPolicy,
 		isDetachPending,
 		setHost,
-		setPolicy,
+		setOwner,
+		setAccount,
 	} = useHostKeyForm({ open: true, hostKey, onSaved });
 
 	return (
@@ -82,14 +82,14 @@ export function HostKeyForm({ hostKey, onSaved, onCancel }: HostKeyFormProps) {
 				<OwnerSection
 					options={ownerOptions}
 					value={values.owner}
-					onChange={(v) => form.setFieldValue("owner", v)}
+					onChange={setOwner}
 					error={ownerError}
 				/>
 
 				<FormSection
 					icon={Globe}
-					title="Host & host policy"
-					description="Which upstream provider this credential authenticates against, and the host policy (mirrors the provider's own tier, e.g. OpenAI Tier 2) that governs its rate limits and capacity."
+					title="Host & account"
+					description="Which upstream provider this credential authenticates against, and the provider account (organization) whose limits it shares."
 				>
 					<div className="flex flex-col gap-4">
 						<div>
@@ -123,48 +123,30 @@ export function HostKeyForm({ hostKey, onSaved, onCancel }: HostKeyFormProps) {
 						</div>
 						<div>
 							<div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-1 inline-flex items-center gap-1">
-								<ShieldCheck className="w-3 h-3" />
-								Host policy
+								<Building2 className="w-3 h-3" />
+								Account
 							</div>
 							<Select
-								value={values.policyId}
-								items={policyOptions}
-								onValueChange={(v) => setPolicy(v ?? "")}
+								value={values.accountId}
+								items={accountOptions}
+								onValueChange={(v) => setAccount(v ?? "")}
 								disabled={!hostSelected}
 							>
-								<SelectTrigger
-									className="w-full max-w-md"
-									aria-invalid={policyIdError ? true : undefined}
-								>
-									<SelectValue
-										placeholder={
-											hostSelected
-												? policyOptions.length === 0
-													? "No host policies defined for this host"
-													: "Pick a host policy…"
-												: "Pick a host first…"
-										}
-									/>
+								<SelectTrigger className="w-full max-w-md">
+									<SelectValue placeholder="Pick a host first…" />
 								</SelectTrigger>
 								<SelectContent>
-									{policyOptions.map((p) => (
-										<SelectItem key={p.value} value={p.value}>
-											{p.label}
+									{accountOptions.map((a) => (
+										<SelectItem key={a.value} value={a.value}>
+											{a.label}
 										</SelectItem>
 									))}
 								</SelectContent>
 							</Select>
-							{policyIdError && (
-								<p className="mt-1.5 text-[11px] text-destructive">
-									{policyIdError}
-								</p>
-							)}
 							<p className="mt-1.5 text-[11px] text-muted-foreground leading-snug">
-								Mirrors the provider's own tier (e.g. <em>OpenAI Tier 2</em>) so
-								Relay knows the real ceiling for this key. Distinct from a user
-								policy — even if this credential is added to a user policy's
-								pool, the host policy chosen here is never overridden, only
-								respected as a hard cap.
+								A key without an account joins its owner's default account at
+								the host. Keys that share one provider organization belong in
+								one account.
 							</p>
 						</div>
 					</div>
@@ -270,12 +252,12 @@ export function HostKeyForm({ hostKey, onSaved, onCancel }: HostKeyFormProps) {
 				{isEdit && (
 					<FormSection
 						icon={Link2}
-						title="Attached to user policies"
-						description="User policies that include this credential in their pool. Detach from a policy to remove it from rotation."
+						title="Linked by policies"
+						description="Policies that link this credential directly or through a pool. Detach removes a direct link; a pool link is removed on the pool."
 					>
 						{attachedPolicies.length === 0 ? (
 							<p className="text-xs text-muted-foreground">
-								This credential is not attached to any user policy yet.
+								No policy links this credential.
 							</p>
 						) : (
 							<ul className="divide-y divide-border">
@@ -308,7 +290,8 @@ export function HostKeyForm({ hostKey, onSaved, onCancel }: HostKeyFormProps) {
 											variant="outline"
 											size="sm"
 											onClick={() => void detachFromPolicy(p.id)}
-											disabled={isDetachPending}
+											disabled={isDetachPending || !p.direct}
+											title={p.direct ? undefined : "Linked through a pool"}
 										>
 											<Unlink2 className="w-3 h-3" />
 											Detach

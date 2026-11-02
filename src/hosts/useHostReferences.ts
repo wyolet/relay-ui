@@ -1,7 +1,6 @@
 import { useMemo } from "react";
 import { bindingsByHost, useBindings } from "@/api/hooks/bindings";
 import { useHostKeys } from "@/api/hooks/hostkeys";
-import { useKeys } from "@/api/hooks/keys";
 import { useModels } from "@/api/hooks/models";
 import { usePolicies } from "@/api/hooks/policies";
 import type { Host } from "@/api/types/host";
@@ -16,28 +15,24 @@ export interface HostReferences {
 	enabledModels: Model[];
 	/** Host keys whose `spec.hostId` matches this host. */
 	hostKeys: HostKey[];
-	/** Policies owned by this host (host policies / tiers). */
+	/** Policies owned by this host: its tier presets. */
 	hostPolicies: Policy[];
-	/** User policies that include any host key from this host in their pool. */
+	/** Policies that link any of this host's keys, directly or through a pool. */
 	userPolicies: Array<{
 		policy: Policy;
 		hostKeyCount: number;
-		keyCount: number;
 	}>;
-	/** Sum of non-revoked keys whose policy uses any HK of this host. */
-	totalKeys: number;
 }
 
 /**
  * Everything that points at a host: models served, host keys configured,
- * the host's own policies, and the user policies that reach them via host
- * keys. Pure derivation from the four lists — no extra fetch.
+ * the host's own policies, and the policies that link its keys. Pure
+ * derivation from the cached lists — no extra fetch.
  */
 export function useHostReferences(host: Host): HostReferences {
 	const { data: modelsData } = useModels();
 	const { data: hostKeysData } = useHostKeys();
 	const { data: policiesData } = usePolicies();
-	const { data: keysData } = useKeys();
 	const { data: bindingsData } = useBindings();
 
 	return useMemo(() => {
@@ -62,9 +57,6 @@ export function useHostReferences(host: Host): HostReferences {
 		const hostKeys = (hostKeysData.items ?? []).filter(
 			(hk) => hk.spec.hostId === hostId,
 		);
-		const hostKeyIds = new Set(
-			hostKeys.map((hk) => hk.metadata.id).filter((x): x is string => !!x),
-		);
 
 		const allPolicies = policiesData.items ?? [];
 		const hostPolicies = allPolicies.filter(
@@ -72,29 +64,19 @@ export function useHostReferences(host: Host): HostReferences {
 				p.metadata.owner?.kind === "host" && p.metadata.owner.id === hostId,
 		);
 
+		// `hostKey.policies` is server-derived and covers pool links too.
 		const keyCountByPolicy = new Map<string, number>();
-		for (const rk of keysData.items ?? []) {
-			const pid = rk.spec.policyId;
-			if (!pid) continue;
-			keyCountByPolicy.set(pid, (keyCountByPolicy.get(pid) ?? 0) + 1);
+		for (const hk of hostKeys) {
+			for (const ref of hk.policies ?? []) {
+				keyCountByPolicy.set(ref.id, (keyCountByPolicy.get(ref.id) ?? 0) + 1);
+			}
 		}
-
-		const userPolicies: HostReferences["userPolicies"] = [];
-		let totalKeys = 0;
-		for (const p of allPolicies) {
-			if (p.metadata.owner?.kind === "host") continue;
-			const hits = (p.spec.hostKeyIds ?? []).filter((id) => hostKeyIds.has(id));
-			if (hits.length === 0) continue;
-			const rkCount = p.metadata.id
-				? (keyCountByPolicy.get(p.metadata.id) ?? 0)
-				: 0;
-			userPolicies.push({
-				policy: p,
-				hostKeyCount: hits.length,
-				keyCount: rkCount,
-			});
-			totalKeys += rkCount;
-		}
+		const userPolicies: HostReferences["userPolicies"] = allPolicies.flatMap(
+			(p) => {
+				const count = keyCountByPolicy.get(p.metadata.id ?? "") ?? 0;
+				return count > 0 ? [{ policy: p, hostKeyCount: count }] : [];
+			},
+		);
 
 		return {
 			models,
@@ -102,7 +84,6 @@ export function useHostReferences(host: Host): HostReferences {
 			hostKeys,
 			hostPolicies,
 			userPolicies,
-			totalKeys,
 		};
-	}, [host, modelsData, hostKeysData, policiesData, keysData, bindingsData]);
+	}, [host, modelsData, hostKeysData, policiesData, bindingsData]);
 }

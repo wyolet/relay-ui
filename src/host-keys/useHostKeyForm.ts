@@ -2,6 +2,8 @@ import { useForm } from "@tanstack/react-form";
 import { useStore } from "@tanstack/react-store";
 import { useEffect, useMemo, useRef } from "react";
 import { z } from "zod";
+import { useAuth } from "@/api/auth";
+import { type Account, useAccounts } from "@/api/hooks/accounts";
 import { useCreateHostKey, useUpdateHostKey } from "@/api/hooks/hostkeys";
 import { useHosts } from "@/api/hooks/hosts";
 import { useDetachHostKeyFromPolicy, usePolicies } from "@/api/hooks/policies";
@@ -18,20 +20,18 @@ import { displayLabel } from "@/lib/displayLabel";
 import { ALL_OWNER_SCOPES, PERSONAL_OWNER } from "@/lib/ownerScopes";
 import { randomSuffix, slugify } from "@/lib/slug";
 import { toast } from "@/shared/Toast";
+import {
+	accountFormValue,
+	accountOptions as buildAccountOptions,
+	DEFAULT_ACCOUNT,
+	defaultAccountFor,
+} from "./hostKeyAccount";
+import { linkedPolicyRows } from "./linkedPolicies";
 import { reservedEnvPrefix } from "./reservedEnv";
-import { isHostTierPolicy } from "./tierPolicy";
 
 export interface SelectOption {
 	value: string;
 	label: string;
-}
-
-export interface ReferencingPolicyView {
-	id: string;
-	name: string;
-	label: string;
-	hasDisplayName: boolean;
-	description: string | undefined;
 }
 
 export interface HostKeyFormValues {
@@ -39,7 +39,8 @@ export interface HostKeyFormValues {
 	description: string;
 	owner: string;
 	hostId: string;
-	policyId: string;
+	/** {@link DEFAULT_ACCOUNT} means the owner's default account at the host. */
+	accountId: string;
 	kind: HostKeyKind;
 	envVar: string;
 	value: string;
@@ -52,7 +53,7 @@ function emptyValues(owner: string): HostKeyFormValues {
 		description: "",
 		owner,
 		hostId: "",
-		policyId: "",
+		accountId: DEFAULT_ACCOUNT,
 		kind: "stored",
 		envVar: "",
 		value: "",
@@ -60,7 +61,11 @@ function emptyValues(owner: string): HostKeyFormValues {
 	};
 }
 
-function hostKeyToValues(hk: HostKey, owner: string): HostKeyFormValues {
+function hostKeyToValues(
+	hk: HostKey,
+	owner: string,
+	accounts: readonly Account[],
+): HostKeyFormValues {
 	const kind: HostKeyKind =
 		hk.spec.valueFrom.kind === "stored" ? "stored" : "env";
 	return {
@@ -68,7 +73,7 @@ function hostKeyToValues(hk: HostKey, owner: string): HostKeyFormValues {
 		description: hk.metadata.description ?? "",
 		owner,
 		hostId: hk.spec.hostId,
-		policyId: hk.spec.policyId,
+		accountId: accountFormValue(accounts, hk.spec.accountId),
 		kind,
 		envVar: hk.spec.valueFrom.env ?? "",
 		value: "",
@@ -89,9 +94,7 @@ function buildSchema(isEdit: boolean) {
 			hostId: z
 				.string()
 				.min(1, "Pick the host this credential authenticates against."),
-			policyId: z
-				.string()
-				.min(1, "Pick the policy this credential belongs to."),
+			accountId: z.string(),
 			kind: z.enum(["stored", "env"]),
 			envVar: z.string().trim().max(200),
 			value: z.string().max(8192),
@@ -133,6 +136,11 @@ export function useHostKeyForm({
 	const updateHostKey = useUpdateHostKey();
 	const { detach, isPending: isDetachPending } = useDetachHostKeyFromPolicy();
 	const toastSaveError = useSaveErrorToast();
+	const { userId } = useAuth();
+	const { data: hostsData } = useHosts();
+	const { data: policiesData } = usePolicies();
+	const { data: accountsData } = useAccounts();
+	const accounts = accountsData.items ?? [];
 	const loaded = useLoadedResourceVersion(
 		`${open}:${hostKey?.metadata.id ?? ""}`,
 		hostKey?.metadata.resourceVersion,
@@ -148,9 +156,9 @@ export function useHostKeyForm({
 	const initial = useMemo<HostKeyFormValues>(
 		() =>
 			hostKey
-				? hostKeyToValues(hostKey, initialOwner)
+				? hostKeyToValues(hostKey, initialOwner, accountsData.items ?? [])
 				: emptyValues(initialOwner),
-		[hostKey, initialOwner],
+		[hostKey, initialOwner, accountsData.items],
 	);
 	const suffixRef = useRef<string>(
 		hostKey?.metadata.name.match(/-(\d{4,8})$/)?.[1] ?? randomSuffix(),
@@ -175,6 +183,15 @@ export function useHostKeyForm({
 		return { fields };
 	}
 
+	// An update that omits accountId keeps the stored account, so "default"
+	// is sent as the default account's id when it exists.
+	function resolveAccountId(value: HostKeyFormValues): string | undefined {
+		if (value.accountId !== DEFAULT_ACCOUNT) return value.accountId;
+		if (!isEdit) return undefined;
+		return defaultAccountFor(accounts, value.hostId, value.owner, userId)
+			?.metadata.id;
+	}
+
 	const form = useForm({
 		defaultValues: initial,
 		validators: {
@@ -186,19 +203,24 @@ export function useHostKeyForm({
 			const description = value.description.trim();
 			const envVar = value.envVar.trim();
 			const newValue = value.value;
+			const accountId = resolveAccountId(value);
 
 			try {
 				if (isEdit && hostKey) {
 					// Secret rotation goes through the Rotate dialog on the detail
-					// page. The edit form only touches identity + host/policy, so we
-					// preserve the existing valueFrom/value untouched.
-					const { value: _existingValue, ...specWithoutValue } = hostKey.spec;
+					// page, so the stored valueFrom/value stay untouched here.
+					const {
+						value: _existingValue,
+						accountId: _storedAccountId,
+						...specWithoutValue
+					} = hostKey.spec;
 					void _existingValue;
+					void _storedAccountId;
 					const nextSpec = {
 						...specWithoutValue,
 						hostId: value.hostId,
-						policyId: value.policyId,
 						enabled: value.enabled,
+						...(accountId ? { accountId } : {}),
 					};
 					const payload: HostKeyUpdate = {
 						metadata: {
@@ -225,10 +247,10 @@ export function useHostKeyForm({
 					const name = computeSlug(displayName);
 					const baseSpec = {
 						hostId: value.hostId,
-						policyId: value.policyId,
 						enabled: value.enabled,
+						...(accountId ? { accountId } : {}),
 					};
-					const spec =
+					const spec: HostKeyCreate["spec"] =
 						value.kind === "env"
 							? { ...baseSpec, valueFrom: { kind: "env", env: envVar } }
 							: { ...baseSpec, valueFrom: { kind: "stored" }, value: newValue };
@@ -292,11 +314,6 @@ export function useHostKeyForm({
 		for (const e of errs) if (typeof e === "string") return e;
 		return undefined;
 	});
-	const policyIdError = useStore(form.store, (s) => {
-		const errs = s.fieldMeta?.policyId?.errors ?? [];
-		for (const e of errs) if (typeof e === "string") return e;
-		return undefined;
-	});
 	const envVarError = useStore(form.store, (s) => {
 		const errs = s.fieldMeta?.envVar?.errors ?? [];
 		for (const e of errs) if (typeof e === "string") return e;
@@ -311,31 +328,10 @@ export function useHostKeyForm({
 		return undefined;
 	});
 
-	const { data: hostsData } = useHosts();
-	const { data: policiesData } = usePolicies();
-
-	// Policies (user-defined) that have this host key in their pool. The
-	// backend includes the slug + id on `hostKey.policies`; we resolve display
-	// names + description from the full policy list so we render labels, not
-	// slugs.
-	const attachedPolicies = useMemo<ReferencingPolicyView[]>(() => {
-		const refs = hostKey?.policies ?? [];
-		return refs.map((ref) => {
-			const match = (policiesData.items ?? []).find(
-				(p) => p.metadata.id === ref.id,
-			);
-			return {
-				id: ref.id,
-				name: ref.name,
-				label: match ? displayLabel(match.metadata) : ref.name,
-				hasDisplayName: match
-					? match.metadata.displayName !== undefined &&
-						match.metadata.displayName !== ""
-					: false,
-				description: match?.metadata.description?.trim() || undefined,
-			};
-		});
-	}, [hostKey?.policies, policiesData.items]);
+	const attachedPolicies = useMemo(
+		() => (hostKey ? linkedPolicyRows(hostKey, policiesData.items ?? []) : []),
+		[hostKey, policiesData.items],
+	);
 
 	const hostOptions = useMemo<SelectOption[]>(
 		() =>
@@ -346,27 +342,29 @@ export function useHostKeyForm({
 		[hostsData.items],
 	);
 
-	const policyOptions = useMemo<SelectOption[]>(
-		() =>
-			(policiesData.items ?? [])
-				.filter((p) => isHostTierPolicy(p, values.hostId))
-				.map((p) => ({
-					value: p.metadata.id ?? "",
-					label: displayLabel(p.metadata),
-				})),
-		[policiesData.items, values.hostId],
+	const accountOptions = buildAccountOptions(
+		accounts,
+		values.hostId,
+		values.owner,
+		userId,
 	);
 
 	const hostSelected = values.hostId !== "";
 
+	// Accounts are scoped to one host and one owner; a change of either drops
+	// the choice back to the default account.
 	function setHost(hostId: string) {
 		form.setFieldValue("hostId", hostId);
-		// Tier list is host-scoped; clear any prior choice.
-		form.setFieldValue("policyId", "");
+		form.setFieldValue("accountId", DEFAULT_ACCOUNT);
 	}
 
-	function setPolicy(policyId: string) {
-		form.setFieldValue("policyId", policyId);
+	function setOwner(owner: string) {
+		form.setFieldValue("owner", owner);
+		form.setFieldValue("accountId", DEFAULT_ACCOUNT);
+	}
+
+	function setAccount(accountId: string) {
+		form.setFieldValue("accountId", accountId);
 	}
 
 	async function detachFromPolicy(policyId: string) {
@@ -391,17 +389,17 @@ export function useHostKeyForm({
 		ownerOptions: ownerPicker.options,
 		ownerError,
 		hostIdError,
-		policyIdError,
 		envVarError,
 		envVarReservedPrefix,
 		valueError,
 		hostOptions,
-		policyOptions,
+		accountOptions,
 		hostSelected,
 		attachedPolicies,
 		detachFromPolicy,
 		isDetachPending,
 		setHost,
-		setPolicy,
+		setOwner,
+		setAccount,
 	};
 }

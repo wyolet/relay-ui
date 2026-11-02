@@ -10,15 +10,16 @@ import {
 	Sliders,
 	Users,
 } from "lucide-react";
-import { Suspense, useMemo } from "react";
+import { Suspense } from "react";
+import { type Account, useAccounts } from "@/api/hooks/accounts";
 import { useGovernance } from "@/api/hooks/governance";
 import type { Host } from "@/api/types/host";
 import type { HostKey } from "@/api/types/hostkey";
-import type { Policy } from "@/api/types/policy";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DiagnosticList } from "@/diagnostics/DiagnosticList";
 import { useHostDiagnostics } from "@/diagnostics/useDiagnostics";
 import { HostLogo } from "@/hosts/HostLogo";
+import { HostTierPresets } from "@/hosts/HostTierPresets";
 import { useHostReferences } from "@/hosts/useHostReferences";
 import { useHostUsage } from "@/hosts/useHostUsage";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
@@ -71,7 +72,7 @@ const TABS: {
 }[] = [
 	{ value: "overview", label: "Overview", icon: LayoutGrid },
 	{ value: "configuration", label: "Configuration", icon: Sliders },
-	{ value: "host-policies", label: "Host policies", icon: ShieldCheck },
+	{ value: "host-policies", label: "Tier presets", icon: ShieldCheck },
 	{ value: "user-policies", label: "User policies", icon: Users },
 	{ value: "host-keys", label: "Credentials", icon: KeyRound },
 	{ value: "models", label: "Models", icon: Boxes },
@@ -179,12 +180,16 @@ function OverviewTabLoader({ host }: { host: Host }) {
 }
 
 function HostPoliciesTabLoader({ host }: { host: Host }) {
-	const refs = useHostReferences(host);
 	return (
-		<HostPoliciesTable
-			host={host}
-			policies={refs.hostPolicies}
-			hostKeys={refs.hostKeys}
+		<HostTierPresets
+			hostName={host.metadata.name}
+			empty={
+				<EmptyState
+					icon={ShieldCheck}
+					title="No tier presets"
+					body="This host owns no policies. Bind your own tier policy to an account to cap its keys."
+				/>
+			}
 		/>
 	);
 }
@@ -196,8 +201,12 @@ function UserPoliciesTabLoader({ host }: { host: Host }) {
 
 function HostKeysTabLoader({ host }: { host: Host }) {
 	const refs = useHostReferences(host);
+	const { data: accountsData } = useAccounts();
 	return (
-		<HostKeysTable hostKeys={refs.hostKeys} hostPolicies={refs.hostPolicies} />
+		<HostKeysTable
+			hostKeys={refs.hostKeys}
+			accounts={accountsData.items ?? []}
+		/>
 	);
 }
 
@@ -334,17 +343,15 @@ function OverviewTab({
 						sub={`${enabledHostKeys} enabled`}
 					/>
 					<StatCard
-						label="Host policies"
+						label="Tier presets"
 						value={refs.hostPolicies.length}
-						sub={refs.hostPolicies.length === 0 ? "no tiers" : "tier caps"}
+						sub={refs.hostPolicies.length === 0 ? "none" : "bind to accounts"}
 					/>
 					<StatCard
 						label="User policies"
 						value={refs.userPolicies.length}
 						sub={
-							refs.userPolicies.length === 0
-								? "unused"
-								: `${refs.totalKeys} key${refs.totalKeys === 1 ? "" : "s"}`
+							refs.userPolicies.length === 0 ? "unused" : "link its credentials"
 						}
 					/>
 					{host.metadata.id && (
@@ -400,7 +407,6 @@ function HostUsageCards({ hostId }: { hostId: string }) {
 
 function ConfigurationTab({ host }: { host: Host }) {
 	const backendEntries = Object.entries(host.spec.backend ?? {});
-	const defaultPolicySlug = host.spec.defaultPolicy?.trim() || undefined;
 
 	return (
 		<div className="flex flex-col gap-4 pt-2">
@@ -414,23 +420,6 @@ function ConfigurationTab({ host }: { host: Host }) {
 						) : (
 							<span className="text-muted-foreground">—</span>
 						)}
-					</Row>
-					<Row label="Default policy">
-						{defaultPolicySlug ? (
-							<Link
-								to="/policies/$name"
-								params={{ name: defaultPolicySlug }}
-								className="font-mono text-xs text-primary hover:underline"
-							>
-								{defaultPolicySlug}
-							</Link>
-						) : (
-							<span className="text-muted-foreground">— (none set)</span>
-						)}
-						<p className="mt-0.5 text-[11px] text-muted-foreground leading-snug">
-							Used when a credential on this host doesn't specify its own host
-							policy.
-						</p>
 					</Row>
 				</dl>
 			</Card>
@@ -485,105 +474,6 @@ function UrlRow({ label, url }: { label: string; url: string | undefined }) {
 	);
 }
 
-/* ---------------- Host policies ---------------- */
-
-function HostPoliciesTable({
-	host,
-	policies,
-	hostKeys,
-}: {
-	host: Host;
-	policies: Policy[];
-	hostKeys: HostKey[];
-}) {
-	const defaultSlug = host.spec.defaultPolicy?.trim() || undefined;
-	const hkCountByPolicy = useMemo(() => {
-		const m = new Map<string, number>();
-		for (const hk of hostKeys) {
-			const pid = hk.spec.policyId;
-			if (!pid) continue;
-			m.set(pid, (m.get(pid) ?? 0) + 1);
-		}
-		return m;
-	}, [hostKeys]);
-
-	if (policies.length === 0) {
-		return (
-			<EmptyState
-				icon={ShieldCheck}
-				title="No host policies"
-				body="This host has no host-owned policies (tiers). Credentials will use the host's default policy if set."
-			/>
-		);
-	}
-
-	return (
-		<div className="mt-2 rounded-md border border-border bg-card overflow-hidden">
-			<table className="w-full text-sm">
-				<thead className="bg-muted/30 text-[10px] uppercase tracking-wide text-muted-foreground">
-					<tr>
-						<Th>Policy</Th>
-						<Th className="text-right">Credentials</Th>
-						<Th className="text-right">Default</Th>
-						<Th className="text-right">Status</Th>
-					</tr>
-				</thead>
-				<tbody className="divide-y divide-border">
-					{policies.map((p) => {
-						const enabled = p.spec.enabled !== false;
-						const isDefault = p.metadata.name === defaultSlug;
-						const hkCount = p.metadata.id
-							? (hkCountByPolicy.get(p.metadata.id) ?? 0)
-							: 0;
-						return (
-							<tr
-								key={p.metadata.name}
-								className="hover:bg-muted/30 transition-colors"
-							>
-								<Td>
-									<Link
-										to="/policies/$name"
-										params={{ name: p.metadata.name }}
-										className="text-foreground hover:underline font-medium"
-									>
-										{displayLabel(p.metadata)}
-									</Link>
-									<div className="text-[11px] text-muted-foreground font-mono truncate">
-										{p.metadata.name}
-									</div>
-								</Td>
-								<Td className="text-right tabular-nums">
-									<span
-										className={
-											hkCount === 0
-												? "text-muted-foreground"
-												: "text-foreground"
-										}
-									>
-										{hkCount}
-									</span>
-								</Td>
-								<Td className="text-right">
-									{isDefault ? (
-										<span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium uppercase tracking-wide bg-info/10 text-info border border-info/30">
-											Default
-										</span>
-									) : (
-										<span className="text-muted-foreground">—</span>
-									)}
-								</Td>
-								<Td className="text-right">
-									<StatusInline enabled={enabled} />
-								</Td>
-							</tr>
-						);
-					})}
-				</tbody>
-			</table>
-		</div>
-	);
-}
-
 /* ---------------- User policies ---------------- */
 
 function UserPoliciesTable({
@@ -595,8 +485,8 @@ function UserPoliciesTable({
 		return (
 			<EmptyState
 				icon={Users}
-				title="No user policies reach this host"
-				body="Attach one of this host's credentials to a user policy's credential pool to start routing through this host."
+				title="No user policies link this host's credentials"
+				body="Principals without a caller policy still reach credentials owned by their own scopes or the system. Link a pool at this host in a policy to steer traffic."
 			/>
 		);
 	}
@@ -607,12 +497,11 @@ function UserPoliciesTable({
 					<tr>
 						<Th>Policy</Th>
 						<Th className="text-right">Credentials</Th>
-						<Th className="text-right">API keys</Th>
 						<Th className="text-right">Status</Th>
 					</tr>
 				</thead>
 				<tbody className="divide-y divide-border">
-					{rows.map(({ policy: p, hostKeyCount, keyCount }) => {
+					{rows.map(({ policy: p, hostKeyCount }) => {
 						const enabled = p.spec.enabled !== false;
 						return (
 							<tr
@@ -634,17 +523,6 @@ function UserPoliciesTable({
 								<Td className="text-right tabular-nums">
 									<span className="text-foreground">{hostKeyCount}</span>
 								</Td>
-								<Td className="text-right tabular-nums">
-									<span
-										className={
-											keyCount === 0
-												? "text-muted-foreground"
-												: "text-foreground"
-										}
-									>
-										{keyCount}
-									</span>
-								</Td>
 								<Td className="text-right">
 									<StatusInline enabled={enabled} />
 								</Td>
@@ -661,18 +539,16 @@ function UserPoliciesTable({
 
 function HostKeysTable({
 	hostKeys,
-	hostPolicies,
+	accounts,
 }: {
 	hostKeys: HostKey[];
-	hostPolicies: Policy[];
+	accounts: Account[];
 }) {
-	const policyLabel = useMemo(() => {
-		const m = new Map<string, string>();
-		for (const p of hostPolicies) {
-			if (p.metadata.id) m.set(p.metadata.id, displayLabel(p.metadata));
-		}
-		return m;
-	}, [hostPolicies]);
+	const accountLabel = new Map<string, string>();
+	for (const a of accounts) {
+		if (a.metadata.id)
+			accountLabel.set(a.metadata.id, displayLabel(a.metadata));
+	}
 
 	if (hostKeys.length === 0) {
 		return (
@@ -691,7 +567,7 @@ function HostKeysTable({
 					<tr>
 						<Th>Name</Th>
 						<Th>Source</Th>
-						<Th>Host policy</Th>
+						<Th>Account</Th>
 						<Th className="text-right">Used by</Th>
 						<Th className="text-right">Status</Th>
 					</tr>
@@ -701,8 +577,8 @@ function HostKeysTable({
 						const enabled = hk.spec.enabled !== false;
 						const stored = hk.spec.valueFrom.kind === "stored";
 						const used = hk.policies?.length ?? 0;
-						const tier = hk.spec.policyId
-							? policyLabel.get(hk.spec.policyId)
+						const account = hk.spec.accountId
+							? accountLabel.get(hk.spec.accountId)
 							: undefined;
 						return (
 							<tr
@@ -736,8 +612,8 @@ function HostKeysTable({
 									)}
 								</Td>
 								<Td>
-									{tier ? (
-										<span className="text-xs text-foreground">{tier}</span>
+									{account ? (
+										<span className="text-xs text-foreground">{account}</span>
 									) : (
 										<span className="text-xs text-muted-foreground">—</span>
 									)}

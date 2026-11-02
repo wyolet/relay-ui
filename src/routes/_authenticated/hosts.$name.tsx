@@ -2,11 +2,13 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ChevronLeft } from "lucide-react";
 import { Suspense } from "react";
 import { z } from "zod";
+import { accountListQueryOptions } from "@/api/hooks/accounts";
 import { bindingsListQueryOptions } from "@/api/hooks/bindings";
 import { governanceQueryOptions } from "@/api/hooks/governance";
 import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
 import {
 	hostDetailQueryOptions,
+	hostPoliciesQueryOptions,
 	hostsListQueryOptions,
 	useDeleteHost,
 	useHost,
@@ -56,6 +58,8 @@ export const Route = createFileRoute("/_authenticated/hosts/$name")({
 		void queryClient.prefetchQuery(rateLimitsListQueryOptions);
 		void queryClient.prefetchQuery(keysListQueryOptions);
 		void queryClient.prefetchQuery(providersListQueryOptions);
+		void queryClient.prefetchQuery(accountListQueryOptions);
+		void queryClient.prefetchQuery(hostPoliciesQueryOptions(params.name));
 		return Promise.all([
 			queryClient.ensureQueryData(hostDetailQueryOptions(params.name)),
 			queryClient.ensureQueryData(governanceQueryOptions("host")),
