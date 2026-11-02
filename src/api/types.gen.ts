@@ -3513,6 +3513,11 @@ export interface components {
             details?: components["schemas"]["ErrorDetail"][] | null;
             /** @description Human-readable explanation. */
             message: string;
+            /**
+             * @description Set when relay refused an inference request itself, as the class of code a client acts on: model_not_allowed (a policy, account or principal refuses the model: use another model or account), host_not_reachable (no host the caller can reach serves the model: use another model or host), no_capacity (a rate limit, budget, cooldown, or every host key out of rotation: retry later). Absent on every other error, an upstream's own included.
+             * @enum {string}
+             */
+            refusal?: "model_not_allowed" | "host_not_reachable" | "no_capacity";
             /** @description Error class, such as invalid_request_error (the request's fault), rate_limit_error, server_error or upstream_error. */
             type: string;
         };
@@ -4180,6 +4185,8 @@ export interface components {
             host_id?: string;
             /** @description Hash of the upstream credential's value (not the host key's row id), so a rotated key records a new value. */
             host_key_id?: string;
+            /** @description Id of the account the request ran in and was charged to: the credential's default, or the one the request switched into. Not account_id, the serving host key's provider account. */
+            lane_account_id?: string;
             /** @description The model's slug at request time. */
             model?: string;
             /** @description Id of the resolved model. */
@@ -4209,6 +4216,11 @@ export interface components {
             provider?: string;
             /** @description The reasoning span, for a translated stream that carried reasoning. */
             reasoning?: components["schemas"]["ReasoningTiming"];
+            /**
+             * @description Set when relay refused the request itself, as the class of error_kind: model_not_allowed (a policy, account or principal refuses the model), host_not_reachable (no host the caller can reach serves it), no_capacity (a rate limit, budget, cooldown, or every host key out of rotation). Absent on success and on every other failure, an upstream's own error included.
+             * @enum {string}
+             */
+            refusal?: "model_not_allowed" | "host_not_reachable" | "no_capacity";
             /** @description The relay key's slug at request time; empty when no key was presented. */
             relay_key?: string;
             /** @description Hash of the relay key presented; empty for tokens and anonymous proxy traffic. */
@@ -12681,6 +12693,8 @@ export interface operations {
                 pool_id?: string[] | null;
                 /** @description Match any of the given ids of the provider account the serving credential belongs to. */
                 account_id?: string[] | null;
+                /** @description Match any of the given ids of the account the request ran in and was charged to (its lane), not the serving credential's provider account. */
+                lane_account_id?: string[] | null;
                 /** @description Match any of the given Project.metadata.id values. */
                 project_id?: string[] | null;
                 /** @description Match any of the given Team.metadata.id values. */
@@ -12697,6 +12711,8 @@ export interface operations {
                 finish_reason?: string[] | null;
                 /** @description Match any of the given error_kind values. */
                 error_kind?: string[] | null;
+                /** @description Match requests relay refused itself, by any of the given classes: model_not_allowed, host_not_reachable, no_capacity. */
+                refusal?: ("model_not_allowed" | "host_not_reachable" | "no_capacity")[] | null;
                 /** @description Minimum HTTP status to include. */
                 status_min?: number;
                 /** @description Maximum HTTP status to include. */
@@ -21911,6 +21927,8 @@ export interface operations {
                 pool_id?: string[] | null;
                 /** @description Match any of the given ids of the provider account the serving credential belongs to. */
                 account_id?: string[] | null;
+                /** @description Match any of the given ids of the account the request ran in and was charged to (its lane), not the serving credential's provider account. */
+                lane_account_id?: string[] | null;
                 /** @description Match any of the given Project.metadata.id values. */
                 project_id?: string[] | null;
                 /** @description Match any of the given Team.metadata.id values. */
@@ -21927,6 +21945,8 @@ export interface operations {
                 finish_reason?: string[] | null;
                 /** @description Match any of the given error_kind values. */
                 error_kind?: string[] | null;
+                /** @description Match requests relay refused itself, by any of the given classes: model_not_allowed, host_not_reachable, no_capacity. */
+                refusal?: ("model_not_allowed" | "host_not_reachable" | "no_capacity")[] | null;
                 /** @description Minimum HTTP status to include. */
                 status_min?: number;
                 /** @description Maximum HTTP status to include. */
@@ -22044,6 +22064,8 @@ export interface operations {
                 pool_id?: string[] | null;
                 /** @description Match any of the given ids of the provider account the serving credential belongs to. */
                 account_id?: string[] | null;
+                /** @description Match any of the given ids of the account the request ran in and was charged to (its lane), not the serving credential's provider account. */
+                lane_account_id?: string[] | null;
                 /** @description Match any of the given Project.metadata.id values. */
                 project_id?: string[] | null;
                 /** @description Match any of the given Team.metadata.id values. */
@@ -22060,6 +22082,8 @@ export interface operations {
                 finish_reason?: string[] | null;
                 /** @description Match any of the given error_kind values. */
                 error_kind?: string[] | null;
+                /** @description Match requests relay refused itself, by any of the given classes: model_not_allowed, host_not_reachable, no_capacity. */
+                refusal?: ("model_not_allowed" | "host_not_reachable" | "no_capacity")[] | null;
                 /** @description Minimum HTTP status to include. */
                 status_min?: number;
                 /** @description Maximum HTTP status to include. */
@@ -22177,6 +22201,8 @@ export interface operations {
                 pool_id?: string[] | null;
                 /** @description Match any of the given ids of the provider account the serving credential belongs to. */
                 account_id?: string[] | null;
+                /** @description Match any of the given ids of the account the request ran in and was charged to (its lane), not the serving credential's provider account. */
+                lane_account_id?: string[] | null;
                 /** @description Match any of the given Project.metadata.id values. */
                 project_id?: string[] | null;
                 /** @description Match any of the given Team.metadata.id values. */
@@ -22193,6 +22219,8 @@ export interface operations {
                 finish_reason?: string[] | null;
                 /** @description Match any of the given error_kind values. */
                 error_kind?: string[] | null;
+                /** @description Match requests relay refused itself, by any of the given classes: model_not_allowed, host_not_reachable, no_capacity. */
+                refusal?: ("model_not_allowed" | "host_not_reachable" | "no_capacity")[] | null;
                 /** @description Minimum HTTP status to include. */
                 status_min?: number;
                 /** @description Maximum HTTP status to include. */
@@ -22233,7 +22261,7 @@ export interface operations {
                 q?: string;
                 /** @description Caller-tag filter as "key:value" (repeatable). Same key repeated matches any of its values; different keys must all match. */
                 tag?: string[] | null;
-                /** @description "source" (default) | "none" (one row over the whole filtered set, group {}) | "model" | "host" | "policy" | "provider" | "project" | "team" | "principal" | "relay_key" (event-time slugs) | "model_id" | "host_id" | "policy_id" | "pool_id" | "account_id" | "project_id" | "team_id" | "principal_id" | "credential_id" | "relay_key_hash" | "host_key_id" | "finish_reason" | "error_kind" | "tags.<key>" (group by a caller tag's value). */
+                /** @description "source" (default) | "none" (one row over the whole filtered set, group {}) | "model" | "host" | "policy" | "provider" | "project" | "team" | "principal" | "relay_key" (event-time slugs) | "model_id" | "host_id" | "policy_id" | "pool_id" | "account_id" | "lane_account_id" | "project_id" | "team_id" | "principal_id" | "credential_id" | "relay_key_hash" | "host_key_id" | "finish_reason" | "error_kind" | "refusal" | "tags.<key>" (group by a caller tag's value). */
                 group_by?: string;
                 /** @description "previous" (the only accepted value) adds each row's numbers over the window of equal length just before this one as previous, and that window's bounds as previous_from/previous_to (previous_to exclusive). Rows stay those of the requested window: a group without traffic in the previous window has no previous, and a group seen only there has no row. The window is resolved once (since counts back from the request time, an open to becomes that time); one with no start or a start after its end is a 400. Not combinable with compare_from/compare_to. */
                 compare?: string;
@@ -22241,7 +22269,7 @@ export interface operations {
                 compare_from?: string;
                 /** @description End (RFC3339, exclusive) of the explicit compare window; needs compare_from and must be after it. */
                 compare_to?: string;
-                /** @description Adds distinct to each row: the number of distinct non-empty values of this dimension among the row's events. One of "relay_key_hash" | "relay_key" | "principal_id" | "credential_id" | "pool_id" | "account_id" | "project_id" | "team_id" | "model_id" | "host_id". Omitted means no distinct count. */
+                /** @description Adds distinct to each row: the number of distinct non-empty values of this dimension among the row's events. One of "relay_key_hash" | "relay_key" | "principal_id" | "credential_id" | "pool_id" | "account_id" | "lane_account_id" | "project_id" | "team_id" | "model_id" | "host_id". Omitted means no distinct count. */
                 distinct?: string;
             };
             header?: never;
@@ -22316,6 +22344,8 @@ export interface operations {
                 pool_id?: string[] | null;
                 /** @description Match any of the given ids of the provider account the serving credential belongs to. */
                 account_id?: string[] | null;
+                /** @description Match any of the given ids of the account the request ran in and was charged to (its lane), not the serving credential's provider account. */
+                lane_account_id?: string[] | null;
                 /** @description Match any of the given Project.metadata.id values. */
                 project_id?: string[] | null;
                 /** @description Match any of the given Team.metadata.id values. */
@@ -22332,6 +22362,8 @@ export interface operations {
                 finish_reason?: string[] | null;
                 /** @description Match any of the given error_kind values. */
                 error_kind?: string[] | null;
+                /** @description Match requests relay refused itself, by any of the given classes: model_not_allowed, host_not_reachable, no_capacity. */
+                refusal?: ("model_not_allowed" | "host_not_reachable" | "no_capacity")[] | null;
                 /** @description Minimum HTTP status to include. */
                 status_min?: number;
                 /** @description Maximum HTTP status to include. */
@@ -22374,9 +22406,9 @@ export interface operations {
                 tag?: string[] | null;
                 /** @description Bucket width (e.g. "5m", "1h", "1d"). Required. */
                 interval?: string;
-                /** @description Optional dimension to split series by: "source" | "model" | "host" | "policy" | "provider" | "project" | "team" | "principal" | "relay_key" (event-time slugs) | "model_id" | "host_id" | "policy_id" | "pool_id" | "account_id" | "project_id" | "team_id" | "principal_id" | "credential_id" | "relay_key_hash" | "host_key_id" | "finish_reason" | "error_kind" | "tags.<key>". Empty returns a single series; "none" returns that series with group {}. */
+                /** @description Optional dimension to split series by: "source" | "model" | "host" | "policy" | "provider" | "project" | "team" | "principal" | "relay_key" (event-time slugs) | "model_id" | "host_id" | "policy_id" | "pool_id" | "account_id" | "lane_account_id" | "project_id" | "team_id" | "principal_id" | "credential_id" | "relay_key_hash" | "host_key_id" | "finish_reason" | "error_kind" | "refusal" | "tags.<key>". Empty returns a single series; "none" returns that series with group {}. */
                 group_by?: string;
-                /** @description Adds distinct to each point: the number of distinct non-empty values of this dimension among the bucket's events. Per-bucket values cannot be summed across buckets (a value seen in two buckets counts in each); use /usage/summary for a window total. One of "relay_key_hash" | "relay_key" | "principal_id" | "credential_id" | "pool_id" | "account_id" | "project_id" | "team_id" | "model_id" | "host_id". Omitted means no distinct count. */
+                /** @description Adds distinct to each point: the number of distinct non-empty values of this dimension among the bucket's events. Per-bucket values cannot be summed across buckets (a value seen in two buckets counts in each); use /usage/summary for a window total. One of "relay_key_hash" | "relay_key" | "principal_id" | "credential_id" | "pool_id" | "account_id" | "lane_account_id" | "project_id" | "team_id" | "model_id" | "host_id". Omitted means no distinct count. */
                 distinct?: string;
             };
             header?: never;
