@@ -48,6 +48,7 @@ Domain folders own their components + hooks together: `policies/`, `models/`, `h
 - Dependency direction is downward: `relay-keys → policies → { host-keys → hosts, rate-limits, models }`. No reverse or circular imports; cross-domain UI lives in the higher domain that owns the binding.
 - **Routes are slim orchestrators**: parse params → call domain hook → render domain component. Loaders `ensureQueryData` only what gates first paint and `prefetchQuery` the rest.
 - Resource CRUD gets pages (`/x/new`, `/x/$name`), not modals. Modals are for short transient flows only.
+- A creation form may also get a dialog skin for quick-create from another form (e.g. "New account…" in the key form): the same `useXForm` hook and fields, a compact shell, and the created row handed back. Never inline another resource's fields into a form; add a dialog skin only when a flow needs it.
 - `components/ui/` is vendored shadcn — owned, customize freely, biome-ignored.
 
 ## TypeScript (non-negotiable)
