@@ -150,6 +150,7 @@ export type CostResourceDimension = Exclude<
 	| "principal_id"
 	| "error_kind"
 	| "finish_reason"
+	| "refusal"
 	| `extras.${string}`
 >;
 
@@ -173,6 +174,8 @@ function sliceFor(
 			return { relay_key_hash: [id] };
 		case "host_key_id":
 			return { host_key_id: [id] };
+		case "lane_account_id":
+			return { lane_account_id: [id] };
 	}
 }
 

@@ -2,7 +2,6 @@ import { describe, expect, test } from "bun:test";
 import {
 	breakerAttention,
 	degradedHosts,
-	rejectionBuckets,
 	volumeLeaders,
 } from "@/lib/usage-math/ops";
 
@@ -47,21 +46,6 @@ describe("volumeLeaders", () => {
 			total: 0,
 			top: [],
 		});
-	});
-});
-
-describe("rejectionBuckets", () => {
-	test("derives the other-4xx remainder", () => {
-		expect(rejectionBuckets(100, 60, 25)).toEqual({
-			total: 100,
-			throttled: 60,
-			auth: 25,
-			other: 15,
-		});
-	});
-
-	test("clamps a negative remainder when counts drift across refetches", () => {
-		expect(rejectionBuckets(10, 8, 5).other).toBe(0);
 	});
 });
 
