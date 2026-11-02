@@ -8,6 +8,8 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { AccountHolderLink } from "@/accounts/AccountHolderLink";
+import { EffectiveLimits } from "@/accounts/EffectiveLimits";
+import { useKeyEffectiveLimits } from "@/accounts/useEffectiveLimits";
 import { useHolderResolver } from "@/accounts/useHolderResolver";
 import { useDeleteKey, useKey } from "@/api/hooks/keys";
 import { Button } from "@/components/ui/button";
@@ -41,6 +43,7 @@ export function KeyDetailView({ name }: { name: string }) {
 	const rkId = rk.metadata.id ?? "";
 	const diagnostics = useKeyDiagnostics(rk.metadata.id);
 	const resolveHolder = useHolderResolver();
+	const limits = useKeyEffectiveLimits(name);
 	const enabled = rk.spec.enabled !== false;
 
 	return (
@@ -127,6 +130,8 @@ export function KeyDetailView({ name }: { name: string }) {
 					</DetailRow>
 				</dl>
 			</DetailCard>
+
+			<EffectiveLimits state={limits} />
 
 			<DetailCard title="Configuration" icon={KeyRound}>
 				<dl className="divide-y divide-border">

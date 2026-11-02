@@ -45,6 +45,7 @@ import { Route as AuthenticatedKeysNameRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedKeysNewRouteImport } from './routes/_authenticated/keys_.new'
 import { Route as AuthenticatedLogsIndexRouteImport } from './routes/_authenticated/logs.index'
 import { Route as AuthenticatedLogsRequestIdRouteImport } from './routes/_authenticated/logs.$requestId'
+import { Route as AuthenticatedMeAccountsRouteImport } from './routes/_authenticated/me.accounts'
 import { Route as AuthenticatedModelsIndexRouteImport } from './routes/_authenticated/models.index'
 import { Route as AuthenticatedModelsNameRouteImport } from './routes/_authenticated/models.$name'
 import { Route as AuthenticatedModelsNewRouteImport } from './routes/_authenticated/models.new'
@@ -299,6 +300,11 @@ const AuthenticatedLogsRequestIdRoute =
     path: '/logs/$requestId',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedMeAccountsRoute = AuthenticatedMeAccountsRouteImport.update({
+  id: '/me/accounts',
+  path: '/me/accounts',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedModelsIndexRoute =
   AuthenticatedModelsIndexRouteImport.update({
     id: '/',
@@ -690,6 +696,7 @@ export interface FileRoutesByFullPath {
   '/keys/$name': typeof AuthenticatedKeysNameRoute
   '/keys/new': typeof AuthenticatedKeysNewRoute
   '/logs/$requestId': typeof AuthenticatedLogsRequestIdRoute
+  '/me/accounts': typeof AuthenticatedMeAccountsRoute
   '/models/$name': typeof AuthenticatedModelsNameRouteWithChildren
   '/models/new': typeof AuthenticatedModelsNewRoute
   '/policies/$name': typeof AuthenticatedPoliciesNameRoute
@@ -776,6 +783,7 @@ export interface FileRoutesByTo {
   '/keys/$name': typeof AuthenticatedKeysNameRoute
   '/keys/new': typeof AuthenticatedKeysNewRoute
   '/logs/$requestId': typeof AuthenticatedLogsRequestIdRoute
+  '/me/accounts': typeof AuthenticatedMeAccountsRoute
   '/models/$name': typeof AuthenticatedModelsNameRouteWithChildren
   '/models/new': typeof AuthenticatedModelsNewRoute
   '/policies/$name': typeof AuthenticatedPoliciesNameRoute
@@ -877,6 +885,7 @@ export interface FileRoutesById {
   '/_authenticated/keys_/$name': typeof AuthenticatedKeysNameRoute
   '/_authenticated/keys_/new': typeof AuthenticatedKeysNewRoute
   '/_authenticated/logs/$requestId': typeof AuthenticatedLogsRequestIdRoute
+  '/_authenticated/me/accounts': typeof AuthenticatedMeAccountsRoute
   '/_authenticated/models/$name': typeof AuthenticatedModelsNameRouteWithChildren
   '/_authenticated/models/new': typeof AuthenticatedModelsNewRoute
   '/_authenticated/policies/$name': typeof AuthenticatedPoliciesNameRoute
@@ -978,6 +987,7 @@ export interface FileRouteTypes {
     | '/keys/$name'
     | '/keys/new'
     | '/logs/$requestId'
+    | '/me/accounts'
     | '/models/$name'
     | '/models/new'
     | '/policies/$name'
@@ -1064,6 +1074,7 @@ export interface FileRouteTypes {
     | '/keys/$name'
     | '/keys/new'
     | '/logs/$requestId'
+    | '/me/accounts'
     | '/models/$name'
     | '/models/new'
     | '/policies/$name'
@@ -1164,6 +1175,7 @@ export interface FileRouteTypes {
     | '/_authenticated/keys_/$name'
     | '/_authenticated/keys_/new'
     | '/_authenticated/logs/$requestId'
+    | '/_authenticated/me/accounts'
     | '/_authenticated/models/$name'
     | '/_authenticated/models/new'
     | '/_authenticated/policies/$name'
@@ -1490,6 +1502,13 @@ declare module '@tanstack/react-router' {
       path: '/logs/$requestId'
       fullPath: '/logs/$requestId'
       preLoaderRoute: typeof AuthenticatedLogsRequestIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/me/accounts': {
+      id: '/_authenticated/me/accounts'
+      path: '/me/accounts'
+      fullPath: '/me/accounts'
+      preLoaderRoute: typeof AuthenticatedMeAccountsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/models/': {
@@ -2234,6 +2253,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedKeysNameRoute: typeof AuthenticatedKeysNameRoute
   AuthenticatedKeysNewRoute: typeof AuthenticatedKeysNewRoute
   AuthenticatedLogsRequestIdRoute: typeof AuthenticatedLogsRequestIdRoute
+  AuthenticatedMeAccountsRoute: typeof AuthenticatedMeAccountsRoute
   AuthenticatedPoolsNameRoute: typeof AuthenticatedPoolsNameRoute
   AuthenticatedPoolsNewRoute: typeof AuthenticatedPoolsNewRoute
   AuthenticatedProvidersNameRoute: typeof AuthenticatedProvidersNameRoute
@@ -2273,6 +2293,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedKeysNameRoute: AuthenticatedKeysNameRoute,
   AuthenticatedKeysNewRoute: AuthenticatedKeysNewRoute,
   AuthenticatedLogsRequestIdRoute: AuthenticatedLogsRequestIdRoute,
+  AuthenticatedMeAccountsRoute: AuthenticatedMeAccountsRoute,
   AuthenticatedPoolsNameRoute: AuthenticatedPoolsNameRoute,
   AuthenticatedPoolsNewRoute: AuthenticatedPoolsNewRoute,
   AuthenticatedProvidersNameRoute: AuthenticatedProvidersNameRoute,
