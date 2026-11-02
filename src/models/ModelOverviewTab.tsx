@@ -13,7 +13,8 @@ import {
 import { Suspense } from "react";
 import type { ModelHostView, ModelPolicyView } from "@/api/hooks/models";
 import type { Model } from "@/api/types/model";
-import { DiagnosticList } from "@/diagnostics/DiagnosticList";
+import { IssuesPanel } from "@/diagnostics/IssuesPanel";
+import { useModelDiagnostics } from "@/diagnostics/useDiagnostics";
 import { modelProductLine } from "@/models/groupModelsByFamily";
 import { ModelCapabilityChips } from "@/models/ModelCapabilityChips";
 import { ModelSnapshotsList } from "@/models/ModelSnapshotsList";
@@ -22,9 +23,9 @@ import {
 	familyLabel,
 	overviewCounts,
 } from "@/models/modelDetail";
-import { useModelIssues } from "@/models/useModelIssues";
 import { useModelUsage } from "@/models/useModelUsage";
 import { DetailCard } from "@/shared/DetailCard";
+import { StatCard, StatGrid } from "@/shared/StatCard";
 import {
 	ResourceSpendCard,
 	ResourceSpendCardSkeleton,
@@ -54,56 +55,50 @@ export function ModelOverviewTab({
 
 	return (
 		<div className="flex flex-col gap-6 pt-2">
-			<IssuesPanel modelId={model.metadata.id} />
+			<ModelIssues modelId={model.metadata.id} />
 
-			<section>
-				<SectionTitle>Overview</SectionTitle>
-				<div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-					<StatCard
-						label="Hosts"
-						value={hostRows.length}
-						sub={
-							hostRows.length === 0 ? "not deployed" : `${enabledHosts} enabled`
-						}
-					/>
-					<StatCard
-						label="Policies"
-						value={policyRows.length}
-						sub={
-							policyRows.length === 0
-								? "unused"
-								: `${throttledPolicies} throttled`
-						}
-					/>
-					<StatCard
-						label="Capabilities"
-						value={caps.length}
-						sub={caps.length === 0 ? "none declared" : "active"}
-					/>
-					<StatCard
-						label="Snapshots"
-						value={snapshots.length}
-						sub={
-							snapshots.length === 0
-								? "none"
-								: `pointer → ${model.spec.pointer || "—"}`
-						}
-					/>
-					{model.metadata.id && (
-						<>
-							<Suspense fallback={<UsageCardsSkeleton />}>
-								<ModelUsageCards modelId={model.metadata.id} />
-							</Suspense>
-							<Suspense fallback={<ResourceSpendCardSkeleton />}>
-								<ResourceSpendCard
-									dimension="model_id"
-									id={model.metadata.id}
-								/>
-							</Suspense>
-						</>
-					)}
-				</div>
-			</section>
+			<StatGrid title="Overview">
+				<StatCard
+					label="Hosts"
+					value={hostRows.length}
+					sub={
+						hostRows.length === 0 ? "not deployed" : `${enabledHosts} enabled`
+					}
+				/>
+				<StatCard
+					label="Policies"
+					value={policyRows.length}
+					sub={
+						policyRows.length === 0
+							? "unused"
+							: `${throttledPolicies} throttled`
+					}
+				/>
+				<StatCard
+					label="Capabilities"
+					value={caps.length}
+					sub={caps.length === 0 ? "none declared" : "active"}
+				/>
+				<StatCard
+					label="Snapshots"
+					value={snapshots.length}
+					sub={
+						snapshots.length === 0
+							? "none"
+							: `pointer → ${model.spec.pointer || "—"}`
+					}
+				/>
+				{model.metadata.id && (
+					<>
+						<Suspense fallback={<UsageCardsSkeleton />}>
+							<ModelUsageCards modelId={model.metadata.id} />
+						</Suspense>
+						<Suspense fallback={<ResourceSpendCardSkeleton />}>
+							<ResourceSpendCard dimension="model_id" id={model.metadata.id} />
+						</Suspense>
+					</>
+				)}
+			</StatGrid>
 
 			<DetailCard title="Identity" icon={LayoutGrid}>
 				<div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -175,20 +170,9 @@ function ModelUsageCards({ modelId }: { modelId: string }) {
 	return <ResourceUsageCards usage={usage} />;
 }
 
-function IssuesPanel({ modelId }: { modelId: string | undefined }) {
-	const { diagnostics, summary } = useModelIssues(modelId);
-	if (diagnostics.length === 0) return null;
-	return (
-		<section>
-			<div className="mb-2 flex items-baseline justify-between gap-2">
-				<SectionTitle>Issues</SectionTitle>
-				<span className="text-[10px] text-muted-foreground tabular-nums">
-					{summary}
-				</span>
-			</div>
-			<DiagnosticList diagnostics={diagnostics} />
-		</section>
-	);
+function ModelIssues({ modelId }: { modelId: string | undefined }) {
+	const diagnostics = useModelDiagnostics(modelId);
+	return <IssuesPanel diagnostics={diagnostics} />;
 }
 
 function IdentityTile({
@@ -215,39 +199,5 @@ function IdentityTile({
 				</div>
 			</div>
 		</div>
-	);
-}
-
-function StatCard({
-	label,
-	value,
-	sub,
-}: {
-	label: string;
-	value: string | number;
-	sub?: string;
-}) {
-	return (
-		<div className="rounded-md border border-border bg-card px-3 py-2">
-			<div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-				{label}
-			</div>
-			<div className="mt-0.5 text-lg font-semibold text-foreground tabular-nums">
-				{value}
-			</div>
-			{sub && (
-				<div className="text-[11px] text-muted-foreground mt-0.5 truncate">
-					{sub}
-				</div>
-			)}
-		</div>
-	);
-}
-
-function SectionTitle({ children }: { children: React.ReactNode }) {
-	return (
-		<h2 className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-			{children}
-		</h2>
 	);
 }

@@ -4,8 +4,8 @@ import type { ModelHostView } from "@/api/hooks/models";
 import type { Host } from "@/api/types/host";
 import { HostCell } from "@/hosts/HostCell";
 import { displayLabel } from "@/lib/displayLabel";
-import { ModelDetailTable, Td } from "@/models/ModelDetailTable";
-import { EmptyState } from "@/models/ModelEmptyState";
+import { DetailTable, Td } from "@/shared/DetailTable";
+import { EmptyState } from "@/shared/EmptyState";
 import { StatusInline } from "@/shared/StatusBadge";
 
 const COLUMNS = [
@@ -33,7 +33,7 @@ export function ModelHostsTab({
 		);
 	}
 	return (
-		<ModelDetailTable columns={COLUMNS}>
+		<DetailTable columns={COLUMNS}>
 			{rows.map((row) => {
 				const host = hostById.get(row.host.id);
 				const snapshots = row.binding.snapshots ?? [];
@@ -93,6 +93,6 @@ export function ModelHostsTab({
 					</tr>
 				);
 			})}
-		</ModelDetailTable>
+		</DetailTable>
 	);
 }

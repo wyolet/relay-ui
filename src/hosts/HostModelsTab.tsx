@@ -1,8 +1,8 @@
 import { Boxes } from "lucide-react";
 import type { Host } from "@/api/types/host";
-import { EmptyState } from "@/hosts/HostDetailKit";
 import { useHostReferences } from "@/hosts/useHostReferences";
 import { ModelsByFamily } from "@/models/ModelsByFamily";
+import { EmptyState } from "@/shared/EmptyState";
 
 export function HostModelsTab({ host }: { host: Host }) {
 	const { models } = useHostReferences(host);

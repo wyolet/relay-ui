@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Gauge, ShieldCheck } from "lucide-react";
 import { useMemo } from "react";
 import type { RateLimit, RateLimitRule } from "@/api/types/ratelimit";
-import { DiagnosticList } from "@/diagnostics/DiagnosticList";
+import { IssuesPanel } from "@/diagnostics/IssuesPanel";
 import { useRateLimitDiagnostics } from "@/diagnostics/useDiagnostics";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { compactNumber } from "@/lib/rateLimitFormat";
@@ -10,13 +10,14 @@ import { isProviderOwned, isSystemOwned } from "@/lib/systemRateLimits";
 import { windowLabel } from "@/lib/timeWindow";
 import { useRateLimitReferences } from "@/rate-limits/useRateLimitReferences";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
+import { DetailTable, Td } from "@/shared/DetailTable";
 import { EmptyPanel } from "@/shared/EmptyPanel";
+import { SectionTitle } from "@/shared/SectionTitle";
 import {
 	CatalogDetachedBadge,
 	OwnerBadge,
 	StatusBadge,
 } from "@/shared/StatusBadge";
-import { Th } from "@/shared/Th";
 
 interface Props {
 	rateLimit: RateLimit;
@@ -42,7 +43,7 @@ export function RateLimitDetailView({
 				deleting={deleting}
 				toggling={toggling}
 			/>
-			<IssuesPanel rateLimitId={rateLimit.metadata.id} />
+			<RateLimitIssues rateLimitId={rateLimit.metadata.id} />
 			<RulesPanel rules={rateLimit.spec.rules ?? []} />
 			<PoliciesPanel rateLimit={rateLimit} />
 		</div>
@@ -189,111 +190,89 @@ function PoliciesPanel({ rateLimit }: { rateLimit: RateLimit }) {
 
 	return (
 		<section>
-			<div className="mb-2 flex items-baseline justify-between gap-2">
-				<SectionTitle>Policies</SectionTitle>
-				<span className="text-[10px] text-muted-foreground tabular-nums">
-					{refs.length} reference{refs.length === 1 ? "" : "s"}
-				</span>
-			</div>
-			<div className="rounded-md border border-border bg-card overflow-hidden">
-				<table className="w-full text-sm">
-					<thead className="bg-muted/30 text-[10px] uppercase tracking-wide text-muted-foreground">
-						<tr>
-							<Th>Policy</Th>
-							<Th>Link</Th>
-							<Th className="text-right">Scope</Th>
-							<Th className="text-right">Status</Th>
+			<SectionTitle
+				aside={`${refs.length} reference${refs.length === 1 ? "" : "s"}`}
+			>
+				Policies
+			</SectionTitle>
+			<DetailTable columns={POLICY_COLUMNS} className="mt-0">
+				{refs.map((ref) => {
+					const name = ref.policy.metadata.name;
+					const enabled = ref.policy.spec.enabled !== false;
+					const hostOwned = ref.policy.metadata.owner?.kind === "host";
+					const unscoped = ref.models.length === 0;
+					const scopeCount = unscoped
+						? (ref.policy.spec.models?.length ?? 0)
+						: ref.models.length;
+					return (
+						<tr
+							// Relay refuses one rate limit linked twice over the same models.
+							key={`${name}|${ref.models.join(",")}`}
+							className="hover:bg-muted/30 transition-colors"
+						>
+							<Td>
+								<div className="min-w-0">
+									<Link
+										to="/policies/$name"
+										params={{ name }}
+										search={{ tab: "rate-limits" }}
+										className="text-foreground hover:underline truncate font-medium"
+									>
+										{displayLabel(ref.policy.metadata)}
+									</Link>
+									<div className="text-[11px] text-muted-foreground font-mono truncate">
+										{name}
+										{hostOwned && (
+											<span className="ml-1.5 text-[9px] uppercase tracking-wide">
+												· host-owned
+											</span>
+										)}
+									</div>
+								</div>
+							</Td>
+							<Td>
+								<Badge tone={unscoped ? "default" : "scoped"}>
+									{unscoped ? "All models" : "Scoped"}
+								</Badge>
+							</Td>
+							<Td className="text-right tabular-nums">
+								{unscoped ? (
+									<span className="text-muted-foreground">
+										all ({scopeCount})
+									</span>
+								) : (
+									<span className="text-foreground">
+										{scopeCount} ref{scopeCount === 1 ? "" : "s"}
+									</span>
+								)}
+							</Td>
+							<Td className="text-right">
+								{enabled ? (
+									<span className="text-[11px] text-success">Enabled</span>
+								) : (
+									<span className="text-[11px] text-muted-foreground">
+										Disabled
+									</span>
+								)}
+							</Td>
 						</tr>
-					</thead>
-					<tbody className="divide-y divide-border">
-						{refs.map((ref) => {
-							const name = ref.policy.metadata.name;
-							const enabled = ref.policy.spec.enabled !== false;
-							const hostOwned = ref.policy.metadata.owner?.kind === "host";
-							const unscoped = ref.models.length === 0;
-							const scopeCount = unscoped
-								? (ref.policy.spec.models?.length ?? 0)
-								: ref.models.length;
-							return (
-								<tr
-									// Relay refuses one rate limit linked twice over the same models.
-									key={`${name}|${ref.models.join(",")}`}
-									className="hover:bg-muted/30 transition-colors"
-								>
-									<Td>
-										<div className="min-w-0">
-											<Link
-												to="/policies/$name"
-												params={{ name }}
-												search={{ tab: "rate-limits" }}
-												className="text-foreground hover:underline truncate font-medium"
-											>
-												{displayLabel(ref.policy.metadata)}
-											</Link>
-											<div className="text-[11px] text-muted-foreground font-mono truncate">
-												{name}
-												{hostOwned && (
-													<span className="ml-1.5 text-[9px] uppercase tracking-wide">
-														· host-owned
-													</span>
-												)}
-											</div>
-										</div>
-									</Td>
-									<Td>
-										<Badge tone={unscoped ? "default" : "scoped"}>
-											{unscoped ? "All models" : "Scoped"}
-										</Badge>
-									</Td>
-									<Td className="text-right tabular-nums">
-										{unscoped ? (
-											<span className="text-muted-foreground">
-												all ({scopeCount})
-											</span>
-										) : (
-											<span className="text-foreground">
-												{scopeCount} ref{scopeCount === 1 ? "" : "s"}
-											</span>
-										)}
-									</Td>
-									<Td className="text-right">
-										{enabled ? (
-											<span className="text-[11px] text-success">Enabled</span>
-										) : (
-											<span className="text-[11px] text-muted-foreground">
-												Disabled
-											</span>
-										)}
-									</Td>
-								</tr>
-							);
-						})}
-					</tbody>
-				</table>
-			</div>
+					);
+				})}
+			</DetailTable>
 		</section>
 	);
 }
 
-function Td({
-	children,
-	className = "",
-}: {
-	children: React.ReactNode;
-	className?: string;
-}) {
-	return <td className={`px-3 py-2 align-middle ${className}`}>{children}</td>;
-}
+const POLICY_COLUMNS = [
+	{ label: "Policy" },
+	{ label: "Link" },
+	{ label: "Scope", className: "text-right" },
+	{ label: "Status", className: "text-right" },
+];
 
-function IssuesPanel({ rateLimitId }: { rateLimitId: string | undefined }) {
+function RateLimitIssues({ rateLimitId }: { rateLimitId: string | undefined }) {
 	const diagnostics = useRateLimitDiagnostics(rateLimitId);
-	if (diagnostics.length === 0) return null;
-	return (
-		<section>
-			<SectionTitle>Issues</SectionTitle>
-			<DiagnosticList diagnostics={diagnostics} />
-		</section>
-	);
+	return <IssuesPanel diagnostics={diagnostics} />;
 }
 
 interface RuleGroup {
@@ -332,13 +311,5 @@ function Badge({
 		>
 			{children}
 		</span>
-	);
-}
-
-function SectionTitle({ children }: { children: React.ReactNode }) {
-	return (
-		<h2 className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-			{children}
-		</h2>
 	);
 }
