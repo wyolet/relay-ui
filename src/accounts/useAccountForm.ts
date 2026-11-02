@@ -2,6 +2,14 @@ import { useForm } from "@tanstack/react-form";
 import { useStore } from "@tanstack/react-store";
 import { useEffect, useMemo, useRef } from "react";
 import { z } from "zod";
+import { ACCOUNT_KIND_LABELS, PROVIDER_KIND } from "@/accounts/accountView";
+import {
+	fromPayloadLoggingChoice,
+	PAYLOAD_LOGGING_CHOICES,
+	type PayloadLoggingChoice,
+	toPayloadLoggingChoice,
+} from "@/accounts/payloadLogging";
+import { useHolderResolver } from "@/accounts/useHolderResolver";
 import {
 	type Account,
 	useCreateAccount,
@@ -15,6 +23,11 @@ import { displayLabel } from "@/lib/displayLabel";
 import { firstError, zodFieldValidator } from "@/lib/formErrors";
 import { ALL_OWNER_SCOPES, PERSONAL_OWNER } from "@/lib/ownerScopes";
 import { randomSuffix, slugify } from "@/lib/slug";
+import {
+	fromLabelPairs,
+	type LabelPair,
+	toLabelPairs,
+} from "@/shared/LabelsEditor";
 import { toast } from "@/shared/Toast";
 
 export interface AccountFormValues {
@@ -23,22 +36,40 @@ export interface AccountFormValues {
 	owner: string;
 	hostId: string;
 	orgId: string;
+	payloadLogging: PayloadLoggingChoice;
+	labels: LabelPair[];
 }
 
-const schema = z.object({
+const baseSchema = z.object({
 	displayName: z
 		.string()
 		.trim()
 		.min(1, "Display name is required — the slug is generated from it")
 		.max(120, "Display name is too long"),
 	description: z.string().trim().max(500, "Description is too long"),
+	payloadLogging: z.enum(PAYLOAD_LOGGING_CHOICES),
+	labels: z.array(
+		z.object({ id: z.string(), key: z.string(), value: z.string() }),
+	),
+});
+
+// Caller accounts keep the owner and host relay gave them; only provider accounts pick them.
+const providerSchema = baseSchema.extend({
 	owner: z.string().min(1, "Pick who owns this account."),
 	hostId: z.string().min(1, "Pick the host this account is held at."),
 	orgId: z.string().trim().max(200, "Organization id is too long"),
 });
 
 function emptyValues(owner: string): AccountFormValues {
-	return { displayName: "", description: "", owner, hostId: "", orgId: "" };
+	return {
+		displayName: "",
+		description: "",
+		owner,
+		hostId: "",
+		orgId: "",
+		payloadLogging: "inherit",
+		labels: [],
+	};
 }
 
 function toValues(account: Account, owner: string): AccountFormValues {
@@ -46,8 +77,10 @@ function toValues(account: Account, owner: string): AccountFormValues {
 		displayName: displayLabel(account.metadata),
 		description: account.metadata.description ?? "",
 		owner,
-		hostId: account.spec.hostId,
+		hostId: account.spec.hostId ?? "",
 		orgId: account.spec.orgId ?? "",
+		payloadLogging: toPayloadLoggingChoice(account.spec.payloadLogging),
+		labels: toLabelPairs(account.metadata.labels),
 	};
 }
 
@@ -58,9 +91,11 @@ interface UseAccountFormOptions {
 
 export function useAccountForm({ account, onSaved }: UseAccountFormOptions) {
 	const isEdit = account !== undefined;
+	const isProvider = !account || account.spec.kind === PROVIDER_KIND;
 	const createAccount = useCreateAccount();
 	const updateAccount = useUpdateAccount();
 	const toastSaveError = useSaveErrorToast();
+	const toHolder = useHolderResolver();
 	const { data: hostsData } = useHosts();
 	const loaded = useLoadedResourceVersion(
 		account?.metadata.id ?? "",
@@ -86,7 +121,9 @@ export function useAccountForm({ account, onSaved }: UseAccountFormOptions) {
 		return `${slugify(trimmed) || "account"}-${suffixRef.current}`;
 	};
 
-	const runValidation = zodFieldValidator<AccountFormValues>(schema);
+	const runValidation = zodFieldValidator<AccountFormValues>(
+		isProvider ? providerSchema : baseSchema,
+	);
 
 	const form = useForm({
 		defaultValues: initial,
@@ -95,7 +132,7 @@ export function useAccountForm({ account, onSaved }: UseAccountFormOptions) {
 			const displayName = value.displayName.trim();
 			const description = value.description.trim();
 			const orgId = value.orgId.trim();
-			const owner = ownerPicker.toOwner(value.owner);
+			const labels = fromLabelPairs(value.labels);
 			try {
 				if (isEdit && account) {
 					const saved = await updateAccount.mutateAsync({
@@ -106,10 +143,20 @@ export function useAccountForm({ account, onSaved }: UseAccountFormOptions) {
 								resourceVersion: loaded.version,
 								displayName,
 								description,
-								owner,
+								labels,
+								...(isProvider
+									? { owner: ownerPicker.toOwner(value.owner) }
+									: {}),
 							},
-							// `default` is server-made; send the stored flag back as is.
-							spec: { ...account.spec, orgId },
+							// Server-managed fields (kind, holder, closed, default) go back as read.
+							spec: isProvider
+								? { ...account.spec, orgId }
+								: {
+										...account.spec,
+										payloadLogging: fromPayloadLoggingChoice(
+											value.payloadLogging,
+										),
+									},
 						},
 					});
 					loaded.markSaved(saved.metadata.resourceVersion);
@@ -120,10 +167,15 @@ export function useAccountForm({ account, onSaved }: UseAccountFormOptions) {
 						metadata: {
 							name: computeSlug(displayName),
 							displayName,
-							owner,
+							owner: ownerPicker.toOwner(value.owner),
 							...(description ? { description } : {}),
+							...(Object.keys(labels).length > 0 ? { labels } : {}),
 						},
-						spec: { hostId: value.hostId, ...(orgId ? { orgId } : {}) },
+						spec: {
+							kind: PROVIDER_KIND,
+							hostId: value.hostId,
+							...(orgId ? { orgId } : {}),
+						},
 					});
 					toast("success", `Account "${displayName}" created.`);
 					onSaved(created.metadata.name);
@@ -165,6 +217,9 @@ export function useAccountForm({ account, onSaved }: UseAccountFormOptions) {
 		values,
 		errors,
 		isEdit,
+		isProvider,
+		kindLabel: account ? ACCOUNT_KIND_LABELS[account.spec.kind] : undefined,
+		holder: account?.spec.holder ? toHolder(account.spec.holder) : undefined,
 		slugPreview: account
 			? account.metadata.name
 			: computeSlug(values.displayName),

@@ -1,24 +1,48 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Building2, ChevronLeft, KeyRound } from "lucide-react";
+import { Building2, ChevronLeft, KeyRound, Shield } from "lucide-react";
+import { AccountHolderLink } from "@/accounts/AccountHolderLink";
+import { PAYLOAD_LOGGING_RULE } from "@/accounts/accountCopy";
+import { ACCOUNT_KIND_LABELS } from "@/accounts/accountView";
 import { DefaultAccountBadge } from "@/accounts/DefaultAccountBadge";
+import {
+	PAYLOAD_LOGGING_LABELS,
+	toPayloadLoggingChoice,
+} from "@/accounts/payloadLogging";
 import { UpstreamKeyList } from "@/accounts/UpstreamKeyList";
 import { useAccountDetail } from "@/accounts/useAccountDetail";
 import { PlanIssuesPanel } from "@/diagnostics/IssuesPanel";
 import { HostCell } from "@/hosts/HostCell";
+import { OwnerLink } from "@/projects/OwnerLink";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
-import { DetailCard, DetailRow } from "@/shared/DetailCard";
+import { DetailCard, DetailEmpty, DetailRow } from "@/shared/DetailCard";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
 import { DetailPageHeader } from "@/shared/DetailPageHeader";
+import { StatusBadge, StatusInline } from "@/shared/StatusBadge";
+
+const hintClass = "mt-0.5 text-[11px] text-muted-foreground leading-snug";
 
 export function AccountDetailView({ name }: { name: string }) {
 	const navigate = useNavigate();
-	const { account, keys, host, hostLabel, del, requestDelete } =
-		useAccountDetail({
-			name,
-			onDeleted: () =>
-				void navigate({ to: "/keys", search: { tab: "accounts" } }),
-		});
-	const isDefault = account.spec.default === true;
+	const {
+		account,
+		isProvider,
+		holder,
+		ownerUser,
+		binding,
+		keys,
+		host,
+		hostLabel,
+		deletable,
+		del,
+		requestDelete,
+	} = useAccountDetail({
+		name,
+		onDeleted: () =>
+			void navigate({ to: "/keys", search: { tab: "accounts" } }),
+	});
+	const { spec, metadata } = account;
+	const isDefault = spec.default === true;
+	const closed = spec.closed === true;
 
 	return (
 		<div className="flex flex-col gap-5">
@@ -33,8 +57,13 @@ export function AccountDetailView({ name }: { name: string }) {
 
 			<DetailPageHeader
 				icon={Building2}
-				metadata={account.metadata}
-				badges={isDefault && <DefaultAccountBadge />}
+				metadata={metadata}
+				badges={
+					<>
+						{isDefault && <DefaultAccountBadge />}
+						{closed && <StatusBadge enabled={false} disabledLabel="Closed" />}
+					</>
+				}
 			>
 				<DetailHeaderActions
 					enabled
@@ -42,6 +71,7 @@ export function AccountDetailView({ name }: { name: string }) {
 					showToggle={false}
 					onDelete={requestDelete}
 					deleting={del.isPending}
+					showDelete={deletable}
 					editLink={({ className, content }) => (
 						<Link
 							to="/accounts/$name/edit"
@@ -54,49 +84,125 @@ export function AccountDetailView({ name }: { name: string }) {
 				/>
 			</DetailPageHeader>
 
-			<PlanIssuesPanel kind="account" id={account.metadata.id} />
+			<PlanIssuesPanel kind="account" id={metadata.id} />
 
 			<DetailCard title="Configuration" icon={Building2}>
 				<dl className="divide-y divide-border">
-					<DetailRow label="Host">
-						{host ? (
-							<Link
-								to="/hosts/$name"
-								params={{ name: host.metadata.name }}
-								className="inline-block hover:underline"
-							>
-								<HostCell host={host} size="sm" />
-							</Link>
+					<DetailRow label="Kind">{ACCOUNT_KIND_LABELS[spec.kind]}</DetailRow>
+					{holder && (
+						<DetailRow label="Holder">
+							<AccountHolderLink holder={holder} />
+						</DetailRow>
+					)}
+					<DetailRow label="Owner">
+						{ownerUser ? (
+							<AccountHolderLink holder={ownerUser} />
 						) : (
-							<HostCell host={undefined} fallbackLabel={hostLabel} size="sm" />
+							<OwnerLink owner={metadata.owner} />
 						)}
 					</DetailRow>
-					<DetailRow label="Organization id">
-						{account.spec.orgId ? (
-							<code className="font-mono text-[11px]">
-								{account.spec.orgId}
-							</code>
-						) : (
-							<span className="text-muted-foreground">Not known yet</span>
-						)}
-					</DetailRow>
-					<DetailRow label="Default">
-						{isDefault ? "Yes" : "No"}
-						<p className="mt-0.5 text-[11px] text-muted-foreground leading-snug">
-							{isDefault
-								? "Keys of this owner at this host join it when they name no account. A provider 429 cools only the key that got it."
-								: "A provider 429 on one key cools every key in this account for the requested model."}
-						</p>
-					</DetailRow>
+					{spec.kind === "member" && (
+						<DetailRow label="Membership">
+							{closed ? "Closed" : "Open"}
+							{closed && (
+								<p className={hintClass}>
+									The membership ended: keys in this account are refused with
+									account_closed until a role grants it again.
+								</p>
+							)}
+						</DetailRow>
+					)}
+					{!isProvider && (
+						<DetailRow label="Payload logging">
+							{
+								PAYLOAD_LOGGING_LABELS[
+									toPayloadLoggingChoice(spec.payloadLogging)
+								]
+							}
+							<p className={hintClass}>{PAYLOAD_LOGGING_RULE}</p>
+						</DetailRow>
+					)}
+					{isProvider && (
+						<>
+							<DetailRow label="Host">
+								{host ? (
+									<Link
+										to="/hosts/$name"
+										params={{ name: host.metadata.name }}
+										className="inline-block hover:underline"
+									>
+										<HostCell host={host} size="sm" />
+									</Link>
+								) : (
+									<HostCell
+										host={undefined}
+										fallbackLabel={hostLabel}
+										size="sm"
+									/>
+								)}
+							</DetailRow>
+							<DetailRow label="Organization id">
+								{spec.orgId ? (
+									<code className="font-mono text-[11px]">{spec.orgId}</code>
+								) : (
+									<span className="text-muted-foreground">Not known yet</span>
+								)}
+							</DetailRow>
+							<DetailRow label="Default">
+								{isDefault ? "Yes" : "No"}
+								<p className={hintClass}>
+									{isDefault
+										? "Keys of this owner at this host join it when they name no account. A provider 429 cools only the key that got it."
+										: "A provider 429 on one key cools every key in this account for the requested model."}
+								</p>
+							</DetailRow>
+						</>
+					)}
 				</dl>
 			</DetailCard>
 
-			<DetailCard title={`Keys · ${keys.length}`} icon={KeyRound}>
-				<UpstreamKeyList
-					keys={keys}
-					empty="No credentials name this account."
-				/>
+			<DetailCard title="Policy" icon={Shield}>
+				{binding ? (
+					<dl className="divide-y divide-border">
+						<DetailRow label="Policy">
+							{binding.policy ? (
+								<Link
+									to="/policies/$name"
+									params={{ name: binding.policy.name }}
+									className="hover:underline"
+								>
+									{binding.policy.label}
+								</Link>
+							) : (
+								<span className="text-muted-foreground">Not visible</span>
+							)}
+						</DetailRow>
+						<DetailRow label="Binding">
+							<span className="inline-flex items-center gap-2">
+								<Link
+									to="/policy-bindings/$name"
+									params={{ name: binding.name }}
+									className="hover:underline"
+								>
+									{binding.label}
+								</Link>
+								<StatusInline enabled={binding.enabled} />
+							</span>
+						</DetailRow>
+					</dl>
+				) : (
+					<DetailEmpty>No policy binding names this account.</DetailEmpty>
+				)}
 			</DetailCard>
+
+			{isProvider && (
+				<DetailCard title={`Keys · ${keys.length}`} icon={KeyRound}>
+					<UpstreamKeyList
+						keys={keys}
+						empty="No credentials name this account."
+					/>
+				</DetailCard>
+			)}
 
 			{del.target && (
 				<DeleteConfirm
