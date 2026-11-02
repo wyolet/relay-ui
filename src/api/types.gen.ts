@@ -1364,6 +1364,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/me/contexts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the scopes the caller may create rows in
+         * @description The contexts the caller may act in: their personal scope first, then each team, then each project, each list by slug, where the caller may create at least one policy, pool, account, host key, budget, rate limit, policy binding, key, service account or role binding. Grants through groups and through a team-level role count, so a team admin is listed with the team's projects. The admin token is no user: it gets every team and project with admin true and no personal scope. Read from the in-memory catalog, so a write shows within about a second.
+         */
+        get: operations["list_my_contexts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/models": {
         parameters: {
             query?: never;
@@ -5144,6 +5164,23 @@ export interface components {
             /** @description True for a member account opened on first use under a group or team-level grant relay cannot list: it serves relay-minted tokens only, and keys cannot be created in it. */
             tokenOnly: boolean;
         };
+        MyContext: {
+            /** @description The caller holds every permission of the scope's built-in admin role there (team-admin for a team, project-admin for a project), through any binding: direct, a group's, or one on the project's team. Always true for personal. */
+            admin: boolean;
+            /** @description The team or project display name; the username for personal. */
+            displayName: string;
+            /** @description The caller's user id for personal, else the team or project id. The owner a row created in this context takes: {kind: user, id} for personal, {kind: team|project, id} otherwise. */
+            id: string;
+            /**
+             * @description personal is the caller's own scope, where rows with an omitted owner land; team and project name a tenancy row.
+             * @enum {string}
+             */
+            kind: "personal" | "team" | "project";
+            /** @description The caller's username for personal, else the team or project slug. */
+            name: string;
+            /** @description The project's team. Projects only. */
+            teamId?: string;
+        };
         OTLPReceiver: {
             /**
              * Format: uri
@@ -7571,6 +7608,8 @@ export interface operations {
                 limit?: number;
                 /** @description Items to skip before the page. */
                 offset?: number;
+                /** @description Only the accounts a policy binding owned by this scope may link, by the rule a save of that row applies: system, user:<id>, team:<id> or project:<id>. */
+                usable_by?: string;
             };
             header?: never;
             path?: never;
@@ -8846,6 +8885,8 @@ export interface operations {
                 limit?: number;
                 /** @description Items to skip before the page. */
                 offset?: number;
+                /** @description Only the budgets a policy owned by this scope may link, by the rule a save of that row applies: system, user:<id>, team:<id> or project:<id>. */
+                usable_by?: string;
             };
             header?: never;
             path?: never;
@@ -10575,6 +10616,8 @@ export interface operations {
                 limit?: number;
                 /** @description Items to skip before the page. */
                 offset?: number;
+                /** @description Only the host-keys a pool owned by this scope may link, by the rule a save of that row applies: system, user:<id>, team:<id> or project:<id>. */
+                usable_by?: string;
             };
             header?: never;
             path?: never;
@@ -13048,6 +13091,53 @@ export interface operations {
             };
         };
     };
+    list_my_contexts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyContext"][] | null;
+                };
+            };
+            /** @description No valid session cookie or admin bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The server failed; error.message carries the cause. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description A backend the operation needs is not configured or not reachable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
     list_models: {
         parameters: {
             query?: {
@@ -14067,6 +14157,8 @@ export interface operations {
                 limit?: number;
                 /** @description Items to skip before the page. */
                 offset?: number;
+                /** @description Only the policies a policy binding owned by this scope may link, by the rule a save of that row applies: system, user:<id>, team:<id> or project:<id>. */
+                usable_by?: string;
             };
             header?: never;
             path?: never;
@@ -15151,6 +15243,8 @@ export interface operations {
                 limit?: number;
                 /** @description Items to skip before the page. */
                 offset?: number;
+                /** @description Only the pools a policy owned by this scope may link, by the rule a save of that row applies: system, user:<id>, team:<id> or project:<id>. */
+                usable_by?: string;
             };
             header?: never;
             path?: never;
@@ -17246,6 +17340,8 @@ export interface operations {
                 limit?: number;
                 /** @description Items to skip before the page. */
                 offset?: number;
+                /** @description Only the rate-limits a policy owned by this scope may link, by the rule a save of that row applies: system, user:<id>, team:<id> or project:<id>. */
+                usable_by?: string;
             };
             header?: never;
             path?: never;
