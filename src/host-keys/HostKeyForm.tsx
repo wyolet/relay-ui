@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Building2, Globe, KeyRound, Link2 } from "lucide-react";
+import { Building2, Globe, KeyRound, Layers, Link2 } from "lucide-react";
 import type { Account } from "@/api/hooks/accounts";
 import type { HostKey, HostKeyKind } from "@/api/types/hostkey";
 import { Input } from "@/components/ui/input";
@@ -10,12 +10,15 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { KeyAccountSelect } from "@/host-keys/KeyAccountSelect";
 import { LinkedPolicyAction } from "@/host-keys/LinkedPolicyAction";
+import { NewAccountFields } from "@/host-keys/NewAccountFields";
 import { useHostKeyForm } from "@/host-keys/useHostKeyForm";
 import { HostSelect } from "@/hosts/HostSelect";
 import { FormFooter } from "@/shared/FormFooter";
 import { FormSection } from "@/shared/FormSection";
 import { IdentitySection } from "@/shared/IdentitySection";
+import { MultiCheckList } from "@/shared/MultiSelect";
 
 const KIND_OPTIONS: Record<HostKeyKind, { label: string; hint: string }> = {
 	stored: {
@@ -50,16 +53,28 @@ export function HostKeyForm({
 		descriptionError,
 		placement,
 		hostIdError,
+		accountIdError,
+		newAccountNameError,
+		newAccountOrgIdError,
 		envVarError,
 		envVarReservedPrefix,
 		valueError,
 		hostOptions,
 		accountOptions,
+		accountGroups,
 		hostSelected,
 		accountLocked,
+		isNewAccount,
+		newAccountSlug,
 		attachedPolicies,
+		poolsShown,
+		poolOptions,
+		checkedPoolIds,
 		setHost,
 		setAccount,
+		setKeyAccount,
+		setNewAccountHost,
+		togglePool,
 	} = useHostKeyForm({ open: true, hostKey, account, onSaved });
 
 	return (
@@ -85,50 +100,110 @@ export function HostKeyForm({
 					placement={placement}
 				/>
 
-				<FormSection
-					icon={Globe}
-					title="Host & account"
-					description="Which upstream provider this credential authenticates against, and the provider account (organization) whose limits it shares."
-				>
-					<div className="flex flex-col gap-4">
-						<HostSelect
-							value={values.hostId}
-							options={hostOptions}
-							onChange={setHost}
-							error={hostIdError}
-							disabled={accountLocked}
-							hint={accountLocked ? "Set by the account." : undefined}
-						/>
-						<div>
-							<div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-1 inline-flex items-center gap-1">
-								<Building2 className="w-3 h-3" />
-								Account
-							</div>
-							<Select
+				{!isEdit && (
+					<FormSection
+						icon={Building2}
+						title="Account"
+						description="The provider account (organization) whose limits this credential shares. It sets the host the credential authenticates against."
+					>
+						<div className="flex flex-col gap-4">
+							<KeyAccountSelect
+								groups={accountGroups}
 								value={values.accountId}
-								items={accountOptions}
-								onValueChange={(v) => setAccount(v ?? "")}
-								disabled={!hostSelected || accountLocked}
-							>
-								<SelectTrigger className="w-full max-w-md">
-									<SelectValue placeholder="Pick a host first…" />
-								</SelectTrigger>
-								<SelectContent>
-									{accountOptions.map((a) => (
-										<SelectItem key={a.value} value={a.value}>
-											{a.label}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-							<p className="mt-1.5 text-[11px] text-muted-foreground leading-snug">
-								A key without an account joins its owner's default account at
-								the host. Keys that share one provider organization belong in
-								one account.
-							</p>
+								onChange={setKeyAccount}
+								error={accountIdError}
+								locked={accountLocked}
+							/>
+							{isNewAccount && (
+								<NewAccountFields
+									hostId={values.hostId}
+									hostOptions={hostOptions}
+									onHostChange={setNewAccountHost}
+									hostError={hostIdError}
+									name={values.newAccountName}
+									onNameChange={(v) => form.setFieldValue("newAccountName", v)}
+									nameError={newAccountNameError}
+									slugPreview={newAccountSlug}
+									orgId={values.newAccountOrgId}
+									onOrgIdChange={(v) =>
+										form.setFieldValue("newAccountOrgId", v)
+									}
+									orgIdError={newAccountOrgIdError}
+								/>
+							)}
 						</div>
-					</div>
-				</FormSection>
+					</FormSection>
+				)}
+
+				{!isEdit && (
+					<FormSection
+						icon={Layers}
+						title="Pools"
+						description="Optional. Pools at the account's host that draw on this credential; it's appended to each after it's created."
+					>
+						{poolsShown ? (
+							<div className="max-w-md rounded-md border border-border p-2">
+								<MultiCheckList
+									options={poolOptions}
+									selected={checkedPoolIds}
+									onToggle={togglePool}
+									emptyLabel="pools"
+								/>
+							</div>
+						) : (
+							<p className="text-xs text-muted-foreground">
+								{isNewAccount
+									? "Pick the new account's host first."
+									: "Pick an account first."}
+							</p>
+						)}
+					</FormSection>
+				)}
+
+				{isEdit && (
+					<FormSection
+						icon={Globe}
+						title="Host & account"
+						description="Which upstream provider this credential authenticates against, and the provider account (organization) whose limits it shares."
+					>
+						<div className="flex flex-col gap-4">
+							<HostSelect
+								value={values.hostId}
+								options={hostOptions}
+								onChange={setHost}
+								error={hostIdError}
+							/>
+							<div>
+								<div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-1 inline-flex items-center gap-1">
+									<Building2 className="w-3 h-3" />
+									Account
+								</div>
+								<Select
+									value={values.accountId}
+									items={accountOptions}
+									onValueChange={(v) => setAccount(v ?? "")}
+									disabled={!hostSelected}
+								>
+									<SelectTrigger className="w-full max-w-md">
+										<SelectValue placeholder="Pick a host first…" />
+									</SelectTrigger>
+									<SelectContent>
+										{accountOptions.map((a) => (
+											<SelectItem key={a.value} value={a.value}>
+												{a.label}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+								<p className="mt-1.5 text-[11px] text-muted-foreground leading-snug">
+									A key without an account joins its owner's default account at
+									the host. Keys that share one provider organization belong in
+									one account.
+								</p>
+							</div>
+						</div>
+					</FormSection>
+				)}
 
 				{!isEdit && (
 					<FormSection
