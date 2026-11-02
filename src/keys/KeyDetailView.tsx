@@ -1,10 +1,10 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import {
 	Activity,
+	Building2,
 	ChevronLeft,
 	KeyRound,
 	RotateCw,
-	ShieldCheck,
 } from "lucide-react";
 import { useState } from "react";
 import { useDeleteKey, useKey } from "@/api/hooks/keys";
@@ -14,8 +14,10 @@ import { useKeyDiagnostics } from "@/diagnostics/useDiagnostics";
 import { KeyRotateDialog } from "@/keys/KeyRotateDialog";
 import { useToggleKeyEnabled } from "@/keys/useToggleKeyEnabled";
 import { displayLabel } from "@/lib/displayLabel";
-import { PrincipalPolicy } from "@/policy-bindings/PrincipalPolicy";
+import { AccountPolicy } from "@/policy-bindings/AccountPolicy";
+import { CopyableValue } from "@/shared/CopyableValue";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
+import { DetailCard, DetailRow } from "@/shared/DetailCard";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
 import { DetailPageHeader } from "@/shared/DetailPageHeader";
 import { StatusBadge } from "@/shared/StatusBadge";
@@ -107,23 +109,33 @@ export function KeyDetailView({ name }: { name: string }) {
 
 			<DiagnosticList diagnostics={diagnostics} />
 
-			<Card title="Policy" icon={ShieldCheck}>
-				<div className="text-xs">
-					<PrincipalPolicy principal={rk.spec.principal} />
-				</div>
-			</Card>
-
-			<Card title="Configuration" icon={KeyRound}>
+			<DetailCard title="Account" icon={Building2}>
 				<dl className="divide-y divide-border">
-					<Row label="Principal">
+					<AccountPolicy accountRef={{ accountId: rk.spec.accountId ?? "" }} />
+					<DetailRow label="Switch account">
+						<p className="mb-2 text-muted-foreground">
+							A request can run in another account the principal holds, by
+							header or by base-URL prefix:
+						</p>
+						<div className="flex flex-col gap-2 max-w-md">
+							<CopyableValue value="X-WR-Account: <account>" />
+							<CopyableValue value="/a/<account>/" />
+						</div>
+					</DetailRow>
+				</dl>
+			</DetailCard>
+
+			<DetailCard title="Configuration" icon={KeyRound}>
+				<dl className="divide-y divide-border">
+					<DetailRow label="Principal">
 						<span className="text-foreground">
 							{rk.spec.principal.kind === "user" ? "User" : "Service account"}{" "}
 							<code className="font-mono text-[11px] text-muted-foreground">
 								{rk.spec.principal.id}
 							</code>
 						</span>
-					</Row>
-					<Row label="Expires">
+					</DetailRow>
+					<DetailRow label="Expires">
 						{rk.spec.expiresAt ? (
 							<span className="text-foreground">
 								{new Date(rk.spec.expiresAt).toLocaleString()}
@@ -131,8 +143,8 @@ export function KeyDetailView({ name }: { name: string }) {
 						) : (
 							<span className="text-muted-foreground">Never</span>
 						)}
-					</Row>
-					<Row label="Rotation grace">
+					</DetailRow>
+					<DetailRow label="Rotation grace">
 						{rk.spec.graceUntil ? (
 							<span className="text-foreground">
 								Previous secret valid until{" "}
@@ -141,8 +153,8 @@ export function KeyDetailView({ name }: { name: string }) {
 						) : (
 							<span className="text-muted-foreground">—</span>
 						)}
-					</Row>
-					<Row label="Prefix">
+					</DetailRow>
+					<DetailRow label="Prefix">
 						{rk.spec.prefix ? (
 							<code className="font-mono text-foreground">
 								{rk.spec.prefix}…
@@ -150,8 +162,8 @@ export function KeyDetailView({ name }: { name: string }) {
 						) : (
 							<span className="text-muted-foreground">—</span>
 						)}
-					</Row>
-					<Row label="Passthrough">
+					</DetailRow>
+					<DetailRow label="Passthrough">
 						{rk.spec.passthroughAllowed ? (
 							<span className="text-foreground">
 								Allowed —{" "}
@@ -167,14 +179,14 @@ export function KeyDetailView({ name }: { name: string }) {
 								</span>
 							</span>
 						)}
-					</Row>
+					</DetailRow>
 				</dl>
-			</Card>
+			</DetailCard>
 
 			{rk.spec.keyHash && (
-				<Card title="Usage" icon={Activity}>
+				<DetailCard title="Usage" icon={Activity}>
 					<ResourceUsage scope="relay_key_hash" id={rk.spec.keyHash} />
-				</Card>
+				</DetailCard>
 			)}
 
 			{rotating && (
@@ -190,45 +202,6 @@ export function KeyDetailView({ name }: { name: string }) {
 					error={del.error}
 				/>
 			)}
-		</div>
-	);
-}
-
-function Card({
-	title,
-	icon: Icon,
-	children,
-}: {
-	title: string;
-	icon: typeof KeyRound;
-	children: React.ReactNode;
-}) {
-	return (
-		<section className="rounded-md border border-border bg-card">
-			<header className="flex items-center gap-1.5 border-b border-border px-4 py-2.5">
-				<Icon className="w-3.5 h-3.5 text-muted-foreground" aria-hidden />
-				<h2 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-					{title}
-				</h2>
-			</header>
-			<div className="px-4 py-3">{children}</div>
-		</section>
-	);
-}
-
-function Row({
-	label,
-	children,
-}: {
-	label: string;
-	children: React.ReactNode;
-}) {
-	return (
-		<div className="py-3 first:pt-0 last:pb-0 grid grid-cols-1 sm:grid-cols-[160px_1fr] gap-1 sm:gap-4">
-			<dt className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-				{label}
-			</dt>
-			<dd className="text-xs text-foreground min-w-0">{children}</dd>
 		</div>
 	);
 }

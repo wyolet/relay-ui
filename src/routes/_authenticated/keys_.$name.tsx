@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Suspense } from "react";
+import { accountListQueryOptions } from "@/api/hooks/accounts";
 import { bindingsListQueryOptions } from "@/api/hooks/bindings";
 import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
@@ -24,6 +25,7 @@ export const Route = createFileRoute("/_authenticated/keys_/$name")({
 		void queryClient.prefetchQuery(bindingsListQueryOptions);
 		void queryClient.prefetchQuery(policiesListQueryOptions);
 		void queryClient.prefetchQuery(policyBindingsAllQueryOptions);
+		void queryClient.prefetchQuery(accountListQueryOptions);
 		return queryClient.ensureQueryData(keyDetailQueryOptions(params.name));
 	},
 	component: KeyDetailPage,

@@ -1,4 +1,10 @@
-import { ShieldCheck, Tags, ToggleLeft, UserRound, Users } from "lucide-react";
+import {
+	Building2,
+	ShieldCheck,
+	Tags,
+	ToggleLeft,
+	UserRound,
+} from "lucide-react";
 import { useId } from "react";
 import { usePolicies } from "@/api/hooks/policies";
 import type { PolicyBinding } from "@/api/types/policyBinding";
@@ -10,7 +16,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { displayLabel } from "@/lib/displayLabel";
-import { SubjectsEditor } from "@/policy-bindings/SubjectsEditor";
+import { AccountsPicker } from "@/policy-bindings/AccountsPicker";
 import { usePolicyBindingForm } from "@/policy-bindings/usePolicyBindingForm";
 import { FormFooter } from "@/shared/FormFooter";
 import { FormSection } from "@/shared/FormSection";
@@ -21,7 +27,7 @@ import { ToggleSwitch } from "@/shared/ToggleSwitch";
 
 interface PolicyBindingFormProps {
 	binding?: PolicyBinding;
-	/** Preselected project when creating from a project page. */
+	/** Preselected owner project when creating from a project page. */
 	projectId?: string;
 	onSaved: (savedName: string) => void;
 	onCancel: () => void;
@@ -43,13 +49,12 @@ export function PolicyBindingForm({
 		ownerOptions,
 		ownerError,
 		policyIdError,
-		subjectOptions,
-		subjectName,
-		setSubjects,
-		subjectsError,
-		duplicateSubjectKey,
+		accountOptions,
+		setAccountIds,
+		accountIdsError,
+		duplicateAccountId,
 	} = usePolicyBindingForm({ open: true, binding, projectId, onSaved });
-	const subjectsErrorId = useId();
+	const accountIdsErrorId = useId();
 
 	const { data: policiesData } = usePolicies();
 	const policyOptions = (policiesData.items ?? []).map((p) => ({
@@ -81,7 +86,7 @@ export function PolicyBindingForm({
 
 				<OwnerSection
 					icon={UserRound}
-					description="The system, a team, a project, or a user. Subjects must sit inside the owner's scope; a user-owned binding names only that user."
+					description="The system, a team, a project, or a user. Accounts must sit inside the owner's scope; a team's scope includes its projects."
 					options={ownerOptions}
 					value={values.owner}
 					onChange={(v) => form.setFieldValue("owner", v)}
@@ -91,7 +96,7 @@ export function PolicyBindingForm({
 				<FormSection
 					icon={ShieldCheck}
 					title="Policy"
-					description="The policy that governs the subjects."
+					description="The policy that governs the accounts."
 				>
 					<div>
 						<Select
@@ -122,25 +127,24 @@ export function PolicyBindingForm({
 				</FormSection>
 
 				<FormSection
-					icon={Users}
-					title="Subjects"
-					description="Who the policy governs. A subject sits in at most one binding; a user once per owner scope."
+					icon={Building2}
+					title="Accounts"
+					description="The accounts the policy governs. An account sits in at most one binding."
 				>
 					<div>
-						<SubjectsEditor
-							rows={values.subjects}
-							onChange={setSubjects}
-							options={subjectOptions}
-							subjectName={subjectName}
-							invalidKey={duplicateSubjectKey}
-							describedBy={subjectsErrorId}
+						<AccountsPicker
+							options={accountOptions}
+							selected={values.accountIds}
+							onChange={setAccountIds}
+							invalidId={duplicateAccountId}
+							describedBy={accountIdsError ? accountIdsErrorId : undefined}
 						/>
-						{subjectsError && (
+						{accountIdsError && (
 							<p
-								id={subjectsErrorId}
+								id={accountIdsErrorId}
 								className="mt-2 text-[11px] text-destructive"
 							>
-								{subjectsError}
+								{accountIdsError}
 							</p>
 						)}
 					</div>
@@ -160,7 +164,7 @@ export function PolicyBindingForm({
 				<FormSection
 					icon={ToggleLeft}
 					title="Behavior"
-					description="A disabled binding governs none of its subjects."
+					description="A disabled binding governs none of its accounts."
 				>
 					<ToggleSwitch
 						value={values.enabled}

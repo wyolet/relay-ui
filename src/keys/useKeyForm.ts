@@ -1,7 +1,9 @@
 import { useForm } from "@tanstack/react-form";
+import { useQuery } from "@tanstack/react-query";
 import { useStore } from "@tanstack/react-store";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
+import { accountListQueryOptions } from "@/api/hooks/accounts";
 import { useCreateKey, useUpdateKey } from "@/api/hooks/keys";
 import type { CreateKeyInput, Key, KeyPrincipal } from "@/api/types/key";
 import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
@@ -9,6 +11,11 @@ import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
 import { firstError, zodFieldValidator } from "@/lib/formErrors";
 import { randomSuffix, slugify } from "@/lib/slug";
+import {
+	accountLabel,
+	defaultLane,
+	heldAccounts,
+} from "@/policy-bindings/accountLookup";
 import { toast } from "@/shared/Toast";
 
 export type PrincipalKind = KeyPrincipal["kind"];
@@ -20,6 +27,8 @@ export interface KeyFormValues {
 	/** Only used to narrow the service-account picker; never sent. */
 	projectId: string;
 	principalId: string;
+	/** The lane account; "" leaves it to the server's default. */
+	accountId: string;
 	/** RFC3339 date from the <input type="date">; "" means never expires. */
 	expiresAt: string;
 	enabled: boolean;
@@ -34,6 +43,7 @@ function emptyValues(): KeyFormValues {
 		principalKind: "serviceaccount",
 		projectId: "",
 		principalId: "",
+		accountId: "",
 		expiresAt: "",
 		enabled: true,
 		passthroughAllowed: false,
@@ -48,6 +58,7 @@ function keyToValues(rk: Key): KeyFormValues {
 		principalKind: rk.spec.principal.kind,
 		projectId: rk.metadata.owner?.id ?? "",
 		principalId: rk.spec.principal.id,
+		accountId: rk.spec.accountId ?? "",
 		expiresAt: rk.spec.expiresAt?.slice(0, 10) ?? "",
 		enabled: rk.spec.enabled ?? true,
 		passthroughAllowed: rk.spec.passthroughAllowed ?? false,
@@ -65,6 +76,7 @@ const schema = z.object({
 	principalKind: z.enum(["serviceaccount", "user"]),
 	projectId: z.string(),
 	principalId: z.string().min(1, "Pick who this key authenticates as."),
+	accountId: z.string(),
 	expiresAt: z.string(),
 	enabled: z.boolean(),
 	passthroughAllowed: z.boolean(),
@@ -166,6 +178,7 @@ export function useKeyForm({
 								kind: value.principalKind,
 								id: value.principalId,
 							},
+							...(value.accountId ? { accountId: value.accountId } : {}),
 							...expiryPatch(value.expiresAt),
 							enabled: value.enabled,
 							passthroughAllowed: value.passthroughAllowed,
@@ -215,6 +228,31 @@ export function useKeyForm({
 	}, [resetKey, open, initial, form]);
 
 	const values = useStore(form.store, (s) => s.values);
+
+	// The lane picker loads non-suspending: without the list the server default applies.
+	const { data: accountsData } = useQuery({
+		...accountListQueryOptions,
+		enabled: !isEdit,
+		retry: false,
+	});
+	const holder = { kind: values.principalKind, id: values.principalId };
+	const held = values.principalId
+		? heldAccounts(accountsData?.items ?? [], holder)
+		: [];
+	const laneOptions = held.flatMap((a) =>
+		a.metadata.id ? [{ value: a.metadata.id, label: accountLabel(a) }] : [],
+	);
+	const laneValue =
+		values.accountId ||
+		(defaultLane(accountsData?.items ?? [], holder)?.metadata.id ?? "");
+
+	/** A new principal holds other accounts, so its lane starts on the default. */
+	function choosePrincipal(kind: PrincipalKind, id: string) {
+		form.setFieldValue("principalKind", kind);
+		form.setFieldValue("principalId", id);
+		form.setFieldValue("accountId", "");
+	}
+
 	const slugPreview = isEdit
 		? (apiKey?.metadata.name ?? "")
 		: computeSlug(values.displayName);
@@ -236,6 +274,9 @@ export function useKeyForm({
 		displayNameError,
 		descriptionError,
 		principalIdError,
+		choosePrincipal,
+		laneOptions,
+		laneValue,
 		freshSecret,
 	};
 }

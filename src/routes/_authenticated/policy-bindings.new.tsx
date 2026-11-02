@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ChevronLeft } from "lucide-react";
 import { Suspense } from "react";
 import { z } from "zod";
+import { accountListQueryOptions } from "@/api/hooks/accounts";
 import { policiesListQueryOptions } from "@/api/hooks/policies";
 import { projectsListQueryOptions } from "@/api/hooks/projects";
 import { PolicyBindingForm } from "@/policy-bindings/PolicyBindingForm";
@@ -17,6 +18,7 @@ export const Route = createFileRoute("/_authenticated/policy-bindings/new")({
 		Promise.all([
 			context.queryClient.ensureQueryData(projectsListQueryOptions),
 			context.queryClient.ensureQueryData(policiesListQueryOptions),
+			context.queryClient.ensureQueryData(accountListQueryOptions),
 		]),
 	component: NewPolicyBindingPage,
 });
@@ -38,8 +40,8 @@ function NewPolicyBindingInner() {
 					New policy binding
 				</h1>
 				<p className="mt-1 text-xs text-muted-foreground">
-					A request must pass the policy of every rung it crosses: its
-					principal, project and team, and the account that serves it.
+					A request must pass the policy of every account it climbs: its team,
+					its project, and the account it runs in.
 				</p>
 			</div>
 			<PolicyBindingForm

@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { z } from "zod";
+import { accountListQueryOptions } from "@/api/hooks/accounts";
 import { policiesListQueryOptions } from "@/api/hooks/policies";
 import { policyBindingsListQuery } from "@/api/hooks/policyBindings";
 import { projectsListQueryOptions } from "@/api/hooks/projects";
@@ -15,7 +16,7 @@ const searchSchema = z.object({
 	q: z.string().default(""),
 	project_id: z.string().catch("").default(""),
 	policy: z.string().catch("").default(""),
-	subject: z.string().catch("").default(""),
+	account: z.string().catch("").default(""),
 });
 
 export const Route = createFileRoute("/_authenticated/policy-bindings/")({
@@ -30,6 +31,7 @@ export const Route = createFileRoute("/_authenticated/policy-bindings/")({
 				),
 				context.queryClient.ensureQueryData(projectsListQueryOptions),
 				context.queryClient.ensureQueryData(policiesListQueryOptions),
+				context.queryClient.ensureQueryData(accountListQueryOptions),
 			]),
 		),
 	component: PolicyBindingsPage,
@@ -43,8 +45,7 @@ function PolicyBindingsPage() {
 					Policy bindings
 				</h1>
 				<p className="text-xs text-muted-foreground mt-0.5">
-					Attach a policy to users, service accounts, teams, projects or
-					accounts. Each subject sits in one binding.
+					Attach a policy to accounts. Each account sits in one binding.
 				</p>
 			</div>
 			<Suspense fallback={<PageLoader className="min-h-[40vh]" />}>

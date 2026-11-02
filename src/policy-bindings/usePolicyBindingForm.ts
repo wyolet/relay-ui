@@ -3,10 +3,12 @@ import { useStore } from "@tanstack/react-store";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 import { useAuth } from "@/api/auth";
+import { useAccounts } from "@/api/hooks/accounts";
 import {
 	useCreatePolicyBinding,
 	useUpdatePolicyBinding,
 } from "@/api/hooks/policyBindings";
+import { useProjects } from "@/api/hooks/projects";
 import type { PolicyBinding } from "@/api/types/policyBinding";
 import type { components } from "@/api/types.gen";
 import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
@@ -14,21 +16,16 @@ import { useOwnerOptions } from "@/hooks/useOwnerOptions";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
 import { firstError, zodFieldValidator } from "@/lib/formErrors";
-import { type OwnerOption, ownerKeyId } from "@/lib/ownerScopes";
+import type { OwnerOption } from "@/lib/ownerScopes";
 import { randomSuffix, slugify } from "@/lib/slug";
 import {
-	type DuplicateSubject,
+	ACCOUNT_KIND_LABEL,
+	accountLabel,
+	type DuplicateAccount,
 	describeDuplicate,
-	fromSubjectRows,
+	inOwnerScope,
 	isDuplicateBinding,
-	newSubjectRow,
-	SUBJECT_KIND_LABEL,
-	SUBJECT_KINDS,
-	type SubjectRow,
-	subjectRowKey,
-	toSubjectRows,
-} from "@/policy-bindings/subjects";
-import { useSubjectOptions } from "@/policy-bindings/useSubjectOptions";
+} from "@/policy-bindings/accountLookup";
 import {
 	fromLabelPairs,
 	type LabelPair,
@@ -47,14 +44,13 @@ const SYSTEM_OPTION: OwnerOption = {
 	label: "System",
 };
 
-/** The first string error a field carries, or undefined. */
 export interface PolicyBindingFormValues {
 	displayName: string;
 	description: string;
 	/** {@link SYSTEM_OWNER}, personal, or "team:<id>" / "project:<id>". */
 	owner: string;
 	policyId: string;
-	subjects: SubjectRow[];
+	accountIds: string[];
 	enabled: boolean;
 	labels: LabelPair[];
 }
@@ -65,7 +61,7 @@ function emptyValues(owner: string): PolicyBindingFormValues {
 		description: "",
 		owner,
 		policyId: "",
-		subjects: [newSubjectRow()],
+		accountIds: [],
 		enabled: true,
 		labels: [],
 	};
@@ -80,7 +76,7 @@ function toValues(
 		description: binding.metadata.description ?? "",
 		owner,
 		policyId: binding.spec.policyId,
-		subjects: toSubjectRows(binding.spec.subjects),
+		accountIds: binding.spec.accountIds ?? [],
 		enabled: binding.spec.enabled ?? true,
 		labels: toLabelPairs(binding.metadata.labels),
 	};
@@ -94,36 +90,20 @@ const schema = z.object({
 		.max(120, "Display name is too long"),
 	description: z.string().trim().max(500, "Description is too long"),
 	owner: z.string().min(1, "Pick who owns this binding."),
-	policyId: z.string().min(1, "Pick the policy the subjects are bound to."),
-	subjects: z
-		.array(
-			z.object({
-				rowId: z.string(),
-				kind: z.enum(SUBJECT_KINDS),
-				value: z.string(),
-			}),
-		)
-		.refine(
-			(rows) => rows.some((r) => r.value.trim().length > 0),
-			"A binding needs at least one subject.",
-		),
+	policyId: z.string().min(1, "Pick the policy the accounts are bound to."),
+	accountIds: z
+		.array(z.string())
+		.min(1, "A binding needs at least one account."),
 	enabled: z.boolean(),
 	labels: z.array(
 		z.object({ id: z.string(), key: z.string(), value: z.string() }),
 	),
 });
 
-/** The stored owner as a form value; a project-owned binding follows spec.projectId. */
-function bindingOwner(binding: PolicyBinding): Owner | undefined {
-	if (binding.spec.projectId)
-		return { kind: "project", id: binding.spec.projectId };
-	return binding.metadata.owner;
-}
-
 interface UsePolicyBindingFormOptions {
 	open?: boolean;
 	binding?: PolicyBinding;
-	/** Preselected project when creating from a project page. */
+	/** Preselected owner project when creating from a project page. */
 	projectId?: string;
 	onSaved: (savedName: string) => void;
 }
@@ -135,21 +115,21 @@ export function usePolicyBindingForm({
 	onSaved,
 }: UsePolicyBindingFormOptions) {
 	const isEdit = binding !== undefined;
-	const { isAdmin } = useAuth();
+	const { isAdmin, userId } = useAuth();
 	const createBinding = useCreatePolicyBinding();
 	const updateBinding = useUpdatePolicyBinding();
 	const toastSaveError = useSaveErrorToast();
-	const subjectOptions = useSubjectOptions();
+	const { data: accountsData } = useAccounts();
+	const { data: projectsData } = useProjects();
 	const loaded = useLoadedResourceVersion(
 		`${open}:${binding?.metadata.id ?? ""}`,
 		binding?.metadata.resourceVersion,
 	);
-	const [duplicate, setDuplicate] = useState<DuplicateSubject | null>(null);
+	const [duplicate, setDuplicate] = useState<DuplicateAccount | null>(null);
 
-	const storedOwner = binding ? bindingOwner(binding) : undefined;
 	const ownerPicker = useOwnerOptions({
 		kinds: ["user", "team", "project"],
-		owner: storedOwner,
+		owner: binding?.metadata.owner,
 		preset: projectId ? `project:${projectId}` : isAdmin ? SYSTEM_OWNER : "",
 	});
 	const { initialOwner } = ownerPicker;
@@ -158,13 +138,8 @@ export function usePolicyBindingForm({
 		...ownerPicker.options.filter((o) => o.value !== SYSTEM_OWNER),
 	];
 
-	/** spec.projectId is set only for a project-owned binding; the owner follows it. */
-	function ownerFields(key: string): { owner: Owner; projectId?: string } {
-		if (key === SYSTEM_OWNER) return { owner: { kind: "system" } };
-		const owner = ownerPicker.toOwner(key);
-		return owner.kind === "project"
-			? { owner, projectId: ownerKeyId(key) }
-			: { owner };
+	function ownerOf(key: string): Owner {
+		return key === SYSTEM_OWNER ? { kind: "system" } : ownerPicker.toOwner(key);
 	}
 
 	const initial = useMemo<PolicyBindingFormValues>(
@@ -182,6 +157,14 @@ export function usePolicyBindingForm({
 		return `${base}-${suffixRef.current}`;
 	};
 
+	const accounts = accountsData.items ?? [];
+	function duplicateName(accountId: string): string | undefined {
+		const account = accounts.find((a) => a.metadata.id === accountId);
+		return account
+			? `${ACCOUNT_KIND_LABEL[account.spec.kind]} account "${displayLabel(account.metadata)}"`
+			: undefined;
+	}
+
 	const runValidation = zodFieldValidator<PolicyBindingFormValues>(schema);
 
 	const form = useForm({
@@ -191,11 +174,10 @@ export function usePolicyBindingForm({
 			const displayName = value.displayName.trim();
 			const description = value.description.trim();
 			const labels = fromLabelPairs(value.labels);
-			const { owner, projectId: ownerProjectId } = ownerFields(value.owner);
+			const owner = ownerOf(value.owner);
 			const spec = {
-				...(ownerProjectId ? { projectId: ownerProjectId } : {}),
 				policyId: value.policyId,
-				subjects: fromSubjectRows(value.subjects),
+				accountIds: value.accountIds,
 				enabled: value.enabled,
 			};
 			setDuplicate(null);
@@ -234,15 +216,7 @@ export function usePolicyBindingForm({
 				}
 			} catch (err) {
 				if (isDuplicateBinding(err)) {
-					setDuplicate(
-						describeDuplicate(err.body.message, (key) => {
-							const row = value.subjects.find((r) => subjectRowKey(r) === key);
-							const name = subjectOptions.nameOfKey(key);
-							return row && name
-								? `${SUBJECT_KIND_LABEL[row.kind]} "${name}"`
-								: undefined;
-						}),
-					);
+					setDuplicate(describeDuplicate(err.body.message, duplicateName));
 					return;
 				}
 				toastSaveError(
@@ -264,12 +238,30 @@ export function usePolicyBindingForm({
 		form.reset(open ? initial : emptyValues(initialOwner));
 	}, [resetKey, open, initial, initialOwner, form]);
 
-	function setSubjects(next: SubjectRow[]) {
-		form.setFieldValue("subjects", next);
+	function setAccountIds(next: string[]) {
+		form.setFieldValue("accountIds", next);
 		setDuplicate(null);
 	}
 
 	const values = useStore(form.store, (s) => s.values);
+
+	// A personal owner carries no id until saved; scope it to the caller.
+	const picked = values.owner ? ownerOf(values.owner) : undefined;
+	const scope =
+		picked?.kind === "user" && !picked.id
+			? { kind: "user" as const, id: userId }
+			: picked;
+	const accountOptions = accounts
+		.filter(
+			(a) =>
+				!scope ||
+				inOwnerScope(a, scope, projectsData.items ?? []) ||
+				values.accountIds.includes(a.metadata.id ?? ""),
+		)
+		.flatMap((a) =>
+			a.metadata.id ? [{ value: a.metadata.id, label: accountLabel(a) }] : [],
+		);
+
 	const slugPreview = isEdit
 		? (binding?.metadata.name ?? "")
 		: computeSlug(values.displayName);
@@ -285,8 +277,8 @@ export function usePolicyBindingForm({
 	const policyIdError = useStore(form.store, (s) =>
 		firstError(s.fieldMeta?.policyId?.errors),
 	);
-	const subjectsFieldError = useStore(form.store, (s) =>
-		firstError(s.fieldMeta?.subjects?.errors),
+	const accountIdsFieldError = useStore(form.store, (s) =>
+		firstError(s.fieldMeta?.accountIds?.errors),
 	);
 
 	return {
@@ -299,10 +291,9 @@ export function usePolicyBindingForm({
 		ownerOptions,
 		ownerError,
 		policyIdError,
-		subjectOptions: subjectOptions.options,
-		subjectName: subjectOptions.subjectName,
-		setSubjects,
-		subjectsError: subjectsFieldError ?? duplicate?.message,
-		duplicateSubjectKey: duplicate?.subjectKey,
+		accountOptions,
+		setAccountIds,
+		accountIdsError: accountIdsFieldError ?? duplicate?.message,
+		duplicateAccountId: duplicate?.accountId,
 	};
 }

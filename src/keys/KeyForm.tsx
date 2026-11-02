@@ -1,4 +1,4 @@
-import { CalendarClock, ToggleLeft, UserRound } from "lucide-react";
+import { Building2, CalendarClock, ToggleLeft, UserRound } from "lucide-react";
 import { useAuth } from "@/api/auth";
 import { useProjects } from "@/api/hooks/projects";
 import { useServiceAccountsInProject } from "@/api/hooks/serviceAccounts";
@@ -40,19 +40,26 @@ export function KeyForm({
 		displayNameError,
 		descriptionError,
 		principalIdError,
+		choosePrincipal,
+		laneOptions,
+		laneValue,
 	} = useKeyForm({ open: true, apiKey, onSaved, onCreated });
 
 	const { userId } = useAuth();
 	const { data: projectsData } = useProjects();
-	const { data: accountsData } = useServiceAccountsInProject(values.projectId);
+	const { data: serviceAccountsData } = useServiceAccountsInProject(
+		values.projectId,
+	);
 	const projectOptions = (projectsData.items ?? []).map((p) => ({
 		value: p.metadata.id ?? "",
 		label: displayLabel(p.metadata),
 	}));
-	const accountOptions = (accountsData?.items ?? []).map((sa) => ({
-		value: sa.metadata.id ?? "",
-		label: displayLabel(sa.metadata),
-	}));
+	const serviceAccountOptions = (serviceAccountsData?.items ?? []).map(
+		(sa) => ({
+			value: sa.metadata.id ?? "",
+			label: displayLabel(sa.metadata),
+		}),
+	);
 
 	return (
 		<form
@@ -96,13 +103,9 @@ export function KeyForm({
 									{ value: "user", label: "Me" },
 								]}
 								value={values.principalKind}
-								onChange={(kind) => {
-									form.setFieldValue("principalKind", kind);
-									form.setFieldValue(
-										"principalId",
-										kind === "user" ? (userId ?? "") : "",
-									);
-								}}
+								onChange={(kind) =>
+									choosePrincipal(kind, kind === "user" ? (userId ?? "") : "")
+								}
 							/>
 
 							{values.principalKind === "serviceaccount" ? (
@@ -112,7 +115,7 @@ export function KeyForm({
 										items={projectOptions}
 										onValueChange={(v) => {
 											form.setFieldValue("projectId", v ?? "");
-											form.setFieldValue("principalId", "");
+											choosePrincipal("serviceaccount", "");
 										}}
 									>
 										<SelectTrigger className="w-full max-w-md">
@@ -128,9 +131,9 @@ export function KeyForm({
 									</Select>
 									<Select
 										value={values.principalId}
-										items={accountOptions}
+										items={serviceAccountOptions}
 										onValueChange={(v) =>
-											form.setFieldValue("principalId", v ?? "")
+											choosePrincipal("serviceaccount", v ?? "")
 										}
 									>
 										<SelectTrigger
@@ -147,7 +150,7 @@ export function KeyForm({
 											/>
 										</SelectTrigger>
 										<SelectContent>
-											{accountOptions.map((a) => (
+											{serviceAccountOptions.map((a) => (
 												<SelectItem key={a.value} value={a.value}>
 													{a.label}
 												</SelectItem>
@@ -169,6 +172,38 @@ export function KeyForm({
 						</div>
 					)}
 				</FormSection>
+
+				{!isEdit && (
+					<FormSection
+						icon={Building2}
+						title="Account"
+						description="The account the key's requests run in by default. A team or project membership account climbs that team's and project's policies; a provider account is direct use under its own policy."
+					>
+						<Select
+							value={laneValue}
+							items={laneOptions}
+							disabled={laneOptions.length === 0}
+							onValueChange={(v) => form.setFieldValue("accountId", v ?? "")}
+						>
+							<SelectTrigger className="w-full max-w-md" aria-label="Account">
+								<SelectValue
+									placeholder={
+										values.principalId
+											? "The principal's default account"
+											: "Pick a principal first"
+									}
+								/>
+							</SelectTrigger>
+							<SelectContent>
+								{laneOptions.map((o) => (
+									<SelectItem key={o.value} value={o.value}>
+										{o.label}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+					</FormSection>
+				)}
 
 				<FormSection
 					icon={CalendarClock}
@@ -193,13 +228,13 @@ export function KeyForm({
 						value={values.passthroughAllowed}
 						onChange={(v) => form.setFieldValue("passthroughAllowed", v)}
 						label="Allow upstream passthrough"
-						hint="Permits the caller to forward their own provider API key instead of using the policy's credentials."
+						hint="Permits the caller to forward their own provider API key instead of using the relay's host keys."
 					/>
 					<ToggleSwitch
 						value={values.payloadLoggingEnabled}
 						onChange={(v) => form.setFieldValue("payloadLoggingEnabled", v)}
 						label="Capture request & response payloads"
-						hint="Logs full request/response bodies for this key's traffic (visible under Logs). The policy or a global default can override this."
+						hint="Logs full request/response bodies for this key's traffic (visible under Logs). An account on the request's ladder that sets payload logging decides instead."
 					/>
 				</FormSection>
 			</div>

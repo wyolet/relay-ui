@@ -17,7 +17,7 @@ import { activeFilterCount } from "@/filters/toQueryParams";
 import type { FilterDef, FilterState } from "@/filters/types";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
-import { PrincipalPolicy } from "@/policy-bindings/PrincipalPolicy";
+import { AccountPolicy } from "@/policy-bindings/AccountPolicy";
 import { OwnerLink } from "@/projects/OwnerLink";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { RowMenu } from "@/shared/RowMenu";
@@ -253,7 +253,7 @@ export function KeysTable() {
 									<Th variant="column">Name</Th>
 									<Th variant="column">Prefix</Th>
 									<Th variant="column">Principal</Th>
-									<Th variant="column">Policy</Th>
+									<Th variant="column">Account · policy</Th>
 									<Th variant="column">Expires</Th>
 									<Th variant="column">Passthrough</Th>
 									<th
@@ -325,8 +325,8 @@ export function KeysTable() {
 														`Service account (${rk.spec.principal.id.slice(0, 6)}…)`)}
 											</td>
 											<td className="px-3 py-2 text-xs">
-												<PrincipalPolicy
-													principal={rk.spec.principal}
+												<AccountPolicy
+													accountRef={{ accountId: rk.spec.accountId ?? "" }}
 													compact
 												/>
 											</td>

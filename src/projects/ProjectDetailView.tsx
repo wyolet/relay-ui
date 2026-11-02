@@ -10,10 +10,7 @@ import {
 } from "lucide-react";
 import { useKeysForPrincipals } from "@/api/hooks/keys";
 import { useProjectPolicies } from "@/api/hooks/policies";
-import {
-	subjectKey,
-	usePolicyBindingsInProject,
-} from "@/api/hooks/policyBindings";
+import { usePolicyBindingsOwnedBy } from "@/api/hooks/policyBindings";
 import {
 	useDeleteProject,
 	useProject,
@@ -25,6 +22,8 @@ import { useTeams } from "@/api/hooks/teams";
 import { resolveWindow, useScopeSpend } from "@/api/hooks/usage";
 import { displayLabel } from "@/lib/displayLabel";
 import { EraseBodiesButton } from "@/logs/EraseBodiesButton";
+import { AccountChips } from "@/policy-bindings/AccountChips";
+import { AccountPolicy } from "@/policy-bindings/AccountPolicy";
 import { useToggleProjectEnabled } from "@/projects/useToggleProjectEnabled";
 import { subjectLabel } from "@/role-bindings/SubjectsEditor";
 import { Chip } from "@/shared/Chip";
@@ -42,12 +41,12 @@ export function ProjectDetailView({ name }: { name: string }) {
 	const { data: teamsData } = useTeams();
 	const projectId = project.metadata.id ?? "";
 	const serviceAccounts = useServiceAccountsInProject(projectId);
-	const accountIds = (serviceAccounts.data?.items ?? [])
+	const serviceAccountIds = (serviceAccounts.data?.items ?? [])
 		.map((sa) => sa.metadata.id ?? "")
 		.filter((id) => id.length > 0);
-	const keys = useKeysForPrincipals(accountIds);
+	const keys = useKeysForPrincipals(serviceAccountIds);
 	const policies = useProjectPolicies(projectId);
-	const policyBindings = usePolicyBindingsInProject(projectId);
+	const policyBindings = usePolicyBindingsOwnedBy(projectId);
 	const roleBindings = useRoleBindingsAtScope("project", projectId);
 	const period = resolveWindow("month");
 	const { spend, unavailable } = useScopeSpend(
@@ -68,7 +67,7 @@ export function ProjectDetailView({ name }: { name: string }) {
 	const team = (teamsData.items ?? []).find(
 		(t) => t.metadata.id === project.spec.teamId,
 	);
-	const accountNames = new Map(
+	const serviceAccountNames = new Map(
 		(serviceAccounts.data?.items ?? []).map((sa) => [
 			sa.metadata.id ?? "",
 			displayLabel(sa.metadata),
@@ -141,6 +140,9 @@ export function ProjectDetailView({ name }: { name: string }) {
 							</code>
 						)}
 					</DetailRow>
+					<AccountPolicy
+						accountRef={{ ownerOf: { kind: "project", id: projectId } }}
+					/>
 					{labels.length > 0 && (
 						<DetailRow label="Labels">
 							<div className="flex flex-wrap gap-1.5">
@@ -204,7 +206,7 @@ export function ProjectDetailView({ name }: { name: string }) {
 									{displayLabel(k.metadata)}
 								</Link>
 								<span className="text-muted-foreground">
-									{accountNames.get(k.spec.principal.id) ?? "—"}
+									{serviceAccountNames.get(k.spec.principal.id) ?? "—"}
 								</span>
 							</li>
 						))}
@@ -266,8 +268,11 @@ export function ProjectDetailView({ name }: { name: string }) {
 										</Link>
 									}
 								>
-									{(b.spec.subjects ?? []).map(subjectKey).join(", ") ||
-										"no subjects"}
+									{(b.spec.accountIds ?? []).length > 0 ? (
+										<AccountChips accountIds={b.spec.accountIds ?? []} />
+									) : (
+										<span className="text-muted-foreground">no accounts</span>
+									)}
 								</DetailRow>
 							</li>
 						))}
