@@ -4,13 +4,14 @@ import { useState } from "react";
 import { useDeleteRoleBinding, useRoleBinding } from "@/api/hooks/roleBindings";
 import { useRoles } from "@/api/hooks/roles";
 import { ApiError } from "@/api/types/errors";
-import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
+import { displayLabel } from "@/lib/displayLabel";
 import { OwnerLink } from "@/projects/OwnerLink";
 import { subjectLabel } from "@/role-bindings/SubjectsEditor";
 import { Chip } from "@/shared/Chip";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { DetailCard, DetailEmpty, DetailRow } from "@/shared/DetailCard";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
+import { DetailPageHeader } from "@/shared/DetailPageHeader";
 import { StatusBadge } from "@/shared/StatusBadge";
 import { toast } from "@/shared/Toast";
 
@@ -23,7 +24,6 @@ export function RoleBindingDetailView({ name }: { name: string }) {
 	const [confirming, setConfirming] = useState(false);
 
 	const enabled = binding.spec.enabled !== false;
-	const description = binding.metadata.description?.trim();
 	const labels = Object.entries(binding.metadata.labels ?? {});
 	const subjects = binding.spec.subjects ?? [];
 	const role = (rolesData.items ?? []).find(
@@ -58,34 +58,11 @@ export function RoleBindingDetailView({ name }: { name: string }) {
 				Role bindings
 			</Link>
 
-			<header className="flex items-start justify-between gap-4">
-				<div className="min-w-0 flex items-start gap-3">
-					<div className="mt-0.5 w-9 h-9 rounded-md bg-muted border border-border shrink-0 flex items-center justify-center">
-						<ShieldCheck
-							className="w-4 h-4 text-muted-foreground"
-							aria-hidden
-						/>
-					</div>
-					<div className="min-w-0">
-						<h1 className="text-xl font-semibold text-foreground truncate flex items-center gap-2">
-							{displayLabel(binding.metadata)}
-							{!hasDisplayName(binding.metadata) && (
-								<span className="text-[11px] text-muted-foreground font-normal">
-									(no display name)
-								</span>
-							)}
-							<StatusBadge enabled={enabled} />
-						</h1>
-						<p className="mt-1 text-xs text-muted-foreground font-mono truncate">
-							{binding.metadata.name}
-						</p>
-						{description && (
-							<p className="mt-1.5 max-w-2xl text-sm text-muted-foreground">
-								{description}
-							</p>
-						)}
-					</div>
-				</div>
+			<DetailPageHeader
+				icon={ShieldCheck}
+				metadata={binding.metadata}
+				badges={<StatusBadge enabled={enabled} />}
+			>
 				<DetailHeaderActions
 					enabled={enabled}
 					onToggle={() => undefined}
@@ -101,7 +78,7 @@ export function RoleBindingDetailView({ name }: { name: string }) {
 						</Link>
 					)}
 				/>
-			</header>
+			</DetailPageHeader>
 
 			<DetailCard title="Configuration" icon={Globe}>
 				<dl className="divide-y divide-border">

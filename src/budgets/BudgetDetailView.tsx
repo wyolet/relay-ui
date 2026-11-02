@@ -6,10 +6,10 @@ import {
 	PERIOD_LABELS,
 } from "@/budgets/budgetFormat";
 import { useBudgetDetail } from "@/budgets/useBudgetDetail";
-import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { DetailCard, DetailRow } from "@/shared/DetailCard";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
+import { DetailPageHeader } from "@/shared/DetailPageHeader";
 
 export function BudgetDetailView({ name }: { name: string }) {
 	const navigate = useNavigate();
@@ -18,7 +18,6 @@ export function BudgetDetailView({ name }: { name: string }) {
 		onDeleted: () =>
 			void navigate({ to: "/policies", search: { tab: "budgets" } }),
 	});
-	const description = budget.metadata.description?.trim();
 
 	return (
 		<div className="flex flex-col gap-5">
@@ -31,30 +30,7 @@ export function BudgetDetailView({ name }: { name: string }) {
 				Budgets
 			</Link>
 
-			<header className="flex items-start justify-between gap-4">
-				<div className="min-w-0 flex items-start gap-3">
-					<div className="mt-0.5 w-9 h-9 rounded-md bg-muted border border-border shrink-0 flex items-center justify-center">
-						<Wallet className="w-4 h-4 text-muted-foreground" aria-hidden />
-					</div>
-					<div className="min-w-0">
-						<h1 className="text-xl font-semibold text-foreground truncate flex items-center gap-2">
-							{displayLabel(budget.metadata)}
-							{!hasDisplayName(budget.metadata) && (
-								<span className="text-[11px] text-muted-foreground font-normal">
-									(no display name)
-								</span>
-							)}
-						</h1>
-						<p className="mt-1 text-xs text-muted-foreground font-mono truncate">
-							{budget.metadata.name}
-						</p>
-						{description && (
-							<p className="mt-1.5 max-w-2xl text-sm text-muted-foreground">
-								{description}
-							</p>
-						)}
-					</div>
-				</div>
+			<DetailPageHeader icon={Wallet} metadata={budget.metadata}>
 				<DetailHeaderActions
 					enabled
 					onToggle={() => undefined}
@@ -71,7 +47,7 @@ export function BudgetDetailView({ name }: { name: string }) {
 						</Link>
 					)}
 				/>
-			</header>
+			</DetailPageHeader>
 
 			<DetailCard title="Cap" icon={Wallet}>
 				<dl className="divide-y divide-border">

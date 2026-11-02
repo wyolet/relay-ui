@@ -4,10 +4,10 @@ import { DefaultAccountBadge } from "@/accounts/DefaultAccountBadge";
 import { UpstreamKeyList } from "@/accounts/UpstreamKeyList";
 import { useAccountDetail } from "@/accounts/useAccountDetail";
 import { HostCell } from "@/hosts/HostCell";
-import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { DetailCard, DetailRow } from "@/shared/DetailCard";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
+import { DetailPageHeader } from "@/shared/DetailPageHeader";
 
 export function AccountDetailView({ name }: { name: string }) {
 	const navigate = useNavigate();
@@ -17,7 +17,6 @@ export function AccountDetailView({ name }: { name: string }) {
 			onDeleted: () =>
 				void navigate({ to: "/keys", search: { tab: "accounts" } }),
 		});
-	const description = account.metadata.description?.trim();
 	const isDefault = account.spec.default === true;
 
 	return (
@@ -31,31 +30,11 @@ export function AccountDetailView({ name }: { name: string }) {
 				Accounts
 			</Link>
 
-			<header className="flex items-start justify-between gap-4">
-				<div className="min-w-0 flex items-start gap-3">
-					<div className="mt-0.5 w-9 h-9 rounded-md bg-muted border border-border shrink-0 flex items-center justify-center">
-						<Building2 className="w-4 h-4 text-muted-foreground" aria-hidden />
-					</div>
-					<div className="min-w-0">
-						<h1 className="text-xl font-semibold text-foreground truncate flex items-center gap-2">
-							{displayLabel(account.metadata)}
-							{!hasDisplayName(account.metadata) && (
-								<span className="text-[11px] text-muted-foreground font-normal">
-									(no display name)
-								</span>
-							)}
-							{isDefault && <DefaultAccountBadge />}
-						</h1>
-						<p className="mt-1 text-xs text-muted-foreground font-mono truncate">
-							{account.metadata.name}
-						</p>
-						{description && (
-							<p className="mt-1.5 max-w-2xl text-sm text-muted-foreground">
-								{description}
-							</p>
-						)}
-					</div>
-				</div>
+			<DetailPageHeader
+				icon={Building2}
+				metadata={account.metadata}
+				badges={isDefault && <DefaultAccountBadge />}
+			>
 				<DetailHeaderActions
 					enabled
 					onToggle={() => undefined}
@@ -72,7 +51,7 @@ export function AccountDetailView({ name }: { name: string }) {
 						</Link>
 					)}
 				/>
-			</header>
+			</DetailPageHeader>
 
 			<DetailCard title="Configuration" icon={Building2}>
 				<dl className="divide-y divide-border">

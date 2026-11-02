@@ -14,10 +14,11 @@ import { DiagnosticList } from "@/diagnostics/DiagnosticList";
 import { useKeyDiagnostics } from "@/diagnostics/useDiagnostics";
 import { KeyRotateDialog } from "@/keys/KeyRotateDialog";
 import { useToggleKeyEnabled } from "@/keys/useToggleKeyEnabled";
-import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
+import { displayLabel } from "@/lib/displayLabel";
 import { PrincipalPolicy } from "@/policy-bindings/PrincipalPolicy";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
+import { DetailPageHeader } from "@/shared/DetailPageHeader";
 import { StatusBadge } from "@/shared/StatusBadge";
 import { toast } from "@/shared/Toast";
 import { ResourceUsage } from "@/usage/ResourceUsage";
@@ -33,7 +34,6 @@ export function KeyDetailView({ name }: { name: string }) {
 
 	const rkId = rk.metadata.id ?? "";
 	const diagnostics = useKeyDiagnostics(rk.metadata.id);
-	const description = rk.metadata.description?.trim();
 	const enabled = rk.spec.enabled !== false;
 
 	async function handleDelete() {
@@ -63,47 +63,33 @@ export function KeyDetailView({ name }: { name: string }) {
 				API keys
 			</Link>
 
-			<header className="flex items-start justify-between gap-4">
-				<div className="min-w-0 flex items-start gap-3">
-					<div className="mt-0.5 w-9 h-9 rounded-md bg-muted border border-border shrink-0 flex items-center justify-center">
-						<KeyRound className="w-4 h-4 text-muted-foreground" aria-hidden />
-					</div>
-					<div className="min-w-0">
-						<h1 className="text-xl font-semibold text-foreground truncate flex items-center gap-2">
-							{displayLabel(rk.metadata)}
-							{!hasDisplayName(rk.metadata) && (
-								<span className="text-[11px] text-muted-foreground font-normal">
-									(no display name)
-								</span>
-							)}
-							<StatusBadge enabled={enabled} enabledLabel="Active" />
-							{rk.spec.passthroughAllowed && (
-								<span
-									className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium uppercase tracking-wide bg-warning/10 text-warning border border-warning/30"
-									title="This key can request models outside its policy's grant."
-								>
-									Passthrough
-								</span>
-							)}
-						</h1>
-						<p className="mt-1 text-xs text-muted-foreground font-mono truncate">
-							{rk.metadata.name}
+			<DetailPageHeader
+				icon={KeyRound}
+				metadata={rk.metadata}
+				badges={
+					<>
+						<StatusBadge enabled={enabled} enabledLabel="Active" />
+						{rk.spec.passthroughAllowed && (
+							<span
+								className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium uppercase tracking-wide bg-warning/10 text-warning border border-warning/30"
+								title="This key can request models outside its policy's grant."
+							>
+								Passthrough
+							</span>
+						)}
+					</>
+				}
+				extra={
+					rk.spec.prefix && (
+						<p className="mt-0.5 text-[11px] text-muted-foreground">
+							prefix{" "}
+							<code className="font-mono text-foreground">
+								{rk.spec.prefix}…
+							</code>
 						</p>
-						{rk.spec.prefix && (
-							<p className="mt-0.5 text-[11px] text-muted-foreground">
-								prefix{" "}
-								<code className="font-mono text-foreground">
-									{rk.spec.prefix}…
-								</code>
-							</p>
-						)}
-						{description && (
-							<p className="mt-1.5 max-w-2xl text-sm text-muted-foreground">
-								{description}
-							</p>
-						)}
-					</div>
-				</div>
+					)
+				}
+			>
 				<DetailHeaderActions
 					enabled={enabled}
 					onToggle={() => void setEnabled(rk, !enabled)}
@@ -125,7 +111,7 @@ export function KeyDetailView({ name }: { name: string }) {
 						Rotate
 					</Button>
 				</DetailHeaderActions>
-			</header>
+			</DetailPageHeader>
 
 			<DiagnosticList diagnostics={diagnostics} />
 
