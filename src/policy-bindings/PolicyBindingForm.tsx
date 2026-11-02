@@ -1,12 +1,5 @@
-import {
-	Building2,
-	ShieldCheck,
-	Tags,
-	ToggleLeft,
-	UserRound,
-} from "lucide-react";
+import { Building2, ShieldCheck, Tags, ToggleLeft } from "lucide-react";
 import { useId } from "react";
-import { usePolicies } from "@/api/hooks/policies";
 import type { PolicyBinding } from "@/api/types/policyBinding";
 import {
 	Select,
@@ -15,19 +8,17 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { displayLabel } from "@/lib/displayLabel";
 import { AccountsPicker } from "@/policy-bindings/AccountsPicker";
 import { usePolicyBindingForm } from "@/policy-bindings/usePolicyBindingForm";
 import { FormFooter } from "@/shared/FormFooter";
 import { FormSection } from "@/shared/FormSection";
 import { IdentitySection } from "@/shared/IdentitySection";
 import { LabelsEditor } from "@/shared/LabelsEditor";
-import { OwnerSection } from "@/shared/OwnerSection";
 import { ToggleSwitch } from "@/shared/ToggleSwitch";
 
 interface PolicyBindingFormProps {
 	binding?: PolicyBinding;
-	/** Preselected owner project when creating from a project page. */
+	/** The owner project when creating from a project page. */
 	projectId?: string;
 	onSaved: (savedName: string) => void;
 	onCancel: () => void;
@@ -46,21 +37,15 @@ export function PolicyBindingForm({
 		slugPreview,
 		displayNameError,
 		descriptionError,
-		ownerOptions,
-		ownerError,
+		placement,
 		policyIdError,
+		policyOptions,
 		accountOptions,
 		setAccountIds,
 		accountIdsError,
 		duplicateAccountId,
 	} = usePolicyBindingForm({ open: true, binding, projectId, onSaved });
 	const accountIdsErrorId = useId();
-
-	const { data: policiesData } = usePolicies();
-	const policyOptions = (policiesData.items ?? []).map((p) => ({
-		value: p.metadata.id ?? "",
-		label: displayLabel(p.metadata),
-	}));
 
 	return (
 		<form
@@ -82,15 +67,7 @@ export function PolicyBindingForm({
 					descriptionError={descriptionError}
 					autoFocus={!isEdit}
 					placeholder="ML Search everyone"
-				/>
-
-				<OwnerSection
-					icon={UserRound}
-					description="The system, a team, a project, or a user. Accounts must sit inside the owner's scope; a team's scope includes its projects."
-					options={ownerOptions}
-					value={values.owner}
-					onChange={(v) => form.setFieldValue("owner", v)}
-					error={ownerError}
+					placement={placement}
 				/>
 
 				<FormSection

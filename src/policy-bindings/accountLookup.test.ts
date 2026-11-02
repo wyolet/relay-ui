@@ -2,14 +2,12 @@ import { describe, expect, it } from "bun:test";
 import { accountLabel } from "@/accounts/accountView";
 import type { Account } from "@/api/hooks/accounts";
 import type { PolicyBinding } from "@/api/types/policyBinding";
-import type { Project } from "@/api/types/project";
 import type { components } from "@/api/types.gen";
 import {
 	accountBinding,
 	defaultLane,
 	describeDuplicate,
 	heldAccounts,
-	inOwnerScope,
 	laneAccounts,
 	ownAccount,
 } from "./accountLookup";
@@ -65,39 +63,9 @@ const closedMember = account(
 );
 const all = [teamAcct, projectAcct, saAcct, personal, member, closedMember];
 
-const projects: Project[] = [
-	{ metadata: { id: "p1", name: "p" }, spec: { teamId: "t1" } },
-	{ metadata: { id: "p2", name: "q" }, spec: { teamId: "t2" } },
-];
-
 describe("accountLabel", () => {
 	it("prefixes the kind", () => {
 		expect(accountLabel(saAcct)).toBe("Service · sa-ci");
-	});
-});
-
-describe("inOwnerScope", () => {
-	it("lets the system hold every account", () => {
-		expect(all.every((a) => inOwnerScope(a, { kind: "system" }, []))).toBe(
-			true,
-		);
-	});
-
-	it("holds a team's own and its projects' accounts", () => {
-		const team = { kind: "team", id: "t1" } as const;
-		expect(inOwnerScope(teamAcct, team, projects)).toBe(true);
-		expect(inOwnerScope(saAcct, team, projects)).toBe(true);
-		expect(inOwnerScope(closedMember, team, projects)).toBe(false);
-		expect(inOwnerScope(personal, team, projects)).toBe(false);
-	});
-
-	it("holds only a project's or user's own accounts", () => {
-		expect(
-			inOwnerScope(teamAcct, { kind: "project", id: "p1" }, projects),
-		).toBe(false);
-		expect(inOwnerScope(personal, { kind: "user", id: "u1" }, projects)).toBe(
-			true,
-		);
 	});
 });
 
