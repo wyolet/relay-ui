@@ -1,22 +1,31 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { ChevronLeft, KeyRound, Layers } from "lucide-react";
+import { Building2, ChevronLeft, KeyRound, Layers } from "lucide-react";
+import { SharedByBadge } from "@/accounts/SharedByBadge";
 import { UpstreamKeyList } from "@/accounts/UpstreamKeyList";
 import { PlanIssuesPanel } from "@/diagnostics/IssuesPanel";
 import { HostCell } from "@/hosts/HostCell";
 import { SELECTION_LABELS } from "@/pools/poolKeys";
 import { usePoolDetail } from "@/pools/usePoolDetail";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
-import { DetailCard, DetailRow } from "@/shared/DetailCard";
+import { DetailCard, DetailEmpty, DetailRow } from "@/shared/DetailCard";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
 import { DetailPageHeader } from "@/shared/DetailPageHeader";
 
 export function PoolDetailView({ name }: { name: string }) {
 	const navigate = useNavigate();
-	const { pool, keys, selection, host, hostLabel, del, requestDelete } =
-		usePoolDetail({
-			name,
-			onDeleted: () => void navigate({ to: "/keys", search: { tab: "pools" } }),
-		});
+	const {
+		pool,
+		accounts,
+		keys,
+		selection,
+		host,
+		hostLabel,
+		del,
+		requestDelete,
+	} = usePoolDetail({
+		name,
+		onDeleted: () => void navigate({ to: "/keys", search: { tab: "pools" } }),
+	});
 
 	return (
 		<div className="flex flex-col gap-5">
@@ -72,6 +81,51 @@ export function PoolDetailView({ name }: { name: string }) {
 						</p>
 					</DetailRow>
 				</dl>
+			</DetailCard>
+
+			<DetailCard title={`Accounts · ${accounts.length}`} icon={Building2}>
+				{accounts.length === 0 ? (
+					<DetailEmpty>
+						No whole accounts; the pool draws on the keys below.
+					</DetailEmpty>
+				) : (
+					<>
+						<p className="mb-2 text-[11px] text-muted-foreground">
+							Each brings all of its keys, in this order, ahead of the single
+							keys in the list below.
+						</p>
+						<ol className="divide-y divide-border">
+							{accounts.map((a, i) => (
+								<li
+									key={a.id}
+									className="flex items-center gap-3 py-2 first:pt-0 last:pb-0"
+								>
+									{selection === "prioritized" && (
+										<span className="w-5 shrink-0 text-right text-[11px] tabular-nums text-muted-foreground">
+											{i + 1}
+										</span>
+									)}
+									{a.known ? (
+										<Link
+											to="/accounts/$name"
+											params={{ name: a.name }}
+											className="min-w-0 truncate text-xs text-foreground hover:underline"
+										>
+											{a.label}
+										</Link>
+									) : (
+										<span className="min-w-0 truncate text-xs text-muted-foreground">
+											{a.label}
+										</span>
+									)}
+									{a.sharedBy !== undefined && (
+										<SharedByBadge name={a.sharedBy} />
+									)}
+								</li>
+							))}
+						</ol>
+					</>
+				)}
 			</DetailCard>
 
 			<DetailCard title={`Keys · ${keys.length}`} icon={KeyRound}>

@@ -1,6 +1,6 @@
-import { type Budget, useBudgets } from "@/api/hooks/budgets";
+import { type Budget, useBudgets, useUsableBudgets } from "@/api/hooks/budgets";
 import { useHosts } from "@/api/hooks/hosts";
-import { type Pool, usePools } from "@/api/hooks/pools";
+import { type Pool, usePools, useUsablePools } from "@/api/hooks/pools";
 import type { Host } from "@/api/types/host";
 import { displayLabel } from "@/lib/displayLabel";
 
@@ -19,18 +19,27 @@ export interface LinkChoices {
 	available: LinkChoice[];
 }
 
+/** Selected rows are named from every readable row; the rest offer only what the owner may link. */
 function splitChoices(
 	all: readonly LinkChoice[],
+	usable: readonly LinkChoice[],
 	selectedIds: readonly string[],
 ): LinkChoices {
-	const byId = new Map(all.map((c) => [c.id, c]));
 	const chosen = new Set(selectedIds);
 	return {
-		selected: selectedIds.map(
-			(id) => byId.get(id) ?? { id, name: id, label: id, meta: "not found" },
-		),
-		available: all.filter((c) => !chosen.has(c.id)),
+		selected: selectedChoices(all, selectedIds),
+		available: usable.filter((c) => !chosen.has(c.id)),
 	};
+}
+
+function selectedChoices(
+	all: readonly LinkChoice[],
+	selectedIds: readonly string[],
+): LinkChoice[] {
+	const byId = new Map(all.map((c) => [c.id, c]));
+	return selectedIds.map(
+		(id) => byId.get(id) ?? { id, name: id, label: id, meta: "not found" },
+	);
 }
 
 function poolChoice(pool: Pool, hosts: readonly Host[]): LinkChoice {
@@ -59,17 +68,49 @@ function budgetChoice(budget: Budget): LinkChoice {
 	};
 }
 
-export function usePoolChoices(selectedIds: readonly string[]): LinkChoices {
+export function useSelectedPools(selectedIds: readonly string[]): LinkChoice[] {
 	const { data: pools } = usePools();
 	const { data: hosts } = useHosts();
 	const hostItems = hosts.items ?? [];
-	return splitChoices(
+	return selectedChoices(
 		(pools.items ?? []).map((p) => poolChoice(p, hostItems)),
 		selectedIds,
 	);
 }
 
-export function useBudgetChoices(selectedIds: readonly string[]): LinkChoices {
+/** `usableBy` is the policy owner's scope as the list filter takes it. */
+export function usePoolChoices(
+	selectedIds: readonly string[],
+	usableBy: string | undefined,
+): LinkChoices {
+	const { data: pools } = usePools();
+	const { data: hosts } = useHosts();
+	const usable = useUsablePools(usableBy);
+	const hostItems = hosts.items ?? [];
+	return splitChoices(
+		(pools.items ?? []).map((p) => poolChoice(p, hostItems)),
+		usable.map((p) => poolChoice(p, hostItems)),
+		selectedIds,
+	);
+}
+
+export function useSelectedBudgets(
+	selectedIds: readonly string[],
+): LinkChoice[] {
 	const { data } = useBudgets();
-	return splitChoices((data.items ?? []).map(budgetChoice), selectedIds);
+	return selectedChoices((data.items ?? []).map(budgetChoice), selectedIds);
+}
+
+/** `usableBy` is the policy owner's scope as the list filter takes it. */
+export function useBudgetChoices(
+	selectedIds: readonly string[],
+	usableBy: string | undefined,
+): LinkChoices {
+	const { data } = useBudgets();
+	const usable = useUsableBudgets(usableBy);
+	return splitChoices(
+		(data.items ?? []).map(budgetChoice),
+		usable.map(budgetChoice),
+		selectedIds,
+	);
 }

@@ -31,14 +31,35 @@ const accounts = [
 ];
 
 describe("accountOptions", () => {
-	it("lists the default choice, then the owner's provider accounts at the host", () => {
-		expect(accountOptions(accounts, "h1", "system", undefined)).toEqual([
+	it("lists the default choice, then the usable provider accounts at the host", () => {
+		expect(accountOptions(accounts, "h1")).toEqual([
 			{ value: DEFAULT_ACCOUNT, label: "Default account" },
 			{ value: "a-org", label: "a-org · org-1" },
+			{ value: "a-team", label: "a-team" },
 		]);
+		expect(accountOptions(accounts, "h2").map((o) => o.value)).toEqual([
+			DEFAULT_ACCOUNT,
+			"a-other-host",
+		]);
+	});
+
+	it("leaves out shared accounts, which hold no keys", () => {
+		const shared = account("a-shared", "h1", system, {
+			sourceAccountId: "a-org",
+		});
 		expect(
-			accountOptions(accounts, "h1", "team:t1", undefined).map((o) => o.value),
-		).toEqual([DEFAULT_ACCOUNT, "a-team"]);
+			accountOptions([...accounts, shared], "h1").map((o) => o.value),
+		).not.toContain("a-shared");
+	});
+
+	it("keeps the key's current account outside the usable set", () => {
+		const team = accounts.filter((a) => a.metadata.id === "a-team");
+		const current = accounts.find((a) => a.metadata.id === "a-org");
+		expect(accountOptions(team, "h1", current).map((o) => o.value)).toEqual([
+			DEFAULT_ACCOUNT,
+			"a-team",
+			"a-org",
+		]);
 	});
 });
 

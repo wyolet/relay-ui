@@ -18,18 +18,16 @@ import {
 	DEFAULT_PERIOD,
 } from "@/budgets/budgetFormat";
 import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
-import { useOwnerOptions } from "@/hooks/useOwnerOptions";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
+import { useFormOwner } from "@/hooks/useWorkContext";
 import { displayLabel } from "@/lib/displayLabel";
 import { shownError, zodFieldValidator } from "@/lib/formErrors";
-import { ALL_OWNER_SCOPES, PERSONAL_OWNER } from "@/lib/ownerScopes";
 import { randomSuffix, slugify } from "@/lib/slug";
 import { toast } from "@/shared/Toast";
 
 export interface BudgetFormValues {
 	displayName: string;
 	description: string;
-	owner: string;
 	amountUsd: string;
 	period: BudgetPeriod;
 	mode: BudgetMode;
@@ -42,7 +40,6 @@ const schema = z.object({
 		.min(1, "Display name is required — the slug is generated from it")
 		.max(120, "Display name is too long"),
 	description: z.string().trim().max(500, "Description is too long"),
-	owner: z.string().min(1, "Pick who owns this budget."),
 	amountUsd: z
 		.string()
 		.min(1, "Enter the cap in USD.")
@@ -54,22 +51,20 @@ const schema = z.object({
 	mode: z.enum(BUDGET_MODES),
 });
 
-function emptyValues(owner: string): BudgetFormValues {
+function emptyValues(): BudgetFormValues {
 	return {
 		displayName: "",
 		description: "",
-		owner,
 		amountUsd: "",
 		period: DEFAULT_PERIOD,
 		mode: DEFAULT_MODE,
 	};
 }
 
-function toValues(budget: Budget, owner: string): BudgetFormValues {
+function toValues(budget: Budget): BudgetFormValues {
 	return {
 		displayName: displayLabel(budget.metadata),
 		description: budget.metadata.description ?? "",
-		owner,
 		amountUsd: budget.spec.amountUsd,
 		period: budget.spec.period ?? DEFAULT_PERIOD,
 		mode: budget.spec.mode ?? DEFAULT_MODE,
@@ -91,16 +86,11 @@ export function useBudgetForm({ budget, onSaved }: UseBudgetFormOptions) {
 		budget?.metadata.resourceVersion,
 	);
 
-	const ownerPicker = useOwnerOptions({
-		kinds: ALL_OWNER_SCOPES,
-		owner: budget?.metadata.owner,
-		preset: PERSONAL_OWNER,
-	});
-	const { initialOwner } = ownerPicker;
+	const { owner, placement } = useFormOwner(budget?.metadata);
 
 	const initial = useMemo<BudgetFormValues>(
-		() => (budget ? toValues(budget, initialOwner) : emptyValues(initialOwner)),
-		[budget, initialOwner],
+		() => (budget ? toValues(budget) : emptyValues()),
+		[budget],
 	);
 	const suffixRef = useRef<string>(randomSuffix());
 	const computeSlug = (displayName: string): string => {
@@ -117,7 +107,6 @@ export function useBudgetForm({ budget, onSaved }: UseBudgetFormOptions) {
 		onSubmit: async ({ value }) => {
 			const displayName = value.displayName.trim();
 			const description = value.description.trim();
-			const owner = ownerPicker.toOwner(value.owner);
 			const spec = {
 				amountUsd: value.amountUsd,
 				period: value.period,
@@ -133,7 +122,6 @@ export function useBudgetForm({ budget, onSaved }: UseBudgetFormOptions) {
 								resourceVersion: loaded.version,
 								displayName,
 								description,
-								owner,
 							},
 							spec,
 						},
@@ -146,7 +134,7 @@ export function useBudgetForm({ budget, onSaved }: UseBudgetFormOptions) {
 						metadata: {
 							name: computeSlug(displayName),
 							displayName,
-							owner,
+							...(owner ? { owner } : {}),
 							...(description ? { description } : {}),
 						},
 						spec,
@@ -176,7 +164,6 @@ export function useBudgetForm({ budget, onSaved }: UseBudgetFormOptions) {
 	const errors = useStore(form.store, (s) => ({
 		displayName: shownError(s.fieldMeta?.displayName, s.submissionAttempts),
 		description: shownError(s.fieldMeta?.description, s.submissionAttempts),
-		owner: shownError(s.fieldMeta?.owner, s.submissionAttempts),
 		amountUsd: shownError(s.fieldMeta?.amountUsd, s.submissionAttempts),
 	}));
 
@@ -192,7 +179,7 @@ export function useBudgetForm({ budget, onSaved }: UseBudgetFormOptions) {
 		slugPreview: budget
 			? budget.metadata.name
 			: computeSlug(values.displayName),
-		ownerOptions: ownerPicker.options,
+		placement,
 		setAmount,
 	};
 }

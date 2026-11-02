@@ -15,15 +15,18 @@ import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
 import { serviceAccountsListQueryOptions } from "@/api/hooks/serviceAccounts";
 import { usersListQueryOptions } from "@/api/hooks/users";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { HostKeysTable } from "@/host-keys/HostKeysTable";
 import { KeysTable, toKeysParams } from "@/keys/KeysTable";
 import { PoolsTable } from "@/pools/PoolsTable";
 import { PageLoader } from "@/shared/Spinner";
 
-const TABS = ["relay", "provider", "accounts", "pools"] as const;
+const TABS = ["relay", "accounts", "pools"] as const;
 
 const searchSchema = z.object({
-	tab: z.enum(TABS).default("relay"),
+	// Credentials live in their accounts now; the old tab lands there.
+	tab: z
+		.enum(TABS)
+		.catch(({ input }) => (input === "provider" ? "accounts" : "relay"))
+		.default("relay"),
 	q: z.string().default(""),
 	principal_kind: z
 		.enum(["all", "serviceaccount", "user"])
@@ -74,7 +77,8 @@ function KeysPage() {
 			<div className="mb-4">
 				<h1 className="text-lg font-semibold text-foreground">Keys</h1>
 				<p className="text-xs text-muted-foreground mt-0.5">
-					Relay API keys and the upstream provider credentials they draw from.
+					Relay API keys, and the provider accounts and pools whose keys they
+					draw on.
 				</p>
 			</div>
 
@@ -82,9 +86,6 @@ function KeysPage() {
 				<TabsList variant="underline">
 					<TabsTrigger value="relay" className="px-3 h-9">
 						API keys
-					</TabsTrigger>
-					<TabsTrigger value="provider" className="px-3 h-9">
-						Credentials
 					</TabsTrigger>
 					<TabsTrigger value="accounts" className="px-3 h-9">
 						Accounts
@@ -98,11 +99,6 @@ function KeysPage() {
 			{search.tab === "relay" && (
 				<Suspense fallback={<PageLoader className="min-h-[40vh]" />}>
 					<KeysTable />
-				</Suspense>
-			)}
-			{search.tab === "provider" && (
-				<Suspense fallback={<PageLoader className="min-h-[40vh]" />}>
-					<HostKeysTable />
 				</Suspense>
 			)}
 			{search.tab === "accounts" && (

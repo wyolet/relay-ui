@@ -3,26 +3,22 @@ import { useStore } from "@tanstack/react-store";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 import { ACCOUNT_KIND_LABELS, accountLabel } from "@/accounts/accountView";
-import { useAuth } from "@/api/auth";
-import { useAccounts } from "@/api/hooks/accounts";
+import { useAccounts, useUsableAccounts } from "@/api/hooks/accounts";
+import { usePolicies, useUsablePolicies } from "@/api/hooks/policies";
 import {
 	useCreatePolicyBinding,
 	useUpdatePolicyBinding,
 } from "@/api/hooks/policyBindings";
-import { useProjects } from "@/api/hooks/projects";
 import type { PolicyBinding } from "@/api/types/policyBinding";
-import type { components } from "@/api/types.gen";
 import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
-import { useOwnerOptions } from "@/hooks/useOwnerOptions";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
+import { useFormOwner } from "@/hooks/useWorkContext";
 import { displayLabel } from "@/lib/displayLabel";
 import { shownError, zodFieldValidator } from "@/lib/formErrors";
-import type { OwnerOption } from "@/lib/ownerScopes";
 import { randomSuffix, slugify } from "@/lib/slug";
 import {
 	type DuplicateAccount,
 	describeDuplicate,
-	inOwnerScope,
 	isDuplicateBinding,
 } from "@/policy-bindings/accountLookup";
 import {
@@ -32,33 +28,19 @@ import {
 } from "@/shared/LabelsEditor";
 import { toast } from "@/shared/Toast";
 
-type Owner = components["schemas"]["Owner"];
-
-/** Form value of a system-owned binding; the other owners use the owner-picker keys. */
-const SYSTEM_OWNER = "system";
-
-const SYSTEM_OPTION: OwnerOption = {
-	value: SYSTEM_OWNER,
-	kind: "system",
-	label: "System",
-};
-
 export interface PolicyBindingFormValues {
 	displayName: string;
 	description: string;
-	/** {@link SYSTEM_OWNER}, personal, or "team:<id>" / "project:<id>". */
-	owner: string;
 	policyId: string;
 	accountIds: string[];
 	enabled: boolean;
 	labels: LabelPair[];
 }
 
-function emptyValues(owner: string): PolicyBindingFormValues {
+function emptyValues(): PolicyBindingFormValues {
 	return {
 		displayName: "",
 		description: "",
-		owner,
 		policyId: "",
 		accountIds: [],
 		enabled: true,
@@ -66,14 +48,10 @@ function emptyValues(owner: string): PolicyBindingFormValues {
 	};
 }
 
-function toValues(
-	binding: PolicyBinding,
-	owner: string,
-): PolicyBindingFormValues {
+function toValues(binding: PolicyBinding): PolicyBindingFormValues {
 	return {
 		displayName: displayLabel(binding.metadata),
 		description: binding.metadata.description ?? "",
-		owner,
 		policyId: binding.spec.policyId,
 		accountIds: binding.spec.accountIds ?? [],
 		enabled: binding.spec.enabled ?? true,
@@ -88,7 +66,6 @@ const schema = z.object({
 		.min(1, "Display name is required — the slug is generated from it")
 		.max(120, "Display name is too long"),
 	description: z.string().trim().max(500, "Description is too long"),
-	owner: z.string().min(1, "Pick who owns this binding."),
 	policyId: z.string().min(1, "Pick the policy the accounts are bound to."),
 	accountIds: z
 		.array(z.string())
@@ -102,7 +79,7 @@ const schema = z.object({
 interface UsePolicyBindingFormOptions {
 	open?: boolean;
 	binding?: PolicyBinding;
-	/** Preselected owner project when creating from a project page. */
+	/** The owner project when creating from a project page. */
 	projectId?: string;
 	onSaved: (savedName: string) => void;
 }
@@ -114,37 +91,28 @@ export function usePolicyBindingForm({
 	onSaved,
 }: UsePolicyBindingFormOptions) {
 	const isEdit = binding !== undefined;
-	const { isAdmin, userId } = useAuth();
 	const createBinding = useCreatePolicyBinding();
 	const updateBinding = useUpdatePolicyBinding();
 	const toastSaveError = useSaveErrorToast();
 	const { data: accountsData } = useAccounts();
-	const { data: projectsData } = useProjects();
+	const { data: policiesData } = usePolicies();
 	const loaded = useLoadedResourceVersion(
 		`${open}:${binding?.metadata.id ?? ""}`,
 		binding?.metadata.resourceVersion,
 	);
 	const [duplicate, setDuplicate] = useState<DuplicateAccount | null>(null);
 
-	const ownerPicker = useOwnerOptions({
-		kinds: ["user", "team", "project"],
-		owner: binding?.metadata.owner,
-		preset: projectId ? `project:${projectId}` : isAdmin ? SYSTEM_OWNER : "",
-	});
-	const { initialOwner } = ownerPicker;
-	const ownerOptions = [
-		...(isAdmin || initialOwner === SYSTEM_OWNER ? [SYSTEM_OPTION] : []),
-		...ownerPicker.options.filter((o) => o.value !== SYSTEM_OWNER),
-	];
-
-	function ownerOf(key: string): Owner {
-		return key === SYSTEM_OWNER ? { kind: "system" } : ownerPicker.toOwner(key);
-	}
+	const { owner, usableBy, placement } = useFormOwner(
+		!binding && projectId
+			? { owner: { kind: "project", id: projectId } }
+			: binding?.metadata,
+	);
+	const usablePolicies = useUsablePolicies(usableBy);
+	const usableAccounts = useUsableAccounts(usableBy);
 
 	const initial = useMemo<PolicyBindingFormValues>(
-		() =>
-			binding ? toValues(binding, initialOwner) : emptyValues(initialOwner),
-		[binding, initialOwner],
+		() => (binding ? toValues(binding) : emptyValues()),
+		[binding],
 	);
 	const suffixRef = useRef<string>(
 		binding?.metadata.name.match(/-(\d{4,8})$/)?.[1] ?? randomSuffix(),
@@ -173,7 +141,6 @@ export function usePolicyBindingForm({
 			const displayName = value.displayName.trim();
 			const description = value.description.trim();
 			const labels = fromLabelPairs(value.labels);
-			const owner = ownerOf(value.owner);
 			const spec = {
 				policyId: value.policyId,
 				accountIds: value.accountIds,
@@ -191,7 +158,6 @@ export function usePolicyBindingForm({
 								displayName,
 								description,
 								labels,
-								owner,
 							},
 							spec,
 						},
@@ -206,7 +172,7 @@ export function usePolicyBindingForm({
 							displayName,
 							description,
 							labels,
-							owner,
+							...(owner ? { owner } : {}),
 						},
 						spec,
 					});
@@ -234,8 +200,8 @@ export function usePolicyBindingForm({
 	useEffect(() => {
 		if (lastResetKey.current === resetKey) return;
 		lastResetKey.current = resetKey;
-		form.reset(open ? initial : emptyValues(initialOwner));
-	}, [resetKey, open, initial, initialOwner, form]);
+		form.reset(open ? initial : emptyValues());
+	}, [resetKey, open, initial, form]);
 
 	function setAccountIds(next: string[]) {
 		form.setFieldValue("accountIds", next);
@@ -244,22 +210,30 @@ export function usePolicyBindingForm({
 
 	const values = useStore(form.store, (s) => s.values);
 
-	// A personal owner carries no id until saved; scope it to the caller.
-	const picked = values.owner ? ownerOf(values.owner) : undefined;
-	const scope =
-		picked?.kind === "user" && !picked.id
-			? { kind: "user" as const, id: userId }
-			: picked;
-	const accountOptions = accounts
-		.filter(
+	// The owner's usable set, plus what the binding already names so an edit keeps it.
+	const usableAccountIds = new Set(usableAccounts.map((a) => a.metadata.id));
+	const accountOptions = [
+		...usableAccounts,
+		...accounts.filter(
 			(a) =>
-				!scope ||
-				inOwnerScope(a, scope, projectsData.items ?? []) ||
+				!usableAccountIds.has(a.metadata.id) &&
 				values.accountIds.includes(a.metadata.id ?? ""),
-		)
-		.flatMap((a) =>
-			a.metadata.id ? [{ value: a.metadata.id, label: accountLabel(a) }] : [],
-		);
+		),
+	].flatMap((a) =>
+		a.metadata.id ? [{ value: a.metadata.id, label: accountLabel(a) }] : [],
+	);
+	const usablePolicyIds = new Set(usablePolicies.map((p) => p.metadata.id));
+	const policyOptions = [
+		...usablePolicies,
+		...(policiesData.items ?? []).filter(
+			(p) =>
+				!usablePolicyIds.has(p.metadata.id) &&
+				p.metadata.id === values.policyId,
+		),
+	].map((p) => ({
+		value: p.metadata.id ?? "",
+		label: displayLabel(p.metadata),
+	}));
 
 	const slugPreview = isEdit
 		? (binding?.metadata.name ?? "")
@@ -269,9 +243,6 @@ export function usePolicyBindingForm({
 	);
 	const descriptionError = useStore(form.store, (s) =>
 		shownError(s.fieldMeta?.description, s.submissionAttempts),
-	);
-	const ownerError = useStore(form.store, (s) =>
-		shownError(s.fieldMeta?.owner, s.submissionAttempts),
 	);
 	const policyIdError = useStore(form.store, (s) =>
 		shownError(s.fieldMeta?.policyId, s.submissionAttempts),
@@ -287,9 +258,9 @@ export function usePolicyBindingForm({
 		slugPreview,
 		displayNameError,
 		descriptionError,
-		ownerOptions,
-		ownerError,
+		placement,
 		policyIdError,
+		policyOptions,
 		accountOptions,
 		setAccountIds,
 		accountIdsError: accountIdsFieldError ?? duplicate?.message,

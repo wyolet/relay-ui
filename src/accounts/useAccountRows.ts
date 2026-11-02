@@ -8,6 +8,8 @@ import {
 	hostLabel,
 	PROVIDER_KIND,
 	parseAccountKind,
+	providersFirst,
+	sharedByName,
 } from "@/accounts/accountView";
 import { useHolderResolver } from "@/accounts/useHolderResolver";
 import { type Account, useAccounts } from "@/api/hooks/accounts";
@@ -47,6 +49,8 @@ export interface AccountRow {
 	provider:
 		| { host: Host | undefined; hostLabel: string; keyCount: number }
 		| undefined;
+	/** Who shared it; unset on accounts that aren't shared. */
+	sharedBy: string | undefined;
 	deletable: boolean;
 }
 
@@ -69,24 +73,29 @@ export function useAccountRows() {
 		if (id) keyCounts.set(id, (keyCounts.get(id) ?? 0) + 1);
 	}
 
-	const allRows: AccountRow[] = (accountsData.items ?? []).map((account) => {
-		const { spec } = account;
-		const hostId = spec.hostId ?? "";
-		const host = hostById.get(hostId);
-		return {
-			account,
-			holder: spec.holder ? toHolder(spec.holder) : undefined,
-			provider:
-				spec.kind === PROVIDER_KIND
-					? {
-							host,
-							hostLabel: hostLabel(host, hostId),
-							keyCount: keyCounts.get(account.metadata.id ?? "") ?? 0,
-						}
-					: undefined,
-			deletable: canDeleteAccount(spec),
-		};
-	});
+	const allRows: AccountRow[] = providersFirst(accountsData.items ?? []).map(
+		(account) => {
+			const { spec } = account;
+			const hostId = spec.hostId ?? "";
+			const host = hostById.get(hostId);
+			// A shared account holds no keys; it counts its real account's.
+			const keyOwnerId = spec.sourceAccountId ?? account.metadata.id ?? "";
+			return {
+				account,
+				holder: spec.holder ? toHolder(spec.holder) : undefined,
+				provider:
+					spec.kind === PROVIDER_KIND
+						? {
+								host,
+								hostLabel: hostLabel(host, hostId),
+								keyCount: keyCounts.get(keyOwnerId) ?? 0,
+							}
+						: undefined,
+				sharedBy: sharedByName(account),
+				deletable: canDeleteAccount(spec),
+			};
+		},
+	);
 
 	const needle = q.trim().toLowerCase();
 	const matches = (r: AccountRow) =>

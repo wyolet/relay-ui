@@ -5,11 +5,10 @@ import { z } from "zod";
 import { useCreatePolicy, useUpdatePolicy } from "@/api/hooks/policies";
 import type { Policy, PolicyCreate, PolicyUpdate } from "@/api/types/policy";
 import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
-import { useOwnerOptions } from "@/hooks/useOwnerOptions";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
+import { useFormOwner } from "@/hooks/useWorkContext";
 import { displayLabel } from "@/lib/displayLabel";
 import { shownError, zodFieldValidator } from "@/lib/formErrors";
-import { ALL_OWNER_SCOPES, PERSONAL_OWNER } from "@/lib/ownerScopes";
 import { randomSuffix, slugify } from "@/lib/slug";
 import {
 	budgetLinksForIds,
@@ -38,7 +37,6 @@ export function policyFromFormValues(
 export interface PolicyFormValues extends PolicySpecValues {
 	displayName: string;
 	description: string;
-	owner: string;
 }
 
 const schema = z.object({
@@ -48,7 +46,6 @@ const schema = z.object({
 		.min(1, "Display name is required — the slug is generated from it")
 		.max(120, "Display name is too long"),
 	description: z.string().trim().max(500, "Description is too long"),
-	owner: z.string().min(1, "Pick who owns this policy."),
 	poolIds: z.array(z.string()),
 	models: z.array(z.string()),
 	rateLimits: z.array(
@@ -62,20 +59,18 @@ const schema = z.object({
 	enabled: z.boolean(),
 });
 
-function emptyValues(owner: string): PolicyFormValues {
+function emptyValues(): PolicyFormValues {
 	return {
 		displayName: "",
 		description: "",
-		owner,
 		...specToFormValues({}),
 	};
 }
 
-function policyToValues(policy: Policy, owner: string): PolicyFormValues {
+function policyToValues(policy: Policy): PolicyFormValues {
 	return {
 		displayName: displayLabel(policy.metadata),
 		description: policy.metadata.description ?? "",
-		owner,
 		...specToFormValues(policy.spec),
 	};
 }
@@ -96,17 +91,11 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 		policy?.metadata.resourceVersion,
 	);
 
-	const ownerPicker = useOwnerOptions({
-		kinds: ALL_OWNER_SCOPES,
-		owner: policy?.metadata.owner,
-		preset: PERSONAL_OWNER,
-	});
-	const { initialOwner } = ownerPicker;
+	const { owner, usableBy, placement } = useFormOwner(policy?.metadata);
 
 	const initial = useMemo<PolicyFormValues>(
-		() =>
-			policy ? policyToValues(policy, initialOwner) : emptyValues(initialOwner),
-		[policy, initialOwner],
+		() => (policy ? policyToValues(policy) : emptyValues()),
+		[policy],
 	);
 	const suffixRef = useRef<string>(
 		policy?.metadata.name.match(/-(\d{4,8})$/)?.[1] ?? randomSuffix(),
@@ -137,7 +126,6 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 							...policy.metadata,
 							resourceVersion: loaded.version,
 							displayName,
-							owner: ownerPicker.toOwner(value.owner),
 							...(description
 								? { description }
 								: policy.metadata.description !== undefined
@@ -158,7 +146,7 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 						metadata: {
 							name,
 							displayName,
-							owner: ownerPicker.toOwner(value.owner),
+							...(owner ? { owner } : {}),
 							...(description ? { description } : {}),
 						},
 						spec,
@@ -185,8 +173,8 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 	useEffect(() => {
 		if (lastResetKey.current === resetKey) return;
 		lastResetKey.current = resetKey;
-		form.reset(open ? initial : emptyValues(initialOwner));
-	}, [resetKey, open, initial, initialOwner, form]);
+		form.reset(open ? initial : emptyValues());
+	}, [resetKey, open, initial, form]);
 
 	const values = useStore(form.store, (s) => s.values);
 	const slugPreview = isEdit
@@ -198,10 +186,6 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 	const descriptionError = useStore(form.store, (s) =>
 		shownError(s.fieldMeta?.description, s.submissionAttempts),
 	);
-	const ownerError = useStore(form.store, (s) =>
-		shownError(s.fieldMeta?.owner, s.submissionAttempts),
-	);
-
 	function setBudgetIds(ids: string[]) {
 		form.setFieldValue("budgets", budgetLinksForIds(ids, values.budgets));
 	}
@@ -223,7 +207,7 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 		slugPreview,
 		displayNameError,
 		descriptionError,
-		ownerOptions: ownerPicker.options,
-		ownerError,
+		placement,
+		usableBy,
 	};
 }

@@ -25,8 +25,10 @@ export function ServiceAccountForm({
 		slugPreview,
 		displayNameError,
 		descriptionError,
-		ownerOptions,
-		ownerError,
+		picksProject,
+		placement,
+		projectOptions,
+		projectIdError,
 	} = useServiceAccountForm({ open: true, serviceAccount, onSaved });
 
 	return (
@@ -49,23 +51,21 @@ export function ServiceAccountForm({
 					descriptionError={descriptionError}
 					autoFocus={!isEdit}
 					placeholder="search-indexer"
+					placement={placement}
 				/>
 
-				<OwnerSection
-					icon={Boxes}
-					title="Project"
-					description={
-						isEdit
-							? "The project that owns this account; fixed once it exists."
-							: "The project that owns this account. Its keys and spend are attributed here."
-					}
-					placeholder="Pick a project…"
-					options={ownerOptions}
-					value={values.owner}
-					onChange={(v) => form.setFieldValue("owner", v)}
-					error={ownerError}
-					disabled={isEdit}
-				/>
+				{picksProject && (
+					<OwnerSection
+						icon={Boxes}
+						title="Project"
+						description="The project that owns this account. Its keys and spend are attributed here."
+						placeholder="Pick a project…"
+						options={projectOptions}
+						value={values.projectId}
+						onChange={(v) => form.setFieldValue("projectId", v)}
+						error={projectIdError}
+					/>
+				)}
 
 				<FormSection
 					icon={ToggleLeft}

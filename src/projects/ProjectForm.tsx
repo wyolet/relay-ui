@@ -10,7 +10,7 @@ import { ToggleSwitch } from "@/shared/ToggleSwitch";
 
 interface ProjectFormProps {
 	project?: Project;
-	/** Preselected team when creating from a team page. */
+	/** The team when creating from a team page. */
 	teamId?: string;
 	onSaved: (savedName: string) => void;
 	onCancel: () => void;
@@ -29,8 +29,10 @@ export function ProjectForm({
 		slugPreview,
 		displayNameError,
 		descriptionError,
-		ownerOptions,
-		ownerError,
+		picksTeam,
+		placement,
+		teamOptions,
+		teamIdError,
 	} = useProjectForm({ open: true, project, teamId, onSaved });
 
 	return (
@@ -53,18 +55,21 @@ export function ProjectForm({
 					descriptionError={descriptionError}
 					autoFocus={!isEdit}
 					placeholder="ML Search"
+					placement={placement}
 				/>
 
-				<OwnerSection
-					icon={Users}
-					title="Team"
-					description="The team that owns this project. Spend rolls up to it."
-					placeholder="Pick a team…"
-					options={ownerOptions}
-					value={values.owner}
-					onChange={(v) => form.setFieldValue("owner", v)}
-					error={ownerError}
-				/>
+				{picksTeam && (
+					<OwnerSection
+						icon={Users}
+						title="Team"
+						description="The team that owns this project. Spend rolls up to it."
+						placeholder="Pick a team…"
+						options={teamOptions}
+						value={values.teamId}
+						onChange={(v) => form.setFieldValue("teamId", v)}
+						error={teamIdError}
+					/>
+				)}
 
 				<FormSection
 					icon={Tags}

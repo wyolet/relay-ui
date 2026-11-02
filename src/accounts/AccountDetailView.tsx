@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Building2, ChevronLeft, KeyRound, Shield } from "lucide-react";
+import { Building2, ChevronLeft, Shield } from "lucide-react";
+import type { ReactNode } from "react";
 import { AccountHolderLink } from "@/accounts/AccountHolderLink";
 import { PAYLOAD_LOGGING_RULE } from "@/accounts/accountCopy";
 import { ACCOUNT_KIND_LABELS } from "@/accounts/accountView";
@@ -9,7 +10,8 @@ import {
 	PAYLOAD_LOGGING_LABELS,
 	toPayloadLoggingChoice,
 } from "@/accounts/payloadLogging";
-import { UpstreamKeyList } from "@/accounts/UpstreamKeyList";
+import { SharedByBadge } from "@/accounts/SharedByBadge";
+import { SharedWithCard } from "@/accounts/SharedWithCard";
 import { useAccountDetail } from "@/accounts/useAccountDetail";
 import { PlanIssuesPanel } from "@/diagnostics/IssuesPanel";
 import { HostCell } from "@/hosts/HostCell";
@@ -22,7 +24,14 @@ import { StatusBadge, StatusInline } from "@/shared/StatusBadge";
 
 const hintClass = "mt-0.5 text-[11px] text-muted-foreground leading-snug";
 
-export function AccountDetailView({ name }: { name: string }) {
+/** `keysCard` is a provider account's keys, owned by the host-keys domain. */
+export function AccountDetailView({
+	name,
+	keysCard,
+}: {
+	name: string;
+	keysCard: ReactNode;
+}) {
 	const navigate = useNavigate();
 	const {
 		account,
@@ -30,8 +39,9 @@ export function AccountDetailView({ name }: { name: string }) {
 		holder,
 		ownerUser,
 		binding,
-		keys,
 		limits,
+		sharedBy,
+		source,
 		host,
 		hostLabel,
 		deletable,
@@ -63,6 +73,7 @@ export function AccountDetailView({ name }: { name: string }) {
 				badges={
 					<>
 						{isDefault && <DefaultAccountBadge />}
+						{sharedBy !== undefined && <SharedByBadge name={sharedBy} />}
 						{closed && <StatusBadge enabled={false} disabledLabel="Closed" />}
 					</>
 				}
@@ -91,6 +102,25 @@ export function AccountDetailView({ name }: { name: string }) {
 			<DetailCard title="Configuration" icon={Building2}>
 				<dl className="divide-y divide-border">
 					<DetailRow label="Kind">{ACCOUNT_KIND_LABELS[spec.kind]}</DetailRow>
+					{sharedBy !== undefined && (
+						<DetailRow label="Shared from">
+							{source ? (
+								<Link
+									to="/accounts/$name"
+									params={{ name: source.name }}
+									className="hover:underline"
+								>
+									{source.label}
+								</Link>
+							) : (
+								<span>An account of {sharedBy}</span>
+							)}
+							<p className={hintClass}>
+								Uses that account's keys, read-only. Requests count on its
+								limits; the policy bound here only narrows them.
+							</p>
+						</DetailRow>
+					)}
 					{holder && (
 						<DetailRow label="Holder">
 							<AccountHolderLink holder={holder} />
@@ -199,14 +229,9 @@ export function AccountDetailView({ name }: { name: string }) {
 
 			<EffectiveLimits state={limits} />
 
-			{isProvider && (
-				<DetailCard title={`Keys · ${keys.length}`} icon={KeyRound}>
-					<UpstreamKeyList
-						keys={keys}
-						empty="No credentials name this account."
-					/>
-				</DetailCard>
-			)}
+			{isProvider && keysCard}
+
+			<SharedWithCard account={account} />
 
 			{del.target && (
 				<DeleteConfirm

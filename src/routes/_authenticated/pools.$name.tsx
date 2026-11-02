@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Suspense } from "react";
+import { accountListQueryOptions } from "@/api/hooks/accounts";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
 import {
 	poolDetailQueryOptions,
@@ -13,6 +14,7 @@ export const Route = createFileRoute("/_authenticated/pools/$name")({
 		const { queryClient } = context;
 		void queryClient.prefetchQuery(poolKeysQueryOptions(params.name));
 		void queryClient.prefetchQuery(hostsListQueryOptions);
+		void queryClient.prefetchQuery(accountListQueryOptions);
 		return queryClient.ensureQueryData(poolDetailQueryOptions(params.name));
 	},
 	component: PoolDetailPage,

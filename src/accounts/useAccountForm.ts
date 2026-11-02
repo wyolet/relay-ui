@@ -22,11 +22,10 @@ import {
 } from "@/api/hooks/accounts";
 import { useHosts } from "@/api/hooks/hosts";
 import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
-import { useOwnerOptions } from "@/hooks/useOwnerOptions";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
+import { useFormOwner } from "@/hooks/useWorkContext";
 import { displayLabel } from "@/lib/displayLabel";
 import { shownError, zodFieldValidator } from "@/lib/formErrors";
-import { ALL_OWNER_SCOPES, PERSONAL_OWNER } from "@/lib/ownerScopes";
 import { randomSuffix, slugify } from "@/lib/slug";
 import {
 	fromLabelPairs,
@@ -38,7 +37,6 @@ import { toast } from "@/shared/Toast";
 export interface AccountFormValues {
 	displayName: string;
 	description: string;
-	owner: string;
 	hostId: string;
 	orgId: string;
 	payloadLogging: PayloadLoggingChoice;
@@ -58,18 +56,16 @@ const baseSchema = z.object({
 	),
 });
 
-// Caller accounts keep the owner and host relay gave them; only provider accounts pick them.
+// Caller accounts keep the host relay gave them; only provider accounts pick one.
 const providerSchema = baseSchema.extend({
-	owner: z.string().min(1, "Pick who owns this account."),
 	hostId: z.string().min(1, "Pick the host this account is held at."),
 	orgId: z.string().trim().max(200, "Organization id is too long"),
 });
 
-function emptyValues(owner: string): AccountFormValues {
+function emptyValues(): AccountFormValues {
 	return {
 		displayName: "",
 		description: "",
-		owner,
 		hostId: "",
 		orgId: "",
 		payloadLogging: "inherit",
@@ -77,11 +73,10 @@ function emptyValues(owner: string): AccountFormValues {
 	};
 }
 
-function toValues(account: Account, owner: string): AccountFormValues {
+function toValues(account: Account): AccountFormValues {
 	return {
 		displayName: displayLabel(account.metadata),
 		description: account.metadata.description ?? "",
-		owner,
 		hostId: account.spec.hostId ?? "",
 		orgId: account.spec.orgId ?? "",
 		payloadLogging: toPayloadLoggingChoice(account.spec.payloadLogging),
@@ -107,17 +102,11 @@ export function useAccountForm({ account, onSaved }: UseAccountFormOptions) {
 		account?.metadata.resourceVersion,
 	);
 
-	const ownerPicker = useOwnerOptions({
-		kinds: ALL_OWNER_SCOPES,
-		owner: account?.metadata.owner,
-		preset: PERSONAL_OWNER,
-	});
-	const { initialOwner } = ownerPicker;
+	const { owner, placement } = useFormOwner(account?.metadata);
 
 	const initial = useMemo<AccountFormValues>(
-		() =>
-			account ? toValues(account, initialOwner) : emptyValues(initialOwner),
-		[account, initialOwner],
+		() => (account ? toValues(account) : emptyValues()),
+		[account],
 	);
 	const suffixRef = useRef<string>(randomSuffix());
 	const computeSlug = (displayName: string): string => {
@@ -149,9 +138,6 @@ export function useAccountForm({ account, onSaved }: UseAccountFormOptions) {
 								displayName,
 								description,
 								labels,
-								...(isProvider
-									? { owner: ownerPicker.toOwner(value.owner) }
-									: {}),
 							},
 							// Server-managed fields (kind, holder, closed, default) go back as read.
 							spec: isProvider
@@ -172,7 +158,7 @@ export function useAccountForm({ account, onSaved }: UseAccountFormOptions) {
 						metadata: {
 							name: computeSlug(displayName),
 							displayName,
-							owner: ownerPicker.toOwner(value.owner),
+							...(owner ? { owner } : {}),
 							...(description ? { description } : {}),
 							...(Object.keys(labels).length > 0 ? { labels } : {}),
 						},
@@ -207,7 +193,6 @@ export function useAccountForm({ account, onSaved }: UseAccountFormOptions) {
 	const errors = useStore(form.store, (s) => ({
 		displayName: shownError(s.fieldMeta?.displayName, s.submissionAttempts),
 		description: shownError(s.fieldMeta?.description, s.submissionAttempts),
-		owner: shownError(s.fieldMeta?.owner, s.submissionAttempts),
 		hostId: shownError(s.fieldMeta?.hostId, s.submissionAttempts),
 		orgId: shownError(s.fieldMeta?.orgId, s.submissionAttempts),
 	}));
@@ -234,7 +219,7 @@ export function useAccountForm({ account, onSaved }: UseAccountFormOptions) {
 		slugPreview: account
 			? account.metadata.name
 			: computeSlug(values.displayName),
-		ownerOptions: ownerPicker.options,
+		placement,
 		hostOptions,
 	};
 }

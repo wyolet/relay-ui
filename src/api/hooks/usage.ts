@@ -57,6 +57,7 @@ export const USAGE_GROUP_BY = [
 	"project_id",
 	"principal_id",
 	"lane_account_id",
+	"via_account_id",
 	"refusal",
 	"error_kind",
 	"finish_reason",
@@ -91,6 +92,7 @@ export type UsageSummaryFilter = Pick<
 	| "project_id"
 	| "principal_id"
 	| "lane_account_id"
+	| "via_account_id"
 	| "refusal"
 >;
 

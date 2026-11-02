@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Building2, Globe, KeyRound, Link2 } from "lucide-react";
+import type { Account } from "@/api/hooks/accounts";
 import type { HostKey, HostKeyKind } from "@/api/types/hostkey";
 import { Input } from "@/components/ui/input";
 import {
@@ -15,7 +16,6 @@ import { HostSelect } from "@/hosts/HostSelect";
 import { FormFooter } from "@/shared/FormFooter";
 import { FormSection } from "@/shared/FormSection";
 import { IdentitySection } from "@/shared/IdentitySection";
-import { OwnerSection } from "@/shared/OwnerSection";
 
 const KIND_OPTIONS: Record<HostKeyKind, { label: string; hint: string }> = {
 	stored: {
@@ -30,11 +30,17 @@ const KIND_OPTIONS: Record<HostKeyKind, { label: string; hint: string }> = {
 
 interface HostKeyFormProps {
 	hostKey?: HostKey;
+	account?: Account;
 	onSaved: (savedName: string) => void;
 	onCancel: () => void;
 }
 
-export function HostKeyForm({ hostKey, onSaved, onCancel }: HostKeyFormProps) {
+export function HostKeyForm({
+	hostKey,
+	account,
+	onSaved,
+	onCancel,
+}: HostKeyFormProps) {
 	const {
 		form,
 		values,
@@ -42,8 +48,7 @@ export function HostKeyForm({ hostKey, onSaved, onCancel }: HostKeyFormProps) {
 		slugPreview,
 		displayNameError,
 		descriptionError,
-		ownerOptions,
-		ownerError,
+		placement,
 		hostIdError,
 		envVarError,
 		envVarReservedPrefix,
@@ -51,11 +56,11 @@ export function HostKeyForm({ hostKey, onSaved, onCancel }: HostKeyFormProps) {
 		hostOptions,
 		accountOptions,
 		hostSelected,
+		accountLocked,
 		attachedPolicies,
 		setHost,
-		setOwner,
 		setAccount,
-	} = useHostKeyForm({ open: true, hostKey, onSaved });
+	} = useHostKeyForm({ open: true, hostKey, account, onSaved });
 
 	return (
 		<form
@@ -77,13 +82,7 @@ export function HostKeyForm({ hostKey, onSaved, onCancel }: HostKeyFormProps) {
 					descriptionError={descriptionError}
 					autoFocus={!isEdit}
 					placeholder="OpenAI production key"
-				/>
-
-				<OwnerSection
-					options={ownerOptions}
-					value={values.owner}
-					onChange={setOwner}
-					error={ownerError}
+					placement={placement}
 				/>
 
 				<FormSection
@@ -97,6 +96,8 @@ export function HostKeyForm({ hostKey, onSaved, onCancel }: HostKeyFormProps) {
 							options={hostOptions}
 							onChange={setHost}
 							error={hostIdError}
+							disabled={accountLocked}
+							hint={accountLocked ? "Set by the account." : undefined}
 						/>
 						<div>
 							<div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-1 inline-flex items-center gap-1">
@@ -107,7 +108,7 @@ export function HostKeyForm({ hostKey, onSaved, onCancel }: HostKeyFormProps) {
 								value={values.accountId}
 								items={accountOptions}
 								onValueChange={(v) => setAccount(v ?? "")}
-								disabled={!hostSelected}
+								disabled={!hostSelected || accountLocked}
 							>
 								<SelectTrigger className="w-full max-w-md">
 									<SelectValue placeholder="Pick a host first…" />

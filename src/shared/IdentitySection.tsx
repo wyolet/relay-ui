@@ -14,6 +14,8 @@ interface IdentitySectionProps {
 	descriptionError?: string;
 	autoFocus?: boolean;
 	placeholder?: string;
+	/** Where the row sits, e.g. "In Team Platform"; read-only. */
+	placement?: string;
 }
 
 export function IdentitySection({
@@ -26,6 +28,7 @@ export function IdentitySection({
 	descriptionError,
 	autoFocus,
 	placeholder = "My rate limit",
+	placement,
 }: IdentitySectionProps) {
 	return (
 		<FormSection
@@ -53,6 +56,7 @@ export function IdentitySection({
 						<code className="font-mono text-foreground/80">
 							{slugPreview || "—"}
 						</code>
+						{placement && <span> · {placement}</span>}
 					</p>
 				</div>
 				<div>

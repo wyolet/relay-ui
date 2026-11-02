@@ -17,7 +17,6 @@ import { FormFooter } from "@/shared/FormFooter";
 import { FormSection } from "@/shared/FormSection";
 import { IdentitySection } from "@/shared/IdentitySection";
 import { LabelsEditor } from "@/shared/LabelsEditor";
-import { OwnerSection } from "@/shared/OwnerSection";
 import { Segmented } from "@/shared/Segmented";
 
 const PAYLOAD_LOGGING_OPTIONS = PAYLOAD_LOGGING_CHOICES.map((value) => ({
@@ -45,7 +44,7 @@ export function AccountForm({ account, onSaved, onCancel }: AccountFormProps) {
 		kindLabel,
 		holder,
 		slugPreview,
-		ownerOptions,
+		placement,
 		hostOptions,
 	} = useAccountForm({ account, onSaved });
 	const orgErrorId = useId();
@@ -70,66 +69,58 @@ export function AccountForm({ account, onSaved, onCancel }: AccountFormProps) {
 					descriptionError={errors.description}
 					autoFocus={!isEdit}
 					placeholder="OpenAI build org"
+					placement={placement}
 				/>
 
 				{isProvider ? (
-					<>
-						<OwnerSection
-							options={ownerOptions}
-							value={values.owner}
-							onChange={(v) => form.setFieldValue("owner", v)}
-							error={errors.owner}
-						/>
-
-						<FormSection
-							icon={Building2}
-							title="Provider organization"
-							description={PROVIDER_ACCOUNT_SUMMARY}
-						>
-							<div className="flex flex-col gap-4">
-								<HostSelect
-									value={values.hostId}
-									options={hostOptions}
-									onChange={(v) => form.setFieldValue("hostId", v)}
-									error={errors.hostId}
-									disabled={isEdit}
-									hint={
-										isEdit
-											? "Fixed once created: the account's keys are at this host."
-											: undefined
+					<FormSection
+						icon={Building2}
+						title="Provider organization"
+						description={PROVIDER_ACCOUNT_SUMMARY}
+					>
+						<div className="flex flex-col gap-4">
+							<HostSelect
+								value={values.hostId}
+								options={hostOptions}
+								onChange={(v) => form.setFieldValue("hostId", v)}
+								error={errors.hostId}
+								disabled={isEdit}
+								hint={
+									isEdit
+										? "Fixed once created: the account's keys are at this host."
+										: undefined
+								}
+							/>
+							<div>
+								<div className={fieldLabelClass}>Organization id</div>
+								<Input
+									type="text"
+									value={values.orgId}
+									onChange={(e) =>
+										form.setFieldValue("orgId", e.currentTarget.value)
 									}
+									placeholder="org-…"
+									className="font-mono w-full max-w-md"
+									aria-label="Organization id"
+									aria-invalid={errors.orgId ? true : undefined}
+									aria-describedby={errors.orgId ? orgErrorId : undefined}
 								/>
-								<div>
-									<div className={fieldLabelClass}>Organization id</div>
-									<Input
-										type="text"
-										value={values.orgId}
-										onChange={(e) =>
-											form.setFieldValue("orgId", e.currentTarget.value)
-										}
-										placeholder="org-…"
-										className="font-mono w-full max-w-md"
-										aria-label="Organization id"
-										aria-invalid={errors.orgId ? true : undefined}
-										aria-describedby={errors.orgId ? orgErrorId : undefined}
-									/>
-									{errors.orgId ? (
-										<p
-											id={orgErrorId}
-											className="mt-1.5 text-[11px] text-destructive"
-										>
-											{errors.orgId}
-										</p>
-									) : (
-										<p className="mt-1.5 text-[11px] text-muted-foreground">
-											The provider's organization id, never a person or an
-											email. Leave empty until known.
-										</p>
-									)}
-								</div>
+								{errors.orgId ? (
+									<p
+										id={orgErrorId}
+										className="mt-1.5 text-[11px] text-destructive"
+									>
+										{errors.orgId}
+									</p>
+								) : (
+									<p className="mt-1.5 text-[11px] text-muted-foreground">
+										The provider's organization id, never a person or an email.
+										Leave empty until known.
+									</p>
+								)}
 							</div>
-						</FormSection>
-					</>
+						</div>
+					</FormSection>
 				) : (
 					<>
 						<FormSection

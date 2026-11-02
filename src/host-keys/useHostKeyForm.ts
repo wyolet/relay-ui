@@ -3,7 +3,11 @@ import { useStore } from "@tanstack/react-store";
 import { useEffect, useMemo, useRef } from "react";
 import { z } from "zod";
 import { useAuth } from "@/api/auth";
-import { type Account, useAccounts } from "@/api/hooks/accounts";
+import {
+	type Account,
+	useAccounts,
+	useUsableAccounts,
+} from "@/api/hooks/accounts";
 import { useCreateHostKey, useUpdateHostKey } from "@/api/hooks/hostkeys";
 import { useHosts } from "@/api/hooks/hosts";
 import { usePolicies } from "@/api/hooks/policies";
@@ -15,11 +19,11 @@ import type {
 	HostKeyUpdate,
 } from "@/api/types/hostkey";
 import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
-import { useOwnerOptions } from "@/hooks/useOwnerOptions";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
+import { useFormOwner } from "@/hooks/useWorkContext";
 import { displayLabel } from "@/lib/displayLabel";
 import { shownError, zodFieldValidator } from "@/lib/formErrors";
-import { ALL_OWNER_SCOPES, PERSONAL_OWNER } from "@/lib/ownerScopes";
+import { ownerKey } from "@/lib/ownerScopes";
 import { randomSuffix, slugify } from "@/lib/slug";
 import { toast } from "@/shared/Toast";
 import {
@@ -39,7 +43,6 @@ export interface SelectOption {
 export interface HostKeyFormValues {
 	displayName: string;
 	description: string;
-	owner: string;
 	hostId: string;
 	/** {@link DEFAULT_ACCOUNT} means the owner's default account at the host. */
 	accountId: string;
@@ -49,13 +52,12 @@ export interface HostKeyFormValues {
 	enabled: boolean;
 }
 
-function emptyValues(owner: string): HostKeyFormValues {
+function emptyValues(account?: Account): HostKeyFormValues {
 	return {
 		displayName: "",
 		description: "",
-		owner,
-		hostId: "",
-		accountId: DEFAULT_ACCOUNT,
+		hostId: account?.spec.hostId ?? "",
+		accountId: account?.metadata.id ?? DEFAULT_ACCOUNT,
 		kind: "stored",
 		envVar: "",
 		value: "",
@@ -65,7 +67,6 @@ function emptyValues(owner: string): HostKeyFormValues {
 
 function hostKeyToValues(
 	hk: HostKey,
-	owner: string,
 	accounts: readonly Account[],
 ): HostKeyFormValues {
 	const kind: HostKeyKind =
@@ -73,7 +74,6 @@ function hostKeyToValues(
 	return {
 		displayName: displayLabel(hk.metadata),
 		description: hk.metadata.description ?? "",
-		owner,
 		hostId: hk.spec.hostId,
 		accountId: accountFormValue(accounts, hk.spec.accountId),
 		kind,
@@ -92,7 +92,6 @@ function buildSchema(isEdit: boolean) {
 				.min(1, "Display name is required — the slug is generated from it")
 				.max(120, "Display name is too long"),
 			description: z.string().trim().max(500, "Description is too long"),
-			owner: z.string().min(1, "Pick who owns this credential."),
 			hostId: z
 				.string()
 				.min(1, "Pick the host this credential authenticates against."),
@@ -125,12 +124,15 @@ function buildSchema(isEdit: boolean) {
 interface UseHostKeyFormOptions {
 	open: boolean;
 	hostKey?: HostKey;
+	/** Creates the key in this provider account; host and account stay fixed. */
+	account?: Account;
 	onSaved: (savedName: string) => void;
 }
 
 export function useHostKeyForm({
 	open,
 	hostKey,
+	account,
 	onSaved,
 }: UseHostKeyFormOptions) {
 	const isEdit = hostKey !== undefined;
@@ -148,19 +150,18 @@ export function useHostKeyForm({
 		hostKey?.metadata.resourceVersion,
 	);
 
-	const ownerPicker = useOwnerOptions({
-		kinds: ALL_OWNER_SCOPES,
-		owner: hostKey?.metadata.owner,
-		preset: PERSONAL_OWNER,
-	});
-	const { initialOwner } = ownerPicker;
+	// Relay requires a key's account to have the key's owner.
+	const { owner, usableBy, placement } = useFormOwner(
+		hostKey?.metadata ?? account?.metadata,
+	);
+	const accountLocked = !hostKey && account !== undefined;
 
 	const initial = useMemo<HostKeyFormValues>(
 		() =>
 			hostKey
-				? hostKeyToValues(hostKey, initialOwner, accountsData.items ?? [])
-				: emptyValues(initialOwner),
-		[hostKey, initialOwner, accountsData.items],
+				? hostKeyToValues(hostKey, accountsData.items ?? [])
+				: emptyValues(account),
+		[hostKey, account, accountsData.items],
 	);
 	const suffixRef = useRef<string>(
 		hostKey?.metadata.name.match(/-(\d{4,8})$/)?.[1] ?? randomSuffix(),
@@ -180,9 +181,13 @@ export function useHostKeyForm({
 	// is sent as the default account's id when it exists.
 	function resolveAccountId(value: HostKeyFormValues): string | undefined {
 		if (value.accountId !== DEFAULT_ACCOUNT) return value.accountId;
-		if (!isEdit) return undefined;
-		return defaultAccountFor(accounts, value.hostId, value.owner, userId)
-			?.metadata.id;
+		if (!hostKey) return undefined;
+		return defaultAccountFor(
+			accounts,
+			value.hostId,
+			ownerKey(hostKey.metadata.owner, userId),
+			userId,
+		)?.metadata.id;
 	}
 
 	const form = useForm({
@@ -220,7 +225,6 @@ export function useHostKeyForm({
 							...hostKey.metadata,
 							resourceVersion: loaded.version,
 							displayName,
-							owner: ownerPicker.toOwner(value.owner),
 							...(description
 								? { description }
 								: hostKey.metadata.description !== undefined
@@ -251,7 +255,7 @@ export function useHostKeyForm({
 						metadata: {
 							name,
 							displayName,
-							owner: ownerPicker.toOwner(value.owner),
+							...(owner ? { owner } : {}),
 							...(description ? { description } : {}),
 						},
 						spec,
@@ -280,8 +284,8 @@ export function useHostKeyForm({
 	useEffect(() => {
 		if (lastResetKey.current === resetKey) return;
 		lastResetKey.current = resetKey;
-		form.reset(open ? initial : emptyValues(initialOwner));
-	}, [resetKey, open, initial, initialOwner, form]);
+		form.reset(open ? initial : emptyValues());
+	}, [resetKey, open, initial, form]);
 
 	const values = useStore(form.store, (s) => s.values);
 	const slugPreview = isEdit
@@ -292,9 +296,6 @@ export function useHostKeyForm({
 	);
 	const descriptionError = useStore(form.store, (s) =>
 		shownError(s.fieldMeta?.description, s.submissionAttempts),
-	);
-	const ownerError = useStore(form.store, (s) =>
-		shownError(s.fieldMeta?.owner, s.submissionAttempts),
 	);
 	const hostIdError = useStore(form.store, (s) =>
 		shownError(s.fieldMeta?.hostId, s.submissionAttempts),
@@ -330,24 +331,30 @@ export function useHostKeyForm({
 		[hostsData.items],
 	);
 
-	const accountOptions = buildAccountOptions(
-		accounts,
-		values.hostId,
-		values.owner,
-		userId,
-	);
-
 	const hostSelected = values.hostId !== "";
+	const usableAccounts = useUsableAccounts(
+		usableBy,
+		{ host_id: [values.hostId], kind: ["provider"] },
+		{ enabled: hostSelected },
+	);
+	const accountOptions =
+		accountLocked && account
+			? [
+					{
+						value: account.metadata.id ?? "",
+						label: displayLabel(account.metadata),
+					},
+				]
+			: buildAccountOptions(
+					usableAccounts,
+					values.hostId,
+					accounts.find((a) => a.metadata.id === hostKey?.spec.accountId),
+				);
 
-	// Accounts are scoped to one host and one owner; a change of either drops
-	// the choice back to the default account.
+	// Accounts are scoped to one host; a change drops the choice back to the
+	// default account.
 	function setHost(hostId: string) {
 		form.setFieldValue("hostId", hostId);
-		form.setFieldValue("accountId", DEFAULT_ACCOUNT);
-	}
-
-	function setOwner(owner: string) {
-		form.setFieldValue("owner", owner);
 		form.setFieldValue("accountId", DEFAULT_ACCOUNT);
 	}
 
@@ -362,8 +369,7 @@ export function useHostKeyForm({
 		slugPreview,
 		displayNameError,
 		descriptionError,
-		ownerOptions: ownerPicker.options,
-		ownerError,
+		placement,
 		hostIdError,
 		envVarError,
 		envVarReservedPrefix,
@@ -371,9 +377,9 @@ export function useHostKeyForm({
 		hostOptions,
 		accountOptions,
 		hostSelected,
+		accountLocked,
 		attachedPolicies,
 		setHost,
-		setOwner,
 		setAccount,
 	};
 }

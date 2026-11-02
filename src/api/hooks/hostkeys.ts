@@ -1,6 +1,8 @@
 import {
 	queryOptions,
 	useMutation,
+	useQueries,
+	useQuery,
 	useQueryClient,
 	useSuspenseQuery,
 } from "@tanstack/react-query";
@@ -12,8 +14,13 @@ import type {
 	HostKeyListResponse,
 	HostKeyUpdate,
 } from "@/api/types/hostkey";
-import type { components } from "@/api/types.gen";
+import type { components, operations } from "@/api/types.gen";
 import { unwrap } from "@/api/unwrap";
+
+/** Server-side filter/sort/page params accepted by GET /host-keys. */
+export type HostKeysListParams = NonNullable<
+	operations["list_host-keys"]["parameters"]["query"]
+>;
 
 /** Circuit-breaker status for one host key (see /host-keys/by-id/{id}/health). */
 export type HostKeyHealth = components["schemas"]["hostKeyHealth"];
@@ -83,6 +90,44 @@ function invalidateHostKeyDependents(
 
 export function useHostKeys() {
 	return useSuspenseQuery(hostKeysListQueryOptions);
+}
+
+export function hostKeysListQuery(params: HostKeysListParams) {
+	return queryOptions({
+		queryKey: ["host-keys", "list", params] as const,
+		queryFn: async (): Promise<HostKeyListResponse> =>
+			unwrap(await apiClient.GET("/host-keys", { params: { query: params } })),
+		staleTime: 30_000,
+		gcTime: 5 * 60_000,
+	});
+}
+
+/** The host keys of one provider account, with full specs. */
+export function accountHostKeysQuery(accountId: string) {
+	return hostKeysListQuery({ account_id: [accountId] });
+}
+
+export function useAccountHostKeys(accountId: string) {
+	return useSuspenseQuery(accountHostKeysQuery(accountId));
+}
+
+/** Breaker status per key id; one call per key, non-suspense. */
+export function useHostKeysHealth(ids: readonly string[]) {
+	return useQueries({
+		queries: ids.map((id) => hostKeyHealthQueryOptions(id)),
+	});
+}
+
+/** The host keys at `hostId` a pool owned by `usableBy` may link; empty while loading. */
+export function useUsableHostKeys(
+	usableBy: string | undefined,
+	hostId: string,
+): HostKey[] {
+	const { data } = useQuery({
+		...hostKeysListQuery({ usable_by: usableBy, host_id: [hostId] }),
+		enabled: hostId !== "",
+	});
+	return data?.items ?? [];
 }
 
 export function useHostKey(ref: string) {

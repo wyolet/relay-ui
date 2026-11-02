@@ -5,6 +5,7 @@ import {
 	useSuspenseQuery,
 } from "@tanstack/react-query";
 import { apiClient } from "@/api/client";
+import { ApiError } from "@/api/types/errors";
 import type { components } from "@/api/types.gen";
 import { unwrap } from "@/api/unwrap";
 
@@ -25,8 +26,25 @@ async function fetchGovernance(
 				: section === "policy"
 					? await apiClient.GET("/settings/governance:policy")
 					: await apiClient.GET("/settings/governance:provider");
-	return unwrap(res);
+	try {
+		return unwrap(res);
+	} catch (err) {
+		// Reading the setting is admin-only. Others get relay's own default for
+		// catalog rows (edit allowed, delete denied); the server enforces it anyway.
+		if (err instanceof ApiError && err.status === 403) {
+			return {
+				section: `governance:${section}`,
+				value: SERVER_DEFAULT_GOVERNANCE,
+			};
+		}
+		throw err;
+	}
 }
+
+const SERVER_DEFAULT_GOVERNANCE: Governance = {
+	allowEdit: true,
+	allowDelete: false,
+};
 
 async function putGovernance(
 	section: GovernanceSection,

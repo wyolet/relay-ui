@@ -1,40 +1,46 @@
 import { useForm } from "@tanstack/react-form";
+import { useQuery } from "@tanstack/react-query";
 import { useStore } from "@tanstack/react-store";
 import { useEffect, useMemo, useRef } from "react";
 import { z } from "zod";
-import { useHostKeys } from "@/api/hooks/hostkeys";
+import {
+	accountListQueryOptions,
+	useUsableAccounts,
+} from "@/api/hooks/accounts";
+import { useHostKeys, useUsableHostKeys } from "@/api/hooks/hostkeys";
 import { useHosts } from "@/api/hooks/hosts";
 import { type Pool, useCreatePool, useUpdatePool } from "@/api/hooks/pools";
 import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
-import { useOwnerOptions } from "@/hooks/useOwnerOptions";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
+import { useFormOwner } from "@/hooks/useWorkContext";
 import { displayLabel } from "@/lib/displayLabel";
 import { shownError, zodFieldValidator } from "@/lib/formErrors";
-import { ALL_OWNER_SCOPES, PERSONAL_OWNER } from "@/lib/ownerScopes";
 import { randomSuffix, slugify } from "@/lib/slug";
 import {
 	moveItem,
 	POOL_SELECTIONS,
 	type PoolSelection,
 } from "@/pools/poolKeys";
+import {
+	availableAccounts,
+	chosenAccounts,
+	type PoolMemberOption,
+	unknownMember,
+} from "@/pools/poolMembers";
 import { toast } from "@/shared/Toast";
 
 export interface PoolFormValues {
 	displayName: string;
 	description: string;
-	owner: string;
 	hostId: string;
+	/** Ordered: tried before the single keys, each account's keys in turn. */
+	accountIds: string[];
 	/** Ordered: the preference for prioritized selection. */
 	credentialIds: string[];
 	selection: PoolSelection;
 }
 
-export interface PoolKeyOption {
-	id: string;
-	label: string;
-	name: string;
-	enabled: boolean;
-}
+type MemberField = "accountIds" | "credentialIds";
 
 const schema = z.object({
 	displayName: z
@@ -43,29 +49,29 @@ const schema = z.object({
 		.min(1, "Display name is required — the slug is generated from it")
 		.max(120, "Display name is too long"),
 	description: z.string().trim().max(500, "Description is too long"),
-	owner: z.string().min(1, "Pick who owns this pool."),
 	hostId: z.string().min(1, "Pick the host every key in the pool is at."),
+	accountIds: z.array(z.string()),
 	credentialIds: z.array(z.string()),
 	selection: z.enum(POOL_SELECTIONS),
 });
 
-function emptyValues(owner: string): PoolFormValues {
+function emptyValues(): PoolFormValues {
 	return {
 		displayName: "",
 		description: "",
-		owner,
 		hostId: "",
+		accountIds: [],
 		credentialIds: [],
 		selection: "prioritized",
 	};
 }
 
-function toValues(pool: Pool, owner: string): PoolFormValues {
+function toValues(pool: Pool): PoolFormValues {
 	return {
 		displayName: displayLabel(pool.metadata),
 		description: pool.metadata.description ?? "",
-		owner,
 		hostId: pool.spec.hostId,
+		accountIds: pool.spec.accountIds ?? [],
 		credentialIds: pool.spec.credentialIds ?? [],
 		selection: pool.spec.selection ?? "prioritized",
 	};
@@ -88,16 +94,11 @@ export function usePoolForm({ pool, onSaved }: UsePoolFormOptions) {
 		pool?.metadata.resourceVersion,
 	);
 
-	const ownerPicker = useOwnerOptions({
-		kinds: ALL_OWNER_SCOPES,
-		owner: pool?.metadata.owner,
-		preset: PERSONAL_OWNER,
-	});
-	const { initialOwner } = ownerPicker;
+	const { owner, usableBy, placement } = useFormOwner(pool?.metadata);
 
 	const initial = useMemo<PoolFormValues>(
-		() => (pool ? toValues(pool, initialOwner) : emptyValues(initialOwner)),
-		[pool, initialOwner],
+		() => (pool ? toValues(pool) : emptyValues()),
+		[pool],
 	);
 	const suffixRef = useRef<string>(randomSuffix());
 	const computeSlug = (displayName: string): string => {
@@ -114,9 +115,9 @@ export function usePoolForm({ pool, onSaved }: UsePoolFormOptions) {
 		onSubmit: async ({ value }) => {
 			const displayName = value.displayName.trim();
 			const description = value.description.trim();
-			const owner = ownerPicker.toOwner(value.owner);
 			const spec = {
 				hostId: value.hostId,
+				accountIds: value.accountIds,
 				credentialIds: value.credentialIds,
 				selection: value.selection,
 			};
@@ -130,7 +131,6 @@ export function usePoolForm({ pool, onSaved }: UsePoolFormOptions) {
 								resourceVersion: loaded.version,
 								displayName,
 								description,
-								owner,
 							},
 							spec,
 						},
@@ -143,7 +143,7 @@ export function usePoolForm({ pool, onSaved }: UsePoolFormOptions) {
 						metadata: {
 							name: computeSlug(displayName),
 							displayName,
-							owner,
+							...(owner ? { owner } : {}),
 							...(description ? { description } : {}),
 						},
 						spec,
@@ -170,10 +170,17 @@ export function usePoolForm({ pool, onSaved }: UsePoolFormOptions) {
 	}, [loaded.resetKey, initial, form]);
 
 	const values = useStore(form.store, (s) => s.values);
+	const usableKeys = useUsableHostKeys(usableBy, values.hostId);
+	const usableAccounts = useUsableAccounts(
+		usableBy,
+		{ kind: ["provider"], host_id: [values.hostId] },
+		{ use: "pool", enabled: values.hostId !== "" },
+	);
+	// Names accounts already in the pool that the current scope may no longer use.
+	const { data: visibleAccounts } = useQuery(accountListQueryOptions);
 	const errors = useStore(form.store, (s) => ({
 		displayName: shownError(s.fieldMeta?.displayName, s.submissionAttempts),
 		description: shownError(s.fieldMeta?.description, s.submissionAttempts),
-		owner: shownError(s.fieldMeta?.owner, s.submissionAttempts),
 		hostId: shownError(s.fieldMeta?.hostId, s.submissionAttempts),
 	}));
 
@@ -182,7 +189,7 @@ export function usePoolForm({ pool, onSaved }: UsePoolFormOptions) {
 		label: displayLabel(h.metadata),
 	}));
 
-	const keyById = new Map<string, PoolKeyOption>();
+	const keyById = new Map<string, PoolMemberOption>();
 	for (const hk of hostKeysData.items ?? []) {
 		if (!hk.metadata.id) continue;
 		keyById.set(hk.metadata.id, {
@@ -190,51 +197,41 @@ export function usePoolForm({ pool, onSaved }: UsePoolFormOptions) {
 			label: displayLabel(hk.metadata),
 			name: hk.metadata.name,
 			enabled: hk.spec.enabled ?? true,
+			known: true,
 		});
 	}
-	const chosenKeys: PoolKeyOption[] = values.credentialIds.map(
-		(id) =>
-			keyById.get(id) ?? {
-				id,
-				label: `Unknown (${id.slice(0, 8)}…)`,
-				name: id,
-				enabled: true,
-			},
+	const chosenKeys: PoolMemberOption[] = values.credentialIds.map(
+		(id) => keyById.get(id) ?? unknownMember(id),
 	);
 	const chosen = new Set(values.credentialIds);
-	const availableKeys: PoolKeyOption[] = (hostKeysData.items ?? []).flatMap(
-		(hk) => {
-			const option = keyById.get(hk.metadata.id ?? "");
-			return option &&
-				hk.spec.hostId === values.hostId &&
-				!chosen.has(option.id)
-				? [option]
-				: [];
-		},
-	);
+	const availableKeys: PoolMemberOption[] = usableKeys.flatMap((hk) => {
+		const option = keyById.get(hk.metadata.id ?? "");
+		return option && hk.spec.hostId === values.hostId && !chosen.has(option.id)
+			? [option]
+			: [];
+	});
 
 	function setHost(hostId: string) {
 		form.setFieldValue("hostId", hostId);
-		// Every key must be at the pool's host.
+		// Every account and key must be at the pool's host.
+		form.setFieldValue("accountIds", []);
 		form.setFieldValue("credentialIds", []);
 	}
 	function setSelection(selection: PoolSelection) {
 		form.setFieldValue("selection", selection);
 	}
-	function addKey(id: string) {
-		form.setFieldValue("credentialIds", [...values.credentialIds, id]);
-	}
-	function removeKey(id: string) {
-		form.setFieldValue(
-			"credentialIds",
-			values.credentialIds.filter((k) => k !== id),
-		);
-	}
-	function moveKey(index: number, delta: -1 | 1) {
-		form.setFieldValue(
-			"credentialIds",
-			moveItem(values.credentialIds, index, delta),
-		);
+	function memberEdits(field: MemberField) {
+		const ids = values[field];
+		return {
+			add: (id: string) => form.setFieldValue(field, [...ids, id]),
+			remove: (id: string) =>
+				form.setFieldValue(
+					field,
+					ids.filter((k) => k !== id),
+				),
+			move: (index: number, delta: -1 | 1) =>
+				form.setFieldValue(field, moveItem(ids, index, delta)),
+		};
 	}
 
 	return {
@@ -243,14 +240,22 @@ export function usePoolForm({ pool, onSaved }: UsePoolFormOptions) {
 		errors,
 		isEdit,
 		slugPreview: pool ? pool.metadata.name : computeSlug(values.displayName),
-		ownerOptions: ownerPicker.options,
+		placement,
 		hostOptions,
+		chosenAccounts: chosenAccounts(values.accountIds, [
+			...usableAccounts,
+			...(visibleAccounts?.items ?? []),
+		]),
+		availableAccounts: availableAccounts(
+			usableAccounts,
+			values.hostId,
+			values.accountIds,
+		),
 		chosenKeys,
 		availableKeys,
 		setHost,
 		setSelection,
-		addKey,
-		removeKey,
-		moveKey,
+		accountEdits: memberEdits("accountIds"),
+		keyEdits: memberEdits("credentialIds"),
 	};
 }
