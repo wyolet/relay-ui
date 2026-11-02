@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { ArrowDown, ArrowUp, ChevronDown, Plus, X } from "lucide-react";
 import type { ReactNode } from "react";
 import { IconButton } from "@/components/ui/icon-button";
@@ -95,14 +96,22 @@ export function PolicyLinkPicker({
 	);
 }
 
+/** Detail routes a linked row can open, keyed by slug. */
+export type LinkChoiceRoute =
+	| "/pools/$name"
+	| "/policies/budgets/$name"
+	| "/host-keys/$name";
+
 /** One linked row; `rank` marks an ordered list, `children` are trailing actions. */
 export function LinkChoiceRow({
 	choice,
 	rank,
+	linkTo,
 	children,
 }: {
 	choice: LinkChoice;
 	rank?: number;
+	linkTo?: LinkChoiceRoute;
 	children?: ReactNode;
 }) {
 	return (
@@ -112,7 +121,17 @@ export function LinkChoiceRow({
 					{rank}
 				</span>
 			)}
-			<LinkChoiceLabel choice={choice} />
+			{linkTo ? (
+				<Link
+					to={linkTo}
+					params={{ name: choice.name }}
+					className="flex min-w-0 flex-1 hover:underline"
+				>
+					<LinkChoiceLabel choice={choice} />
+				</Link>
+			) : (
+				<LinkChoiceLabel choice={choice} />
+			)}
 			{children}
 		</li>
 	);

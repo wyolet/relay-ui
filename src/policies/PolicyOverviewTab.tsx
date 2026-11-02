@@ -1,11 +1,13 @@
-import { Link } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { usePolicyReferences } from "@/api/hooks/policies";
 import type { Policy } from "@/api/types/policy";
 import { DiagnosticList } from "@/diagnostics/DiagnosticList";
 import { usePolicyDiagnostics } from "@/diagnostics/useDiagnostics";
 import { HostLogo, hostRefLogo } from "@/hosts/HostLogo";
-import { LinkChoiceLabel, LinkChoiceRow } from "@/policies/PolicyLinkPicker";
+import {
+	type LinkChoiceRoute,
+	LinkChoiceRow,
+} from "@/policies/PolicyLinkPicker";
 import { usePolicyHosts } from "@/policies/usePolicyHosts";
 import {
 	type LinkChoice,
@@ -52,25 +54,23 @@ function LinksPanel({ policy }: { policy: Policy }) {
 				title="Pools, in failover order"
 				empty="No pools linked."
 				items={pools}
+				linkTo="/pools/$name"
 				ordered
 			/>
-			<LinkList title="Budgets" empty="No budgets linked." items={budgets} />
+			<LinkList
+				title="Budgets"
+				empty="No budgets linked."
+				items={budgets}
+				linkTo="/policies/budgets/$name"
+			/>
 			{credentials.length > 0 && (
 				<div className="sm:col-span-2">
-					<SectionTitle>Credentials linked directly</SectionTitle>
-					<ul className="divide-y divide-border rounded-md border border-border">
-						{credentials.map((c) => (
-							<li key={c.id} className="px-3 py-2">
-								<Link
-									to="/host-keys/$name"
-									params={{ name: c.name }}
-									className="flex hover:underline"
-								>
-									<LinkChoiceLabel choice={c} />
-								</Link>
-							</li>
-						))}
-					</ul>
+					<LinkList
+						title="Credentials linked directly"
+						empty=""
+						items={credentials}
+						linkTo="/host-keys/$name"
+					/>
 				</div>
 			)}
 		</section>
@@ -81,11 +81,13 @@ function LinkList({
 	title,
 	empty,
 	items,
+	linkTo,
 	ordered,
 }: {
 	title: string;
 	empty: string;
 	items: LinkChoice[];
+	linkTo: LinkChoiceRoute;
 	ordered?: boolean;
 }) {
 	return (
@@ -99,6 +101,7 @@ function LinkList({
 						<LinkChoiceRow
 							key={c.id}
 							choice={c}
+							linkTo={linkTo}
 							rank={ordered ? i + 1 : undefined}
 						/>
 					))}
