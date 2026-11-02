@@ -8,8 +8,6 @@ import {
 import { whoamiQueryOptions } from "@/api/auth";
 import { ConfirmDialogHost } from "@/shared/ConfirmDialog";
 
-import "../styles.css";
-
 interface RouterContext {
 	queryClient: QueryClient;
 }
