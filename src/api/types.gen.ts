@@ -161,7 +161,7 @@ export interface paths {
         };
         /**
          * Read the limits a request in this account climbs
-         * @description The caller rungs a request in the account climbs (team account, project account, the account itself), each with its bound policy, the rate limits and budgets it links and current usage against them, and the tightest of them. Readable by whoever may read the account and by the user who acts in it. A team's or project's own account is a rung, not a lane: it answers 400. {ref} is a slug or id.
+         * @description The caller rungs a request in the account climbs (team account, project account, the account itself), each with its bound policy, the rate limits and budgets it links and current usage against them, and the tightest of them. Readable by whoever may read the account and by the user who acts in it. A team's or project's own account answers with the accounts above and including it; links counted per lane have no single reading there and are marked perLane. {ref} is a slug or id.
          */
         get: operations["account_limits"];
         put?: never;
@@ -3557,9 +3557,9 @@ export interface components {
              * @example https://example.com/schemas/AccountLimits.json
              */
             readonly $schema?: string;
-            /** @description The account requests run in. */
+            /** @description The account read: the lane requests run in, or a team's or project's own account. */
             lane: components["schemas"]["LimitsAccount"];
-            /** @description The accounts a request in the lane climbs, outermost first: the team's account, the project's account, then the lane. Every rung only narrows. Empty for a provider account, whose own policy caps its keys upstream and is not reported here. */
+            /** @description The accounts a request in the lane climbs, outermost first: the team's account, the project's account, then the lane. Every rung only narrows. For a team's or project's own account, the accounts above and including it. Empty for a provider account, whose own policy caps its keys upstream and is not reported here. */
             rungs: components["schemas"]["LimitsRung"][] | null;
             /** @description The hard limit with the least left as a share of its cap; omitted when no rung caps anything. */
             tightest?: components["schemas"]["LimitsTightest"];
@@ -4791,23 +4791,27 @@ export interface components {
             mode: "hard" | "alert";
             /** @description Budget slug. */
             name: string;
+            /** @description True when the budget is spent per lane (shared false) and the account read is a team's or project's own: no single spend exists, so spentUsd and remainingUsd are omitted and the budget is never tightest. */
+            perLane: boolean;
             /**
              * @description Calendar period the cap covers, in UTC.
              * @enum {string}
              */
             period: "day" | "week" | "month";
-            /** @description amountUsd minus spentUsd, never below zero, as a decimal string. */
-            remainingUsd: string;
+            /** @description amountUsd minus spentUsd, never below zero, as a decimal string. Omitted when the budget is perLane. */
+            remainingUsd?: string;
             /** @description True spends one budget for the rung's account, so spentUsd is every lane under it together; false gives each lane its own, so spentUsd is this lane's. */
             shared: boolean;
-            /** @description USD spent in the current period, as a decimal string. */
-            spentUsd: string;
+            /** @description USD spent in the current period, as a decimal string. Omitted when the budget is perLane. */
+            spentUsd?: string;
         };
         LimitsRateLimit: {
             /** @description The models the link applies to, in the policy's model grammar; empty applies it to every request. */
             models: string[] | null;
             /** @description Rate limit slug. */
             name: string;
+            /** @description True when the link counts per lane (shared false) and the account read is a team's or project's own: no single count exists, so the rules carry no used or remaining and the link is never tightest. */
+            perLane: boolean;
             /** @description Rate limit id. */
             rateLimitId: string;
             /** @description The rate limit's rules, in order. */
@@ -4828,9 +4832,9 @@ export interface components {
             meter: "requests" | "concurrency" | "tokens" | "tokens.input" | "tokens.output" | "tokens.cache_read" | "tokens.cache_creation" | "tokens.reasoning" | "tokens.server_tool_use_input" | "tokens.server_tool_use_output";
             /**
              * Format: int64
-             * @description amount minus used, never below zero.
+             * @description amount minus used, never below zero. Omitted when the rate limit is perLane.
              */
-            remaining: number;
+            remaining?: number;
             /**
              * @description Counting algorithm. For a token bucket used is the tokens drawn and not yet refilled; for a leaky bucket its level.
              * @enum {string}
@@ -4838,9 +4842,9 @@ export interface components {
             strategy: "token-bucket" | "sliding-window" | "fixed-window" | "leaky-bucket" | "session-window";
             /**
              * Format: int64
-             * @description The current count as admission compares it, rounded up. Under the hybrid limiter it is this relay instance's view, which may lag other instances by up to one sync interval.
+             * @description The current count as admission compares it, rounded up. Under the hybrid limiter it is this relay instance's view, which may lag other instances by up to one sync interval. Omitted when the rate limit is perLane.
              */
-            used: number;
+            used?: number;
             /**
              * Format: int64
              * @description Measurement period, in whole seconds.
@@ -8128,15 +8132,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AccountLimits"];
-                };
-            };
-            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIError"];
                 };
             };
             /** @description No valid session cookie or admin bearer token. */

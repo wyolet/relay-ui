@@ -43,15 +43,3 @@ export const AMOUNT_USD_PATTERN = /^\d+(\.\d{1,2})?$/;
 export function amountInput(raw: string): string {
 	return raw.replace(/[^\d.]/g, "");
 }
-
-export function fmtBudgetAmount(amountUsd: string): string {
-	const n = Number(amountUsd);
-	if (!Number.isFinite(n)) return amountUsd;
-	const cents = !Number.isInteger(n);
-	return new Intl.NumberFormat("en-US", {
-		style: "currency",
-		currency: "USD",
-		minimumFractionDigits: cents ? 2 : 0,
-		maximumFractionDigits: 2,
-	}).format(n);
-}

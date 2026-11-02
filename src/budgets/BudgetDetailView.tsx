@@ -1,12 +1,9 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { ChevronLeft, Wallet } from "lucide-react";
-import {
-	fmtBudgetAmount,
-	MODE_LABELS,
-	PERIOD_LABELS,
-} from "@/budgets/budgetFormat";
+import { MODE_LABELS, PERIOD_LABELS } from "@/budgets/budgetFormat";
 import { useBudgetDetail } from "@/budgets/useBudgetDetail";
 import { PlanIssuesPanel } from "@/diagnostics/IssuesPanel";
+import { fmtUsd } from "@/lib/limitsFormat";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { DetailCard, DetailRow } from "@/shared/DetailCard";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
@@ -56,7 +53,7 @@ export function BudgetDetailView({ name }: { name: string }) {
 				<dl className="divide-y divide-border">
 					<DetailRow label="Amount">
 						<span className="text-sm tabular-nums">
-							{fmtBudgetAmount(budget.spec.amountUsd)}
+							{fmtUsd(budget.spec.amountUsd)}
 						</span>
 					</DetailRow>
 					<DetailRow label="Period">
