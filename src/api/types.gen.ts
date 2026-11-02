@@ -4236,7 +4236,7 @@ export interface components {
             source: "pipeline" | "proxy" | "ws" | "batch" | "count" | "otlp";
             /**
              * Format: int64
-             * @description HTTP status the caller received; 0 for a request refused before reaching an upstream.
+             * @description HTTP status the caller received: the provider's, or relay's own when relay refused the request (refusal set). 0 for a request relay failed before any upstream answered for another reason.
              */
             status: number;
             /** @description The response was streamed. */
