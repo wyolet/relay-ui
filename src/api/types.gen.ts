@@ -1500,26 +1500,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/plan-issues": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List plan-engine diagnostics
-         * @description Returns every issue the plan engine has recorded for catalog objects, sorted by kind, name and code. Errors mean an object cannot serve; warnings mean it serves but something is likely wrong. Filter by kind, or by kind and id to narrow to one object.
-         */
-        get: operations["plan_issues_list"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/policies": {
         parameters: {
             query?: never;
@@ -3432,6 +3412,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/plan-issues": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List plan-engine diagnostics
+         * @description Returns every issue the plan engine has recorded for relay objects (keys, policies, bindings, …) that the caller may see, sorted by kind, name and code. Errors mean the object cannot serve; warnings mean it serves but something is likely wrong. Filter by kind, or by kind and id to narrow to one object.
+         */
+        get: operations["plan_issues_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -3468,6 +3468,15 @@ export interface components {
             /** @description The row's configuration. */
             spec: components["schemas"]["AccountSpec"];
         };
+        AccountHolder: {
+            /** @description Id of the user or service account. */
+            id: string;
+            /**
+             * @description Whether a user or a service account acts in the account.
+             * @enum {string}
+             */
+            kind: "user" | "serviceaccount";
+        };
         AccountList: {
             /**
              * Format: uri
@@ -3484,12 +3493,26 @@ export interface components {
             total: number;
         };
         AccountSpec: {
-            /** @description The account a host key of the same owner at this host joins when it names none. Created on first use; an owner has at most one per host, and a second answers 409. */
+            /** @description The membership this member account stood for has ended: its keys are refused with account_closed. Reopened when a role grants the membership again. Server-managed. */
+            readonly closed?: boolean;
+            /** @description The provider account a host key of the same owner at this host joins when it names none. Created on first use; an owner has at most one per host, and a second answers 409. */
             default?: boolean;
-            /** @description Id of the host this account is held at. */
-            hostId: string;
-            /** @description The provider's organization id (the org, never a person or an email). Empty until known. */
+            /** @description The user or service account acting in the account. Set on personal, member and service accounts; empty on team, project and provider accounts. Server-managed. */
+            readonly holder?: components["schemas"]["AccountHolder"];
+            /** @description Id of the host a provider account is held at. Set on provider accounts only. */
+            hostId?: string;
+            /**
+             * @description What the account is: a team's or a project's own account, a user's personal account, a user's member account in a team or project, a service account's account, or a provider account at a host. Derived from hostId, holder and the owner; server-managed.
+             * @enum {string}
+             */
+            readonly kind: "team" | "project" | "personal" | "member" | "service" | "provider";
+            /** @description The provider's organization id (the org, never a person or an email). Provider accounts only; empty until known. */
             orgId?: string;
+            /**
+             * @description Capture request and response bodies of requests in this account: on or off. Omitted leaves it to the account above it on the ladder (project, then team), then to the key's own flag.
+             * @enum {string}
+             */
+            payloadLogging?: "on" | "off";
         };
         Audit: {
             /**
@@ -3942,7 +3965,7 @@ export interface components {
             sunsetDate?: string;
         };
         DetachedLinks: {
-            /** @description The policy field that loses the link, such as spec.budgetIds. */
+            /** @description The policy field that loses the link, such as spec.budgets. */
             field: string;
             /**
              * Format: int64
@@ -4558,6 +4581,8 @@ export interface components {
             kind: "serviceaccount" | "user";
         };
         KeySpec: {
+            /** @description Id of the account the key's requests run in by default: one the principal holds (a service account's account, the user's personal or member account) or a provider account the principal may use. Optional on create: a service account's key defaults to its account, a user's key to the personal account. */
+            accountId?: string;
             /** @description False stops the key authenticating (401) until re-enabled. Omitted means true. */
             enabled?: boolean;
             /**
@@ -4574,13 +4599,13 @@ export interface components {
             readonly keyHash: string;
             /** @description Let the key send its own upstream credential in proxy mode. Needs proxy mode enabled in settings. */
             passthroughAllowed?: boolean;
-            /** @description Capture request and response bodies of this key's requests. A governing policy's flag overrides it. */
+            /** @description Capture request and response bodies of this key's requests. An account on the request's ladder (the lane, its project, its team) that sets payloadLogging decides instead. */
             payloadLoggingEnabled?: boolean;
             /** @description Leading characters of the plaintext, for recognising the key. Server-managed. */
             readonly prefix?: string;
             /** @description Hash of the plaintext the last rotation replaced; it still authenticates until graceUntil. Server-managed. */
             readonly previousKeyHash?: string;
-            /** @description The service account or user the key authenticates as; its policies govern the key's requests. Fixed at create. */
+            /** @description The service account or user the key authenticates as. Fixed at create. */
             principal: components["schemas"]["KeyPrincipal"];
             /**
              * Format: date-time
@@ -5011,31 +5036,6 @@ export interface components {
             /** @description Use TLS; required unless plain HTTP is allowed by the deployment. */
             useSSL: boolean;
         };
-        PlanIssue: {
-            /** @description Stable snake_case diagnostic identifier, such as ref_missing or host_mismatch. */
-            code: string;
-            /** @description Id (UUIDv7) of the object carrying the issue. */
-            id: string;
-            /** @description Kind of the object carrying the issue (e.g. key, policybinding). */
-            kind: string;
-            /** @description Human-readable explanation of what is wrong. */
-            message: string;
-            /** @description Slug of the object; empty for derived objects that have no slug. */
-            name: string;
-            /** @description Objects the issue implicates, such as a missing target. */
-            refs: components["schemas"]["PlanIssueRef"][] | null;
-            /**
-             * @description Severity: error means the object cannot serve; warning means it serves but something is likely wrong.
-             * @enum {string}
-             */
-            severity: "error" | "warning";
-        };
-        PlanIssueRef: {
-            /** @description Id (UUIDv7) of the referenced object. */
-            id: string;
-            /** @description Kind of the referenced object (e.g. policy, host). */
-            kind: string;
-        };
         Policy: {
             /**
              * Format: uri
@@ -5090,24 +5090,18 @@ export interface components {
             provider: components["schemas"]["ProviderRef"];
         };
         PolicyBindingSpec: {
-            /** @description False stops the binding from governing its subjects. Omitted means true. */
+            /** @description Ids of the accounts the policy governs, each inside the binding owner's scope. An account is held by at most one binding; a second answers 409 duplicate_binding. */
+            accountIds: string[] | null;
+            /** @description False stops the binding from governing its accounts. Omitted means true. */
             enabled?: boolean;
-            /** @description Id of the policy the subjects are bound to. */
+            /** @description Id of the policy the accounts are bound to. */
             policyId: string;
-            /** @description Id of the owning project; set it for a project-owned binding (the owner follows it). Empty when a team, a user or the system owns the binding. */
-            projectId?: string;
-            /** @description Rungs the policy governs, each inside the binding owner's scope. A subject is held by at most one binding (a user once per scope); a second answers 409 duplicate_binding. Only a system-owned binding may name a host. */
-            subjects: components["schemas"]["PolicyBindingSubject"][] | null;
         };
-        /** @description One rung a policy binding governs. */
-        PolicyBindingSubject: {
-            /** @description Id of the subject row. */
-            id: string;
-            /**
-             * @description What the subject is: a principal (user, serviceaccount), a tenancy scope (team, project), or an upstream rung (host, account, credential, meaning a host key). Groups are not policy subjects.
-             * @enum {string}
-             */
-            kind: "user" | "serviceaccount" | "host" | "account" | "credential" | "team" | "project";
+        PolicyBudgetLink: {
+            /** @description Id of the linked budget. */
+            budgetId: string;
+            /** @description True spends one budget for the bound account; false gives each account under it a budget of its own. Omitted on write means true; always returned. */
+            shared?: boolean;
         };
         PolicyHostRow: {
             /** @description The host. */
@@ -5138,14 +5132,16 @@ export interface components {
         PolicyModelExclusion: {
             /** @description The model. */
             model: components["schemas"]["ModelRef"];
-            /** @description Why the policy does not allow it, such as no matching entry, deprecated, or no host the policy reaches. */
+            /** @description Why the policy does not allow it, such as no matching entry or no host the policy reaches. */
             reason: string;
         };
         PolicyRateLimitLink: {
-            /** @description Model references the limit applies to; empty applies it to every request. Only policies bound to a host, account or host key may scope a limit to models. */
+            /** @description Models the limit applies to, in the policy's model grammar (provider or provider/model); empty applies it to every request. Each matched model counts on its own. */
             models?: string[] | null;
             /** @description Id of the linked rate limit. */
             rateLimitId: string;
+            /** @description True counts once for the bound account; false counts once per account under it (each lane its own bucket). Omitted on write means true; always returned. */
+            shared?: boolean;
         };
         PolicyRateLimitRow: {
             /** @description The link has no model scope and applies to every model. */
@@ -5172,19 +5168,13 @@ export interface components {
             owner: components["schemas"]["OwnerRef"];
         };
         PolicySpec: {
-            /** @description Ids of the budgets every request under this policy must fit. Unpriced models are refused under a budget. */
-            budgetIds?: string[] | null;
-            /** @description Ids of host keys linked directly, each one a pool of one, tried after poolIds. Only on policies bound to a team, project, user or service account. */
-            credentialIds?: string[] | null;
+            /** @description Budgets every request under this policy must fit. Unpriced models are refused under a budget. */
+            budgets?: components["schemas"]["PolicyBudgetLink"][] | null;
             /** @description False refuses every request this policy governs with policy_disabled. Omitted means true. */
             enabled?: boolean;
-            /** @description Let wildcard entries in models match deprecated and sunset models. Models named literally always match. */
-            includeDeprecated?: boolean;
-            /** @description Model references this policy allows, in the model-reference grammar: provider/model@host for one binding, provider/model for every host serving it, provider or provider/* for every model of a provider. Wildcards expand against the live catalog. Empty does not constrain this rung: the request is held to the other rungs' lists. */
+            /** @description Models this policy allows: provider for every model of a provider, provider/model for one model (provider/* is stored as provider). Empty ([]) allows every model the reached pools serve. A host (@host) is refused: the pools decide hosts. The request is held to every rung's list. */
             models?: string[] | null;
-            /** @description Capture request and response bodies of every request this policy governs, overriding the key's own flag. */
-            payloadLoggingEnabled?: boolean;
-            /** @description Ids of the pools requests draw host keys from, tried in this order: a later pool is the failover for an earlier one. Only on policies bound to a team, project, user or service account. */
+            /** @description Ids of the pools requests draw host keys from, tried in this order: a later pool is the failover for an earlier one. Not on host-owned (tier) policies. */
             poolIds?: string[] | null;
             /** @description Rate limits every request under this policy must fit. */
             rateLimits?: components["schemas"]["PolicyRateLimitLink"][] | null;
@@ -5589,7 +5579,7 @@ export interface components {
             /** @description Control-API kinds (plurals, such as policies or host-keys) the rule covers; * covers every kind. */
             kinds: ("*" | "accounts" | "audit" | "budgets" | "debug" | "groups" | "host-bindings" | "host-keys" | "hosts" | "keys" | "license" | "logs" | "master-key" | "models" | "policies" | "policy-bindings" | "pools" | "pricings" | "projects" | "providers" | "rate-limits" | "role-bindings" | "roles" | "scim-clients" | "secret-keys" | "service-accounts" | "settings" | "system" | "teams" | "tokens" | "usage" | "users")[] | null;
             /** @description Verbs the rule grants on those kinds, such as list, get, create, update, delete, rotate; * grants every verb. */
-            verbs: ("*" | "apply" | "attach" | "create" | "delete" | "destroy" | "detach" | "generate" | "get" | "health" | "list" | "mint" | "read" | "reload" | "revoke" | "rewrap" | "rotate" | "snapshot" | "update")[] | null;
+            verbs: ("*" | "apply" | "attach" | "create" | "delete" | "destroy" | "detach" | "generate" | "get" | "health" | "list" | "mint" | "read" | "reload" | "revoke" | "rewrap" | "rotate" | "snapshot" | "update" | "use")[] | null;
         };
         RoleSpec: {
             /** @description False makes bindings of this role grant nothing. Omitted means true. */
@@ -6195,6 +6185,11 @@ export interface components {
             plaintext: string;
         };
         createKeySpec: {
+            /**
+             * Format: uuid
+             * @description Id of the account the key's requests run in by default: one the principal holds (a service account's account, the user's personal or member account), or a provider account the caller may use. Omitted: the service account's account, or the user's personal account.
+             */
+            accountId?: string;
             /** @description False creates the key disabled. Omitted means true. */
             enabled?: boolean;
             /**
@@ -6204,7 +6199,7 @@ export interface components {
             expiresAt?: string;
             /** @description Let the key send its own upstream credential in proxy mode. */
             passthroughAllowed?: boolean;
-            /** @description Capture request and response bodies of this key's requests. A governing policy's flag overrides it. */
+            /** @description Capture request and response bodies of this key's requests. An account on the request's ladder that sets payloadLogging decides instead. */
             payloadLoggingEnabled?: boolean;
             /** @description The service account or user the key acts as. Its owner becomes the key's owner. */
             principal: components["schemas"]["KeyPrincipal"];
@@ -6215,11 +6210,6 @@ export interface components {
              * @description Budgets it links.
              */
             budgets: number;
-            /**
-             * Format: int64
-             * @description Host keys it links directly.
-             */
-            credentials: number;
             /**
              * Format: int64
              * @description Model references the policy lists.
@@ -7174,6 +7164,31 @@ export interface components {
             /** @description Relay build version. */
             version: string;
         };
+        PlanIssue: {
+            /** @description Stable snake_case diagnostic identifier, such as ref_missing or host_mismatch. */
+            code: string;
+            /** @description Id (UUIDv7) of the object carrying the issue. */
+            id: string;
+            /** @description Kind of the object carrying the issue (e.g. key, policybinding). */
+            kind: string;
+            /** @description Human-readable explanation of what is wrong. */
+            message: string;
+            /** @description Slug of the object; empty for derived objects that have no slug. */
+            name: string;
+            /** @description Objects the issue implicates, such as a missing target. */
+            refs: components["schemas"]["PlanIssueRef"][] | null;
+            /**
+             * @description Severity: error means the object cannot serve; warning means it serves but something is likely wrong.
+             * @enum {string}
+             */
+            severity: "error" | "warning";
+        };
+        PlanIssueRef: {
+            /** @description Id (UUIDv7) of the referenced object; empty when the caller may not see the object. */
+            id: string;
+            /** @description Kind of the referenced object (e.g. policy, host). */
+            kind: string;
+        };
     };
     responses: never;
     parameters: never;
@@ -7277,6 +7292,14 @@ export interface operations {
                 name?: string;
                 /** @description Match owner exactly. */
                 owner?: string;
+                /** @description Match any of the given owner_id values. */
+                owner_id?: string[];
+                /** @description Match any of the given kind values. */
+                kind?: ("team" | "project" | "personal" | "member" | "service" | "provider")[];
+                /** @description Match any of the given holder_id values. */
+                holder_id?: string[];
+                /** @description Match closed (true/false). */
+                closed?: boolean;
                 /** @description Match any of the given host_id values. */
                 host_id?: string[];
                 /** @description Match org_id exactly. */
@@ -7402,7 +7425,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description A conflict with stored rows: duplicate_binding (a policy-binding subject another binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
+            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -7576,7 +7599,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns. */
+            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns, and account_managed for a team, project, personal, service or open member account, which goes with its own row. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -8609,7 +8632,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description A conflict with stored rows: duplicate_binding (a policy-binding subject another binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
+            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -8783,7 +8806,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns. */
+            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns, and account_managed for a team, project, personal, service or open member account, which goes with its own row. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -9395,7 +9418,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description A conflict with stored rows: duplicate_binding (a policy-binding subject another binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
+            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -9569,7 +9592,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns. */
+            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns, and account_managed for a team, project, personal, service or open member account, which goes with its own row. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -9940,7 +9963,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description A conflict with stored rows: duplicate_binding (a policy-binding subject another binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
+            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -10114,7 +10137,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns. */
+            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns, and account_managed for a team, project, personal, service or open member account, which goes with its own row. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -10338,7 +10361,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description A conflict with stored rows: duplicate_binding (a policy-binding subject another binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
+            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -10512,7 +10535,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns. */
+            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns, and account_managed for a team, project, personal, service or open member account, which goes with its own row. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -11072,7 +11095,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description A conflict with stored rows: duplicate_binding (a policy-binding subject another binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
+            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -11246,7 +11269,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns. */
+            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns, and account_managed for a team, project, personal, service or open member account, which goes with its own row. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -11646,6 +11669,8 @@ export interface operations {
                 principal_kind?: ("serviceaccount" | "user")[];
                 /** @description Match any of the given principal_id values. */
                 principal_id?: string[];
+                /** @description Match any of the given account_id values. */
+                account_id?: string[];
                 /** @description Match expired (true/false). */
                 expired?: boolean;
                 /** @description Match prefix exactly. */
@@ -11936,7 +11961,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns. */
+            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns, and account_managed for a team, project, personal, service or open member account, which goes with its own row. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -12738,7 +12763,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description A conflict with stored rows: duplicate_binding (a policy-binding subject another binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
+            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -12912,7 +12937,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns. */
+            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns, and account_managed for a team, project, personal, service or open member account, which goes with its own row. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -13512,67 +13537,6 @@ export interface operations {
             };
         };
     };
-    plan_issues_list: {
-        parameters: {
-            query?: {
-                /** @description Filter by object kind, such as key or policybinding. Omit for all kinds. */
-                kind?: string;
-                /** @description Filter by object id (UUIDv7). Takes effect only together with kind. */
-                id?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PlanIssue"][] | null;
-                };
-            };
-            /** @description No valid session cookie or admin bearer token. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIError"];
-                };
-            };
-            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIError"];
-                };
-            };
-            /** @description The request does not match the schema; error.details lists each failing field. */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIError"];
-                };
-            };
-            /** @description The server failed; error.message carries the cause. */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIError"];
-                };
-            };
-        };
-    };
     list_policies: {
         parameters: {
             query?: {
@@ -13580,16 +13544,10 @@ export interface operations {
                 name?: string;
                 /** @description Match enabled (true/false). */
                 enabled?: boolean;
-                /** @description Match payload_logging (true/false). */
-                payload_logging?: boolean;
-                /** @description Match include_deprecated (true/false). */
-                include_deprecated?: boolean;
                 /** @description Match owner exactly. */
                 owner?: string;
                 /** @description Match any of the given pool_id values. */
                 pool_id?: string[];
-                /** @description Match any of the given credential_id values. */
-                credential_id?: string[];
                 /** @description Match any of the given rate_limit_id values. */
                 rate_limit_id?: string[];
                 /** @description Match any of the given budget_id values. */
@@ -13715,7 +13673,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description A conflict with stored rows: duplicate_binding (a policy-binding subject another binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
+            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -13889,7 +13847,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns. */
+            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns, and account_managed for a team, project, personal, service or open member account, which goes with its own row. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -14282,12 +14240,14 @@ export interface operations {
                 name?: string;
                 /** @description Match enabled (true/false). */
                 enabled?: boolean;
-                /** @description Match any of the given project_id values. */
-                project_id?: string[];
+                /** @description Match owner exactly. */
+                owner?: string;
+                /** @description Match any of the given owner_id values. */
+                owner_id?: string[];
                 /** @description Match any of the given policy_id values. */
                 policy_id?: string[];
-                /** @description Match any of the given subject values. */
-                subject?: string[];
+                /** @description Match any of the given account_id values. */
+                account_id?: string[];
                 /** @description Free-text search. */
                 q?: string;
                 /** @description Label selector key=value (repeatable, all must match). */
@@ -14401,7 +14361,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description A conflict with stored rows: duplicate_binding (a policy-binding subject another binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
+            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -14575,7 +14535,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns. */
+            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns, and account_managed for a team, project, personal, service or open member account, which goes with its own row. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -14797,7 +14757,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description A conflict with stored rows: duplicate_binding (a policy-binding subject another binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
+            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -14971,7 +14931,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns. */
+            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns, and account_managed for a team, project, personal, service or open member account, which goes with its own row. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -15374,7 +15334,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description A conflict with stored rows: duplicate_binding (a policy-binding subject another binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
+            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -15548,7 +15508,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns. */
+            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns, and account_managed for a team, project, personal, service or open member account, which goes with its own row. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -15876,7 +15836,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description A conflict with stored rows: duplicate_binding (a policy-binding subject another binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
+            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -16050,7 +16010,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns. */
+            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns, and account_managed for a team, project, personal, service or open member account, which goes with its own row. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -16384,7 +16344,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description A conflict with stored rows: duplicate_binding (a policy-binding subject another binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
+            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -16558,7 +16518,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns. */
+            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns, and account_managed for a team, project, personal, service or open member account, which goes with its own row. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -16892,7 +16852,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description A conflict with stored rows: duplicate_binding (a policy-binding subject another binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
+            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -17066,7 +17026,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns. */
+            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns, and account_managed for a team, project, personal, service or open member account, which goes with its own row. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -17447,7 +17407,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description A conflict with stored rows: duplicate_binding (a policy-binding subject another binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
+            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -17621,7 +17581,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns. */
+            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns, and account_managed for a team, project, personal, service or open member account, which goes with its own row. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -17829,7 +17789,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description A conflict with stored rows: duplicate_binding (a policy-binding subject another binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
+            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -18003,7 +17963,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns. */
+            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns, and account_managed for a team, project, personal, service or open member account, which goes with its own row. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -18937,7 +18897,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description A conflict with stored rows: duplicate_binding (a policy-binding subject another binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
+            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -19111,7 +19071,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns. */
+            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns, and account_managed for a team, project, personal, service or open member account, which goes with its own row. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -21118,7 +21078,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description A conflict with stored rows: duplicate_binding (a policy-binding subject another binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
+            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -21292,7 +21252,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns. */
+            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns, and account_managed for a team, project, personal, service or open member account, which goes with its own row. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -22252,6 +22212,67 @@ export interface operations {
             };
             /** @description Error */
             default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    plan_issues_list: {
+        parameters: {
+            query?: {
+                /** @description Filter by object kind, such as key or policybinding. Omit for all kinds. */
+                kind?: string;
+                /** @description Filter by object id (UUIDv7). Takes effect only together with kind. */
+                id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanIssue"][] | null;
+                };
+            };
+            /** @description No valid session cookie or admin bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The request does not match the schema; error.details lists each failing field. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The server failed; error.message carries the cause. */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };
