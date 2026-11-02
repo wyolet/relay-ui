@@ -10,6 +10,7 @@ import {
 	describeDuplicate,
 	heldAccounts,
 	inOwnerScope,
+	laneAccounts,
 	ownAccount,
 } from "./accountLookup";
 
@@ -165,5 +166,28 @@ describe("describeDuplicate", () => {
 			accountId: undefined,
 			message: "already bound",
 		});
+	});
+});
+
+describe("laneAccounts", () => {
+	const ownProvider = account("openai-alice", "provider", {
+		kind: "user",
+		id: "u1",
+	});
+	const teamProvider = account("openai-team", "provider", {
+		kind: "team",
+		id: "t1",
+	});
+	const all = [personal, saAcct, ownProvider, teamProvider];
+
+	it("adds the provider accounts a user owns to the ones it holds", () => {
+		expect(laneAccounts(all, alice).map((a) => a.metadata.id)).toEqual([
+			"user-alice",
+			"openai-alice",
+		]);
+	});
+
+	it("gives a service account no provider accounts", () => {
+		expect(laneAccounts(all, sa).map((a) => a.metadata.id)).toEqual(["sa-ci"]);
 	});
 });

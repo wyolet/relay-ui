@@ -54,12 +54,17 @@ export function ServiceAccountForm({
 				<OwnerSection
 					icon={Boxes}
 					title="Project"
-					description="The project that owns this account. Its keys and spend are attributed here."
+					description={
+						isEdit
+							? "The project that owns this account; fixed once it exists."
+							: "The project that owns this account. Its keys and spend are attributed here."
+					}
 					placeholder="Pick a project…"
 					options={ownerOptions}
 					value={values.owner}
 					onChange={(v) => form.setFieldValue("owner", v)}
 					error={ownerError}
+					disabled={isEdit}
 				/>
 
 				<FormSection

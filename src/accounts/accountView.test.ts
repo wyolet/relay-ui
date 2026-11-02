@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
 	canDeleteAccount,
+	canSetPayloadLogging,
 	parseAccountKind,
 	resolveHolder,
 } from "@/accounts/accountView";
@@ -69,5 +70,43 @@ describe("payload logging choice", () => {
 		expect(toPayloadLoggingChoice(undefined)).toBe("inherit");
 		expect(fromPayloadLoggingChoice("inherit")).toBeUndefined();
 		expect(fromPayloadLoggingChoice("off")).toBe("off");
+	});
+});
+
+describe("canSetPayloadLogging", () => {
+	const member = {
+		metadata: { name: "m", owner: { kind: "team" as const, id: "t1" } },
+		spec: {
+			kind: "member" as const,
+			holder: { kind: "user" as const, id: "u1" },
+		},
+	};
+	const caller = { isAdmin: false, userId: "u2", scopes: ["team:t1"] };
+
+	test("an admin always may", () => {
+		expect(
+			canSetPayloadLogging(member, { ...caller, isAdmin: true, scopes: [] }),
+		).toBe(true);
+	});
+	test("the holder may not", () => {
+		expect(canSetPayloadLogging(member, { ...caller, userId: "u1" })).toBe(
+			false,
+		);
+	});
+	test("a member of the owning team is offered it", () => {
+		expect(canSetPayloadLogging(member, caller)).toBe(true);
+		expect(
+			canSetPayloadLogging(member, { ...caller, scopes: ["team:t9"] }),
+		).toBe(false);
+	});
+	test("personal accounts are admin-only", () => {
+		const personal = {
+			metadata: { name: "p", owner: { kind: "user" as const, id: "u1" } },
+			spec: {
+				kind: "personal" as const,
+				holder: { kind: "user" as const, id: "u1" },
+			},
+		};
+		expect(canSetPayloadLogging(personal, caller)).toBe(false);
 	});
 });

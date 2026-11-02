@@ -41,6 +41,7 @@ export function AccountForm({ account, onSaved, onCancel }: AccountFormProps) {
 		errors,
 		isEdit,
 		isProvider,
+		payloadLoggingEditable,
 		kindLabel,
 		holder,
 		slugPreview,
@@ -157,11 +158,21 @@ export function AccountForm({ account, onSaved, onCancel }: AccountFormProps) {
 							title="Payload logging"
 							description={PAYLOAD_LOGGING_RULE}
 						>
-							<Segmented
-								options={PAYLOAD_LOGGING_OPTIONS}
-								value={values.payloadLogging}
-								onChange={(v) => form.setFieldValue("payloadLogging", v)}
-							/>
+							{payloadLoggingEditable ? (
+								<Segmented
+									options={PAYLOAD_LOGGING_OPTIONS}
+									value={values.payloadLogging}
+									onChange={(v) => form.setFieldValue("payloadLogging", v)}
+								/>
+							) : (
+								<p className="text-sm text-foreground">
+									{PAYLOAD_LOGGING_LABELS[values.payloadLogging]}
+									<span className="ml-2 text-xs text-muted-foreground">
+										Set by an admin, or an admin of the account's team or
+										project.
+									</span>
+								</p>
+							)}
 						</FormSection>
 					</>
 				)}

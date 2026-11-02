@@ -40,6 +40,7 @@ interface OwnerSectionProps {
 	icon?: LucideIcon;
 	placeholder?: string;
 	error?: string;
+	disabled?: boolean;
 }
 
 function OwnerLabel({ option }: { option: OwnerOption }) {
@@ -61,6 +62,7 @@ export function OwnerSection({
 	icon = UserRound,
 	placeholder = "Pick an owner…",
 	error,
+	disabled,
 }: OwnerSectionProps) {
 	const errorId = useId();
 	const selected = options.find((o) => o.value === value);
@@ -73,6 +75,7 @@ export function OwnerSection({
 					value={value}
 					items={options.map((o) => ({ value: o.value, label: o.label }))}
 					onValueChange={(v) => onChange(v ?? "")}
+					disabled={disabled}
 				>
 					<SelectTrigger
 						className="w-full max-w-md"

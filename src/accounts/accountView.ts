@@ -85,3 +85,27 @@ export function resolveHolder(
 			}
 		: { ...holder, label: shortId(holder.id) };
 }
+
+/** What the UI knows about the caller: its admin role, id and membership scopes ("team:<id>", "project:<id>"). */
+export interface Caller {
+	isAdmin: boolean;
+	userId: string | undefined;
+	scopes: readonly string[];
+}
+
+/**
+ * Relay lets an admin, or an admin of the account's team or project, set its
+ * payload logging, never its holder. The UI sees memberships, not scope roles,
+ * so a member is offered the control and the server has the last word.
+ */
+export function canSetPayloadLogging(
+	account: Account,
+	caller: Caller,
+): boolean {
+	if (caller.isAdmin) return true;
+	const holder = account.spec.holder;
+	if (holder?.kind === "user" && holder.id === caller.userId) return false;
+	const owner = account.metadata.owner;
+	if (owner?.kind !== "team" && owner?.kind !== "project") return false;
+	return caller.scopes.includes(`${owner.kind}:${owner.id ?? ""}`);
+}

@@ -2,7 +2,11 @@ import { useForm } from "@tanstack/react-form";
 import { useStore } from "@tanstack/react-store";
 import { useEffect, useMemo, useRef } from "react";
 import { z } from "zod";
-import { ACCOUNT_KIND_LABELS, PROVIDER_KIND } from "@/accounts/accountView";
+import {
+	ACCOUNT_KIND_LABELS,
+	canSetPayloadLogging,
+	PROVIDER_KIND,
+} from "@/accounts/accountView";
 import {
 	fromPayloadLoggingChoice,
 	PAYLOAD_LOGGING_CHOICES,
@@ -10,6 +14,7 @@ import {
 	toPayloadLoggingChoice,
 } from "@/accounts/payloadLogging";
 import { useHolderResolver } from "@/accounts/useHolderResolver";
+import { useAuth } from "@/api/auth";
 import {
 	type Account,
 	useCreateAccount,
@@ -207,6 +212,11 @@ export function useAccountForm({ account, onSaved }: UseAccountFormOptions) {
 		orgId: firstError(s.fieldMeta?.orgId?.errors),
 	}));
 
+	const { isAdmin, userId, scopes } = useAuth();
+	const payloadLoggingEditable =
+		account !== undefined &&
+		canSetPayloadLogging(account, { isAdmin, userId, scopes });
+
 	const hostOptions = (hostsData.items ?? []).map((h) => ({
 		value: h.metadata.id ?? "",
 		label: displayLabel(h.metadata),
@@ -218,6 +228,7 @@ export function useAccountForm({ account, onSaved }: UseAccountFormOptions) {
 		errors,
 		isEdit,
 		isProvider,
+		payloadLoggingEditable,
 		kindLabel: account ? ACCOUNT_KIND_LABELS[account.spec.kind] : undefined,
 		holder: account?.spec.holder ? toHolder(account.spec.holder) : undefined,
 		slugPreview: account

@@ -50,6 +50,24 @@ export function heldAccounts(
 	);
 }
 
+/** Accounts a key of this principal may run in: those it holds, and for a user the provider accounts that user owns. */
+export function laneAccounts(
+	accounts: readonly Account[],
+	holder: AccountHolder,
+): Account[] {
+	const owned =
+		holder.kind === "user"
+			? accounts.filter(
+					(a) =>
+						a.spec.kind === "provider" &&
+						a.metadata.owner?.kind === "user" &&
+						a.metadata.owner.id === holder.id &&
+						!a.spec.closed,
+				)
+			: [];
+	return [...heldAccounts(accounts, holder), ...owned];
+}
+
 /** The lane a key runs in when it names none: the service account's account, or the user's personal one. */
 export function defaultLane(
 	accounts: readonly Account[],

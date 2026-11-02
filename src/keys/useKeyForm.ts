@@ -12,7 +12,7 @@ import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
 import { firstError, zodFieldValidator } from "@/lib/formErrors";
 import { randomSuffix, slugify } from "@/lib/slug";
-import { defaultLane, heldAccounts } from "@/policy-bindings/accountLookup";
+import { defaultLane, laneAccounts } from "@/policy-bindings/accountLookup";
 import { toast } from "@/shared/Toast";
 
 export type PrincipalKind = KeyPrincipal["kind"];
@@ -157,6 +157,7 @@ export function useKeyForm({
 							enabled: value.enabled,
 							passthroughAllowed: value.passthroughAllowed,
 							payloadLoggingEnabled: value.payloadLoggingEnabled,
+							...(value.accountId ? { accountId: value.accountId } : {}),
 						},
 					};
 					const saved = await updateKey.mutateAsync({
@@ -229,14 +230,13 @@ export function useKeyForm({
 	// The lane picker loads non-suspending: without the list the server default applies.
 	const { data: accountsData } = useQuery({
 		...accountListQueryOptions,
-		enabled: !isEdit,
 		retry: false,
 	});
 	const holder = { kind: values.principalKind, id: values.principalId };
-	const held = values.principalId
-		? heldAccounts(accountsData?.items ?? [], holder)
+	const lanes = values.principalId
+		? laneAccounts(accountsData?.items ?? [], holder)
 		: [];
-	const laneOptions = held.flatMap((a) =>
+	const laneOptions = lanes.flatMap((a) =>
 		a.metadata.id ? [{ value: a.metadata.id, label: accountLabel(a) }] : [],
 	);
 	const laneValue =

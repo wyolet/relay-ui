@@ -173,37 +173,35 @@ export function KeyForm({
 					)}
 				</FormSection>
 
-				{!isEdit && (
-					<FormSection
-						icon={Building2}
-						title="Account"
-						description="The account the key's requests run in by default. A team or project membership account climbs that team's and project's policies; a personal or service account answers to its own policy only."
+				<FormSection
+					icon={Building2}
+					title="Account"
+					description="The account the key's requests run in by default. A team or project membership account climbs that team's and project's policies; a personal, service or provider account answers to its own policy only."
+				>
+					<Select
+						value={laneValue}
+						items={laneOptions}
+						disabled={laneOptions.length === 0}
+						onValueChange={(v) => form.setFieldValue("accountId", v ?? "")}
 					>
-						<Select
-							value={laneValue}
-							items={laneOptions}
-							disabled={laneOptions.length === 0}
-							onValueChange={(v) => form.setFieldValue("accountId", v ?? "")}
-						>
-							<SelectTrigger className="w-full max-w-md" aria-label="Account">
-								<SelectValue
-									placeholder={
-										values.principalId
-											? "The principal's default account"
-											: "Pick a principal first"
-									}
-								/>
-							</SelectTrigger>
-							<SelectContent>
-								{laneOptions.map((o) => (
-									<SelectItem key={o.value} value={o.value}>
-										{o.label}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-					</FormSection>
-				)}
+						<SelectTrigger className="w-full max-w-md" aria-label="Account">
+							<SelectValue
+								placeholder={
+									values.principalId
+										? "The principal's default account"
+										: "Pick a principal first"
+								}
+							/>
+						</SelectTrigger>
+						<SelectContent>
+							{laneOptions.map((o) => (
+								<SelectItem key={o.value} value={o.value}>
+									{o.label}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+				</FormSection>
 
 				<FormSection
 					icon={CalendarClock}
