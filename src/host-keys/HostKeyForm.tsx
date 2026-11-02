@@ -16,6 +16,7 @@ import { HostSelect } from "@/hosts/HostSelect";
 import { FormFooter } from "@/shared/FormFooter";
 import { FormSection } from "@/shared/FormSection";
 import { IdentitySection } from "@/shared/IdentitySection";
+import { OptionWithHint } from "@/shared/OptionWithHint";
 
 const KIND_OPTIONS: Record<HostKeyKind, { label: string; hint: string }> = {
 	stored: {
@@ -150,14 +151,10 @@ export function HostKeyForm({
 									<SelectContent>
 										{(Object.keys(KIND_OPTIONS) as HostKeyKind[]).map((k) => (
 											<SelectItem key={k} value={k}>
-												<span className="flex flex-col items-start gap-0.5 whitespace-normal">
-													<span className="text-sm text-foreground">
-														{KIND_OPTIONS[k].label}
-													</span>
-													<span className="text-[11px] leading-snug text-muted-foreground">
-														{KIND_OPTIONS[k].hint}
-													</span>
-												</span>
+												<OptionWithHint
+													label={KIND_OPTIONS[k].label}
+													hint={KIND_OPTIONS[k].hint}
+												/>
 											</SelectItem>
 										))}
 									</SelectContent>
