@@ -5,6 +5,7 @@ import { displayLabel } from "@/lib/displayLabel";
 
 export type AccountKind = AccountSpec["kind"];
 type AccountHolder = components["schemas"]["AccountHolder"];
+type AccountShareParty = components["schemas"]["AccountShareParty"];
 
 export const ACCOUNT_KIND_LABELS: Record<AccountKind, string> = {
 	team: "Team",
@@ -15,9 +16,30 @@ export const ACCOUNT_KIND_LABELS: Record<AccountKind, string> = {
 	provider: "Provider",
 };
 
-/** "Kind · name", the label every account picker and chip shows. */
+/** "Kind · name", the label every account picker and chip shows; a shared account adds who shared it. */
 export function accountLabel(account: Account): string {
-	return `${ACCOUNT_KIND_LABELS[account.spec.kind]} · ${displayLabel(account.metadata)}`;
+	const label = `${ACCOUNT_KIND_LABELS[account.spec.kind]} · ${displayLabel(account.metadata)}`;
+	const sharer = sharedByName(account);
+	return sharer === undefined ? label : `${label} · shared by ${sharer}`;
+}
+
+/** A copy of a provider account made by sharing it; it holds no keys of its own. */
+export function isSharedAccount(account: Account): boolean {
+	return Boolean(account.spec.sourceAccountId);
+}
+
+/** Who shared it; a party the caller can't see shows a short id. */
+export function partyName(party: AccountShareParty): string {
+	if (party.kind === "system") return "System";
+	if (party.name) return party.name;
+	return party.id ? shortId(party.id) : "unknown";
+}
+
+/** Who shared the account, or undefined for one that isn't shared. */
+export function sharedByName(account: Account): string | undefined {
+	if (!isSharedAccount(account)) return undefined;
+	const party = account.spec.sharedBy;
+	return party ? partyName(party) : "unknown";
 }
 
 export const ACCOUNT_KINDS = [
