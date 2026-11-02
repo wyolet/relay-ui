@@ -1,6 +1,7 @@
 import {
 	queryOptions,
 	useMutation,
+	useQueries,
 	useQuery,
 	useQueryClient,
 	useSuspenseQuery,
@@ -98,6 +99,22 @@ export function hostKeysListQuery(params: HostKeysListParams) {
 			unwrap(await apiClient.GET("/host-keys", { params: { query: params } })),
 		staleTime: 30_000,
 		gcTime: 5 * 60_000,
+	});
+}
+
+/** The host keys of one provider account, with full specs. */
+export function accountHostKeysQuery(accountId: string) {
+	return hostKeysListQuery({ account_id: [accountId] });
+}
+
+export function useAccountHostKeys(accountId: string) {
+	return useSuspenseQuery(accountHostKeysQuery(accountId));
+}
+
+/** Breaker status per key id; one call per key, non-suspense. */
+export function useHostKeysHealth(ids: readonly string[]) {
+	return useQueries({
+		queries: ids.map((id) => hostKeyHealthQueryOptions(id)),
 	});
 }
 

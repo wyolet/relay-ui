@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { useAccounts } from "@/api/hooks/accounts";
-import { useDeleteHostKey, useHostKey } from "@/api/hooks/hostkeys";
+import { useHostKey } from "@/api/hooks/hostkeys";
 import { useHosts } from "@/api/hooks/hosts";
 import { usePolicies } from "@/api/hooks/policies";
 import { usePools } from "@/api/hooks/pools";
 import type { Host } from "@/api/types/host";
+import { useHostKeyDelete } from "@/host-keys/useHostKeyDelete";
 import { useToggleHostKeyEnabled } from "@/host-keys/useToggleHostKeyEnabled";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { toast } from "@/shared/Toast";
-import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 import { linkedPolicyRows } from "./linkedPolicies";
 
 interface UseHostKeyDetailOptions {
@@ -56,16 +56,12 @@ export function useHostKeyDetail({ name, onDeleted }: UseHostKeyDetailOptions) {
 	const { data: policiesData } = usePolicies();
 	const { data: poolsData } = usePools();
 	const { data: accountsData } = useAccounts();
-	const del = useConfirmedDelete(useDeleteHostKey(), {
-		noun: "credential",
-		onDeleted,
-	});
+	const { del, request: requestDelete } = useHostKeyDelete({ onDeleted });
 	const { setEnabled: setEnabledMutation, isPending: isToggling } =
 		useToggleHostKeyEnabled();
 
 	const [rotating, setRotating] = useState(false);
 
-	const refs = hk.policies ?? [];
 	const attachedPolicies = linkedPolicyRows(
 		hk,
 		policiesData.items ?? [],
@@ -123,25 +119,7 @@ export function useHostKeyDetail({ name, onDeleted }: UseHostKeyDetailOptions) {
 	};
 
 	function attemptDelete() {
-		if (refs.length > 0) {
-			const preview = refs
-				.slice(0, 3)
-				.map((r) => r.name)
-				.join(", ");
-			const overflow = refs.length > 3 ? ` (+${refs.length - 3} more)` : "";
-			toast(
-				"error",
-				`Remove it from its pools first; ${refs.length} ${
-					refs.length === 1 ? "policy reaches" : "policies reach"
-				} it: ${preview}${overflow}.`,
-			);
-			return;
-		}
-		del.request({
-			id: hk.metadata.id ?? "",
-			name: hk.metadata.name,
-			label: displayLabel(hk.metadata),
-		});
+		requestDelete(hk);
 	}
 
 	function openRotate() {
