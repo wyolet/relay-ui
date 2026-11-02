@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
+import { accountLabel } from "@/accounts/accountView";
 import { type Account, accountListQueryOptions } from "@/api/hooks/accounts";
-import { accountLabel } from "@/policy-bindings/accountLookup";
 
 /**
  * "Kind · name" per account id, plus the account's slug for a link. Loads

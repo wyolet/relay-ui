@@ -1,5 +1,6 @@
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { Plus, ShieldCheck } from "lucide-react";
+import { accountLabel } from "@/accounts/accountView";
 import { useAccounts } from "@/api/hooks/accounts";
 import { usePolicies } from "@/api/hooks/policies";
 import {
@@ -14,7 +15,6 @@ import { activeFilterCount } from "@/filters/toQueryParams";
 import type { FilterDef, FilterState } from "@/filters/types";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { AccountChips } from "@/policy-bindings/AccountChips";
-import { accountLabel } from "@/policy-bindings/accountLookup";
 import { BindingOwner } from "@/policy-bindings/BindingOwner";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { RowMenu } from "@/shared/RowMenu";

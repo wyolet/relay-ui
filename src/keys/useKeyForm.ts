@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useStore } from "@tanstack/react-store";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
+import { accountLabel } from "@/accounts/accountView";
 import { accountListQueryOptions } from "@/api/hooks/accounts";
 import { useCreateKey, useUpdateKey } from "@/api/hooks/keys";
 import type { CreateKeyInput, Key, KeyPrincipal } from "@/api/types/key";
@@ -11,11 +12,7 @@ import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
 import { firstError, zodFieldValidator } from "@/lib/formErrors";
 import { randomSuffix, slugify } from "@/lib/slug";
-import {
-	accountLabel,
-	defaultLane,
-	heldAccounts,
-} from "@/policy-bindings/accountLookup";
+import { defaultLane, heldAccounts } from "@/policy-bindings/accountLookup";
 import { toast } from "@/shared/Toast";
 
 export type PrincipalKind = KeyPrincipal["kind"];

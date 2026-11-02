@@ -177,7 +177,7 @@ export function KeyForm({
 					<FormSection
 						icon={Building2}
 						title="Account"
-						description="The account the key's requests run in by default. A team or project membership account climbs that team's and project's policies; a provider account is direct use under its own policy."
+						description="The account the key's requests run in by default. A team or project membership account climbs that team's and project's policies; a personal or service account answers to its own policy only."
 					>
 						<Select
 							value={laneValue}

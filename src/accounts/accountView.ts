@@ -1,4 +1,4 @@
-import type { AccountSpec } from "@/api/hooks/accounts";
+import type { Account, AccountSpec } from "@/api/hooks/accounts";
 import type { Host } from "@/api/types/host";
 import type { components } from "@/api/types.gen";
 import { displayLabel } from "@/lib/displayLabel";
@@ -14,6 +14,11 @@ export const ACCOUNT_KIND_LABELS: Record<AccountKind, string> = {
 	service: "Service",
 	provider: "Provider",
 };
+
+/** "Kind · name", the label every account picker and chip shows. */
+export function accountLabel(account: Account): string {
+	return `${ACCOUNT_KIND_LABELS[account.spec.kind]} · ${displayLabel(account.metadata)}`;
+}
 
 export const ACCOUNT_KINDS = [
 	"team",

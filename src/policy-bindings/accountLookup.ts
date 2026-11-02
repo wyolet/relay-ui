@@ -3,25 +3,9 @@ import { ApiError } from "@/api/types/errors";
 import type { PolicyBinding } from "@/api/types/policyBinding";
 import type { Project } from "@/api/types/project";
 import type { components } from "@/api/types.gen";
-import { displayLabel } from "@/lib/displayLabel";
 
 type Owner = components["schemas"]["Owner"];
-export type AccountKind = Account["spec"]["kind"];
 export type AccountHolder = components["schemas"]["AccountHolder"];
-
-export const ACCOUNT_KIND_LABEL: Record<AccountKind, string> = {
-	team: "Team",
-	project: "Project",
-	personal: "Personal",
-	member: "Member",
-	service: "Service",
-	provider: "Provider",
-};
-
-/** "Kind · name", the label every account picker and chip shows. */
-export function accountLabel(account: Account): string {
-	return `${ACCOUNT_KIND_LABEL[account.spec.kind]} · ${displayLabel(account.metadata)}`;
-}
 
 /**
  * Whether an account sits inside a binding owner's scope: the system holds

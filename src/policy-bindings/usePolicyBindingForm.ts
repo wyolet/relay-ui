@@ -2,6 +2,7 @@ import { useForm } from "@tanstack/react-form";
 import { useStore } from "@tanstack/react-store";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
+import { ACCOUNT_KIND_LABELS, accountLabel } from "@/accounts/accountView";
 import { useAuth } from "@/api/auth";
 import { useAccounts } from "@/api/hooks/accounts";
 import {
@@ -19,8 +20,6 @@ import { firstError, zodFieldValidator } from "@/lib/formErrors";
 import type { OwnerOption } from "@/lib/ownerScopes";
 import { randomSuffix, slugify } from "@/lib/slug";
 import {
-	ACCOUNT_KIND_LABEL,
-	accountLabel,
 	type DuplicateAccount,
 	describeDuplicate,
 	inOwnerScope,
@@ -161,7 +160,7 @@ export function usePolicyBindingForm({
 	function duplicateName(accountId: string): string | undefined {
 		const account = accounts.find((a) => a.metadata.id === accountId);
 		return account
-			? `${ACCOUNT_KIND_LABEL[account.spec.kind]} account "${displayLabel(account.metadata)}"`
+			? `${ACCOUNT_KIND_LABELS[account.spec.kind]} account "${displayLabel(account.metadata)}"`
 			: undefined;
 	}
 

@@ -1,11 +1,11 @@
 import { describe, expect, it } from "bun:test";
+import { accountLabel } from "@/accounts/accountView";
 import type { Account } from "@/api/hooks/accounts";
 import type { PolicyBinding } from "@/api/types/policyBinding";
 import type { Project } from "@/api/types/project";
 import type { components } from "@/api/types.gen";
 import {
 	accountBinding,
-	accountLabel,
 	defaultLane,
 	describeDuplicate,
 	heldAccounts,

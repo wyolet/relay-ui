@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
+import { ACCOUNT_KIND_LABELS } from "@/accounts/accountView";
 import { displayLabel } from "@/lib/displayLabel";
-import { ACCOUNT_KIND_LABEL } from "@/policy-bindings/accountLookup";
 import {
 	type AccountRef,
 	useAccountPolicy,
@@ -89,7 +89,7 @@ export function AccountPolicy({
 				{accountLink}
 				<span className="text-muted-foreground">
 					{" "}
-					· {ACCOUNT_KIND_LABEL[account.spec.kind]}
+					· {ACCOUNT_KIND_LABELS[account.spec.kind]}
 					{account.spec.closed && " (closed)"}
 				</span>
 			</DetailRow>
