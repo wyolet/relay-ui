@@ -36,7 +36,7 @@ describe("resolveMutability", () => {
 
 	it("governs detached catalog rows as user-owned", () => {
 		const catalogDetachedAt = "2026-10-18T12:00:00Z";
-		for (const kind of ["provider", "host", "system"]) {
+		for (const kind of ["provider", "host", "system"] as const) {
 			expect(
 				resolveMutability({ owner: { kind }, catalogDetachedAt }, locked),
 			).toEqual(both);

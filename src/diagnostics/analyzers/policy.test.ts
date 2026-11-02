@@ -5,7 +5,6 @@ import {
 	graph,
 	makeHost,
 	makeHostKey,
-	makeKey,
 	makeModel,
 	makePolicy,
 	makeProvider,
@@ -15,19 +14,26 @@ import {
 const codes = (ds: { code: string }[]) => ds.map((d) => d.code).sort();
 
 describe("analyzePolicy", () => {
-	it("flags no host keys", () => {
-		const p = makePolicy({ hostKeyIds: [] });
+	it("flags no credentials or pools", () => {
+		const p = makePolicy({ credentialIds: [], poolIds: [] });
 		const ds = analyzePolicy(p, graph({ policies: [p] }));
 		expect(codes(ds)).toContain("policy.no-host-keys");
 	});
 
-	it("does not flag no-host-keys when a grant reaches a noAuth host", () => {
+	it("does not flag no-credentials when poolIds is non-empty", () => {
+		const p = makePolicy({ credentialIds: [], poolIds: ["pool-1"] });
+		const ds = analyzePolicy(p, graph({ policies: [p] }));
+		expect(codes(ds)).not.toContain("policy.no-host-keys");
+	});
+
+	it("does not flag no-credentials when a grant reaches a noAuth host", () => {
 		const host = makeHost({ id: "h1", name: "ollama-self", noAuth: true });
 		const provider = makeProvider({ id: "pr1", name: "ollama" });
 		const model = makeModel({ id: "m1", name: "llama3", providerId: "pr1" });
 		const p = makePolicy({
 			id: "p1",
-			hostKeyIds: [],
+			credentialIds: [],
+			poolIds: [],
 			models: ["@ollama-self"],
 		});
 		const ds = analyzePolicy(
@@ -44,15 +50,14 @@ describe("analyzePolicy", () => {
 		expect(codes(ds)).not.toContain("policy.catalog-resolves-empty");
 	});
 
-	it("flags all-host-keys-disabled when every attached key is off", () => {
+	it("flags all-credentials-disabled when every attached credential is off", () => {
 		const host = makeHost({ id: "h1", name: "openai" });
 		const hk = makeHostKey({
 			id: "k1",
 			hostId: "h1",
-			policyId: "p1",
 			enabled: false,
 		});
-		const p = makePolicy({ id: "p1", hostKeyIds: ["k1"] });
+		const p = makePolicy({ id: "p1", credentialIds: ["k1"] });
 		const ds = analyzePolicy(
 			p,
 			graph({ policies: [p], hostKeys: [hk], hosts: [host] }),
@@ -60,16 +65,15 @@ describe("analyzePolicy", () => {
 		expect(codes(ds)).toContain("policy.host-keys-all-disabled");
 	});
 
-	it("warns when only some host keys are disabled", () => {
+	it("warns when only some credentials are disabled", () => {
 		const host = makeHost({ id: "h1", name: "openai" });
-		const a = makeHostKey({ id: "a", hostId: "h1", policyId: "p1" });
+		const a = makeHostKey({ id: "a", hostId: "h1" });
 		const b = makeHostKey({
 			id: "b",
 			hostId: "h1",
-			policyId: "p1",
 			enabled: false,
 		});
-		const p = makePolicy({ id: "p1", hostKeyIds: ["a", "b"] });
+		const p = makePolicy({ id: "p1", credentialIds: ["a", "b"] });
 		const ds = analyzePolicy(
 			p,
 			graph({ policies: [p], hostKeys: [a, b], hosts: [host] }),
@@ -77,10 +81,10 @@ describe("analyzePolicy", () => {
 		expect(codes(ds)).toContain("policy.host-keys-degraded");
 	});
 
-	it("flags transitive host-disabled when every enabled hk's host is off", () => {
+	it("flags transitive host-disabled when every enabled credential's host is off", () => {
 		const host = makeHost({ id: "h1", name: "openai", enabled: false });
-		const hk = makeHostKey({ id: "k1", hostId: "h1", policyId: "p1" });
-		const p = makePolicy({ id: "p1", hostKeyIds: ["k1"] });
+		const hk = makeHostKey({ id: "k1", hostId: "h1" });
+		const p = makePolicy({ id: "p1", credentialIds: ["k1"] });
 		const ds = analyzePolicy(
 			p,
 			graph({ policies: [p], hostKeys: [hk], hosts: [host] }),
@@ -90,12 +94,12 @@ describe("analyzePolicy", () => {
 
 	it("warns when a referenced rate limit is disabled", () => {
 		const host = makeHost({ id: "h1", name: "openai" });
-		const hk = makeHostKey({ id: "k1", hostId: "h1", policyId: "p1" });
+		const hk = makeHostKey({ id: "k1", hostId: "h1" });
 		const rl = makeRateLimit({ id: "rl1", enabled: false });
 		const p = makePolicy({
 			id: "p1",
-			hostKeyIds: ["k1"],
-			rateLimitId: "rl1",
+			credentialIds: ["k1"],
+			rateLimits: [{ rateLimitId: "rl1" }],
 		});
 		const ds = analyzePolicy(
 			p,
@@ -109,14 +113,14 @@ describe("analyzePolicy", () => {
 		expect(codes(ds)).toContain("policy.rate-limit-disabled");
 	});
 
-	it("warns about rl-binding pointing at models outside the catalog", () => {
+	it("warns about rl entry pointing at models outside the catalog", () => {
 		const host = makeHost({ id: "h1", name: "openai" });
-		const hk = makeHostKey({ id: "k1", hostId: "h1", policyId: "p1" });
+		const hk = makeHostKey({ id: "k1", hostId: "h1" });
 		const p = makePolicy({
 			id: "p1",
-			hostKeyIds: ["k1"],
+			credentialIds: ["k1"],
 			models: ["openai/gpt-4o"],
-			rlBindings: [
+			rateLimits: [
 				{ rateLimitId: "rl1", models: ["anthropic/claude-3-haiku"] },
 			],
 		});
@@ -127,32 +131,15 @@ describe("analyzePolicy", () => {
 		expect(codes(ds)).toContain("policy.rl-binding-dead");
 	});
 
-	it("warns when disabled but enabled keys attached", () => {
-		const host = makeHost({ id: "h1", name: "openai" });
-		const hk = makeHostKey({ id: "k1", hostId: "h1", policyId: "p1" });
-		const p = makePolicy({
-			id: "p1",
-			hostKeyIds: ["k1"],
-			enabled: false,
-		});
-		const rk = makeKey({ policyId: "p1" });
-		const ds = analyzePolicy(
-			p,
-			graph({
-				policies: [p],
-				hostKeys: [hk],
-				hosts: [host],
-				keys: [rk],
-			}),
-		);
-		expect(codes(ds)).toContain("policy.disabled-with-keys");
-	});
-
-	it("skips host-key and key checks for host-owned policies", () => {
-		// Host-owned (tier) policy with no hostKeyIds — would normally trigger
-		// policy.no-host-keys, but tier policies don't pool host keys.
+	it("skips credential and pool checks for host-owned policies", () => {
+		// Host-owned (tier) policy with no credentialIds — would normally trigger
+		// policy.no-host-keys, but tier policies don't pool credentials.
 		const tier: ReturnType<typeof makePolicy> = {
-			...makePolicy({ id: "tier-1", name: "anthropic-tier-1", hostKeyIds: [] }),
+			...makePolicy({
+				id: "tier-1",
+				name: "anthropic-tier-1",
+				credentialIds: [],
+			}),
 			metadata: {
 				id: "tier-1",
 				name: "anthropic-tier-1",
@@ -165,19 +152,6 @@ describe("analyzePolicy", () => {
 		expect(c).not.toContain("policy.host-keys-all-disabled");
 		expect(c).not.toContain("policy.host-keys-degraded");
 		expect(c).not.toContain("policy.host-disabled-transitive");
-		expect(c).not.toContain("policy.no-keys");
-		expect(c).not.toContain("policy.disabled-with-keys");
-	});
-
-	it("info: no keys attached", () => {
-		const host = makeHost({ id: "h1", name: "openai" });
-		const hk = makeHostKey({ id: "k1", hostId: "h1", policyId: "p1" });
-		const p = makePolicy({ id: "p1", hostKeyIds: ["k1"] });
-		const ds = analyzePolicy(
-			p,
-			graph({ policies: [p], hostKeys: [hk], hosts: [host] }),
-		);
-		expect(codes(ds)).toContain("policy.no-keys");
 	});
 
 	describe("catalog coverage", () => {
@@ -188,7 +162,7 @@ describe("analyzePolicy", () => {
 
 		it("matches grants through the provider UUID → slug map", () => {
 			const host = makeHost({ id: "h1", name: "openai" });
-			const hk = makeHostKey({ id: "k1", hostId: "h1", policyId: "p1" });
+			const hk = makeHostKey({ id: "k1", hostId: "h1" });
 			const provider = makeProvider({ id: PROV, name: "openai" });
 			const model = makeModel({
 				name: "gpt-4o",
@@ -196,7 +170,7 @@ describe("analyzePolicy", () => {
 			});
 			const p = makePolicy({
 				id: "p1",
-				hostKeyIds: ["k1"],
+				credentialIds: ["k1"],
 				models: ["openai/gpt-4o"],
 			});
 			const ds = analyzePolicy(
@@ -215,7 +189,7 @@ describe("analyzePolicy", () => {
 
 		it("flags error when every grant resolves to no reachable model", () => {
 			const host = makeHost({ id: "h1", name: "openai" });
-			const hk = makeHostKey({ id: "k1", hostId: "h1", policyId: "p1" });
+			const hk = makeHostKey({ id: "k1", hostId: "h1" });
 			const provider = makeProvider({ id: PROV, name: "openai" });
 			// Model exists but binds to a host the policy can't reach.
 			const otherHost = makeHost({ id: "h2", name: "azure" });
@@ -225,7 +199,7 @@ describe("analyzePolicy", () => {
 			});
 			const p = makePolicy({
 				id: "p1",
-				hostKeyIds: ["k1"],
+				credentialIds: ["k1"],
 				models: ["openai/gpt-4o"],
 			});
 			const ds = analyzePolicy(
@@ -245,7 +219,7 @@ describe("analyzePolicy", () => {
 
 		it("warns when some grants are dead", () => {
 			const host = makeHost({ id: "h1", name: "openai" });
-			const hk = makeHostKey({ id: "k1", hostId: "h1", policyId: "p1" });
+			const hk = makeHostKey({ id: "k1", hostId: "h1" });
 			const provider = makeProvider({ id: PROV, name: "openai" });
 			const live = makeModel({
 				name: "gpt-4o",
@@ -253,7 +227,7 @@ describe("analyzePolicy", () => {
 			});
 			const p = makePolicy({
 				id: "p1",
-				hostKeyIds: ["k1"],
+				credentialIds: ["k1"],
 				models: ["openai/gpt-4o", "openai/does-not-exist"],
 			});
 			const ds = analyzePolicy(
@@ -273,7 +247,7 @@ describe("analyzePolicy", () => {
 
 		it("disabled models don't count as reachable", () => {
 			const host = makeHost({ id: "h1", name: "openai" });
-			const hk = makeHostKey({ id: "k1", hostId: "h1", policyId: "p1" });
+			const hk = makeHostKey({ id: "k1", hostId: "h1" });
 			const provider = makeProvider({ id: PROV, name: "openai" });
 			const model = makeModel({
 				name: "gpt-4o",
@@ -282,7 +256,7 @@ describe("analyzePolicy", () => {
 			});
 			const p = makePolicy({
 				id: "p1",
-				hostKeyIds: ["k1"],
+				credentialIds: ["k1"],
 				models: ["openai/gpt-4o"],
 			});
 			const ds = analyzePolicy(

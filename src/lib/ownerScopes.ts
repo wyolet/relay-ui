@@ -4,6 +4,22 @@ import type { components } from "@/api/types.gen";
 import { displayLabel } from "@/lib/displayLabel";
 
 type Owner = components["schemas"]["Owner"];
+type OwnerKind = NonNullable<Owner["kind"]>;
+
+// All valid owner kind strings, derived from the generated Owner schema.
+// Used to narrow string form values to the typed union.
+const OWNER_KINDS = [
+	"system",
+	"provider",
+	"host",
+	"user",
+	"team",
+	"project",
+] as const satisfies readonly OwnerKind[];
+
+function parseOwnerKind(v: string): OwnerKind | undefined {
+	return OWNER_KINDS.find((k) => k === v);
+}
 
 /** The scopes a row can be created in. */
 export type OwnerScopeKind = "user" | "team" | "project";
@@ -67,7 +83,8 @@ export function ownerFromKey(key: string, actorUserId?: string): Owner {
 	if (key === PERSONAL_OWNER) {
 		return actorUserId ? { kind: "user", id: actorUserId } : { kind: "user" };
 	}
-	const { kind, id } = splitKey(key);
+	const { kind: rawKind, id } = splitKey(key);
+	const kind = parseOwnerKind(rawKind);
 	return id ? { kind, id } : { kind };
 }
 

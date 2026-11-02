@@ -7,7 +7,10 @@ const codes = (ds: { code: string }[]) => ds.map((d) => d.code).sort();
 describe("analyzeRateLimit", () => {
 	it("warns when disabled and an enabled policy references it", () => {
 		const rl = makeRateLimit({ id: "rl1", enabled: false });
-		const p = makePolicy({ id: "p1", rateLimitId: "rl1" });
+		const p = makePolicy({
+			id: "p1",
+			rateLimits: [{ rateLimitId: "rl1" }],
+		});
 		const ds = analyzeRateLimit(rl, graph({ rateLimits: [rl], policies: [p] }));
 		expect(codes(ds)).toContain("rate-limit.disabled-with-refs");
 	});
@@ -16,7 +19,7 @@ describe("analyzeRateLimit", () => {
 		const rl = makeRateLimit({ id: "rl1", enabled: false });
 		const p = makePolicy({
 			id: "p1",
-			rateLimitId: "rl1",
+			rateLimits: [{ rateLimitId: "rl1" }],
 			enabled: false,
 		});
 		const ds = analyzeRateLimit(rl, graph({ rateLimits: [rl], policies: [p] }));

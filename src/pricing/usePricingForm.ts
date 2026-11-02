@@ -9,18 +9,24 @@ import type {
 	PricingRate,
 	PricingUpdate,
 } from "@/api/types/pricing";
+import type { components } from "@/api/types.gen";
 import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
 import { randomSuffix, slugify } from "@/lib/slug";
-import { PRICING_METERS } from "@/lib/usage-math/pricing";
+import { PRICING_METERS, type PRICING_UNITS } from "@/lib/usage-math/pricing";
 import { toast } from "@/shared/Toast";
 
-export type PricingMeter = (typeof PRICING_METERS)[number];
+type Owner = components["schemas"]["Owner"];
+
+// Derived from the generated PricingRate schema — the full set the server accepts.
+// PRICING_METERS is the UI subset offered in pickers.
+export type PricingMeter = components["schemas"]["PricingRate"]["meter"];
+export type PricingUnit = (typeof PRICING_UNITS)[number];
 
 export interface RateDraft {
-	meter: string;
-	unit: string;
+	meter: PricingMeter;
+	unit: PricingUnit;
 	/** Decimal string, e.g. "3" or "0.30". */
 	amount: string;
 	/** Tier threshold; "" marks the meter's base rate. */
@@ -93,7 +99,7 @@ const schema = z
 		});
 	});
 
-export function emptyRate(meter: string = "tokens.input"): RateDraft {
+export function emptyRate(meter: PricingMeter = "tokens.input"): RateDraft {
 	return { meter, unit: "per_million", amount: "", aboveTokens: "" };
 }
 
@@ -212,7 +218,7 @@ export function usePricingForm({
 			};
 			// The relay requires pricing rows to be host-owned (rate sheets
 			// belong to the billing host).
-			const owner = { kind: "host", id: value.host };
+			const owner: Owner = { kind: "host", id: value.host };
 			try {
 				const name = computeSlug(displayName);
 				if (isEdit && pricing) {

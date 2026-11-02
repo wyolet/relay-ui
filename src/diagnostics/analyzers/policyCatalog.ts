@@ -38,8 +38,8 @@ function providerSlugOf(m: Model, graph: DiagnosticGraph): string | null {
 
 /**
  * Set of host IDs the policy's catalog refs touch — ignoring whether the
- * policy has keys for them. Used to detect attached host keys whose host
- * isn't in the policy's catalog (dangling keys after a ref edit).
+ * policy has credentials for them. Used to detect attached credentials whose
+ * host isn't in the policy's catalog (dangling keys after a ref edit).
  */
 export function hostIdsInPolicyCatalog(
 	policy: Policy,
@@ -75,10 +75,12 @@ export function hostIdsInPolicyCatalog(
 /**
  * Models reachable through the policy via the ref. A model counts if:
  *   - it matches the ref (provider / model / @host segments), AND
- *   - the binding's host is reachable: either an enabled host key points at it,
- *     or the host is `noAuth` (needs no credential — e.g. a local Ollama).
+ *   - the binding's host is reachable: either an enabled credential points at it
+ *     (via credentialIds), or the host is `noAuth` (needs no credential).
  *
  * Empty result = the grant unlocks nothing through this policy.
+ * Note: pool-linked credentials (poolIds) are not resolved here — the graph
+ * does not load pool data.
  */
 export function modelsForRefViaPolicy(
 	ref: string,
@@ -88,12 +90,11 @@ export function modelsForRefViaPolicy(
 	const parsed = parseRef(ref);
 	if (!parsed) return [];
 
-	// Hosts this policy can actually authenticate against: each enabled host
-	// key contributes its host (if the host itself is enabled). `noAuth` hosts
-	// need no key, so any enabled noAuth host is reachable unconditionally.
+	// Hosts this policy can authenticate against via direct credentialIds.
+	// `noAuth` hosts need no credential — any enabled noAuth host is reachable.
 	const reachableHostIds = new Set<string>();
-	for (const hkId of policy.spec.hostKeyIds ?? []) {
-		const hk = graph.hostKeys.get(hkId);
+	for (const credId of policy.spec.credentialIds ?? []) {
+		const hk = graph.hostKeys.get(credId);
 		if (!hk || hk.spec.enabled === false) continue;
 		const host = graph.hosts.get(hk.spec.hostId);
 		if (!host || host.spec.enabled === false) continue;

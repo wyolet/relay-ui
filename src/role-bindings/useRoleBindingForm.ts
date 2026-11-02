@@ -7,6 +7,10 @@ import {
 	useUpdateRoleBinding,
 } from "@/api/hooks/roleBindings";
 import type { RoleBinding } from "@/api/types/roleBinding";
+import type { components } from "@/api/types.gen";
+
+type Owner = components["schemas"]["Owner"];
+
 import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
@@ -167,7 +171,7 @@ export function useRoleBindingForm({
 			const labels = fromLabelPairs(value.labels);
 			// The global scope carries no id, and the server re-derives the
 			// owner from the scope on every write.
-			const scope =
+			const scope: Owner =
 				value.scopeKind === "system"
 					? { kind: "system" }
 					: { kind: value.scopeKind, id: value.scopeId };
