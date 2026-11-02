@@ -3,7 +3,6 @@ import { useAuth } from "@/api/auth";
 import type { PolicyBindingSubject } from "@/api/types/policyBinding";
 import { Button } from "@/components/ui/button";
 import { IconButton } from "@/components/ui/icon-button";
-import { Input } from "@/components/ui/input";
 import {
 	Select,
 	SelectContent,
@@ -16,12 +15,14 @@ import {
 	newSubjectRow,
 	OFFERED_SUBJECT_KINDS,
 	type OfferedSubjectKind,
+	optionsWithValue,
 	SUBJECT_KIND_LABEL,
+	type SubjectOption,
 	type SubjectRow,
 	subjectRowKey,
 	toOfferedKind,
 } from "@/policy-bindings/subjects";
-import type { SubjectOption } from "@/policy-bindings/useSubjectOptions";
+
 import { Chip } from "@/shared/Chip";
 
 const KIND_OPTIONS = OFFERED_SUBJECT_KINDS.map((k) => ({
@@ -74,7 +75,14 @@ export function SubjectsEditor({
 						</div>
 					);
 				}
-				const valueOptions = options[r.kind];
+				const valueOptions = optionsWithValue(
+					options[r.kind],
+					r.value,
+					r.kind === "user" && r.value === userId
+						? "You"
+						: subjectName({ kind: r.kind, id: r.value }),
+				);
+				const label = SUBJECT_KIND_LABEL[r.kind];
 				return (
 					<div key={r.rowId} className="flex items-center gap-2">
 						<Select
@@ -99,41 +107,34 @@ export function SubjectsEditor({
 							</SelectContent>
 						</Select>
 
-						{valueOptions.length > 0 ? (
-							<Select
-								value={r.value}
-								items={valueOptions}
-								onValueChange={(v) => patch(r.rowId, { value: v ?? "" })}
-							>
-								<SelectTrigger
-									className="w-full"
-									aria-label={SUBJECT_KIND_LABEL[r.kind]}
-									aria-invalid={invalid ? true : undefined}
-									aria-describedby={invalid ? describedBy : undefined}
-								>
-									<SelectValue placeholder="Pick a subject…" />
-								</SelectTrigger>
-								<SelectContent>
-									{valueOptions.map((o) => (
-										<SelectItem key={o.value} value={o.value}>
-											{o.label}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-						) : (
-							<Input
-								type="text"
-								value={r.value}
-								onChange={(e) =>
-									patch(r.rowId, { value: e.currentTarget.value })
-								}
-								placeholder={`${SUBJECT_KIND_LABEL[r.kind]} id`}
-								aria-label={`${SUBJECT_KIND_LABEL[r.kind]} id`}
+						<Select
+							value={r.value}
+							items={valueOptions}
+							disabled={valueOptions.length === 0}
+							onValueChange={(v) => patch(r.rowId, { value: v ?? "" })}
+						>
+							<SelectTrigger
+								className="w-full"
+								aria-label={label}
 								aria-invalid={invalid ? true : undefined}
 								aria-describedby={invalid ? describedBy : undefined}
-							/>
-						)}
+							>
+								<SelectValue
+									placeholder={
+										valueOptions.length === 0
+											? `No ${label.toLowerCase()} to pick`
+											: "Pick a subject…"
+									}
+								/>
+							</SelectTrigger>
+							<SelectContent>
+								{valueOptions.map((o) => (
+									<SelectItem key={o.value} value={o.value}>
+										{o.label}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
 
 						{r.kind === "user" && (
 							<Button

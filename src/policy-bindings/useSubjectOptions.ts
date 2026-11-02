@@ -10,12 +10,8 @@ import { displayLabel } from "@/lib/displayLabel";
 import {
 	OFFERED_SUBJECT_KINDS,
 	type OfferedSubjectKind,
+	type SubjectOption,
 } from "@/policy-bindings/subjects";
-
-export interface SubjectOption {
-	value: string;
-	label: string;
-}
 
 type Named = { metadata: { id?: string; name: string; displayName?: string } };
 

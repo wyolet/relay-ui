@@ -146,3 +146,19 @@ export function describeDuplicate(
 		message: name ? `${name}${message.slice(subjectKey.length)}` : message,
 	};
 }
+
+export interface SubjectOption {
+	value: string;
+	label: string;
+}
+
+/** A kind's options, plus the row's current value when no list holds it. */
+export function optionsWithValue(
+	options: readonly SubjectOption[],
+	value: string,
+	label: string,
+): SubjectOption[] {
+	if (value === "" || options.some((o) => o.value === value))
+		return [...options];
+	return [{ value, label }, ...options];
+}

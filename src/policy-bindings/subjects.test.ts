@@ -5,6 +5,7 @@ import {
 	describeDuplicate,
 	fromSubjectRows,
 	newSubjectRow,
+	optionsWithValue,
 	principalBinding,
 	toOfferedKind,
 } from "./subjects";
@@ -107,5 +108,20 @@ describe("subject rows", () => {
 		expect(toOfferedKind("host")).toBeUndefined();
 		expect(toOfferedKind("credential")).toBeUndefined();
 		expect(toOfferedKind(null)).toBeUndefined();
+	});
+});
+
+describe("optionsWithValue", () => {
+	const listed = [{ value: "sa-1", label: "ci-bot" }];
+
+	it("keeps the list when the value is empty or listed", () => {
+		expect(optionsWithValue(listed, "", "x")).toEqual(listed);
+		expect(optionsWithValue(listed, "sa-1", "x")).toEqual(listed);
+	});
+
+	it("puts an unlisted value first under the given label", () => {
+		expect(optionsWithValue([], "u-9", "You")).toEqual([
+			{ value: "u-9", label: "You" },
+		]);
 	});
 });
