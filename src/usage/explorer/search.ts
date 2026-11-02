@@ -7,7 +7,7 @@ import {
 	type UsageSummaryFilter,
 } from "@/api/hooks/usage";
 import { STATUS_CLASS_VALUES } from "@/logs/logFilterConfig";
-import { FILTER_DIMENSIONS } from "@/usage/filters/dimensions";
+import { dimensionFilter, FILTER_DIMENSIONS } from "@/usage/filters/dimensions";
 
 export const LENSES = [
 	"traffic",
@@ -32,9 +32,11 @@ export const explorerSearchSchema = z.object({
 	team_id: ids,
 	project_id: ids,
 	principal_id: ids,
+	lane_account_id: ids,
 	relay_key_hash: ids,
 	policy_id: ids,
 	host_key_id: ids,
+	refusal: ids,
 });
 export type ExplorerSearch = z.infer<typeof explorerSearchSchema>;
 
@@ -44,10 +46,7 @@ export const EXPLORER_DEFAULTS: ExplorerSearch = explorerSearchSchema.parse({});
 /** The server filter the URL describes; empty facets are left out so an
  * unfiltered view keeps the same cache entries as the rest of the app. */
 export function explorerFilter(s: ExplorerSearch): UsageSummaryFilter {
-	const filter: UsageSummaryFilter = {};
-	for (const d of FILTER_DIMENSIONS) {
-		if (s[d].length) filter[d] = s[d];
-	}
+	const filter: UsageSummaryFilter = dimensionFilter(s);
 	if (s.status_class) filter.status_class = s.status_class;
 	return filter;
 }
