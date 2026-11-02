@@ -11,6 +11,7 @@ import {
 	ownerUsableBy,
 	resolveWorkContext,
 	SYSTEM_CONTEXT,
+	scopeOptions,
 	type WorkContext,
 	workContexts,
 } from "@/lib/workContext";
@@ -198,6 +199,19 @@ describe("contextLabel", () => {
 	test("personal reads as Personal, the rest by display name", () => {
 		expect(contextLabel(personal)).toBe("Personal");
 		expect(contextLabel(team)).toBe("Platform");
+	});
+});
+
+describe("scopeOptions", () => {
+	test("lists one kind by id and display name", () => {
+		const contexts = workContexts(mine, true);
+		expect(scopeOptions(contexts, "team")).toEqual([
+			{ value: "t1", kind: "team", label: "Platform" },
+		]);
+		expect(scopeOptions(contexts, "project").map((o) => o.value)).toEqual([
+			"p1",
+			"p2",
+		]);
 	});
 });
 

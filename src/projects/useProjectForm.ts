@@ -5,12 +5,12 @@ import { z } from "zod";
 import { useCreateProject, useUpdateProject } from "@/api/hooks/projects";
 import type { Project } from "@/api/types/project";
 import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
-import { useOwnerOptions } from "@/hooks/useOwnerOptions";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
+import { useFormOwner, useWorkContext } from "@/hooks/useWorkContext";
 import { displayLabel } from "@/lib/displayLabel";
 import { shownError, zodFieldValidator } from "@/lib/formErrors";
-import { ownerKeyId } from "@/lib/ownerScopes";
 import { randomSuffix, slugify } from "@/lib/slug";
+import { contextTeamId, scopeOptions } from "@/lib/workContext";
 import {
 	fromLabelPairs,
 	type LabelPair,
@@ -21,50 +21,54 @@ import { toast } from "@/shared/Toast";
 export interface ProjectFormValues {
 	displayName: string;
 	description: string;
-	/** "team:<id>"; spec.teamId is taken from it. */
-	owner: string;
+	/** Picked only when no team is fixed by the row, the page or the context. */
+	teamId: string;
 	enabled: boolean;
 	labels: LabelPair[];
 }
 
-function emptyValues(owner: string): ProjectFormValues {
+function emptyValues(): ProjectFormValues {
 	return {
 		displayName: "",
 		description: "",
-		owner,
+		teamId: "",
 		enabled: true,
 		labels: [],
 	};
 }
 
-function toValues(project: Project, owner: string): ProjectFormValues {
+function toValues(project: Project): ProjectFormValues {
 	return {
 		displayName: displayLabel(project.metadata),
 		description: project.metadata.description ?? "",
-		owner,
+		teamId: project.spec.teamId,
 		enabled: project.spec.enabled ?? true,
 		labels: toLabelPairs(project.metadata.labels),
 	};
 }
 
-const schema = z.object({
-	displayName: z
-		.string()
-		.trim()
-		.min(1, "Display name is required — the slug is generated from it")
-		.max(120, "Display name is too long"),
-	description: z.string().trim().max(500, "Description is too long"),
-	owner: z.string().min(1, "Pick the team this project belongs to."),
-	enabled: z.boolean(),
-	labels: z.array(
-		z.object({ id: z.string(), key: z.string(), value: z.string() }),
-	),
-});
+function buildSchema(picksTeam: boolean) {
+	return z.object({
+		displayName: z
+			.string()
+			.trim()
+			.min(1, "Display name is required — the slug is generated from it")
+			.max(120, "Display name is too long"),
+		description: z.string().trim().max(500, "Description is too long"),
+		teamId: picksTeam
+			? z.string().min(1, "Pick the team this project belongs to.")
+			: z.string(),
+		enabled: z.boolean(),
+		labels: z.array(
+			z.object({ id: z.string(), key: z.string(), value: z.string() }),
+		),
+	});
+}
 
 interface UseProjectFormOptions {
 	open?: boolean;
 	project?: Project;
-	/** Preselected team when creating from a team page. */
+	/** The team when creating from a team page. */
 	teamId?: string;
 	onSaved: (savedName: string) => void;
 }
@@ -84,17 +88,21 @@ export function useProjectForm({
 		project?.metadata.resourceVersion,
 	);
 
-	const ownerPicker = useOwnerOptions({
-		kinds: ["team"],
-		owner: project ? { kind: "team", id: project.spec.teamId } : undefined,
-		preset: teamId ? `team:${teamId}` : "",
+	// The edited row's team, else a team page's, else the current context's.
+	const { contexts, current } = useWorkContext();
+	const fixedTeamId =
+		project?.spec.teamId ||
+		teamId ||
+		(current ? contextTeamId(current) : undefined) ||
+		"";
+	const picksTeam = fixedTeamId === "";
+	const { placement } = useFormOwner({
+		owner: { kind: "team", id: fixedTeamId },
 	});
-	const { initialOwner } = ownerPicker;
 
 	const initial = useMemo<ProjectFormValues>(
-		() =>
-			project ? toValues(project, initialOwner) : emptyValues(initialOwner),
-		[project, initialOwner],
+		() => (project ? toValues(project) : emptyValues()),
+		[project],
 	);
 	const suffixRef = useRef<string>(
 		project?.metadata.name.match(/-(\d{4,8})$/)?.[1] ?? randomSuffix(),
@@ -106,6 +114,7 @@ export function useProjectForm({
 		return `${base}-${suffixRef.current}`;
 	};
 
+	const schema = useMemo(() => buildSchema(picksTeam), [picksTeam]);
 	const runValidation = zodFieldValidator<ProjectFormValues>(schema);
 
 	const form = useForm({
@@ -116,7 +125,7 @@ export function useProjectForm({
 			const description = value.description.trim();
 			const labels = fromLabelPairs(value.labels);
 			const spec = {
-				teamId: ownerKeyId(value.owner),
+				teamId: fixedTeamId || value.teamId,
 				enabled: value.enabled,
 			};
 			try {
@@ -145,7 +154,7 @@ export function useProjectForm({
 							displayName,
 							description,
 							labels,
-							owner: ownerPicker.toOwner(value.owner),
+							owner: { kind: "team", id: spec.teamId },
 						},
 						spec,
 					});
@@ -167,8 +176,8 @@ export function useProjectForm({
 	useEffect(() => {
 		if (lastResetKey.current === resetKey) return;
 		lastResetKey.current = resetKey;
-		form.reset(open ? initial : emptyValues(initialOwner));
-	}, [resetKey, open, initial, initialOwner, form]);
+		form.reset(open ? initial : emptyValues());
+	}, [resetKey, open, initial, form]);
 
 	const values = useStore(form.store, (s) => s.values);
 	const slugPreview = isEdit
@@ -180,8 +189,8 @@ export function useProjectForm({
 	const descriptionError = useStore(form.store, (s) =>
 		shownError(s.fieldMeta?.description, s.submissionAttempts),
 	);
-	const ownerError = useStore(form.store, (s) =>
-		shownError(s.fieldMeta?.owner, s.submissionAttempts),
+	const teamIdError = useStore(form.store, (s) =>
+		shownError(s.fieldMeta?.teamId, s.submissionAttempts),
 	);
 
 	return {
@@ -191,7 +200,9 @@ export function useProjectForm({
 		slugPreview,
 		displayNameError,
 		descriptionError,
-		ownerOptions: ownerPicker.options,
-		ownerError,
+		picksTeam,
+		placement: picksTeam ? undefined : placement,
+		teamOptions: scopeOptions(contexts, "team"),
+		teamIdError,
 	};
 }

@@ -1,4 +1,5 @@
 import type { components } from "@/api/types.gen";
+import type { OwnerOption } from "@/lib/ownerScopes";
 
 type MyContext = components["schemas"]["MyContext"];
 type Owner = components["schemas"]["Owner"];
@@ -169,6 +170,16 @@ export function contextRows(contexts: readonly WorkContext[]): ContextRow[] {
 			.filter((p) => !p.teamId || !teamIds.has(p.teamId))
 			.map((context) => ({ context, nested: false })),
 	];
+}
+
+/** Select options, valued by id, for the caller's teams or projects. */
+export function scopeOptions(
+	contexts: readonly WorkContext[],
+	kind: "team" | "project",
+): OwnerOption[] {
+	return contexts
+		.filter((c) => c.kind === kind)
+		.map((c) => ({ value: c.id, kind, label: c.displayName }));
 }
 
 /** The team a project created in this context belongs to; undefined leaves the choice to the form. */
