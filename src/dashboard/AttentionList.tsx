@@ -129,6 +129,16 @@ function TargetLink({
 					{children}
 				</Link>
 			);
+		case "object":
+			return (
+				<Link
+					to={target.to}
+					params={{ name: target.name }}
+					className={className}
+				>
+					{children}
+				</Link>
+			);
 		case "key":
 			return (
 				<Link

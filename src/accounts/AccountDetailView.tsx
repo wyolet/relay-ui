@@ -3,6 +3,7 @@ import { Building2, ChevronLeft, KeyRound } from "lucide-react";
 import { DefaultAccountBadge } from "@/accounts/DefaultAccountBadge";
 import { UpstreamKeyList } from "@/accounts/UpstreamKeyList";
 import { useAccountDetail } from "@/accounts/useAccountDetail";
+import { PlanIssuesPanel } from "@/diagnostics/IssuesPanel";
 import { HostCell } from "@/hosts/HostCell";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { DetailCard, DetailRow } from "@/shared/DetailCard";
@@ -52,6 +53,8 @@ export function AccountDetailView({ name }: { name: string }) {
 					)}
 				/>
 			</DetailPageHeader>
+
+			<PlanIssuesPanel kind="account" id={account.metadata.id} />
 
 			<DetailCard title="Configuration" icon={Building2}>
 				<dl className="divide-y divide-border">

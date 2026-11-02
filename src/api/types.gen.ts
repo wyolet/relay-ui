@@ -1500,6 +1500,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/plan-issues": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List plan-engine diagnostics
+         * @description Returns every issue the plan engine has recorded for catalog objects, sorted by kind, name and code. Errors mean an object cannot serve; warnings mean it serves but something is likely wrong. Filter by kind, or by kind and id to narrow to one object.
+         */
+        get: operations["plan_issues_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/policies": {
         parameters: {
             query?: never;
@@ -4990,6 +5010,31 @@ export interface components {
             secretKey: components["schemas"]["SecretRef"];
             /** @description Use TLS; required unless plain HTTP is allowed by the deployment. */
             useSSL: boolean;
+        };
+        PlanIssue: {
+            /** @description Stable snake_case diagnostic identifier, such as ref_missing or host_mismatch. */
+            code: string;
+            /** @description Id (UUIDv7) of the object carrying the issue. */
+            id: string;
+            /** @description Kind of the object carrying the issue (e.g. key, policybinding). */
+            kind: string;
+            /** @description Human-readable explanation of what is wrong. */
+            message: string;
+            /** @description Slug of the object; empty for derived objects that have no slug. */
+            name: string;
+            /** @description Objects the issue implicates, such as a missing target. */
+            refs: components["schemas"]["PlanIssueRef"][] | null;
+            /**
+             * @description Severity: error means the object cannot serve; warning means it serves but something is likely wrong.
+             * @enum {string}
+             */
+            severity: "error" | "warning";
+        };
+        PlanIssueRef: {
+            /** @description Id (UUIDv7) of the referenced object. */
+            id: string;
+            /** @description Kind of the referenced object (e.g. policy, host). */
+            kind: string;
         };
         Policy: {
             /**
@@ -13440,6 +13485,67 @@ export interface operations {
             };
             /** @description No such row, or one the caller may not see. */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The request does not match the schema; error.details lists each failing field. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The server failed; error.message carries the cause. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    plan_issues_list: {
+        parameters: {
+            query?: {
+                /** @description Filter by object kind, such as key or policybinding. Omit for all kinds. */
+                kind?: string;
+                /** @description Filter by object id (UUIDv7). Takes effect only together with kind. */
+                id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanIssue"][] | null;
+                };
+            };
+            /** @description No valid session cookie or admin bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

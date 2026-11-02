@@ -31,68 +31,16 @@ const TONE: Record<
 	},
 };
 
-/**
- * Typed dispatcher over the closed set of routes diagnostic links can point
- * at. Adding a new target = adding a case here; keeps TanStack Router's
- * typed `to` prop honest without `as any`.
- */
 function DiagnosticActionLink({ link }: { link: DiagLink }) {
-	if (link.to === "/policies/rate-limits/$name" && link.params?.name) {
-		return (
-			<Link
-				to="/policies/rate-limits/$name"
-				params={{ name: link.params.name }}
-				className="ml-1 underline underline-offset-2 hover:text-primary"
-			>
-				View
-			</Link>
-		);
-	}
-	if (link.to === "/policies/$name" && link.params?.name) {
-		return (
-			<Link
-				to="/policies/$name"
-				params={{ name: link.params.name }}
-				className="ml-1 underline underline-offset-2 hover:text-primary"
-			>
-				View
-			</Link>
-		);
-	}
-	if (link.to === "/host-keys/$name" && link.params?.name) {
-		return (
-			<Link
-				to="/host-keys/$name"
-				params={{ name: link.params.name }}
-				className="ml-1 underline underline-offset-2 hover:text-primary"
-			>
-				View
-			</Link>
-		);
-	}
-	if (link.to === "/keys/$name" && link.params?.name) {
-		return (
-			<Link
-				to="/keys/$name"
-				params={{ name: link.params.name }}
-				className="ml-1 underline underline-offset-2 hover:text-primary"
-			>
-				View
-			</Link>
-		);
-	}
-	if (link.to === "/models/$name" && link.params?.name) {
-		return (
-			<Link
-				to="/models/$name"
-				params={{ name: link.params.name }}
-				className="ml-1 underline underline-offset-2 hover:text-primary"
-			>
-				View
-			</Link>
-		);
-	}
-	return null;
+	return (
+		<Link
+			to={link.to}
+			params={link.params}
+			className="ml-1 underline underline-offset-2 hover:text-primary"
+		>
+			View
+		</Link>
+	);
 }
 
 interface DiagnosticListProps {
