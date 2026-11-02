@@ -16,7 +16,6 @@ import {
 } from "@/policies/usePolicyLinkChoices";
 import { FormFooter } from "@/shared/FormFooter";
 import { IdentitySection } from "@/shared/IdentitySection";
-import { OwnerSection } from "@/shared/OwnerSection";
 
 interface PolicyFormProps {
 	policy?: Policy;
@@ -34,16 +33,19 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 		slugPreview,
 		displayNameError,
 		descriptionError,
-		ownerOptions,
-		ownerError,
+		placement,
+		usableBy,
 	} = usePolicyForm({
 		open: true,
 		policy,
 		onSaved,
 	});
 
-	const pools = usePoolChoices(values.poolIds);
-	const budgets = useBudgetChoices(values.budgets.map((b) => b.budgetId));
+	const pools = usePoolChoices(values.poolIds, usableBy);
+	const budgets = useBudgetChoices(
+		values.budgets.map((b) => b.budgetId),
+		usableBy,
+	);
 
 	// Live diagnostics: synthesize a draft policy from form values and run
 	// the analyzer against it, so warnings clear without a Save round-trip.
@@ -79,13 +81,7 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 					descriptionError={descriptionError}
 					autoFocus={!isEdit}
 					placeholder="Default policy"
-				/>
-
-				<OwnerSection
-					options={ownerOptions}
-					value={values.owner}
-					onChange={(v) => form.setFieldValue("owner", v)}
-					error={ownerError}
+					placement={placement}
 				/>
 
 				<Section
@@ -123,6 +119,7 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 						links={values.rateLimits}
 						allowedModels={values.models}
 						onChange={(next) => form.setFieldValue("rateLimits", next)}
+						usableBy={usableBy}
 					/>
 				</Section>
 
