@@ -25,7 +25,7 @@ function NewAccountPage() {
 					Accounts
 				</Link>
 				<h1 className="mt-2 text-xl font-semibold text-foreground">
-					New account
+					New provider account
 				</h1>
 			</div>
 			<Suspense fallback={<PageLoader />}>
