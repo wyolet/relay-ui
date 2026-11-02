@@ -17,6 +17,7 @@ import type {
 	KeyAccountOption,
 } from "@/host-keys/hostKeyAccount";
 import { HostLogo, type HostLogoLike } from "@/hosts/HostLogo";
+import { middleTruncate } from "@/lib/middleTruncate";
 
 const NEW_ACCOUNT_LABEL = "New account…";
 
@@ -152,8 +153,11 @@ function AccountItemLabel({ option }: { option: KeyAccountOption }) {
 		<>
 			<span>{option.label}</span>
 			{option.orgId && (
-				<span className="font-mono text-[11px] text-muted-foreground">
-					{option.orgId}
+				<span
+					className="font-mono text-[11px] text-muted-foreground"
+					title={option.orgId}
+				>
+					{middleTruncate(option.orgId)}
 				</span>
 			)}
 			{option.isDefault && <DefaultAccountBadge />}
