@@ -6,21 +6,19 @@ import {
 	useProjectsList,
 } from "@/api/hooks/projects";
 import { useTeams } from "@/api/hooks/teams";
-import { ApiError } from "@/api/types/errors";
-import type { Project } from "@/api/types/project";
 import { buttonVariants } from "@/components/ui/button";
 import { FilterBar } from "@/filters/FilterBar";
 import { activeFilterCount } from "@/filters/toQueryParams";
 import type { FilterDef, FilterState } from "@/filters/types";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { useToggleProjectEnabled } from "@/projects/useToggleProjectEnabled";
-import { confirm } from "@/shared/ConfirmDialog";
+import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { RowMenu } from "@/shared/RowMenu";
 import { StaleContent } from "@/shared/StaleContent";
 import { Switch } from "@/shared/Switch";
 import { TableToolbar } from "@/shared/TableToolbar";
 import { Th } from "@/shared/Th";
-import { toast } from "@/shared/Toast";
+import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 import { useDeferredSearch } from "@/shared/useDeferredSearch";
 
 /** Filters rendered above the table, all served by GET /projects. */
@@ -65,7 +63,7 @@ export function ProjectsTable() {
 	const { search, isStale } = useDeferredSearch(live);
 	const { data } = useProjectsList(toProjectsParams(search));
 	const { data: teamsData } = useTeams();
-	const deleteProject = useDeleteProject();
+	const del = useConfirmedDelete(useDeleteProject(), { noun: "project" });
 	const { setEnabled } = useToggleProjectEnabled();
 
 	const teams = new Map<string, { name: string; label: string }>();
@@ -82,27 +80,6 @@ export function ProjectsTable() {
 
 	function patch(next: FilterState) {
 		void navigate({ search: (prev) => ({ ...prev, ...next }), replace: true });
-	}
-
-	async function handleDelete(project: Project) {
-		const ok = await confirm({
-			title: `Delete ${displayLabel(project.metadata)}?`,
-			description: "Its service accounts, keys, and policies go with it.",
-			confirmLabel: "Delete",
-			danger: true,
-		});
-		if (!ok) return;
-		try {
-			await deleteProject.mutateAsync(project.metadata.id ?? "");
-			toast("success", `Project "${displayLabel(project.metadata)}" deleted.`);
-		} catch (err) {
-			toast(
-				"error",
-				err instanceof ApiError
-					? err.body.message
-					: "Failed to delete project.",
-			);
-		}
 	}
 
 	return (
@@ -236,7 +213,12 @@ export function ProjectsTable() {
 														{
 															label: "Delete",
 															danger: true,
-															onClick: () => void handleDelete(project),
+															onClick: () =>
+																del.request({
+																	id: project.metadata.id ?? "",
+																	name: project.metadata.name,
+																	label: displayLabel(project.metadata),
+																}),
 														},
 													]}
 												/>
@@ -249,6 +231,15 @@ export function ProjectsTable() {
 					</div>
 				)}
 			</StaleContent>
+			{del.target && (
+				<DeleteConfirm
+					resourceName={del.target.name}
+					onConfirm={() => void del.confirm()}
+					onCancel={del.cancel}
+					isPending={del.isPending}
+					error={del.error}
+				/>
+			)}
 		</div>
 	);
 }

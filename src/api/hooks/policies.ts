@@ -6,7 +6,7 @@ import {
 	useSuspenseQuery,
 } from "@tanstack/react-query";
 import { apiClient } from "@/api/client";
-import { ApiError } from "@/api/types/errors";
+import { ApiError, type DetachedLinks } from "@/api/types/errors";
 import type {
 	Policy,
 	PolicyCreate,
@@ -214,15 +214,17 @@ export function useUpdatePolicy() {
 	});
 }
 
+/** Resolves to the links the delete took from rows that stay (empty on 204). */
 export function useDeletePolicy() {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: async (id: string): Promise<void> => {
-			unwrap(
+		mutationFn: async (id: string): Promise<DetachedLinks[]> => {
+			const data = unwrap(
 				await apiClient.DELETE("/policies/by-id/{id}", {
 					params: { path: { id } },
 				}),
 			);
+			return data?.detached ?? [];
 		},
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: ["policies"] });

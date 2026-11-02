@@ -8,7 +8,6 @@ import {
 	ShieldCheck,
 	Users,
 } from "lucide-react";
-import { useState } from "react";
 import { useKeysForPrincipals } from "@/api/hooks/keys";
 import { useProjectPolicies } from "@/api/hooks/policies";
 import {
@@ -24,7 +23,6 @@ import { useRoleBindingsAtScope } from "@/api/hooks/roleBindings";
 import { useServiceAccountsInProject } from "@/api/hooks/serviceAccounts";
 import { useTeams } from "@/api/hooks/teams";
 import { resolveWindow, useScopeSpend } from "@/api/hooks/usage";
-import { ApiError } from "@/api/types/errors";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { EraseBodiesButton } from "@/logs/EraseBodiesButton";
 import { useToggleProjectEnabled } from "@/projects/useToggleProjectEnabled";
@@ -34,7 +32,7 @@ import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { DetailCard, DetailEmpty, DetailRow } from "@/shared/DetailCard";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
 import { StatusBadge } from "@/shared/StatusBadge";
-import { toast } from "@/shared/Toast";
+import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 import { ScopeSpendCard } from "@/teams/ScopeSpendCard";
 
 export function ProjectDetailView({ name }: { name: string }) {
@@ -57,11 +55,12 @@ export function ProjectDetailView({ name }: { name: string }) {
 		"model",
 		period,
 	);
-	const deleteProject = useDeleteProject();
-	const { setEnabled, isPending: isToggling } = useToggleProjectEnabled();
 	const navigate = useNavigate();
-
-	const [confirming, setConfirming] = useState(false);
+	const del = useConfirmedDelete(useDeleteProject(), {
+		noun: "project",
+		onDeleted: () => void navigate({ to: "/projects" }),
+	});
+	const { setEnabled, isPending: isToggling } = useToggleProjectEnabled();
 
 	const enabled = project.spec.enabled !== false;
 	const description = project.metadata.description?.trim();
@@ -75,21 +74,6 @@ export function ProjectDetailView({ name }: { name: string }) {
 			displayLabel(sa.metadata),
 		]),
 	);
-
-	async function handleDelete() {
-		try {
-			await deleteProject.mutateAsync(projectId);
-			toast("success", `Project "${displayLabel(project.metadata)}" deleted.`);
-			void navigate({ to: "/projects" });
-		} catch (err) {
-			toast(
-				"error",
-				err instanceof ApiError
-					? err.body.message
-					: "Failed to delete project.",
-			);
-		}
-	}
 
 	return (
 		<div className="flex flex-col gap-5">
@@ -130,7 +114,13 @@ export function ProjectDetailView({ name }: { name: string }) {
 					enabled={enabled}
 					onToggle={() => void setEnabled(project, !enabled)}
 					toggling={isToggling}
-					onDelete={() => setConfirming(true)}
+					onDelete={() =>
+						del.request({
+							id: projectId,
+							name: project.metadata.name,
+							label: displayLabel(project.metadata),
+						})
+					}
 					editLink={({ className, content }) => (
 						<Link
 							to="/projects/$name/edit"
@@ -366,12 +356,13 @@ export function ProjectDetailView({ name }: { name: string }) {
 				)}
 			</DetailCard>
 
-			{confirming && (
+			{del.target && (
 				<DeleteConfirm
-					resourceName={project.metadata.name}
-					onConfirm={() => void handleDelete()}
-					onCancel={() => setConfirming(false)}
-					isPending={deleteProject.isPending}
+					resourceName={del.target.name}
+					onConfirm={() => void del.confirm()}
+					onCancel={del.cancel}
+					isPending={del.isPending}
+					error={del.error}
 				/>
 			)}
 		</div>

@@ -5,6 +5,7 @@ import {
 	useSuspenseQuery,
 } from "@tanstack/react-query";
 import { apiClient } from "@/api/client";
+import type { DetachedLinks } from "@/api/types/errors";
 import type { Team, TeamList } from "@/api/types/team";
 import type { operations } from "@/api/types.gen";
 import { unwrap } from "@/api/unwrap";
@@ -130,15 +131,17 @@ export function useUpdateTeam() {
 	});
 }
 
+/** Resolves to the links the delete took from rows that stay (empty on 204). */
 export function useDeleteTeam() {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: async (id: string): Promise<void> => {
-			unwrap(
+		mutationFn: async (id: string): Promise<DetachedLinks[]> => {
+			const data = unwrap(
 				await apiClient.DELETE("/teams/by-id/{id}", {
 					params: { path: { id } },
 				}),
 			);
+			return data?.detached ?? [];
 		},
 		onSuccess: () => {
 			invalidateTeamDependents(queryClient);

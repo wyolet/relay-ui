@@ -8,7 +8,6 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { useDeleteKey, useKey } from "@/api/hooks/keys";
-import { ApiError } from "@/api/types/errors";
 import { Button } from "@/components/ui/button";
 import { DiagnosticList } from "@/diagnostics/DiagnosticList";
 import { useKeyDiagnostics } from "@/diagnostics/useDiagnostics";
@@ -19,38 +18,25 @@ import { PrincipalPolicy } from "@/policy-bindings/PrincipalPolicy";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
 import { StatusBadge } from "@/shared/StatusBadge";
-import { toast } from "@/shared/Toast";
+import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 import { ResourceUsage } from "@/usage/ResourceUsage";
 
 export function KeyDetailView({ name }: { name: string }) {
 	const { data: rk } = useKey(name);
-	const deleteKey = useDeleteKey();
 	const { setEnabled, isPending: isToggling } = useToggleKeyEnabled();
 	const navigate = useNavigate();
+	const del = useConfirmedDelete(useDeleteKey(), {
+		noun: "key",
+		onDeleted: () =>
+			void navigate({ to: "/keys", search: { tab: "relay", q: "" } }),
+	});
 
-	const [confirming, setConfirming] = useState(false);
 	const [rotating, setRotating] = useState(false);
 
 	const rkId = rk.metadata.id ?? "";
 	const diagnostics = useKeyDiagnostics(rk.metadata.id);
 	const description = rk.metadata.description?.trim();
 	const enabled = rk.spec.enabled !== false;
-
-	async function handleDelete() {
-		try {
-			await deleteKey.mutateAsync(rkId);
-			toast("success", `Key "${displayLabel(rk.metadata)}" deleted.`);
-			void navigate({
-				to: "/keys",
-				search: { tab: "relay", q: "" },
-			});
-		} catch (err) {
-			toast(
-				"error",
-				err instanceof ApiError ? err.body.message : "Failed to delete key.",
-			);
-		}
-	}
 
 	return (
 		<div className="flex flex-col gap-5">
@@ -108,7 +94,13 @@ export function KeyDetailView({ name }: { name: string }) {
 					enabled={enabled}
 					onToggle={() => void setEnabled(rk, !enabled)}
 					toggling={isToggling}
-					onDelete={() => setConfirming(true)}
+					onDelete={() =>
+						del.request({
+							id: rkId,
+							name: rk.metadata.name,
+							label: displayLabel(rk.metadata),
+						})
+					}
 					editLink={({ className, content }) => (
 						<Link to="/keys/$name/edit" params={{ name }} className={className}>
 							{content}
@@ -203,12 +195,13 @@ export function KeyDetailView({ name }: { name: string }) {
 				<KeyRotateDialog rk={rk} onClose={() => setRotating(false)} />
 			)}
 
-			{confirming && (
+			{del.target && (
 				<DeleteConfirm
-					resourceName={rk.metadata.name}
-					onConfirm={() => void handleDelete()}
-					onCancel={() => setConfirming(false)}
-					isPending={deleteKey.isPending}
+					resourceName={del.target.name}
+					onConfirm={() => void del.confirm()}
+					onCancel={del.cancel}
+					isPending={del.isPending}
+					error={del.error}
 				/>
 			)}
 		</div>

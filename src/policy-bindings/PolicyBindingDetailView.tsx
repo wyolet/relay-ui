@@ -1,12 +1,10 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { ChevronLeft, ShieldCheck, Users } from "lucide-react";
-import { useState } from "react";
 import { usePolicies } from "@/api/hooks/policies";
 import {
 	useDeletePolicyBinding,
 	usePolicyBinding,
 } from "@/api/hooks/policyBindings";
-import { ApiError } from "@/api/types/errors";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { BindingOwner } from "@/policy-bindings/BindingOwner";
 import { SubjectChips } from "@/policy-bindings/SubjectChips";
@@ -16,16 +14,17 @@ import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { DetailCard, DetailEmpty, DetailRow } from "@/shared/DetailCard";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
 import { StatusBadge } from "@/shared/StatusBadge";
-import { toast } from "@/shared/Toast";
+import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 
 export function PolicyBindingDetailView({ name }: { name: string }) {
 	const { data: binding } = usePolicyBinding(name);
 	const { data: policiesData } = usePolicies();
 	const { subjectName } = useSubjectOptions();
-	const deleteBinding = useDeletePolicyBinding();
 	const navigate = useNavigate();
-
-	const [confirming, setConfirming] = useState(false);
+	const del = useConfirmedDelete(useDeletePolicyBinding(), {
+		noun: "policy binding",
+		onDeleted: () => void navigate({ to: "/policy-bindings" }),
+	});
 
 	const enabled = binding.spec.enabled !== false;
 	const description = binding.metadata.description?.trim();
@@ -34,24 +33,6 @@ export function PolicyBindingDetailView({ name }: { name: string }) {
 	const policy = (policiesData.items ?? []).find(
 		(p) => p.metadata.id === binding.spec.policyId,
 	);
-
-	async function handleDelete() {
-		try {
-			await deleteBinding.mutateAsync(binding.metadata.id ?? "");
-			toast(
-				"success",
-				`Policy binding "${displayLabel(binding.metadata)}" deleted.`,
-			);
-			void navigate({ to: "/policy-bindings" });
-		} catch (err) {
-			toast(
-				"error",
-				err instanceof ApiError
-					? err.body.message
-					: "Failed to delete policy binding.",
-			);
-		}
-	}
 
 	return (
 		<div className="flex flex-col gap-5">
@@ -95,7 +76,13 @@ export function PolicyBindingDetailView({ name }: { name: string }) {
 					enabled={enabled}
 					onToggle={() => undefined}
 					showToggle={false}
-					onDelete={() => setConfirming(true)}
+					onDelete={() =>
+						del.request({
+							id: binding.metadata.id ?? "",
+							name: binding.metadata.name,
+							label: displayLabel(binding.metadata),
+						})
+					}
 					editLink={({ className, content }) => (
 						<Link
 							to="/policy-bindings/$name/edit"
@@ -148,12 +135,13 @@ export function PolicyBindingDetailView({ name }: { name: string }) {
 				)}
 			</DetailCard>
 
-			{confirming && (
+			{del.target && (
 				<DeleteConfirm
-					resourceName={binding.metadata.name}
-					onConfirm={() => void handleDelete()}
-					onCancel={() => setConfirming(false)}
-					isPending={deleteBinding.isPending}
+					resourceName={del.target.name}
+					onConfirm={() => void del.confirm()}
+					onCancel={del.cancel}
+					isPending={del.isPending}
+					error={del.error}
 				/>
 			)}
 		</div>

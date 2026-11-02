@@ -28,6 +28,7 @@ export function HostKeyDetailView({ name }: { name: string }) {
 		confirming,
 		rotating,
 		isDeletingPending,
+		deleteError,
 		attemptDelete,
 		confirmDelete,
 		cancelDelete,
@@ -176,6 +177,7 @@ export function HostKeyDetailView({ name }: { name: string }) {
 					onConfirm={() => void confirmDelete()}
 					onCancel={cancelDelete}
 					isPending={isDeletingPending}
+					error={deleteError}
 				/>
 			)}
 		</div>

@@ -9,14 +9,14 @@ import {
 	usePricing,
 	useUpdatePricing,
 } from "@/api/hooks/pricings";
-import { ApiError } from "@/api/types/errors";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
 import { PricingDetailView } from "@/pricing/PricingDetailView";
 import { pricingGraphQuery } from "@/pricing/usePricingMatrix";
-import { confirm } from "@/shared/ConfirmDialog";
+import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { PageLoader } from "@/shared/Spinner";
 import { toast } from "@/shared/Toast";
+import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 
 export const Route = createFileRoute("/_authenticated/pricing/$name")({
 	loader: ({ context, params }) =>
@@ -35,32 +35,12 @@ function PricingDetailInner() {
 	const { name } = Route.useParams();
 	const navigate = useNavigate({ from: "/pricing/$name" });
 	const { data: pricing } = usePricing(name);
-	const deletePricing = useDeletePricing();
+	const del = useConfirmedDelete(useDeletePricing(), {
+		noun: "pricing",
+		onDeleted: () => void navigate({ to: "/pricing" }),
+	});
 	const updatePricing = useUpdatePricing();
 	const toastSaveError = useSaveErrorToast();
-
-	async function handleDelete() {
-		const ok = await confirm({
-			title: `Delete pricing ${name}?`,
-			description:
-				"Bindings that reference it lose their rates — affected usage shows as unpriced.",
-			confirmLabel: "Delete",
-			danger: true,
-		});
-		if (!ok) return;
-		try {
-			await deletePricing.mutateAsync(pricing.metadata.id ?? "");
-			toast("success", `Pricing "${displayLabel(pricing.metadata)}" deleted.`);
-			void navigate({ to: "/pricing" });
-		} catch (err) {
-			toast(
-				"error",
-				err instanceof ApiError
-					? err.body.message
-					: "Failed to delete pricing.",
-			);
-		}
-	}
 
 	async function handleToggleEnabled() {
 		const next = !(pricing.spec.enabled !== false);
@@ -86,11 +66,26 @@ function PricingDetailInner() {
 			</Link>
 			<PricingDetailView
 				pricing={pricing}
-				onDelete={() => void handleDelete()}
+				onDelete={() =>
+					del.request({
+						id: pricing.metadata.id ?? "",
+						name: pricing.metadata.name,
+						label: displayLabel(pricing.metadata),
+					})
+				}
 				onToggleEnabled={() => void handleToggleEnabled()}
-				deleting={deletePricing.isPending}
+				deleting={del.isPending}
 				toggling={updatePricing.isPending}
 			/>
+			{del.target && (
+				<DeleteConfirm
+					resourceName={del.target.name}
+					onConfirm={() => void del.confirm()}
+					onCancel={del.cancel}
+					isPending={del.isPending}
+					error={del.error}
+				/>
+			)}
 		</div>
 	);
 }

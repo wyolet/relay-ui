@@ -6,6 +6,7 @@ import {
 	useSuspenseQuery,
 } from "@tanstack/react-query";
 import { apiClient } from "@/api/client";
+import type { DetachedLinks } from "@/api/types/errors";
 import type {
 	ServiceAccount,
 	ServiceAccountList,
@@ -145,15 +146,17 @@ export function useUpdateServiceAccount() {
 	});
 }
 
+/** Resolves to the links the delete took from rows that stay (empty on 204). */
 export function useDeleteServiceAccount() {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: async (id: string): Promise<void> => {
-			unwrap(
+		mutationFn: async (id: string): Promise<DetachedLinks[]> => {
+			const data = unwrap(
 				await apiClient.DELETE("/service-accounts/by-id/{id}", {
 					params: { path: { id } },
 				}),
 			);
+			return data?.detached ?? [];
 		},
 		onSuccess: () => {
 			invalidateServiceAccountDependents(queryClient);

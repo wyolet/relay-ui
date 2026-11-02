@@ -3,11 +3,11 @@ import { useAccounts } from "@/api/hooks/accounts";
 import { useDeleteHostKey, useHostKey } from "@/api/hooks/hostkeys";
 import { useHosts } from "@/api/hooks/hosts";
 import { useDetachHostKeyFromPolicy, usePolicies } from "@/api/hooks/policies";
-import { ApiError } from "@/api/types/errors";
 import type { Host } from "@/api/types/host";
 import { useToggleHostKeyEnabled } from "@/host-keys/useToggleHostKeyEnabled";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { toast } from "@/shared/Toast";
+import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 import { linkedPolicyRows } from "./linkedPolicies";
 
 interface UseHostKeyDetailOptions {
@@ -54,12 +54,14 @@ export function useHostKeyDetail({ name, onDeleted }: UseHostKeyDetailOptions) {
 	const { data: hostsData } = useHosts();
 	const { data: policiesData } = usePolicies();
 	const { data: accountsData } = useAccounts();
-	const deleteHostKey = useDeleteHostKey();
+	const del = useConfirmedDelete(useDeleteHostKey(), {
+		noun: "credential",
+		onDeleted,
+	});
 	const { detach, isPending: isDetachPending } = useDetachHostKeyFromPolicy();
 	const { setEnabled: setEnabledMutation, isPending: isToggling } =
 		useToggleHostKeyEnabled();
 
-	const [confirming, setConfirming] = useState(false);
 	const [rotating, setRotating] = useState(false);
 
 	const refs = hk.policies ?? [];
@@ -130,26 +132,11 @@ export function useHostKeyDetail({ name, onDeleted }: UseHostKeyDetailOptions) {
 			);
 			return;
 		}
-		setConfirming(true);
-	}
-
-	async function confirmDelete() {
-		try {
-			await deleteHostKey.mutateAsync(hk.metadata.id ?? "");
-			toast("success", `Credential "${displayLabel(hk.metadata)}" deleted.`);
-			onDeleted();
-		} catch (err) {
-			toast(
-				"error",
-				err instanceof ApiError
-					? err.body.message
-					: "Failed to delete credential.",
-			);
-		}
-	}
-
-	function cancelDelete() {
-		setConfirming(false);
+		del.request({
+			id: hk.metadata.id ?? "",
+			name: hk.metadata.name,
+			label: displayLabel(hk.metadata),
+		});
 	}
 
 	function openRotate() {
@@ -186,12 +173,13 @@ export function useHostKeyDetail({ name, onDeleted }: UseHostKeyDetailOptions) {
 		hk,
 		view,
 		attachedPolicies,
-		confirming,
+		confirming: del.target !== null,
 		rotating,
-		isDeletingPending: deleteHostKey.isPending,
+		isDeletingPending: del.isPending,
+		deleteError: del.error,
 		attemptDelete,
-		confirmDelete,
-		cancelDelete,
+		confirmDelete: del.confirm,
+		cancelDelete: del.cancel,
 		openRotate,
 		closeRotate,
 		setEnabled,

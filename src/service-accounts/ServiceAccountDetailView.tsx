@@ -1,6 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Bot, ChevronLeft, Link2, ShieldCheck } from "lucide-react";
-import { useState } from "react";
 import { CheckAccessButton } from "@/access-review/CheckAccessButton";
 import { useProjects } from "@/api/hooks/projects";
 import {
@@ -8,7 +7,6 @@ import {
 	useServiceAccount,
 	useServiceAccountReferences,
 } from "@/api/hooks/serviceAccounts";
-import { ApiError } from "@/api/types/errors";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { EraseBodiesButton } from "@/logs/EraseBodiesButton";
 import { PrincipalPolicy } from "@/policy-bindings/PrincipalPolicy";
@@ -16,42 +14,25 @@ import { useToggleServiceAccountEnabled } from "@/service-accounts/useToggleServ
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
 import { StatusBadge } from "@/shared/StatusBadge";
-import { toast } from "@/shared/Toast";
+import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 
 export function ServiceAccountDetailView({ name }: { name: string }) {
 	const { data: sa } = useServiceAccount(name);
 	const { data: projectsData } = useProjects();
 	const { data: refs } = useServiceAccountReferences(sa.metadata.id);
-	const deleteServiceAccount = useDeleteServiceAccount();
 	const { setEnabled, isPending: isToggling } =
 		useToggleServiceAccountEnabled();
 	const navigate = useNavigate();
-
-	const [confirming, setConfirming] = useState(false);
+	const del = useConfirmedDelete(useDeleteServiceAccount(), {
+		noun: "service account",
+		onDeleted: () => void navigate({ to: "/service-accounts" }),
+	});
 
 	const enabled = sa.spec.enabled !== false;
 	const project = (projectsData.items ?? []).find(
 		(p) => p.metadata.id === sa.spec.projectId,
 	);
 	const description = sa.metadata.description?.trim();
-
-	async function handleDelete() {
-		try {
-			await deleteServiceAccount.mutateAsync(sa.metadata.id ?? "");
-			toast(
-				"success",
-				`Service account "${displayLabel(sa.metadata)}" deleted.`,
-			);
-			void navigate({ to: "/service-accounts" });
-		} catch (err) {
-			toast(
-				"error",
-				err instanceof ApiError
-					? err.body.message
-					: "Failed to delete service account.",
-			);
-		}
-	}
 
 	return (
 		<div className="flex flex-col gap-5">
@@ -92,7 +73,13 @@ export function ServiceAccountDetailView({ name }: { name: string }) {
 					enabled={enabled}
 					onToggle={() => void setEnabled(sa, !enabled)}
 					toggling={isToggling}
-					onDelete={() => setConfirming(true)}
+					onDelete={() =>
+						del.request({
+							id: sa.metadata.id ?? "",
+							name: sa.metadata.name,
+							label: displayLabel(sa.metadata),
+						})
+					}
 					editLink={({ className, content }) => (
 						<Link
 							to="/service-accounts/$name/edit"
@@ -162,12 +149,13 @@ export function ServiceAccountDetailView({ name }: { name: string }) {
 				)}
 			</Card>
 
-			{confirming && (
+			{del.target && (
 				<DeleteConfirm
-					resourceName={sa.metadata.name}
-					onConfirm={() => void handleDelete()}
-					onCancel={() => setConfirming(false)}
-					isPending={deleteServiceAccount.isPending}
+					resourceName={del.target.name}
+					onConfirm={() => void del.confirm()}
+					onCancel={del.cancel}
+					isPending={del.isPending}
+					error={del.error}
 				/>
 			)}
 		</div>

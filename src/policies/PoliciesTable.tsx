@@ -17,7 +17,7 @@ import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { resolveMutability } from "@/lib/ownership";
 import { OwnerLink } from "@/projects/OwnerLink";
-import { confirm } from "@/shared/ConfirmDialog";
+import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import {
 	matchesOwnerFilter,
 	type OwnerFilter,
@@ -29,7 +29,7 @@ import { CatalogDetachedBadge } from "@/shared/StatusBadge";
 import { Switch } from "@/shared/Switch";
 import { TableToolbar } from "@/shared/TableToolbar";
 import { Th } from "@/shared/Th";
-import { toast } from "@/shared/Toast";
+import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 
 function describeCatalog(p: Policy): {
 	label: string;
@@ -48,7 +48,7 @@ function describeCatalog(p: Policy): {
 export function PoliciesTable() {
 	const { data: policiesData } = usePolicies();
 	const rateLimits = useAttachableRateLimits();
-	const deletePolicy = useDeletePolicy();
+	const del = useConfirmedDelete(useDeletePolicy(), { noun: "policy" });
 	const navigate = useNavigate({ from: "/policies" });
 	const [q, setQ] = useState("");
 	const [ownerFilter, setOwnerFilter] = useState<OwnerFilter>("user");
@@ -66,25 +66,6 @@ export function PoliciesTable() {
 	const rateLimitById = new Map<string, RateLimit>();
 	for (const rl of rateLimits) {
 		if (rl.metadata.id) rateLimitById.set(rl.metadata.id, rl);
-	}
-
-	async function handleDelete(p: Policy) {
-		const ok = await confirm({
-			title: `Delete policy ${p.metadata.name}?`,
-			description: "Relay refuses the delete while a binding applies it.",
-			confirmLabel: "Delete",
-			danger: true,
-		});
-		if (!ok) return;
-		try {
-			await deletePolicy.mutateAsync(p.metadata.id ?? "");
-			toast("success", `Policy "${displayLabel(p.metadata)}" deleted.`);
-		} catch (err) {
-			toast(
-				"error",
-				err instanceof Error ? err.message : "Failed to delete policy.",
-			);
-		}
 	}
 
 	return (
@@ -172,12 +153,27 @@ export function PoliciesTable() {
 											params: { name: p.metadata.name },
 										})
 									}
-									onDelete={() => void handleDelete(p)}
+									onDelete={() =>
+										del.request({
+											id: p.metadata.id ?? "",
+											name: p.metadata.name,
+											label: displayLabel(p.metadata),
+										})
+									}
 								/>
 							))}
 						</tbody>
 					</table>
 				</div>
+			)}
+			{del.target && (
+				<DeleteConfirm
+					resourceName={del.target.name}
+					onConfirm={() => void del.confirm()}
+					onCancel={del.cancel}
+					isPending={del.isPending}
+					error={del.error}
+				/>
 			)}
 		</div>
 	);

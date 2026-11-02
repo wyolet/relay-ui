@@ -20,16 +20,16 @@ import {
 import { poolListQueryOptions } from "@/api/hooks/pools";
 import { providersListQueryOptions } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
-import { ApiError } from "@/api/types/errors";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
 import {
 	type PolicyDetailTab,
 	PolicyDetailView,
 } from "@/policies/PolicyDetailView";
-import { confirm } from "@/shared/ConfirmDialog";
+import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { PageLoader } from "@/shared/Spinner";
 import { toast } from "@/shared/Toast";
+import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 
 const searchSchema = z.object({
 	tab: z
@@ -69,30 +69,13 @@ function PolicyDetailInner() {
 	const { tab } = Route.useSearch();
 	const navigate = useNavigate({ from: "/policies/$name" });
 	const { data: policy } = usePolicy(name);
-	const deletePolicy = useDeletePolicy();
+	const del = useConfirmedDelete(useDeletePolicy(), {
+		noun: "policy",
+		onDeleted: () =>
+			void navigate({ to: "/policies", search: { tab: "policies" } }),
+	});
 	const updatePolicy = useUpdatePolicy();
 	const toastSaveError = useSaveErrorToast();
-
-	async function handleDelete() {
-		const ok = await confirm({
-			title: `Delete policy ${name}?`,
-			description:
-				"API keys using this policy will lose access until reattached.",
-			confirmLabel: "Delete",
-			danger: true,
-		});
-		if (!ok) return;
-		try {
-			await deletePolicy.mutateAsync(policy.metadata.id ?? "");
-			toast("success", `Policy "${displayLabel(policy.metadata)}" deleted.`);
-			void navigate({ to: "/policies", search: { tab: "policies" } });
-		} catch (err) {
-			toast(
-				"error",
-				err instanceof ApiError ? err.body.message : "Failed to delete policy.",
-			);
-		}
-	}
 
 	async function handleToggleEnabled() {
 		const next = !(policy.spec.enabled !== false);
@@ -108,17 +91,34 @@ function PolicyDetailInner() {
 	}
 
 	return (
-		<PolicyDetailView
-			policy={policy}
-			tab={tab}
-			onTabChange={(next: PolicyDetailTab) =>
-				void navigate({ search: (prev) => ({ ...prev, tab: next }) })
-			}
-			onDelete={() => void handleDelete()}
-			onToggleEnabled={() => void handleToggleEnabled()}
-			deleting={deletePolicy.isPending}
-			toggling={updatePolicy.isPending}
-		/>
+		<>
+			<PolicyDetailView
+				policy={policy}
+				tab={tab}
+				onTabChange={(next: PolicyDetailTab) =>
+					void navigate({ search: (prev) => ({ ...prev, tab: next }) })
+				}
+				onDelete={() =>
+					del.request({
+						id: policy.metadata.id ?? "",
+						name: policy.metadata.name,
+						label: displayLabel(policy.metadata),
+					})
+				}
+				onToggleEnabled={() => void handleToggleEnabled()}
+				deleting={del.isPending}
+				toggling={updatePolicy.isPending}
+			/>
+			{del.target && (
+				<DeleteConfirm
+					resourceName={del.target.name}
+					onConfirm={() => void del.confirm()}
+					onCancel={del.cancel}
+					isPending={del.isPending}
+					error={del.error}
+				/>
+			)}
+		</>
 	);
 }
 

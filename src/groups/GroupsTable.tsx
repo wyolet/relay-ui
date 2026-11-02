@@ -5,21 +5,19 @@ import {
 	useDeleteGroup,
 	useGroupsList,
 } from "@/api/hooks/groups";
-import { ApiError } from "@/api/types/errors";
-import type { Group } from "@/api/types/group";
 import { buttonVariants } from "@/components/ui/button";
 import { FilterBar } from "@/filters/FilterBar";
 import { activeFilterCount } from "@/filters/toQueryParams";
 import type { FilterDef, FilterState } from "@/filters/types";
 import { useToggleGroupEnabled } from "@/groups/useToggleGroupEnabled";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
-import { confirm } from "@/shared/ConfirmDialog";
+import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { RowMenu } from "@/shared/RowMenu";
 import { StaleContent } from "@/shared/StaleContent";
 import { Switch } from "@/shared/Switch";
 import { TableToolbar } from "@/shared/TableToolbar";
 import { Th } from "@/shared/Th";
-import { toast } from "@/shared/Toast";
+import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 import { useDeferredSearch } from "@/shared/useDeferredSearch";
 
 /** Filters rendered above the table, all served by GET /groups. */
@@ -61,7 +59,7 @@ export function GroupsTable() {
 	const live = useSearch({ from: "/_authenticated/groups/" });
 	const { search, isStale } = useDeferredSearch(live);
 	const { data } = useGroupsList(toGroupsParams(search));
-	const deleteGroup = useDeleteGroup();
+	const del = useConfirmedDelete(useDeleteGroup(), { noun: "group" });
 	const { setEnabled } = useToggleGroupEnabled();
 
 	const items = data.items ?? [];
@@ -69,25 +67,6 @@ export function GroupsTable() {
 
 	function patch(next: FilterState) {
 		void navigate({ search: (prev) => ({ ...prev, ...next }), replace: true });
-	}
-
-	async function handleDelete(g: Group) {
-		const ok = await confirm({
-			title: `Delete ${displayLabel(g.metadata)}?`,
-			description: "Bindings that name this group stop matching its members.",
-			confirmLabel: "Delete",
-			danger: true,
-		});
-		if (!ok) return;
-		try {
-			await deleteGroup.mutateAsync(g.metadata.id ?? "");
-			toast("success", `Group "${displayLabel(g.metadata)}" deleted.`);
-		} catch (err) {
-			toast(
-				"error",
-				err instanceof ApiError ? err.body.message : "Failed to delete group.",
-			);
-		}
 	}
 
 	return (
@@ -211,7 +190,12 @@ export function GroupsTable() {
 														{
 															label: "Delete",
 															danger: true,
-															onClick: () => void handleDelete(g),
+															onClick: () =>
+																del.request({
+																	id: g.metadata.id ?? "",
+																	name: g.metadata.name,
+																	label: displayLabel(g.metadata),
+																}),
 														},
 													]}
 												/>
@@ -224,6 +208,15 @@ export function GroupsTable() {
 					</div>
 				)}
 			</StaleContent>
+			{del.target && (
+				<DeleteConfirm
+					resourceName={del.target.name}
+					onConfirm={() => void del.confirm()}
+					onCancel={del.cancel}
+					isPending={del.isPending}
+					error={del.error}
+				/>
+			)}
 		</div>
 	);
 }

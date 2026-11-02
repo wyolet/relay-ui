@@ -15,13 +15,13 @@ import {
 	useRateLimit,
 	useUpdateRateLimit,
 } from "@/api/hooks/ratelimits";
-import { ApiError } from "@/api/types/errors";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
 import { RateLimitDetailView } from "@/rate-limits/RateLimitDetailView";
-import { confirm } from "@/shared/ConfirmDialog";
+import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { PageLoader } from "@/shared/Spinner";
 import { toast } from "@/shared/Toast";
+import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 
 export const Route = createFileRoute(
 	"/_authenticated/policies/rate-limits/$name",
@@ -47,34 +47,13 @@ function RateLimitDetailInner() {
 	const { name } = Route.useParams();
 	const navigate = useNavigate({ from: "/policies/rate-limits/$name" });
 	const { data: rateLimit } = useRateLimit(name);
-	const deleteRL = useDeleteRateLimit();
+	const del = useConfirmedDelete(useDeleteRateLimit(), {
+		noun: "rate limit",
+		onDeleted: () =>
+			void navigate({ to: "/policies", search: { tab: "ratelimits" } }),
+	});
 	const updateRL = useUpdateRateLimit();
 	const toastSaveError = useSaveErrorToast();
-
-	async function handleDelete() {
-		const ok = await confirm({
-			title: `Delete rate limit ${name}?`,
-			description: "Policies that reference it will lose this rule.",
-			confirmLabel: "Delete",
-			danger: true,
-		});
-		if (!ok) return;
-		try {
-			await deleteRL.mutateAsync(rateLimit.metadata.id ?? "");
-			toast(
-				"success",
-				`Rate limit "${displayLabel(rateLimit.metadata)}" deleted.`,
-			);
-			void navigate({ to: "/policies", search: { tab: "ratelimits" } });
-		} catch (err) {
-			toast(
-				"error",
-				err instanceof ApiError
-					? err.body.message
-					: "Failed to delete rate limit.",
-			);
-		}
-	}
 
 	async function handleToggleEnabled() {
 		const next = !(rateLimit.spec.enabled !== false);
@@ -101,11 +80,26 @@ function RateLimitDetailInner() {
 			</Link>
 			<RateLimitDetailView
 				rateLimit={rateLimit}
-				onDelete={() => void handleDelete()}
+				onDelete={() =>
+					del.request({
+						id: rateLimit.metadata.id ?? "",
+						name: rateLimit.metadata.name,
+						label: displayLabel(rateLimit.metadata),
+					})
+				}
 				onToggleEnabled={() => void handleToggleEnabled()}
-				deleting={deleteRL.isPending}
+				deleting={del.isPending}
 				toggling={updateRL.isPending}
 			/>
+			{del.target && (
+				<DeleteConfirm
+					resourceName={del.target.name}
+					onConfirm={() => void del.confirm()}
+					onCancel={del.cancel}
+					isPending={del.isPending}
+					error={del.error}
+				/>
+			)}
 		</div>
 	);
 }
