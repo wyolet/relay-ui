@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { ChevronLeft } from "lucide-react";
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
+import { StickyFooter } from "@/shared/FormFooter";
 
 /** The back link, title and lede every /settings/* page opens with. */
 export function SettingsPageHeader({
@@ -37,7 +38,7 @@ export function SettingsSaveBar({
 	saving: boolean;
 }) {
 	return (
-		<div className="sticky bottom-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-t border-border mt-6 -mx-6 px-6 py-3 flex items-center justify-end gap-2">
+		<StickyFooter>
 			<Button type="button" variant="outline" size="lg" onClick={onReset}>
 				Reset
 			</Button>
@@ -50,6 +51,6 @@ export function SettingsSaveBar({
 			>
 				{saving ? "Saving…" : "Save changes"}
 			</Button>
-		</div>
+		</StickyFooter>
 	);
 }
