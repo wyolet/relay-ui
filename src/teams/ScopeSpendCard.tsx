@@ -1,8 +1,8 @@
 import { CircleDollarSign } from "lucide-react";
 import type { ScopeSpend } from "@/api/hooks/usage";
 import { DetailCard, DetailEmpty } from "@/shared/DetailCard";
+import { StatCard } from "@/shared/StatCard";
 import { fmtCompact, fmtInt, fmtMoney } from "@/usage/format";
-import { UsageCard } from "@/usage/ResourceUsageCards";
 
 /**
  * This period's spend for a team or project. Renders nothing when the
@@ -26,9 +26,9 @@ export function ScopeSpendCard({
 	return (
 		<DetailCard title="Spend this period" icon={CircleDollarSign}>
 			<div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-				<UsageCard label="Cost" value={total} mono />
-				<UsageCard label="Requests" value={fmtInt(spend.requests)} mono />
-				<UsageCard label="Tokens" value={fmtCompact(spend.tokens)} mono />
+				<StatCard label="Cost" value={total} mono />
+				<StatCard label="Requests" value={fmtInt(spend.requests)} mono />
+				<StatCard label="Tokens" value={fmtCompact(spend.tokens)} mono />
 			</div>
 			<div className="mt-3">
 				<h3 className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-1.5">

@@ -1,8 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { ShieldCheck } from "lucide-react";
 import type { ModelPolicyView } from "@/api/hooks/models";
-import { ModelDetailTable, Td } from "@/models/ModelDetailTable";
-import { EmptyState } from "@/models/ModelEmptyState";
+import { DetailTable, Td } from "@/shared/DetailTable";
+import { EmptyState } from "@/shared/EmptyState";
 
 const COLUMNS = [
 	{ label: "Policy" },
@@ -21,7 +21,7 @@ export function ModelPoliciesTab({ rows }: { rows: ModelPolicyView[] }) {
 		);
 	}
 	return (
-		<ModelDetailTable columns={COLUMNS}>
+		<DetailTable columns={COLUMNS}>
 			{rows.map((row) => {
 				const limits = row.limits ?? [];
 				return (
@@ -67,6 +67,6 @@ export function ModelPoliciesTab({ rows }: { rows: ModelPolicyView[] }) {
 					</tr>
 				);
 			})}
-		</ModelDetailTable>
+		</DetailTable>
 	);
 }

@@ -1,5 +1,5 @@
 import { type CostResourceDimension, useResourceSpend } from "@/api/hooks/cost";
-import { UsageCard } from "@/usage/ResourceUsageCards";
+import { StatCard } from "@/shared/StatCard";
 import { fmtCompact, fmtMoneyCompact } from "./format";
 
 /**
@@ -22,11 +22,11 @@ export function ResourceSpendCard({
 			: undefined;
 
 	if (sum.usd == null) {
-		return <UsageCard label="Est. spend · 1h" value="—" sub={unpricedSub} />;
+		return <StatCard label="Est. spend · 1h" value="—" sub={unpricedSub} />;
 	}
 
 	return (
-		<UsageCard
+		<StatCard
 			label="Est. spend · 1h"
 			value={`≈${fmtMoneyCompact(sum.usd, "USD")}`}
 			sub={unpricedSub}
@@ -37,5 +37,5 @@ export function ResourceSpendCard({
 
 /** Suspense fallback matching the tile row. */
 export function ResourceSpendCardSkeleton() {
-	return <UsageCard label="Est. spend · 1h" value="…" />;
+	return <StatCard label="Est. spend · 1h" value="…" />;
 }

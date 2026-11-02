@@ -15,12 +15,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { HostConfigurationTab } from "@/hosts/HostConfigurationTab";
 import { HostCredentialsTab } from "@/hosts/HostCredentialsTab";
 import { HostDetailHeader } from "@/hosts/HostDetailHeader";
-import { EmptyState } from "@/hosts/HostDetailKit";
 import { HostModelsTab } from "@/hosts/HostModelsTab";
 import { HostOverviewTab } from "@/hosts/HostOverviewTab";
 import { HostTierPresets } from "@/hosts/HostTierPresets";
 import { HostUserPoliciesTab } from "@/hosts/HostUserPoliciesTab";
 import { ResourceLogs } from "@/logs/ResourceLogs";
+import { EmptyState } from "@/shared/EmptyState";
 import { PageLoader } from "@/shared/Spinner";
 import { ResourceUsage } from "@/usage/ResourceUsage";
 

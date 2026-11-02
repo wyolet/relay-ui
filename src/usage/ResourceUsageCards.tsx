@@ -1,4 +1,5 @@
 import type { ResourceUsageStats } from "@/api/hooks/usage";
+import { StatCard } from "@/shared/StatCard";
 import { fmtCompact, fmtInt, fmtMs, fmtPct } from "@/usage/format";
 
 /**
@@ -16,26 +17,26 @@ export function ResourceUsageCards({
 	if (!usage || usage.requests === 0) {
 		return (
 			<>
-				<UsageCard label="Requests · 1h" value="0" sub="no traffic yet" />
-				<UsageCard label="Error rate" value="—" />
-				<UsageCard label="p95 latency" value="—" />
-				<UsageCard label="Tokens" value="—" />
+				<StatCard label="Requests · 1h" value="0" sub="no traffic yet" />
+				<StatCard label="Error rate" value="—" />
+				<StatCard label="p95 latency" value="—" />
+				<StatCard label="Tokens" value="—" />
 			</>
 		);
 	}
 	const errorTone = usage.errorRate >= 0.05 ? "text-destructive" : undefined;
 	return (
 		<>
-			<UsageCard label="Requests · 1h" value={fmtInt(usage.requests)} mono />
-			<UsageCard
+			<StatCard label="Requests · 1h" value={fmtInt(usage.requests)} mono />
+			<StatCard
 				label="Error rate"
 				value={fmtPct(usage.errorRate)}
 				sub={`${fmtInt(usage.errorCount)} errors`}
 				valueClassName={errorTone}
 				mono
 			/>
-			<UsageCard label="p95 latency" value={fmtMs(usage.duration.p95)} mono />
-			<UsageCard label="Tokens" value={fmtCompact(usage.tokens)} mono />
+			<StatCard label="p95 latency" value={fmtMs(usage.duration.p95)} mono />
+			<StatCard label="Tokens" value={fmtCompact(usage.tokens)} mono />
 		</>
 	);
 }
@@ -45,44 +46,8 @@ export function UsageCardsSkeleton() {
 	return (
 		<>
 			{["Requests · 1h", "Error rate", "p95 latency", "Tokens"].map((label) => (
-				<UsageCard key={label} label={label} value="…" />
+				<StatCard key={label} label={label} value="…" />
 			))}
 		</>
-	);
-}
-
-/** One compact resource stat tile — exported so domain cards (e.g. the
- * Est. spend card) can match the row exactly. */
-export function UsageCard({
-	label,
-	value,
-	sub,
-	mono,
-	valueClassName,
-}: {
-	label: string;
-	value: string;
-	sub?: string;
-	mono?: boolean;
-	valueClassName?: string;
-}) {
-	return (
-		<div className="rounded-md border border-border bg-card px-3 py-2">
-			<div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-				{label}
-			</div>
-			<div
-				className={`mt-0.5 text-lg font-semibold tabular-nums ${
-					mono ? "font-mono text-base" : ""
-				} ${valueClassName ?? "text-foreground"}`}
-			>
-				{value}
-			</div>
-			{sub && (
-				<div className="text-[11px] text-muted-foreground mt-0.5 truncate">
-					{sub}
-				</div>
-			)}
-		</div>
 	);
 }

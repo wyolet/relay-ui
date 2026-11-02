@@ -12,7 +12,6 @@ import type { Model } from "@/api/types/model";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ResourceLogs } from "@/logs/ResourceLogs";
 import { ModelDetailHeader } from "@/models/ModelDetailHeader";
-import { ComingSoon } from "@/models/ModelEmptyState";
 import { ModelHostsTab } from "@/models/ModelHostsTab";
 import { ModelLimitsTab } from "@/models/ModelLimitsTab";
 import { ModelOverviewTab } from "@/models/ModelOverviewTab";
@@ -22,6 +21,7 @@ import { useHostsById } from "@/models/useHostsById";
 import { useModelHosts } from "@/models/useModelHosts";
 import { useModelPolicies } from "@/models/useModelPolicies";
 import { useModelProvider } from "@/models/useModelProvider";
+import { EmptyState } from "@/shared/EmptyState";
 import { ResourceUsage } from "@/usage/ResourceUsage";
 
 export type ModelDetailTab =
@@ -122,10 +122,11 @@ export function ModelDetailView({
 					{model.metadata.id ? (
 						<ResourceUsage scope="model_id" id={model.metadata.id} />
 					) : (
-						<ComingSoon
+						<EmptyState
 							icon={Activity}
 							title="Usage"
 							body="Save this model to see its traffic."
+							comingSoon
 						/>
 					)}
 				</TabsContent>
@@ -137,10 +138,11 @@ export function ModelDetailView({
 							label="model"
 						/>
 					) : (
-						<ComingSoon
+						<EmptyState
 							icon={ScrollText}
 							title="Logs"
 							body="Save this model to see the inference requests targeting it."
+							comingSoon
 						/>
 					)}
 				</TabsContent>

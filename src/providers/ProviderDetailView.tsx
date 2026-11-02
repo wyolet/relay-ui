@@ -13,12 +13,14 @@ import {
 	useProviderReferences,
 } from "@/providers/useProviderReferences";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
+import { DetailTable, Td } from "@/shared/DetailTable";
+import { EmptyState } from "@/shared/EmptyState";
+import { StatCard, StatGrid } from "@/shared/StatCard";
 import {
 	CatalogDetachedBadge,
 	OwnerBadge,
 	StatusBadge,
 } from "@/shared/StatusBadge";
-import { Th } from "@/shared/Th";
 
 export type ProviderDetailTab = "overview" | "models" | "hosts";
 
@@ -209,35 +211,37 @@ function OverviewTab({ refs }: { refs: ProviderReferences }) {
 
 	return (
 		<div className="flex flex-col gap-6 pt-2">
-			<section>
-				<SectionTitle>Overview</SectionTitle>
-				<div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-					<StatCard
-						label="Models"
-						value={refs.models.length}
-						sub={
-							refs.models.length === 0
-								? "none registered"
-								: `${enabledModels} enabled`
-						}
-					/>
-					<StatCard
-						label="Families"
-						value={families.size}
-						sub={families.size === 0 ? "—" : "distinct"}
-					/>
-					<StatCard
-						label="Hosts"
-						value={refs.hosts.length}
-						sub={refs.hosts.length === 0 ? "no host serves" : "serving"}
-					/>
-				</div>
-			</section>
+			<StatGrid title="Overview" columns={3}>
+				<StatCard
+					label="Models"
+					value={refs.models.length}
+					sub={
+						refs.models.length === 0
+							? "none registered"
+							: `${enabledModels} enabled`
+					}
+				/>
+				<StatCard
+					label="Families"
+					value={families.size}
+					sub={families.size === 0 ? "—" : "distinct"}
+				/>
+				<StatCard
+					label="Hosts"
+					value={refs.hosts.length}
+					sub={refs.hosts.length === 0 ? "no host serves" : "serving"}
+				/>
+			</StatGrid>
 		</div>
 	);
 }
 
 /* ---------------- Hosts ---------------- */
+
+const HOST_COLUMNS = [
+	{ label: "Host" },
+	{ label: "Models served", className: "text-right" },
+];
 
 function HostsTab({ refs }: { refs: ProviderReferences }) {
 	if (refs.hosts.length === 0) {
@@ -250,112 +254,29 @@ function HostsTab({ refs }: { refs: ProviderReferences }) {
 		);
 	}
 	return (
-		<div className="mt-2 rounded-md border border-border bg-card overflow-hidden">
-			<table className="w-full text-sm">
-				<thead className="bg-muted/30 text-[10px] uppercase tracking-wide text-muted-foreground">
-					<tr>
-						<Th>Host</Th>
-						<Th className="text-right">Models served</Th>
-					</tr>
-				</thead>
-				<tbody className="divide-y divide-border">
-					{refs.hosts.map((h) => {
-						const count = refs.modelCountByHost.get(h.metadata.id ?? "") ?? 0;
-						return (
-							<tr
-								key={h.metadata.name}
-								className="hover:bg-muted/30 transition-colors"
+		<DetailTable columns={HOST_COLUMNS}>
+			{refs.hosts.map((h) => {
+				const count = refs.modelCountByHost.get(h.metadata.id ?? "") ?? 0;
+				return (
+					<tr
+						key={h.metadata.name}
+						className="hover:bg-muted/30 transition-colors"
+					>
+						<Td>
+							<Link
+								to="/hosts/$name"
+								params={{ name: h.metadata.name }}
+								className="block"
 							>
-								<Td>
-									<Link
-										to="/hosts/$name"
-										params={{ name: h.metadata.name }}
-										className="block"
-									>
-										<HostCell host={h} size="sm" />
-									</Link>
-								</Td>
-								<Td className="text-right tabular-nums">
-									<span className="text-foreground">{count}</span>
-								</Td>
-							</tr>
-						);
-					})}
-				</tbody>
-			</table>
-		</div>
-	);
-}
-
-/* ---------------- Shared ---------------- */
-
-function Td({
-	children,
-	className = "",
-}: {
-	children: React.ReactNode;
-	className?: string;
-}) {
-	return <td className={`px-3 py-2 align-middle ${className}`}>{children}</td>;
-}
-
-function StatCard({
-	label,
-	value,
-	sub,
-	mono,
-}: {
-	label: string;
-	value: string | number;
-	sub?: string;
-	mono?: boolean;
-}) {
-	return (
-		<div className="rounded-md border border-border bg-card px-3 py-2">
-			<div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-				{label}
-			</div>
-			<div
-				className={`mt-0.5 text-lg font-semibold text-foreground tabular-nums ${mono ? "font-mono text-base" : ""}`}
-			>
-				{value}
-			</div>
-			{sub && (
-				<div className="text-[11px] text-muted-foreground mt-0.5 truncate">
-					{sub}
-				</div>
-			)}
-		</div>
-	);
-}
-
-function SectionTitle({ children }: { children: React.ReactNode }) {
-	return (
-		<h2 className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-			{children}
-		</h2>
-	);
-}
-
-function EmptyState({
-	icon: Icon,
-	title,
-	body,
-}: {
-	icon: typeof LayoutGrid;
-	title: string;
-	body: string;
-}) {
-	return (
-		<div className="mt-4 rounded-md border border-dashed border-border bg-muted/30 px-6 py-10 text-center">
-			<Icon
-				className="mx-auto w-6 h-6 text-muted-foreground/60 mb-2"
-				aria-hidden
-			/>
-			<div className="text-sm font-medium text-foreground">{title}</div>
-			<div className="mt-1 text-xs text-muted-foreground max-w-md mx-auto">
-				{body}
-			</div>
-		</div>
+								<HostCell host={h} size="sm" />
+							</Link>
+						</Td>
+						<Td className="text-right tabular-nums">
+							<span className="text-foreground">{count}</span>
+						</Td>
+					</tr>
+				);
+			})}
+		</DetailTable>
 	);
 }

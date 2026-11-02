@@ -4,8 +4,8 @@ import type { ModelHostView } from "@/api/hooks/models";
 import type { Host } from "@/api/types/host";
 import type { Model } from "@/api/types/model";
 import { HostPricingCard } from "@/models/HostPricingCard";
-import { ComingSoon, EmptyState } from "@/models/ModelEmptyState";
 import { useModelPricing } from "@/models/useModelPricing";
+import { EmptyState } from "@/shared/EmptyState";
 
 export function ModelPricingTab({
 	model,
@@ -18,10 +18,11 @@ export function ModelPricingTab({
 }) {
 	if (!model.metadata.id) {
 		return (
-			<ComingSoon
+			<EmptyState
 				icon={DollarSign}
 				title="Pricing"
 				body="Save this model to attach and view its pricing."
+				comingSoon
 			/>
 		);
 	}

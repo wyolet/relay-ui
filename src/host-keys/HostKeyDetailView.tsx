@@ -10,9 +10,17 @@ import { SecretRotateDialog } from "@/host-keys/SecretRotateDialog";
 import { useHostKeyDetail } from "@/host-keys/useHostKeyDetail";
 import { HostLogo } from "@/hosts/HostLogo";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
+import { DetailEmpty } from "@/shared/DetailCard";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
+import { DetailTable, Td } from "@/shared/DetailTable";
 import { StatusBadge } from "@/shared/StatusBadge";
-import { Th } from "@/shared/Th";
+
+const POLICY_COLUMNS = [
+	{ label: "Policy" },
+	{ label: "Link", className: "text-right" },
+	{ label: "Status", className: "text-right" },
+	{ label: "Action", className: "text-right" },
+];
 
 export function HostKeyDetailView({ name }: { name: string }) {
 	const navigate = useNavigate();
@@ -191,10 +199,10 @@ function PoliciesPanel({
 	if (rows.length === 0) {
 		return (
 			<Card title="Linked by policies" icon={Link2}>
-				<p className="text-xs text-muted-foreground">
+				<DetailEmpty>
 					No policy links this credential. Principals without a caller policy
 					still reach it when it belongs to their own scope or to the system.
-				</p>
+				</DetailEmpty>
 			</Card>
 		);
 	}
@@ -209,57 +217,45 @@ function PoliciesPanel({
 					{rows.length} polic{rows.length === 1 ? "y" : "ies"}
 				</span>
 			</div>
-			<div className="rounded-md border border-border bg-card overflow-hidden">
-				<table className="w-full text-sm">
-					<thead className="bg-muted/30 text-[10px] uppercase tracking-wide text-muted-foreground">
-						<tr>
-							<Th>Policy</Th>
-							<Th className="text-right">Link</Th>
-							<Th className="text-right">Status</Th>
-							<Th className="text-right">Action</Th>
-						</tr>
-					</thead>
-					<tbody className="divide-y divide-border">
-						{rows.map((row) => (
-							<tr key={row.id} className="hover:bg-muted/30 transition-colors">
-								<Td>
-									<div className="min-w-0">
-										<Link
-											to="/policies/$name"
-											params={{ name: row.name }}
-											className="text-foreground hover:underline truncate font-medium"
-										>
-											{row.label}
-										</Link>
-										<div className="text-[11px] text-muted-foreground font-mono truncate">
-											{row.name}
-										</div>
-									</div>
-								</Td>
-								<Td className="text-right text-[11px] text-muted-foreground">
-									{row.direct ? "Direct" : "Pool"}
-								</Td>
-								<Td className="text-right">
-									{row.enabled ? (
-										<span className="text-[11px] text-success">Enabled</span>
-									) : (
-										<span className="text-[11px] text-muted-foreground">
-											Disabled
-										</span>
-									)}
-								</Td>
-								<Td className="text-right">
-									<LinkedPolicyAction
-										row={row}
-										onDetach={onDetach}
-										detaching={detaching}
-									/>
-								</Td>
-							</tr>
-						))}
-					</tbody>
-				</table>
-			</div>
+			<DetailTable columns={POLICY_COLUMNS} className="mt-0">
+				{rows.map((row) => (
+					<tr key={row.id} className="hover:bg-muted/30 transition-colors">
+						<Td>
+							<div className="min-w-0">
+								<Link
+									to="/policies/$name"
+									params={{ name: row.name }}
+									className="text-foreground hover:underline truncate font-medium"
+								>
+									{row.label}
+								</Link>
+								<div className="text-[11px] text-muted-foreground font-mono truncate">
+									{row.name}
+								</div>
+							</div>
+						</Td>
+						<Td className="text-right text-[11px] text-muted-foreground">
+							{row.direct ? "Direct" : "Pool"}
+						</Td>
+						<Td className="text-right">
+							{row.enabled ? (
+								<span className="text-[11px] text-success">Enabled</span>
+							) : (
+								<span className="text-[11px] text-muted-foreground">
+									Disabled
+								</span>
+							)}
+						</Td>
+						<Td className="text-right">
+							<LinkedPolicyAction
+								row={row}
+								onDetach={onDetach}
+								detaching={detaching}
+							/>
+						</Td>
+					</tr>
+				))}
+			</DetailTable>
 		</section>
 	);
 }
@@ -304,16 +300,6 @@ function Row({
 			<dd className="text-xs text-foreground min-w-0">{children}</dd>
 		</div>
 	);
-}
-
-function Td({
-	children,
-	className = "",
-}: {
-	children: React.ReactNode;
-	className?: string;
-}) {
-	return <td className={`px-3 py-2 align-middle ${className}`}>{children}</td>;
 }
 
 function KindBadge({ stored }: { stored: boolean }) {
