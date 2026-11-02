@@ -31,32 +31,21 @@ function byId<T extends { metadata: { id?: string } }>(
 }
 
 export function buildDiagnosticGraph(input: GraphInput): DiagnosticGraph {
-	const keysByPolicyId = new Map<string, Key[]>();
-	for (const rk of input.keys) {
-		const pid = rk.spec.policyId;
-		if (!pid) continue;
-		const list = keysByPolicyId.get(pid);
-		if (list) list.push(rk);
-		else keysByPolicyId.set(pid, [rk]);
-	}
+	// In v0.20 relay keys carry no policyId; the policy–key link is a PolicyBinding.
+	// We no longer index keys by policy.
 
-	const policiesByHostKeyId = new Map<string, Policy[]>();
+	const policiesByCredentialId = new Map<string, Policy[]>();
 	const policiesByRateLimitId = new Map<string, Policy[]>();
 	for (const p of input.policies) {
-		for (const hkId of p.spec.hostKeyIds ?? []) {
-			const list = policiesByHostKeyId.get(hkId);
+		for (const credId of p.spec.credentialIds ?? []) {
+			const list = policiesByCredentialId.get(credId);
 			if (list) list.push(p);
-			else policiesByHostKeyId.set(hkId, [p]);
+			else policiesByCredentialId.set(credId, [p]);
 		}
-		const rlIds = new Set<string>();
-		if (p.spec.rateLimitId) rlIds.add(p.spec.rateLimitId);
-		for (const b of p.spec.rlBindings ?? []) {
-			if (b.rateLimitId) rlIds.add(b.rateLimitId);
-		}
-		for (const rlId of rlIds) {
-			const list = policiesByRateLimitId.get(rlId);
+		for (const rl of p.spec.rateLimits ?? []) {
+			const list = policiesByRateLimitId.get(rl.rateLimitId);
 			if (list) list.push(p);
-			else policiesByRateLimitId.set(rlId, [p]);
+			else policiesByRateLimitId.set(rl.rateLimitId, [p]);
 		}
 	}
 
@@ -70,8 +59,7 @@ export function buildDiagnosticGraph(input: GraphInput): DiagnosticGraph {
 		providers: byId(input.providers),
 		bindingsByModel: bindingsByModel(input.bindings),
 		bindingsByHost: bindingsByHost(input.bindings),
-		keysByPolicyId,
-		policiesByHostKeyId,
+		policiesByCredentialId,
 		policiesByRateLimitId,
 	};
 }

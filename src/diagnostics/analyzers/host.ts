@@ -33,18 +33,6 @@ export function analyzeHost(host: Host, graph: DiagnosticGraph): Diagnostic[] {
 		}
 	}
 
-	if (host.spec.defaultPolicy) {
-		// `spec.defaultPolicy` holds the policy id (UUID), not the slug.
-		const found = graph.policies.has(host.spec.defaultPolicy);
-		if (!found) {
-			out.push({
-				severity: "warn",
-				code: "host.default-policy-dangling",
-				message: "Default policy no longer exists.",
-			});
-		}
-	}
-
 	// `noAuth` hosts (e.g. local Ollama) route without a credential, so an
 	// empty key list is expected — not worth surfacing.
 	if (keys.length === 0 && host.spec.noAuth !== true) {
