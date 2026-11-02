@@ -10,7 +10,7 @@ import { FilterBar } from "@/filters/FilterBar";
 import { activeFilterCount } from "@/filters/toQueryParams";
 import type { FilterDef, FilterState } from "@/filters/types";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
-import { PrincipalPolicy } from "@/policy-bindings/PrincipalPolicy";
+import { AccountPolicy } from "@/policy-bindings/AccountPolicy";
 import { OwnerLink } from "@/projects/OwnerLink";
 import { useToggleServiceAccountEnabled } from "@/service-accounts/useToggleServiceAccountEnabled";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
@@ -131,7 +131,7 @@ export function ServiceAccountsTable() {
 								<tr>
 									<Th variant="column">Name</Th>
 									<Th variant="column">Project</Th>
-									<Th variant="column">Policy</Th>
+									<Th variant="column">Account · policy</Th>
 									<th
 										scope="col"
 										className="w-12 px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground"
@@ -178,10 +178,12 @@ export function ServiceAccountsTable() {
 												/>
 											</td>
 											<td className="px-3 py-2 text-xs">
-												<PrincipalPolicy
-													principal={{
-														kind: "serviceaccount",
-														id: sa.metadata.id ?? "",
+												<AccountPolicy
+													accountRef={{
+														ownerOf: {
+															kind: "serviceaccount",
+															id: sa.metadata.id ?? "",
+														},
 													}}
 													compact
 												/>

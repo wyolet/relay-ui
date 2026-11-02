@@ -1,4 +1,4 @@
-import { Suspense } from "react";
+import { type ReactNode, Suspense } from "react";
 import { usePolicyReferences } from "@/api/hooks/policies";
 import type { Policy } from "@/api/types/policy";
 import { IssuesPanel } from "@/diagnostics/IssuesPanel";
@@ -8,15 +8,16 @@ import {
 	type LinkChoiceRoute,
 	LinkChoiceRow,
 } from "@/policies/PolicyLinkPicker";
+import { budgetLinkShared } from "@/policies/policyFormSpec";
 import { usePolicyHosts } from "@/policies/usePolicyHosts";
 import {
 	type LinkChoice,
 	useBudgetChoices,
-	useCredentialChoices,
 	usePoolChoices,
 } from "@/policies/usePolicyLinkChoices";
 import { usePolicyModels } from "@/policies/usePolicyModels";
 import { usePolicyUsage } from "@/policies/usePolicyUsage";
+import { SharedLinkLabel } from "@/rate-limits/SharedLinkLabel";
 import { DetailEmpty } from "@/shared/DetailCard";
 import { SectionTitle } from "@/shared/SectionTitle";
 import { StatCard, StatGrid } from "@/shared/StatCard";
@@ -48,9 +49,9 @@ export function PolicyOverviewTab({ policy }: Props) {
 }
 
 function LinksPanel({ policy }: { policy: Policy }) {
+	const budgetLinks = policy.spec.budgets ?? [];
 	const pools = usePoolChoices(policy.spec.poolIds ?? []).selected;
-	const budgets = useBudgetChoices(policy.spec.budgetIds ?? []).selected;
-	const credentials = useCredentialChoices(policy.spec.credentialIds ?? []);
+	const budgets = useBudgetChoices(budgetLinks.map((b) => b.budgetId)).selected;
 	return (
 		<section className="grid gap-4 sm:grid-cols-2">
 			<LinkList
@@ -65,17 +66,10 @@ function LinksPanel({ policy }: { policy: Policy }) {
 				empty="No budgets linked."
 				items={budgets}
 				linkTo="/policies/budgets/$name"
+				renderTrailing={(c) => (
+					<SharedLinkLabel shared={budgetLinkShared(budgetLinks, c.id)} />
+				)}
 			/>
-			{credentials.length > 0 && (
-				<div className="sm:col-span-2">
-					<LinkList
-						title="Credentials linked directly"
-						empty=""
-						items={credentials}
-						linkTo="/host-keys/$name"
-					/>
-				</div>
-			)}
 		</section>
 	);
 }
@@ -86,12 +80,14 @@ function LinkList({
 	items,
 	linkTo,
 	ordered,
+	renderTrailing,
 }: {
 	title: string;
 	empty: string;
 	items: LinkChoice[];
 	linkTo: LinkChoiceRoute;
 	ordered?: boolean;
+	renderTrailing?: (choice: LinkChoice) => ReactNode;
 }) {
 	return (
 		<div>
@@ -106,7 +102,9 @@ function LinkList({
 							choice={c}
 							linkTo={linkTo}
 							rank={ordered ? i + 1 : undefined}
-						/>
+						>
+							{renderTrailing?.(c)}
+						</LinkChoiceRow>
 					))}
 				</ul>
 			)}
@@ -174,7 +172,7 @@ function HostsPanel({ policy }: { policy: Policy }) {
 			<section>
 				<SectionTitle>Hosts</SectionTitle>
 				<DetailEmpty>
-					No hosts resolved — pick models in the catalog above.
+					No hosts resolved: link pools that serve this policy's models.
 				</DetailEmpty>
 			</section>
 		);

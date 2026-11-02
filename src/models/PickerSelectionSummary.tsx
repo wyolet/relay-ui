@@ -6,17 +6,15 @@ import type { PickerIndex } from "@/models/usePickerCatalog";
 export function PickerSelectionSummary({
 	refs,
 	index,
-	includeDeprecated,
 }: {
 	refs: CatalogRef[];
 	index: PickerIndex;
-	includeDeprecated: boolean;
 }) {
 	return (
 		<div className="border-t border-border bg-muted/30">
 			<div className="flex items-center justify-between px-3 py-1.5 border-b border-border/50">
 				<div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-					This policy grants
+					Selected
 				</div>
 				<div className="text-[10px] text-muted-foreground tabular-nums">
 					{refs.length} {refs.length === 1 ? "grant" : "grants"}
@@ -26,7 +24,7 @@ export function PickerSelectionSummary({
 				{refs.map((r) => {
 					const meta = KIND_META[r.kind];
 					const Icon = meta.icon;
-					const counts = refReachText(r, index, includeDeprecated);
+					const counts = refReachText(r, index);
 					return (
 						<li key={r.raw} className="flex items-center gap-3 px-3 py-2">
 							<span className="inline-flex h-6 w-6 items-center justify-center rounded bg-primary/10 text-primary shrink-0">

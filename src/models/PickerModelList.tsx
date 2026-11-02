@@ -38,6 +38,11 @@ export function PickerModelList({
 									<code className="text-[10px] font-mono text-muted-foreground">
 										{m.provider}/{m.name}
 									</code>
+									{m.deprecated && (
+										<span className="ml-1.5 text-[10px] text-warning">
+											deprecated
+										</span>
+									)}
 								</span>
 							</span>
 							<span className="flex items-center gap-1">

@@ -11,7 +11,7 @@ interface ToggleSwitchProps {
 /**
  * Boxed labelled switch for form-level on/off settings. Mirrors the visual
  * weight of an input row — use instead of a bare checkbox when the toggle
- * stands alone as a decision (passthrough, includeDeprecated, …).
+ * stands alone as a decision (passthrough, payload logging, …).
  */
 export function ToggleSwitch({
 	value,

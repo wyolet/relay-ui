@@ -6,7 +6,7 @@ import {
 	type AttentionTarget,
 	useAttention,
 } from "./useAttention";
-import { AUTH_STATUSES, THROTTLED_STATUSES } from "./useOpsAttention";
+import { UNAUTHENTICATED_STATUSES } from "./useOpsAttention";
 
 /** One line per thing to act on; a single quiet line when nothing is. */
 export function AttentionList() {
@@ -93,21 +93,21 @@ function TargetLink({
 					{children}
 				</Link>
 			);
-		case "throttled":
+		case "refusal":
 			return (
 				<Link
 					to="/logs"
-					search={{ status: THROTTLED_STATUSES, since: "24h" }}
+					search={{ refusal: [target.refusal], since: "24h" }}
 					className={className}
 				>
 					{children}
 				</Link>
 			);
-		case "refused":
+		case "unauthenticated":
 			return (
 				<Link
 					to="/logs"
-					search={{ status: AUTH_STATUSES, since: "24h" }}
+					search={{ status: UNAUTHENTICATED_STATUSES, since: "24h" }}
 					className={className}
 				>
 					{children}

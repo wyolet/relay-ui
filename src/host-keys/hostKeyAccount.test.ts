@@ -17,7 +17,7 @@ const account = (
 	extra: Partial<Account["spec"]> = {},
 ): Account => ({
 	metadata: { id, name: id, owner },
-	spec: { hostId, ...extra },
+	spec: { kind: "provider", hostId, ...extra },
 });
 
 const system = { kind: "system" } as const;
@@ -26,10 +26,12 @@ const accounts = [
 	account("a-org", "h1", system, { orgId: "org-1" }),
 	account("a-other-host", "h2", system),
 	account("a-team", "h1", { kind: "team", id: "t1" }),
+	// A caller account carries no hostId; this one checks kind alone excludes it.
+	account("team-acme", "h1", system, { kind: "team" }),
 ];
 
 describe("accountOptions", () => {
-	it("lists the default choice, then the owner's named accounts at the host", () => {
+	it("lists the default choice, then the owner's provider accounts at the host", () => {
 		expect(accountOptions(accounts, "h1", "system", undefined)).toEqual([
 			{ value: DEFAULT_ACCOUNT, label: "Default account" },
 			{ value: "a-org", label: "a-org · org-1" },

@@ -3,18 +3,21 @@ import { Fragment, Suspense } from "react";
 import type { LogEvent, LogsFilter } from "@/api/hooks/logs";
 import { useLogDetail, useLogs } from "@/api/hooks/logs";
 import { Button } from "@/components/ui/button";
+import { refusalLabel } from "@/lib/refusal";
 import { cn } from "@/lib/utils";
-import { failureAttribution } from "./attribution";
+import { failureAttribution, failureReason } from "./attribution";
 import { FailureLayerBadge } from "./FailureLayerBadge";
 import { Field } from "./Field";
 import { fmtInt, fmtLogTime, fmtMs, fmtTs, sumTokens } from "./format";
+import { LaneAccountField } from "./LaneAccountField";
 import { LogsEmpty } from "./LogsEmpty";
+import { logModelLabel } from "./logModelLabel";
 import { isErrorEvent } from "./predicates";
 import { statusDot, statusTone } from "./statusStyle";
 import type { LogLabeler } from "./useLogsFilterOptions";
 
 /** Which dimension a click-to-filter affordance targets. */
-export type LogFilterKey = "model_id" | "host_id" | "status_class";
+export type LogFilterKey = "model_id" | "host_id" | "refusal" | "status_class";
 
 const COLUMN_COUNT = 9;
 
@@ -35,7 +38,7 @@ function statusBand(status: number): string {
 /**
  * The request feed: a dense table whose rows expand in place to show a summary.
  * Structured filters apply server-side via `filter`; `query` is a client-side
- * text refinement. Clicking a model/host/status value adds a facet; the
+ * text refinement. Clicking a model/host/status/refusal value adds a facet; the
  * expanded row links to the full request page when bodies were captured.
  */
 export function LogsTable({
@@ -161,11 +164,7 @@ function LogRow({
 	onToggle: () => void;
 	onFilter?: (key: LogFilterKey, value: string) => void;
 }) {
-	const modelLabel =
-		labelFor?.("model", event.model_id) ??
-		event.model_id ??
-		event.requested_model ??
-		event.source;
+	const modelLabel = logModelLabel(event, labelFor);
 	const hostLabel = labelFor?.("host", event.host_id) ?? event.host_id ?? "—";
 	return (
 		<tr
@@ -253,24 +252,46 @@ function LogRow({
 				{fmtInt(sumTokens(event.tokens))}
 			</td>
 			<td className="px-3 py-2">
-				<FinishCell event={event} />
+				<FinishCell event={event} onFilter={onFilter} />
 			</td>
 		</tr>
 	);
 }
 
 /** Finish column: the finish reason for successes; for failures, the
- * failing layer + error kind so "us or them?" reads off the row. */
-function FinishCell({ event }: { event: LogEvent }) {
+ * failing layer + error kind so "us or them?" reads off the row, and for
+ * a request relay refused itself, the refusal. */
+function FinishCell({
+	event,
+	onFilter,
+}: {
+	event: LogEvent;
+	onFilter?: (key: LogFilterKey, value: string) => void;
+}) {
 	const attribution = failureAttribution(event);
 	if (!attribution) {
 		return <span className="text-ink-3">{event.finish_reason ?? "—"}</span>;
 	}
+	const { refusal } = event;
 	return (
 		<span className="inline-flex items-center gap-1.5">
 			<FailureLayerBadge layer={attribution.layer} />
-			{event.error_kind && (
-				<span className="text-destructive">{event.error_kind}</span>
+			{refusal ? (
+				<Filterable
+					value={refusal}
+					onFilter={onFilter && ((v) => onFilter("refusal", v))}
+				>
+					<span
+						className="whitespace-nowrap text-destructive"
+						title={event.error_kind}
+					>
+						Refused: {refusalLabel(refusal).toLowerCase()}
+					</span>
+				</Filterable>
+			) : (
+				event.error_kind && (
+					<span className="text-destructive">{event.error_kind}</span>
+				)
 			)}
 		</span>
 	);
@@ -288,6 +309,7 @@ function ExpandedDetail({
 	onOpen: () => void;
 }) {
 	const attribution = failureAttribution(event);
+	const reason = failureReason(event);
 	return (
 		<div className="flex flex-col gap-3 px-8 py-4">
 			<div className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-4">
@@ -303,8 +325,14 @@ function ExpandedDetail({
 						<FailureLayerBadge layer={attribution.layer} />
 					</Field>
 				)}
+				{event.refusal && (
+					<Field label="Refusal">{refusalLabel(event.refusal)}</Field>
+				)}
 				{event.requested_model && (
 					<Field label="Requested">{event.requested_model}</Field>
+				)}
+				{event.lane_account_id && (
+					<LaneAccountField id={event.lane_account_id} />
 				)}
 				{event.policy_id && (
 					<Field label="Policy">
@@ -317,9 +345,7 @@ function ExpandedDetail({
 				{event.streamed && <Field label="Streamed">yes</Field>}
 			</div>
 
-			{attribution && (
-				<p className="text-meta text-ink-2">{attribution.reason}</p>
-			)}
+			{reason && <p className="text-meta text-ink-2">{reason}</p>}
 			{event.error_message && (
 				<p className="text-meta text-destructive">{event.error_message}</p>
 			)}

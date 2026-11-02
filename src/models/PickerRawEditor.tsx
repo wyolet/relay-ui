@@ -22,7 +22,8 @@ export function PickerRawEditor({
 				<code className="font-mono text-foreground/80">
 					anthropic/claude-opus-4-7
 				</code>
-				, <code className="font-mono text-foreground/80">@bedrock</code>.
+				. Hosts come from the pools, so <code className="font-mono">@host</code>{" "}
+				isn't accepted.
 				<br />
 				Refs are DNS-style slugs — not upstream model names. Replace{" "}
 				<code className="font-mono text-foreground/80">.</code> and{" "}
@@ -34,7 +35,7 @@ export function PickerRawEditor({
 				onChange={(e) => edit(e.currentTarget.value)}
 				spellCheck={false}
 				rows={8}
-				placeholder="anthropic&#10;openai/gpt-4o&#10;@bedrock"
+				placeholder="anthropic&#10;openai/gpt-4o"
 				className="min-h-32 font-mono text-xs leading-relaxed"
 			/>
 			{errors.length > 0 && (

@@ -1,17 +1,23 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useAuth } from "@/api/auth";
+import { accountListQuery } from "@/api/hooks/accounts";
 import { useCatalogGraph } from "@/api/hooks/catalog";
 import { useCreateHostKey } from "@/api/hooks/hostkeys";
 import { useHosts, useUpdateHost } from "@/api/hooks/hosts";
 import { useCreateKey } from "@/api/hooks/keys";
 import { useCreatePolicy, useUpdatePolicy } from "@/api/hooks/policies";
-import { useCreatePolicyBinding } from "@/api/hooks/policyBindings";
+import {
+	policyBindingsListQuery,
+	useCreatePolicyBinding,
+} from "@/api/hooks/policyBindings";
 import { useCreatePool } from "@/api/hooks/pools";
 import { useCreateRateLimit } from "@/api/hooks/ratelimits";
 import { ApiError } from "@/api/types/errors";
 import type { Host } from "@/api/types/host";
 import type { Policy, PolicySpec } from "@/api/types/policy";
+import { displayLabel } from "@/lib/displayLabel";
 import { slugWithSuffix } from "@/lib/slug";
 import type {
 	RateLimitMeter as CanonicalMeter,
@@ -19,6 +25,7 @@ import type {
 } from "@/rate-limits/useRateLimitForm";
 import { toast } from "@/shared/Toast";
 import { useSetupStore } from "@/stores/setup";
+import { personalAccountOf } from "./personalAccount";
 import {
 	PROVIDERS,
 	type ProviderDef,
@@ -103,8 +110,8 @@ export function useSetupWizard() {
 	const [step, setStep] = useState<SetupStep>("provider");
 	const [providerId, setProviderId] = useState<ProviderId | null>(null);
 	// The caller's own keys reach the host keys they create without a policy.
-	// One is created, and bound to the caller, only for a rate limit or a
-	// keyless host; it's carried across "add another provider".
+	// One is created, and bound to the caller's personal account, only for a
+	// rate limit or a keyless host; it's carried across "add another provider".
 	const [policy, setPolicy] = useState<Policy | null>(null);
 	const [unpooledKeys, setUnpooledKeys] = useState<UnpooledKey[]>([]);
 	const [apiKey, setApiKey] = useState<CreatedKey | null>(null);
@@ -185,6 +192,7 @@ export function useSetupWizard() {
 	const createRateLimit = useCreateRateLimit();
 	const createKey = useCreateKey();
 	const { userId } = useAuth();
+	const queryClient = useQueryClient();
 
 	async function createPoolFor(
 		label: string,
@@ -199,8 +207,43 @@ export function useSetupWizard() {
 		return pool.metadata.id ?? "";
 	}
 
-	/** Updates the wizard's policy, or creates it and binds it to the caller. */
-	async function savePolicy(patch: Partial<PolicySpec>): Promise<void> {
+	/**
+	 * The caller's personal account, the lane their first key defaults to.
+	 * Checked before anything is created: an account takes one binding, so an
+	 * already-bound one stops the wizard with the binding to edit instead.
+	 */
+	async function personalAccountToBind(): Promise<string> {
+		if (!userId) throw new Error("Sign in again to finish setup.");
+		const accounts = await queryClient.fetchQuery(
+			accountListQuery({ kind: ["personal"], holder_id: [userId] }),
+		);
+		const accountId = personalAccountOf(accounts.items ?? [], userId)?.metadata
+			.id;
+		if (!accountId) {
+			throw new Error(
+				"Relay hasn't created your personal account yet. Try again in a moment.",
+			);
+		}
+		const bindings = await queryClient.fetchQuery(
+			policyBindingsListQuery({ account_id: [accountId] }),
+		);
+		const held = bindings.items?.[0];
+		if (held) {
+			throw new Error(
+				`Your personal account is already bound by "${displayLabel(held.metadata)}", and an account takes one binding. Add the pool or rate limit to that binding's policy instead.`,
+			);
+		}
+		return accountId;
+	}
+
+	/**
+	 * Updates the wizard's policy, or creates it and binds it to
+	 * `bindAccountId` (from {@link personalAccountToBind}).
+	 */
+	async function savePolicy(
+		patch: Partial<PolicySpec>,
+		bindAccountId: string | undefined,
+	): Promise<void> {
 		if (policy) {
 			const saved = await updatePolicy.mutateAsync({
 				id: policy.metadata.id ?? "",
@@ -209,7 +252,7 @@ export function useSetupWizard() {
 			setPolicy(saved);
 			return;
 		}
-		if (!userId) throw new Error("Sign in again to finish setup.");
+		if (!bindAccountId) throw new Error("No account to bind the policy to.");
 		const label = "Setup policy";
 		const created = await createPolicy.mutateAsync({
 			metadata: { name: slugWithSuffix(label), displayName: label },
@@ -225,7 +268,7 @@ export function useSetupWizard() {
 			},
 			spec: {
 				policyId: created.metadata.id ?? "",
-				subjects: [{ kind: "user", id: userId }],
+				accountIds: [bindAccountId],
 			},
 		});
 		setPolicy(created);
@@ -252,6 +295,13 @@ export function useSetupWizard() {
 			const hostId = selectedHost.metadata.id;
 			if (!hostId) throw new Error("Selected host is missing an id.");
 
+			// Unauthenticated local provider (e.g. Ollama with no key): no host
+			// key to store. Only create one when a key is given.
+			const keyValue = input.apiKey.trim();
+			// Without a key the host is reached through a pool, so a policy.
+			const bindAccountId =
+				!policy && !keyValue ? await personalAccountToBind() : undefined;
+
 			// Ollama: persist a reachable base URL before storing the credential.
 			const nextBaseURL = input.baseURL.trim();
 			if (
@@ -268,9 +318,6 @@ export function useSetupWizard() {
 				});
 			}
 
-			// Unauthenticated local provider (e.g. Ollama with no key): no host
-			// key to store. Only create one when a key is given.
-			const keyValue = input.apiKey.trim();
 			const label = selectedProvider.label;
 			let newHostKeyId = "";
 			if (keyValue) {
@@ -305,7 +352,10 @@ export function useSetupWizard() {
 					hostId,
 					newHostKeyId ? [newHostKeyId] : [],
 				);
-				await savePolicy({ poolIds: [...linkedPools, ...earlier, added] });
+				await savePolicy(
+					{ poolIds: [...linkedPools, ...earlier, added] },
+					bindAccountId,
+				);
 				setUnpooledKeys([]);
 			} else {
 				setUnpooledKeys((prev) => [
@@ -355,19 +405,23 @@ export function useSetupWizard() {
 					: [];
 			});
 			if (rules.length > 0) {
+				const bindAccountId = policy
+					? undefined
+					: await personalAccountToBind();
 				const rlLabel = `${selectedProvider.label} limit`;
 				const rl = await createRateLimit.mutateAsync({
 					metadata: { name: slugWithSuffix(rlLabel), displayName: rlLabel },
 					spec: { enabled: true, rules },
 				});
-				// No `models` scope: a policy bound to a user may only hold
-				// limits that cover every model.
-				await savePolicy({
-					rateLimits: [
-						...(policy?.spec.rateLimits ?? []),
-						{ rateLimitId: rl.metadata.id ?? "" },
-					],
-				});
+				await savePolicy(
+					{
+						rateLimits: [
+							...(policy?.spec.rateLimits ?? []),
+							{ rateLimitId: rl.metadata.id ?? "" },
+						],
+					},
+					bindAccountId,
+				);
 			}
 
 			const rk = await createKey.mutateAsync({

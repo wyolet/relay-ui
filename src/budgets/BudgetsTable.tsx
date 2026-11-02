@@ -4,13 +4,13 @@ import { useDeleteBudget } from "@/api/hooks/budgets";
 import {
 	DEFAULT_MODE,
 	DEFAULT_PERIOD,
-	fmtBudgetAmount,
 	MODE_LABELS,
 	PERIOD_LABELS,
 } from "@/budgets/budgetFormat";
 import { useBudgetRows } from "@/budgets/useBudgetRows";
 import { buttonVariants } from "@/components/ui/button";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
+import { fmtUsd } from "@/lib/limitsFormat";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { RowMenu } from "@/shared/RowMenu";
 import { SearchBox } from "@/shared/SearchBox";
@@ -91,7 +91,7 @@ export function BudgetsTable() {
 											</Link>
 										</td>
 										<td className="px-3 py-2 text-right text-sm tabular-nums text-foreground">
-											{fmtBudgetAmount(b.spec.amountUsd)}
+											{fmtUsd(b.spec.amountUsd)}
 										</td>
 										<td className="px-3 py-2 text-xs text-foreground">
 											{PERIOD_LABELS[b.spec.period ?? DEFAULT_PERIOD]}

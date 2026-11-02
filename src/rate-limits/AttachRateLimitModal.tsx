@@ -23,8 +23,8 @@ export interface AttachRateLimitModalProps {
 	existing: { rateLimitId: string; models: string[] } | undefined;
 	rateLimits: RLMeta[];
 	excludeRLIds: Set<string>;
+	/** The policy's models; empty means all available. */
 	allowedModels: string[];
-	includeDeprecated: boolean;
 	onClose: () => void;
 	onSave: (rateLimitId: string, models: string[]) => void;
 }
@@ -34,7 +34,6 @@ export function AttachRateLimitModal({
 	rateLimits,
 	excludeRLIds,
 	allowedModels,
-	includeDeprecated,
 	onClose,
 	onSave,
 }: AttachRateLimitModalProps) {
@@ -80,7 +79,6 @@ export function AttachRateLimitModal({
 						value={models}
 						onChange={setModels}
 						allowedModels={allowedModels}
-						includeDeprecated={includeDeprecated}
 						rateLimitLabel={
 							rateLimits.find((rl) => rl.id === rateLimitId)?.label ?? "—"
 						}
@@ -203,7 +201,6 @@ interface Step2Props {
 	value: string[];
 	onChange: (models: string[]) => void;
 	allowedModels: string[];
-	includeDeprecated: boolean;
 	rateLimitLabel: string;
 }
 
@@ -211,44 +208,22 @@ function Step2Models({
 	value,
 	onChange,
 	allowedModels,
-	includeDeprecated,
 	rateLimitLabel,
 }: Step2Props) {
-	if (allowedModels.length === 0) {
-		return (
-			<div className="flex flex-col gap-2">
-				<div className="text-[11px] text-muted-foreground">
-					Attaching{" "}
-					<span className="font-medium text-foreground">{rateLimitLabel}</span>
-				</div>
-				<div className="rounded-md border border-dashed border-border bg-muted/30 px-3 py-4 text-sm text-muted-foreground text-center">
-					The Allowed catalog is empty. Save with no models to make this rate
-					limit apply to every request, or add models to the Allowed catalog
-					first to scope it.
-				</div>
-			</div>
-		);
-	}
-
 	return (
 		<div className="flex flex-col gap-2">
 			<div className="text-[11px] text-muted-foreground">
 				Attaching{" "}
 				<span className="font-medium text-foreground">{rateLimitLabel}</span>
 				{" — "}
-				pick providers, models, or hosts from the policy's Allowed catalog.
+				pick providers or models from the policy's models.
 			</div>
 			<ModelPicker
 				value={value}
 				onChange={onChange}
-				includeDeprecated={includeDeprecated}
-				restrictTo={allowedModels}
+				emptyText="No scope: this rate limit applies to every request under the policy."
+				restrictTo={allowedModels.length > 0 ? allowedModels : undefined}
 			/>
-			<p className="text-[10px] text-muted-foreground">
-				No selection = this rate limit applies to every request to the policy.
-				Relay refuses a model scope on a policy bound to a team, project, user
-				or service account.
-			</p>
 		</div>
 	);
 }

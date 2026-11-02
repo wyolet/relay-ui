@@ -76,9 +76,8 @@ export function hostIdsInPolicyCatalog(
 /**
  * Models reachable through the policy via the ref. A model counts if:
  *   - it matches the ref (provider / model / @host segments), AND
- *   - the binding's host is reachable: an enabled credential the policy draws
- *     on (through a pool or directly) is at it, or a linked pool sits at it and
- *     the host is `noAuth` (a keyless host is reached only through a pool).
+ *   - the binding's host is reachable: an enabled credential in a linked pool
+ *     is at it, or a linked pool sits at it and the host is `noAuth`.
  *
  * Empty result = the grant unlocks nothing through this policy.
  */

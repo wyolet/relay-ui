@@ -14,8 +14,10 @@ import type {
 	KeyList,
 	RotateKeyResponse,
 } from "@/api/types/key";
-import type { operations } from "@/api/types.gen";
+import type { components, operations } from "@/api/types.gen";
 import { unwrap } from "@/api/unwrap";
+
+type AccountLimits = components["schemas"]["AccountLimits"];
 
 /** Server-side filter/sort/page params accepted by GET /keys. */
 export type KeysListParams = NonNullable<
@@ -75,6 +77,26 @@ export function keyDetailQueryOptions(ref: string) {
 		staleTime: 30_000,
 		gcTime: 5 * 60_000,
 	});
+}
+
+/** The limits of the key's default lane. */
+export function keyLimitsQueryOptions(ref: string) {
+	return queryOptions({
+		queryKey: ["keys", ref, "limits"] as const,
+		queryFn: async (): Promise<AccountLimits> =>
+			unwrap(
+				await apiClient.GET("/keys/{ref}/limits", {
+					params: { path: { ref } },
+				}),
+			),
+		retry: false,
+		staleTime: 10_000,
+		gcTime: 5 * 60_000,
+	});
+}
+
+export function useKeyLimits(ref: string) {
+	return useQuery(keyLimitsQueryOptions(ref));
 }
 
 function invalidateKeyDependents(

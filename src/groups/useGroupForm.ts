@@ -7,7 +7,7 @@ import type { Group } from "@/api/types/group";
 import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
-import { firstError, zodFieldValidator } from "@/lib/formErrors";
+import { shownError, zodFieldValidator } from "@/lib/formErrors";
 import { randomSuffix, slugify } from "@/lib/slug";
 import { toast } from "@/shared/Toast";
 
@@ -150,10 +150,10 @@ export function useGroupForm({
 		? (group?.metadata.name ?? "")
 		: computeSlug(values.displayName);
 	const displayNameError = useStore(form.store, (s) =>
-		firstError(s.fieldMeta?.displayName?.errors),
+		shownError(s.fieldMeta?.displayName, s.submissionAttempts),
 	);
 	const descriptionError = useStore(form.store, (s) =>
-		firstError(s.fieldMeta?.description?.errors),
+		shownError(s.fieldMeta?.description, s.submissionAttempts),
 	);
 
 	function addMember(id: string) {

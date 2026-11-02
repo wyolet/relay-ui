@@ -8,7 +8,7 @@ import {
 	useAccessReview,
 } from "@/api/hooks/accessReview";
 import { accessCheckFailure } from "@/lib/accessReview";
-import { firstError, zodFieldValidator } from "@/lib/formErrors";
+import { shownError, zodFieldValidator } from "@/lib/formErrors";
 import { RULE_KINDS, RULE_VERBS, RULE_WILDCARD } from "@/roles/vocabulary";
 
 export const RESOURCE_KINDS = RULE_KINDS.filter((k) => k !== RULE_WILDCARD);
@@ -113,10 +113,10 @@ export function useAccessCheckForm(subject?: AccessReviewSubject) {
 
 	const values = useStore(form.store, (s) => s.values);
 	const nameError = useStore(form.store, (s) =>
-		firstError(s.fieldMeta?.name?.errors),
+		shownError(s.fieldMeta?.name, s.submissionAttempts),
 	);
 	const ownerNameError = useStore(form.store, (s) =>
-		firstError(s.fieldMeta?.ownerName?.errors),
+		shownError(s.fieldMeta?.ownerName, s.submissionAttempts),
 	);
 
 	return {

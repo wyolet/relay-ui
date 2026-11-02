@@ -42,35 +42,6 @@ export function volumeLeaders(
 	};
 }
 
-/** 4xx volume split into the operator-meaningful kinds. */
-export interface RejectionBuckets {
-	total: number;
-	/** 429 — rate limited. */
-	throttled: number;
-	/** 401/403 — bad, expired, or unauthorized keys. */
-	auth: number;
-	/** Everything else 4xx (bad requests, unknown models, …). */
-	other: number;
-}
-
-/**
- * Split total 4xx volume into throttled / auth / other. `other` is derived,
- * clamped at zero in case the three counts come from windows that drifted
- * a refetch apart.
- */
-export function rejectionBuckets(
-	total: number,
-	throttled: number,
-	auth: number,
-): RejectionBuckets {
-	return {
-		total,
-		throttled,
-		auth,
-		other: Math.max(total - throttled - auth, 0),
-	};
-}
-
 /** The per-group stats degradedHosts ranks; matches UsageGroupStat shape. */
 export interface HostErrorStat {
 	key: string;

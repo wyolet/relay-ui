@@ -1,22 +1,27 @@
 import { Link } from "@tanstack/react-router";
 import { Building2, Plus } from "lucide-react";
+import { AccountHolderLink } from "@/accounts/AccountHolderLink";
 import { ACCOUNT_SUMMARY } from "@/accounts/accountCopy";
+import { ACCOUNT_KIND_LABELS } from "@/accounts/accountView";
 import { DefaultAccountBadge } from "@/accounts/DefaultAccountBadge";
-import { useAccountRows } from "@/accounts/useAccountRows";
+import { ACCOUNT_FILTERS, useAccountRows } from "@/accounts/useAccountRows";
 import { useDeleteAccount } from "@/api/hooks/accounts";
 import { buttonVariants } from "@/components/ui/button";
+import { FilterBar } from "@/filters/FilterBar";
 import { HostCell } from "@/hosts/HostCell";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
-import { RowMenu } from "@/shared/RowMenu";
-import { SearchBox } from "@/shared/SearchBox";
+import { type MenuAction, RowMenu } from "@/shared/RowMenu";
+import { StatusBadge } from "@/shared/StatusBadge";
 import { TableEmpty } from "@/shared/TableEmpty";
 import { TableToolbar } from "@/shared/TableToolbar";
 import { Th } from "@/shared/Th";
 import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 
+const dash = <span className="text-muted-foreground/70">—</span>;
+
 export function AccountsTable() {
-	const { rows, total, q, setQ } = useAccountRows();
+	const { rows, total, filters, setFilters } = useAccountRows();
 	const del = useConfirmedDelete(useDeleteAccount(), { noun: "account" });
 
 	return (
@@ -24,7 +29,11 @@ export function AccountsTable() {
 			<p className="mb-3 text-xs text-muted-foreground">{ACCOUNT_SUMMARY}</p>
 			<TableToolbar
 				search={
-					<SearchBox value={q} onChange={setQ} placeholder="Search accounts" />
+					<FilterBar
+						defs={ACCOUNT_FILTERS}
+						state={filters}
+						onChange={setFilters}
+					/>
 				}
 				actions={
 					<Link
@@ -32,7 +41,7 @@ export function AccountsTable() {
 						className={buttonVariants({ variant: "default", size: "lg" })}
 					>
 						<Plus className="w-3.5 h-3.5" />
-						New account
+						New provider account
 					</Link>
 				}
 			/>
@@ -41,7 +50,7 @@ export function AccountsTable() {
 				<TableEmpty icon={Building2}>
 					<p className="text-sm text-muted-foreground">
 						{total === 0
-							? "No accounts yet. Relay makes a default one per owner and host when a credential needs it."
+							? "No accounts yet."
 							: "No accounts match the current filter."}
 					</p>
 				</TableEmpty>
@@ -51,6 +60,8 @@ export function AccountsTable() {
 						<thead className="bg-muted/40">
 							<tr>
 								<Th variant="column">Name</Th>
+								<Th variant="column">Kind</Th>
+								<Th variant="column">Holder</Th>
 								<Th variant="column">Host</Th>
 								<Th variant="column">Organization</Th>
 								<Th variant="column" align="right">
@@ -64,8 +75,28 @@ export function AccountsTable() {
 							</tr>
 						</thead>
 						<tbody>
-							{rows.map(({ account, host, hostLabel, keyCount }) => {
+							{rows.map(({ account, holder, provider, deletable }) => {
 								const name = account.metadata.name;
+								const actions: MenuAction[] = [
+									{
+										label: "Edit",
+										render: (
+											<Link to="/accounts/$name/edit" params={{ name }} />
+										),
+									},
+								];
+								if (deletable) {
+									actions.push({
+										label: "Delete",
+										danger: true,
+										onClick: () =>
+											del.request({
+												id: account.metadata.id ?? "",
+												name,
+												label: displayLabel(account.metadata),
+											}),
+									});
+								}
 								return (
 									<tr
 										key={account.metadata.id ?? name}
@@ -80,6 +111,12 @@ export function AccountsTable() {
 												<div className="flex items-center gap-2 text-sm font-medium text-foreground">
 													<span>{displayLabel(account.metadata)}</span>
 													{account.spec.default && <DefaultAccountBadge />}
+													{account.spec.closed && (
+														<StatusBadge
+															enabled={false}
+															disabledLabel="Closed"
+														/>
+													)}
 												</div>
 												{hasDisplayName(account.metadata) && (
 													<div className="font-mono text-[11px] text-muted-foreground">
@@ -88,45 +125,31 @@ export function AccountsTable() {
 												)}
 											</Link>
 										</td>
-										<td className="px-3 py-2">
-											<HostCell
-												host={host}
-												fallbackLabel={hostLabel}
-												size="sm"
-											/>
+										<td className="px-3 py-2 text-xs text-foreground">
+											{ACCOUNT_KIND_LABELS[account.spec.kind]}
 										</td>
-										<td className="px-3 py-2 font-mono text-[11px] text-foreground">
-											{account.spec.orgId || (
-												<span className="text-muted-foreground/70">—</span>
+										<td className="px-3 py-2">
+											{holder ? <AccountHolderLink holder={holder} /> : dash}
+										</td>
+										<td className="px-3 py-2">
+											{provider ? (
+												<HostCell
+													host={provider.host}
+													fallbackLabel={provider.hostLabel}
+													size="sm"
+												/>
+											) : (
+												dash
 											)}
 										</td>
+										<td className="px-3 py-2 font-mono text-[11px] text-foreground">
+											{(provider && account.spec.orgId) || dash}
+										</td>
 										<td className="px-3 py-2 text-right text-xs tabular-nums text-foreground">
-											{keyCount}
+											{provider ? provider.keyCount : dash}
 										</td>
 										<td className="px-3 py-2 text-right">
-											<RowMenu
-												actions={[
-													{
-														label: "Edit",
-														render: (
-															<Link
-																to="/accounts/$name/edit"
-																params={{ name }}
-															/>
-														),
-													},
-													{
-														label: "Delete",
-														danger: true,
-														onClick: () =>
-															del.request({
-																id: account.metadata.id ?? "",
-																name,
-																label: displayLabel(account.metadata),
-															}),
-													},
-												]}
-											/>
+											<RowMenu actions={actions} />
 										</td>
 									</tr>
 								);

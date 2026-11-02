@@ -10,8 +10,6 @@ export interface LinkedPolicyRow {
 	hasDisplayName: boolean;
 	description: string | undefined;
 	enabled: boolean;
-	/** Linked by `credentialIds`; false when the key is reached through a pool. */
-	direct: boolean;
 	/** The policy's pools that hold the key, in failover order. */
 	viaPools: { name: string; label: string }[];
 }
@@ -33,7 +31,6 @@ export function linkedPolicyRows(
 			hasDisplayName: match ? hasDisplayName(match.metadata) : false,
 			description: match?.metadata.description?.trim() || undefined,
 			enabled: match ? match.spec.enabled !== false : true,
-			direct: (match?.spec.credentialIds ?? []).includes(hkId),
 			viaPools: (match?.spec.poolIds ?? []).flatMap((id) => {
 				const pool = poolsById.get(id);
 				return pool?.spec.credentialIds?.includes(hkId)

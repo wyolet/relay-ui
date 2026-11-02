@@ -8,14 +8,14 @@ import {
 describe("detachedSummary", () => {
 	test("is null when nothing was unlinked", () => {
 		expect(detachedSummary([])).toBeNull();
-		expect(detachedSummary([{ field: "spec.budgetIds", policies: [] }])).toBe(
+		expect(detachedSummary([{ field: "spec.budgets", policies: [] }])).toBe(
 			null,
 		);
 	});
 
 	test("names one policy", () => {
 		expect(
-			detachedSummary([{ field: "spec.budgetIds", policies: ["ci"] }]),
+			detachedSummary([{ field: "spec.budgets", policies: ["ci"] }]),
 		).toBe("Unlinked from policy ci.");
 	});
 
@@ -23,7 +23,7 @@ describe("detachedSummary", () => {
 		expect(
 			detachedSummary([
 				{ field: "spec.poolIds", policies: ["ci", "prod"], hidden: 1 },
-				{ field: "spec.credentialIds", policies: ["ci"] },
+				{ field: "spec.poolIds", policies: ["ci"] },
 			]),
 		).toBe("Unlinked from policies ci, prod and 1 you can't see.");
 	});
@@ -33,7 +33,7 @@ describe("deletedMessage", () => {
 	test("appends the summary when links were taken", () => {
 		expect(
 			deletedMessage("budget", "Monthly", [
-				{ field: "spec.budgetIds", policies: ["ci"] },
+				{ field: "spec.budgets", policies: ["ci"] },
 			]),
 		).toBe('Budget "Monthly" deleted. Unlinked from policy ci.');
 	});

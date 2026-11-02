@@ -21,7 +21,7 @@ import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
 import { useOwnerOptions } from "@/hooks/useOwnerOptions";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
-import { firstError, zodFieldValidator } from "@/lib/formErrors";
+import { shownError, zodFieldValidator } from "@/lib/formErrors";
 import { ALL_OWNER_SCOPES, PERSONAL_OWNER } from "@/lib/ownerScopes";
 import { randomSuffix, slugify } from "@/lib/slug";
 import { toast } from "@/shared/Toast";
@@ -174,10 +174,10 @@ export function useBudgetForm({ budget, onSaved }: UseBudgetFormOptions) {
 
 	const values = useStore(form.store, (s) => s.values);
 	const errors = useStore(form.store, (s) => ({
-		displayName: firstError(s.fieldMeta?.displayName?.errors),
-		description: firstError(s.fieldMeta?.description?.errors),
-		owner: firstError(s.fieldMeta?.owner?.errors),
-		amountUsd: firstError(s.fieldMeta?.amountUsd?.errors),
+		displayName: shownError(s.fieldMeta?.displayName, s.submissionAttempts),
+		description: shownError(s.fieldMeta?.description, s.submissionAttempts),
+		owner: shownError(s.fieldMeta?.owner, s.submissionAttempts),
+		amountUsd: shownError(s.fieldMeta?.amountUsd, s.submissionAttempts),
 	}));
 
 	function setAmount(raw: string) {

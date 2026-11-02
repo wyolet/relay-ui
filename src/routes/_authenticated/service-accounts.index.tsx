@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { z } from "zod";
+import { accountListQueryOptions } from "@/api/hooks/accounts";
 import { policiesListQueryOptions } from "@/api/hooks/policies";
 import { policyBindingsAllQueryOptions } from "@/api/hooks/policyBindings";
 import { projectsListQueryOptions } from "@/api/hooks/projects";
@@ -28,6 +29,7 @@ export const Route = createFileRoute("/_authenticated/service-accounts/")({
 	loader: ({ context, deps, cause }) => {
 		void context.queryClient.prefetchQuery(policiesListQueryOptions);
 		void context.queryClient.prefetchQuery(policyBindingsAllQueryOptions);
+		void context.queryClient.prefetchQuery(accountListQueryOptions);
 		return awaitOnEnter(
 			cause,
 			Promise.all([

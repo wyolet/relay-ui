@@ -33,12 +33,9 @@ export function analyzePolicy(
 	const livingKeys = resolvedKeys.filter((k) => k !== undefined);
 	const enabledKeys = livingKeys.filter((k) => k.spec.enabled !== false);
 	const grants = policy.spec.models ?? [];
-	// A policy that links nothing leaves reach to the other rungs, or to the
-	// credentials the caller's own scopes own; only links decide reach here.
-	const linksReach =
-		(policy.spec.poolIds?.length ?? 0) +
-			(policy.spec.credentialIds?.length ?? 0) >
-		0;
+	// A policy that links no pools leaves reach to the other rungs, or to the
+	// credentials the caller's own scopes own; only pools decide reach here.
+	const linksReach = (policy.spec.poolIds?.length ?? 0) > 0;
 	if (!linksReach) {
 		out.push({
 			severity: "info",
@@ -61,7 +58,7 @@ export function analyzePolicy(
 			severity: "error",
 			code: "policy.host-keys-all-disabled",
 			message:
-				"All attached credentials are disabled or deleted — no upstream credential is usable.",
+				"Every credential in its pools is disabled or deleted — no upstream credential is usable.",
 		});
 	} else if (enabledKeys.length < livingKeys.length) {
 		const disabledKeys = livingKeys.filter((k) => k.spec.enabled === false);
@@ -71,7 +68,7 @@ export function analyzePolicy(
 		out.push({
 			severity: "warn",
 			code: "policy.host-keys-degraded",
-			message: `Disabled credentials in the pool: ${names}.`,
+			message: `Disabled credentials in its pools: ${names}.`,
 		});
 	}
 
@@ -157,8 +154,8 @@ export function analyzePolicy(
 				code: "policy.host-keys-outside-catalog",
 				message:
 					stray.length === 1
-						? `Credential ${phrased} stays attached but its host isn't in this policy's catalog. Detach the credential or add models served on that host.`
-						: `${stray.length} credentials stay attached but their hosts aren't in this policy's catalog: ${phrased}. Detach them or add models served on those hosts.`,
+						? `Credential ${phrased} sits in a linked pool but its host isn't in this policy's catalog. Unlink the pool or add models served on that host.`
+						: `${stray.length} credentials sit in linked pools but their hosts aren't in this policy's catalog: ${phrased}. Unlink those pools or add models served on those hosts.`,
 			});
 		}
 	}
@@ -208,7 +205,7 @@ export function analyzePolicy(
 			models: [...graph.models.values()],
 			hosts: [...graph.hosts.values()],
 			bindings: [...graph.bindingsByModel.values()].flat(),
-			includeDeprecated: policy.spec.includeDeprecated ?? false,
+			includeDeprecated: true,
 		});
 		const uncovered = new Set<string>();
 		for (const bnd of catalog) {
@@ -245,14 +242,14 @@ function describeDeadGrant(raw: string): string {
 	}
 	switch (r.kind) {
 		case "host":
-			return `No models are reachable on host "${r.host}" — attach a credential for it, or remove "${raw}".`;
+			return `No models are reachable on host "${r.host}" — link a pool at it, or remove "${raw}".`;
 		case "provider":
-			return `No "${r.provider}" models are reachable — attach a credential for a host that serves ${r.provider}, or remove "${raw}".`;
+			return `No "${r.provider}" models are reachable — link a pool at a host that serves ${r.provider}, or remove "${raw}".`;
 		case "provider-on-host":
-			return `No "${r.provider}" models are reachable on host "${r.host}" — attach a credential for it, or remove "${raw}".`;
+			return `No "${r.provider}" models are reachable on host "${r.host}" — link a pool at it, or remove "${raw}".`;
 		case "model":
-			return `Model "${r.provider}/${r.model}" isn't reachable — no host you have a key for serves it. Attach a key, or remove "${raw}".`;
+			return `Model "${r.provider}/${r.model}" isn't reachable — no linked pool's host serves it. Link a pool, or remove "${raw}".`;
 		case "binding":
-			return `Model "${r.provider}/${r.model}" isn't reachable on host "${r.host}" — attach a credential for it, or remove "${raw}".`;
+			return `Model "${r.provider}/${r.model}" isn't reachable on host "${r.host}" — link a pool at it, or remove "${raw}".`;
 	}
 }

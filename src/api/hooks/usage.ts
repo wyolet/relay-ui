@@ -56,6 +56,8 @@ export const USAGE_GROUP_BY = [
 	"team_id",
 	"project_id",
 	"principal_id",
+	"lane_account_id",
+	"refusal",
 	"error_kind",
 	"finish_reason",
 	"extras.instance",
@@ -88,6 +90,8 @@ export type UsageSummaryFilter = Pick<
 	| "team_id"
 	| "project_id"
 	| "principal_id"
+	| "lane_account_id"
+	| "refusal"
 >;
 
 export function usageSummaryQueryOptions(
@@ -876,6 +880,7 @@ export type DistinctDimension =
 	| "relay_key"
 	| "principal_id"
 	| "credential_id"
+	| "lane_account_id"
 	| "project_id"
 	| "team_id"
 	| "model_id"

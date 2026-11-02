@@ -11,8 +11,8 @@ interface Props {
 
 /**
  * Host keys reaching the hosts this policy can serve, resolved server-side via
- * `GET /policies/{ref}/hosts`. Each row is a host the policy's catalog reaches,
- * with the host keys its pools and credentials give it. A host with no key is flagged — `required`
+ * `GET /policies/{ref}/hosts`. Each row is a host the policy's models reach,
+ * with the host keys its pools give it. A host with no key is flagged — `required`
  * means requests there will fail; `optional` means a sibling host can cover the
  * same models. All state (host/key enabled, sharing, requirement) is server-fed.
  */
@@ -23,7 +23,7 @@ export function PolicyKeysTab({ policy }: Props) {
 	if (hosts.length === 0) {
 		return (
 			<EmptyPanel title="Nothing to show" className="mt-2">
-				Pick models on the Models tab, then link pools in the edit form.
+				Link pools in the edit form; their host keys show here.
 			</EmptyPanel>
 		);
 	}

@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { ChevronLeft, ShieldCheck, Users } from "lucide-react";
+import { Building2, ChevronLeft, ShieldCheck } from "lucide-react";
 import { usePolicies } from "@/api/hooks/policies";
 import {
 	useDeletePolicyBinding,
@@ -7,9 +7,8 @@ import {
 } from "@/api/hooks/policyBindings";
 import { PlanIssuesPanel } from "@/diagnostics/IssuesPanel";
 import { displayLabel } from "@/lib/displayLabel";
+import { AccountChips } from "@/policy-bindings/AccountChips";
 import { BindingOwner } from "@/policy-bindings/BindingOwner";
-import { SubjectChips } from "@/policy-bindings/SubjectChips";
-import { useSubjectOptions } from "@/policy-bindings/useSubjectOptions";
 import { Chip } from "@/shared/Chip";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { DetailCard, DetailEmpty, DetailRow } from "@/shared/DetailCard";
@@ -21,7 +20,6 @@ import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 export function PolicyBindingDetailView({ name }: { name: string }) {
 	const { data: binding } = usePolicyBinding(name);
 	const { data: policiesData } = usePolicies();
-	const { subjectName } = useSubjectOptions();
 	const navigate = useNavigate();
 	const del = useConfirmedDelete(useDeletePolicyBinding(), {
 		noun: "policy binding",
@@ -30,7 +28,7 @@ export function PolicyBindingDetailView({ name }: { name: string }) {
 
 	const enabled = binding.spec.enabled !== false;
 	const labels = Object.entries(binding.metadata.labels ?? {});
-	const subjects = binding.spec.subjects ?? [];
+	const accountIds = binding.spec.accountIds ?? [];
 	const policy = (policiesData.items ?? []).find(
 		(p) => p.metadata.id === binding.spec.policyId,
 	);
@@ -78,7 +76,7 @@ export function PolicyBindingDetailView({ name }: { name: string }) {
 			<DetailCard title="Configuration" icon={ShieldCheck}>
 				<dl className="divide-y divide-border">
 					<DetailRow label="Owner">
-						<BindingOwner binding={binding} subjectName={subjectName} />
+						<BindingOwner binding={binding} />
 					</DetailRow>
 					<DetailRow label="Policy">
 						{policy ? (
@@ -107,11 +105,11 @@ export function PolicyBindingDetailView({ name }: { name: string }) {
 				</dl>
 			</DetailCard>
 
-			<DetailCard title="Subjects" icon={Users}>
-				{subjects.length === 0 ? (
-					<DetailEmpty>This binding names no subjects.</DetailEmpty>
+			<DetailCard title="Accounts" icon={Building2}>
+				{accountIds.length === 0 ? (
+					<DetailEmpty>This binding holds no accounts.</DetailEmpty>
 				) : (
-					<SubjectChips subjects={subjects} subjectName={subjectName} />
+					<AccountChips accountIds={accountIds} />
 				)}
 			</DetailCard>
 

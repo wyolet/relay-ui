@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
+import { accountListQueryOptions } from "@/api/hooks/accounts";
 import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
 import { keysListQueryOptions } from "@/api/hooks/keys";
@@ -11,6 +12,7 @@ import { teamsListQueryOptions } from "@/api/hooks/teams";
 import type { UsageGroupBy } from "@/api/hooks/usage";
 import { usersListQueryOptions } from "@/api/hooks/users";
 import { displayLabel } from "@/lib/displayLabel";
+import { refusalLabel } from "@/lib/refusal";
 
 type Labelable = { name: string; displayName?: string };
 
@@ -64,8 +66,13 @@ export function useGroupLabeler(
 		...usersListQueryOptions,
 		enabled: groupBy === "principal_id" && !served,
 	});
+	const accounts = useQuery({
+		...accountListQueryOptions,
+		enabled: groupBy === "lane_account_id" && !served,
+	});
 
 	return useMemo(() => {
+		if (groupBy === "refusal") return refusalLabel;
 		function index<T>(
 			items: readonly T[] | null | undefined,
 			keyOf: (r: T) => string | undefined,
@@ -130,7 +137,12 @@ export function useGroupLabeler(
 			);
 			for (const u of users.data ?? [])
 				map.set(u.id, u.username || u.email || u.id);
-		}
+		} else if (groupBy === "lane_account_id")
+			map = index(
+				accounts.data?.items,
+				(r) => r.metadata.id,
+				(r) => r.metadata,
+			);
 
 		return (value: string) => served?.[value] || map?.get(value) || value;
 	}, [
@@ -145,5 +157,6 @@ export function useGroupLabeler(
 		projects.data,
 		serviceAccounts.data,
 		users.data,
+		accounts.data,
 	]);
 }

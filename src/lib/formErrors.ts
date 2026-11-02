@@ -8,6 +8,19 @@ export function firstError(
 	return undefined;
 }
 
+/**
+ * A field's first error once it was touched or a submit was tried. The
+ * form-level validator fills every field's errors on the first change, so
+ * untouched fields would otherwise turn red while the user types elsewhere.
+ */
+export function shownError(
+	meta: { errors?: readonly unknown[]; isTouched?: boolean } | undefined,
+	submissionAttempts: number,
+): string | undefined {
+	if (!meta?.isTouched && submissionAttempts === 0) return undefined;
+	return firstError(meta?.errors);
+}
+
 /** Form-level validator that maps each field path to its first zod issue. */
 export function zodFieldValidator<V>(schema: z.ZodType) {
 	return ({ value }: { value: V }) => {

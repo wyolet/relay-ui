@@ -6,7 +6,7 @@ import { useAuth } from "@/api/auth";
 import { type Account, useAccounts } from "@/api/hooks/accounts";
 import { useCreateHostKey, useUpdateHostKey } from "@/api/hooks/hostkeys";
 import { useHosts } from "@/api/hooks/hosts";
-import { useDetachHostKeyFromPolicy, usePolicies } from "@/api/hooks/policies";
+import { usePolicies } from "@/api/hooks/policies";
 import { usePools } from "@/api/hooks/pools";
 import type {
 	HostKey,
@@ -18,7 +18,7 @@ import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
 import { useOwnerOptions } from "@/hooks/useOwnerOptions";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
-import { firstError, zodFieldValidator } from "@/lib/formErrors";
+import { shownError, zodFieldValidator } from "@/lib/formErrors";
 import { ALL_OWNER_SCOPES, PERSONAL_OWNER } from "@/lib/ownerScopes";
 import { randomSuffix, slugify } from "@/lib/slug";
 import { toast } from "@/shared/Toast";
@@ -136,7 +136,6 @@ export function useHostKeyForm({
 	const isEdit = hostKey !== undefined;
 	const createHostKey = useCreateHostKey();
 	const updateHostKey = useUpdateHostKey();
-	const { detach, isPending: isDetachPending } = useDetachHostKeyFromPolicy();
 	const toastSaveError = useSaveErrorToast();
 	const { userId } = useAuth();
 	const { data: hostsData } = useHosts();
@@ -289,25 +288,25 @@ export function useHostKeyForm({
 		? (hostKey?.metadata.name ?? "")
 		: computeSlug(values.displayName);
 	const displayNameError = useStore(form.store, (s) =>
-		firstError(s.fieldMeta?.displayName?.errors),
+		shownError(s.fieldMeta?.displayName, s.submissionAttempts),
 	);
 	const descriptionError = useStore(form.store, (s) =>
-		firstError(s.fieldMeta?.description?.errors),
+		shownError(s.fieldMeta?.description, s.submissionAttempts),
 	);
 	const ownerError = useStore(form.store, (s) =>
-		firstError(s.fieldMeta?.owner?.errors),
+		shownError(s.fieldMeta?.owner, s.submissionAttempts),
 	);
 	const hostIdError = useStore(form.store, (s) =>
-		firstError(s.fieldMeta?.hostId?.errors),
+		shownError(s.fieldMeta?.hostId, s.submissionAttempts),
 	);
 	const envVarError = useStore(form.store, (s) =>
-		firstError(s.fieldMeta?.envVar?.errors),
+		shownError(s.fieldMeta?.envVar, s.submissionAttempts),
 	);
 	const envVarReservedPrefix = useStore(form.store, (s) =>
 		s.values.kind === "env" ? reservedEnvPrefix(s.values.envVar) : undefined,
 	);
 	const valueError = useStore(form.store, (s) =>
-		firstError(s.fieldMeta?.value?.errors),
+		shownError(s.fieldMeta?.value, s.submissionAttempts),
 	);
 
 	const attachedPolicies = useMemo(
@@ -356,18 +355,6 @@ export function useHostKeyForm({
 		form.setFieldValue("accountId", accountId);
 	}
 
-	async function detachFromPolicy(policyId: string) {
-		if (!hostKey) {
-			toast("error", "Credential not loaded.");
-			return;
-		}
-		await detach({
-			policyId,
-			hostKeyId: hostKey.metadata.id ?? "",
-			policies: policiesData.items ?? [],
-		});
-	}
-
 	return {
 		form,
 		values,
@@ -385,8 +372,6 @@ export function useHostKeyForm({
 		accountOptions,
 		hostSelected,
 		attachedPolicies,
-		detachFromPolicy,
-		isDetachPending,
 		setHost,
 		setOwner,
 		setAccount,

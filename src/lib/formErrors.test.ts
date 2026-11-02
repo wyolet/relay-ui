@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { z } from "zod";
-import { firstError, zodFieldValidator } from "@/lib/formErrors";
+import { firstError, shownError, zodFieldValidator } from "@/lib/formErrors";
 
 describe("firstError", () => {
 	test("returns the first string, skipping other error shapes", () => {
@@ -27,5 +27,18 @@ describe("zodFieldValidator", () => {
 		expect(validate({ value: { name: "", tags: ["a", ""] } })).toEqual({
 			fields: { name: "required", "tags.1": "empty tag" },
 		});
+	});
+});
+
+describe("shownError", () => {
+	const meta = { errors: ["Required"], isTouched: false };
+
+	test("hides an untouched field's error until a submit is tried", () => {
+		expect(shownError(meta, 0)).toBeUndefined();
+		expect(shownError(meta, 1)).toBe("Required");
+	});
+
+	test("shows a touched field's error at once", () => {
+		expect(shownError({ ...meta, isTouched: true }, 0)).toBe("Required");
 	});
 });

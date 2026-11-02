@@ -69,11 +69,11 @@ export function teamReferencesQueryOptions(id: string) {
 	});
 }
 
-/** A team owns projects, and every project-owned row hangs off those. */
+/** A team owns projects, and every project-owned row hangs off those; it also has an account. */
 function invalidateTeamDependents(
 	queryClient: ReturnType<typeof useQueryClient>,
 ): void {
-	for (const key of [["teams"], ["projects"]]) {
+	for (const key of [["teams"], ["projects"], ["accounts"]]) {
 		void queryClient.invalidateQueries({ queryKey: key });
 	}
 }

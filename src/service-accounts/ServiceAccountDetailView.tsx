@@ -9,9 +9,10 @@ import {
 } from "@/api/hooks/serviceAccounts";
 import { displayLabel } from "@/lib/displayLabel";
 import { EraseBodiesButton } from "@/logs/EraseBodiesButton";
-import { PrincipalPolicy } from "@/policy-bindings/PrincipalPolicy";
+import { AccountPolicy } from "@/policy-bindings/AccountPolicy";
 import { useToggleServiceAccountEnabled } from "@/service-accounts/useToggleServiceAccountEnabled";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
+import { DetailCard, DetailRow } from "@/shared/DetailCard";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
 import { DetailPageHeader } from "@/shared/DetailPageHeader";
 import { StatusBadge } from "@/shared/StatusBadge";
@@ -88,9 +89,9 @@ export function ServiceAccountDetailView({ name }: { name: string }) {
 				</DetailHeaderActions>
 			</DetailPageHeader>
 
-			<Card title="Configuration" icon={ShieldCheck}>
+			<DetailCard title="Configuration" icon={ShieldCheck}>
 				<dl className="divide-y divide-border">
-					<Row label="Project">
+					<DetailRow label="Project">
 						{project ? (
 							<span className="text-foreground">
 								{displayLabel(project.metadata)}
@@ -98,16 +99,16 @@ export function ServiceAccountDetailView({ name }: { name: string }) {
 						) : (
 							<code className="font-mono text-[11px]">{sa.spec.projectId}</code>
 						)}
-					</Row>
-					<Row label="Policy">
-						<PrincipalPolicy
-							principal={{ kind: "serviceaccount", id: sa.metadata.id ?? "" }}
-						/>
-					</Row>
+					</DetailRow>
+					<AccountPolicy
+						accountRef={{
+							ownerOf: { kind: "serviceaccount", id: sa.metadata.id ?? "" },
+						}}
+					/>
 				</dl>
-			</Card>
+			</DetailCard>
 
-			<Card title="References" icon={Link2}>
+			<DetailCard title="References" icon={Link2}>
 				{(refs.items ?? []).length === 0 ? (
 					<p className="text-xs text-muted-foreground">
 						Nothing points at this service account yet.
@@ -127,7 +128,7 @@ export function ServiceAccountDetailView({ name }: { name: string }) {
 						))}
 					</ul>
 				)}
-			</Card>
+			</DetailCard>
 
 			{del.target && (
 				<DeleteConfirm
@@ -138,45 +139,6 @@ export function ServiceAccountDetailView({ name }: { name: string }) {
 					error={del.error}
 				/>
 			)}
-		</div>
-	);
-}
-
-function Card({
-	title,
-	icon: Icon,
-	children,
-}: {
-	title: string;
-	icon: typeof Bot;
-	children: React.ReactNode;
-}) {
-	return (
-		<section className="rounded-md border border-border bg-card">
-			<header className="flex items-center gap-1.5 border-b border-border px-4 py-2.5">
-				<Icon className="w-3.5 h-3.5 text-muted-foreground" aria-hidden />
-				<h2 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-					{title}
-				</h2>
-			</header>
-			<div className="px-4 py-3">{children}</div>
-		</section>
-	);
-}
-
-function Row({
-	label,
-	children,
-}: {
-	label: string;
-	children: React.ReactNode;
-}) {
-	return (
-		<div className="py-3 first:pt-0 last:pb-0 grid grid-cols-1 sm:grid-cols-[160px_1fr] gap-1 sm:gap-4">
-			<dt className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-				{label}
-			</dt>
-			<dd className="text-xs text-foreground min-w-0">{children}</dd>
 		</div>
 	);
 }

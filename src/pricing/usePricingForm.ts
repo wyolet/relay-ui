@@ -13,7 +13,7 @@ import type { components } from "@/api/types.gen";
 import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
-import { firstError, zodFieldValidator } from "@/lib/formErrors";
+import { firstError, shownError, zodFieldValidator } from "@/lib/formErrors";
 import { randomSuffix, slugify } from "@/lib/slug";
 import { PRICING_METERS, type PRICING_UNITS } from "@/lib/usage-math/pricing";
 import { toast } from "@/shared/Toast";
@@ -260,19 +260,19 @@ export function usePricingForm({
 	const values = useStore(form.store, (s) => s.values);
 	const slugPreview = computeSlug(values.displayName);
 	const displayNameError = useStore(form.store, (s) =>
-		firstError(s.fieldMeta?.displayName?.errors),
+		shownError(s.fieldMeta?.displayName, s.submissionAttempts),
 	);
 	const currencyError = useStore(form.store, (s) =>
-		firstError(s.fieldMeta?.currency?.errors),
+		shownError(s.fieldMeta?.currency, s.submissionAttempts),
 	);
 	const hostError = useStore(form.store, (s) =>
-		firstError(s.fieldMeta?.host?.errors),
+		shownError(s.fieldMeta?.host, s.submissionAttempts),
 	);
 	const targetModelsError = useStore(form.store, (s) =>
-		firstError(s.fieldMeta?.targetModels?.errors),
+		shownError(s.fieldMeta?.targetModels, s.submissionAttempts),
 	);
 	const ratesError = useStore(form.store, (s) =>
-		firstError(s.fieldMeta?.rates?.errors),
+		shownError(s.fieldMeta?.rates, s.submissionAttempts),
 	);
 	const rateErrors = useStore(form.store, (s) => {
 		const meta = s.fieldMeta ?? {};

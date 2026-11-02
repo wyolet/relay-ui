@@ -33,22 +33,15 @@ interface Props {
 export function PolicyModelsTab({ policy }: Props) {
 	const rows = usePolicyModels(policy.metadata.name);
 	const grants = policy.spec.models ?? [];
-
-	if (grants.length === 0) {
-		return (
-			<EmptyPanel title="No catalog refs" className="mt-2">
-				This policy currently grants nothing. Add catalog refs in the edit form.
-			</EmptyPanel>
-		);
-	}
+	const allAvailable = grants.length === 0;
 
 	if (rows.length === 0) {
 		return (
 			<div className="flex flex-col gap-3">
 				<EmptyPanel title="No reachable models" className="mt-2">
-					The catalog refs on this policy don't match any model currently in the
-					catalog. They may match models added later, or you may need to revisit
-					them.
+					{allAvailable
+						? "This policy allows every model its pools serve, and no linked pool serves one yet."
+						: "The models listed on this policy don't match any model a linked pool serves. They may match models added later, or you may need to revisit them."}
 				</EmptyPanel>
 				<ExcludedModelsPanel policyName={policy.metadata.name} />
 			</div>
@@ -79,8 +72,10 @@ export function PolicyModelsTab({ policy }: Props) {
 	return (
 		<div className="flex flex-col gap-4 pt-2">
 			<div className="text-[11px] text-muted-foreground">
-				Grouped by host. {grants.length} catalog grant
-				{grants.length === 1 ? "" : "s"} reach{" "}
+				Grouped by host.{" "}
+				{allAvailable
+					? "All available models: the pools reach "
+					: `${grants.length} entr${grants.length === 1 ? "y reaches" : "ies reach"} `}
 				<span className="text-foreground tabular-nums">
 					{distinctModels.size}
 				</span>{" "}

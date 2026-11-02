@@ -34,7 +34,6 @@ export interface PickerIndex {
 	providersByName: Map<string, ProviderRow>;
 	modelRows: ModelRow[];
 	modelsByProvider: Map<string, ModelRow[]>;
-	bindingsByHostName: Map<string, { provider: string; model: string }[]>;
 }
 
 /**
@@ -43,11 +42,12 @@ export interface PickerIndex {
  * pagination-proof — the picker never re-derives bindings from the heavyweight
  * `/models`/`/hosts`/`/providers` lists.
  *
- * When `restrictTo` is given (a parent policy's allowed catalog), rows are
- * trimmed to only what those refs cover; otherwise the whole graph is exposed.
+ * When `restrictTo` is given (a parent policy's models), rows are trimmed to
+ * only what those refs cover; otherwise the whole graph is exposed.
  */
 export function usePickerCatalog(restrictTo?: readonly string[]): PickerIndex {
-	const { data: graph } = useCatalogGraph();
+	// Policies don't gate on deprecation, so deprecated models are pickable too.
+	const { data: graph } = useCatalogGraph({ includeDeprecated: true });
 
 	const restrictRefs = useMemo(() => {
 		if (!restrictTo) return null;
@@ -103,10 +103,6 @@ function buildIndex(
 
 	const modelRows: ModelRow[] = [];
 	const modelsByProvider = new Map<string, ModelRow[]>();
-	const bindingsByHostName = new Map<
-		string,
-		{ provider: string; model: string }[]
-	>();
 
 	for (const m of graph.models ?? []) {
 		const provider = providerNameById.get(m.providerId);
@@ -124,9 +120,6 @@ function buildIndex(
 				continue;
 			}
 			if (!hostNames.includes(host)) hostNames.push(host);
-			const list = bindingsByHostName.get(host) ?? [];
-			list.push({ provider, model: m.name });
-			bindingsByHostName.set(host, list);
 			usedHosts.add(host);
 		}
 		if (restricted && hostNames.length === 0) continue;
@@ -159,6 +152,5 @@ function buildIndex(
 		providersByName: new Map(providers.map((p) => [p.name, p])),
 		modelRows,
 		modelsByProvider,
-		bindingsByHostName,
 	};
 }

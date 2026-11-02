@@ -1,7 +1,10 @@
 import { describe, expect, it } from "bun:test";
 import {
+	budgetLinkShared,
+	budgetLinksForIds,
 	moveItem,
 	type PolicySpecValues,
+	rateLimitRowShared,
 	specFromFormValues,
 	specToFormValues,
 } from "./policyFormSpec";
@@ -10,46 +13,42 @@ const EMPTY: PolicySpecValues = {
 	poolIds: [],
 	models: [],
 	rateLimits: [],
-	budgetIds: [],
+	budgets: [],
 	enabled: true,
-	includeDeprecated: false,
-	payloadLoggingEnabled: false,
 };
 
 describe("specFromFormValues", () => {
-	it("sends empty lists as null", () => {
+	it("sends empty link lists as null and models as []", () => {
 		const spec = specFromFormValues(EMPTY);
 		expect(spec.poolIds).toBeNull();
-		expect(spec.models).toBeNull();
+		expect(spec.models).toEqual([]);
 		expect(spec.rateLimits).toBeNull();
-		expect(spec.budgetIds).toBeNull();
+		expect(spec.budgets).toBeNull();
 	});
 
 	it("keeps pool order and a lone unscoped rate limit as a link", () => {
 		const spec = specFromFormValues({
 			...EMPTY,
 			poolIds: ["p2", "p1"],
-			rateLimits: [{ rateLimitId: "rl", models: [] }],
+			rateLimits: [{ rateLimitId: "rl", models: [], shared: false }],
 		});
 		expect(spec.poolIds).toEqual(["p2", "p1"]);
-		expect(spec.rateLimits).toEqual([{ rateLimitId: "rl", models: null }]);
+		expect(spec.rateLimits).toEqual([
+			{ rateLimitId: "rl", models: null, shared: false },
+		]);
 	});
 
 	it("drops rate-limit rows without a rate limit", () => {
 		const spec = specFromFormValues({
 			...EMPTY,
 			rateLimits: [
-				{ rateLimitId: "", models: [] },
-				{ rateLimitId: "rl", models: ["openai/gpt-5"] },
+				{ rateLimitId: "", models: [], shared: true },
+				{ rateLimitId: "rl", models: ["openai/gpt-5"], shared: true },
 			],
 		});
 		expect(spec.rateLimits).toEqual([
-			{ rateLimitId: "rl", models: ["openai/gpt-5"] },
+			{ rateLimitId: "rl", models: ["openai/gpt-5"], shared: true },
 		]);
-	});
-
-	it("never writes credentialIds", () => {
-		expect("credentialIds" in specFromFormValues(EMPTY)).toBe(false);
 	});
 });
 
@@ -58,17 +57,67 @@ describe("specToFormValues", () => {
 		const values: PolicySpecValues = {
 			poolIds: ["p1"],
 			models: ["anthropic"],
-			rateLimits: [{ rateLimitId: "rl", models: ["anthropic/claude"] }],
-			budgetIds: ["b1"],
+			rateLimits: [
+				{ rateLimitId: "rl", models: ["anthropic/claude"], shared: false },
+			],
+			budgets: [{ budgetId: "b1", shared: false }],
 			enabled: false,
-			includeDeprecated: true,
-			payloadLoggingEnabled: true,
 		};
 		expect(specToFormValues(specFromFormValues(values))).toEqual(values);
 	});
 
-	it("defaults omitted fields", () => {
+	it("defaults omitted fields, with links shared", () => {
 		expect(specToFormValues({})).toEqual(EMPTY);
+		const values = specToFormValues({
+			rateLimits: [{ rateLimitId: "rl" }],
+			budgets: [{ budgetId: "b1" }],
+		});
+		expect(values.rateLimits[0]?.shared).toBe(true);
+		expect(values.budgets[0]?.shared).toBe(true);
+	});
+});
+
+describe("budgetLinksForIds", () => {
+	it("keeps shared on kept links and starts new ones shared", () => {
+		const links = [
+			{ budgetId: "a", shared: false },
+			{ budgetId: "b", shared: true },
+		];
+		expect(budgetLinksForIds(["b", "a", "c"], links)).toEqual([
+			{ budgetId: "b", shared: true },
+			{ budgetId: "a", shared: false },
+			{ budgetId: "c", shared: true },
+		]);
+	});
+});
+
+describe("rateLimitRowShared", () => {
+	const links = [
+		{ rateLimitId: "rl", models: ["openai"], shared: false },
+		{ rateLimitId: "rl", models: ["anthropic", "google"], shared: true },
+	];
+
+	it("matches the link by limit and model scope", () => {
+		expect(
+			rateLimitRowShared(links, { id: "rl", models: ["google", "anthropic"] }),
+		).toBe(true);
+		expect(rateLimitRowShared(links, { id: "rl", models: ["openai"] })).toBe(
+			false,
+		);
+	});
+
+	it("falls back to the first link to the limit, then to shared", () => {
+		expect(rateLimitRowShared(links, { id: "rl", models: ["x"] })).toBe(false);
+		expect(rateLimitRowShared(links, { id: "other" })).toBe(true);
+	});
+});
+
+describe("budgetLinkShared", () => {
+	it("reads the link's flag, shared when omitted", () => {
+		const links = [{ budgetId: "a", shared: false }, { budgetId: "b" }];
+		expect(budgetLinkShared(links, "a")).toBe(false);
+		expect(budgetLinkShared(links, "b")).toBe(true);
+		expect(budgetLinkShared(links, "c")).toBe(true);
 	});
 });
 

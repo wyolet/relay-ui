@@ -13,6 +13,7 @@ import { poolListQueryOptions } from "@/api/hooks/pools";
 import { providersListQueryOptions } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
 import { serviceAccountsListQueryOptions } from "@/api/hooks/serviceAccounts";
+import { usersListQueryOptions } from "@/api/hooks/users";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { HostKeysTable } from "@/host-keys/HostKeysTable";
 import { KeysTable, toKeysParams } from "@/keys/KeysTable";
@@ -52,6 +53,7 @@ export const Route = createFileRoute("/_authenticated/keys")({
 		void context.queryClient.prefetchQuery(providersListQueryOptions);
 		void context.queryClient.prefetchQuery(bindingsListQueryOptions);
 		void context.queryClient.prefetchQuery(accountListQueryOptions);
+		void context.queryClient.prefetchQuery(usersListQueryOptions);
 		void context.queryClient.prefetchQuery(poolListQueryOptions);
 		return null;
 	},

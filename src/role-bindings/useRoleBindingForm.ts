@@ -14,7 +14,7 @@ type Owner = components["schemas"]["Owner"];
 import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
-import { firstError, zodFieldValidator } from "@/lib/formErrors";
+import { shownError, zodFieldValidator } from "@/lib/formErrors";
 import { randomSuffix, slugify } from "@/lib/slug";
 import {
 	fromSubjectRows,
@@ -224,19 +224,19 @@ export function useRoleBindingForm({
 		? (binding?.metadata.name ?? "")
 		: computeSlug(values.displayName);
 	const displayNameError = useStore(form.store, (s) =>
-		firstError(s.fieldMeta?.displayName?.errors),
+		shownError(s.fieldMeta?.displayName, s.submissionAttempts),
 	);
 	const descriptionError = useStore(form.store, (s) =>
-		firstError(s.fieldMeta?.description?.errors),
+		shownError(s.fieldMeta?.description, s.submissionAttempts),
 	);
 	const roleIdError = useStore(form.store, (s) =>
-		firstError(s.fieldMeta?.roleId?.errors),
+		shownError(s.fieldMeta?.roleId, s.submissionAttempts),
 	);
 	const scopeIdError = useStore(form.store, (s) =>
-		firstError(s.fieldMeta?.scopeId?.errors),
+		shownError(s.fieldMeta?.scopeId, s.submissionAttempts),
 	);
 	const subjectsError = useStore(form.store, (s) =>
-		firstError(s.fieldMeta?.subjects?.errors),
+		shownError(s.fieldMeta?.subjects, s.submissionAttempts),
 	);
 
 	return {

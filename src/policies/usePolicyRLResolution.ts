@@ -25,7 +25,6 @@ export interface PolicyRLResolution {
  * label lookups, for the edit picker's scope descriptions. */
 export function usePolicyRLResolution(
 	links: readonly { rateLimitId: string; models: string[] }[],
-	includeDeprecated: boolean,
 ): PolicyRLResolution {
 	const { data: providersData } = useProviders();
 	const { data: modelsData } = useModels();
@@ -40,9 +39,9 @@ export function usePolicyRLResolution(
 				models: modelsData.items ?? [],
 				hosts: hostsData.items ?? [],
 				bindings: hostBindingsData.items ?? [],
-				includeDeprecated,
+				includeDeprecated: true,
 			}),
-		[providersData, modelsData, hostsData, hostBindingsData, includeDeprecated],
+		[providersData, modelsData, hostsData, hostBindingsData],
 	);
 
 	const labels = useMemo<LabelLookups>(() => {

@@ -18,6 +18,8 @@ interface Props {
 	onChange: (ids: string[]) => void;
 	/** Rank the rows and let the operator reorder them. */
 	ordered?: boolean;
+	/** Extra control shown on each linked row, before its remove button. */
+	renderRowControl?: (choice: LinkChoice) => ReactNode;
 	addLabel: string;
 	emptyText: string;
 }
@@ -27,6 +29,7 @@ export function PolicyLinkPicker({
 	choices,
 	onChange,
 	ordered,
+	renderRowControl,
 	addLabel,
 	emptyText,
 }: Props) {
@@ -59,6 +62,7 @@ export function PolicyLinkPicker({
 									/>
 								</>
 							)}
+							{renderRowControl?.(c)}
 							<IconButton
 								icon={X}
 								label={`Remove ${c.label}`}
@@ -97,10 +101,7 @@ export function PolicyLinkPicker({
 }
 
 /** Detail routes a linked row can open, keyed by slug. */
-export type LinkChoiceRoute =
-	| "/pools/$name"
-	| "/policies/budgets/$name"
-	| "/host-keys/$name";
+export type LinkChoiceRoute = "/pools/$name" | "/policies/budgets/$name";
 
 /** One linked row; `rank` marks an ordered list, `children` are trailing actions. */
 export function LinkChoiceRow({

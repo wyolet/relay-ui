@@ -18,7 +18,7 @@ import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
 import { useOwnerOptions } from "@/hooks/useOwnerOptions";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
-import { firstError, zodFieldValidator } from "@/lib/formErrors";
+import { firstError, shownError, zodFieldValidator } from "@/lib/formErrors";
 import { ALL_OWNER_SCOPES, PERSONAL_OWNER } from "@/lib/ownerScopes";
 import {
 	type SystemReqCap,
@@ -292,13 +292,13 @@ export function useRateLimitForm({
 	const values = useStore(form.store, (s) => s.values);
 	const slugPreview = computeSlug(values.displayName);
 	const displayNameError = useStore(form.store, (s) =>
-		firstError(s.fieldMeta?.displayName?.errors),
+		shownError(s.fieldMeta?.displayName, s.submissionAttempts),
 	);
 	const ownerError = useStore(form.store, (s) =>
-		firstError(s.fieldMeta?.owner?.errors),
+		shownError(s.fieldMeta?.owner, s.submissionAttempts),
 	);
 	const rulesError = useStore(form.store, (s) =>
-		firstError(s.fieldMeta?.rules?.errors),
+		shownError(s.fieldMeta?.rules, s.submissionAttempts),
 	);
 	const ruleErrors = useStore(form.store, (s) => {
 		const meta = s.fieldMeta ?? {};
