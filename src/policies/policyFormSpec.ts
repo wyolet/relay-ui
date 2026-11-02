@@ -1,44 +1,50 @@
-import type { PolicySpec } from "@/api/types/policy";
+import type {
+	PolicyBudgetLink,
+	PolicyRateLimitLink,
+	PolicySpec,
+} from "@/api/types/policy";
 
 export interface RateLimitLinkValue {
 	rateLimitId: string;
 	models: string[];
+	shared: boolean;
 }
 
-/** The spec fields the policy form edits; the rest (credentialIds) ride
- * along from the loaded policy untouched. */
+export interface BudgetLinkValue {
+	budgetId: string;
+	shared: boolean;
+}
+
 export interface PolicySpecValues {
 	poolIds: string[];
+	/** Empty allows every model the policy's pools serve. */
 	models: string[];
 	rateLimits: RateLimitLinkValue[];
-	budgetIds: string[];
+	budgets: BudgetLinkValue[];
 	enabled: boolean;
-	includeDeprecated: boolean;
-	payloadLoggingEnabled: boolean;
 }
 
 function listOrNull<T>(items: T[]): T[] | null {
 	return items.length > 0 ? items : null;
 }
 
-export function specFromFormValues(
-	values: PolicySpecValues,
-): Omit<PolicySpec, "credentialIds"> {
+export function specFromFormValues(values: PolicySpecValues): PolicySpec {
 	return {
 		enabled: values.enabled,
 		poolIds: listOrNull(values.poolIds),
-		models: listOrNull(values.models),
+		models: values.models,
 		rateLimits: listOrNull(
 			values.rateLimits
 				.filter((l) => l.rateLimitId)
 				.map((l) => ({
 					rateLimitId: l.rateLimitId,
 					models: listOrNull(l.models),
+					shared: l.shared,
 				})),
 		),
-		budgetIds: listOrNull(values.budgetIds),
-		includeDeprecated: values.includeDeprecated,
-		payloadLoggingEnabled: values.payloadLoggingEnabled,
+		budgets: listOrNull(
+			values.budgets.map((b) => ({ budgetId: b.budgetId, shared: b.shared })),
+		),
 	};
 }
 
@@ -49,12 +55,51 @@ export function specToFormValues(spec: PolicySpec): PolicySpecValues {
 		rateLimits: (spec.rateLimits ?? []).map((l) => ({
 			rateLimitId: l.rateLimitId,
 			models: l.models ?? [],
+			shared: l.shared ?? true,
 		})),
-		budgetIds: spec.budgetIds ?? [],
+		budgets: (spec.budgets ?? []).map((b) => ({
+			budgetId: b.budgetId,
+			shared: b.shared ?? true,
+		})),
 		enabled: spec.enabled ?? true,
-		includeDeprecated: spec.includeDeprecated ?? false,
-		payloadLoggingEnabled: spec.payloadLoggingEnabled ?? false,
 	};
+}
+
+/** Budget links for `ids` in that order, keeping each kept link's `shared`;
+ * a newly added budget starts shared. */
+export function budgetLinksForIds(
+	ids: readonly string[],
+	links: readonly BudgetLinkValue[],
+): BudgetLinkValue[] {
+	const sharedById = new Map(links.map((l) => [l.budgetId, l.shared]));
+	return ids.map((budgetId) => ({
+		budgetId,
+		shared: sharedById.get(budgetId) ?? true,
+	}));
+}
+
+/** The `shared` flag of the spec link a resolved rate-limit row came from:
+ * same rate limit and same model scope, else the first link to that limit. */
+export function rateLimitRowShared(
+	links: readonly PolicyRateLimitLink[],
+	row: { id: string; models?: readonly string[] | null },
+): boolean {
+	const scope = sortedKey(row.models ?? []);
+	const sameLimit = links.filter((l) => l.rateLimitId === row.id);
+	const link =
+		sameLimit.find((l) => sortedKey(l.models ?? []) === scope) ?? sameLimit[0];
+	return link?.shared ?? true;
+}
+
+export function budgetLinkShared(
+	links: readonly PolicyBudgetLink[],
+	budgetId: string,
+): boolean {
+	return links.find((l) => l.budgetId === budgetId)?.shared ?? true;
+}
+
+function sortedKey(models: readonly string[]): string {
+	return [...models].sort().join(",");
 }
 
 /** Moves the item at `from` one step up (-1) or down (+1); out-of-range is a no-op. */

@@ -35,9 +35,9 @@ function describeCatalog(p: Policy): {
 	label: string;
 	tone: "all" | "restricted" | "none";
 } {
-	const refs = p.spec.models ?? null;
-	if (refs === null || refs.length === 0) {
-		return { label: "All catalog", tone: "all" };
+	const refs = p.spec.models ?? [];
+	if (refs.length === 0) {
+		return { label: "All available", tone: "all" };
 	}
 	return {
 		label: `${refs.length} grant${refs.length === 1 ? "" : "s"}`,
@@ -119,7 +119,7 @@ export function PoliciesTable() {
 						<thead className="bg-muted/40">
 							<tr>
 								<Th variant="column">Name</Th>
-								<Th variant="column">Catalog</Th>
+								<Th variant="column">Models</Th>
 								<Th variant="column" align="right">
 									Pools
 								</Th>
@@ -279,7 +279,7 @@ function PolicyRow({
 				)}
 			</td>
 			<td className="px-3 py-2 text-sm text-foreground text-right tabular-nums">
-				{(policy.spec.budgetIds ?? []).length}
+				{(policy.spec.budgets ?? []).length}
 			</td>
 			<td className="px-3 py-2">
 				{canEdit ? (

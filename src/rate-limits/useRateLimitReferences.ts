@@ -6,6 +6,7 @@ export interface RateLimitPolicyRef {
 	policy: Policy;
 	/** The link's model scope; empty applies the limit to every request. */
 	models: readonly string[];
+	shared: boolean;
 }
 
 /**
@@ -21,7 +22,11 @@ export function useRateLimitReferences(
 		return (data.items ?? []).flatMap((policy) =>
 			(policy.spec.rateLimits ?? [])
 				.filter((l) => l.rateLimitId === rateLimitId)
-				.map((l) => ({ policy, models: l.models ?? [] })),
+				.map((l) => ({
+					policy,
+					models: l.models ?? [],
+					shared: l.shared ?? true,
+				})),
 		);
 	}, [data, rateLimitId]);
 }

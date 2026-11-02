@@ -1,5 +1,5 @@
 import type { CatalogRef } from "@/lib/catalogRef";
-import type { ModelRow, PickerIndex } from "@/models/usePickerCatalog";
+import type { PickerIndex } from "@/models/usePickerCatalog";
 
 interface RefCounts {
 	providers?: number;
@@ -11,29 +11,20 @@ interface RefCounts {
 export function refReachText(
 	ref: CatalogRef,
 	index: PickerIndex,
-	includeDeprecated: boolean,
 ): string | undefined {
-	return formatCounts(countsForRef(ref, index, includeDeprecated));
+	return formatCounts(countsForRef(ref, index));
 }
 
-function countsForRef(
-	ref: CatalogRef,
-	index: PickerIndex,
-	includeDeprecated: boolean,
-): RefCounts {
-	const filter = (rows: ModelRow[]) =>
-		includeDeprecated ? rows : rows.filter((r) => !r.deprecated);
+function countsForRef(ref: CatalogRef, index: PickerIndex): RefCounts {
 	const host = ref.host;
 
 	if (ref.kind === "host" && host) {
-		const rows = filter(
-			index.modelRows.filter((m) => m.hostNames.includes(host)),
-		);
+		const rows = index.modelRows.filter((m) => m.hostNames.includes(host));
 		const providers = new Set(rows.map((m) => m.provider));
 		return { providers: providers.size, models: rows.length };
 	}
 	if (!ref.provider) return {};
-	const providerRows = filter(index.modelsByProvider.get(ref.provider) ?? []);
+	const providerRows = index.modelsByProvider.get(ref.provider) ?? [];
 
 	if (ref.kind === "provider") {
 		const hosts = new Set<string>();
@@ -84,11 +75,11 @@ export function describeRef(ref: CatalogRef, index: PickerIndex): string {
 
 	switch (ref.kind) {
 		case "provider":
-			return `All ${providerLabel} models on every host`;
+			return `All ${providerLabel} models`;
 		case "provider-on-host":
 			return `All ${providerLabel} models on ${hostLabel}`;
 		case "model":
-			return `${modelLabel} on any host`;
+			return modelLabel ?? ref.raw;
 		case "binding":
 			return `${modelLabel} on ${hostLabel}`;
 		case "host":

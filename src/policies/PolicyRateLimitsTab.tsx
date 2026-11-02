@@ -1,11 +1,13 @@
 import { Link } from "@tanstack/react-router";
 import { Gauge } from "lucide-react";
 import type { Policy } from "@/api/types/policy";
+import { rateLimitRowShared } from "@/policies/policyFormSpec";
 import {
 	type UnthrottledModel,
 	usePolicyRateLimits,
 } from "@/policies/usePolicyRateLimits";
 import { RateLimitRuleChips } from "@/rate-limits/RateLimitRuleChips";
+import { SharedLinkLabel } from "@/rate-limits/SharedLinkLabel";
 import { AlertBanner } from "@/shared/AlertBanner";
 import { EmptyPanel } from "@/shared/EmptyPanel";
 
@@ -59,6 +61,11 @@ export function PolicyRateLimitsTab({ policy }: Props) {
 									all models
 								</span>
 							)}
+							<span className="ml-auto">
+								<SharedLinkLabel
+									shared={rateLimitRowShared(policy.spec.rateLimits ?? [], row)}
+								/>
+							</span>
 						</header>
 
 						<div className="px-3 py-2.5 flex flex-col gap-2.5">

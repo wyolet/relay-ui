@@ -1,12 +1,10 @@
 import { type Budget, useBudgets } from "@/api/hooks/budgets";
-import { useHostKeys } from "@/api/hooks/hostkeys";
 import { useHosts } from "@/api/hooks/hosts";
 import { type Pool, usePools } from "@/api/hooks/pools";
 import type { Host } from "@/api/types/host";
-import type { HostKey } from "@/api/types/hostkey";
 import { displayLabel } from "@/lib/displayLabel";
 
-/** One linkable row (pool, budget, host key) as the policy pickers show it. */
+/** One linkable row (pool, budget) as the policy pickers show it. */
 export interface LinkChoice {
 	id: string;
 	name: string;
@@ -61,17 +59,6 @@ function budgetChoice(budget: Budget): LinkChoice {
 	};
 }
 
-function hostKeyChoice(key: HostKey, hosts: readonly Host[]): LinkChoice {
-	const host = hosts.find((h) => h.metadata.id === key.spec.hostId);
-	return {
-		id: key.metadata.id ?? key.metadata.name,
-		name: key.metadata.name,
-		label: displayLabel(key.metadata),
-		meta: host ? displayLabel(host.metadata) : key.spec.hostId,
-		host,
-	};
-}
-
 export function usePoolChoices(selectedIds: readonly string[]): LinkChoices {
 	const { data: pools } = usePools();
 	const { data: hosts } = useHosts();
@@ -85,17 +72,4 @@ export function usePoolChoices(selectedIds: readonly string[]): LinkChoices {
 export function useBudgetChoices(selectedIds: readonly string[]): LinkChoices {
 	const { data } = useBudgets();
 	return splitChoices((data.items ?? []).map(budgetChoice), selectedIds);
-}
-
-/** Host keys a policy links directly; read-only, shown only when present. */
-export function useCredentialChoices(
-	selectedIds: readonly string[],
-): LinkChoice[] {
-	const { data: keys } = useHostKeys();
-	const { data: hosts } = useHosts();
-	const hostItems = hosts.items ?? [];
-	return splitChoices(
-		(keys.items ?? []).map((k) => hostKeyChoice(k, hostItems)),
-		selectedIds,
-	).selected;
 }
