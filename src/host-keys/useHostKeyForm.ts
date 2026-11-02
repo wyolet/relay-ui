@@ -52,12 +52,12 @@ export interface HostKeyFormValues {
 	enabled: boolean;
 }
 
-function emptyValues(): HostKeyFormValues {
+function emptyValues(account?: Account): HostKeyFormValues {
 	return {
 		displayName: "",
 		description: "",
-		hostId: "",
-		accountId: DEFAULT_ACCOUNT,
+		hostId: account?.spec.hostId ?? "",
+		accountId: account?.metadata.id ?? DEFAULT_ACCOUNT,
 		kind: "stored",
 		envVar: "",
 		value: "",
@@ -124,12 +124,15 @@ function buildSchema(isEdit: boolean) {
 interface UseHostKeyFormOptions {
 	open: boolean;
 	hostKey?: HostKey;
+	/** Creates the key in this provider account; host and account stay fixed. */
+	account?: Account;
 	onSaved: (savedName: string) => void;
 }
 
 export function useHostKeyForm({
 	open,
 	hostKey,
+	account,
 	onSaved,
 }: UseHostKeyFormOptions) {
 	const isEdit = hostKey !== undefined;
@@ -147,14 +150,18 @@ export function useHostKeyForm({
 		hostKey?.metadata.resourceVersion,
 	);
 
-	const { owner, usableBy, placement } = useFormOwner(hostKey?.metadata);
+	// Relay requires a key's account to have the key's owner.
+	const { owner, usableBy, placement } = useFormOwner(
+		hostKey?.metadata ?? account?.metadata,
+	);
+	const accountLocked = !hostKey && account !== undefined;
 
 	const initial = useMemo<HostKeyFormValues>(
 		() =>
 			hostKey
 				? hostKeyToValues(hostKey, accountsData.items ?? [])
-				: emptyValues(),
-		[hostKey, accountsData.items],
+				: emptyValues(account),
+		[hostKey, account, accountsData.items],
 	);
 	const suffixRef = useRef<string>(
 		hostKey?.metadata.name.match(/-(\d{4,8})$/)?.[1] ?? randomSuffix(),
@@ -330,11 +337,19 @@ export function useHostKeyForm({
 		{ host_id: [values.hostId], kind: ["provider"] },
 		hostSelected,
 	);
-	const accountOptions = buildAccountOptions(
-		usableAccounts,
-		values.hostId,
-		accounts.find((a) => a.metadata.id === hostKey?.spec.accountId),
-	);
+	const accountOptions =
+		accountLocked && account
+			? [
+					{
+						value: account.metadata.id ?? "",
+						label: displayLabel(account.metadata),
+					},
+				]
+			: buildAccountOptions(
+					usableAccounts,
+					values.hostId,
+					accounts.find((a) => a.metadata.id === hostKey?.spec.accountId),
+				);
 
 	// Accounts are scoped to one host; a change drops the choice back to the
 	// default account.
@@ -362,6 +377,7 @@ export function useHostKeyForm({
 		hostOptions,
 		accountOptions,
 		hostSelected,
+		accountLocked,
 		attachedPolicies,
 		setHost,
 		setAccount,
