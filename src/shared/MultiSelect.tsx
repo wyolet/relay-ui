@@ -62,13 +62,19 @@ export function MultiSelect({
 	);
 }
 
+/** A check-list entry; a disabled one shows its state but can't be toggled. */
+export interface CheckOption extends FilterOption {
+	disabled?: boolean;
+	hint?: string;
+}
+
 export function MultiCheckList({
 	options,
 	selected,
 	onToggle,
 	emptyLabel,
 }: {
-	options: readonly FilterOption[];
+	options: readonly CheckOption[];
 	selected: readonly string[];
 	onToggle: (value: string) => void;
 	emptyLabel: string;
@@ -108,8 +114,9 @@ export function MultiCheckList({
 						<li key={o.value}>
 							<OptionRow
 								aria-pressed={checked}
+								disabled={o.disabled}
 								onClick={() => onToggle(o.value)}
-								className="gap-2 rounded-md px-1 py-1.5 text-xs text-foreground hover:bg-muted/50"
+								className="gap-2 rounded-md px-1 py-1.5 text-xs text-foreground hover:bg-muted/50 disabled:hover:bg-transparent"
 							>
 								<span
 									className={cn(
@@ -123,6 +130,11 @@ export function MultiCheckList({
 									{checked && <Check className="size-3" />}
 								</span>
 								<span className="min-w-0 truncate">{o.label}</span>
+								{o.hint && (
+									<span className="ml-auto shrink-0 text-[11px] text-muted-foreground">
+										{o.hint}
+									</span>
+								)}
 							</OptionRow>
 						</li>
 					);
