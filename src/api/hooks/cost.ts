@@ -176,6 +176,8 @@ function sliceFor(
 			return { host_key_id: [id] };
 		case "lane_account_id":
 			return { lane_account_id: [id] };
+		case "via_account_id":
+			return { via_account_id: [id] };
 	}
 }
 
