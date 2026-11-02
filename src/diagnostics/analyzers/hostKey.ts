@@ -25,7 +25,7 @@ export function analyzeHostKey(
 		});
 	}
 
-	// No policy reaches the credential, through a pool or directly.
+	// No policy reaches the credential through a pool.
 	const userPolicies = hkId
 		? (graph.policiesByCredentialId.get(hkId) ?? []).filter(
 				(p) => p.metadata.owner?.kind !== "host",
@@ -35,7 +35,7 @@ export function analyzeHostKey(
 		out.push({
 			severity: "info",
 			code: "host-key.orphan",
-			message: "Not attached to any user policy.",
+			message: "No user policy links a pool holding it.",
 		});
 	}
 

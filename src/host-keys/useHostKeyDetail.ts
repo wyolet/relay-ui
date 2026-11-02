@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useAccounts } from "@/api/hooks/accounts";
 import { useDeleteHostKey, useHostKey } from "@/api/hooks/hostkeys";
 import { useHosts } from "@/api/hooks/hosts";
-import { useDetachHostKeyFromPolicy, usePolicies } from "@/api/hooks/policies";
+import { usePolicies } from "@/api/hooks/policies";
 import { usePools } from "@/api/hooks/pools";
 import type { Host } from "@/api/types/host";
 import { useToggleHostKeyEnabled } from "@/host-keys/useToggleHostKeyEnabled";
@@ -60,7 +60,6 @@ export function useHostKeyDetail({ name, onDeleted }: UseHostKeyDetailOptions) {
 		noun: "credential",
 		onDeleted,
 	});
-	const { detach, isPending: isDetachPending } = useDetachHostKeyFromPolicy();
 	const { setEnabled: setEnabledMutation, isPending: isToggling } =
 		useToggleHostKeyEnabled();
 
@@ -132,9 +131,9 @@ export function useHostKeyDetail({ name, onDeleted }: UseHostKeyDetailOptions) {
 			const overflow = refs.length > 3 ? ` (+${refs.length - 3} more)` : "";
 			toast(
 				"error",
-				`Detach from ${refs.length} ${
-					refs.length === 1 ? "policy" : "policies"
-				} first: ${preview}${overflow}.`,
+				`Remove it from its pools first; ${refs.length} ${
+					refs.length === 1 ? "policy reaches" : "policies reach"
+				} it: ${preview}${overflow}.`,
 			);
 			return;
 		}
@@ -155,14 +154,6 @@ export function useHostKeyDetail({ name, onDeleted }: UseHostKeyDetailOptions) {
 
 	async function setEnabled(next: boolean) {
 		await setEnabledMutation(hk, next);
-	}
-
-	async function detachFromPolicy(policyId: string) {
-		await detach({
-			policyId,
-			hostKeyId: hk.metadata.id ?? "",
-			policies: policiesData.items ?? [],
-		});
 	}
 
 	async function copyId() {
@@ -190,8 +181,6 @@ export function useHostKeyDetail({ name, onDeleted }: UseHostKeyDetailOptions) {
 		closeRotate,
 		setEnabled,
 		isToggling,
-		detachFromPolicy,
-		isDetachPending,
 		copyId,
 	};
 }

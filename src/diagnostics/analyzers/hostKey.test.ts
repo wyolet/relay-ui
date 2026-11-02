@@ -5,6 +5,7 @@ import {
 	makeHost,
 	makeHostKey,
 	makePolicy,
+	makePool,
 } from "@/diagnostics/fixtures";
 
 const codes = (ds: { code: string }[]) => ds.map((d) => d.code).sort();
@@ -23,25 +24,40 @@ describe("analyzeHostKey", () => {
 		expect(codes(ds)).toContain("host-key.host-disabled");
 	});
 
-	it("info: orphan when no user policy has this credential in credentialIds", () => {
+	it("info: orphan when no user policy links a pool holding this credential", () => {
 		const host = makeHost({ id: "h1", name: "openai" });
 		const hk = makeHostKey({ id: "k1", hostId: "h1" });
-		// policy doesn't reference k1 in credentialIds
-		const policy = makePolicy({ id: "p1", credentialIds: [] });
+		const pool = makePool({ id: "pool-1", hostId: "h1" });
+		const policy = makePolicy({ id: "p1", poolIds: ["pool-1"] });
 		const ds = analyzeHostKey(
 			hk,
-			graph({ hostKeys: [hk], hosts: [host], policies: [policy] }),
+			graph({
+				hostKeys: [hk],
+				hosts: [host],
+				pools: [pool],
+				policies: [policy],
+			}),
 		);
 		expect(codes(ds)).toContain("host-key.orphan");
 	});
 
-	it("no orphan when a user policy has this credential in credentialIds", () => {
+	it("no orphan when a user policy links a pool holding this credential", () => {
 		const host = makeHost({ id: "h1", name: "openai" });
 		const hk = makeHostKey({ id: "k1", hostId: "h1" });
-		const policy = makePolicy({ id: "p1", credentialIds: ["k1"] });
+		const pool = makePool({
+			id: "pool-1",
+			hostId: "h1",
+			credentialIds: ["k1"],
+		});
+		const policy = makePolicy({ id: "p1", poolIds: ["pool-1"] });
 		const ds = analyzeHostKey(
 			hk,
-			graph({ hostKeys: [hk], hosts: [host], policies: [policy] }),
+			graph({
+				hostKeys: [hk],
+				hosts: [host],
+				pools: [pool],
+				policies: [policy],
+			}),
 		);
 		expect(codes(ds)).not.toContain("host-key.orphan");
 	});

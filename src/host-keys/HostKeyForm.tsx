@@ -52,8 +52,6 @@ export function HostKeyForm({ hostKey, onSaved, onCancel }: HostKeyFormProps) {
 		accountOptions,
 		hostSelected,
 		attachedPolicies,
-		detachFromPolicy,
-		isDetachPending,
 		setHost,
 		setOwner,
 		setAccount,
@@ -232,7 +230,7 @@ export function HostKeyForm({ hostKey, onSaved, onCancel }: HostKeyFormProps) {
 					<FormSection
 						icon={Link2}
 						title="Linked by policies"
-						description="Policies that link this credential directly or through a pool. Detach removes a direct link; a pool link is removed on the pool."
+						description="Policies that reach this credential through a pool. Change the link on the pool."
 					>
 						{attachedPolicies.length === 0 ? (
 							<p className="text-xs text-muted-foreground">
@@ -264,11 +262,7 @@ export function HostKeyForm({ hostKey, onSaved, onCancel }: HostKeyFormProps) {
 												</p>
 											)}
 										</div>
-										<LinkedPolicyAction
-											row={p}
-											onDetach={(id) => void detachFromPolicy(id)}
-											detaching={isDetachPending}
-										/>
+										<LinkedPolicyAction row={p} />
 									</li>
 								))}
 							</ul>

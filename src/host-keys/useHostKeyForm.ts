@@ -6,7 +6,7 @@ import { useAuth } from "@/api/auth";
 import { type Account, useAccounts } from "@/api/hooks/accounts";
 import { useCreateHostKey, useUpdateHostKey } from "@/api/hooks/hostkeys";
 import { useHosts } from "@/api/hooks/hosts";
-import { useDetachHostKeyFromPolicy, usePolicies } from "@/api/hooks/policies";
+import { usePolicies } from "@/api/hooks/policies";
 import { usePools } from "@/api/hooks/pools";
 import type {
 	HostKey,
@@ -136,7 +136,6 @@ export function useHostKeyForm({
 	const isEdit = hostKey !== undefined;
 	const createHostKey = useCreateHostKey();
 	const updateHostKey = useUpdateHostKey();
-	const { detach, isPending: isDetachPending } = useDetachHostKeyFromPolicy();
 	const toastSaveError = useSaveErrorToast();
 	const { userId } = useAuth();
 	const { data: hostsData } = useHosts();
@@ -356,18 +355,6 @@ export function useHostKeyForm({
 		form.setFieldValue("accountId", accountId);
 	}
 
-	async function detachFromPolicy(policyId: string) {
-		if (!hostKey) {
-			toast("error", "Credential not loaded.");
-			return;
-		}
-		await detach({
-			policyId,
-			hostKeyId: hostKey.metadata.id ?? "",
-			policies: policiesData.items ?? [],
-		});
-	}
-
 	return {
 		form,
 		values,
@@ -385,8 +372,6 @@ export function useHostKeyForm({
 		accountOptions,
 		hostSelected,
 		attachedPolicies,
-		detachFromPolicy,
-		isDetachPending,
 		setHost,
 		setOwner,
 		setAccount,

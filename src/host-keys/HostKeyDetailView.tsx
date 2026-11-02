@@ -17,9 +17,8 @@ import { StatusBadge } from "@/shared/StatusBadge";
 
 const POLICY_COLUMNS = [
 	{ label: "Policy" },
-	{ label: "Link", className: "text-right" },
 	{ label: "Status", className: "text-right" },
-	{ label: "Action", className: "text-right" },
+	{ label: "Pools", className: "text-right" },
 ];
 
 export function HostKeyDetailView({ name }: { name: string }) {
@@ -39,8 +38,6 @@ export function HostKeyDetailView({ name }: { name: string }) {
 		closeRotate,
 		setEnabled,
 		isToggling,
-		detachFromPolicy,
-		isDetachPending,
 	} = useHostKeyDetail({
 		name,
 		onDeleted: () =>
@@ -166,11 +163,7 @@ export function HostKeyDetailView({ name }: { name: string }) {
 				</dl>
 			</Card>
 
-			<PoliciesPanel
-				rows={attachedPolicies}
-				onDetach={(id) => void detachFromPolicy(id)}
-				detaching={isDetachPending}
-			/>
+			<PoliciesPanel rows={attachedPolicies} />
 
 			{rotating && <SecretRotateDialog hk={hk} onClose={closeRotate} />}
 
@@ -187,21 +180,14 @@ export function HostKeyDetailView({ name }: { name: string }) {
 	);
 }
 
-function PoliciesPanel({
-	rows,
-	onDetach,
-	detaching,
-}: {
-	rows: LinkedPolicyRow[];
-	onDetach: (policyId: string) => void;
-	detaching: boolean;
-}) {
+function PoliciesPanel({ rows }: { rows: LinkedPolicyRow[] }) {
 	if (rows.length === 0) {
 		return (
 			<Card title="Linked by policies" icon={Link2}>
 				<DetailEmpty>
-					No policy links this credential. Principals without a caller policy
-					still reach it when it belongs to their own scope or to the system.
+					No policy links a pool holding this credential. Requests whose
+					policies link no pools still reach it when it belongs to their own
+					scope or to the system.
 				</DetailEmpty>
 			</Card>
 		);
@@ -234,9 +220,6 @@ function PoliciesPanel({
 								</div>
 							</div>
 						</Td>
-						<Td className="text-right text-[11px] text-muted-foreground">
-							{row.direct ? "Direct" : "Pool"}
-						</Td>
 						<Td className="text-right">
 							{row.enabled ? (
 								<span className="text-[11px] text-success">Enabled</span>
@@ -247,11 +230,7 @@ function PoliciesPanel({
 							)}
 						</Td>
 						<Td className="text-right">
-							<LinkedPolicyAction
-								row={row}
-								onDetach={onDetach}
-								detaching={detaching}
-							/>
+							<LinkedPolicyAction row={row} />
 						</Td>
 					</tr>
 				))}

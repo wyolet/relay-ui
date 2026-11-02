@@ -23,7 +23,6 @@ interface PolicyOpts {
 	id?: string;
 	name?: string;
 	enabled?: boolean;
-	credentialIds?: string[];
 	poolIds?: string[];
 	models?: string[];
 	rateLimits?: { rateLimitId: string; models?: string[] }[];
@@ -38,7 +37,6 @@ export function makePolicy(o: PolicyOpts = {}): Policy {
 		},
 		spec: {
 			enabled: o.enabled ?? true,
-			credentialIds: o.credentialIds ?? [],
 			poolIds: o.poolIds ?? [],
 			models: o.models ?? [],
 			rateLimits: o.rateLimits?.map((rl) => ({
