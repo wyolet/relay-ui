@@ -15,7 +15,6 @@ import { HostSelect } from "@/hosts/HostSelect";
 import { FormFooter } from "@/shared/FormFooter";
 import { FormSection } from "@/shared/FormSection";
 import { IdentitySection } from "@/shared/IdentitySection";
-import { OwnerSection } from "@/shared/OwnerSection";
 
 const KIND_OPTIONS: Record<HostKeyKind, { label: string; hint: string }> = {
 	stored: {
@@ -42,8 +41,7 @@ export function HostKeyForm({ hostKey, onSaved, onCancel }: HostKeyFormProps) {
 		slugPreview,
 		displayNameError,
 		descriptionError,
-		ownerOptions,
-		ownerError,
+		placement,
 		hostIdError,
 		envVarError,
 		envVarReservedPrefix,
@@ -53,7 +51,6 @@ export function HostKeyForm({ hostKey, onSaved, onCancel }: HostKeyFormProps) {
 		hostSelected,
 		attachedPolicies,
 		setHost,
-		setOwner,
 		setAccount,
 	} = useHostKeyForm({ open: true, hostKey, onSaved });
 
@@ -77,13 +74,7 @@ export function HostKeyForm({ hostKey, onSaved, onCancel }: HostKeyFormProps) {
 					descriptionError={descriptionError}
 					autoFocus={!isEdit}
 					placeholder="OpenAI production key"
-				/>
-
-				<OwnerSection
-					options={ownerOptions}
-					value={values.owner}
-					onChange={setOwner}
-					error={ownerError}
+					placement={placement}
 				/>
 
 				<FormSection

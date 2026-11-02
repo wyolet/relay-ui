@@ -84,10 +84,12 @@ export function useAccountsList(params: AccountsListParams) {
 export function useUsableAccounts(
 	usableBy: string | undefined,
 	params: AccountsListParams = {},
+	enabled = true,
 ): Account[] {
-	const { data } = useQuery(
-		accountListQuery({ ...params, usable_by: usableBy }),
-	);
+	const { data } = useQuery({
+		...accountListQuery({ ...params, usable_by: usableBy }),
+		enabled,
+	});
 	return data?.items ?? [];
 }
 

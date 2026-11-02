@@ -38,15 +38,26 @@ export function defaultAccountFor(
 	);
 }
 
-/** The default-account choice first, then the owner's named accounts at the host. */
+/**
+ * The default-account choice first, then the named provider accounts at the
+ * host the key's owner may use; `current` stays listed so an edit keeps it.
+ */
 export function accountOptions(
-	accounts: readonly Account[],
+	usable: readonly Account[],
 	hostId: string,
-	owner: string,
-	userId: string | undefined,
+	current?: Account,
 ): AccountOption[] {
-	const named = accountsFor(accounts, hostId, owner, userId)
-		.filter((a) => a.spec.default !== true)
+	const listed =
+		current && !usable.some((a) => a.metadata.id === current.metadata.id)
+			? [...usable, current]
+			: usable;
+	const named = listed
+		.filter(
+			(a) =>
+				a.spec.kind === "provider" &&
+				a.spec.hostId === hostId &&
+				a.spec.default !== true,
+		)
 		.map((a) => ({
 			value: a.metadata.id ?? "",
 			label: a.spec.orgId
