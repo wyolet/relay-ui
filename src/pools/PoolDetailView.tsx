@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { ChevronLeft, KeyRound, Layers } from "lucide-react";
 import { UpstreamKeyList } from "@/accounts/UpstreamKeyList";
+import { PlanIssuesPanel } from "@/diagnostics/IssuesPanel";
 import { HostCell } from "@/hosts/HostCell";
 import { SELECTION_LABELS } from "@/pools/poolKeys";
 import { usePoolDetail } from "@/pools/usePoolDetail";
@@ -46,6 +47,8 @@ export function PoolDetailView({ name }: { name: string }) {
 					)}
 				/>
 			</DetailPageHeader>
+
+			<PlanIssuesPanel kind="pool" id={pool.metadata.id} />
 
 			<DetailCard title="Configuration" icon={Layers}>
 				<dl className="divide-y divide-border">

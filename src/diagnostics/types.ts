@@ -7,6 +7,7 @@ import type { Model } from "@/api/types/model";
 import type { Policy } from "@/api/types/policy";
 import type { Provider } from "@/api/types/provider";
 import type { RateLimit } from "@/api/types/ratelimit";
+import type { ObjectRoute } from "@/diagnostics/objectRoutes";
 
 export type Severity = "error" | "warn" | "info";
 
@@ -40,11 +41,13 @@ export type DiagCode =
 	// Rate Limit
 	| "rate-limit.disabled-with-refs"
 	| "rate-limit.orphan"
-	| "rate-limit.disabled";
+	| "rate-limit.disabled"
+	// Raised by relay's plan engine; the suffix is its own stable code.
+	| `plan.${string}`;
 
 export interface DiagLink {
-	to: string;
-	params?: Record<string, string>;
+	to: ObjectRoute;
+	params: { name: string };
 }
 
 export interface Diagnostic {

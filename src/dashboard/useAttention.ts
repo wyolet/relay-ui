@@ -2,10 +2,13 @@ import { useQuery } from "@tanstack/react-query";
 import { useDeniedAuditCount } from "@/api/hooks/audit";
 import { useCostKpi } from "@/api/hooks/cost";
 import { keysListQueryOptions } from "@/api/hooks/keys";
+import { usePlanIssues } from "@/api/hooks/planIssues";
 import { resolveWindow, useRolling24hWindow } from "@/api/hooks/usage";
+import type { ObjectRoute } from "@/diagnostics/objectRoutes";
 import { displayLabel } from "@/lib/displayLabel";
 import { fmtCompact, fmtPct } from "@/usage/format";
 import { useGroupLabeler } from "@/usage/useGroupLabeler";
+import { planIssueAttention } from "./planIssueAttention";
 import { useDashboardHealth } from "./useDashboardHealth";
 import {
 	useBreakerHealth,
@@ -22,7 +25,8 @@ export type AttentionTarget =
 	| { kind: "refused" }
 	| { kind: "denied" }
 	| { kind: "pricing" }
-	| { kind: "key"; name: string };
+	| { kind: "key"; name: string }
+	| { kind: "object"; to: ObjectRoute; name: string };
 
 export interface AttentionItem {
 	key: string;
@@ -45,6 +49,7 @@ export function useAttention(): { items: AttentionItem[]; checking: boolean } {
 	const denied = useDeniedAuditCount(useRolling24hWindow().from);
 	const cost = useCostKpi(resolveWindow("week"));
 	const { data: keyList } = useQuery(keysListQueryOptions);
+	const planIssues = usePlanIssues();
 
 	const items: AttentionItem[] = [];
 	for (const b of health.backends) {
@@ -126,6 +131,8 @@ export function useAttention(): { items: AttentionItem[]; checking: boolean } {
 			target: { kind: "key", name: k.metadata.name },
 		});
 	}
+
+	items.push(...planIssueAttention(planIssues));
 
 	items.sort((a, b) => Number(b.tone === "alert") - Number(a.tone === "alert"));
 	return { items, checking: breakers.pending };

@@ -6,6 +6,7 @@ import {
 	PERIOD_LABELS,
 } from "@/budgets/budgetFormat";
 import { useBudgetDetail } from "@/budgets/useBudgetDetail";
+import { PlanIssuesPanel } from "@/diagnostics/IssuesPanel";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { DetailCard, DetailRow } from "@/shared/DetailCard";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
@@ -48,6 +49,8 @@ export function BudgetDetailView({ name }: { name: string }) {
 					)}
 				/>
 			</DetailPageHeader>
+
+			<PlanIssuesPanel kind="budget" id={budget.metadata.id} />
 
 			<DetailCard title="Cap" icon={Wallet}>
 				<dl className="divide-y divide-border">

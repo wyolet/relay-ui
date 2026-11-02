@@ -5,6 +5,7 @@ import {
 	useDeletePolicyBinding,
 	usePolicyBinding,
 } from "@/api/hooks/policyBindings";
+import { PlanIssuesPanel } from "@/diagnostics/IssuesPanel";
 import { displayLabel } from "@/lib/displayLabel";
 import { BindingOwner } from "@/policy-bindings/BindingOwner";
 import { SubjectChips } from "@/policy-bindings/SubjectChips";
@@ -71,6 +72,8 @@ export function PolicyBindingDetailView({ name }: { name: string }) {
 					)}
 				/>
 			</DetailPageHeader>
+
+			<PlanIssuesPanel kind="policybinding" id={binding.metadata.id} />
 
 			<DetailCard title="Configuration" icon={ShieldCheck}>
 				<dl className="divide-y divide-border">
