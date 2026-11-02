@@ -13,7 +13,8 @@ import { linkedPolicyRows } from "./linkedPolicies";
 
 interface UseHostKeyDetailOptions {
 	name: string;
-	onDeleted: () => void;
+	/** Gets the slug (or id, when unresolved) of the account the key was in. */
+	onDeleted: (accountName: string | undefined) => void;
 }
 
 export type HostKeyStatusTone = "active" | "warn" | "muted";
@@ -56,7 +57,9 @@ export function useHostKeyDetail({ name, onDeleted }: UseHostKeyDetailOptions) {
 	const { data: policiesData } = usePolicies();
 	const { data: poolsData } = usePools();
 	const { data: accountsData } = useAccounts();
-	const { del, request: requestDelete } = useHostKeyDelete({ onDeleted });
+	const { del, request: requestDelete } = useHostKeyDelete({
+		onDeleted: () => onDeleted(view.account?.name),
+	});
 	const { setEnabled: setEnabledMutation, isPending: isToggling } =
 		useToggleHostKeyEnabled();
 

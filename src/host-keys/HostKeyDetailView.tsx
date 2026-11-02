@@ -15,6 +15,9 @@ import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
 import { DetailTable, Td } from "@/shared/DetailTable";
 import { StatusBadge } from "@/shared/StatusBadge";
 
+const backLinkClass =
+	"inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors";
+
 const POLICY_COLUMNS = [
 	{ label: "Policy" },
 	{ label: "Status", className: "text-right" },
@@ -40,24 +43,31 @@ export function HostKeyDetailView({ name }: { name: string }) {
 		isToggling,
 	} = useHostKeyDetail({
 		name,
-		onDeleted: () =>
-			void navigate({
-				to: "/keys",
-				search: { tab: "provider", q: "" },
-			}),
+		onDeleted: (accountName) =>
+			void (accountName
+				? navigate({ to: "/accounts/$name", params: { name: accountName } })
+				: navigate({ to: "/keys", search: { tab: "accounts" } })),
 	});
 	const diagnostics = useHostKeyDiagnostics(hk.metadata.id);
+	const { account } = view;
 
 	return (
 		<div className="flex flex-col gap-5">
-			<Link
-				to="/keys"
-				search={{ tab: "provider", q: "" }}
-				className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-			>
-				<ChevronLeft className="w-3.5 h-3.5" />
-				Credentials
-			</Link>
+			{account ? (
+				<Link
+					to="/accounts/$name"
+					params={{ name: account.name }}
+					className={backLinkClass}
+				>
+					<ChevronLeft className="w-3.5 h-3.5" />
+					{account.label}
+				</Link>
+			) : (
+				<Link to="/keys" search={{ tab: "accounts" }} className={backLinkClass}>
+					<ChevronLeft className="w-3.5 h-3.5" />
+					Accounts
+				</Link>
+			)}
 
 			<header className="flex items-start justify-between gap-4">
 				<div className="min-w-0 flex items-start gap-3">
@@ -87,6 +97,19 @@ export function HostKeyDetailView({ name }: { name: string }) {
 								</Link>
 							) : (
 								<span className="text-foreground">{view.hostLabel}</span>
+							)}
+							{account && (
+								<>
+									{" "}
+									in{" "}
+									<Link
+										to="/accounts/$name"
+										params={{ name: account.name }}
+										className="text-foreground hover:underline"
+									>
+										{account.label}
+									</Link>
+								</>
 							)}
 						</p>
 						{view.description && (
