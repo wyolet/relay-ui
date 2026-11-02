@@ -1560,6 +1560,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/plan-issues": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List plan-engine diagnostics
+         * @description Returns every issue the plan engine has recorded for relay objects (keys, policies, bindings, …) that the caller may see, sorted by kind, name and code. Errors mean the object cannot serve; warnings mean it serves but something is likely wrong. Filter by kind, or by kind and id to narrow to one object.
+         */
+        get: operations["plan_issues_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/policies": {
         parameters: {
             query?: never;
@@ -3472,26 +3492,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/plan-issues": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List plan-engine diagnostics
-         * @description Returns every issue the plan engine has recorded for relay objects (keys, policies, bindings, …) that the caller may see, sorted by kind, name and code. Errors mean the object cannot serve; warnings mean it serves but something is likely wrong. Filter by kind, or by kind and id to narrow to one object.
-         */
-        get: operations["plan_issues_list"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -3514,7 +3514,7 @@ export interface components {
             /** @description Human-readable explanation. */
             message: string;
             /**
-             * @description Set when relay refused an inference request itself, as the class of code a client acts on: model_not_allowed (a policy, account or principal refuses the model: use another model or account), host_not_reachable (no host the caller can reach serves the model: use another model or host), no_capacity (a rate limit, budget, cooldown, or every host key out of rotation: retry later). Absent on every other error, an upstream's own included.
+             * @description Set when relay refused an inference request itself, as the class of code a client acts on: model_not_allowed (a policy, account or principal refuses the model: use another model or account), host_not_reachable (no host the caller can reach serves the model, or none of them accepted a connection: use another model or host), no_capacity (a rate limit, budget, cooldown, or every host key out of rotation: retry later). Absent on every other error, an upstream's own included.
              * @enum {string}
              */
             refusal?: "model_not_allowed" | "host_not_reachable" | "no_capacity";
@@ -4217,7 +4217,7 @@ export interface components {
             /** @description The reasoning span, for a translated stream that carried reasoning. */
             reasoning?: components["schemas"]["ReasoningTiming"];
             /**
-             * @description Set when relay refused the request itself, as the class of error_kind: model_not_allowed (a policy, account or principal refuses the model), host_not_reachable (no host the caller can reach serves it), no_capacity (a rate limit, budget, cooldown, or every host key out of rotation). Absent on success and on every other failure, an upstream's own error included.
+             * @description Set when relay refused the request itself, as the class of error_kind: model_not_allowed (a policy, account or principal refuses the model), host_not_reachable (no host the caller can reach serves it, or none of them accepted a connection), no_capacity (a rate limit, budget, cooldown, or every host key out of rotation). Absent on success and on every other failure, an upstream's own error included.
              * @enum {string}
              */
             refusal?: "model_not_allowed" | "host_not_reachable" | "no_capacity";
@@ -5284,6 +5284,31 @@ export interface components {
             secretKey: components["schemas"]["SecretRef"];
             /** @description Use TLS; required unless plain HTTP is allowed by the deployment. */
             useSSL: boolean;
+        };
+        PlanIssue: {
+            /** @description Stable snake_case diagnostic identifier, such as ref_missing or host_mismatch. */
+            code: string;
+            /** @description Id (UUIDv7) of the object carrying the issue. */
+            id: string;
+            /** @description Kind of the object carrying the issue (e.g. key, policybinding). */
+            kind: string;
+            /** @description Human-readable explanation of what is wrong. */
+            message: string;
+            /** @description Slug of the object; empty for derived objects that have no slug. */
+            name: string;
+            /** @description Objects the issue implicates, such as a missing target. */
+            refs: components["schemas"]["PlanIssueRef"][] | null;
+            /**
+             * @description Severity: error means the object cannot serve; warning means it serves but something is likely wrong.
+             * @enum {string}
+             */
+            severity: "error" | "warning";
+        };
+        PlanIssueRef: {
+            /** @description Id (UUIDv7) of the referenced object; empty when the caller may not see the object. */
+            id: string;
+            /** @description Kind of the referenced object (e.g. policy, host). */
+            kind: string;
         };
         Policy: {
             /**
@@ -7412,31 +7437,6 @@ export interface components {
             license?: components["schemas"]["Info"];
             /** @description Relay build version. */
             version: string;
-        };
-        PlanIssue: {
-            /** @description Stable snake_case diagnostic identifier, such as ref_missing or host_mismatch. */
-            code: string;
-            /** @description Id (UUIDv7) of the object carrying the issue. */
-            id: string;
-            /** @description Kind of the object carrying the issue (e.g. key, policybinding). */
-            kind: string;
-            /** @description Human-readable explanation of what is wrong. */
-            message: string;
-            /** @description Slug of the object; empty for derived objects that have no slug. */
-            name: string;
-            /** @description Objects the issue implicates, such as a missing target. */
-            refs: components["schemas"]["PlanIssueRef"][] | null;
-            /**
-             * @description Severity: error means the object cannot serve; warning means it serves but something is likely wrong.
-             * @enum {string}
-             */
-            severity: "error" | "warning";
-        };
-        PlanIssueRef: {
-            /** @description Id (UUIDv7) of the referenced object; empty when the caller may not see the object. */
-            id: string;
-            /** @description Kind of the referenced object (e.g. policy, host). */
-            kind: string;
         };
     };
     responses: never;
@@ -13955,6 +13955,67 @@ export interface operations {
             };
             /** @description No such row, or one the caller may not see. */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The request does not match the schema; error.details lists each failing field. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The server failed; error.message carries the cause. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    plan_issues_list: {
+        parameters: {
+            query?: {
+                /** @description Filter by object kind, such as key or policybinding. Omit for all kinds. */
+                kind?: string;
+                /** @description Filter by object id (UUIDv7). Takes effect only together with kind. */
+                id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanIssue"][] | null;
+                };
+            };
+            /** @description No valid session cookie or admin bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -22673,67 +22734,6 @@ export interface operations {
             };
             /** @description Error */
             default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIError"];
-                };
-            };
-        };
-    };
-    plan_issues_list: {
-        parameters: {
-            query?: {
-                /** @description Filter by object kind, such as key or policybinding. Omit for all kinds. */
-                kind?: string;
-                /** @description Filter by object id (UUIDv7). Takes effect only together with kind. */
-                id?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PlanIssue"][] | null;
-                };
-            };
-            /** @description No valid session cookie or admin bearer token. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIError"];
-                };
-            };
-            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIError"];
-                };
-            };
-            /** @description The request does not match the schema; error.details lists each failing field. */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIError"];
-                };
-            };
-            /** @description The server failed; error.message carries the cause. */
-            500: {
                 headers: {
                     [name: string]: unknown;
                 };
