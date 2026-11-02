@@ -6,6 +6,7 @@ import { usePlanIssues } from "@/api/hooks/planIssues";
 import { resolveWindow, useRolling24hWindow } from "@/api/hooks/usage";
 import type { ObjectRoute } from "@/diagnostics/objectRoutes";
 import { displayLabel } from "@/lib/displayLabel";
+import { type Refusal, refusalLabel } from "@/lib/refusal";
 import { fmtCompact, fmtPct } from "@/usage/format";
 import { useGroupLabeler } from "@/usage/useGroupLabeler";
 import { planIssueAttention } from "./planIssueAttention";
@@ -21,8 +22,8 @@ export type AttentionTarget =
 	| { kind: "none" }
 	| { kind: "hostKey"; name: string }
 	| { kind: "hostErrors"; hostId: string }
-	| { kind: "throttled" }
-	| { kind: "refused" }
+	| { kind: "refusal"; refusal: Refusal }
+	| { kind: "unauthenticated" }
 	| { kind: "denied" }
 	| { kind: "pricing" }
 	| { kind: "key"; name: string }
@@ -45,7 +46,7 @@ export function useAttention(): { items: AttentionItem[]; checking: boolean } {
 	const breakers = useBreakerHealth();
 	const hosts = useDegradedHosts();
 	const hostLabel = useGroupLabeler("host_id");
-	const { buckets } = useRejections();
+	const rejections = useRejections();
 	const denied = useDeniedAuditCount(useRolling24hWindow().from);
 	const cost = useCostKpi(resolveWindow("week"));
 	const { data: keyList } = useQuery(keysListQueryOptions);
@@ -85,20 +86,20 @@ export function useAttention(): { items: AttentionItem[]; checking: boolean } {
 			target: { kind: "hostErrors", hostId: h.key },
 		});
 	}
-	if (buckets.throttled > 0) {
+	for (const r of rejections.refusals) {
 		items.push({
-			key: "throttled",
+			key: `refusal-${r.refusal}`,
 			tone: "warn",
-			text: `${fmtCompact(buckets.throttled)} requests throttled (429)`,
-			target: { kind: "throttled" },
+			text: `${fmtCompact(r.requests)} requests refused: ${refusalLabel(r.refusal).toLowerCase()}`,
+			target: { kind: "refusal", refusal: r.refusal },
 		});
 	}
-	if (buckets.auth > 0) {
+	if (rejections.unauthenticated > 0) {
 		items.push({
-			key: "refused",
+			key: "unauthenticated",
 			tone: "warn",
-			text: `${fmtCompact(buckets.auth)} requests refused (401, 403)`,
-			target: { kind: "refused" },
+			text: `${fmtCompact(rejections.unauthenticated)} requests unauthenticated (401)`,
+			target: { kind: "unauthenticated" },
 		});
 	}
 	if (denied && denied.events > 0) {

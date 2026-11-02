@@ -1,4 +1,5 @@
 import type { LogEvent } from "@/api/hooks/logs";
+import { refusalReason } from "@/lib/refusal";
 
 /**
  * Which layer produced a failed request's verdict. Mirrors the relay's
@@ -37,6 +38,11 @@ const BY_KIND: Record<string, FailureAttribution> = {
 	no_keys: {
 		layer: "relay",
 		reason: "No upstream key was configured for the resolved policy.",
+	},
+	no_healthy_keys: {
+		layer: "relay",
+		reason:
+			"Every host key that could serve the request was out of rotation, so the relay refused it.",
 	},
 	keys_exhausted: {
 		layer: "relay",
@@ -89,4 +95,13 @@ export function failureAttribution(
 		};
 	}
 	return null;
+}
+
+/** The sentence a detail view explains a failure with; a refusal's own
+ * reason says more than its error kind's. */
+export function failureReason(
+	e: Pick<LogEvent, "status" | "error_kind" | "refusal">,
+): string | undefined {
+	if (e.refusal) return refusalReason(e.refusal);
+	return failureAttribution(e)?.reason;
 }

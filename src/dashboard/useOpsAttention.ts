@@ -13,63 +13,52 @@ import {
 	useRolling24hWindow,
 } from "@/api/hooks/usage";
 import { displayLabel } from "@/lib/displayLabel";
+import { type RefusalCount, refusalCounts } from "@/lib/refusal";
 import {
 	type BreakerStatus,
 	breakerAttention,
 	degradedHosts,
 	type HostErrorStat,
-	type RejectionBuckets,
-	rejectionBuckets,
-	type VolumeLeader,
-	volumeLeaders,
 } from "@/lib/usage-math/ops";
 
 /** How often the operations block re-polls its live signals. */
 const OPS_REFETCH_MS = 30_000;
 
-/** Exact statuses behind the "auth" rejection bucket — also used by the
- * panel's deep link so logs show the same slice that was counted. */
-export const AUTH_STATUSES = [401, 403];
-export const THROTTLED_STATUSES = [429];
+/** Statuses no refusal covers: a missing or bad credential. Also the
+ * panel's deep link, so logs show the slice that was counted. */
+export const UNAUTHENTICATED_STATUSES = [401];
 
 /**
- * Rejected (4xx) traffic over the trailing 24h: total volume split into
- * throttled / auth / other buckets, plus the keys catching the most
- * rejections. Three summary calls against the same window — one grouped by
- * key for the leaderboard, two ungrouped slices for the bucket counts.
- * Note a 429 can be relay-issued (our rate limit) or an upstream 429 passed
- * through; `error_kind` could split those once the relay enumerates its
- * values, but the combined count is the honest aggregate today.
+ * Requests rejected over the trailing 24h: those relay refused itself, by
+ * refusal, and unauthenticated ones. Refusals already hold relay's 429s and
+ * policy 403s, so the status count stays at 401 to avoid counting a request
+ * twice; an upstream's own 4xx shows in its host's failure rate.
  */
 export function useRejections(): {
-	buckets: RejectionBuckets;
-	topKeys: VolumeLeader[];
+	refusals: RefusalCount[];
+	unauthenticated: number;
 } {
 	const win = useRolling24hWindow();
-	const [all, auth] = useSuspenseQueries({
+	const [refused, unauthenticated] = useSuspenseQueries({
 		queries: [
 			{
-				...usageSummaryQueryOptions("relay_key_hash", win, {
-					status_class: "4xx",
-				}),
+				...usageSummaryQueryOptions("refusal", win),
 				refetchInterval: OPS_REFETCH_MS,
 			},
 			{
-				...usageSummaryQueryOptions("source", win, { status: AUTH_STATUSES }),
+				...usageSummaryQueryOptions("source", win, {
+					status: UNAUTHENTICATED_STATUSES,
+				}),
 				refetchInterval: OPS_REFETCH_MS,
 			},
 		],
 	});
-	const rows = all.data.rows ?? [];
-	const byKey = volumeLeaders(rows, "relay_key_hash");
 	return {
-		buckets: rejectionBuckets(
-			byKey.total,
-			// The 4xx rows already count their 429s.
-			rows.reduce((n, r) => n + (r.throttled ?? 0), 0),
-			volumeLeaders(auth.data.rows ?? [], "source").total,
+		refusals: refusalCounts(refused.data.rows ?? []),
+		unauthenticated: (unauthenticated.data.rows ?? []).reduce(
+			(n, r) => n + r.requests,
+			0,
 		),
-		topKeys: byKey.top,
 	};
 }
 

@@ -16,7 +16,7 @@ import { useLogLabeler } from "@/logs/useLogsFilterOptions";
 import { PageLoader } from "@/shared/Spinner";
 import { StaleContent } from "@/shared/StaleContent";
 import { useDeferredSearch } from "@/shared/useDeferredSearch";
-import { FILTER_DIMENSIONS } from "@/usage/filters/dimensions";
+import { dimensionFilter } from "@/usage/filters/dimensions";
 
 const SLOW_LABEL = `Slow >${SLOW_MS / 1000}s`;
 
@@ -34,9 +34,11 @@ const searchSchema = z.object({
 	team_id: z.array(z.string()).default([]),
 	project_id: z.array(z.string()).default([]),
 	principal_id: z.array(z.string()).default([]),
+	lane_account_id: z.array(z.string()).default([]),
 	relay_key_hash: z.array(z.string()).default([]),
 	policy_id: z.array(z.string()).default([]),
 	host_key_id: z.array(z.string()).default([]),
+	refusal: z.array(z.string()).default([]),
 	expand: z.string().optional(),
 });
 
@@ -48,14 +50,11 @@ const LOGS_DEFAULTS = searchSchema.parse({});
 /** Map URL search into the server-side /logs query. `q` is intentionally not
  * here — the backend has no free-text field, so it stays a client refinement. */
 function toLogsFilter(s: LogsSearch): LogsFilter {
-	const filter: LogsFilter = { since: s.since };
+	const filter: LogsFilter = { ...dimensionFilter(s), since: s.since };
 	if (s.status_class) filter.status_class = s.status_class;
 	if (s.status.length) filter.status = s.status;
 	if (s.errors) filter.error = "true";
 	if (s.slow) filter.duration_ms_min = SLOW_MS;
-	for (const d of FILTER_DIMENSIONS) {
-		if (s[d].length) filter[d] = s[d];
-	}
 	return filter;
 }
 

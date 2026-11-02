@@ -14,7 +14,7 @@ import { FilterDropdown } from "@/shared/FilterDropdown";
 import { CountBadge, filterTriggerClassName } from "@/shared/MultiSelect";
 import { DimensionChips } from "@/usage/filters/DimensionChips";
 import {
-	FILTER_DIMENSIONS,
+	dimensionFilter,
 	type FilterDimension,
 } from "@/usage/filters/dimensions";
 import {
@@ -35,10 +35,7 @@ export type LogsFilterValues = {
 
 /** The usage slice matching the feed, so filter choices count the same rows. */
 function usageSlice(values: LogsFilterValues): UsageSummaryFilter {
-	const filter: UsageSummaryFilter = {};
-	for (const d of FILTER_DIMENSIONS) {
-		if (values[d].length) filter[d] = values[d];
-	}
+	const filter: UsageSummaryFilter = dimensionFilter(values);
 	if (values.status_class) filter.status_class = values.status_class;
 	if (values.errors) filter.error = "true";
 	return filter;

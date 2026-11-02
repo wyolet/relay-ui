@@ -1,5 +1,23 @@
 import { describe, expect, it } from "bun:test";
-import { failureAttribution } from "@/logs/attribution";
+import { refusalReason } from "@/lib/refusal";
+import { failureAttribution, failureReason } from "@/logs/attribution";
+
+describe("failureReason", () => {
+	it("explains a refusal by its class", () => {
+		expect(
+			failureReason({
+				status: 429,
+				error_kind: "rate_limit_exceeded",
+				refusal: "no_capacity",
+			}),
+		).toBe(refusalReason("no_capacity"));
+	});
+
+	it("falls back to the attribution, and to nothing on success", () => {
+		expect(failureReason({ status: 401 })).toContain("401");
+		expect(failureReason({ status: 200 })).toBeUndefined();
+	});
+});
 
 describe("failureAttribution", () => {
 	it("returns null for successes", () => {
@@ -39,6 +57,12 @@ describe("failureAttribution", () => {
 	it("falls back to relay for unknown kinds — the relay wrote the verdict", () => {
 		expect(
 			failureAttribution({ status: 0, error_kind: "some_future_kind" })?.layer,
+		).toBe("relay");
+	});
+
+	it("attributes an out-of-rotation 503 to the relay", () => {
+		expect(
+			failureAttribution({ status: 503, error_kind: "no_healthy_keys" })?.layer,
 		).toBe("relay");
 	});
 

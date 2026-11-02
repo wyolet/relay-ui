@@ -2,13 +2,15 @@ import { MousePointerClick, X } from "lucide-react";
 import { Suspense, useState } from "react";
 import { type LogDetail, useLogDetail } from "@/api/hooks/logs";
 import { Button } from "@/components/ui/button";
+import { refusalLabel } from "@/lib/refusal";
 import { cn } from "@/lib/utils";
 import { Segmented } from "@/shared/Segmented";
-import { failureAttribution } from "./attribution";
+import { failureAttribution, failureReason } from "./attribution";
 import { FailureLayerBadge } from "./FailureLayerBadge";
 import { Field } from "./Field";
 import { fmtInt, fmtMs, fmtTs, prettyBody, sumTokens } from "./format";
 import { type ChatMessage, parseTranscript } from "./generation";
+import { LaneAccountField } from "./LaneAccountField";
 import { isErrorEvent } from "./predicates";
 import { statusDot, statusTone } from "./statusStyle";
 import type { LogLabeler } from "./useLogsFilterOptions";
@@ -57,6 +59,7 @@ function PanelBody({
 	const { log, payload } = data;
 	const isError = isErrorEvent(log);
 	const attribution = failureAttribution(log);
+	const reason = failureReason(log);
 	const transcript = parseTranscript(payload);
 
 	const [tab, setTab] = useState<"messages" | "raw">("messages");
@@ -127,6 +130,10 @@ function PanelBody({
 							{labelFor?.("policy", log.policy_id) ?? log.policy_id}
 						</Field>
 					)}
+					{log.lane_account_id && <LaneAccountField id={log.lane_account_id} />}
+					{log.refusal && (
+						<Field label="Refusal">{refusalLabel(log.refusal)}</Field>
+					)}
 					<Field label="Runner">{log.source}</Field>
 					{log.relay_key && <Field label="Key">{log.relay_key}</Field>}
 					{log.attempts !== undefined && log.attempts > 1 && (
@@ -135,9 +142,7 @@ function PanelBody({
 					{log.streamed && <Field label="Streamed">yes</Field>}
 				</div>
 
-				{attribution && (
-					<p className="mt-3 text-meta text-ink-2">{attribution.reason}</p>
-				)}
+				{reason && <p className="mt-3 text-meta text-ink-2">{reason}</p>}
 				{log.error_message && (
 					<p className="mt-3 text-meta text-destructive">{log.error_message}</p>
 				)}
