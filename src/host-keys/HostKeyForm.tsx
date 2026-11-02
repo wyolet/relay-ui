@@ -11,6 +11,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { useHostKeyForm } from "@/host-keys/useHostKeyForm";
+import { HostSelect } from "@/hosts/HostSelect";
 import { FormSection } from "@/shared/FormSection";
 import { IdentitySection } from "@/shared/IdentitySection";
 import { OwnerSection } from "@/shared/OwnerSection";
@@ -92,35 +93,12 @@ export function HostKeyForm({ hostKey, onSaved, onCancel }: HostKeyFormProps) {
 					description="Which upstream provider this credential authenticates against, and the provider account (organization) whose limits it shares."
 				>
 					<div className="flex flex-col gap-4">
-						<div>
-							<div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-1">
-								Host
-							</div>
-							<Select
-								value={values.hostId}
-								items={hostOptions}
-								onValueChange={(v) => setHost(v ?? "")}
-							>
-								<SelectTrigger
-									className="w-full max-w-md"
-									aria-invalid={hostIdError ? true : undefined}
-								>
-									<SelectValue placeholder="Pick a host…" />
-								</SelectTrigger>
-								<SelectContent>
-									{hostOptions.map((h) => (
-										<SelectItem key={h.value} value={h.value}>
-											{h.label}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-							{hostIdError && (
-								<p className="mt-1.5 text-[11px] text-destructive">
-									{hostIdError}
-								</p>
-							)}
-						</div>
+						<HostSelect
+							value={values.hostId}
+							options={hostOptions}
+							onChange={setHost}
+							error={hostIdError}
+						/>
 						<div>
 							<div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-1 inline-flex items-center gap-1">
 								<Building2 className="w-3 h-3" />

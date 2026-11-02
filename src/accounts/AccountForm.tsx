@@ -5,13 +5,7 @@ import { useAccountForm } from "@/accounts/useAccountForm";
 import type { Account } from "@/api/hooks/accounts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
+import { HostSelect } from "@/hosts/HostSelect";
 import { FormSection } from "@/shared/FormSection";
 import { IdentitySection } from "@/shared/IdentitySection";
 import { OwnerSection } from "@/shared/OwnerSection";
@@ -32,7 +26,6 @@ export function AccountForm({ account, onSaved, onCancel }: AccountFormProps) {
 		ownerOptions,
 		hostOptions,
 	} = useAccountForm({ account, onSaved });
-	const hostErrorId = useId();
 	const orgErrorId = useId();
 
 	return (
@@ -70,46 +63,18 @@ export function AccountForm({ account, onSaved, onCancel }: AccountFormProps) {
 					description={ACCOUNT_SUMMARY}
 				>
 					<div className="flex flex-col gap-4">
-						<div>
-							<div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-1">
-								Host
-							</div>
-							<Select
-								value={values.hostId}
-								items={hostOptions}
-								onValueChange={(v) => form.setFieldValue("hostId", v ?? "")}
-								disabled={isEdit}
-							>
-								<SelectTrigger
-									className="w-full max-w-md"
-									aria-label="Host"
-									aria-invalid={errors.hostId ? true : undefined}
-									aria-describedby={errors.hostId ? hostErrorId : undefined}
-								>
-									<SelectValue placeholder="Pick a host…" />
-								</SelectTrigger>
-								<SelectContent>
-									{hostOptions.map((h) => (
-										<SelectItem key={h.value} value={h.value}>
-											{h.label}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-							{errors.hostId && (
-								<p
-									id={hostErrorId}
-									className="mt-1.5 text-[11px] text-destructive"
-								>
-									{errors.hostId}
-								</p>
-							)}
-							{isEdit && (
-								<p className="mt-1.5 text-[11px] text-muted-foreground">
-									Fixed once created: the account's keys are at this host.
-								</p>
-							)}
-						</div>
+						<HostSelect
+							value={values.hostId}
+							options={hostOptions}
+							onChange={(v) => form.setFieldValue("hostId", v)}
+							error={errors.hostId}
+							disabled={isEdit}
+							hint={
+								isEdit
+									? "Fixed once created: the account's keys are at this host."
+									: undefined
+							}
+						/>
 						<div>
 							<div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-1">
 								Organization id
