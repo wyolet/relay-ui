@@ -13,6 +13,7 @@ import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
 import { useOwnerOptions } from "@/hooks/useOwnerOptions";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
+import { firstError, zodFieldValidator } from "@/lib/formErrors";
 import { type OwnerOption, ownerKeyId } from "@/lib/ownerScopes";
 import { randomSuffix, slugify } from "@/lib/slug";
 import {
@@ -47,13 +48,6 @@ const SYSTEM_OPTION: OwnerOption = {
 };
 
 /** The first string error a field carries, or undefined. */
-function firstError(
-	errors: readonly unknown[] | undefined,
-): string | undefined {
-	for (const e of errors ?? []) if (typeof e === "string") return e;
-	return undefined;
-}
-
 export interface PolicyBindingFormValues {
 	displayName: string;
 	description: string;
@@ -188,16 +182,7 @@ export function usePolicyBindingForm({
 		return `${base}-${suffixRef.current}`;
 	};
 
-	function runValidation({ value }: { value: PolicyBindingFormValues }) {
-		const r = schema.safeParse(value);
-		if (r.success) return undefined;
-		const fields: Record<string, string> = {};
-		for (const issue of r.error.issues) {
-			const key = issue.path.join(".");
-			if (key && !fields[key]) fields[key] = issue.message;
-		}
-		return { fields };
-	}
+	const runValidation = zodFieldValidator<PolicyBindingFormValues>(schema);
 
 	const form = useForm({
 		defaultValues: initial,

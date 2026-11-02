@@ -9,6 +9,7 @@ import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
 import { useOwnerOptions } from "@/hooks/useOwnerOptions";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
+import { firstError, zodFieldValidator } from "@/lib/formErrors";
 import { ALL_OWNER_SCOPES, PERSONAL_OWNER } from "@/lib/ownerScopes";
 import { randomSuffix, slugify } from "@/lib/slug";
 import {
@@ -47,13 +48,6 @@ const schema = z.object({
 	credentialIds: z.array(z.string()),
 	selection: z.enum(POOL_SELECTIONS),
 });
-
-function firstError(
-	errors: readonly unknown[] | undefined,
-): string | undefined {
-	for (const e of errors ?? []) if (typeof e === "string") return e;
-	return undefined;
-}
 
 function emptyValues(owner: string): PoolFormValues {
 	return {
@@ -112,16 +106,7 @@ export function usePoolForm({ pool, onSaved }: UsePoolFormOptions) {
 		return `${slugify(trimmed) || "pool"}-${suffixRef.current}`;
 	};
 
-	function runValidation({ value }: { value: PoolFormValues }) {
-		const r = schema.safeParse(value);
-		if (r.success) return undefined;
-		const fields: Record<string, string> = {};
-		for (const issue of r.error.issues) {
-			const key = issue.path.join(".");
-			if (key && !fields[key]) fields[key] = issue.message;
-		}
-		return { fields };
-	}
+	const runValidation = zodFieldValidator<PoolFormValues>(schema);
 
 	const form = useForm({
 		defaultValues: initial,

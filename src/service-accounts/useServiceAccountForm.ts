@@ -11,6 +11,7 @@ import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
 import { useOwnerOptions } from "@/hooks/useOwnerOptions";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
+import { firstError, zodFieldValidator } from "@/lib/formErrors";
 import { ownerKeyId } from "@/lib/ownerScopes";
 import { randomSuffix, slugify } from "@/lib/slug";
 import { toast } from "@/shared/Toast";
@@ -97,16 +98,7 @@ export function useServiceAccountForm({
 		return `${base}-${suffixRef.current}`;
 	};
 
-	function runValidation({ value }: { value: ServiceAccountFormValues }) {
-		const r = schema.safeParse(value);
-		if (r.success) return undefined;
-		const fields: Record<string, string> = {};
-		for (const issue of r.error.issues) {
-			const key = issue.path.join(".");
-			if (key && !fields[key]) fields[key] = issue.message;
-		}
-		return { fields };
-	}
+	const runValidation = zodFieldValidator<ServiceAccountFormValues>(schema);
 
 	const form = useForm({
 		defaultValues: initial,
@@ -173,21 +165,15 @@ export function useServiceAccountForm({
 	const slugPreview = isEdit
 		? (serviceAccount?.metadata.name ?? "")
 		: computeSlug(values.displayName);
-	const displayNameError = useStore(form.store, (s) => {
-		const errs = s.fieldMeta?.displayName?.errors ?? [];
-		for (const e of errs) if (typeof e === "string") return e;
-		return undefined;
-	});
-	const descriptionError = useStore(form.store, (s) => {
-		const errs = s.fieldMeta?.description?.errors ?? [];
-		for (const e of errs) if (typeof e === "string") return e;
-		return undefined;
-	});
-	const ownerError = useStore(form.store, (s) => {
-		const errs = s.fieldMeta?.owner?.errors ?? [];
-		for (const e of errs) if (typeof e === "string") return e;
-		return undefined;
-	});
+	const displayNameError = useStore(form.store, (s) =>
+		firstError(s.fieldMeta?.displayName?.errors),
+	);
+	const descriptionError = useStore(form.store, (s) =>
+		firstError(s.fieldMeta?.description?.errors),
+	);
+	const ownerError = useStore(form.store, (s) =>
+		firstError(s.fieldMeta?.owner?.errors),
+	);
 
 	return {
 		form,
