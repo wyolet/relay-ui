@@ -8,7 +8,6 @@ import { FormFooter } from "@/shared/FormFooter";
 import { FormSection } from "@/shared/FormSection";
 import { IdentitySection } from "@/shared/IdentitySection";
 import { OptionRow } from "@/shared/OptionRow";
-import { OwnerSection } from "@/shared/OwnerSection";
 import { Segmented } from "@/shared/Segmented";
 import { StatusInline } from "@/shared/StatusBadge";
 
@@ -30,7 +29,7 @@ export function PoolForm({ pool, onSaved, onCancel }: PoolFormProps) {
 		errors,
 		isEdit,
 		slugPreview,
-		ownerOptions,
+		placement,
 		hostOptions,
 		chosenKeys,
 		availableKeys,
@@ -61,13 +60,7 @@ export function PoolForm({ pool, onSaved, onCancel }: PoolFormProps) {
 					descriptionError={errors.description}
 					autoFocus={!isEdit}
 					placeholder="OpenAI production pool"
-				/>
-
-				<OwnerSection
-					options={ownerOptions}
-					value={values.owner}
-					onChange={(v) => form.setFieldValue("owner", v)}
-					error={errors.owner}
+					placement={placement}
 				/>
 
 				<FormSection

@@ -2,15 +2,14 @@ import { useForm } from "@tanstack/react-form";
 import { useStore } from "@tanstack/react-store";
 import { useEffect, useMemo, useRef } from "react";
 import { z } from "zod";
-import { useHostKeys } from "@/api/hooks/hostkeys";
+import { useHostKeys, useUsableHostKeys } from "@/api/hooks/hostkeys";
 import { useHosts } from "@/api/hooks/hosts";
 import { type Pool, useCreatePool, useUpdatePool } from "@/api/hooks/pools";
 import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
-import { useOwnerOptions } from "@/hooks/useOwnerOptions";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
+import { useFormOwner } from "@/hooks/useWorkContext";
 import { displayLabel } from "@/lib/displayLabel";
 import { shownError, zodFieldValidator } from "@/lib/formErrors";
-import { ALL_OWNER_SCOPES, PERSONAL_OWNER } from "@/lib/ownerScopes";
 import { randomSuffix, slugify } from "@/lib/slug";
 import {
 	moveItem,
@@ -22,7 +21,6 @@ import { toast } from "@/shared/Toast";
 export interface PoolFormValues {
 	displayName: string;
 	description: string;
-	owner: string;
 	hostId: string;
 	/** Ordered: the preference for prioritized selection. */
 	credentialIds: string[];
@@ -43,28 +41,25 @@ const schema = z.object({
 		.min(1, "Display name is required — the slug is generated from it")
 		.max(120, "Display name is too long"),
 	description: z.string().trim().max(500, "Description is too long"),
-	owner: z.string().min(1, "Pick who owns this pool."),
 	hostId: z.string().min(1, "Pick the host every key in the pool is at."),
 	credentialIds: z.array(z.string()),
 	selection: z.enum(POOL_SELECTIONS),
 });
 
-function emptyValues(owner: string): PoolFormValues {
+function emptyValues(): PoolFormValues {
 	return {
 		displayName: "",
 		description: "",
-		owner,
 		hostId: "",
 		credentialIds: [],
 		selection: "prioritized",
 	};
 }
 
-function toValues(pool: Pool, owner: string): PoolFormValues {
+function toValues(pool: Pool): PoolFormValues {
 	return {
 		displayName: displayLabel(pool.metadata),
 		description: pool.metadata.description ?? "",
-		owner,
 		hostId: pool.spec.hostId,
 		credentialIds: pool.spec.credentialIds ?? [],
 		selection: pool.spec.selection ?? "prioritized",
@@ -88,16 +83,11 @@ export function usePoolForm({ pool, onSaved }: UsePoolFormOptions) {
 		pool?.metadata.resourceVersion,
 	);
 
-	const ownerPicker = useOwnerOptions({
-		kinds: ALL_OWNER_SCOPES,
-		owner: pool?.metadata.owner,
-		preset: PERSONAL_OWNER,
-	});
-	const { initialOwner } = ownerPicker;
+	const { owner, usableBy, placement } = useFormOwner(pool?.metadata);
 
 	const initial = useMemo<PoolFormValues>(
-		() => (pool ? toValues(pool, initialOwner) : emptyValues(initialOwner)),
-		[pool, initialOwner],
+		() => (pool ? toValues(pool) : emptyValues()),
+		[pool],
 	);
 	const suffixRef = useRef<string>(randomSuffix());
 	const computeSlug = (displayName: string): string => {
@@ -114,7 +104,6 @@ export function usePoolForm({ pool, onSaved }: UsePoolFormOptions) {
 		onSubmit: async ({ value }) => {
 			const displayName = value.displayName.trim();
 			const description = value.description.trim();
-			const owner = ownerPicker.toOwner(value.owner);
 			const spec = {
 				hostId: value.hostId,
 				credentialIds: value.credentialIds,
@@ -130,7 +119,6 @@ export function usePoolForm({ pool, onSaved }: UsePoolFormOptions) {
 								resourceVersion: loaded.version,
 								displayName,
 								description,
-								owner,
 							},
 							spec,
 						},
@@ -143,7 +131,7 @@ export function usePoolForm({ pool, onSaved }: UsePoolFormOptions) {
 						metadata: {
 							name: computeSlug(displayName),
 							displayName,
-							owner,
+							...(owner ? { owner } : {}),
 							...(description ? { description } : {}),
 						},
 						spec,
@@ -170,10 +158,10 @@ export function usePoolForm({ pool, onSaved }: UsePoolFormOptions) {
 	}, [loaded.resetKey, initial, form]);
 
 	const values = useStore(form.store, (s) => s.values);
+	const usableKeys = useUsableHostKeys(usableBy, values.hostId);
 	const errors = useStore(form.store, (s) => ({
 		displayName: shownError(s.fieldMeta?.displayName, s.submissionAttempts),
 		description: shownError(s.fieldMeta?.description, s.submissionAttempts),
-		owner: shownError(s.fieldMeta?.owner, s.submissionAttempts),
 		hostId: shownError(s.fieldMeta?.hostId, s.submissionAttempts),
 	}));
 
@@ -202,16 +190,12 @@ export function usePoolForm({ pool, onSaved }: UsePoolFormOptions) {
 			},
 	);
 	const chosen = new Set(values.credentialIds);
-	const availableKeys: PoolKeyOption[] = (hostKeysData.items ?? []).flatMap(
-		(hk) => {
-			const option = keyById.get(hk.metadata.id ?? "");
-			return option &&
-				hk.spec.hostId === values.hostId &&
-				!chosen.has(option.id)
-				? [option]
-				: [];
-		},
-	);
+	const availableKeys: PoolKeyOption[] = usableKeys.flatMap((hk) => {
+		const option = keyById.get(hk.metadata.id ?? "");
+		return option && hk.spec.hostId === values.hostId && !chosen.has(option.id)
+			? [option]
+			: [];
+	});
 
 	function setHost(hostId: string) {
 		form.setFieldValue("hostId", hostId);
@@ -243,7 +227,7 @@ export function usePoolForm({ pool, onSaved }: UsePoolFormOptions) {
 		errors,
 		isEdit,
 		slugPreview: pool ? pool.metadata.name : computeSlug(values.displayName),
-		ownerOptions: ownerPicker.options,
+		placement,
 		hostOptions,
 		chosenKeys,
 		availableKeys,
