@@ -3,8 +3,10 @@ import {
 	buildPricingMatrix,
 	filterPricingMatrix,
 	type MatrixPricing,
+	modelPriceSummaries,
 	pricingCoverage,
 	rankPriceRows,
+	unpricedGrants,
 	usageByModel,
 } from "@/lib/pricingMatrix";
 
@@ -111,6 +113,51 @@ describe("buildPricingMatrix", () => {
 		expect(pricingCoverage(matrix)).toEqual({ served: 3, priced: 1 });
 	});
 
+	test("rows carry the enabled sheet's blended price", () => {
+		const opus = matrix[0]?.rows.find((r) => r.model.slug === "opus");
+		expect(opus?.blended).toEqual({ amount: 30, per: "1M", currency: "USD" });
+		const gpt = matrix[1]?.rows.find((r) => r.model.slug === "gpt");
+		expect(gpt?.blended).toBeNull();
+	});
+
+	test("summaries cover served hosts only", () => {
+		const summaries = modelPriceSummaries(matrix);
+		const opus = summaries.get("m-opus");
+		expect(opus?.hosts.map((h) => h.host.slug)).toEqual(["anthropic"]);
+		expect(opus?.lowest).toEqual({
+			price: { amount: 30, per: "1M", currency: "USD" },
+			from: false,
+		});
+		expect(opus?.unpricedHosts).toEqual([]);
+		expect(summaries.get("m-gpt")?.unpricedHosts.map((h) => h.slug)).toEqual([
+			"azure",
+		]);
+		expect(summaries.get("m-gpt")?.lowest).toBeNull();
+	});
+
+	test("unpriced grants group by model; unknown bindings count", () => {
+		const grant = (modelId: string, hostId: string) => ({
+			model: { id: modelId, slug: modelId, label: modelId },
+			host: { id: hostId, slug: hostId, label: hostId },
+		});
+		const grants = [
+			grant("m-opus", "h-ant"),
+			grant("m-haiku", "h-ant"),
+			grant("m-opus", "h-idle"),
+			grant("m-gpt", "h-az"),
+		];
+		expect(
+			unpricedGrants(modelPriceSummaries(matrix), grants).map((g) => [
+				g.model.id,
+				g.hosts.map((h) => h.id),
+			]),
+		).toEqual([
+			["m-gpt", ["h-az"]],
+			["m-haiku", ["h-ant"]],
+			["m-opus", ["h-idle"]],
+		]);
+	});
+
 	test("filters by text and by unpriced", () => {
 		expect(
 			filterPricingMatrix(matrix, "haiku", false).flatMap((h) =>
@@ -136,6 +183,7 @@ describe("rankPriceRows", () => {
 		currency: "USD",
 		cells: {},
 		extra: 0,
+		blended: null,
 		served: true,
 		unpriced,
 	});
