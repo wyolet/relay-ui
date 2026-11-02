@@ -6,11 +6,7 @@ import {
 } from "@/accounts/accountView";
 import { useAccountEffectiveLimits } from "@/accounts/useEffectiveLimits";
 import { useHolderResolver } from "@/accounts/useHolderResolver";
-import {
-	useAccount,
-	useAccountKeys,
-	useDeleteAccount,
-} from "@/api/hooks/accounts";
+import { useAccount, useDeleteAccount } from "@/api/hooks/accounts";
 import { useHosts } from "@/api/hooks/hosts";
 import { policiesListQueryOptions } from "@/api/hooks/policies";
 import { usePolicyBindings } from "@/api/hooks/policyBindings";
@@ -25,7 +21,6 @@ export function useAccountDetail({
 	onDeleted: () => void;
 }) {
 	const { data: account } = useAccount(name);
-	const { data: keysData } = useAccountKeys(name);
 	const { data: hostsData } = useHosts();
 	const { data: bindingsData } = usePolicyBindings();
 	const { data: policiesData } = useQuery(policiesListQueryOptions);
@@ -75,7 +70,6 @@ export function useAccountDetail({
 				label: displayLabel(policy.metadata),
 			},
 		},
-		keys: keysData.keys ?? [],
 		limits,
 		host,
 		hostLabel: hostLabel(host, hostId),

@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Building2, ChevronLeft, KeyRound, Shield } from "lucide-react";
+import { Building2, ChevronLeft, Shield } from "lucide-react";
+import type { ReactNode } from "react";
 import { AccountHolderLink } from "@/accounts/AccountHolderLink";
 import { PAYLOAD_LOGGING_RULE } from "@/accounts/accountCopy";
 import { ACCOUNT_KIND_LABELS } from "@/accounts/accountView";
@@ -9,7 +10,6 @@ import {
 	PAYLOAD_LOGGING_LABELS,
 	toPayloadLoggingChoice,
 } from "@/accounts/payloadLogging";
-import { UpstreamKeyList } from "@/accounts/UpstreamKeyList";
 import { useAccountDetail } from "@/accounts/useAccountDetail";
 import { PlanIssuesPanel } from "@/diagnostics/IssuesPanel";
 import { HostCell } from "@/hosts/HostCell";
@@ -22,7 +22,14 @@ import { StatusBadge, StatusInline } from "@/shared/StatusBadge";
 
 const hintClass = "mt-0.5 text-[11px] text-muted-foreground leading-snug";
 
-export function AccountDetailView({ name }: { name: string }) {
+/** `keysCard` is a provider account's keys, owned by the host-keys domain. */
+export function AccountDetailView({
+	name,
+	keysCard,
+}: {
+	name: string;
+	keysCard: ReactNode;
+}) {
 	const navigate = useNavigate();
 	const {
 		account,
@@ -30,7 +37,6 @@ export function AccountDetailView({ name }: { name: string }) {
 		holder,
 		ownerUser,
 		binding,
-		keys,
 		limits,
 		host,
 		hostLabel,
@@ -199,14 +205,7 @@ export function AccountDetailView({ name }: { name: string }) {
 
 			<EffectiveLimits state={limits} />
 
-			{isProvider && (
-				<DetailCard title={`Keys · ${keys.length}`} icon={KeyRound}>
-					<UpstreamKeyList
-						keys={keys}
-						empty="No credentials name this account."
-					/>
-				</DetailCard>
-			)}
+			{isProvider && keysCard}
 
 			{del.target && (
 				<DeleteConfirm

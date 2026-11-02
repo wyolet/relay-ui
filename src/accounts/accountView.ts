@@ -32,6 +32,14 @@ export const ACCOUNT_KINDS = [
 /** The only kind POST /accounts creates. */
 export const PROVIDER_KIND: Extract<AccountKind, "provider"> = "provider";
 
+/** Provider accounts ahead of caller accounts, each group in its given order. */
+export function providersFirst(accounts: readonly Account[]): Account[] {
+	return [
+		...accounts.filter((a) => a.spec.kind === PROVIDER_KIND),
+		...accounts.filter((a) => a.spec.kind !== PROVIDER_KIND),
+	];
+}
+
 export function parseAccountKind(value: string): AccountKind | undefined {
 	return ACCOUNT_KINDS.find((k) => k === value);
 }

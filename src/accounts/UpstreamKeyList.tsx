@@ -1,19 +1,25 @@
 import { Link } from "@tanstack/react-router";
+import type { ReactNode } from "react";
 import type { components } from "@/api/types.gen";
 import { DetailEmpty } from "@/shared/DetailCard";
 import { StatusInline } from "@/shared/StatusBadge";
 
 type HostKeyView = components["schemas"]["HostKeyView"];
 
-/** The secret-free host keys of an account or pool; `ordered` numbers them. */
-export function UpstreamKeyList({
+/**
+ * The secret-free host keys of an account or pool; `ordered` numbers them,
+ * `trailing` adds per-row cells after the status.
+ */
+export function UpstreamKeyList<K extends HostKeyView>({
 	keys,
 	ordered = false,
 	empty,
+	trailing,
 }: {
-	keys: readonly HostKeyView[];
+	keys: readonly K[];
 	ordered?: boolean;
 	empty: string;
+	trailing?: (key: K) => ReactNode;
 }) {
 	if (keys.length === 0) return <DetailEmpty>{empty}</DetailEmpty>;
 	return (
@@ -39,6 +45,7 @@ export function UpstreamKeyList({
 						{k.kind}
 					</span>
 					<StatusInline enabled={k.enabled} />
+					{trailing?.(k)}
 				</li>
 			))}
 		</ol>

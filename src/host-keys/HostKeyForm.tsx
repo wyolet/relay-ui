@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Building2, Globe, KeyRound, Link2 } from "lucide-react";
+import type { Account } from "@/api/hooks/accounts";
 import type { HostKey, HostKeyKind } from "@/api/types/hostkey";
 import { Input } from "@/components/ui/input";
 import {
@@ -29,11 +30,17 @@ const KIND_OPTIONS: Record<HostKeyKind, { label: string; hint: string }> = {
 
 interface HostKeyFormProps {
 	hostKey?: HostKey;
+	account?: Account;
 	onSaved: (savedName: string) => void;
 	onCancel: () => void;
 }
 
-export function HostKeyForm({ hostKey, onSaved, onCancel }: HostKeyFormProps) {
+export function HostKeyForm({
+	hostKey,
+	account,
+	onSaved,
+	onCancel,
+}: HostKeyFormProps) {
 	const {
 		form,
 		values,
@@ -49,10 +56,11 @@ export function HostKeyForm({ hostKey, onSaved, onCancel }: HostKeyFormProps) {
 		hostOptions,
 		accountOptions,
 		hostSelected,
+		accountLocked,
 		attachedPolicies,
 		setHost,
 		setAccount,
-	} = useHostKeyForm({ open: true, hostKey, onSaved });
+	} = useHostKeyForm({ open: true, hostKey, account, onSaved });
 
 	return (
 		<form
@@ -88,6 +96,8 @@ export function HostKeyForm({ hostKey, onSaved, onCancel }: HostKeyFormProps) {
 							options={hostOptions}
 							onChange={setHost}
 							error={hostIdError}
+							disabled={accountLocked}
+							hint={accountLocked ? "Set by the account." : undefined}
 						/>
 						<div>
 							<div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-1 inline-flex items-center gap-1">
@@ -98,7 +108,7 @@ export function HostKeyForm({ hostKey, onSaved, onCancel }: HostKeyFormProps) {
 								value={values.accountId}
 								items={accountOptions}
 								onValueChange={(v) => setAccount(v ?? "")}
-								disabled={!hostSelected}
+								disabled={!hostSelected || accountLocked}
 							>
 								<SelectTrigger className="w-full max-w-md">
 									<SelectValue placeholder="Pick a host first…" />
