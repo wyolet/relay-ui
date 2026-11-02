@@ -18,19 +18,10 @@ describe("resolveMutability", () => {
 		).toEqual({ canEdit: true, canDelete: false });
 	});
 
-	it("never lets system rows mutate", () => {
-		expect(
-			resolveMutability(
-				{ owner: { kind: "system" } },
-				{ allowEdit: true, allowDelete: true },
-			),
-		).toEqual(none);
-	});
-
-	it("treats user-owned and unowned rows as mutable", () => {
-		expect(resolveMutability({ owner: { kind: "user" } }, locked)).toEqual(
-			both,
-		);
+	it("leaves system, team, project, user and unowned rows to RBAC", () => {
+		for (const kind of ["system", "team", "project", "user"] as const) {
+			expect(resolveMutability({ owner: { kind } }, locked)).toEqual(both);
+		}
 		expect(resolveMutability({}, locked)).toEqual(both);
 	});
 

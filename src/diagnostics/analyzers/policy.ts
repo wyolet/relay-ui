@@ -3,6 +3,7 @@ import {
 	hostIdsInPolicyCatalog,
 	modelsForRefViaPolicy,
 } from "@/diagnostics/analyzers/policyCatalog";
+import { policyCredentialIds } from "@/diagnostics/buildGraph";
 import type { Diagnostic, DiagnosticGraph } from "@/diagnostics/types";
 import {
 	type CatalogRef,
@@ -27,7 +28,7 @@ export function analyzePolicy(
 		return out;
 	}
 
-	const credentialIds = policy.spec.credentialIds ?? [];
+	const credentialIds = policyCredentialIds(policy, graph.pools);
 	const resolvedKeys = credentialIds.map((id) => graph.hostKeys.get(id));
 	const livingKeys = resolvedKeys.filter((k) => k !== undefined);
 	const enabledKeys = livingKeys.filter((k) => k.spec.enabled !== false);
@@ -37,10 +38,7 @@ export function analyzePolicy(
 	const reachesWithoutKeys = grants.some(
 		(g) => modelsForRefViaPolicy(g, policy, graph).length > 0,
 	);
-	// poolIds is non-empty when the policy links pools (not checked here — pool
-	// data isn't loaded into the graph). Only warn when both are absent.
-	const hasPools = (policy.spec.poolIds?.length ?? 0) > 0;
-	if (credentialIds.length === 0 && !hasPools && !reachesWithoutKeys) {
+	if (credentialIds.length === 0 && !reachesWithoutKeys) {
 		out.push({
 			severity: "error",
 			code: "policy.no-host-keys",

@@ -7,6 +7,7 @@ import {
 	makeHostKey,
 	makeModel,
 	makePolicy,
+	makePool,
 	makeProvider,
 	makeRateLimit,
 } from "@/diagnostics/fixtures";
@@ -20,10 +21,34 @@ describe("analyzePolicy", () => {
 		expect(codes(ds)).toContain("policy.no-host-keys");
 	});
 
-	it("does not flag no-credentials when poolIds is non-empty", () => {
-		const p = makePolicy({ credentialIds: [], poolIds: ["pool-1"] });
-		const ds = analyzePolicy(p, graph({ policies: [p] }));
+	it("counts the keys of linked pools as the policy's credentials", () => {
+		const host = makeHost({ id: "h1", name: "openai" });
+		const hk = makeHostKey({ id: "k1", hostId: "h1" });
+		const provider = makeProvider({ id: "prov-openai", name: "openai" });
+		const model = makeModel({ name: "gpt-4o", providerId: "prov-openai" });
+		const p = makePolicy({ poolIds: ["pool-1"], models: ["openai"] });
+		const ds = analyzePolicy(
+			p,
+			graph({
+				policies: [p],
+				pools: [
+					makePool({ id: "pool-1", hostId: "h1", credentialIds: ["k1"] }),
+				],
+				hostKeys: [hk],
+				hosts: [host],
+				models: [model],
+				providers: [provider],
+				bindings: [bindingTo(model, "h1")],
+			}),
+		);
 		expect(codes(ds)).not.toContain("policy.no-host-keys");
+		expect(codes(ds)).not.toContain("policy.catalog-resolves-empty");
+	});
+
+	it("flags no credentials when a linked pool is missing", () => {
+		const p = makePolicy({ credentialIds: [], poolIds: ["pool-gone"] });
+		const ds = analyzePolicy(p, graph({ policies: [p] }));
+		expect(codes(ds)).toContain("policy.no-host-keys");
 	});
 
 	it("does not flag no-credentials when a grant reaches a noAuth host", () => {

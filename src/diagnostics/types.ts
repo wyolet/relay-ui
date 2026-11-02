@@ -1,4 +1,5 @@
 import type { Binding } from "@/api/hooks/bindings";
+import type { Pool } from "@/api/hooks/pools";
 import type { Host } from "@/api/types/host";
 import type { HostKey } from "@/api/types/hostkey";
 import type { Key } from "@/api/types/key";
@@ -59,12 +60,14 @@ export interface DiagnosticGraph {
 	hosts: ReadonlyMap<string, Host>;
 	models: ReadonlyMap<string, Model>;
 	rateLimits: ReadonlyMap<string, RateLimit>;
+	pools: ReadonlyMap<string, Pool>;
 	keys: ReadonlyMap<string, Key>;
 	providers: ReadonlyMap<string, Provider>;
 	// Host-bindings, indexed both ways (a model is served on a host via a binding).
 	bindingsByModel: ReadonlyMap<string, Binding[]>;
 	bindingsByHost: ReadonlyMap<string, Binding[]>;
-	// Reverse indexes: policies referencing a credential or rate limit by id.
+	// Reverse indexes: policies reaching a credential (through a pool or
+	// directly) or referencing a rate limit, by id.
 	policiesByCredentialId: ReadonlyMap<string, Policy[]>;
 	policiesByRateLimitId: ReadonlyMap<string, Policy[]>;
 }

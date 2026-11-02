@@ -1,5 +1,6 @@
 import type { Model } from "@/api/types/model";
 import type { Policy } from "@/api/types/policy";
+import { policyCredentialIds } from "@/diagnostics/buildGraph";
 import type { DiagnosticGraph } from "@/diagnostics/types";
 
 interface ParsedRef {
@@ -75,12 +76,10 @@ export function hostIdsInPolicyCatalog(
 /**
  * Models reachable through the policy via the ref. A model counts if:
  *   - it matches the ref (provider / model / @host segments), AND
- *   - the binding's host is reachable: either an enabled credential points at it
- *     (via credentialIds), or the host is `noAuth` (needs no credential).
+ *   - the binding's host is reachable: either an enabled credential the policy
+ *     draws on (through a pool or directly) is at it, or the host is `noAuth`.
  *
  * Empty result = the grant unlocks nothing through this policy.
- * Note: pool-linked credentials (poolIds) are not resolved here — the graph
- * does not load pool data.
  */
 export function modelsForRefViaPolicy(
 	ref: string,
@@ -90,10 +89,9 @@ export function modelsForRefViaPolicy(
 	const parsed = parseRef(ref);
 	if (!parsed) return [];
 
-	// Hosts this policy can authenticate against via direct credentialIds.
 	// `noAuth` hosts need no credential — any enabled noAuth host is reachable.
 	const reachableHostIds = new Set<string>();
-	for (const credId of policy.spec.credentialIds ?? []) {
+	for (const credId of policyCredentialIds(policy, graph.pools)) {
 		const hk = graph.hostKeys.get(credId);
 		if (!hk || hk.spec.enabled === false) continue;
 		const host = graph.hosts.get(hk.spec.hostId);

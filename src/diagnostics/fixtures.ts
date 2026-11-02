@@ -1,4 +1,5 @@
 import type { Binding } from "@/api/hooks/bindings";
+import type { Pool } from "@/api/hooks/pools";
 import type { Host } from "@/api/types/host";
 import type { HostKey } from "@/api/types/hostkey";
 import type { Key } from "@/api/types/key";
@@ -68,6 +69,18 @@ export function makeHostKey(o: HostKeyOpts): HostKey {
 			enabled: o.enabled ?? true,
 			valueFrom: { kind: "stored" },
 		},
+	};
+}
+
+interface PoolOpts {
+	id: string;
+	hostId: string;
+	credentialIds?: string[];
+}
+export function makePool(o: PoolOpts): Pool {
+	return {
+		metadata: { id: o.id, name: o.id, owner: { kind: "user" } },
+		spec: { hostId: o.hostId, credentialIds: o.credentialIds ?? [] },
 	};
 }
 
@@ -196,6 +209,7 @@ interface GraphOpts {
 	hosts?: Host[];
 	models?: Model[];
 	rateLimits?: RateLimit[];
+	pools?: Pool[];
 	keys?: Key[];
 	providers?: Provider[];
 	bindings?: Binding[];
@@ -207,6 +221,7 @@ export function graph(o: GraphOpts = {}): DiagnosticGraph {
 		hosts: o.hosts ?? [],
 		models: o.models ?? [],
 		rateLimits: o.rateLimits ?? [],
+		pools: o.pools ?? [],
 		keys: o.keys ?? [],
 		providers: o.providers ?? [],
 		bindings: o.bindings ?? [],
