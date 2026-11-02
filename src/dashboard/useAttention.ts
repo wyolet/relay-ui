@@ -90,7 +90,7 @@ export function useAttention(): { items: AttentionItem[]; checking: boolean } {
 		items.push({
 			key: `refusal-${r.refusal}`,
 			tone: "warn",
-			text: `${fmtCompact(r.requests)} requests refused: ${refusalLabel(r.refusal).toLowerCase()}`,
+			text: `${requestCount(r.requests)} refused: ${refusalLabel(r.refusal).toLowerCase()}`,
 			target: { kind: "refusal", refusal: r.refusal },
 		});
 	}
@@ -98,7 +98,7 @@ export function useAttention(): { items: AttentionItem[]; checking: boolean } {
 		items.push({
 			key: "unauthenticated",
 			tone: "warn",
-			text: `${fmtCompact(rejections.unauthenticated)} requests unauthenticated (401)`,
+			text: `${requestCount(rejections.unauthenticated)} unauthenticated (401)`,
 			target: { kind: "unauthenticated" },
 		});
 	}
@@ -106,7 +106,7 @@ export function useAttention(): { items: AttentionItem[]; checking: boolean } {
 		items.push({
 			key: "denied",
 			tone: "warn",
-			text: `${fmtCompact(denied.events)}${denied.truncated ? "+" : ""} control-plane requests denied`,
+			text: `${fmtCompact(denied.events)}${denied.truncated ? "+" : ""} control-plane request${denied.events === 1 && !denied.truncated ? "" : "s"} denied`,
 			target: { kind: "denied" },
 		});
 	}
@@ -114,7 +114,7 @@ export function useAttention(): { items: AttentionItem[]; checking: boolean } {
 		items.push({
 			key: "unpriced",
 			tone: "warn",
-			text: `${fmtCompact(cost.current.unpricedEvents)} requests unpriced this week`,
+			text: `${requestCount(cost.current.unpricedEvents)} unpriced this week`,
 			target: { kind: "pricing" },
 		});
 	}
@@ -137,4 +137,8 @@ export function useAttention(): { items: AttentionItem[]; checking: boolean } {
 
 	items.sort((a, b) => Number(b.tone === "alert") - Number(a.tone === "alert"));
 	return { items, checking: breakers.pending };
+}
+
+function requestCount(n: number): string {
+	return `${fmtCompact(n)} request${n === 1 ? "" : "s"}`;
 }
