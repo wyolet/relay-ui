@@ -13,27 +13,24 @@ import {
 	type RefCoverage,
 } from "@/lib/policyRLResolution";
 import type { RateLimitLinkValue } from "@/policies/policyFormSpec";
+import { SharedLinkSwitch } from "@/policies/SharedLinkSwitch";
 import { usePolicyRLResolution } from "@/policies/usePolicyRLResolution";
 import { AttachRateLimitModal } from "@/rate-limits/AttachRateLimitModal";
 import { AlertBanner } from "@/shared/AlertBanner";
 
 interface PolicyRLPickerProps {
 	links: RateLimitLinkValue[];
+	/** The policy's models; empty means all available. */
 	allowedModels: string[];
-	includeDeprecated: boolean;
 	onChange: (next: RateLimitLinkValue[]) => void;
 }
 
 export function PolicyRLPicker({
 	links,
 	allowedModels,
-	includeDeprecated,
 	onChange,
 }: PolicyRLPickerProps) {
-	const { scopes, labels, rlMetaById } = usePolicyRLResolution(
-		links,
-		includeDeprecated,
-	);
+	const { scopes, labels, rlMetaById } = usePolicyRLResolution(links);
 
 	const grantRefs = useMemo(
 		() =>
@@ -44,6 +41,7 @@ export function PolicyRLPicker({
 	);
 
 	function orphansFor(refs: readonly string[]): string[] {
+		if (allowedModels.length === 0) return [];
 		return refs.filter((raw) => {
 			if (validateCatalogRef(raw)) return false;
 			const scope = parseCatalogRef(raw);
@@ -73,13 +71,19 @@ export function PolicyRLPicker({
 		onChange(links.filter((_, i) => i !== idx));
 	}
 
+	function setShared(idx: number, shared: boolean) {
+		onChange(links.map((l, i) => (i === idx ? { ...l, shared } : l)));
+	}
+
 	function save(rateLimitId: string, models: string[]) {
 		if (!editing) return;
 		if (editing.kind === "new") {
-			onChange([...links, { rateLimitId, models }]);
+			onChange([...links, { rateLimitId, models, shared: true }]);
 		} else {
 			onChange(
-				links.map((l, i) => (i === editing.idx ? { rateLimitId, models } : l)),
+				links.map((l, i) =>
+					i === editing.idx ? { ...l, rateLimitId, models } : l,
+				),
 			);
 		}
 		setEditing(null);
@@ -142,6 +146,11 @@ export function PolicyRLPicker({
 											)}
 										</div>
 										<div className="flex items-center gap-1 shrink-0">
+											<SharedLinkSwitch
+												value={l.shared}
+												onChange={(next) => setShared(i, next)}
+												linkLabel={meta?.label ?? l.rateLimitId}
+											/>
 											<Button
 												type="button"
 												variant="ghost"
@@ -198,7 +207,6 @@ export function PolicyRLPicker({
 					rateLimits={[...rlMetaById.values()]}
 					excludeRLIds={usedRLIds}
 					allowedModels={allowedModels}
-					includeDeprecated={includeDeprecated}
 					onClose={() => setEditing(null)}
 					onSave={save}
 				/>

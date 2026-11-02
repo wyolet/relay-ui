@@ -8,6 +8,7 @@ import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { compactNumber } from "@/lib/rateLimitFormat";
 import { isProviderOwned, isSystemOwned } from "@/lib/systemRateLimits";
 import { windowLabel } from "@/lib/timeWindow";
+import { SharedLinkLabel } from "@/rate-limits/SharedLinkLabel";
 import { useRateLimitReferences } from "@/rate-limits/useRateLimitReferences";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
 import { DetailTable, Td } from "@/shared/DetailTable";
@@ -201,9 +202,7 @@ function PoliciesPanel({ rateLimit }: { rateLimit: RateLimit }) {
 					const enabled = ref.policy.spec.enabled !== false;
 					const hostOwned = ref.policy.metadata.owner?.kind === "host";
 					const unscoped = ref.models.length === 0;
-					const scopeCount = unscoped
-						? (ref.policy.spec.models?.length ?? 0)
-						: ref.models.length;
+					const scopeCount = ref.models.length;
 					return (
 						<tr
 							// Relay refuses one rate limit linked twice over the same models.
@@ -231,15 +230,16 @@ function PoliciesPanel({ rateLimit }: { rateLimit: RateLimit }) {
 								</div>
 							</Td>
 							<Td>
-								<Badge tone={unscoped ? "default" : "scoped"}>
-									{unscoped ? "All models" : "Scoped"}
-								</Badge>
+								<span className="inline-flex items-center gap-2">
+									<Badge tone={unscoped ? "default" : "scoped"}>
+										{unscoped ? "All models" : "Scoped"}
+									</Badge>
+									<SharedLinkLabel shared={ref.shared} />
+								</span>
 							</Td>
 							<Td className="text-right tabular-nums">
 								{unscoped ? (
-									<span className="text-muted-foreground">
-										all ({scopeCount})
-									</span>
+									<span className="text-muted-foreground">all</span>
 								) : (
 									<span className="text-foreground">
 										{scopeCount} ref{scopeCount === 1 ? "" : "s"}

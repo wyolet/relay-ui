@@ -12,6 +12,7 @@ import { firstError, zodFieldValidator } from "@/lib/formErrors";
 import { ALL_OWNER_SCOPES, PERSONAL_OWNER } from "@/lib/ownerScopes";
 import { randomSuffix, slugify } from "@/lib/slug";
 import {
+	budgetLinksForIds,
 	type PolicySpecValues,
 	specFromFormValues,
 	specToFormValues,
@@ -30,7 +31,7 @@ export function policyFromFormValues(
 ): Policy {
 	return {
 		metadata: base?.metadata ?? { name: "" },
-		spec: { ...base?.spec, ...specFromFormValues(values) },
+		spec: specFromFormValues(values),
 	};
 }
 
@@ -54,12 +55,11 @@ const schema = z.object({
 		z.object({
 			rateLimitId: z.string().min(1, "Pick a rate limit"),
 			models: z.array(z.string()),
+			shared: z.boolean(),
 		}),
 	),
-	budgetIds: z.array(z.string()),
+	budgets: z.array(z.object({ budgetId: z.string(), shared: z.boolean() })),
 	enabled: z.boolean(),
-	includeDeprecated: z.boolean(),
-	payloadLoggingEnabled: z.boolean(),
 });
 
 function emptyValues(owner: string): PolicyFormValues {
@@ -144,7 +144,7 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 									? { description: "" }
 									: {}),
 						},
-						spec: { ...policy.spec, ...spec },
+						spec,
 					};
 					const saved = await updatePolicy.mutateAsync({
 						id: policy.metadata.id ?? "",
@@ -202,9 +202,23 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 		firstError(s.fieldMeta?.owner?.errors),
 	);
 
+	function setBudgetIds(ids: string[]) {
+		form.setFieldValue("budgets", budgetLinksForIds(ids, values.budgets));
+	}
+	function setBudgetShared(budgetId: string, shared: boolean) {
+		form.setFieldValue(
+			"budgets",
+			values.budgets.map((b) =>
+				b.budgetId === budgetId ? { ...b, shared } : b,
+			),
+		);
+	}
+
 	return {
 		form,
 		values,
+		setBudgetIds,
+		setBudgetShared,
 		isEdit,
 		slugPreview,
 		displayNameError,

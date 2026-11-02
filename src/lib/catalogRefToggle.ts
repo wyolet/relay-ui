@@ -54,14 +54,3 @@ export function toggleModelRef(
 		parseCatalogRef(formatCatalogRef({ provider, model })),
 	];
 }
-
-/** Add or drop an `@host` grant (every binding on the host, any provider);
- * adding drops the binding-level refs on that host. */
-export function toggleHostRef(refs: CatalogRef[], host: string): CatalogRef[] {
-	const existing = refs.find((r) => r.kind === "host" && r.host === host);
-	if (existing) return refs.filter((r) => r.raw !== existing.raw);
-	return [
-		...refs.filter((r) => !(r.kind === "binding" && r.host === host)),
-		parseCatalogRef(formatCatalogRef({ host })),
-	];
-}

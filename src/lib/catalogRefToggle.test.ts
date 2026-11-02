@@ -1,7 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import {
 	parseValidRefs,
-	toggleHostRef,
 	toggleModelRef,
 	toggleProviderRef,
 } from "./catalogRefToggle";
@@ -51,24 +50,5 @@ describe("toggleModelRef", () => {
 	it("removes an existing model grant", () => {
 		const refs = parseValidRefs(["anthropic/opus"]);
 		expect(raws(toggleModelRef(refs, "anthropic", "opus"))).toEqual([]);
-	});
-});
-
-describe("toggleHostRef", () => {
-	it("adds the host and drops binding refs on it", () => {
-		const refs = parseValidRefs([
-			"anthropic/opus@bedrock",
-			"anthropic@bedrock",
-			"anthropic/opus@vertex",
-		]);
-		expect(raws(toggleHostRef(refs, "bedrock"))).toEqual([
-			"anthropic@bedrock",
-			"anthropic/opus@vertex",
-			"@bedrock",
-		]);
-	});
-	it("removes an existing host grant", () => {
-		const refs = parseValidRefs(["@bedrock", "openai"]);
-		expect(raws(toggleHostRef(refs, "bedrock"))).toEqual(["openai"]);
 	});
 });

@@ -6,7 +6,7 @@ import {
 	useSuspenseQuery,
 } from "@tanstack/react-query";
 import { apiClient } from "@/api/client";
-import { ApiError, type DetachedLinks } from "@/api/types/errors";
+import type { DetachedLinks } from "@/api/types/errors";
 import type {
 	Policy,
 	PolicyCreate,
@@ -15,8 +15,6 @@ import type {
 } from "@/api/types/policy";
 import type { components } from "@/api/types.gen";
 import { unwrap } from "@/api/unwrap";
-import { displayLabel } from "@/lib/displayLabel";
-import { toast } from "@/shared/Toast";
 
 export const policiesListQueryOptions = queryOptions({
 	queryKey: ["policies"] as const,
@@ -250,56 +248,4 @@ export function policyReferencesQueryOptions(id: string) {
 
 export function usePolicyReferences(id: string | undefined) {
 	return useSuspenseQuery(policyReferencesQueryOptions(id ?? ""));
-}
-
-interface DetachHostKeyArgs {
-	policyId: string;
-	hostKeyId: string;
-	policies: Policy[];
-}
-
-/**
- * Removes a host key from a policy's directly linked `credentialIds`. Lives in
- * the api layer (below every domain) so host-keys can call it without a
- * reverse policies dependency.
- */
-export function useDetachHostKeyFromPolicy() {
-	const updatePolicy = useUpdatePolicy();
-	const queryClient = useQueryClient();
-
-	async function detach({ policyId, hostKeyId, policies }: DetachHostKeyArgs) {
-		const policy = policies.find((p) => p.metadata.id === policyId);
-		if (!policy) {
-			toast("error", "Policy not found — refresh and retry.");
-			return;
-		}
-		const nextCredentialIds = (policy.spec.credentialIds ?? []).filter(
-			(id) => id !== hostKeyId,
-		);
-		try {
-			await updatePolicy.mutateAsync({
-				id: policyId,
-				body: {
-					metadata: policy.metadata,
-					spec: {
-						...policy.spec,
-						credentialIds:
-							nextCredentialIds.length > 0 ? nextCredentialIds : null,
-					},
-				},
-			});
-			// Host-key views list the policies linking them, computed server-side.
-			void queryClient.invalidateQueries({ queryKey: ["host-keys"] });
-			toast("success", `Detached from "${displayLabel(policy.metadata)}".`);
-		} catch (err) {
-			toast(
-				"error",
-				err instanceof ApiError
-					? err.body.message
-					: "Failed to detach from policy.",
-			);
-		}
-	}
-
-	return { detach, isPending: updatePolicy.isPending };
 }

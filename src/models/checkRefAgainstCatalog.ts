@@ -5,13 +5,16 @@ import type { PickerIndex } from "@/models/usePickerCatalog";
 
 /**
  * Why a typed ref can't be granted against this catalog, or undefined when it
- * can: bad characters (with a slugged or nearest suggestion), bad syntax, or
- * a provider / model / host the catalog doesn't have.
+ * can: a host part, bad characters (with a slugged or nearest suggestion), bad
+ * syntax, or a provider / model the catalog doesn't have.
  */
 export function checkRefAgainstCatalog(
 	ref: string,
 	index: PickerIndex,
 ): string | undefined {
+	if (ref.includes("@")) {
+		return "Hosts (@host) aren't accepted: the pools decide hosts. Use provider or provider/model.";
+	}
 	const bad = ref.match(/[.:]/);
 	if (bad) {
 		const slugged = slugifyRef(ref);
@@ -30,46 +33,17 @@ export function checkRefAgainstCatalog(
 	const synErr = validateCatalogRef(ref);
 	if (synErr) return synErr;
 	const parsed = parseCatalogRef(ref);
-	const host = parsed.host;
-
-	if (parsed.kind === "host") {
-		if (!host || !index.hostsByName.has(host)) {
-			return `Host "${host}" doesn't exist`;
-		}
-		return undefined;
-	}
 
 	if (!parsed.provider || !index.providersByName.has(parsed.provider)) {
 		return `Provider "${parsed.provider}" doesn't exist`;
 	}
 
-	const providerModels = index.modelsByProvider.get(parsed.provider) ?? [];
-
 	if (parsed.model !== undefined) {
-		const model = providerModels.find((m) => m.name === parsed.model);
-		if (!model) {
+		const providerModels = index.modelsByProvider.get(parsed.provider) ?? [];
+		if (!providerModels.some((m) => m.name === parsed.model)) {
 			const near = closestRef(`${parsed.provider}/${parsed.model}`, index);
 			const hint = near ? ` — did you mean "${near}"?` : "";
 			return `Model "${parsed.provider}/${parsed.model}" doesn't exist${hint}`;
-		}
-		if (host !== undefined) {
-			if (!index.hostsByName.has(host)) {
-				return `Host "${host}" doesn't exist`;
-			}
-			if (!model.hostNames.includes(host)) {
-				return `Model "${parsed.provider}/${parsed.model}" isn't served on host "${host}"`;
-			}
-		}
-		return undefined;
-	}
-
-	if (host !== undefined) {
-		if (!index.hostsByName.has(host)) {
-			return `Host "${host}" doesn't exist`;
-		}
-		const hasBinding = providerModels.some((m) => m.hostNames.includes(host));
-		if (!hasBinding) {
-			return `No "${parsed.provider}" models on host "${host}"`;
 		}
 	}
 	return undefined;
@@ -77,7 +51,7 @@ export function checkRefAgainstCatalog(
 
 function slugifyRef(ref: string): string {
 	return ref
-		.split(/([/@])/)
+		.split(/(\/)/)
 		.map((part, i) => (i % 2 === 0 ? slugFrom(part) : part))
 		.join("");
 }
@@ -88,7 +62,6 @@ function allRefs(index: PickerIndex): string[] {
 	for (const [prov, rows] of index.modelsByProvider) {
 		for (const r of rows) out.push(`${prov}/${r.name}`);
 	}
-	for (const h of index.hostsByName.keys()) out.push(`@${h}`);
 	return out;
 }
 

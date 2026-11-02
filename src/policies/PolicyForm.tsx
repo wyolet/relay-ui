@@ -1,20 +1,14 @@
-import {
-	Boxes,
-	Gauge,
-	Layers,
-	type LucideIcon,
-	ScrollText,
-	Wallet,
-} from "lucide-react";
+import { Boxes, Gauge, Layers, type LucideIcon, Wallet } from "lucide-react";
 import { useMemo } from "react";
 import type { Policy } from "@/api/types/policy";
 import { analyzePolicy } from "@/diagnostics/analyzers/policy";
 import { DiagnosticList } from "@/diagnostics/DiagnosticList";
 import { useDiagnosticGraph } from "@/diagnostics/useDiagnostics";
 import { ModelPicker } from "@/models/ModelPicker";
-import { IncludeDeprecatedSwitch } from "@/policies/IncludeDeprecatedSwitch";
 import { PolicyLinkPicker } from "@/policies/PolicyLinkPicker";
 import { PolicyRLPicker } from "@/policies/PolicyRLPicker";
+import { budgetLinkShared } from "@/policies/policyFormSpec";
+import { SharedLinkSwitch } from "@/policies/SharedLinkSwitch";
 import { policyFromFormValues, usePolicyForm } from "@/policies/usePolicyForm";
 import {
 	useBudgetChoices,
@@ -23,7 +17,6 @@ import {
 import { FormFooter } from "@/shared/FormFooter";
 import { IdentitySection } from "@/shared/IdentitySection";
 import { OwnerSection } from "@/shared/OwnerSection";
-import { ToggleSwitch } from "@/shared/ToggleSwitch";
 
 interface PolicyFormProps {
 	policy?: Policy;
@@ -35,6 +28,8 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 	const {
 		form,
 		values,
+		setBudgetIds,
+		setBudgetShared,
 		isEdit,
 		slugPreview,
 		displayNameError,
@@ -48,7 +43,7 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 	});
 
 	const pools = usePoolChoices(values.poolIds);
-	const budgets = useBudgetChoices(values.budgetIds);
+	const budgets = useBudgetChoices(values.budgets.map((b) => b.budgetId));
 
 	// Live diagnostics: synthesize a draft policy from form values and run
 	// the analyzer against it, so warnings clear without a Save round-trip.
@@ -95,20 +90,14 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 
 				<Section
 					icon={Boxes}
-					title="Allowed catalog"
-					description="Grant providers, models, hosts, or specific model+host pairs. Wildcard grants auto-include catalog rows added later."
+					title="Models"
+					description="Providers or single models this policy allows; a provider includes models added to it later. Hosts come from the pools."
 				>
-					<div className="flex flex-col gap-2">
-						<ModelPicker
-							value={values.models}
-							onChange={(next) => form.setFieldValue("models", next)}
-							includeDeprecated={values.includeDeprecated}
-						/>
-						<IncludeDeprecatedSwitch
-							value={values.includeDeprecated}
-							onChange={(next) => form.setFieldValue("includeDeprecated", next)}
-						/>
-					</div>
+					<ModelPicker
+						value={values.models}
+						onChange={(next) => form.setFieldValue("models", next)}
+						emptyText="All available models: whatever this policy's pools serve. Pick providers or models to narrow it."
+					/>
 				</Section>
 
 				<Section
@@ -126,27 +115,13 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 				</Section>
 
 				<Section
-					icon={ScrollText}
-					title="Logging"
-					description="Capture full request and response bodies for traffic under this policy."
-				>
-					<ToggleSwitch
-						value={values.payloadLoggingEnabled}
-						onChange={(v) => form.setFieldValue("payloadLoggingEnabled", v)}
-						label="Capture request & response payloads"
-						hint="Logs bodies for this policy's traffic (visible under Logs), overriding the per-key setting. A global default can override this in turn."
-					/>
-				</Section>
-
-				<Section
 					icon={Gauge}
 					title="Rate limits"
-					description="Every linked rate limit applies; a model scope narrows one to those models."
+					description="Every linked rate limit applies; a model scope narrows one to those models. Shared is one count for the bound account; off is one count per member under it."
 				>
 					<PolicyRLPicker
 						links={values.rateLimits}
 						allowedModels={values.models}
-						includeDeprecated={values.includeDeprecated}
 						onChange={(next) => form.setFieldValue("rateLimits", next)}
 					/>
 				</Section>
@@ -154,11 +129,18 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 				<Section
 					icon={Wallet}
 					title="Budgets"
-					description="Spend caps every request under this policy must fit. Unpriced models are refused under a budget."
+					description="Spend caps every request under this policy must fit. Unpriced models are refused under a budget. Shared is one budget for the bound account; off is one budget per member under it."
 				>
 					<PolicyLinkPicker
 						choices={budgets}
-						onChange={(next) => form.setFieldValue("budgetIds", next)}
+						onChange={setBudgetIds}
+						renderRowControl={(c) => (
+							<SharedLinkSwitch
+								value={budgetLinkShared(values.budgets, c.id)}
+								onChange={(next) => setBudgetShared(c.id, next)}
+								linkLabel={c.label}
+							/>
+						)}
 						addLabel="Add budget"
 						emptyText="No budgets linked."
 					/>
