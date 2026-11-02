@@ -14,7 +14,6 @@ import { DetailCard, DetailEmpty, DetailRow } from "@/shared/DetailCard";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
 import { StatusBadge } from "@/shared/StatusBadge";
 import { toast } from "@/shared/Toast";
-import { BudgetCard } from "@/teams/BudgetCard";
 import { ScopeSpendCard } from "@/teams/ScopeSpendCard";
 import { useToggleTeamEnabled } from "@/teams/useToggleTeamEnabled";
 
@@ -122,8 +121,6 @@ export function TeamDetailView({ name }: { name: string }) {
 					</div>
 				</DetailCard>
 			)}
-
-			<BudgetCard budget={team.spec.budget} />
 
 			<ScopeSpendCard
 				spend={spend}

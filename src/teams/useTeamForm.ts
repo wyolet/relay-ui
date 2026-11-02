@@ -100,9 +100,7 @@ export function useTeamForm({
 			const displayName = value.displayName.trim();
 			const description = value.description.trim();
 			const labels = fromLabelPairs(value.labels);
-			// Budget stays server-side until it is editable; carry the stored
-			// value through so a save never clears it.
-			const spec = { ...(team?.spec ?? {}), enabled: value.enabled };
+			const spec = { enabled: value.enabled };
 			try {
 				if (isEdit && team) {
 					const saved = await updateTeam.mutateAsync({
