@@ -6,6 +6,7 @@ import {
 	modelPriceSummaries,
 	pricingCoverage,
 	rankPriceRows,
+	sortByLowestPrice,
 	unpricedGrants,
 	usageByModel,
 } from "@/lib/pricingMatrix";
@@ -133,6 +134,32 @@ describe("buildPricingMatrix", () => {
 			"azure",
 		]);
 		expect(summaries.get("m-gpt")?.lowest).toBeNull();
+	});
+
+	test("sorts by lowest price, unpriced last either way", () => {
+		const summaries = modelPriceSummaries(
+			buildPricingMatrix({
+				hosts,
+				models,
+				bindings,
+				pricings: [
+					sheet({
+						targetModels: ["m-opus"],
+						rates: [{ meter: "tokens.input", unit: "per_million", amount: 9 }],
+					}),
+					sheet({
+						name: "cheap",
+						targetModels: ["m-haiku"],
+						rates: [{ meter: "tokens.input", unit: "per_million", amount: 1 }],
+					}),
+				],
+			}),
+		);
+		const ids = ["m-gpt", "m-opus", "m-haiku", "m-none"];
+		const sorted = (dir: "asc" | "desc") =>
+			sortByLowestPrice(ids, (id) => summaries.get(id), dir);
+		expect(sorted("asc")).toEqual(["m-haiku", "m-opus", "m-gpt", "m-none"]);
+		expect(sorted("desc")).toEqual(["m-opus", "m-haiku", "m-gpt", "m-none"]);
 	});
 
 	test("unpriced grants group by model; unknown bindings count", () => {

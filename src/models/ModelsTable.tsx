@@ -17,16 +17,18 @@ import { useMutability } from "@/hooks/useMutability";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { HostLogo } from "@/hosts/HostLogo";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
+import type { ModelPriceSummary } from "@/lib/pricingMatrix";
+import { ModelPrice } from "@/pricing/ModelPrice";
+import type { ModelPrices } from "@/pricing/useModelPrices";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { CatalogDetachedBadge } from "@/shared/StatusBadge";
 import { Switch } from "@/shared/Switch";
 import { Th } from "@/shared/Th";
 import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 
-// Sorting happens server-side (GET /models?sort=) since pagination landed:
-// the page window depends on order, so client-side sorting stopped being
-// coherent. Only name is server-sortable today.
-export type ModelsSortKey = "name";
+// Name sorts server-side (GET /models?sort=); price has no server sort, so
+// the page sorts the full filtered set by it and windows it client-side.
+export type ModelsSortKey = "name" | "price";
 export type ModelsSortDir = "asc" | "desc";
 
 function deprecationNote(m: Model): string | null {
@@ -129,12 +131,14 @@ function ModelRow({
 	hideProvider,
 	hostsById,
 	hostIds,
+	price,
 	onDelete,
 }: {
 	m: Model;
 	hideProvider?: boolean;
 	hostsById?: Map<string, Host>;
 	hostIds: readonly string[];
+	price: ModelPriceSummary | undefined;
 	onDelete: () => void;
 }) {
 	const enabled = m.spec.enabled !== false;
@@ -191,6 +195,11 @@ function ModelRow({
 					<HostBadges hostIds={hostIds} hostsById={hostsById} />
 				</td>
 			)}
+			<td className="px-3 py-2 text-right">
+				{m.metadata.id && (
+					<ModelPrice modelId={m.metadata.id} summary={price} />
+				)}
+			</td>
 			<td className="px-3 py-2">
 				{canEdit ? (
 					<Switch
@@ -226,12 +235,13 @@ function ModelRow({
 }
 
 interface ModelsTableProps {
-	items: Model[];
+	items: readonly Model[];
 	sort: ModelsSortKey;
 	dir: ModelsSortDir;
 	onSort: (field: ModelsSortKey) => void;
 	hideProvider?: boolean;
 	hostsById?: Map<string, Host>;
+	prices: ModelPrices | undefined;
 }
 
 export function ModelsTable({
@@ -241,6 +251,7 @@ export function ModelsTable({
 	onSort,
 	hideProvider,
 	hostsById,
+	prices,
 }: ModelsTableProps) {
 	const { data: bindingsData } = useBindings();
 	const del = useConfirmedDelete(useDeleteModel(), { noun: "model" });
@@ -272,6 +283,17 @@ export function ModelsTable({
 								Name
 							</Th>
 							{!hideProvider && <Th variant="column">Hosts</Th>}
+							<Th
+								variant="column"
+								align="right"
+								sort={{
+									active: sort === "price",
+									direction: dir,
+									onSort: () => onSort("price"),
+								}}
+							>
+								Price
+							</Th>
 							<th
 								scope="col"
 								className="w-12 px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground"
@@ -289,6 +311,7 @@ export function ModelsTable({
 								hideProvider={hideProvider}
 								hostsById={hostsById}
 								hostIds={hostIdsByModel.get(m.metadata.id ?? "") ?? []}
+								price={prices?.get(m.metadata.id ?? "")}
 								onDelete={() =>
 									del.request({
 										id: m.metadata.id ?? "",

@@ -1,6 +1,7 @@
 import {
 	type BlendedPrice,
 	blendedPrice,
+	compareBlendedPrices,
 	lowestBlendedPrice,
 } from "@/lib/usage-math/blendedPrice";
 import {
@@ -232,6 +233,23 @@ export function modelPriceSummaries(
 		});
 	}
 	return out;
+}
+
+/** Items ordered by their model's lowest blended price; models without one
+ * stay last in either direction. */
+export function sortByLowestPrice<T>(
+	items: readonly T[],
+	summaryOf: (item: T) => ModelPriceSummary | undefined,
+	dir: "asc" | "desc",
+): T[] {
+	const priceOf = (item: T) => summaryOf(item)?.lowest?.price ?? null;
+	return [...items].sort((a, b) => {
+		const pa = priceOf(a);
+		const pb = priceOf(b);
+		if (!pa || !pb) return Number(!pa) - Number(!pb);
+		const order = compareBlendedPrices(pa, pb);
+		return dir === "asc" ? order : -order;
+	});
 }
 
 /** A granted model some reached host serves without a price. */
