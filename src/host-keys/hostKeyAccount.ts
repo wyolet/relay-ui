@@ -1,3 +1,4 @@
+import { isSharedAccount } from "@/accounts/accountView";
 import type { Account } from "@/api/hooks/accounts";
 import type { DetectedAccount } from "@/api/hooks/hostkeys";
 import { ApiError } from "@/api/types/errors";
@@ -56,7 +57,8 @@ export function accountOptions(
 			(a) =>
 				a.spec.kind === "provider" &&
 				a.spec.hostId === hostId &&
-				a.spec.default !== true,
+				a.spec.default !== true &&
+				!isSharedAccount(a),
 		)
 		.map((a) => ({
 			value: a.metadata.id ?? "",

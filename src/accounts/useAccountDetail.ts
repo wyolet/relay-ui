@@ -3,10 +3,15 @@ import {
 	canDeleteAccount,
 	hostLabel,
 	PROVIDER_KIND,
+	sharedByName,
 } from "@/accounts/accountView";
 import { useAccountEffectiveLimits } from "@/accounts/useEffectiveLimits";
 import { useHolderResolver } from "@/accounts/useHolderResolver";
-import { useAccount, useDeleteAccount } from "@/api/hooks/accounts";
+import {
+	accountDetailQueryOptions,
+	useAccount,
+	useDeleteAccount,
+} from "@/api/hooks/accounts";
 import { useHosts } from "@/api/hooks/hosts";
 import { policiesListQueryOptions } from "@/api/hooks/policies";
 import { usePolicyBindings } from "@/api/hooks/policyBindings";
@@ -44,6 +49,13 @@ export function useAccountDetail({
 			)
 		: undefined;
 	const owner = metadata.owner;
+	const sourceId = spec.sourceAccountId ?? "";
+	// The receiver may not see the real account; then the source shows unlinked.
+	const { data: sourceAccount } = useQuery({
+		...accountDetailQueryOptions(sourceId),
+		enabled: sourceId !== "",
+		retry: false,
+	});
 
 	function requestDelete() {
 		del.request({
@@ -71,6 +83,11 @@ export function useAccountDetail({
 			},
 		},
 		limits,
+		sharedBy: sharedByName(account),
+		source: sourceAccount && {
+			name: sourceAccount.metadata.name,
+			label: displayLabel(sourceAccount.metadata),
+		},
 		host,
 		hostLabel: hostLabel(host, hostId),
 		deletable: canDeleteAccount(spec),

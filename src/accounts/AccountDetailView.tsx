@@ -10,6 +10,8 @@ import {
 	PAYLOAD_LOGGING_LABELS,
 	toPayloadLoggingChoice,
 } from "@/accounts/payloadLogging";
+import { SharedByBadge } from "@/accounts/SharedByBadge";
+import { SharedWithCard } from "@/accounts/SharedWithCard";
 import { useAccountDetail } from "@/accounts/useAccountDetail";
 import { PlanIssuesPanel } from "@/diagnostics/IssuesPanel";
 import { HostCell } from "@/hosts/HostCell";
@@ -38,6 +40,8 @@ export function AccountDetailView({
 		ownerUser,
 		binding,
 		limits,
+		sharedBy,
+		source,
 		host,
 		hostLabel,
 		deletable,
@@ -69,6 +73,7 @@ export function AccountDetailView({
 				badges={
 					<>
 						{isDefault && <DefaultAccountBadge />}
+						{sharedBy !== undefined && <SharedByBadge name={sharedBy} />}
 						{closed && <StatusBadge enabled={false} disabledLabel="Closed" />}
 					</>
 				}
@@ -97,6 +102,25 @@ export function AccountDetailView({
 			<DetailCard title="Configuration" icon={Building2}>
 				<dl className="divide-y divide-border">
 					<DetailRow label="Kind">{ACCOUNT_KIND_LABELS[spec.kind]}</DetailRow>
+					{sharedBy !== undefined && (
+						<DetailRow label="Shared from">
+							{source ? (
+								<Link
+									to="/accounts/$name"
+									params={{ name: source.name }}
+									className="hover:underline"
+								>
+									{source.label}
+								</Link>
+							) : (
+								<span>An account of {sharedBy}</span>
+							)}
+							<p className={hintClass}>
+								Uses that account's keys, read-only. Requests count on its
+								limits; the policy bound here only narrows them.
+							</p>
+						</DetailRow>
+					)}
 					{holder && (
 						<DetailRow label="Holder">
 							<AccountHolderLink holder={holder} />
@@ -206,6 +230,8 @@ export function AccountDetailView({
 			<EffectiveLimits state={limits} />
 
 			{isProvider && keysCard}
+
+			<SharedWithCard account={account} />
 
 			{del.target && (
 				<DeleteConfirm

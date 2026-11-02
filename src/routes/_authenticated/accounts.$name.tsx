@@ -2,7 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { AccountDetailView } from "@/accounts/AccountDetailView";
 import { PROVIDER_KIND } from "@/accounts/accountView";
-import { accountDetailQueryOptions } from "@/api/hooks/accounts";
+import {
+	accountDetailQueryOptions,
+	accountKeysQueryOptions,
+} from "@/api/hooks/accounts";
 import { accountHostKeysQuery } from "@/api/hooks/hostkeys";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
 import { policiesListQueryOptions } from "@/api/hooks/policies";
@@ -23,7 +26,9 @@ export const Route = createFileRoute("/_authenticated/accounts/$name")({
 		const account = await queryClient.ensureQueryData(
 			accountDetailQueryOptions(params.name),
 		);
-		if (account.spec.kind === PROVIDER_KIND && account.metadata.id) {
+		if (account.spec.sourceAccountId) {
+			void queryClient.prefetchQuery(accountKeysQueryOptions(params.name));
+		} else if (account.spec.kind === PROVIDER_KIND && account.metadata.id) {
 			void queryClient.prefetchQuery(accountHostKeysQuery(account.metadata.id));
 		}
 		return account;
