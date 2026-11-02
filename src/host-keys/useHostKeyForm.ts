@@ -335,7 +335,7 @@ export function useHostKeyForm({
 	const usableAccounts = useUsableAccounts(
 		usableBy,
 		{ host_id: [values.hostId], kind: ["provider"] },
-		hostSelected,
+		{ enabled: hostSelected },
 	);
 	const accountOptions =
 		accountLocked && account

@@ -172,6 +172,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/accounts/{ref}/shares": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the accounts a provider account is shared with
+         * @description The real account's shares, each with its receiver and the requests and cost it sent through the real account over the window: usage rows of the real account grouped by via_account_id. For the real account's owner, as sharing is (403 otherwise). Revoke a share with DELETE /accounts/by-id/{id} on the shared account: it always goes through and answers what it changed (policy bindings that drop it or go, relay keys moved to their principal's own account, pools that lose it).
+         */
+        get: operations["list_account_shares"];
+        put?: never;
+        /**
+         * Share a provider account with a user, team, project or service account
+         * @description Creates an account owned by the receiver (a service account's by its project, held by it so only its lane draws on it) that reaches the real account's keys: current ones, keys added later, and their rotations. The shared account holds no keys and never shows a secret; its requests count on the real account's tier, and a policy bound to it only narrows them. It changes no routing by itself: the receiving scope uses it by listing it in one of its pools. Only the real account's owner shares it: its user alone for a personal account (no admin), an admin of its team, project or the system otherwise (403). A receiver that does not exist, or that the caller may not see, answers 404. One share per receiver: a second answers 409 share_exists. A shared account is not shared on: 409 reshare_refused. A receiver that already reaches the account through ownership (a project of the team that owns it, any scope for a system account) answers 409 already_reachable.
+         */
+        post: operations["share_account"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/apply": {
         parameters: {
             query?: never;
@@ -873,7 +897,7 @@ export interface paths {
         };
         /**
          * Read a HostKey's circuit-breaker state
-         * @description Reports why requests skip the key: open indefinitely after an auth failure until the key heals or rotates, or for a timed cooldown after rate limits and server errors.
+         * @description Reports why requests skip the key: open indefinitely after an auth failure until the key heals or rotates, or for a timed cooldown after rate limits and server errors. Readable by whoever may read the key, and by whoever sees an account shared from the key's account.
          */
         get: operations["get_host_key_health"];
         put?: never;
@@ -3512,30 +3536,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/accounts/{ref}/shares": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List the accounts a provider account is shared with
-         * @description The real account's shares, each with its receiver and the requests and cost it sent through the real account over the window: usage rows of the real account grouped by via_account_id. For the real account's owner, as sharing is (403 otherwise). Delete a share with DELETE /accounts/by-id/{id} on the shared account: it answers which pools lose it.
-         */
-        get: operations["list_account_shares"];
-        put?: never;
-        /**
-         * Share a provider account with a user, team, project or service account
-         * @description Creates an account owned by the receiver (a service account's by its project, held by it so only its lane draws on it) that reaches the real account's keys: current ones, keys added later, and their rotations. The shared account holds no keys and never shows a secret; its requests count on the real account's tier, and a policy bound to it only narrows them. Only the real account's owner shares it: its user for a personal account, an admin of its team, project or the system otherwise (403). One share per receiver: a second answers 409 share_exists. A shared account is not shared on: 409 reshare_refused. A receiver that does not exist answers 404.
-         */
-        post: operations["share_account"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -3623,6 +3623,15 @@ export interface components {
              */
             total: number;
         };
+        AccountReceiver: {
+            /** @description Id of the user, team, project or service account. */
+            id: string;
+            /**
+             * @description Whether the account is shared with a user, a team, a project or a service account.
+             * @enum {string}
+             */
+            kind: "user" | "team" | "project" | "serviceaccount";
+        };
         AccountScope: {
             /** @description Id of the user, team or project. */
             id: string;
@@ -3633,6 +3642,45 @@ export interface components {
             kind: "user" | "team" | "project";
             /** @description Username of the user, or slug of the team or project; empty when the row is gone. */
             name: string;
+        };
+        AccountShare: {
+            /** @description Who the account is shared with. */
+            receiver: components["schemas"]["AccountShareParty"];
+            /** @description The shared account, owned by the receiver. */
+            sharedAccount: components["schemas"]["ShareAccountRef"];
+            /** @description What requests through the shared account drew on the real account over the window; absent when this deployment reads no usage. */
+            usage?: components["schemas"]["ShareUsage"];
+        };
+        AccountShareParty: {
+            /** @description Id of the user, team, project or service account; empty for the system. */
+            id?: string;
+            /**
+             * @description Kind of the party: the system, a user, a team, a project or a service account.
+             * @enum {string}
+             */
+            kind: "system" | "user" | "team" | "project" | "serviceaccount";
+            /** @description Username, or slug of the team, project or service account; empty for the system or when the row is gone. */
+            name?: string;
+        };
+        AccountShares: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/AccountShares.json
+             */
+            readonly $schema?: string;
+            /**
+             * Format: date-time
+             * @description Start of the usage window.
+             */
+            from: string;
+            /** @description The accounts the provider account is shared with, by name. */
+            items: components["schemas"]["AccountShare"][] | null;
+            /**
+             * Format: date-time
+             * @description End of the usage window.
+             */
+            to: string;
         };
         AccountSpec: {
             /** @description The membership this member account stood for has ended: its keys are refused with account_closed. Reopened when a role grants the membership again. Server-managed. */
@@ -3655,7 +3703,7 @@ export interface components {
              * @enum {string}
              */
             payloadLogging?: "on" | "off";
-            /** @description Set on a shared account: the owner of the real account, who shared it. Derived on read. */
+            /** @description Set on a shared account: the owner of the real account, who shared it, always named to whoever sees the share (sharing it was their choice). Derived on read. */
             readonly sharedBy?: components["schemas"]["AccountShareParty"];
             /** @description Set on a shared account: the id of the provider account whose keys it reaches. A shared account holds no host keys of its own; its requests use the real account's keys, count on the real account's tier, and only narrow by the policy bound to the shared account. Made by POST /accounts/{ref}/shares; fixed at create. */
             readonly sourceAccountId?: string;
@@ -4182,6 +4230,8 @@ export interface components {
             kind: string;
             /** @description metadata.name of the row. */
             name: string;
+            /** @description On the delete of a shared account (pruned, or pruned with its real account): what revoking it changes. Policy bindings drop it, or go when it was their only account; relay keys whose lane it was move to their principal's own account; pools lose it. */
+            revokes?: components["schemas"]["RevokeImpact"][] | null;
         };
         ErrorDetail: {
             /** @description Where the error occurred, e.g. 'body.items[3].tags' or 'path.thing-id' */
@@ -4560,7 +4610,9 @@ export interface components {
             kind: "env" | "stored" | "oauth";
             /** @description Host key slug. */
             name: string;
-            /** @description The key belongs to the real account of a shared account: listed for the receiver to see, never edited or revealed through the share. */
+            /** @description What the caller may see of the secret, for recognising the key: its first 8 characters for whoever may edit the key; for anyone else, and through a share, only the key format's fixed prefix (such as sk-proj-) when it has a known one, then ... and the last 4 characters. Absent while the secret cannot be read or when it is shorter than 24 characters. */
+            prefix?: string;
+            /** @description The key belongs to the real account of a shared account: listed for the receiver to see, never edited or revealed through the share. Its breaker state reads from GET /host-keys/by-id/{id}/health. */
             readOnly?: boolean;
         };
         HostList: {
@@ -5828,6 +5880,25 @@ export interface components {
              */
             start: number;
         };
+        RevokeImpact: {
+            /**
+             * @description drops: the rows let go of the share; deleted: policy bindings left with no account go; moves: relay keys whose lane the share was move to their principal's own account.
+             * @enum {string}
+             */
+            change: "drops" | "deleted" | "moves";
+            /**
+             * Format: int64
+             * @description Changed rows the caller may not see.
+             */
+            hidden?: number;
+            /**
+             * @description Kind of the changed rows, as an API singular.
+             * @enum {string}
+             */
+            kind: "policy-binding" | "key" | "pool";
+            /** @description Slugs of the changed rows the caller may see. */
+            names?: string[] | null;
+        };
         RewrapResult: {
             /**
              * Format: uri
@@ -6023,6 +6094,29 @@ export interface components {
             enabled?: boolean;
             /** @description Id of the project the service account belongs to. The owner follows it. */
             projectId: string;
+        };
+        ShareAccountRef: {
+            /** @description Id of the shared account. */
+            id: string;
+            /** @description Slug of the shared account. */
+            name: string;
+        };
+        ShareUsage: {
+            /**
+             * Format: int64
+             * @description Cost of the priced ones, in nano-USD.
+             */
+            costNanos: number;
+            /**
+             * Format: int64
+             * @description Requests that reached an upstream through the shared account.
+             */
+            requests: number;
+            /**
+             * Format: int64
+             * @description Requests with no cost, left out of costNanos.
+             */
+            unpriced: number;
         };
         SummaryPrevious: {
             /**
@@ -6467,6 +6561,8 @@ export interface components {
              * @description Every referencing row, including the hidden ones.
              */
             count: number;
+            /** @description In a delete's answer: the rows went with the target instead of letting go of it, such as a policy binding left with no account when a share is revoked. */
+            deleted?: boolean;
             /** @description The rows can let go of the target (POST …/detach does it); otherwise reassign or delete them first. */
             detachable: boolean;
             /** @description Field path on those rows that names the target, such as spec.poolIds. */
@@ -6496,7 +6592,7 @@ export interface components {
             readonly $schema?: string;
             /** @description With resource_in_use: the rows that still reference the target, grouped by kind and field. */
             blockers?: components["schemas"]["blockerGroup"][] | null;
-            /** @description The error. code says which conflict: resource_in_use, stale_resource_version, managed_by_source, duplicate_binding, account_shared, share_exists, reshare_refused, or a duplicate default account. */
+            /** @description The error. code says which conflict: resource_in_use, stale_resource_version, managed_by_source, duplicate_binding, account_shared, share_exists, reshare_refused, already_reachable, or a duplicate default account. */
             error: components["schemas"]["APIErrorBody"];
         };
         createKeyInputBody: {
@@ -6546,8 +6642,18 @@ export interface components {
             passthroughAllowed?: boolean;
             /** @description Capture request and response bodies of this key's requests. An account on the request's ladder that sets payloadLogging decides instead. */
             payloadLoggingEnabled?: boolean;
-            /** @description The service account or user the key acts as. Its owner becomes the key's owner. */
-            principal: components["schemas"]["KeyPrincipal"];
+            /** @description The service account or user the key acts as. Its owner becomes the key's owner. Omitted: the signed-in user; the admin token must name one. */
+            principal?: components["schemas"]["KeyPrincipal"];
+        };
+        createShareInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/createShareInputBody.json
+             */
+            readonly $schema?: string;
+            /** @description Who the account is shared with. */
+            receiver: components["schemas"]["AccountReceiver"];
         };
         debugPolicyJoin: {
             /**
@@ -7509,87 +7615,6 @@ export interface components {
             /** @description Relay build version. */
             version: string;
         };
-        AccountReceiver: {
-            /** @description Id of the user, team, project or service account. */
-            id: string;
-            /**
-             * @description Whether the account is shared with a user, a team, a project or a service account.
-             * @enum {string}
-             */
-            kind: "user" | "team" | "project" | "serviceaccount";
-        };
-        AccountShare: {
-            /** @description Who the account is shared with. */
-            receiver: components["schemas"]["AccountShareParty"];
-            /** @description The shared account, owned by the receiver. */
-            sharedAccount: components["schemas"]["ShareAccountRef"];
-            /** @description What requests through the shared account drew on the real account over the window; absent when this deployment reads no usage. */
-            usage?: components["schemas"]["ShareUsage"];
-        };
-        AccountShareParty: {
-            /** @description Id of the user, team, project or service account; empty for the system. */
-            id?: string;
-            /**
-             * @description Kind of the party: the system, a user, a team, a project or a service account.
-             * @enum {string}
-             */
-            kind: "system" | "user" | "team" | "project" | "serviceaccount";
-            /** @description Username, or slug of the team, project or service account; empty for the system, when the row is gone, or when the caller may not see it. */
-            name?: string;
-        };
-        AccountShares: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example https://example.com/schemas/AccountShares.json
-             */
-            readonly $schema?: string;
-            /**
-             * Format: date-time
-             * @description Start of the usage window.
-             */
-            from: string;
-            /** @description The accounts the provider account is shared with, by name. */
-            items: components["schemas"]["AccountShare"][] | null;
-            /**
-             * Format: date-time
-             * @description End of the usage window.
-             */
-            to: string;
-        };
-        ShareAccountRef: {
-            /** @description Id of the shared account. */
-            id: string;
-            /** @description Slug of the shared account. */
-            name: string;
-        };
-        ShareUsage: {
-            /**
-             * Format: int64
-             * @description Cost of the priced ones, in nano-USD.
-             */
-            costNanos: number;
-            /**
-             * Format: int64
-             * @description Requests that reached an upstream through the shared account.
-             */
-            requests: number;
-            /**
-             * Format: int64
-             * @description Requests with no cost, left out of costNanos.
-             */
-            unpriced: number;
-        };
-        createShareInputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example https://example.com/schemas/createShareInputBody.json
-             */
-            readonly $schema?: string;
-            /** @description Who the account is shared with. */
-            receiver: components["schemas"]["AccountReceiver"];
-        };
     };
     responses: never;
     parameters: never;
@@ -7723,8 +7748,10 @@ export interface operations {
                 limit?: number;
                 /** @description Items to skip before the page. */
                 offset?: number;
-                /** @description Only the accounts a policy binding owned by this scope may link, by the rule a save of that row applies: system, user:<id>, team:<id> or project:<id>. */
+                /** @description Only the accounts a row owned by this scope may link, by the rule a save of that row applies; usable_for says which row: system, user:<id>, team:<id> or project:<id>. */
                 usable_by?: string;
+                /** @description Which row usable_by asks for (binding: what a policy binding owned by the usable_by scope may list; pool: what a pool owned by the usable_by scope may list). Default binding. Only with usable_by. */
+                usable_for?: "binding" | "pool";
             };
             header?: never;
             path?: never;
@@ -7752,6 +7779,15 @@ export interface operations {
             };
             /** @description No valid session cookie or admin bearer token. */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description No such row, or one the caller may not see. */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -8326,6 +8362,176 @@ export interface operations {
             };
             /** @description A backend the operation needs is not configured or not reachable. */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    list_account_shares: {
+        parameters: {
+            query?: {
+                /** @description Relative usage window (e.g. "24h", "7d", "30d"), the same grammar as the usage endpoints. Default "30d". */
+                since?: string;
+            };
+            header?: never;
+            path: {
+                /** @description Slug or id of the provider account whose shares to list. */
+                ref: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountShares"];
+                };
+            };
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description No valid session cookie or admin bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description No such row, or one the caller may not see. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The request does not match the schema; error.details lists each failing field. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The server failed; error.message carries the cause. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    share_account: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Slug or id of the provider account to share. */
+                ref: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["createShareInputBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Account"];
+                };
+            };
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description No valid session cookie or admin bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description No such row, or one the caller may not see. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description share_exists: the account is already shared with this receiver; reshare_refused: the account is itself a share; already_reachable: the receiver reaches the account through ownership already. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["conflictBody"];
+                };
+            };
+            /** @description The request does not match the schema; error.details lists each failing field. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The server failed; error.message carries the cause. */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -9029,6 +9235,15 @@ export interface operations {
             };
             /** @description No valid session cookie or admin bearer token. */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description No such row, or one the caller may not see. */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -10760,6 +10975,15 @@ export interface operations {
             };
             /** @description No valid session cookie or admin bearer token. */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description No such row, or one the caller may not see. */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -14310,6 +14534,15 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
+            /** @description No such row, or one the caller may not see. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
             /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
@@ -15389,6 +15622,15 @@ export interface operations {
             };
             /** @description No valid session cookie or admin bearer token. */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description No such row, or one the caller may not see. */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -17486,6 +17728,15 @@ export interface operations {
             };
             /** @description No valid session cookie or admin bearer token. */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description No such row, or one the caller may not see. */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -22946,176 +23197,6 @@ export interface operations {
             };
             /** @description Error */
             default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIError"];
-                };
-            };
-        };
-    };
-    list_account_shares: {
-        parameters: {
-            query?: {
-                /** @description Relative usage window (e.g. "24h", "7d", "30d"), the same grammar as the usage endpoints. Default "30d". */
-                since?: string;
-            };
-            header?: never;
-            path: {
-                /** @description Slug or id of the provider account whose shares to list. */
-                ref: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AccountShares"];
-                };
-            };
-            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIError"];
-                };
-            };
-            /** @description No valid session cookie or admin bearer token. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIError"];
-                };
-            };
-            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIError"];
-                };
-            };
-            /** @description No such row, or one the caller may not see. */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIError"];
-                };
-            };
-            /** @description The request does not match the schema; error.details lists each failing field. */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIError"];
-                };
-            };
-            /** @description The server failed; error.message carries the cause. */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIError"];
-                };
-            };
-        };
-    };
-    share_account: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Slug or id of the provider account to share. */
-                ref: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["createShareInputBody"];
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Account"];
-                };
-            };
-            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIError"];
-                };
-            };
-            /** @description No valid session cookie or admin bearer token. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIError"];
-                };
-            };
-            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIError"];
-                };
-            };
-            /** @description No such row, or one the caller may not see. */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIError"];
-                };
-            };
-            /** @description share_exists: the account is already shared with this receiver; reshare_refused: the account is itself a share. */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["conflictBody"];
-                };
-            };
-            /** @description The request does not match the schema; error.details lists each failing field. */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIError"];
-                };
-            };
-            /** @description The server failed; error.message carries the cause. */
-            500: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -174,7 +174,7 @@ export function usePoolForm({ pool, onSaved }: UsePoolFormOptions) {
 	const usableAccounts = useUsableAccounts(
 		usableBy,
 		{ kind: ["provider"], host_id: [values.hostId] },
-		values.hostId !== "",
+		{ use: "pool", enabled: values.hostId !== "" },
 	);
 	// Names accounts already in the pool that the current scope may no longer use.
 	const { data: visibleAccounts } = useQuery(accountListQueryOptions);
