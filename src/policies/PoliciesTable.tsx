@@ -1,7 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Plus, ShieldCheck } from "lucide-react";
 import { useState } from "react";
-import { useGovernance } from "@/api/hooks/governance";
 import {
 	useDeletePolicy,
 	usePolicies,
@@ -13,9 +12,9 @@ import type { RateLimit } from "@/api/types/ratelimit";
 import { buttonVariants } from "@/components/ui/button";
 import { DiagnosticDot } from "@/diagnostics/DiagnosticDot";
 import { usePolicyDiagnostics } from "@/diagnostics/useDiagnostics";
+import { useMutability } from "@/hooks/useMutability";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
-import { resolveMutability } from "@/lib/ownership";
 import { OwnerLink } from "@/projects/OwnerLink";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import {
@@ -200,8 +199,7 @@ function PolicyRow({
 	const diagnostics = usePolicyDiagnostics(policy.metadata.id);
 	const catalog = describeCatalog(policy);
 	const enabled = policy.spec.enabled !== false;
-	const gov = useGovernance("policy");
-	const { canEdit, canDelete } = resolveMutability(policy.metadata, gov);
+	const { canEdit, canDelete } = useMutability(policy.metadata, "policy");
 
 	async function toggleEnabled(next: boolean) {
 		try {

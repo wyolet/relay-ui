@@ -2,7 +2,6 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { AlertTriangle, MoreHorizontal } from "lucide-react";
 import { useMemo } from "react";
 import { bindingsByModel, useBindings } from "@/api/hooks/bindings";
-import { useGovernance } from "@/api/hooks/governance";
 import { useDeleteModel, useUpdateModel } from "@/api/hooks/models";
 import type { Host } from "@/api/types/host";
 import type { Model } from "@/api/types/model";
@@ -14,10 +13,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { DiagnosticDot } from "@/diagnostics/DiagnosticDot";
 import { useModelDiagnostics } from "@/diagnostics/useDiagnostics";
+import { useMutability } from "@/hooks/useMutability";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { HostLogo } from "@/hosts/HostLogo";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
-import { resolveMutability } from "@/lib/ownership";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { CatalogDetachedBadge } from "@/shared/StatusBadge";
 import { Switch } from "@/shared/Switch";
@@ -142,8 +141,7 @@ function ModelRow({
 	const updateModel = useUpdateModel();
 	const toastSaveError = useSaveErrorToast();
 	const diagnostics = useModelDiagnostics(m.metadata.id);
-	const gov = useGovernance("model");
-	const { canEdit, canDelete } = resolveMutability(m.metadata, gov);
+	const { canEdit, canDelete } = useMutability(m.metadata, "model");
 	async function toggleEnabled(next: boolean) {
 		try {
 			await updateModel.mutateAsync({

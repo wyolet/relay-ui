@@ -12,18 +12,17 @@ import {
 } from "lucide-react";
 import { Suspense } from "react";
 import { type Account, useAccounts } from "@/api/hooks/accounts";
-import { useGovernance } from "@/api/hooks/governance";
 import type { Host } from "@/api/types/host";
 import type { HostKey } from "@/api/types/hostkey";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DiagnosticList } from "@/diagnostics/DiagnosticList";
 import { useHostDiagnostics } from "@/diagnostics/useDiagnostics";
+import { useMutability } from "@/hooks/useMutability";
 import { HostLogo } from "@/hosts/HostLogo";
 import { HostTierPresets } from "@/hosts/HostTierPresets";
 import { useHostReferences } from "@/hosts/useHostReferences";
 import { useHostUsage } from "@/hosts/useHostUsage";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
-import { resolveMutability } from "@/lib/ownership";
 import { ResourceLogs } from "@/logs/ResourceLogs";
 import { ModelsByFamily } from "@/models/ModelsByFamily";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
@@ -243,8 +242,7 @@ function Header({
 }) {
 	const enabled = host.spec.enabled !== false;
 	const system = host.metadata.owner?.kind === "system";
-	const gov = useGovernance("host");
-	const { canEdit, canDelete } = resolveMutability(host.metadata, gov);
+	const { canEdit, canDelete } = useMutability(host.metadata, "host");
 
 	const links: { href: string | undefined; label: string }[] = [
 		{ href: host.spec.consoleURL, label: "Console" },

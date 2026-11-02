@@ -37,7 +37,6 @@ import {
 	Zap,
 } from "lucide-react";
 import { Suspense, useMemo } from "react";
-import { useGovernance } from "@/api/hooks/governance";
 import { useHosts } from "@/api/hooks/hosts";
 import type { ModelHostView, ModelPolicyView } from "@/api/hooks/models";
 import type { Host } from "@/api/types/host";
@@ -45,9 +44,9 @@ import type { Model, ModelCapabilities } from "@/api/types/model";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DiagnosticList } from "@/diagnostics/DiagnosticList";
 import { useModelDiagnostics } from "@/diagnostics/useDiagnostics";
+import { useMutability } from "@/hooks/useMutability";
 import { HostCell } from "@/hosts/HostCell";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
-import { resolveMutability } from "@/lib/ownership";
 import { blendedRequestCost } from "@/lib/usage-math/pricing";
 import { ResourceLogs } from "@/logs/ResourceLogs";
 import { modelProductLine } from "@/models/groupModelsByFamily";
@@ -227,8 +226,7 @@ function Header({
 }) {
 	const enabled = model.spec.enabled !== false;
 	const isProviderOwned = model.metadata.owner?.kind === "provider";
-	const gov = useGovernance("model");
-	const { canEdit, canDelete } = resolveMutability(model.metadata, gov);
+	const { canEdit, canDelete } = useMutability(model.metadata, "model");
 	const dep = deprecationNote(model);
 	const productLine = modelProductLine(model);
 
