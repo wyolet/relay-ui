@@ -3509,7 +3509,7 @@ export interface components {
             /** @description The provider's organization id (the org, never a person or an email). Provider accounts only; empty until known. */
             orgId?: string;
             /**
-             * @description Capture request and response bodies of requests in this account: on or off. Omitted leaves it to the account above it on the ladder (project, then team), then to the key's own flag.
+             * @description Capture request and response bodies of requests in this account: on or off. Omitted leaves it to the account above it on the ladder (project, then team), then to the key's own flag. On a personal account only an admin sets it; on a team, project, member or service account an admin of its scope, never the member account's own holder (403).
              * @enum {string}
              */
             payloadLogging?: "on" | "off";
@@ -4581,7 +4581,7 @@ export interface components {
             kind: "serviceaccount" | "user";
         };
         KeySpec: {
-            /** @description Id of the account the key's requests run in by default: one the principal holds (a service account's account, the user's personal or member account) or a provider account the principal may use. Optional on create: a service account's key defaults to its account, a user's key to the personal account. */
+            /** @description Id of the account the key's requests run in by default: the service account's account, the user's personal account, a member account a role binding grants the user, or a provider account the user owns personally. Any other answers 403 account_not_held. Optional on create: a service account's key defaults to its account, a user's key to the personal account. */
             accountId?: string;
             /** @description False stops the key authenticating (401) until re-enabled. Omitted means true. */
             enabled?: boolean;
@@ -5579,7 +5579,7 @@ export interface components {
             /** @description Control-API kinds (plurals, such as policies or host-keys) the rule covers; * covers every kind. */
             kinds: ("*" | "accounts" | "audit" | "budgets" | "debug" | "groups" | "host-bindings" | "host-keys" | "hosts" | "keys" | "license" | "logs" | "master-key" | "models" | "policies" | "policy-bindings" | "pools" | "pricings" | "projects" | "providers" | "rate-limits" | "role-bindings" | "roles" | "scim-clients" | "secret-keys" | "service-accounts" | "settings" | "system" | "teams" | "tokens" | "usage" | "users")[] | null;
             /** @description Verbs the rule grants on those kinds, such as list, get, create, update, delete, rotate; * grants every verb. */
-            verbs: ("*" | "apply" | "attach" | "create" | "delete" | "destroy" | "detach" | "generate" | "get" | "health" | "list" | "mint" | "read" | "reload" | "revoke" | "rewrap" | "rotate" | "snapshot" | "update" | "use")[] | null;
+            verbs: ("*" | "apply" | "attach" | "create" | "delete" | "destroy" | "detach" | "generate" | "get" | "health" | "list" | "mint" | "read" | "reload" | "revoke" | "rewrap" | "rotate" | "snapshot" | "update")[] | null;
         };
         RoleSpec: {
             /** @description False makes bindings of this role grant nothing. Omitted means true. */
@@ -6187,7 +6187,7 @@ export interface components {
         createKeySpec: {
             /**
              * Format: uuid
-             * @description Id of the account the key's requests run in by default: one the principal holds (a service account's account, the user's personal or member account), or a provider account the caller may use. Omitted: the service account's account, or the user's personal account.
+             * @description Id of the account the key's requests run in by default: the service account's account, the user's personal account, a member account a role binding grants the user, or a provider account the user owns personally. Any other answers 403 account_not_held. Omitted: the service account's account, or the user's personal account.
              */
             accountId?: string;
             /** @description False creates the key disabled. Omitted means true. */
