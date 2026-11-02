@@ -7,6 +7,7 @@ import {
 } from "@/policies/usePolicyRateLimits";
 import { RateLimitRuleChips } from "@/rate-limits/RateLimitRuleChips";
 import { AlertBanner } from "@/shared/AlertBanner";
+import { EmptyPanel } from "@/shared/EmptyPanel";
 
 interface Props {
 	policy: Policy;
@@ -22,15 +23,10 @@ export function PolicyRateLimitsTab({ policy }: Props) {
 
 	if (rateLimits.length === 0) {
 		return (
-			<div className="rounded-md border border-dashed border-border bg-muted/30 px-4 py-6 text-center mt-2">
-				<div className="text-sm font-medium text-foreground">
-					No rate limits attached
-				</div>
-				<div className="mt-0.5 text-xs text-muted-foreground">
-					Requests through this policy are not rate-limited beyond upstream
-					provider quotas.
-				</div>
-			</div>
+			<EmptyPanel title="No rate limits attached" className="mt-2">
+				Requests through this policy are not rate-limited beyond upstream
+				provider quotas.
+			</EmptyPanel>
 		);
 	}
 
