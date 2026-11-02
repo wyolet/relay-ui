@@ -3093,12 +3093,12 @@ export interface paths {
         };
         /**
          * Get settings section: otlp-receiver
-         * @description OpenTelemetry receiver. When enabled, the inference listener accepts OTLP/HTTP exports at /otlp/v1/traces and /otlp/v1/logs and records the model calls they describe as usage events with source "otlp". Reported usage is self-declared: no policy grant and none of the rate limits of inference apply; export requests are capped per credential. captureContent also stores the message content clients report, in the payload store, while payload logging is enabled; for a credential governed by a policy, only when that policy has payloadLoggingEnabled. Both default off. Hot-reloaded.
+         * @description OpenTelemetry receiver. When enabled, the inference listener accepts OTLP/HTTP exports at /otlp/v1/traces and /otlp/v1/logs and records the model calls they describe as usage events with source "otlp". Reported usage is self-declared: no policy grant and none of the rate limits of inference apply; export requests are capped per credential. captureContent also stores the message content clients report, in the payload store, while payload logging is enabled, and only where the credential's account allows it: the nearest account on its ladder that sets payloadLogging decides (lane, then project, then team), else the key's own payloadLoggingEnabled. Both default off. Hot-reloaded.
          */
         get: operations["get_settings_otlp-receiver"];
         /**
          * Update settings section: otlp-receiver
-         * @description OpenTelemetry receiver. When enabled, the inference listener accepts OTLP/HTTP exports at /otlp/v1/traces and /otlp/v1/logs and records the model calls they describe as usage events with source "otlp". Reported usage is self-declared: no policy grant and none of the rate limits of inference apply; export requests are capped per credential. captureContent also stores the message content clients report, in the payload store, while payload logging is enabled; for a credential governed by a policy, only when that policy has payloadLoggingEnabled. Both default off. Hot-reloaded.
+         * @description OpenTelemetry receiver. When enabled, the inference listener accepts OTLP/HTTP exports at /otlp/v1/traces and /otlp/v1/logs and records the model calls they describe as usage events with source "otlp". Reported usage is self-declared: no policy grant and none of the rate limits of inference apply; export requests are capped per credential. captureContent also stores the message content clients report, in the payload store, while payload logging is enabled, and only where the credential's account allows it: the nearest account on its ladder that sets payloadLogging decides (lane, then project, then team), else the key's own payloadLoggingEnabled. Both default off. Hot-reloaded.
          */
         put: operations["update_settings_otlp-receiver"];
         post?: never;
@@ -5410,7 +5410,7 @@ export interface components {
             reason: string;
         };
         PolicyRateLimitLink: {
-            /** @description Models the limit applies to, in the policy's model grammar (provider or provider/model); empty applies it to every request. Each matched model counts on its own. */
+            /** @description Models the limit applies to, in the policy's model grammar (provider or provider/model); empty applies it to every request. Bound to a caller account (team, project or lane), every matched model draws on one shared count; bound to a provider account, each matched model counts on its own. */
             models?: string[] | null;
             /** @description Id of the linked rate limit. */
             rateLimitId: string;
@@ -14007,15 +14007,6 @@ export interface operations {
             };
             /** @description No valid session cookie or admin bearer token. */
             401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIError"];
-                };
-            };
-            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
-            403: {
                 headers: {
                     [name: string]: unknown;
                 };
