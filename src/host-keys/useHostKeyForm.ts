@@ -27,13 +27,7 @@ import { ownerKey } from "@/lib/ownerScopes";
 import { randomSuffix, slugify } from "@/lib/slug";
 import type { CheckOption } from "@/shared/MultiSelect";
 import { toast } from "@/shared/Toast";
-import {
-	accountFormValue,
-	accountOptions as buildAccountOptions,
-	DEFAULT_ACCOUNT,
-	defaultAccountFor,
-	keyAccountGroups,
-} from "./hostKeyAccount";
+import { keyAccountGroups } from "./hostKeyAccount";
 import {
 	keyCreatePlan,
 	keyPoolChoices,
@@ -53,10 +47,7 @@ export interface HostKeyFormValues {
 	displayName: string;
 	description: string;
 	hostId: string;
-	/**
-	 * On edit, {@link DEFAULT_ACCOUNT} means the owner's default account at the
-	 * host. On create, "" is no pick yet.
-	 */
+	/** The provider account the key joins; "" is no pick yet. */
 	accountId: string;
 	/** Pools the new key is appended to after it's created. */
 	poolIds: string[];
@@ -80,10 +71,7 @@ function emptyValues(account?: Account): HostKeyFormValues {
 	};
 }
 
-function hostKeyToValues(
-	hk: HostKey,
-	accounts: readonly Account[],
-): HostKeyFormValues {
+function hostKeyToValues(hk: HostKey): HostKeyFormValues {
 	const kind: HostKeyKind =
 		hk.spec.valueFrom.kind === "stored" ? "stored" : "env";
 	return {
@@ -91,7 +79,7 @@ function hostKeyToValues(
 		displayName: displayLabel(hk.metadata),
 		description: hk.metadata.description ?? "",
 		hostId: hk.spec.hostId,
-		accountId: accountFormValue(accounts, hk.spec.accountId),
+		accountId: hk.spec.accountId ?? "",
 		kind,
 		envVar: hk.spec.valueFrom.env ?? "",
 		enabled: hk.spec.enabled ?? true,
@@ -185,19 +173,25 @@ export function useHostKeyForm({
 		kind: ["provider"],
 	});
 	// An omitted owner is the caller's own scope.
+	// The key's own account stays listed even if the scope's list no longer has it.
+	const currentAccount = accounts.find(
+		(a) => a.metadata.id === hostKey?.spec.accountId,
+	);
+	const listedAccounts =
+		currentAccount &&
+		!usableAccounts.some((a) => a.metadata.id === currentAccount.metadata.id)
+			? [...usableAccounts, currentAccount]
+			: usableAccounts;
 	const accountGroups = keyAccountGroups(
-		accountLocked && account ? [account] : usableAccounts,
+		accountLocked && account ? [account] : listedAccounts,
 		hosts,
 		ownerKey(owner ?? { kind: "user" }, userId),
 		userId,
 	);
 
 	const initial = useMemo<HostKeyFormValues>(
-		() =>
-			hostKey
-				? hostKeyToValues(hostKey, accountsData.items ?? [])
-				: emptyValues(account),
-		[hostKey, account, accountsData.items],
+		() => (hostKey ? hostKeyToValues(hostKey) : emptyValues(account)),
+		[hostKey, account],
 	);
 	const suffixRef = useRef<string>(
 		hostKey?.metadata.name.match(/-(\d{4,8})$/)?.[1] ?? randomSuffix(),
@@ -211,19 +205,6 @@ export function useHostKeyForm({
 	const schema = useMemo(() => buildSchema(isEdit), [isEdit]);
 
 	const runValidation = zodFieldValidator<HostKeyFormValues>(schema);
-
-	// An update that omits accountId keeps the stored account, so "default"
-	// is sent as the default account's id when it exists.
-	function resolveAccountId(value: HostKeyFormValues): string | undefined {
-		if (value.accountId !== DEFAULT_ACCOUNT) return value.accountId;
-		if (!hostKey) return undefined;
-		return defaultAccountFor(
-			accounts,
-			value.hostId,
-			ownerKey(hostKey.metadata.owner, userId),
-			userId,
-		)?.metadata.id;
-	}
 
 	const form = useForm({
 		defaultValues: initial,
@@ -239,7 +220,7 @@ export function useHostKeyForm({
 
 			try {
 				if (isEdit && hostKey) {
-					const accountId = resolveAccountId(value);
+					const accountId = value.accountId || undefined;
 					// Secret rotation goes through the Rotate dialog on the detail
 					// page, so the stored valueFrom/value stay untouched here.
 					const {
@@ -357,9 +338,6 @@ export function useHostKeyForm({
 	const descriptionError = useStore(form.store, (s) =>
 		shownError(s.fieldMeta?.description, s.submissionAttempts),
 	);
-	const hostIdError = useStore(form.store, (s) =>
-		shownError(s.fieldMeta?.hostId, s.submissionAttempts),
-	);
 	const accountIdError = useStore(form.store, (s) =>
 		shownError(s.fieldMeta?.accountId, s.submissionAttempts),
 	);
@@ -385,23 +363,7 @@ export function useHostKeyForm({
 		[hostKey, policiesData.items, poolsData.items],
 	);
 
-	const hostOptions = useMemo<SelectOption[]>(
-		() =>
-			(hostsData.items ?? []).map((h) => ({
-				value: h.metadata.id ?? "",
-				label: displayLabel(h.metadata),
-			})),
-		[hostsData.items],
-	);
-
-	const hostSelected = values.hostId !== "";
-	const accountOptions = buildAccountOptions(
-		usableAccounts,
-		values.hostId,
-		accounts.find((a) => a.metadata.id === hostKey?.spec.accountId),
-	);
-
-	const poolsShown = !isEdit && hostSelected && values.accountId !== "";
+	const poolsShown = !isEdit && values.hostId !== "" && values.accountId !== "";
 	const usablePools = useUsablePools(
 		usableBy,
 		{ host_id: [values.hostId] },
@@ -419,17 +381,6 @@ export function useHostKeyForm({
 		...values.poolIds,
 		...poolChoices.filter((c) => c.implied).map((c) => c.id),
 	];
-
-	// Accounts are scoped to one host; a change drops the choice back to the
-	// default account.
-	function setHost(hostId: string) {
-		form.setFieldValue("hostId", hostId);
-		form.setFieldValue("accountId", DEFAULT_ACCOUNT);
-	}
-
-	function setAccount(accountId: string) {
-		form.setFieldValue("accountId", accountId);
-	}
 
 	// Picking an account fixes the host; the pools on offer follow it.
 	function setKeyAccount(accountId: string) {
@@ -469,22 +420,16 @@ export function useHostKeyForm({
 		displayNameError,
 		descriptionError,
 		placement,
-		hostIdError,
 		accountIdError,
 		envVarError,
 		envVarReservedPrefix,
 		valueError,
-		hostOptions,
-		accountOptions,
 		accountGroups,
-		hostSelected,
 		accountLocked,
 		attachedPolicies,
 		poolsShown,
 		poolOptions,
 		checkedPoolIds,
-		setHost,
-		setAccount,
 		setKeyAccount,
 		selectCreatedAccount,
 		togglePool,

@@ -3,10 +3,6 @@ import type { Account } from "@/api/hooks/accounts";
 import { ApiError } from "@/api/types/errors";
 import type { Host } from "@/api/types/host";
 import {
-	accountFormValue,
-	accountOptions,
-	DEFAULT_ACCOUNT,
-	defaultAccountFor,
 	detectionErrorMessage,
 	detectionVerdict,
 	keyAccountGroups,
@@ -31,39 +27,6 @@ const accounts = [
 	// A caller account carries no hostId; this one checks kind alone excludes it.
 	account("team-acme", "h1", system, { kind: "team" }),
 ];
-
-describe("accountOptions", () => {
-	it("lists the default choice, then the usable provider accounts at the host", () => {
-		expect(accountOptions(accounts, "h1")).toEqual([
-			{ value: DEFAULT_ACCOUNT, label: "Default account" },
-			{ value: "a-org", label: "a-org · org-1" },
-			{ value: "a-team", label: "a-team" },
-		]);
-		expect(accountOptions(accounts, "h2").map((o) => o.value)).toEqual([
-			DEFAULT_ACCOUNT,
-			"a-other-host",
-		]);
-	});
-
-	it("leaves out shared accounts, which hold no keys", () => {
-		const shared = account("a-shared", "h1", system, {
-			sourceAccountId: "a-org",
-		});
-		expect(
-			accountOptions([...accounts, shared], "h1").map((o) => o.value),
-		).not.toContain("a-shared");
-	});
-
-	it("keeps the key's current account outside the usable set", () => {
-		const team = accounts.filter((a) => a.metadata.id === "a-team");
-		const current = accounts.find((a) => a.metadata.id === "a-org");
-		expect(accountOptions(team, "h1", current).map((o) => o.value)).toEqual([
-			DEFAULT_ACCOUNT,
-			"a-team",
-			"a-org",
-		]);
-	});
-});
 
 describe("keyAccountGroups", () => {
 	const host = (id: string, displayName: string): Host => ({
@@ -90,20 +53,6 @@ describe("keyAccountGroups", () => {
 		]);
 		expect(groups[1].accounts[0].isDefault).toBe(true);
 		expect(groups[1].accounts[1].orgId).toBe("org-1");
-	});
-});
-
-describe("defaultAccountFor / accountFormValue", () => {
-	it("finds the owner's default account and reads it as the default choice", () => {
-		expect(
-			defaultAccountFor(accounts, "h1", "system", undefined)?.metadata.id,
-		).toBe("a-default");
-		expect(
-			defaultAccountFor(accounts, "h2", "system", undefined),
-		).toBeUndefined();
-		expect(accountFormValue(accounts, "a-default")).toBe(DEFAULT_ACCOUNT);
-		expect(accountFormValue(accounts, "a-org")).toBe("a-org");
-		expect(accountFormValue(accounts, undefined)).toBe(DEFAULT_ACCOUNT);
 	});
 });
 

@@ -10,14 +10,6 @@ import type { Host } from "@/api/types/host";
 import { displayLabel } from "@/lib/displayLabel";
 import { ownerKey } from "@/lib/ownerScopes";
 
-export interface AccountOption {
-	value: string;
-	label: string;
-}
-
-/** Form value for "the owner's default account at the host". */
-export const DEFAULT_ACCOUNT = "";
-
 export interface KeyAccountOption {
 	value: string;
 	label: string;
@@ -80,72 +72,6 @@ export function keyAccountGroups(
 	for (const g of sorted)
 		g.accounts.sort((x, y) => x.label.localeCompare(y.label));
 	return sorted;
-}
-
-/** Accounts a key of this owner at this host may name: provider accounts at the host, same owner. */
-function accountsFor(
-	accounts: readonly Account[],
-	hostId: string,
-	owner: string,
-	userId: string | undefined,
-): Account[] {
-	return accounts.filter(
-		(a) =>
-			a.spec.kind === "provider" &&
-			a.spec.hostId === hostId &&
-			ownerKey(a.metadata.owner, userId) === owner,
-	);
-}
-
-export function defaultAccountFor(
-	accounts: readonly Account[],
-	hostId: string,
-	owner: string,
-	userId: string | undefined,
-): Account | undefined {
-	return accountsFor(accounts, hostId, owner, userId).find(
-		(a) => a.spec.default === true,
-	);
-}
-
-/**
- * The default-account choice first, then the named provider accounts at the
- * host the key's owner may use; `current` stays listed so an edit keeps it.
- */
-export function accountOptions(
-	usable: readonly Account[],
-	hostId: string,
-	current?: Account,
-): AccountOption[] {
-	const listed =
-		current && !usable.some((a) => a.metadata.id === current.metadata.id)
-			? [...usable, current]
-			: usable;
-	const named = listed
-		.filter(
-			(a) =>
-				a.spec.kind === "provider" &&
-				a.spec.hostId === hostId &&
-				a.spec.default !== true &&
-				!isSharedAccount(a),
-		)
-		.map((a) => ({
-			value: a.metadata.id ?? "",
-			label: a.spec.orgId
-				? `${displayLabel(a.metadata)} · ${a.spec.orgId}`
-				: displayLabel(a.metadata),
-		}));
-	return [{ value: DEFAULT_ACCOUNT, label: "Default account" }, ...named];
-}
-
-/** The form value for a stored accountId: a default account reads as the default choice. */
-export function accountFormValue(
-	accounts: readonly Account[],
-	accountId: string | undefined,
-): string {
-	if (!accountId) return DEFAULT_ACCOUNT;
-	const account = accounts.find((a) => a.metadata.id === accountId);
-	return account?.spec.default === true ? DEFAULT_ACCOUNT : accountId;
 }
 
 export type DetectionVerdict =
