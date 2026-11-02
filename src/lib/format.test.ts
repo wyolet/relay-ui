@@ -1,5 +1,17 @@
 import { describe, expect, it } from "bun:test";
-import { fmtAgo, fmtDate } from "./format";
+import { fmtAgo, fmtDate, fmtTokens } from "./format";
+
+describe("fmtTokens", () => {
+	it("rounds to k; M gets one decimal unless exact", () => {
+		expect([512, 8_192, 200_000, 1_000_000, 1_048_576].map(fmtTokens)).toEqual([
+			"512",
+			"8k",
+			"200k",
+			"1M",
+			"1.0M",
+		]);
+	});
+});
 
 describe("fmtDate", () => {
 	it("passes unparseable input through", () => {

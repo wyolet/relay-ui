@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { usePolicyReferences } from "@/api/hooks/policies";
 import type { Policy } from "@/api/types/policy";
-import { DiagnosticList } from "@/diagnostics/DiagnosticList";
+import { IssuesPanel } from "@/diagnostics/IssuesPanel";
 import { usePolicyDiagnostics } from "@/diagnostics/useDiagnostics";
 import { HostLogo, hostRefLogo } from "@/hosts/HostLogo";
 import {
@@ -17,6 +17,9 @@ import {
 } from "@/policies/usePolicyLinkChoices";
 import { usePolicyModels } from "@/policies/usePolicyModels";
 import { usePolicyUsage } from "@/policies/usePolicyUsage";
+import { DetailEmpty } from "@/shared/DetailCard";
+import { SectionTitle } from "@/shared/SectionTitle";
+import { StatCard, StatGrid } from "@/shared/StatCard";
 import {
 	ResourceSpendCard,
 	ResourceSpendCardSkeleton,
@@ -33,7 +36,7 @@ interface Props {
 export function PolicyOverviewTab({ policy }: Props) {
 	return (
 		<div className="flex flex-col gap-6">
-			<IssuesPanel policyId={policy.metadata.id} />
+			<PolicyIssues policyId={policy.metadata.id} />
 
 			<StatsGrid policy={policy} />
 
@@ -94,7 +97,7 @@ function LinkList({
 		<div>
 			<SectionTitle>{title}</SectionTitle>
 			{items.length === 0 ? (
-				<p className="text-xs text-muted-foreground">{empty}</p>
+				<DetailEmpty>{empty}</DetailEmpty>
 			) : (
 				<ul className="divide-y divide-border rounded-md border border-border">
 					{items.map((c, i) => (
@@ -116,43 +119,37 @@ function StatsGrid({ policy }: { policy: Policy }) {
 	const hosts = usePolicyHosts(policy.metadata.name);
 
 	return (
-		<section>
-			<SectionTitle>Overview</SectionTitle>
-			<div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-				<StatCard
-					label="Models"
-					value={models.length}
-					sub="granted by this policy"
-				/>
-				<StatCard
-					label="Hosts"
-					value={hosts.length}
-					sub={hosts.length === 0 ? "no host resolved" : "serving requests"}
-				/>
-				{policy.metadata.id ? (
-					<Suspense
-						fallback={<StatCard label="Bindings" value="…" sub="loading" />}
-					>
-						<BindingStatCard policyId={policy.metadata.id} />
+		<StatGrid title="Overview">
+			<StatCard
+				label="Models"
+				value={models.length}
+				sub="granted by this policy"
+			/>
+			<StatCard
+				label="Hosts"
+				value={hosts.length}
+				sub={hosts.length === 0 ? "no host resolved" : "serving requests"}
+			/>
+			{policy.metadata.id ? (
+				<Suspense
+					fallback={<StatCard label="Bindings" value="…" sub="loading" />}
+				>
+					<BindingStatCard policyId={policy.metadata.id} />
+				</Suspense>
+			) : (
+				<StatCard label="Bindings" value="—" sub="unsaved" />
+			)}
+			{policy.metadata.id && (
+				<>
+					<Suspense fallback={<UsageCardsSkeleton />}>
+						<PolicyUsageCards policyId={policy.metadata.id} />
 					</Suspense>
-				) : (
-					<StatCard label="Bindings" value="—" sub="unsaved" />
-				)}
-				{policy.metadata.id && (
-					<>
-						<Suspense fallback={<UsageCardsSkeleton />}>
-							<PolicyUsageCards policyId={policy.metadata.id} />
-						</Suspense>
-						<Suspense fallback={<ResourceSpendCardSkeleton />}>
-							<ResourceSpendCard
-								dimension="policy_id"
-								id={policy.metadata.id}
-							/>
-						</Suspense>
-					</>
-				)}
-			</div>
-		</section>
+					<Suspense fallback={<ResourceSpendCardSkeleton />}>
+						<ResourceSpendCard dimension="policy_id" id={policy.metadata.id} />
+					</Suspense>
+				</>
+			)}
+		</StatGrid>
 	);
 }
 
@@ -176,9 +173,9 @@ function HostsPanel({ policy }: { policy: Policy }) {
 		return (
 			<section>
 				<SectionTitle>Hosts</SectionTitle>
-				<p className="text-xs text-muted-foreground">
+				<DetailEmpty>
 					No hosts resolved — pick models in the catalog above.
-				</p>
+				</DetailEmpty>
 			</section>
 		);
 	}
@@ -214,68 +211,7 @@ function PolicyUsageCards({ policyId }: { policyId: string }) {
 	return <ResourceUsageCards usage={usage} />;
 }
 
-function IssuesPanel({ policyId }: { policyId: string | undefined }) {
+function PolicyIssues({ policyId }: { policyId: string | undefined }) {
 	const diagnostics = usePolicyDiagnostics(policyId);
-	if (diagnostics.length === 0) return null;
-	const counts = {
-		error: diagnostics.filter((d) => d.severity === "error").length,
-		warn: diagnostics.filter((d) => d.severity === "warn").length,
-		info: diagnostics.filter((d) => d.severity === "info").length,
-	};
-	const summary = [
-		counts.error && `${counts.error} error${counts.error === 1 ? "" : "s"}`,
-		counts.warn && `${counts.warn} warning${counts.warn === 1 ? "" : "s"}`,
-		counts.info && `${counts.info} info`,
-	]
-		.filter(Boolean)
-		.join(" · ");
-	return (
-		<section>
-			<div className="mb-2 flex items-baseline justify-between gap-2">
-				<SectionTitle>Issues</SectionTitle>
-				<span className="text-[10px] text-muted-foreground tabular-nums">
-					{summary}
-				</span>
-			</div>
-			<DiagnosticList diagnostics={diagnostics} />
-		</section>
-	);
-}
-
-function StatCard({
-	label,
-	value,
-	sub,
-	mono,
-}: {
-	label: string;
-	value: string | number;
-	sub?: string;
-	mono?: boolean;
-}) {
-	return (
-		<div className="rounded-md border border-border bg-card px-3 py-2">
-			<div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-				{label}
-			</div>
-			<div
-				className={`mt-0.5 text-lg font-semibold text-foreground tabular-nums ${mono ? "font-mono text-base" : ""}`}
-			>
-				{value}
-			</div>
-			{sub && (
-				<div className="text-[11px] text-muted-foreground mt-0.5 truncate">
-					{sub}
-				</div>
-			)}
-		</div>
-	);
-}
-
-function SectionTitle({ children }: { children: React.ReactNode }) {
-	return (
-		<h2 className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-			{children}
-		</h2>
-	);
+	return <IssuesPanel diagnostics={diagnostics} />;
 }

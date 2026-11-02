@@ -18,6 +18,7 @@ import { PolicyModelsTab } from "@/policies/PolicyModelsTab";
 import { PolicyOverviewTab } from "@/policies/PolicyOverviewTab";
 import { PolicyRateLimitsTab } from "@/policies/PolicyRateLimitsTab";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
+import { EmptyState } from "@/shared/EmptyState";
 import { PageLoader } from "@/shared/Spinner";
 import { CatalogDetachedBadge, StatusBadge } from "@/shared/StatusBadge";
 import { ResourceUsage } from "@/usage/ResourceUsage";
@@ -114,10 +115,11 @@ export function PolicyDetailView({
 					{policy.metadata.id ? (
 						<ResourceUsage scope="policy_id" id={policy.metadata.id} />
 					) : (
-						<ComingSoon
+						<EmptyState
 							icon={Activity}
 							title="Usage"
 							body="Save this policy to see its traffic."
+							comingSoon
 						/>
 					)}
 				</TabsContent>
@@ -129,10 +131,11 @@ export function PolicyDetailView({
 							label="policy"
 						/>
 					) : (
-						<ComingSoon
+						<EmptyState
 							icon={ScrollText}
 							title="Logs"
 							body="Save this policy to see the requests routed through it."
+							comingSoon
 						/>
 					)}
 				</TabsContent>
@@ -215,30 +218,6 @@ function Header({
 						: undefined
 				}
 			/>
-		</div>
-	);
-}
-
-interface ComingSoonProps {
-	icon: typeof LayoutGrid;
-	title: string;
-	body: string;
-}
-
-function ComingSoon({ icon: Icon, title, body }: ComingSoonProps) {
-	return (
-		<div className="mt-4 rounded-md border border-dashed border-border bg-muted/30 px-6 py-10 text-center">
-			<Icon
-				className="mx-auto w-6 h-6 text-muted-foreground/60 mb-2"
-				aria-hidden
-			/>
-			<div className="text-sm font-medium text-foreground">{title}</div>
-			<div className="mt-1 text-xs text-muted-foreground max-w-md mx-auto">
-				{body}
-			</div>
-			<div className="mt-3 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground border border-border uppercase tracking-wide">
-				Coming soon
-			</div>
 		</div>
 	);
 }

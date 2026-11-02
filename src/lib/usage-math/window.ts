@@ -118,6 +118,15 @@ export function daySliceStarts(win: IsoWindow, rolling: boolean): number[] {
 	return starts;
 }
 
+/** Round a `[from, to]` window to a short label: "30d", "12h". */
+export function isoWindowLabel(from: string, to: string): string {
+	const ms = Date.parse(to) - Date.parse(from);
+	if (!Number.isFinite(ms) || ms <= 0) return "window";
+	const days = Math.round(ms / 86_400_000);
+	if (days >= 1) return `${days}d`;
+	return `${Math.max(1, Math.round(ms / 3_600_000))}h`;
+}
+
 /**
  * Fold timestamped values into slices: each goes to the last slice starting at
  * or before it (the first takes anything earlier). Slices that start after

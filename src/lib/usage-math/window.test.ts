@@ -4,9 +4,30 @@ import {
 	comparisonWindows,
 	daySliceStarts,
 	floorToInterval,
+	isoWindowLabel,
 	rollingWindow,
 	totalsBySlice,
 } from "@/lib/usage-math/window";
+
+describe("isoWindowLabel", () => {
+	test("rounds to whole days, else whole hours with a 1h floor", () => {
+		expect(isoWindowLabel("2026-10-01T00:00:00Z", "2026-10-31T00:00:00Z")).toBe(
+			"30d",
+		);
+		expect(isoWindowLabel("2026-10-01T00:00:00Z", "2026-10-01T11:00:00Z")).toBe(
+			"11h",
+		);
+		expect(isoWindowLabel("2026-10-01T00:00:00Z", "2026-10-01T00:10:00Z")).toBe(
+			"1h",
+		);
+	});
+	test("falls back for empty or unparseable windows", () => {
+		expect(isoWindowLabel("nope", "2026-10-01T00:00:00Z")).toBe("window");
+		expect(isoWindowLabel("2026-10-01T00:00:00Z", "2026-10-01T00:00:00Z")).toBe(
+			"window",
+		);
+	});
+});
 
 describe("floorToInterval / advanceInterval", () => {
 	test("floors to epoch-aligned bucket starts (UTC midnight for 1d)", () => {
