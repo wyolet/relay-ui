@@ -18,9 +18,6 @@ export interface AccountOption {
 /** Form value for "the owner's default account at the host". */
 export const DEFAULT_ACCOUNT = "";
 
-/** Create-form value for "make a provider account with the key". */
-export const NEW_ACCOUNT = "+new";
-
 export interface KeyAccountOption {
 	value: string;
 	label: string;
@@ -83,22 +80,6 @@ export function keyAccountGroups(
 	for (const g of sorted)
 		g.accounts.sort((x, y) => x.label.localeCompare(y.label));
 	return sorted;
-}
-
-/** The name a new account starts with: its host's. */
-export function defaultNewAccountName(host: Host | undefined): string {
-	return host ? displayLabel(host.metadata) : "";
-}
-
-/** A host change renames the new account unless the user typed their own name. */
-export function nextNewAccountName(
-	current: string,
-	previousDefault: string,
-	nextDefault: string,
-): string {
-	return current.trim() === "" || current === previousDefault
-		? nextDefault
-		: current;
 }
 
 /** Accounts a key of this owner at this host may name: provider accounts at the host, same owner. */

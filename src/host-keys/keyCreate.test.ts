@@ -1,7 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import type { Pool } from "@/api/hooks/pools";
 import { ApiError } from "@/api/types/errors";
-import { NEW_ACCOUNT } from "./hostKeyAccount";
 import {
 	type KeyCreateEffects,
 	keyCreatePlan,
@@ -36,12 +35,6 @@ describe("keyPoolChoices", () => {
 			{ id: "p-acct", label: "p-acct", implied: true },
 		]);
 	});
-
-	it("implies nothing for a new account", () => {
-		expect(keyPoolChoices(pools, "h1", undefined).some((c) => c.implied)).toBe(
-			false,
-		);
-	});
 });
 
 describe("poolWithKey", () => {
@@ -58,30 +51,15 @@ describe("poolWithKey", () => {
 
 describe("keyCreatePlan", () => {
 	const choices = keyPoolChoices(pools, "h1", "a1");
-	const input = {
-		accountId: "a1",
-		hostId: "h1",
-		newAccountName: " Anthropic ",
-		newAccountOrgId: "",
-		poolIds: ["p-plain", "p-acct", "gone"],
-	};
-
 	it("joins the picked account and skips implied or unknown pools", () => {
-		expect(keyCreatePlan(input, choices)).toEqual({
-			accountId: "a1",
-			poolIds: ["p-plain"],
-		});
-	});
-
-	it("makes the new account first", () => {
 		expect(
 			keyCreatePlan(
-				{ ...input, accountId: NEW_ACCOUNT, newAccountOrgId: " org-1 " },
-				keyPoolChoices(pools, "h1", undefined),
+				{ accountId: "a1", poolIds: ["p-plain", "p-acct", "gone"] },
+				choices,
 			),
 		).toEqual({
-			newAccount: { hostId: "h1", displayName: "Anthropic", orgId: "org-1" },
-			poolIds: ["p-plain", "p-acct"],
+			accountId: "a1",
+			poolIds: ["p-plain"],
 		});
 	});
 });
@@ -91,16 +69,9 @@ type Key = { metadata: { id?: string } };
 function effects(overrides: Partial<KeyCreateEffects<Key>> = {}) {
 	const calls: string[] = [];
 	const base: KeyCreateEffects<Key> = {
-		createAccount: async () => {
-			calls.push("account");
-			return "a-new";
-		},
 		createKey: async (accountId) => {
 			calls.push(`key:${accountId ?? ""}`);
 			return { metadata: { id: "k-new" } };
-		},
-		deleteAccount: async (id) => {
-			calls.push(`delete:${id}`);
 		},
 		addKeyToPool: async (poolId, keyId) => {
 			calls.push(`pool:${poolId}:${keyId}`);
@@ -110,47 +81,24 @@ function effects(overrides: Partial<KeyCreateEffects<Key>> = {}) {
 }
 
 describe("runKeyCreate", () => {
-	const plan = {
-		newAccount: { hostId: "h1", displayName: "Anthropic", orgId: "" },
-		poolIds: ["p1", "p2"],
-	};
-
-	it("creates the account, the key in it, then each pool", async () => {
+	it("creates the key in the account, then each pool", async () => {
 		const { calls, effects: fx } = effects();
-		const out = await runKeyCreate(plan, fx);
-		expect(calls).toEqual([
-			"account",
-			"key:a-new",
-			"pool:p1:k-new",
-			"pool:p2:k-new",
-		]);
+		const out = await runKeyCreate(
+			{ accountId: "a1", poolIds: ["p1", "p2"] },
+			fx,
+		);
+		expect(calls).toEqual(["key:a1", "pool:p1:k-new", "pool:p2:k-new"]);
 		expect(out.poolFailures).toEqual([]);
 	});
 
-	it("removes the new account when the key fails and rethrows", async () => {
-		const failure = new Error("bad key");
-		const { calls, effects: fx } = effects({
-			createKey: async () => {
-				calls.push("key");
-				throw failure;
-			},
-			deleteAccount: async (id) => {
-				calls.push(`delete:${id}`);
-				throw new Error("delete failed too");
-			},
-		});
-		await expect(runKeyCreate(plan, fx)).rejects.toBe(failure);
-		expect(calls).toEqual(["account", "key", "delete:a-new"]);
-	});
-
-	it("keeps the existing account when the key fails", async () => {
+	it("rethrows a failed key and touches no pool", async () => {
 		const { calls, effects: fx } = effects({
 			createKey: async () => {
 				throw new Error("bad key");
 			},
 		});
 		await expect(
-			runKeyCreate({ accountId: "a1", poolIds: [] }, fx),
+			runKeyCreate({ accountId: "a1", poolIds: ["p1"] }, fx),
 		).rejects.toThrow("bad key");
 		expect(calls).toEqual([]);
 	});

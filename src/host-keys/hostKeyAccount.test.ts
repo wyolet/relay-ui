@@ -7,11 +7,9 @@ import {
 	accountOptions,
 	DEFAULT_ACCOUNT,
 	defaultAccountFor,
-	defaultNewAccountName,
 	detectionErrorMessage,
 	detectionVerdict,
 	keyAccountGroups,
-	nextNewAccountName,
 } from "./hostKeyAccount";
 
 const account = (
@@ -92,19 +90,6 @@ describe("keyAccountGroups", () => {
 		]);
 		expect(groups[1].accounts[0].isDefault).toBe(true);
 		expect(groups[1].accounts[1].orgId).toBe("org-1");
-	});
-});
-
-describe("new account name", () => {
-	it("starts from the host and follows host changes until edited", () => {
-		expect(defaultNewAccountName(undefined)).toBe("");
-		expect(nextNewAccountName("", "", "Anthropic")).toBe("Anthropic");
-		expect(nextNewAccountName("Anthropic", "Anthropic", "OpenAI")).toBe(
-			"OpenAI",
-		);
-		expect(nextNewAccountName("Research org", "Anthropic", "OpenAI")).toBe(
-			"Research org",
-		);
 	});
 });
 

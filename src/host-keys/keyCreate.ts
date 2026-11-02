@@ -1,7 +1,6 @@
 import type { Pool } from "@/api/hooks/pools";
 import { ApiError, isStaleResourceVersion } from "@/api/types/errors";
 import { displayLabel } from "@/lib/displayLabel";
-import { NEW_ACCOUNT } from "./hostKeyAccount";
 
 export interface KeyPoolChoice {
 	id: string;
@@ -10,11 +9,11 @@ export interface KeyPoolChoice {
 	implied: boolean;
 }
 
-/** The pools at the host a new key may join; `accountId` is unset for a new account. */
+/** The pools at the host a new key in `accountId` may join. */
 export function keyPoolChoices(
 	pools: readonly Pool[],
 	hostId: string,
-	accountId: string | undefined,
+	accountId: string,
 ): KeyPoolChoice[] {
 	return pools.flatMap((p) =>
 		p.metadata.id && p.spec.hostId === hostId
@@ -22,9 +21,7 @@ export function keyPoolChoices(
 					{
 						id: p.metadata.id,
 						label: displayLabel(p.metadata),
-						implied:
-							accountId !== undefined &&
-							(p.spec.accountIds ?? []).includes(accountId),
+						implied: (p.spec.accountIds ?? []).includes(accountId),
 					},
 				]
 			: [],
@@ -43,15 +40,7 @@ export function poolWithKey(pool: Pool, keyId: string): Pool {
 	};
 }
 
-export interface NewAccountDraft {
-	hostId: string;
-	displayName: string;
-	orgId: string;
-}
-
 export interface KeyCreatePlan {
-	/** Set when the key joins an account made with it. */
-	newAccount?: NewAccountDraft;
 	accountId?: string;
 	/** Pools to append the key to, in order. */
 	poolIds: string[];
@@ -59,9 +48,6 @@ export interface KeyCreatePlan {
 
 interface KeyCreateInput {
 	accountId: string;
-	hostId: string;
-	newAccountName: string;
-	newAccountOrgId: string;
 	poolIds: readonly string[];
 }
 
@@ -71,27 +57,14 @@ export function keyCreatePlan(
 	choices: readonly KeyPoolChoice[],
 ): KeyCreatePlan {
 	const offered = new Set(choices.filter((c) => !c.implied).map((c) => c.id));
-	const poolIds = input.poolIds.filter((id) => offered.has(id));
-	if (input.accountId === NEW_ACCOUNT) {
-		return {
-			newAccount: {
-				hostId: input.hostId,
-				displayName: input.newAccountName.trim(),
-				orgId: input.newAccountOrgId.trim(),
-			},
-			poolIds,
-		};
-	}
 	return {
 		...(input.accountId ? { accountId: input.accountId } : {}),
-		poolIds,
+		poolIds: input.poolIds.filter((id) => offered.has(id)),
 	};
 }
 
 export interface KeyCreateEffects<K> {
-	createAccount: (draft: NewAccountDraft) => Promise<string>;
 	createKey: (accountId: string | undefined) => Promise<K>;
-	deleteAccount: (id: string) => Promise<unknown>;
 	addKeyToPool: (poolId: string, keyId: string) => Promise<unknown>;
 }
 
@@ -101,26 +74,14 @@ export interface PoolFailure {
 }
 
 /**
- * Runs the plan: the account, then the key, then each pool in turn. A failed
- * key create removes the account made for it and rethrows; a failed pool
- * update is collected and the rest still run.
+ * Runs the plan: the key, then each pool in turn. A failed pool update is
+ * collected and the rest still run.
  */
 export async function runKeyCreate<K extends { metadata: { id?: string } }>(
 	plan: KeyCreatePlan,
 	effects: KeyCreateEffects<K>,
 ): Promise<{ key: K; poolFailures: PoolFailure[] }> {
-	const createdAccountId = plan.newAccount
-		? await effects.createAccount(plan.newAccount)
-		: undefined;
-	let key: K;
-	try {
-		key = await effects.createKey(createdAccountId ?? plan.accountId);
-	} catch (err) {
-		if (createdAccountId) {
-			await effects.deleteAccount(createdAccountId).catch(() => undefined);
-		}
-		throw err;
-	}
+	const key = await effects.createKey(plan.accountId);
 	const keyId = key.metadata.id;
 	const poolFailures: PoolFailure[] = [];
 	for (const poolId of plan.poolIds) {
