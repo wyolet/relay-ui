@@ -1,11 +1,13 @@
 import { Link } from "@tanstack/react-router";
 import { ScanSearch } from "lucide-react";
+import { DefaultAccountBadge } from "@/accounts/DefaultAccountBadge";
 import { Button } from "@/components/ui/button";
 import {
 	type DetectedOrganization,
 	useHostKeyAccountDetection,
 } from "@/host-keys/useHostKeyAccountDetection";
 import type { HostKeyAccountView } from "@/host-keys/useHostKeyDetail";
+import { DetailInline } from "@/shared/DetailCard";
 
 interface HostKeyAccountRowProps {
 	hostKeyId: string;
@@ -22,7 +24,7 @@ export function HostKeyAccountRow({
 
 	return (
 		<div className="flex flex-col gap-2">
-			<div className="flex items-center gap-2 flex-wrap">
+			<DetailInline>
 				{account ? (
 					<Link
 						to="/accounts/$name"
@@ -34,11 +36,7 @@ export function HostKeyAccountRow({
 				) : (
 					<span className="text-muted-foreground">— (none set)</span>
 				)}
-				{account?.isDefault && (
-					<span className="inline-flex items-center rounded-full border border-border bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-						default
-					</span>
-				)}
+				{account?.isDefault && <DefaultAccountBadge />}
 				{account?.orgId && (
 					<code className="font-mono text-[11px] text-muted-foreground">
 						{account.orgId}
@@ -53,7 +51,7 @@ export function HostKeyAccountRow({
 					<ScanSearch className="size-3" />
 					{isPending ? "Detecting…" : "Detect account"}
 				</Button>
-			</div>
+			</DetailInline>
 			<p className="text-[11px] text-muted-foreground leading-snug">
 				Keys of one account share its upstream limits, and the policy bound to
 				the account caps them.

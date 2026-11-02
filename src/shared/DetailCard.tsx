@@ -37,10 +37,24 @@ export function DetailRow({
 }) {
 	return (
 		<div className="py-3 first:pt-0 last:pb-0 grid grid-cols-1 sm:grid-cols-[160px_1fr] gap-1 sm:gap-4">
-			<dt className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+			<dt className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground sm:flex sm:min-h-7 sm:items-center">
 				{label}
 			</dt>
-			<dd className="text-xs text-foreground min-w-0">{children}</dd>
+			<dd className="text-xs text-foreground min-w-0 sm:flex sm:min-h-7 sm:flex-col sm:justify-center">
+				{children}
+			</dd>
+		</div>
+	);
+}
+
+/**
+ * A value line mixing text, badges and buttons. It shares the label's 28px band
+ * (the height of an inline button), so every piece centres on one line.
+ */
+export function DetailInline({ children }: { children: React.ReactNode }) {
+	return (
+		<div className="flex min-h-7 flex-wrap items-center gap-x-2 gap-y-1">
+			{children}
 		</div>
 	);
 }
