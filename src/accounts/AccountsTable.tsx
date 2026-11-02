@@ -13,6 +13,7 @@ import { HostCell } from "@/hosts/HostCell";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { type MenuAction, RowMenu } from "@/shared/RowMenu";
+import { ShortId } from "@/shared/ShortId";
 import { StatusBadge } from "@/shared/StatusBadge";
 import { TableEmpty } from "@/shared/TableEmpty";
 import { TableToolbar } from "@/shared/TableToolbar";
@@ -148,7 +149,11 @@ export function AccountsTable() {
 												)}
 											</td>
 											<td className="px-3 py-2 font-mono text-[11px] text-foreground">
-												{(provider && account.spec.orgId) || dash}
+												{provider && account.spec.orgId ? (
+													<ShortId value={account.spec.orgId} />
+												) : (
+													dash
+												)}
 											</td>
 											<td className="px-3 py-2 text-right text-xs tabular-nums text-foreground">
 												{provider ? provider.keyCount : dash}

@@ -8,6 +8,7 @@ import {
 } from "@/host-keys/useHostKeyAccountDetection";
 import type { HostKeyAccountView } from "@/host-keys/useHostKeyDetail";
 import { DetailInline } from "@/shared/DetailCard";
+import { ShortId } from "@/shared/ShortId";
 
 interface HostKeyAccountRowProps {
 	hostKeyId: string;
@@ -37,11 +38,7 @@ export function HostKeyAccountRow({
 					<span className="text-muted-foreground">— (none set)</span>
 				)}
 				{account?.isDefault && <DefaultAccountBadge />}
-				{account?.orgId && (
-					<code className="font-mono text-[11px] text-muted-foreground">
-						{account.orgId}
-					</code>
-				)}
+				{account?.orgId && <ShortId value={account.orgId} />}
 				<Button
 					type="button"
 					variant="outline"
