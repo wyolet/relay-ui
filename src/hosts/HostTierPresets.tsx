@@ -1,24 +1,13 @@
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { type HostPolicies, useHostPolicies } from "@/api/hooks/hosts";
-import { parseDurationSeconds, windowShort } from "@/lib/timeWindow";
+import { RateLimitRuleChips } from "@/rate-limits/RateLimitRuleChips";
 import { StatusInline } from "@/shared/StatusBadge";
 import { Th } from "@/shared/Th";
 
 type PresetRateLimit = NonNullable<
 	NonNullable<HostPolicies["policies"]>[number]["rateLimits"]
 >[number];
-
-function formatLimits(rl: PresetRateLimit): string {
-	const limits = rl.limits ?? [];
-	if (limits.length === 0) return "no rules";
-	return limits
-		.map(
-			(l) =>
-				`${l.amount.toLocaleString()} ${l.meter} / ${windowShort(parseDurationSeconds(l.window))}`,
-		)
-		.join(" · ");
-}
 
 function scopeLabel(rl: PresetRateLimit): string {
 	if (rl.default) return "all models";
@@ -73,15 +62,21 @@ export function HostTierPresets({
 										) : (
 											<ul className="flex flex-col gap-1">
 												{rateLimits.map((rl) => (
-													<li key={rl.id} className="text-xs">
+													<li
+														key={rl.id}
+														className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs"
+													>
 														<span className="text-foreground">{rl.name}</span>
 														<span className="text-muted-foreground">
-															{" "}
-															· {scopeLabel(rl)} ·{" "}
+															· {scopeLabel(rl)} ·
 														</span>
-														<span className="font-mono text-[11px] text-foreground">
-															{formatLimits(rl)}
-														</span>
+														{rl.limits?.length ? (
+															<RateLimitRuleChips limits={rl.limits} />
+														) : (
+															<span className="font-mono text-[11px] text-foreground">
+																no rules
+															</span>
+														)}
 													</li>
 												))}
 											</ul>

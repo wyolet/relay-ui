@@ -1,17 +1,10 @@
 import { ArrowDown, ArrowUp, Layers, Plus, X } from "lucide-react";
-import { useId } from "react";
 import type { Pool } from "@/api/hooks/pools";
-import { Button } from "@/components/ui/button";
 import { IconButton } from "@/components/ui/icon-button";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
+import { HostSelect } from "@/hosts/HostSelect";
 import { POOL_SELECTIONS, SELECTION_LABELS } from "@/pools/poolKeys";
 import { type PoolKeyOption, usePoolForm } from "@/pools/usePoolForm";
+import { FormFooter } from "@/shared/FormFooter";
 import { FormSection } from "@/shared/FormSection";
 import { IdentitySection } from "@/shared/IdentitySection";
 import { OptionRow } from "@/shared/OptionRow";
@@ -47,7 +40,6 @@ export function PoolForm({ pool, onSaved, onCancel }: PoolFormProps) {
 		removeKey,
 		moveKey,
 	} = usePoolForm({ pool, onSaved });
-	const hostErrorId = useId();
 
 	return (
 		<form
@@ -84,46 +76,18 @@ export function PoolForm({ pool, onSaved, onCancel }: PoolFormProps) {
 					description="Credentials at one host that a policy linking this pool routes through, and how a request picks one."
 				>
 					<div className="flex flex-col gap-4">
-						<div>
-							<div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-1">
-								Host
-							</div>
-							<Select
-								value={values.hostId}
-								items={hostOptions}
-								onValueChange={(v) => setHost(v ?? "")}
-								disabled={isEdit}
-							>
-								<SelectTrigger
-									className="w-full max-w-md"
-									aria-label="Host"
-									aria-invalid={errors.hostId ? true : undefined}
-									aria-describedby={errors.hostId ? hostErrorId : undefined}
-								>
-									<SelectValue placeholder="Pick a host…" />
-								</SelectTrigger>
-								<SelectContent>
-									{hostOptions.map((h) => (
-										<SelectItem key={h.value} value={h.value}>
-											{h.label}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-							{errors.hostId && (
-								<p
-									id={hostErrorId}
-									className="mt-1.5 text-[11px] text-destructive"
-								>
-									{errors.hostId}
-								</p>
-							)}
-							{isEdit && (
-								<p className="mt-1.5 text-[11px] text-muted-foreground">
-									Fixed once created: every key in the pool is at this host.
-								</p>
-							)}
-						</div>
+						<HostSelect
+							value={values.hostId}
+							options={hostOptions}
+							onChange={setHost}
+							error={errors.hostId}
+							disabled={isEdit}
+							hint={
+								isEdit
+									? "Fixed once created: every key in the pool is at this host."
+									: undefined
+							}
+						/>
 
 						<div>
 							<div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-1">
@@ -152,23 +116,15 @@ export function PoolForm({ pool, onSaved, onCancel }: PoolFormProps) {
 				</FormSection>
 			</div>
 
-			<div className="sticky bottom-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-t border-border mt-6 -mx-6 px-6 py-3 flex items-center justify-end gap-2">
-				<Button type="button" variant="outline" size="lg" onClick={onCancel}>
-					Cancel
-				</Button>
-				<form.Subscribe selector={(s) => s.isSubmitting}>
-					{(isSubmitting) => (
-						<Button
-							type="submit"
-							variant="cta"
-							size="lg"
-							disabled={isSubmitting}
-						>
-							{isSubmitting ? "Saving…" : isEdit ? "Save changes" : "Create"}
-						</Button>
-					)}
-				</form.Subscribe>
-			</div>
+			<form.Subscribe selector={(s) => s.isSubmitting}>
+				{(isSubmitting) => (
+					<FormFooter
+						isEdit={isEdit}
+						isSubmitting={isSubmitting}
+						onCancel={onCancel}
+					/>
+				)}
+			</form.Subscribe>
 		</form>
 	);
 }

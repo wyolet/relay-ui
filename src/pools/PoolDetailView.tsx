@@ -2,12 +2,12 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { ChevronLeft, KeyRound, Layers } from "lucide-react";
 import { UpstreamKeyList } from "@/accounts/UpstreamKeyList";
 import { HostCell } from "@/hosts/HostCell";
-import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { SELECTION_LABELS } from "@/pools/poolKeys";
 import { usePoolDetail } from "@/pools/usePoolDetail";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { DetailCard, DetailRow } from "@/shared/DetailCard";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
+import { DetailPageHeader } from "@/shared/DetailPageHeader";
 
 export function PoolDetailView({ name }: { name: string }) {
 	const navigate = useNavigate();
@@ -16,7 +16,6 @@ export function PoolDetailView({ name }: { name: string }) {
 			name,
 			onDeleted: () => void navigate({ to: "/keys", search: { tab: "pools" } }),
 		});
-	const description = pool.metadata.description?.trim();
 
 	return (
 		<div className="flex flex-col gap-5">
@@ -29,30 +28,7 @@ export function PoolDetailView({ name }: { name: string }) {
 				Pools
 			</Link>
 
-			<header className="flex items-start justify-between gap-4">
-				<div className="min-w-0 flex items-start gap-3">
-					<div className="mt-0.5 w-9 h-9 rounded-md bg-muted border border-border shrink-0 flex items-center justify-center">
-						<Layers className="w-4 h-4 text-muted-foreground" aria-hidden />
-					</div>
-					<div className="min-w-0">
-						<h1 className="text-xl font-semibold text-foreground truncate flex items-center gap-2">
-							{displayLabel(pool.metadata)}
-							{!hasDisplayName(pool.metadata) && (
-								<span className="text-[11px] text-muted-foreground font-normal">
-									(no display name)
-								</span>
-							)}
-						</h1>
-						<p className="mt-1 text-xs text-muted-foreground font-mono truncate">
-							{pool.metadata.name}
-						</p>
-						{description && (
-							<p className="mt-1.5 max-w-2xl text-sm text-muted-foreground">
-								{description}
-							</p>
-						)}
-					</div>
-				</div>
+			<DetailPageHeader icon={Layers} metadata={pool.metadata}>
 				<DetailHeaderActions
 					enabled
 					onToggle={() => undefined}
@@ -69,7 +45,7 @@ export function PoolDetailView({ name }: { name: string }) {
 						</Link>
 					)}
 				/>
-			</header>
+			</DetailPageHeader>
 
 			<DetailCard title="Configuration" icon={Layers}>
 				<dl className="divide-y divide-border">

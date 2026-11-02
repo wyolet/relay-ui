@@ -17,6 +17,7 @@ import {
 	usePolicyExcludedModels,
 	usePolicyModels,
 } from "@/policies/usePolicyModels";
+import { EmptyPanel } from "@/shared/EmptyPanel";
 import { OptionRow } from "@/shared/OptionRow";
 
 interface Props {
@@ -35,20 +36,20 @@ export function PolicyModelsTab({ policy }: Props) {
 
 	if (grants.length === 0) {
 		return (
-			<EmptyState
-				title="No catalog refs"
-				message="This policy currently grants nothing. Add catalog refs in the edit form."
-			/>
+			<EmptyPanel title="No catalog refs" className="mt-2">
+				This policy currently grants nothing. Add catalog refs in the edit form.
+			</EmptyPanel>
 		);
 	}
 
 	if (rows.length === 0) {
 		return (
 			<div className="flex flex-col gap-3">
-				<EmptyState
-					title="No reachable models"
-					message="The catalog refs on this policy don't match any model currently in the catalog. They may match models added later, or you may need to revisit them."
-				/>
+				<EmptyPanel title="No reachable models" className="mt-2">
+					The catalog refs on this policy don't match any model currently in the
+					catalog. They may match models added later, or you may need to revisit
+					them.
+				</EmptyPanel>
 				<ExcludedModelsPanel policyName={policy.metadata.name} />
 			</div>
 		);
@@ -322,13 +323,4 @@ function hostLabel(row: PolicyModelView | undefined): string {
 	const host = row?.host;
 	if (!host) return "";
 	return host.displayName?.trim() || host.name;
-}
-
-function EmptyState({ title, message }: { title: string; message: string }) {
-	return (
-		<div className="rounded-md border border-dashed border-border bg-muted/30 px-4 py-6 text-center mt-2">
-			<div className="text-sm font-medium text-foreground">{title}</div>
-			<div className="mt-0.5 text-xs text-muted-foreground">{message}</div>
-		</div>
-	);
 }

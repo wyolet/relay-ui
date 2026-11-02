@@ -23,7 +23,7 @@ import { useRoleBindingsAtScope } from "@/api/hooks/roleBindings";
 import { useServiceAccountsInProject } from "@/api/hooks/serviceAccounts";
 import { useTeams } from "@/api/hooks/teams";
 import { resolveWindow, useScopeSpend } from "@/api/hooks/usage";
-import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
+import { displayLabel } from "@/lib/displayLabel";
 import { EraseBodiesButton } from "@/logs/EraseBodiesButton";
 import { useToggleProjectEnabled } from "@/projects/useToggleProjectEnabled";
 import { subjectLabel } from "@/role-bindings/SubjectsEditor";
@@ -31,6 +31,7 @@ import { Chip } from "@/shared/Chip";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { DetailCard, DetailEmpty, DetailRow } from "@/shared/DetailCard";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
+import { DetailPageHeader } from "@/shared/DetailPageHeader";
 import { StatusBadge } from "@/shared/StatusBadge";
 import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 import { ScopeSpendCard } from "@/teams/ScopeSpendCard";
@@ -63,7 +64,6 @@ export function ProjectDetailView({ name }: { name: string }) {
 	const { setEnabled, isPending: isToggling } = useToggleProjectEnabled();
 
 	const enabled = project.spec.enabled !== false;
-	const description = project.metadata.description?.trim();
 	const labels = Object.entries(project.metadata.labels ?? {});
 	const team = (teamsData.items ?? []).find(
 		(t) => t.metadata.id === project.spec.teamId,
@@ -85,31 +85,11 @@ export function ProjectDetailView({ name }: { name: string }) {
 				Projects
 			</Link>
 
-			<header className="flex items-start justify-between gap-4">
-				<div className="min-w-0 flex items-start gap-3">
-					<div className="mt-0.5 w-9 h-9 rounded-md bg-muted border border-border shrink-0 flex items-center justify-center">
-						<Boxes className="w-4 h-4 text-muted-foreground" aria-hidden />
-					</div>
-					<div className="min-w-0">
-						<h1 className="text-xl font-semibold text-foreground truncate flex items-center gap-2">
-							{displayLabel(project.metadata)}
-							{!hasDisplayName(project.metadata) && (
-								<span className="text-[11px] text-muted-foreground font-normal">
-									(no display name)
-								</span>
-							)}
-							<StatusBadge enabled={enabled} />
-						</h1>
-						<p className="mt-1 text-xs text-muted-foreground font-mono truncate">
-							{project.metadata.name}
-						</p>
-						{description && (
-							<p className="mt-1.5 max-w-2xl text-sm text-muted-foreground">
-								{description}
-							</p>
-						)}
-					</div>
-				</div>
+			<DetailPageHeader
+				icon={Boxes}
+				metadata={project.metadata}
+				badges={<StatusBadge enabled={enabled} />}
+			>
 				<DetailHeaderActions
 					enabled={enabled}
 					onToggle={() => void setEnabled(project, !enabled)}
@@ -142,7 +122,7 @@ export function ProjectDetailView({ name }: { name: string }) {
 						}}
 					/>
 				</DetailHeaderActions>
-			</header>
+			</DetailPageHeader>
 
 			<DetailCard title="Configuration" icon={Users}>
 				<dl className="divide-y divide-border">

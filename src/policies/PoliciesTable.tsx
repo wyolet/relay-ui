@@ -27,6 +27,7 @@ import { RowMenu } from "@/shared/RowMenu";
 import { SearchBox } from "@/shared/SearchBox";
 import { CatalogDetachedBadge } from "@/shared/StatusBadge";
 import { Switch } from "@/shared/Switch";
+import { TableEmpty } from "@/shared/TableEmpty";
 import { TableToolbar } from "@/shared/TableToolbar";
 import { Th } from "@/shared/Th";
 import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
@@ -89,8 +90,7 @@ export function PoliciesTable() {
 			/>
 
 			{items.length === 0 ? (
-				<div className="rounded-lg border border-dashed border-input bg-card px-6 py-14 text-center">
-					<ShieldCheck className="w-6 h-6 mx-auto mb-3 text-muted-foreground/50" />
+				<TableEmpty icon={ShieldCheck}>
 					{allItems.length === 0 ? (
 						<>
 							<p className="text-sm font-medium text-foreground mb-1">
@@ -113,7 +113,7 @@ export function PoliciesTable() {
 							No policies match the current filter.
 						</p>
 					)}
-				</div>
+				</TableEmpty>
 			) : (
 				<div className="overflow-x-auto rounded-lg border border-border bg-card">
 					<table className="w-full border-collapse">

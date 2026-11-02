@@ -8,7 +8,6 @@ import {
 } from "lucide-react";
 import { useMemo } from "react";
 import type { Policy } from "@/api/types/policy";
-import { Button } from "@/components/ui/button";
 import { analyzePolicy } from "@/diagnostics/analyzers/policy";
 import { DiagnosticList } from "@/diagnostics/DiagnosticList";
 import { useDiagnosticGraph } from "@/diagnostics/useDiagnostics";
@@ -21,6 +20,7 @@ import {
 	useBudgetChoices,
 	usePoolChoices,
 } from "@/policies/usePolicyLinkChoices";
+import { FormFooter } from "@/shared/FormFooter";
 import { IdentitySection } from "@/shared/IdentitySection";
 import { OwnerSection } from "@/shared/OwnerSection";
 import { ToggleSwitch } from "@/shared/ToggleSwitch";
@@ -165,23 +165,15 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 				</Section>
 			</div>
 
-			<div className="sticky bottom-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-t border-border mt-6 -mx-6 px-6 py-3 flex items-center justify-end gap-2">
-				<Button type="button" variant="outline" size="lg" onClick={onCancel}>
-					Cancel
-				</Button>
-				<form.Subscribe selector={(s) => s.isSubmitting}>
-					{(isSubmitting) => (
-						<Button
-							type="submit"
-							variant="cta"
-							size="lg"
-							disabled={isSubmitting}
-						>
-							{isSubmitting ? "Saving…" : isEdit ? "Save changes" : "Create"}
-						</Button>
-					)}
-				</form.Subscribe>
-			</div>
+			<form.Subscribe selector={(s) => s.isSubmitting}>
+				{(isSubmitting) => (
+					<FormFooter
+						isEdit={isEdit}
+						isSubmitting={isSubmitting}
+						onCancel={onCancel}
+					/>
+				)}
+			</form.Subscribe>
 		</form>
 	);
 }

@@ -3,6 +3,7 @@ import { AlertTriangle, KeyRound, Plus } from "lucide-react";
 import type { Policy } from "@/api/types/policy";
 import { HostLogo, hostRefLogo } from "@/hosts/HostLogo";
 import { type PolicyHostView, usePolicyHosts } from "@/policies/usePolicyHosts";
+import { EmptyPanel } from "@/shared/EmptyPanel";
 
 interface Props {
 	policy: Policy;
@@ -21,14 +22,9 @@ export function PolicyKeysTab({ policy }: Props) {
 
 	if (hosts.length === 0) {
 		return (
-			<div className="rounded-md border border-dashed border-border bg-muted/30 px-4 py-6 text-center mt-2">
-				<div className="text-sm font-medium text-foreground">
-					Nothing to show
-				</div>
-				<div className="mt-0.5 text-xs text-muted-foreground">
-					Pick models on the Models tab, then link pools in the edit form.
-				</div>
-			</div>
+			<EmptyPanel title="Nothing to show" className="mt-2">
+				Pick models on the Models tab, then link pools in the edit form.
+			</EmptyPanel>
 		);
 	}
 

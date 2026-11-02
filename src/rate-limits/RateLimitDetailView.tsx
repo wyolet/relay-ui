@@ -10,6 +10,7 @@ import { isProviderOwned, isSystemOwned } from "@/lib/systemRateLimits";
 import { windowLabel } from "@/lib/timeWindow";
 import { useRateLimitReferences } from "@/rate-limits/useRateLimitReferences";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
+import { EmptyPanel } from "@/shared/EmptyPanel";
 import {
 	CatalogDetachedBadge,
 	OwnerBadge,
@@ -119,14 +120,9 @@ function RulesPanel({ rules }: { rules: readonly RateLimitRule[] }) {
 		<section>
 			<SectionTitle>Rules</SectionTitle>
 			{rules.length === 0 ? (
-				<div className="rounded-md border border-dashed border-border bg-muted/30 px-4 py-6 text-center">
-					<div className="text-sm font-medium text-foreground">
-						No rules configured
-					</div>
-					<div className="mt-0.5 text-xs text-muted-foreground">
-						This rate limit will never throttle. Add a rule to enforce a quota.
-					</div>
-				</div>
+				<EmptyPanel title="No rules configured">
+					This rate limit will never throttle. Add a rule to enforce a quota.
+				</EmptyPanel>
 			) : (
 				<div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
 					{groups.map((g) => (

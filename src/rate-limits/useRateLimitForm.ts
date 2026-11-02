@@ -18,6 +18,7 @@ import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
 import { useOwnerOptions } from "@/hooks/useOwnerOptions";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
+import { firstError, zodFieldValidator } from "@/lib/formErrors";
 import { ALL_OWNER_SCOPES, PERSONAL_OWNER } from "@/lib/ownerScopes";
 import {
 	type SystemReqCap,
@@ -215,30 +216,11 @@ export function useRateLimitForm({
 		return `${base}-${suffixRef.current}`;
 	};
 
+	const runValidation = zodFieldValidator<RateLimitFormValues>(schema);
+
 	const form = useForm({
 		defaultValues: initial,
-		validators: {
-			onSubmit: ({ value }) => {
-				const r = schema.safeParse(value);
-				if (r.success) return undefined;
-				const fields: Record<string, string> = {};
-				for (const issue of r.error.issues) {
-					const key = issue.path.join(".");
-					if (key && !fields[key]) fields[key] = issue.message;
-				}
-				return { fields };
-			},
-			onChange: ({ value }) => {
-				const r = schema.safeParse(value);
-				if (r.success) return undefined;
-				const fields: Record<string, string> = {};
-				for (const issue of r.error.issues) {
-					const key = issue.path.join(".");
-					if (key && !fields[key]) fields[key] = issue.message;
-				}
-				return { fields };
-			},
-		},
+		validators: { onSubmit: runValidation, onChange: runValidation },
 		onSubmit: async ({ value }) => {
 			const rules: RateLimitRule[] = value.rules.map((r) => ({
 				amount: Number(r.amount),
@@ -309,21 +291,15 @@ export function useRateLimitForm({
 
 	const values = useStore(form.store, (s) => s.values);
 	const slugPreview = computeSlug(values.displayName);
-	const displayNameError = useStore(form.store, (s) => {
-		const errs = s.fieldMeta?.displayName?.errors ?? [];
-		for (const e of errs) if (typeof e === "string") return e;
-		return undefined;
-	});
-	const ownerError = useStore(form.store, (s) => {
-		const errs = s.fieldMeta?.owner?.errors ?? [];
-		for (const e of errs) if (typeof e === "string") return e;
-		return undefined;
-	});
-	const rulesError = useStore(form.store, (s) => {
-		const errs = s.fieldMeta?.rules?.errors ?? [];
-		for (const e of errs) if (typeof e === "string") return e;
-		return undefined;
-	});
+	const displayNameError = useStore(form.store, (s) =>
+		firstError(s.fieldMeta?.displayName?.errors),
+	);
+	const ownerError = useStore(form.store, (s) =>
+		firstError(s.fieldMeta?.owner?.errors),
+	);
+	const rulesError = useStore(form.store, (s) =>
+		firstError(s.fieldMeta?.rules?.errors),
+	);
 	const ruleErrors = useStore(form.store, (s) => {
 		const meta = s.fieldMeta ?? {};
 		const byIdx: Record<number, { amount?: string; window?: string }> = {};
@@ -332,13 +308,8 @@ export function useRateLimitForm({
 			if (!m) continue;
 			const idx = Number(m[1]);
 			const field = m[2] as "amount" | "window";
-			const errs = value?.errors ?? [];
-			for (const e of errs) {
-				if (typeof e === "string") {
-					byIdx[idx] = { ...byIdx[idx], [field]: e };
-					break;
-				}
-			}
+			const e = firstError(value?.errors);
+			if (e !== undefined) byIdx[idx] = { ...byIdx[idx], [field]: e };
 		}
 		return byIdx;
 	});

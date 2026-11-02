@@ -21,6 +21,7 @@ import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
 import { useOwnerOptions } from "@/hooks/useOwnerOptions";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
+import { firstError, zodFieldValidator } from "@/lib/formErrors";
 import { ALL_OWNER_SCOPES, PERSONAL_OWNER } from "@/lib/ownerScopes";
 import { randomSuffix, slugify } from "@/lib/slug";
 import { toast } from "@/shared/Toast";
@@ -52,13 +53,6 @@ const schema = z.object({
 	period: z.enum(BUDGET_PERIODS),
 	mode: z.enum(BUDGET_MODES),
 });
-
-function firstError(
-	errors: readonly unknown[] | undefined,
-): string | undefined {
-	for (const e of errors ?? []) if (typeof e === "string") return e;
-	return undefined;
-}
 
 function emptyValues(owner: string): BudgetFormValues {
 	return {
@@ -115,16 +109,7 @@ export function useBudgetForm({ budget, onSaved }: UseBudgetFormOptions) {
 		return `${slugify(trimmed) || "budget"}-${suffixRef.current}`;
 	};
 
-	function runValidation({ value }: { value: BudgetFormValues }) {
-		const r = schema.safeParse(value);
-		if (r.success) return undefined;
-		const fields: Record<string, string> = {};
-		for (const issue of r.error.issues) {
-			const key = issue.path.join(".");
-			if (key && !fields[key]) fields[key] = issue.message;
-		}
-		return { fields };
-	}
+	const runValidation = zodFieldValidator<BudgetFormValues>(schema);
 
 	const form = useForm({
 		defaultValues: initial,

@@ -16,6 +16,7 @@ import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { RowMenu } from "@/shared/RowMenu";
 import { StaleContent } from "@/shared/StaleContent";
 import { Switch } from "@/shared/Switch";
+import { TableEmpty } from "@/shared/TableEmpty";
 import { TableToolbar } from "@/shared/TableToolbar";
 import { Th } from "@/shared/Th";
 import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
@@ -105,8 +106,7 @@ export function ProjectsTable() {
 
 			<StaleContent stale={isStale}>
 				{items.length === 0 ? (
-					<div className="rounded-lg border border-dashed border-input bg-card px-6 py-14 text-center">
-						<Boxes className="w-6 h-6 mx-auto mb-3 text-muted-foreground/50" />
+					<TableEmpty icon={Boxes}>
 						{!filtered ? (
 							<>
 								<p className="text-sm font-medium text-foreground mb-1">
@@ -129,7 +129,7 @@ export function ProjectsTable() {
 								No projects match this filter.
 							</p>
 						)}
-					</div>
+					</TableEmpty>
 				) : (
 					<div className="overflow-x-auto rounded-lg border border-border bg-card">
 						<table className="w-full border-collapse">

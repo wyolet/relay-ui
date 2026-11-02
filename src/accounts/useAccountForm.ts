@@ -12,6 +12,7 @@ import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
 import { useOwnerOptions } from "@/hooks/useOwnerOptions";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
+import { firstError, zodFieldValidator } from "@/lib/formErrors";
 import { ALL_OWNER_SCOPES, PERSONAL_OWNER } from "@/lib/ownerScopes";
 import { randomSuffix, slugify } from "@/lib/slug";
 import { toast } from "@/shared/Toast";
@@ -35,13 +36,6 @@ const schema = z.object({
 	hostId: z.string().min(1, "Pick the host this account is held at."),
 	orgId: z.string().trim().max(200, "Organization id is too long"),
 });
-
-function firstError(
-	errors: readonly unknown[] | undefined,
-): string | undefined {
-	for (const e of errors ?? []) if (typeof e === "string") return e;
-	return undefined;
-}
 
 function emptyValues(owner: string): AccountFormValues {
 	return { displayName: "", description: "", owner, hostId: "", orgId: "" };
@@ -92,16 +86,7 @@ export function useAccountForm({ account, onSaved }: UseAccountFormOptions) {
 		return `${slugify(trimmed) || "account"}-${suffixRef.current}`;
 	};
 
-	function runValidation({ value }: { value: AccountFormValues }) {
-		const r = schema.safeParse(value);
-		if (r.success) return undefined;
-		const fields: Record<string, string> = {};
-		for (const issue of r.error.issues) {
-			const key = issue.path.join(".");
-			if (key && !fields[key]) fields[key] = issue.message;
-		}
-		return { fields };
-	}
+	const runValidation = zodFieldValidator<AccountFormValues>(schema);
 
 	const form = useForm({
 		defaultValues: initial,

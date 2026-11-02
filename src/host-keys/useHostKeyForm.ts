@@ -17,6 +17,7 @@ import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
 import { useOwnerOptions } from "@/hooks/useOwnerOptions";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
+import { firstError, zodFieldValidator } from "@/lib/formErrors";
 import { ALL_OWNER_SCOPES, PERSONAL_OWNER } from "@/lib/ownerScopes";
 import { randomSuffix, slugify } from "@/lib/slug";
 import { toast } from "@/shared/Toast";
@@ -172,16 +173,7 @@ export function useHostKeyForm({
 
 	const schema = useMemo(() => buildSchema(isEdit), [isEdit]);
 
-	function runValidation({ value }: { value: HostKeyFormValues }) {
-		const r = schema.safeParse(value);
-		if (r.success) return undefined;
-		const fields: Record<string, string> = {};
-		for (const issue of r.error.issues) {
-			const key = issue.path.join(".");
-			if (key && !fields[key]) fields[key] = issue.message;
-		}
-		return { fields };
-	}
+	const runValidation = zodFieldValidator<HostKeyFormValues>(schema);
 
 	// An update that omits accountId keeps the stored account, so "default"
 	// is sent as the default account's id when it exists.
@@ -294,39 +286,27 @@ export function useHostKeyForm({
 	const slugPreview = isEdit
 		? (hostKey?.metadata.name ?? "")
 		: computeSlug(values.displayName);
-	const displayNameError = useStore(form.store, (s) => {
-		const errs = s.fieldMeta?.displayName?.errors ?? [];
-		for (const e of errs) if (typeof e === "string") return e;
-		return undefined;
-	});
-	const descriptionError = useStore(form.store, (s) => {
-		const errs = s.fieldMeta?.description?.errors ?? [];
-		for (const e of errs) if (typeof e === "string") return e;
-		return undefined;
-	});
-	const ownerError = useStore(form.store, (s) => {
-		const errs = s.fieldMeta?.owner?.errors ?? [];
-		for (const e of errs) if (typeof e === "string") return e;
-		return undefined;
-	});
-	const hostIdError = useStore(form.store, (s) => {
-		const errs = s.fieldMeta?.hostId?.errors ?? [];
-		for (const e of errs) if (typeof e === "string") return e;
-		return undefined;
-	});
-	const envVarError = useStore(form.store, (s) => {
-		const errs = s.fieldMeta?.envVar?.errors ?? [];
-		for (const e of errs) if (typeof e === "string") return e;
-		return undefined;
-	});
+	const displayNameError = useStore(form.store, (s) =>
+		firstError(s.fieldMeta?.displayName?.errors),
+	);
+	const descriptionError = useStore(form.store, (s) =>
+		firstError(s.fieldMeta?.description?.errors),
+	);
+	const ownerError = useStore(form.store, (s) =>
+		firstError(s.fieldMeta?.owner?.errors),
+	);
+	const hostIdError = useStore(form.store, (s) =>
+		firstError(s.fieldMeta?.hostId?.errors),
+	);
+	const envVarError = useStore(form.store, (s) =>
+		firstError(s.fieldMeta?.envVar?.errors),
+	);
 	const envVarReservedPrefix = useStore(form.store, (s) =>
 		s.values.kind === "env" ? reservedEnvPrefix(s.values.envVar) : undefined,
 	);
-	const valueError = useStore(form.store, (s) => {
-		const errs = s.fieldMeta?.value?.errors ?? [];
-		for (const e of errs) if (typeof e === "string") return e;
-		return undefined;
-	});
+	const valueError = useStore(form.store, (s) =>
+		firstError(s.fieldMeta?.value?.errors),
+	);
 
 	const attachedPolicies = useMemo(
 		() => (hostKey ? linkedPolicyRows(hostKey, policiesData.items ?? []) : []),

@@ -7,12 +7,13 @@ import {
 	useServiceAccount,
 	useServiceAccountReferences,
 } from "@/api/hooks/serviceAccounts";
-import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
+import { displayLabel } from "@/lib/displayLabel";
 import { EraseBodiesButton } from "@/logs/EraseBodiesButton";
 import { PrincipalPolicy } from "@/policy-bindings/PrincipalPolicy";
 import { useToggleServiceAccountEnabled } from "@/service-accounts/useToggleServiceAccountEnabled";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
+import { DetailPageHeader } from "@/shared/DetailPageHeader";
 import { StatusBadge } from "@/shared/StatusBadge";
 import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 
@@ -32,7 +33,6 @@ export function ServiceAccountDetailView({ name }: { name: string }) {
 	const project = (projectsData.items ?? []).find(
 		(p) => p.metadata.id === sa.spec.projectId,
 	);
-	const description = sa.metadata.description?.trim();
 
 	return (
 		<div className="flex flex-col gap-5">
@@ -44,31 +44,11 @@ export function ServiceAccountDetailView({ name }: { name: string }) {
 				Service accounts
 			</Link>
 
-			<header className="flex items-start justify-between gap-4">
-				<div className="min-w-0 flex items-start gap-3">
-					<div className="mt-0.5 w-9 h-9 rounded-md bg-muted border border-border shrink-0 flex items-center justify-center">
-						<Bot className="w-4 h-4 text-muted-foreground" aria-hidden />
-					</div>
-					<div className="min-w-0">
-						<h1 className="text-xl font-semibold text-foreground truncate flex items-center gap-2">
-							{displayLabel(sa.metadata)}
-							{!hasDisplayName(sa.metadata) && (
-								<span className="text-[11px] text-muted-foreground font-normal">
-									(no display name)
-								</span>
-							)}
-							<StatusBadge enabled={enabled} />
-						</h1>
-						<p className="mt-1 text-xs text-muted-foreground font-mono truncate">
-							{sa.metadata.name}
-						</p>
-						{description && (
-							<p className="mt-1.5 max-w-2xl text-sm text-muted-foreground">
-								{description}
-							</p>
-						)}
-					</div>
-				</div>
+			<DetailPageHeader
+				icon={Bot}
+				metadata={sa.metadata}
+				badges={<StatusBadge enabled={enabled} />}
+			>
 				<DetailHeaderActions
 					enabled={enabled}
 					onToggle={() => void setEnabled(sa, !enabled)}
@@ -106,7 +86,7 @@ export function ServiceAccountDetailView({ name }: { name: string }) {
 						}}
 					/>
 				</DetailHeaderActions>
-			</header>
+			</DetailPageHeader>
 
 			<Card title="Configuration" icon={ShieldCheck}>
 				<dl className="divide-y divide-border">
