@@ -1,3 +1,4 @@
+import { fmtTokens } from "@/lib/format";
 import {
 	groupByMeter,
 	type MeterGroup,
@@ -29,13 +30,6 @@ export function fmtCost(amount: number, currency: string): string {
 	if (amount === 0) return `${prefix}0`;
 	const digits = amount < 0.01 ? 4 : amount < 1 ? 3 : 2;
 	return `${prefix}${amount.toFixed(digits)}`;
-}
-
-function fmtTokens(n: number): string {
-	if (n >= 1_000_000)
-		return `${(n / 1_000_000).toFixed(n % 1_000_000 === 0 ? 0 : 1)}M`;
-	if (n >= 1_000) return `${Math.round(n / 1_000)}k`;
-	return String(n);
 }
 
 /** A rate sheet as figures: each meter's base rate, its unit, and any
