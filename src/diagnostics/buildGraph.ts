@@ -33,8 +33,8 @@ function byId<T extends { metadata: { id?: string } }>(
 }
 
 /**
- * Credentials a policy draws on: its pools' keys in failover order, then the
- * keys it links directly, without repeats. Pools the graph lacks add nothing.
+ * Credentials a policy draws on: its pools' keys in failover order, without
+ * repeats. Pools the graph lacks add nothing.
  */
 export function policyCredentialIds(
 	policy: Policy,
@@ -44,7 +44,6 @@ export function policyCredentialIds(
 	for (const poolId of policy.spec.poolIds ?? []) {
 		for (const id of pools.get(poolId)?.spec.credentialIds ?? []) ids.add(id);
 	}
-	for (const id of policy.spec.credentialIds ?? []) ids.add(id);
 	return [...ids];
 }
 

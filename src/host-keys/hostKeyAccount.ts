@@ -12,7 +12,7 @@ export interface AccountOption {
 /** Form value for "the owner's default account at the host". */
 export const DEFAULT_ACCOUNT = "";
 
-/** Accounts a key of this owner at this host may name: same host, same owner. */
+/** Accounts a key of this owner at this host may name: provider accounts at the host, same owner. */
 function accountsFor(
 	accounts: readonly Account[],
 	hostId: string,
@@ -21,7 +21,9 @@ function accountsFor(
 ): Account[] {
 	return accounts.filter(
 		(a) =>
-			a.spec.hostId === hostId && ownerKey(a.metadata.owner, userId) === owner,
+			a.spec.kind === "provider" &&
+			a.spec.hostId === hostId &&
+			ownerKey(a.metadata.owner, userId) === owner,
 	);
 }
 

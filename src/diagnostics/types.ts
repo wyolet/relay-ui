@@ -69,8 +69,8 @@ export interface DiagnosticGraph {
 	// Host-bindings, indexed both ways (a model is served on a host via a binding).
 	bindingsByModel: ReadonlyMap<string, Binding[]>;
 	bindingsByHost: ReadonlyMap<string, Binding[]>;
-	// Reverse indexes: policies reaching a credential (through a pool or
-	// directly) or referencing a rate limit, by id.
+	// Reverse indexes: policies reaching a credential through a pool, or
+	// referencing a rate limit, by id.
 	policiesByCredentialId: ReadonlyMap<string, Policy[]>;
 	policiesByRateLimitId: ReadonlyMap<string, Policy[]>;
 }

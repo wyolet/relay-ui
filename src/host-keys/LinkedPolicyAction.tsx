@@ -1,33 +1,8 @@
 import { Link } from "@tanstack/react-router";
-import { Unlink2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import type { LinkedPolicyRow } from "./linkedPolicies";
 
-/** Detach for a direct link; a pool link is removed on the pool, so name it. */
-export function LinkedPolicyAction({
-	row,
-	onDetach,
-	detaching,
-}: {
-	row: LinkedPolicyRow;
-	onDetach: (policyId: string) => void;
-	detaching: boolean;
-}) {
-	if (row.direct) {
-		return (
-			<Button
-				type="button"
-				variant="outline"
-				size="sm"
-				onClick={() => onDetach(row.id)}
-				disabled={detaching}
-				title="Remove the policy's direct link to this key"
-			>
-				<Unlink2 className="size-3" />
-				Detach
-			</Button>
-		);
-	}
+/** The pools a policy reaches the key through; the link is changed on the pool. */
+export function LinkedPolicyAction({ row }: { row: LinkedPolicyRow }) {
 	if (row.viaPools.length === 0) return null;
 	return (
 		<span className="text-[11px] text-muted-foreground">
