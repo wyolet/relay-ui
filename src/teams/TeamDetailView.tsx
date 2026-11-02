@@ -1,10 +1,18 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Boxes, ChevronLeft, Link2, ShieldCheck, Users } from "lucide-react";
+import {
+	Boxes,
+	Building2,
+	ChevronLeft,
+	Link2,
+	ShieldCheck,
+	Users,
+} from "lucide-react";
 import { useProjectsInTeam } from "@/api/hooks/projects";
 import { useRoleBindingsAtScope } from "@/api/hooks/roleBindings";
 import { useDeleteTeam, useTeam, useTeamReferences } from "@/api/hooks/teams";
 import { resolveWindow, useScopeSpend } from "@/api/hooks/usage";
 import { displayLabel } from "@/lib/displayLabel";
+import { AccountPolicy } from "@/policy-bindings/AccountPolicy";
 import { subjectLabel } from "@/role-bindings/SubjectsEditor";
 import { Chip } from "@/shared/Chip";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
@@ -93,6 +101,14 @@ export function TeamDetailView({ name }: { name: string }) {
 					</div>
 				</DetailCard>
 			)}
+
+			<DetailCard title="Account" icon={Building2}>
+				<dl className="divide-y divide-border">
+					<AccountPolicy
+						accountRef={{ ownerOf: { kind: "team", id: teamId } }}
+					/>
+				</dl>
+			</DetailCard>
 
 			<ScopeSpendCard
 				spend={spend}

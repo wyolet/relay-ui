@@ -1,5 +1,6 @@
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { Plus, ShieldCheck } from "lucide-react";
+import { useAccounts } from "@/api/hooks/accounts";
 import { usePolicies } from "@/api/hooks/policies";
 import {
 	type PolicyBindingsListParams,
@@ -12,9 +13,9 @@ import { FilterBar } from "@/filters/FilterBar";
 import { activeFilterCount } from "@/filters/toQueryParams";
 import type { FilterDef, FilterState } from "@/filters/types";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
+import { AccountChips } from "@/policy-bindings/AccountChips";
+import { accountLabel } from "@/policy-bindings/accountLookup";
 import { BindingOwner } from "@/policy-bindings/BindingOwner";
-import { SubjectChips } from "@/policy-bindings/SubjectChips";
-import { useSubjectOptions } from "@/policy-bindings/useSubjectOptions";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { RowMenu } from "@/shared/RowMenu";
 import { StaleContent } from "@/shared/StaleContent";
@@ -26,27 +27,21 @@ import { useDeferredSearch } from "@/shared/useDeferredSearch";
 
 export interface PolicyBindingsSearch {
 	q: string;
+	/** A project-owned binding's owner id. */
 	project_id: string;
 	/** Not `policy_id`: the logs route already owns that key as a list. */
 	policy: string;
-	subject: string;
+	account: string;
 }
 
-/** Static filters; the project and policy pickers are appended at render
- * time because their options come from the catalog. */
+/** Static filters; the project, policy and account pickers are appended at
+ * render time because their options come from the catalog. */
 const STATIC_FILTERS = [
 	{
 		key: "q",
 		type: "search",
 		label: "Search",
 		placeholder: "Search policy bindings",
-		default: "",
-	},
-	{
-		key: "subject",
-		type: "search",
-		label: "Subject",
-		placeholder: "serviceaccount:<id>",
 		default: "",
 	},
 ] as const satisfies readonly FilterDef[];
@@ -58,10 +53,9 @@ export function toPolicyBindingsParams(
 	const params: PolicyBindingsListParams = {};
 	const q = search.q.trim();
 	if (q) params.q = q;
-	if (search.project_id) params.project_id = [search.project_id];
+	if (search.project_id) params.owner_id = [search.project_id];
 	if (search.policy) params.policy_id = [search.policy];
-	const subject = search.subject.trim();
-	if (subject) params.subject = [subject];
+	if (search.account) params.account_id = [search.account];
 	return params;
 }
 
@@ -72,7 +66,7 @@ export function PolicyBindingsTable() {
 	const { data } = usePolicyBindingsList(toPolicyBindingsParams(search));
 	const { data: projectsData } = useProjects();
 	const { data: policiesData } = usePolicies();
-	const { subjectName } = useSubjectOptions();
+	const { data: accountsData } = useAccounts();
 	const del = useConfirmedDelete(useDeletePolicyBinding(), {
 		noun: "policy binding",
 	});
@@ -112,6 +106,19 @@ export function PolicyBindingsTable() {
 				})),
 			],
 		},
+		{
+			key: "account",
+			type: "select",
+			label: "Account",
+			default: "",
+			options: [
+				{ value: "", label: "Any account" },
+				...(accountsData.items ?? []).map((a) => ({
+					value: a.metadata.id ?? "",
+					label: accountLabel(a),
+				})),
+			],
+		},
 	];
 
 	const items = data.items ?? [];
@@ -147,8 +154,8 @@ export function PolicyBindingsTable() {
 									No policy bindings yet
 								</p>
 								<p className="text-sm text-muted-foreground mb-5 max-w-sm mx-auto">
-									A policy binding attaches one policy to its subjects: users,
-									service accounts, teams, projects or accounts. Each subject
+									A policy binding attaches one policy to accounts: team,
+									project, personal, member, service or provider. Each account
 									sits in one binding.
 								</p>
 								<Link
@@ -173,7 +180,7 @@ export function PolicyBindingsTable() {
 									<Th variant="column">Name</Th>
 									<Th variant="column">Owner</Th>
 									<Th variant="column">Policy</Th>
-									<Th variant="column">Subjects</Th>
+									<Th variant="column">Accounts</Th>
 									<th
 										scope="col"
 										className="w-10 px-3 py-2"
@@ -204,10 +211,7 @@ export function PolicyBindingsTable() {
 												)}
 											</td>
 											<td className="px-3 py-2 text-xs">
-												<BindingOwner
-													binding={binding}
-													subjectName={subjectName}
-												/>
+												<BindingOwner binding={binding} />
 											</td>
 											<td className="px-3 py-2 text-xs">
 												{policy ? (
@@ -225,9 +229,8 @@ export function PolicyBindingsTable() {
 												)}
 											</td>
 											<td className="px-3 py-2">
-												<SubjectChips
-													subjects={binding.spec.subjects ?? []}
-													subjectName={subjectName}
+												<AccountChips
+													accountIds={binding.spec.accountIds ?? []}
 												/>
 											</td>
 											<td className="px-3 py-2 text-right">

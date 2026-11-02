@@ -70,11 +70,16 @@ export function projectReferencesQueryOptions(id: string) {
 	});
 }
 
-/** A project owns service accounts, and their keys hang off those. */
+/** A project owns service accounts, and their keys hang off those; it also has an account. */
 function invalidateProjectDependents(
 	queryClient: ReturnType<typeof useQueryClient>,
 ): void {
-	for (const key of [["projects"], ["service-accounts"], ["keys"]]) {
+	for (const key of [
+		["projects"],
+		["service-accounts"],
+		["keys"],
+		["accounts"],
+	]) {
 		void queryClient.invalidateQueries({ queryKey: key });
 	}
 }

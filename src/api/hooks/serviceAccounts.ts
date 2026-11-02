@@ -75,11 +75,16 @@ export function serviceAccountReferencesQueryOptions(id: string) {
 	});
 }
 
-/** A service account owns keys and points at a project and a policy. */
+/** A service account owns keys and an account, and points at a project. */
 function invalidateServiceAccountDependents(
 	queryClient: ReturnType<typeof useQueryClient>,
 ): void {
-	for (const key of [["service-accounts"], ["keys"], ["projects"]]) {
+	for (const key of [
+		["service-accounts"],
+		["keys"],
+		["projects"],
+		["accounts"],
+	]) {
 		void queryClient.invalidateQueries({ queryKey: key });
 	}
 }

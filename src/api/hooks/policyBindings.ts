@@ -10,7 +10,6 @@ import type { DetachedLinks } from "@/api/types/errors";
 import type {
 	PolicyBinding,
 	PolicyBindingList,
-	PolicyBindingSubject,
 } from "@/api/types/policyBinding";
 import type { operations } from "@/api/types.gen";
 import { unwrap } from "@/api/unwrap";
@@ -19,11 +18,6 @@ import { unwrap } from "@/api/unwrap";
 export type PolicyBindingsListParams = NonNullable<
 	operations["list_policy-bindings"]["parameters"]["query"]
 >;
-
-/** "<kind>:<id>", the form the server keys a subject in and the `subject` filter matches. */
-export function subjectKey(subject: PolicyBindingSubject): string {
-	return `${subject.kind}:${subject.id}`;
-}
 
 export function policyBindingsListQuery(params: PolicyBindingsListParams) {
 	return queryOptions({
@@ -55,12 +49,12 @@ export function policyBindingDetailQueryOptions(ref: string) {
 	});
 }
 
-/** The policy bindings of one project. Non-suspending: the project page
- * renders without them. */
-export function usePolicyBindingsInProject(projectId: string) {
+/** The policy bindings a team or project owns. Non-suspending: the owner's
+ * page renders without them. */
+export function usePolicyBindingsOwnedBy(ownerId: string) {
 	return useQuery({
-		...policyBindingsListQuery({ project_id: [projectId] }),
-		enabled: projectId.length > 0,
+		...policyBindingsListQuery({ owner_id: [ownerId] }),
+		enabled: ownerId.length > 0,
 	});
 }
 
