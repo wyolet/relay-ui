@@ -1,6 +1,7 @@
 import {
 	queryOptions,
 	useMutation,
+	useQuery,
 	useQueryClient,
 	useSuspenseQuery,
 } from "@tanstack/react-query";
@@ -75,6 +76,12 @@ export function useBudgets() {
 
 export function useBudgetsList(params: BudgetsListParams) {
 	return useSuspenseQuery(budgetListQuery(params));
+}
+
+/** The budgets a policy owned by `usableBy` may link; empty while loading. */
+export function useUsableBudgets(usableBy: string | undefined): Budget[] {
+	const { data } = useQuery(budgetListQuery({ usable_by: usableBy }));
+	return data?.items ?? [];
 }
 
 export function useBudget(ref: string) {

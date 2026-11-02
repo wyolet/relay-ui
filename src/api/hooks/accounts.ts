@@ -80,6 +80,19 @@ export function useAccountsList(params: AccountsListParams) {
 	return useSuspenseQuery(accountListQuery(params));
 }
 
+/** The accounts a binding owned by `usableBy` may bind, narrowed by `params`; empty while loading. */
+export function useUsableAccounts(
+	usableBy: string | undefined,
+	params: AccountsListParams = {},
+	enabled = true,
+): Account[] {
+	const { data } = useQuery({
+		...accountListQuery({ ...params, usable_by: usableBy }),
+		enabled,
+	});
+	return data?.items ?? [];
+}
+
 export function useAccount(ref: string) {
 	return useSuspenseQuery(accountDetailQueryOptions(ref));
 }

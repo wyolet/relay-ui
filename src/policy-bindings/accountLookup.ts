@@ -1,33 +1,9 @@
 import type { Account } from "@/api/hooks/accounts";
 import { ApiError } from "@/api/types/errors";
 import type { PolicyBinding } from "@/api/types/policyBinding";
-import type { Project } from "@/api/types/project";
 import type { components } from "@/api/types.gen";
 
-type Owner = components["schemas"]["Owner"];
 export type AccountHolder = components["schemas"]["AccountHolder"];
-
-/**
- * Whether an account sits inside a binding owner's scope: the system holds
- * every account, any other scope its own, and a team also its projects'.
- */
-export function inOwnerScope(
-	account: Account,
-	scope: Owner,
-	projects: readonly Project[],
-): boolean {
-	if (scope.kind === "system") return true;
-	const owner = account.metadata.owner;
-	if (!owner?.id || !scope.id) return false;
-	if (owner.kind === scope.kind && owner.id === scope.id) return true;
-	return (
-		scope.kind === "team" &&
-		owner.kind === "project" &&
-		projects.some(
-			(p) => p.metadata.id === owner.id && p.spec.teamId === scope.id,
-		)
-	);
-}
 
 /** The binding that holds an account; an account sits in at most one. */
 export function accountBinding(

@@ -12,8 +12,8 @@ import { budgetLinkShared } from "@/policies/policyFormSpec";
 import { usePolicyHosts } from "@/policies/usePolicyHosts";
 import {
 	type LinkChoice,
-	useBudgetChoices,
-	usePoolChoices,
+	useSelectedBudgets,
+	useSelectedPools,
 } from "@/policies/usePolicyLinkChoices";
 import { usePolicyModels } from "@/policies/usePolicyModels";
 import { usePolicyUsage } from "@/policies/usePolicyUsage";
@@ -50,8 +50,8 @@ export function PolicyOverviewTab({ policy }: Props) {
 
 function LinksPanel({ policy }: { policy: Policy }) {
 	const budgetLinks = policy.spec.budgets ?? [];
-	const pools = usePoolChoices(policy.spec.poolIds ?? []).selected;
-	const budgets = useBudgetChoices(budgetLinks.map((b) => b.budgetId)).selected;
+	const pools = useSelectedPools(policy.spec.poolIds ?? []);
+	const budgets = useSelectedBudgets(budgetLinks.map((b) => b.budgetId));
 	return (
 		<section className="grid gap-4 sm:grid-cols-2">
 			<LinkList

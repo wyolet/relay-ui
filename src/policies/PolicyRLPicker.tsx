@@ -23,14 +23,20 @@ interface PolicyRLPickerProps {
 	/** The policy's models; empty means all available. */
 	allowedModels: string[];
 	onChange: (next: RateLimitLinkValue[]) => void;
+	/** The policy owner's scope, as the rate-limit list filter takes it. */
+	usableBy: string | undefined;
 }
 
 export function PolicyRLPicker({
 	links,
 	allowedModels,
 	onChange,
+	usableBy,
 }: PolicyRLPickerProps) {
-	const { scopes, labels, rlMetaById } = usePolicyRLResolution(links);
+	const { scopes, labels, rlMetaById, attachable } = usePolicyRLResolution(
+		links,
+		usableBy,
+	);
 
 	const grantRefs = useMemo(
 		() =>
@@ -204,7 +210,7 @@ export function PolicyRLPicker({
 			{editing && (
 				<AttachRateLimitModal
 					existing={editing.kind === "edit" ? links[editing.idx] : undefined}
-					rateLimits={[...rlMetaById.values()]}
+					rateLimits={attachable}
 					excludeRLIds={usedRLIds}
 					allowedModels={allowedModels}
 					onClose={() => setEditing(null)}

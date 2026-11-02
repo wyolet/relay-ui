@@ -8,50 +8,54 @@ import {
 } from "@/api/hooks/serviceAccounts";
 import type { ServiceAccount } from "@/api/types/serviceAccount";
 import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
-import { useOwnerOptions } from "@/hooks/useOwnerOptions";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
+import { useFormOwner, useWorkContext } from "@/hooks/useWorkContext";
 import { displayLabel } from "@/lib/displayLabel";
 import { shownError, zodFieldValidator } from "@/lib/formErrors";
-import { ownerKeyId } from "@/lib/ownerScopes";
 import { randomSuffix, slugify } from "@/lib/slug";
+import { scopeOptions } from "@/lib/workContext";
 import { toast } from "@/shared/Toast";
 
 export interface ServiceAccountFormValues {
 	displayName: string;
 	description: string;
-	/** "project:<id>"; spec.projectId is taken from it. */
-	owner: string;
+	/** Picked only when neither the row nor the context fixes the project. */
+	projectId: string;
 	enabled: boolean;
 }
 
-function emptyValues(owner: string): ServiceAccountFormValues {
+function emptyValues(): ServiceAccountFormValues {
 	return {
 		displayName: "",
 		description: "",
-		owner,
+		projectId: "",
 		enabled: true,
 	};
 }
 
-function toValues(sa: ServiceAccount, owner: string): ServiceAccountFormValues {
+function toValues(sa: ServiceAccount): ServiceAccountFormValues {
 	return {
 		displayName: displayLabel(sa.metadata),
 		description: sa.metadata.description ?? "",
-		owner,
+		projectId: sa.spec.projectId,
 		enabled: sa.spec.enabled ?? true,
 	};
 }
 
-const schema = z.object({
-	displayName: z
-		.string()
-		.trim()
-		.min(1, "Display name is required — the slug is generated from it")
-		.max(120, "Display name is too long"),
-	description: z.string().trim().max(500, "Description is too long"),
-	owner: z.string().min(1, "Pick the project this account belongs to."),
-	enabled: z.boolean(),
-});
+function buildSchema(picksProject: boolean) {
+	return z.object({
+		displayName: z
+			.string()
+			.trim()
+			.min(1, "Display name is required — the slug is generated from it")
+			.max(120, "Display name is too long"),
+		description: z.string().trim().max(500, "Description is too long"),
+		projectId: picksProject
+			? z.string().min(1, "Pick the project this account belongs to.")
+			: z.string(),
+		enabled: z.boolean(),
+	});
+}
 
 interface UseServiceAccountFormOptions {
 	open?: boolean;
@@ -73,20 +77,19 @@ export function useServiceAccountForm({
 		serviceAccount?.metadata.resourceVersion,
 	);
 
-	const ownerPicker = useOwnerOptions({
-		kinds: ["project"],
-		owner: serviceAccount
-			? { kind: "project", id: serviceAccount.spec.projectId }
-			: undefined,
+	// The edited row's project, else the current project context.
+	const { contexts, current } = useWorkContext();
+	const fixedProjectId =
+		serviceAccount?.spec.projectId ||
+		(current?.kind === "project" ? current.id : "");
+	const picksProject = fixedProjectId === "";
+	const { placement } = useFormOwner({
+		owner: { kind: "project", id: fixedProjectId },
 	});
-	const { initialOwner } = ownerPicker;
 
 	const initial = useMemo<ServiceAccountFormValues>(
-		() =>
-			serviceAccount
-				? toValues(serviceAccount, initialOwner)
-				: emptyValues(initialOwner),
-		[serviceAccount, initialOwner],
+		() => (serviceAccount ? toValues(serviceAccount) : emptyValues()),
+		[serviceAccount],
 	);
 	const suffixRef = useRef<string>(
 		serviceAccount?.metadata.name.match(/-(\d{4,8})$/)?.[1] ?? randomSuffix(),
@@ -98,6 +101,7 @@ export function useServiceAccountForm({
 		return `${base}-${suffixRef.current}`;
 	};
 
+	const schema = useMemo(() => buildSchema(picksProject), [picksProject]);
 	const runValidation = zodFieldValidator<ServiceAccountFormValues>(schema);
 
 	const form = useForm({
@@ -107,7 +111,7 @@ export function useServiceAccountForm({
 			const displayName = value.displayName.trim();
 			const description = value.description.trim();
 			const spec = {
-				projectId: ownerKeyId(value.owner),
+				projectId: fixedProjectId || value.projectId,
 				enabled: value.enabled,
 			};
 			try {
@@ -134,7 +138,7 @@ export function useServiceAccountForm({
 							displayName,
 							description,
 							// Owner is re-derived from spec.projectId server-side.
-							owner: ownerPicker.toOwner(value.owner),
+							owner: { kind: "project", id: spec.projectId },
 						},
 						spec,
 					});
@@ -158,8 +162,8 @@ export function useServiceAccountForm({
 	useEffect(() => {
 		if (lastResetKey.current === resetKey) return;
 		lastResetKey.current = resetKey;
-		form.reset(open ? initial : emptyValues(initialOwner));
-	}, [resetKey, open, initial, initialOwner, form]);
+		form.reset(open ? initial : emptyValues());
+	}, [resetKey, open, initial, form]);
 
 	const values = useStore(form.store, (s) => s.values);
 	const slugPreview = isEdit
@@ -171,8 +175,8 @@ export function useServiceAccountForm({
 	const descriptionError = useStore(form.store, (s) =>
 		shownError(s.fieldMeta?.description, s.submissionAttempts),
 	);
-	const ownerError = useStore(form.store, (s) =>
-		shownError(s.fieldMeta?.owner, s.submissionAttempts),
+	const projectIdError = useStore(form.store, (s) =>
+		shownError(s.fieldMeta?.projectId, s.submissionAttempts),
 	);
 
 	return {
@@ -182,7 +186,9 @@ export function useServiceAccountForm({
 		slugPreview,
 		displayNameError,
 		descriptionError,
-		ownerOptions: ownerPicker.options,
-		ownerError,
+		picksProject,
+		placement: picksProject ? undefined : placement,
+		projectOptions: scopeOptions(contexts, "project"),
+		projectIdError,
 	};
 }

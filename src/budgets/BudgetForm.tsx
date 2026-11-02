@@ -12,7 +12,6 @@ import { Input } from "@/components/ui/input";
 import { FormFooter } from "@/shared/FormFooter";
 import { FormSection } from "@/shared/FormSection";
 import { IdentitySection } from "@/shared/IdentitySection";
-import { OwnerSection } from "@/shared/OwnerSection";
 import { Segmented } from "@/shared/Segmented";
 
 const PERIOD_OPTIONS = BUDGET_PERIODS.map((p) => ({
@@ -31,7 +30,7 @@ interface BudgetFormProps {
 }
 
 export function BudgetForm({ budget, onSaved, onCancel }: BudgetFormProps) {
-	const { form, values, errors, isEdit, slugPreview, ownerOptions, setAmount } =
+	const { form, values, errors, isEdit, slugPreview, placement, setAmount } =
 		useBudgetForm({ budget, onSaved });
 	const amountErrorId = useId();
 
@@ -55,13 +54,7 @@ export function BudgetForm({ budget, onSaved, onCancel }: BudgetFormProps) {
 					descriptionError={errors.description}
 					autoFocus={!isEdit}
 					placeholder="Monthly team cap"
-				/>
-
-				<OwnerSection
-					options={ownerOptions}
-					value={values.owner}
-					onChange={(v) => form.setFieldValue("owner", v)}
-					error={errors.owner}
+					placement={placement}
 				/>
 
 				<FormSection

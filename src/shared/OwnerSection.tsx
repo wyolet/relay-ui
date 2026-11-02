@@ -57,7 +57,7 @@ export function OwnerSection({
 	options,
 	value,
 	onChange,
-	description = "Personal, or a team or project you can create in. Picking another scope on edit moves the row there.",
+	description = "The team or project this row belongs to.",
 	title = "Owner",
 	icon = UserRound,
 	placeholder = "Pick an owner…",
