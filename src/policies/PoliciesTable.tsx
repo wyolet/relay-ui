@@ -71,8 +71,7 @@ export function PoliciesTable() {
 	async function handleDelete(p: Policy) {
 		const ok = await confirm({
 			title: `Delete policy ${p.metadata.name}?`,
-			description:
-				"API keys using this policy will lose access until reattached.",
+			description: "Relay refuses the delete while a binding applies it.",
 			confirmLabel: "Delete",
 			danger: true,
 		});
@@ -117,8 +116,8 @@ export function PoliciesTable() {
 								No policies yet
 							</p>
 							<p className="text-sm text-muted-foreground mb-5">
-								Bundle upstream secrets, allowed models, and rate limits — then
-								attach to keys.
+								Bundle pools, allowed models, rate limits and budgets — then
+								bind the policy where it applies.
 							</p>
 							<Link
 								to="/policies/new"
@@ -142,9 +141,12 @@ export function PoliciesTable() {
 								<Th variant="column">Name</Th>
 								<Th variant="column">Catalog</Th>
 								<Th variant="column" align="right">
-									Credentials
+									Pools
 								</Th>
-								<Th variant="column">Rate limit</Th>
+								<Th variant="column">Rate limits</Th>
+								<Th variant="column" align="right">
+									Budgets
+								</Th>
 								<th
 									scope="col"
 									className="w-12 px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground"
@@ -163,11 +165,7 @@ export function PoliciesTable() {
 								<PolicyRow
 									key={p.metadata.name}
 									policy={p}
-									rateLimit={
-										p.spec.rateLimitId
-											? rateLimitById.get(p.spec.rateLimitId)
-											: undefined
-									}
+									rateLimitById={rateLimitById}
 									onEdit={() =>
 										void navigate({
 											to: "/policies/$name",
@@ -187,15 +185,20 @@ export function PoliciesTable() {
 
 function PolicyRow({
 	policy,
-	rateLimit,
+	rateLimitById,
 	onEdit,
 	onDelete,
 }: {
 	policy: Policy;
-	rateLimit: RateLimit | undefined;
+	rateLimitById: Map<string, RateLimit>;
 	onEdit: () => void;
 	onDelete: () => void;
 }) {
+	const rateLimitLinks = policy.spec.rateLimits ?? [];
+	const onlyRateLimit =
+		rateLimitLinks.length === 1 && rateLimitLinks[0]
+			? rateLimitById.get(rateLimitLinks[0].rateLimitId)
+			: undefined;
 	const updatePolicy = useUpdatePolicy();
 	const toastSaveError = useSaveErrorToast();
 	const diagnostics = usePolicyDiagnostics(policy.metadata.id);
@@ -261,24 +264,28 @@ function PolicyRow({
 				</span>
 			</td>
 			<td className="px-3 py-2 text-sm text-foreground text-right tabular-nums">
-				{(policy.spec.hostKeyIds ?? []).length}
+				{(policy.spec.poolIds ?? []).length}
 			</td>
 			<td className="px-3 py-2 text-sm">
-				{rateLimit ? (
+				{onlyRateLimit ? (
 					<Link
 						to="/policies/rate-limits/$name"
-						params={{ name: rateLimit.metadata.name }}
+						params={{ name: onlyRateLimit.metadata.name }}
 						className="text-foreground hover:underline"
 					>
-						{displayLabel(rateLimit.metadata)}
+						{displayLabel(onlyRateLimit.metadata)}
 					</Link>
-				) : (policy.spec.rlBindings ?? []).length > 0 ? (
+				) : rateLimitLinks.length > 0 ? (
 					<span className="text-muted-foreground">
-						{(policy.spec.rlBindings ?? []).length} rate limits
+						{rateLimitLinks.length} rate limit
+						{rateLimitLinks.length === 1 ? "" : "s"}
 					</span>
 				) : (
 					<span className="text-muted-foreground/70">—</span>
 				)}
+			</td>
+			<td className="px-3 py-2 text-sm text-foreground text-right tabular-nums">
+				{(policy.spec.budgetIds ?? []).length}
 			</td>
 			<td className="px-3 py-2">
 				{canEdit ? (

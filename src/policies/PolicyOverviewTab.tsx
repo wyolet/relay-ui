@@ -1,10 +1,18 @@
+import { Link } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { usePolicyReferences } from "@/api/hooks/policies";
 import type { Policy } from "@/api/types/policy";
 import { DiagnosticList } from "@/diagnostics/DiagnosticList";
 import { usePolicyDiagnostics } from "@/diagnostics/useDiagnostics";
 import { HostLogo, hostRefLogo } from "@/hosts/HostLogo";
+import { LinkChoiceLabel, LinkChoiceRow } from "@/policies/PolicyLinkPicker";
 import { usePolicyHosts } from "@/policies/usePolicyHosts";
+import {
+	type LinkChoice,
+	useBudgetChoices,
+	useCredentialChoices,
+	usePoolChoices,
+} from "@/policies/usePolicyLinkChoices";
 import { usePolicyModels } from "@/policies/usePolicyModels";
 import { usePolicyUsage } from "@/policies/usePolicyUsage";
 import {
@@ -27,7 +35,75 @@ export function PolicyOverviewTab({ policy }: Props) {
 
 			<StatsGrid policy={policy} />
 
+			<LinksPanel policy={policy} />
+
 			<HostsPanel policy={policy} />
+		</div>
+	);
+}
+
+function LinksPanel({ policy }: { policy: Policy }) {
+	const pools = usePoolChoices(policy.spec.poolIds ?? []).selected;
+	const budgets = useBudgetChoices(policy.spec.budgetIds ?? []).selected;
+	const credentials = useCredentialChoices(policy.spec.credentialIds ?? []);
+	return (
+		<section className="grid gap-4 sm:grid-cols-2">
+			<LinkList
+				title="Pools, in failover order"
+				empty="No pools linked."
+				items={pools}
+				ordered
+			/>
+			<LinkList title="Budgets" empty="No budgets linked." items={budgets} />
+			{credentials.length > 0 && (
+				<div className="sm:col-span-2">
+					<SectionTitle>Credentials linked directly</SectionTitle>
+					<ul className="divide-y divide-border rounded-md border border-border">
+						{credentials.map((c) => (
+							<li key={c.id} className="px-3 py-2">
+								<Link
+									to="/host-keys/$name"
+									params={{ name: c.name }}
+									className="flex hover:underline"
+								>
+									<LinkChoiceLabel choice={c} />
+								</Link>
+							</li>
+						))}
+					</ul>
+				</div>
+			)}
+		</section>
+	);
+}
+
+function LinkList({
+	title,
+	empty,
+	items,
+	ordered,
+}: {
+	title: string;
+	empty: string;
+	items: LinkChoice[];
+	ordered?: boolean;
+}) {
+	return (
+		<div>
+			<SectionTitle>{title}</SectionTitle>
+			{items.length === 0 ? (
+				<p className="text-xs text-muted-foreground">{empty}</p>
+			) : (
+				<ul className="divide-y divide-border rounded-md border border-border">
+					{items.map((c, i) => (
+						<LinkChoiceRow
+							key={c.id}
+							choice={c}
+							rank={ordered ? i + 1 : undefined}
+						/>
+					))}
+				</ul>
+			)}
 		</div>
 	);
 }
@@ -52,12 +128,12 @@ function StatsGrid({ policy }: { policy: Policy }) {
 				/>
 				{policy.metadata.id ? (
 					<Suspense
-						fallback={<StatCard label="API keys" value="…" sub="loading" />}
+						fallback={<StatCard label="Bindings" value="…" sub="loading" />}
 					>
-						<KeyStatCard policyId={policy.metadata.id} />
+						<BindingStatCard policyId={policy.metadata.id} />
 					</Suspense>
 				) : (
-					<StatCard label="API keys" value="—" sub="unsaved" />
+					<StatCard label="Bindings" value="—" sub="unsaved" />
 				)}
 				{policy.metadata.id && (
 					<>
@@ -77,14 +153,16 @@ function StatsGrid({ policy }: { policy: Policy }) {
 	);
 }
 
-function KeyStatCard({ policyId }: { policyId: string }) {
+function BindingStatCard({ policyId }: { policyId: string }) {
 	const { data } = usePolicyReferences(policyId);
-	const count = (data.items ?? []).filter((r) => r.kind === "key").length;
+	const count = (data.items ?? []).filter(
+		(r) => r.kind === "policy-binding" && r.via === "spec.policyId",
+	).length;
 	return (
 		<StatCard
-			label="API keys"
+			label="Bindings"
 			value={count}
-			sub={count === 0 ? "unused" : "using this policy"}
+			sub={count === 0 ? "not bound" : "applying this policy"}
 		/>
 	);
 }

@@ -11,7 +11,7 @@ interface Props {
 /**
  * Host keys reaching the hosts this policy can serve, resolved server-side via
  * `GET /policies/{ref}/hosts`. Each row is a host the policy's catalog reaches,
- * with the host-keys attached to it. A host with no key is flagged — `required`
+ * with the host keys its pools and credentials give it. A host with no key is flagged — `required`
  * means requests there will fail; `optional` means a sibling host can cover the
  * same models. All state (host/key enabled, sharing, requirement) is server-fed.
  */
@@ -26,8 +26,7 @@ export function PolicyKeysTab({ policy }: Props) {
 					Nothing to show
 				</div>
 				<div className="mt-0.5 text-xs text-muted-foreground">
-					Pick models on the Models tab, then attach credentials in the edit
-					form.
+					Pick models on the Models tab, then link pools in the edit form.
 				</div>
 			</div>
 		);
@@ -155,7 +154,7 @@ function HostRow({
 							className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline"
 						>
 							<Plus className="w-3 h-3" />
-							Attach key
+							Link a pool
 						</Link>
 					) : (
 						<StatusPill tone="muted">optional</StatusPill>

@@ -34,10 +34,10 @@ export const Route = createFileRoute(
 		void queryClient.prefetchQuery(modelsListQueryOptions);
 		void queryClient.prefetchQuery(providersListQueryOptions);
 		void queryClient.prefetchQuery(bindingsListQueryOptions);
+		void queryClient.prefetchQuery(keysListQueryOptions);
 		return Promise.all([
 			queryClient.ensureQueryData(rateLimitDetailQueryOptions(params.name)),
 			queryClient.ensureQueryData(policiesListQueryOptions),
-			queryClient.ensureQueryData(keysListQueryOptions),
 		]);
 	},
 	component: RateLimitDetailPage,
