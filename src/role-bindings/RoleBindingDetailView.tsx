@@ -1,9 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { ChevronLeft, Globe, ShieldCheck, Users } from "lucide-react";
-import { useState } from "react";
 import { useDeleteRoleBinding, useRoleBinding } from "@/api/hooks/roleBindings";
 import { useRoles } from "@/api/hooks/roles";
-import { ApiError } from "@/api/types/errors";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { OwnerLink } from "@/projects/OwnerLink";
 import { subjectLabel } from "@/role-bindings/SubjectsEditor";
@@ -12,15 +10,16 @@ import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { DetailCard, DetailEmpty, DetailRow } from "@/shared/DetailCard";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
 import { StatusBadge } from "@/shared/StatusBadge";
-import { toast } from "@/shared/Toast";
+import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 
 export function RoleBindingDetailView({ name }: { name: string }) {
 	const { data: binding } = useRoleBinding(name);
 	const { data: rolesData } = useRoles();
-	const deleteBinding = useDeleteRoleBinding();
 	const navigate = useNavigate();
-
-	const [confirming, setConfirming] = useState(false);
+	const del = useConfirmedDelete(useDeleteRoleBinding(), {
+		noun: "role binding",
+		onDeleted: () => void navigate({ to: "/role-bindings" }),
+	});
 
 	const enabled = binding.spec.enabled !== false;
 	const description = binding.metadata.description?.trim();
@@ -29,24 +28,6 @@ export function RoleBindingDetailView({ name }: { name: string }) {
 	const role = (rolesData.items ?? []).find(
 		(r) => r.metadata.id === binding.spec.roleId,
 	);
-
-	async function handleDelete() {
-		try {
-			await deleteBinding.mutateAsync(binding.metadata.id ?? "");
-			toast(
-				"success",
-				`Role binding "${displayLabel(binding.metadata)}" deleted.`,
-			);
-			void navigate({ to: "/role-bindings" });
-		} catch (err) {
-			toast(
-				"error",
-				err instanceof ApiError
-					? err.body.message
-					: "Failed to delete role binding.",
-			);
-		}
-	}
 
 	return (
 		<div className="flex flex-col gap-5">
@@ -90,7 +71,13 @@ export function RoleBindingDetailView({ name }: { name: string }) {
 					enabled={enabled}
 					onToggle={() => undefined}
 					showToggle={false}
-					onDelete={() => setConfirming(true)}
+					onDelete={() =>
+						del.request({
+							id: binding.metadata.id ?? "",
+							name: binding.metadata.name,
+							label: displayLabel(binding.metadata),
+						})
+					}
 					editLink={({ className, content }) => (
 						<Link
 							to="/role-bindings/$name/edit"
@@ -158,12 +145,13 @@ export function RoleBindingDetailView({ name }: { name: string }) {
 				)}
 			</DetailCard>
 
-			{confirming && (
+			{del.target && (
 				<DeleteConfirm
-					resourceName={binding.metadata.name}
-					onConfirm={() => void handleDelete()}
-					onCancel={() => setConfirming(false)}
-					isPending={deleteBinding.isPending}
+					resourceName={del.target.name}
+					onConfirm={() => void del.confirm()}
+					onCancel={del.cancel}
+					isPending={del.isPending}
+					error={del.error}
 				/>
 			)}
 		</div>

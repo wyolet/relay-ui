@@ -7,8 +7,6 @@ import {
 	usePolicyBindingsList,
 } from "@/api/hooks/policyBindings";
 import { useProjects } from "@/api/hooks/projects";
-import { ApiError } from "@/api/types/errors";
-import type { PolicyBinding } from "@/api/types/policyBinding";
 import { buttonVariants } from "@/components/ui/button";
 import { FilterBar } from "@/filters/FilterBar";
 import { activeFilterCount } from "@/filters/toQueryParams";
@@ -17,12 +15,12 @@ import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { BindingOwner } from "@/policy-bindings/BindingOwner";
 import { SubjectChips } from "@/policy-bindings/SubjectChips";
 import { useSubjectOptions } from "@/policy-bindings/useSubjectOptions";
-import { confirm } from "@/shared/ConfirmDialog";
+import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { RowMenu } from "@/shared/RowMenu";
 import { StaleContent } from "@/shared/StaleContent";
 import { TableToolbar } from "@/shared/TableToolbar";
 import { Th } from "@/shared/Th";
-import { toast } from "@/shared/Toast";
+import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 import { useDeferredSearch } from "@/shared/useDeferredSearch";
 
 export interface PolicyBindingsSearch {
@@ -74,7 +72,9 @@ export function PolicyBindingsTable() {
 	const { data: projectsData } = useProjects();
 	const { data: policiesData } = usePolicies();
 	const { subjectName } = useSubjectOptions();
-	const deleteBinding = useDeletePolicyBinding();
+	const del = useConfirmedDelete(useDeletePolicyBinding(), {
+		noun: "policy binding",
+	});
 
 	const policyNames = new Map(
 		(policiesData.items ?? []).map((p) => [
@@ -118,30 +118,6 @@ export function PolicyBindingsTable() {
 
 	function patch(next: FilterState) {
 		void navigate({ search: (prev) => ({ ...prev, ...next }), replace: true });
-	}
-
-	async function handleDelete(binding: PolicyBinding) {
-		const ok = await confirm({
-			title: `Delete ${displayLabel(binding.metadata)}?`,
-			description: "Its subjects are no longer governed by its policy.",
-			confirmLabel: "Delete",
-			danger: true,
-		});
-		if (!ok) return;
-		try {
-			await deleteBinding.mutateAsync(binding.metadata.id ?? "");
-			toast(
-				"success",
-				`Policy binding "${displayLabel(binding.metadata)}" deleted.`,
-			);
-		} catch (err) {
-			toast(
-				"error",
-				err instanceof ApiError
-					? err.body.message
-					: "Failed to delete policy binding.",
-			);
-		}
 	}
 
 	return (
@@ -269,7 +245,12 @@ export function PolicyBindingsTable() {
 														{
 															label: "Delete",
 															danger: true,
-															onClick: () => void handleDelete(binding),
+															onClick: () =>
+																del.request({
+																	id: binding.metadata.id ?? "",
+																	name: binding.metadata.name,
+																	label: displayLabel(binding.metadata),
+																}),
 														},
 													]}
 												/>
@@ -282,6 +263,15 @@ export function PolicyBindingsTable() {
 					</div>
 				)}
 			</StaleContent>
+			{del.target && (
+				<DeleteConfirm
+					resourceName={del.target.name}
+					onConfirm={() => void del.confirm()}
+					onCancel={del.cancel}
+					isPending={del.isPending}
+					error={del.error}
+				/>
+			)}
 		</div>
 	);
 }

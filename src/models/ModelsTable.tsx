@@ -4,7 +4,6 @@ import { useMemo } from "react";
 import { bindingsByModel, useBindings } from "@/api/hooks/bindings";
 import { useGovernance } from "@/api/hooks/governance";
 import { useDeleteModel, useUpdateModel } from "@/api/hooks/models";
-import { ApiError } from "@/api/types/errors";
 import type { Host } from "@/api/types/host";
 import type { Model } from "@/api/types/model";
 import {
@@ -19,11 +18,11 @@ import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { HostLogo } from "@/hosts/HostLogo";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { resolveMutability } from "@/lib/ownership";
-import { confirm } from "@/shared/ConfirmDialog";
+import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { CatalogDetachedBadge } from "@/shared/StatusBadge";
 import { Switch } from "@/shared/Switch";
 import { Th } from "@/shared/Th";
-import { toast } from "@/shared/Toast";
+import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 
 // Sorting happens server-side (GET /models?sort=) since pagination landed:
 // the page window depends on order, so client-side sorting stopped being
@@ -131,16 +130,17 @@ function ModelRow({
 	hideProvider,
 	hostsById,
 	hostIds,
+	onDelete,
 }: {
 	m: Model;
 	hideProvider?: boolean;
 	hostsById?: Map<string, Host>;
 	hostIds: readonly string[];
+	onDelete: () => void;
 }) {
 	const enabled = m.spec.enabled !== false;
 	const updateModel = useUpdateModel();
 	const toastSaveError = useSaveErrorToast();
-	const deleteModel = useDeleteModel();
 	const diagnostics = useModelDiagnostics(m.metadata.id);
 	const gov = useGovernance("model");
 	const { canEdit, canDelete } = resolveMutability(m.metadata, gov);
@@ -152,25 +152,6 @@ function ModelRow({
 			});
 		} catch (err) {
 			toastSaveError(err, "Failed to update model.");
-		}
-	}
-	async function handleDelete() {
-		const ok = await confirm({
-			title: `Delete model ${m.metadata.name}?`,
-			description:
-				"Policies and keys referencing this model will lose access until reattached.",
-			confirmLabel: "Delete",
-			danger: true,
-		});
-		if (!ok) return;
-		try {
-			await deleteModel.mutateAsync(m.metadata.id ?? "");
-			toast("success", `Model "${displayLabel(m.metadata)}" deleted.`);
-		} catch (err) {
-			toast(
-				"error",
-				err instanceof ApiError ? err.body.message : "Failed to delete model.",
-			);
 		}
 	}
 	const dep = deprecationNote(m);
@@ -239,7 +220,7 @@ function ModelRow({
 					name={m.metadata.name}
 					canEdit={canEdit}
 					canDelete={canDelete}
-					onDelete={() => void handleDelete()}
+					onDelete={onDelete}
 				/>
 			</td>
 		</tr>
@@ -264,6 +245,7 @@ export function ModelsTable({
 	hostsById,
 }: ModelsTableProps) {
 	const { data: bindingsData } = useBindings();
+	const del = useConfirmedDelete(useDeleteModel(), { noun: "model" });
 	const hostIdsByModel = useMemo(() => {
 		const byModel = bindingsByModel(bindingsData.items ?? []);
 		const out = new Map<string, string[]>();
@@ -276,42 +258,60 @@ export function ModelsTable({
 		return out;
 	}, [bindingsData]);
 	return (
-		<div className="overflow-x-auto rounded-lg border border-border bg-card">
-			<table className="w-full border-collapse">
-				<thead className="bg-muted/40">
-					<tr>
-						<Th
-							variant="column"
-							sort={{
-								active: sort === "name",
-								direction: dir,
-								onSort: () => onSort("name"),
-							}}
-						>
-							Name
-						</Th>
-						{!hideProvider && <Th variant="column">Hosts</Th>}
-						<th
-							scope="col"
-							className="w-12 px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground"
-						>
-							On
-						</th>
-						<th scope="col" className="w-10 px-3 py-2" aria-label="Actions" />
-					</tr>
-				</thead>
-				<tbody>
-					{items.map((m) => (
-						<ModelRow
-							key={m.metadata.name}
-							m={m}
-							hideProvider={hideProvider}
-							hostsById={hostsById}
-							hostIds={hostIdsByModel.get(m.metadata.id ?? "") ?? []}
-						/>
-					))}
-				</tbody>
-			</table>
-		</div>
+		<>
+			<div className="overflow-x-auto rounded-lg border border-border bg-card">
+				<table className="w-full border-collapse">
+					<thead className="bg-muted/40">
+						<tr>
+							<Th
+								variant="column"
+								sort={{
+									active: sort === "name",
+									direction: dir,
+									onSort: () => onSort("name"),
+								}}
+							>
+								Name
+							</Th>
+							{!hideProvider && <Th variant="column">Hosts</Th>}
+							<th
+								scope="col"
+								className="w-12 px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground"
+							>
+								On
+							</th>
+							<th scope="col" className="w-10 px-3 py-2" aria-label="Actions" />
+						</tr>
+					</thead>
+					<tbody>
+						{items.map((m) => (
+							<ModelRow
+								key={m.metadata.name}
+								m={m}
+								hideProvider={hideProvider}
+								hostsById={hostsById}
+								hostIds={hostIdsByModel.get(m.metadata.id ?? "") ?? []}
+								onDelete={() =>
+									del.request({
+										id: m.metadata.id ?? "",
+										name: m.metadata.name,
+										label: displayLabel(m.metadata),
+									})
+								}
+							/>
+						))}
+					</tbody>
+				</table>
+			</div>
+			{del.target && (
+				<DeleteConfirm
+					resourceName={del.target.name}
+					onConfirm={() => void del.confirm()}
+					onCancel={del.cancel}
+					isPending={del.isPending}
+					error={del.error}
+				/>
+			)}
+		</>
 	);
 }

@@ -1,12 +1,10 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { ChevronLeft, Link2, ShieldCheck } from "lucide-react";
-import { useState } from "react";
 import {
 	FEATURE_CUSTOM_ROLES,
 	useHasLicenseFeature,
 } from "@/api/hooks/license";
 import { useDeleteRole, useRole, useRoleReferences } from "@/api/hooks/roles";
-import { ApiError } from "@/api/types/errors";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { CustomRolesNotice } from "@/roles/CustomRolesNotice";
 import { RuleChips } from "@/roles/RuleChips";
@@ -16,16 +14,17 @@ import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { DetailCard, DetailEmpty } from "@/shared/DetailCard";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
 import { StatusBadge } from "@/shared/StatusBadge";
-import { toast } from "@/shared/Toast";
+import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 
 export function RoleDetailView({ name }: { name: string }) {
 	const { data: role } = useRole(name);
 	const { data: refs } = useRoleReferences(role.metadata.id);
 	const canAuthor = useHasLicenseFeature(FEATURE_CUSTOM_ROLES);
-	const deleteRole = useDeleteRole();
 	const navigate = useNavigate();
-
-	const [confirming, setConfirming] = useState(false);
+	const del = useConfirmedDelete(useDeleteRole(), {
+		noun: "role",
+		onDeleted: () => void navigate({ to: "/roles" }),
+	});
 
 	const builtin = isBuiltinRole(role.metadata.owner?.kind);
 	const editable = !builtin && canAuthor;
@@ -33,19 +32,6 @@ export function RoleDetailView({ name }: { name: string }) {
 	const description = role.metadata.description?.trim();
 	const labels = Object.entries(role.metadata.labels ?? {});
 	const rules = role.spec.rules ?? [];
-
-	async function handleDelete() {
-		try {
-			await deleteRole.mutateAsync(role.metadata.id ?? "");
-			toast("success", `Role "${displayLabel(role.metadata)}" deleted.`);
-			void navigate({ to: "/roles" });
-		} catch (err) {
-			toast(
-				"error",
-				err instanceof ApiError ? err.body.message : "Failed to delete role.",
-			);
-		}
-	}
 
 	return (
 		<div className="flex flex-col gap-5">
@@ -91,7 +77,13 @@ export function RoleDetailView({ name }: { name: string }) {
 						enabled={enabled}
 						onToggle={() => undefined}
 						showToggle={false}
-						onDelete={() => setConfirming(true)}
+						onDelete={() =>
+							del.request({
+								id: role.metadata.id ?? "",
+								name: role.metadata.name,
+								label: displayLabel(role.metadata),
+							})
+						}
 						editLink={({ className, content }) => (
 							<Link
 								to="/roles/$name/edit"
@@ -159,12 +151,13 @@ export function RoleDetailView({ name }: { name: string }) {
 				)}
 			</DetailCard>
 
-			{confirming && (
+			{del.target && (
 				<DeleteConfirm
-					resourceName={role.metadata.name}
-					onConfirm={() => void handleDelete()}
-					onCancel={() => setConfirming(false)}
-					isPending={deleteRole.isPending}
+					resourceName={del.target.name}
+					onConfirm={() => void del.confirm()}
+					onCancel={del.cancel}
+					isPending={del.isPending}
+					error={del.error}
 				/>
 			)}
 		</div>

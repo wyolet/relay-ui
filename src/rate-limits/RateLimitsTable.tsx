@@ -14,7 +14,7 @@ import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { compactNumber } from "@/lib/rateLimitFormat";
 import { windowShort } from "@/lib/timeWindow";
-import { confirm } from "@/shared/ConfirmDialog";
+import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import {
 	matchesOwnerFilter,
 	type OwnerFilter,
@@ -26,11 +26,11 @@ import { CatalogDetachedBadge } from "@/shared/StatusBadge";
 import { Switch } from "@/shared/Switch";
 import { TableToolbar } from "@/shared/TableToolbar";
 import { Th } from "@/shared/Th";
-import { toast } from "@/shared/Toast";
+import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 
 export function RateLimitsTable() {
 	const { data: rateLimitsData } = useRateLimits();
-	const deleteRL = useDeleteRateLimit();
+	const del = useConfirmedDelete(useDeleteRateLimit(), { noun: "rate limit" });
 	const navigate = useNavigate({ from: "/policies" });
 	const [q, setQ] = useState("");
 	const [ownerFilter, setOwnerFilter] = useState<OwnerFilter>("user");
@@ -44,25 +44,6 @@ export function RateLimitsTable() {
 				displayLabel(rl.metadata).toLowerCase().includes(needle),
 			)
 		: allItems;
-
-	async function handleDelete(rl: RateLimit) {
-		const ok = await confirm({
-			title: `Delete rate limit ${rl.metadata.name}?`,
-			description: "Policies and models that reference it will lose this rule.",
-			confirmLabel: "Delete",
-			danger: true,
-		});
-		if (!ok) return;
-		try {
-			await deleteRL.mutateAsync(rl.metadata.id ?? "");
-			toast("success", `Rate limit "${displayLabel(rl.metadata)}" deleted.`);
-		} catch (err) {
-			toast(
-				"error",
-				err instanceof Error ? err.message : "Failed to delete rate limit.",
-			);
-		}
-	}
 
 	return (
 		<div>
@@ -148,12 +129,27 @@ export function RateLimitsTable() {
 											params: { name: rl.metadata.name },
 										})
 									}
-									onDelete={() => void handleDelete(rl)}
+									onDelete={() =>
+										del.request({
+											id: rl.metadata.id ?? "",
+											name: rl.metadata.name,
+											label: displayLabel(rl.metadata),
+										})
+									}
 								/>
 							))}
 						</tbody>
 					</table>
 				</div>
+			)}
+			{del.target && (
+				<DeleteConfirm
+					resourceName={del.target.name}
+					onConfirm={() => void del.confirm()}
+					onCancel={del.cancel}
+					isPending={del.isPending}
+					error={del.error}
+				/>
 			)}
 		</div>
 	);

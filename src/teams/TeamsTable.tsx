@@ -5,20 +5,18 @@ import {
 	useDeleteTeam,
 	useTeamsList,
 } from "@/api/hooks/teams";
-import { ApiError } from "@/api/types/errors";
-import type { Team } from "@/api/types/team";
 import { buttonVariants } from "@/components/ui/button";
 import { FilterBar } from "@/filters/FilterBar";
 import { activeFilterCount } from "@/filters/toQueryParams";
 import type { FilterDef, FilterState } from "@/filters/types";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
-import { confirm } from "@/shared/ConfirmDialog";
+import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { RowMenu } from "@/shared/RowMenu";
 import { StaleContent } from "@/shared/StaleContent";
 import { Switch } from "@/shared/Switch";
 import { TableToolbar } from "@/shared/TableToolbar";
 import { Th } from "@/shared/Th";
-import { toast } from "@/shared/Toast";
+import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 import { useDeferredSearch } from "@/shared/useDeferredSearch";
 import { useToggleTeamEnabled } from "@/teams/useToggleTeamEnabled";
 
@@ -61,7 +59,7 @@ export function TeamsTable() {
 	const live = useSearch({ from: "/_authenticated/teams/" });
 	const { search, isStale } = useDeferredSearch(live);
 	const { data } = useTeamsList(toTeamsParams(search));
-	const deleteTeam = useDeleteTeam();
+	const del = useConfirmedDelete(useDeleteTeam(), { noun: "team" });
 	const { setEnabled } = useToggleTeamEnabled();
 
 	const items = data.items ?? [];
@@ -69,25 +67,6 @@ export function TeamsTable() {
 
 	function patch(next: FilterState) {
 		void navigate({ search: (prev) => ({ ...prev, ...next }), replace: true });
-	}
-
-	async function handleDelete(team: Team) {
-		const ok = await confirm({
-			title: `Delete ${displayLabel(team.metadata)}?`,
-			description: "Its projects and everything they own go with it.",
-			confirmLabel: "Delete",
-			danger: true,
-		});
-		if (!ok) return;
-		try {
-			await deleteTeam.mutateAsync(team.metadata.id ?? "");
-			toast("success", `Team "${displayLabel(team.metadata)}" deleted.`);
-		} catch (err) {
-			toast(
-				"error",
-				err instanceof ApiError ? err.body.message : "Failed to delete team.",
-			);
-		}
 	}
 
 	return (
@@ -206,7 +185,12 @@ export function TeamsTable() {
 														{
 															label: "Delete",
 															danger: true,
-															onClick: () => void handleDelete(team),
+															onClick: () =>
+																del.request({
+																	id: team.metadata.id ?? "",
+																	name: team.metadata.name,
+																	label: displayLabel(team.metadata),
+																}),
 														},
 													]}
 												/>
@@ -219,6 +203,15 @@ export function TeamsTable() {
 					</div>
 				)}
 			</StaleContent>
+			{del.target && (
+				<DeleteConfirm
+					resourceName={del.target.name}
+					onConfirm={() => void del.confirm()}
+					onCancel={del.cancel}
+					isPending={del.isPending}
+					error={del.error}
+				/>
+			)}
 		</div>
 	);
 }

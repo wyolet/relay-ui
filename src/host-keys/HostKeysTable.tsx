@@ -4,20 +4,18 @@ import { useState } from "react";
 import { useAccounts } from "@/api/hooks/accounts";
 import { useDeleteHostKey, useHostKeys } from "@/api/hooks/hostkeys";
 import { useHosts } from "@/api/hooks/hosts";
-import { ApiError } from "@/api/types/errors";
 import type { Host } from "@/api/types/host";
-import type { HostKey } from "@/api/types/hostkey";
 import { buttonVariants } from "@/components/ui/button";
 import { DiagnosticDot } from "@/diagnostics/DiagnosticDot";
 import { useHostKeyDiagnostics } from "@/diagnostics/useDiagnostics";
 import { HostCell } from "@/hosts/HostCell";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
-import { confirm } from "@/shared/ConfirmDialog";
+import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { RowMenu } from "@/shared/RowMenu";
 import { SearchBox } from "@/shared/SearchBox";
 import { TableToolbar } from "@/shared/TableToolbar";
 import { Th } from "@/shared/Th";
-import { toast } from "@/shared/Toast";
+import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 
 function HostKeyDiagDot({ id }: { id: string | undefined }) {
 	const diagnostics = useHostKeyDiagnostics(id);
@@ -28,7 +26,7 @@ export function HostKeysTable() {
 	const { data: hostKeysData } = useHostKeys();
 	const { data: hostsData } = useHosts();
 	const { data: accountsData } = useAccounts();
-	const deleteHostKey = useDeleteHostKey();
+	const del = useConfirmedDelete(useDeleteHostKey(), { noun: "credential" });
 	const [q, setQ] = useState("");
 
 	const hostById = new Map<string, Host>();
@@ -60,42 +58,6 @@ export function HostKeysTable() {
 				);
 			})
 		: allItems;
-
-	async function handleDelete(hk: HostKey) {
-		const refs = hk.policies ?? [];
-		if (refs.length > 0) {
-			const preview = refs
-				.slice(0, 3)
-				.map((r) => r.name)
-				.join(", ");
-			const overflow = refs.length > 3 ? ` (+${refs.length - 3} more)` : "";
-			toast(
-				"error",
-				`Detach from ${refs.length} ${
-					refs.length === 1 ? "policy" : "policies"
-				} first: ${preview}${overflow}.`,
-			);
-			return;
-		}
-		const ok = await confirm({
-			title: `Delete credential ${displayLabel(hk.metadata)}?`,
-			description: "No policy links this credential.",
-			confirmLabel: "Delete",
-			danger: true,
-		});
-		if (!ok) return;
-		try {
-			await deleteHostKey.mutateAsync(hk.metadata.id ?? "");
-			toast("success", `Credential "${displayLabel(hk.metadata)}" deleted.`);
-		} catch (err) {
-			toast(
-				"error",
-				err instanceof ApiError
-					? err.body.message
-					: "Failed to delete credential.",
-			);
-		}
-	}
 
 	return (
 		<div>
@@ -262,7 +224,12 @@ export function HostKeysTable() {
 													{
 														label: "Delete",
 														danger: true,
-														onClick: () => void handleDelete(hk),
+														onClick: () =>
+															del.request({
+																id: hk.metadata.id ?? "",
+																name: hk.metadata.name,
+																label: displayLabel(hk.metadata),
+															}),
 													},
 												]}
 											/>
@@ -273,6 +240,15 @@ export function HostKeysTable() {
 						</tbody>
 					</table>
 				</div>
+			)}
+			{del.target && (
+				<DeleteConfirm
+					resourceName={del.target.name}
+					onConfirm={() => void del.confirm()}
+					onCancel={del.cancel}
+					isPending={del.isPending}
+					error={del.error}
+				/>
 			)}
 		</div>
 	);

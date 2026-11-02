@@ -1,11 +1,9 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Boxes, ChevronLeft, Link2, ShieldCheck, Users } from "lucide-react";
-import { useState } from "react";
 import { useProjectsInTeam } from "@/api/hooks/projects";
 import { useRoleBindingsAtScope } from "@/api/hooks/roleBindings";
 import { useDeleteTeam, useTeam, useTeamReferences } from "@/api/hooks/teams";
 import { resolveWindow, useScopeSpend } from "@/api/hooks/usage";
-import { ApiError } from "@/api/types/errors";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { subjectLabel } from "@/role-bindings/SubjectsEditor";
 import { Chip } from "@/shared/Chip";
@@ -13,7 +11,7 @@ import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { DetailCard, DetailEmpty, DetailRow } from "@/shared/DetailCard";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
 import { StatusBadge } from "@/shared/StatusBadge";
-import { toast } from "@/shared/Toast";
+import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 import { ScopeSpendCard } from "@/teams/ScopeSpendCard";
 import { useToggleTeamEnabled } from "@/teams/useToggleTeamEnabled";
 
@@ -30,11 +28,12 @@ export function TeamDetailView({ name }: { name: string }) {
 		"project_id",
 		period,
 	);
-	const deleteTeam = useDeleteTeam();
 	const { setEnabled, isPending: isToggling } = useToggleTeamEnabled();
 	const navigate = useNavigate();
-
-	const [confirming, setConfirming] = useState(false);
+	const del = useConfirmedDelete(useDeleteTeam(), {
+		noun: "team",
+		onDeleted: () => void navigate({ to: "/teams" }),
+	});
 
 	const enabled = team.spec.enabled !== false;
 	const description = team.metadata.description?.trim();
@@ -46,19 +45,6 @@ export function TeamDetailView({ name }: { name: string }) {
 			{ name: p.metadata.name, label: displayLabel(p.metadata) },
 		]),
 	);
-
-	async function handleDelete() {
-		try {
-			await deleteTeam.mutateAsync(teamId);
-			toast("success", `Team "${displayLabel(team.metadata)}" deleted.`);
-			void navigate({ to: "/teams" });
-		} catch (err) {
-			toast(
-				"error",
-				err instanceof ApiError ? err.body.message : "Failed to delete team.",
-			);
-		}
-	}
 
 	return (
 		<div className="flex flex-col gap-5">
@@ -99,7 +85,13 @@ export function TeamDetailView({ name }: { name: string }) {
 					enabled={enabled}
 					onToggle={() => void setEnabled(team, !enabled)}
 					toggling={isToggling}
-					onDelete={() => setConfirming(true)}
+					onDelete={() =>
+						del.request({
+							id: teamId,
+							name: team.metadata.name,
+							label: displayLabel(team.metadata),
+						})
+					}
 					editLink={({ className, content }) => (
 						<Link
 							to="/teams/$name/edit"
@@ -239,12 +231,13 @@ export function TeamDetailView({ name }: { name: string }) {
 				)}
 			</DetailCard>
 
-			{confirming && (
+			{del.target && (
 				<DeleteConfirm
-					resourceName={team.metadata.name}
-					onConfirm={() => void handleDelete()}
-					onCancel={() => setConfirming(false)}
-					isPending={deleteTeam.isPending}
+					resourceName={del.target.name}
+					onConfirm={() => void del.confirm()}
+					onCancel={del.cancel}
+					isPending={del.isPending}
+					error={del.error}
 				/>
 			)}
 		</div>

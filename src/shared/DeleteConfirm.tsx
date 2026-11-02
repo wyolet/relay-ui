@@ -19,6 +19,8 @@ interface DeleteConfirmProps {
 	isPending?: boolean;
 	/** The delete mutation's error; a resource_in_use refusal lists its blockers here. */
 	error?: unknown;
+	/** Extra warning shown above the typed-confirm field. */
+	description?: string;
 }
 
 export function DeleteConfirm({
@@ -27,6 +29,7 @@ export function DeleteConfirm({
 	onCancel,
 	isPending = false,
 	error,
+	description,
 }: DeleteConfirmProps) {
 	const [typed, setTyped] = useState("");
 
@@ -49,6 +52,9 @@ export function DeleteConfirm({
 						to confirm.
 					</DialogDescription>
 				</DialogHeader>
+				{description && (
+					<p className="text-sm text-muted-foreground">{description}</p>
+				)}
 				<TypedConfirmField
 					expected={resourceName}
 					value={typed}
