@@ -9,9 +9,10 @@ type OwnershipMetadata = Pick<
  * Resolves whether a catalog resource may be edited/deleted from the UI,
  * combining its owner kind with the server's governance guardrail.
  *
- * Catalog-managed rows (host/provider-synced) are gated by the governance
- * flags; rows owned by the system, a team, a project or a user (or unowned)
- * bypass governance and are left to the server's RBAC.
+ * Mirrors relay's governance tiers for these kinds (policies, models, hosts,
+ * providers): system-owned rows change only for an admin; team-, project- and
+ * user-owned (or unowned) rows always may; catalog-managed rows (host- or
+ * provider-owned) follow the governance flags.
  *
  * A row the catalog no longer ships (`catalogDetachedAt`) keeps its stored
  * owner but is governed as user-owned, as the relay does.
@@ -22,10 +23,12 @@ type OwnershipMetadata = Pick<
 export function resolveMutability(
 	metadata: OwnershipMetadata,
 	gov: { allowEdit: boolean; allowDelete: boolean },
+	isAdmin: boolean,
 ): { canEdit: boolean; canDelete: boolean } {
 	const ownerKind = metadata.catalogDetachedAt ? "user" : metadata.owner?.kind;
 	if (ownerKind === "host" || ownerKind === "provider")
 		return { canEdit: gov.allowEdit, canDelete: gov.allowDelete };
+	if (ownerKind === "system") return { canEdit: isAdmin, canDelete: isAdmin };
 	return { canEdit: true, canDelete: true };
 }
 

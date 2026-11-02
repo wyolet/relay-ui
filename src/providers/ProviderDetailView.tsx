@@ -1,11 +1,10 @@
 import { Link } from "@tanstack/react-router";
 import { Boxes, ExternalLink, LayoutGrid, Server } from "lucide-react";
-import { useGovernance } from "@/api/hooks/governance";
 import type { Provider } from "@/api/types/provider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useMutability } from "@/hooks/useMutability";
 import { HostCell } from "@/hosts/HostCell";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
-import { resolveMutability } from "@/lib/ownership";
 import { modelFamily } from "@/models/groupModelsByFamily";
 import { ModelsByFamily } from "@/models/ModelsByFamily";
 import { ProviderLogo } from "@/providers/ProviderLogo";
@@ -122,8 +121,7 @@ function Header({
 }) {
 	const enabled = provider.spec.enabled !== false;
 	const system = provider.metadata.owner?.kind === "system";
-	const gov = useGovernance("provider");
-	const { canEdit, canDelete } = resolveMutability(provider.metadata, gov);
+	const { canEdit, canDelete } = useMutability(provider.metadata, "provider");
 
 	const links: { href: string | undefined; label: string }[] = [
 		{ href: provider.spec.docsURL, label: "Docs" },

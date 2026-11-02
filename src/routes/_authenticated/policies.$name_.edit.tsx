@@ -3,7 +3,7 @@ import { ChevronLeft } from "lucide-react";
 import { Suspense } from "react";
 import { bindingsListQueryOptions } from "@/api/hooks/bindings";
 import { budgetListQueryOptions } from "@/api/hooks/budgets";
-import { governanceQueryOptions, useGovernance } from "@/api/hooks/governance";
+import { governanceQueryOptions } from "@/api/hooks/governance";
 import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
 import { keysListQueryOptions } from "@/api/hooks/keys";
@@ -16,8 +16,8 @@ import {
 import { poolListQueryOptions } from "@/api/hooks/pools";
 import { providersListQueryOptions } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
+import { useMutability } from "@/hooks/useMutability";
 import { displayLabel } from "@/lib/displayLabel";
-import { resolveMutability } from "@/lib/ownership";
 import { PolicyForm } from "@/policies/PolicyForm";
 import { PageLoader } from "@/shared/Spinner";
 
@@ -48,8 +48,7 @@ function EditPolicyInner() {
 	const { name } = Route.useParams();
 	const { data: policy } = usePolicy(name);
 	const navigate = useNavigate();
-	const gov = useGovernance("policy");
-	const { canEdit } = resolveMutability(policy.metadata, gov);
+	const { canEdit } = useMutability(policy.metadata, "policy");
 
 	if (!canEdit) {
 		return (

@@ -8,11 +8,10 @@ import {
 	ScrollText,
 } from "lucide-react";
 import { Suspense } from "react";
-import { useGovernance } from "@/api/hooks/governance";
 import type { Policy } from "@/api/types/policy";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useMutability } from "@/hooks/useMutability";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
-import { resolveMutability } from "@/lib/ownership";
 import { ResourceLogs } from "@/logs/ResourceLogs";
 import { PolicyKeysTab } from "@/policies/PolicyKeysTab";
 import { PolicyModelsTab } from "@/policies/PolicyModelsTab";
@@ -161,8 +160,7 @@ function Header({
 }: HeaderProps) {
 	const name = policy.metadata.name;
 	const isHostOwned = policy.metadata.owner?.kind === "host";
-	const gov = useGovernance("policy");
-	const { canEdit, canDelete } = resolveMutability(policy.metadata, gov);
+	const { canEdit, canDelete } = useMutability(policy.metadata, "policy");
 	return (
 		<div className="flex items-start justify-between gap-4">
 			<div className="min-w-0">
