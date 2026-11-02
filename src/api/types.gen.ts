@@ -83,7 +83,7 @@ export interface paths {
         put?: never;
         /**
          * Release every reference to this account that can let go
-         * @description In one transaction, clears each optional field and drops each list entry naming the row, on the referencing rows the caller may update. Deletes nothing; returns what still references the row.
+         * @description In one transaction, clears each optional field and drops each list entry naming the account, on the referencing rows the caller may update, and deletes the accounts shared from it that nothing else holds (pools drawing on them lose them). Returns what still references the account.
          */
         post: operations["detach_account"];
         delete?: never;
@@ -141,7 +141,7 @@ export interface paths {
         };
         /**
          * List the host keys belonging to this account (secret-free)
-         * @description Host keys whose accountId names the account, without secrets; they share its upstream limits. Keys the caller may not see are left out. {ref} is a slug or id.
+         * @description Host keys whose accountId names the account, without secrets; they share its upstream limits. Keys the caller may not see are left out. For a shared account, the keys of its real account, marked readOnly: whoever sees the shared account sees them, but never their secret, and edits them only on the real account. {ref} is a slug or id.
          */
         get: operations["account_keys"];
         put?: never;
@@ -1953,7 +1953,7 @@ export interface paths {
         };
         /**
          * List the pool's keys in pool order (secret-free)
-         * @description The pool's host keys in the order prioritized selection tries them, without secrets. Keys the caller may not see are left out. {ref} is a slug or id.
+         * @description The pool's host keys in the order prioritized selection tries them, without secrets: each of accountIds' keys in creation order, then credentialIds, a key reached twice at its first place. A shared account's keys are its real account's, marked readOnly; other keys the caller may not see are left out. {ref} is a slug or id.
          */
         get: operations["pool_keys"];
         put?: never;
@@ -3512,6 +3512,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/accounts/{ref}/shares": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the accounts a provider account is shared with
+         * @description The real account's shares, each with its receiver and the requests and cost it sent through the real account over the window: usage rows of the real account grouped by via_account_id. For the real account's owner, as sharing is (403 otherwise). Delete a share with DELETE /accounts/by-id/{id} on the shared account: it answers which pools lose it.
+         */
+        get: operations["list_account_shares"];
+        put?: never;
+        /**
+         * Share a provider account with a user, team, project or service account
+         * @description Creates an account owned by the receiver (a service account's by its project, held by it so only its lane draws on it) that reaches the real account's keys: current ones, keys added later, and their rotations. The shared account holds no keys and never shows a secret; its requests count on the real account's tier, and a policy bound to it only narrows them. Only the real account's owner shares it: its user for a personal account, an admin of its team, project or the system otherwise (403). One share per receiver: a second answers 409 share_exists. A shared account is not shared on: 409 reshare_refused. A receiver that does not exist answers 404.
+         */
+        post: operations["share_account"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -3631,6 +3655,10 @@ export interface components {
              * @enum {string}
              */
             payloadLogging?: "on" | "off";
+            /** @description Set on a shared account: the owner of the real account, who shared it. Derived on read. */
+            readonly sharedBy?: components["schemas"]["AccountShareParty"];
+            /** @description Set on a shared account: the id of the provider account whose keys it reaches. A shared account holds no host keys of its own; its requests use the real account's keys, count on the real account's tier, and only narrow by the policy bound to the shared account. Made by POST /accounts/{ref}/shares; fixed at create. */
+            readonly sourceAccountId?: string;
         };
         AccountSummary: {
             /** @description The membership the account stood for has ended: its keys are refused with account_closed. */
@@ -4164,7 +4192,7 @@ export interface components {
             value?: unknown;
         };
         Event: {
-            /** @description Id of the provider account the serving host key belongs to. */
+            /** @description Id of the provider account the serving host key belongs to: the real account, whose bill it is, also when the request went through an account shared from it. */
             account_id?: string;
             /**
              * Format: int64
@@ -4280,6 +4308,8 @@ export interface components {
             ts: string;
             /** @description Upstream timing marks; absent when the request never reached an upstream. */
             upstream?: components["schemas"]["UpstreamTiming"];
+            /** @description Id of the shared account the request reached the serving host key through; empty when it used the real account directly. Group by account_id for the whole drain on a provider account, by via_account_id for each share's part. */
+            via_account_id?: string;
         };
         FacetValue: {
             /** @description Display name for an id value, such as its slug. */
@@ -4530,6 +4560,8 @@ export interface components {
             kind: "env" | "stored" | "oauth";
             /** @description Host key slug. */
             name: string;
+            /** @description The key belongs to the real account of a shared account: listed for the receiver to see, never edited or revealed through the share. */
+            readOnly?: boolean;
         };
         HostList: {
             /**
@@ -5518,7 +5550,9 @@ export interface components {
             total: number;
         };
         PoolSpec: {
-            /** @description Ids of the pool's host keys, all at hostId. The order is the preference for prioritized selection. May be empty. */
+            /** @description Ids of provider accounts at hostId the pool draws on whole: each contributes every host key it holds, now and later, and a shared account the keys of its real account. Prioritized selection tries the accounts first, in this order and each account's keys in creation order, then credentialIds in their order; a key listed directly and through its account counts once, at its first place. May be empty. */
+            accountIds?: string[] | null;
+            /** @description Ids of the pool's host keys, all at hostId, tried after the keys of accountIds. The order is the preference for prioritized selection. May be empty. */
             credentialIds?: string[] | null;
             /** @description Id of the one host every key in the pool authenticates to. */
             hostId: string;
@@ -6462,7 +6496,7 @@ export interface components {
             readonly $schema?: string;
             /** @description With resource_in_use: the rows that still reference the target, grouped by kind and field. */
             blockers?: components["schemas"]["blockerGroup"][] | null;
-            /** @description The error. code says which conflict: resource_in_use, stale_resource_version, managed_by_source, duplicate_binding, or a duplicate default account. */
+            /** @description The error. code says which conflict: resource_in_use, stale_resource_version, managed_by_source, duplicate_binding, account_shared, share_exists, reshare_refused, or a duplicate default account. */
             error: components["schemas"]["APIErrorBody"];
         };
         createKeyInputBody: {
@@ -7475,6 +7509,87 @@ export interface components {
             /** @description Relay build version. */
             version: string;
         };
+        AccountReceiver: {
+            /** @description Id of the user, team, project or service account. */
+            id: string;
+            /**
+             * @description Whether the account is shared with a user, a team, a project or a service account.
+             * @enum {string}
+             */
+            kind: "user" | "team" | "project" | "serviceaccount";
+        };
+        AccountShare: {
+            /** @description Who the account is shared with. */
+            receiver: components["schemas"]["AccountShareParty"];
+            /** @description The shared account, owned by the receiver. */
+            sharedAccount: components["schemas"]["ShareAccountRef"];
+            /** @description What requests through the shared account drew on the real account over the window; absent when this deployment reads no usage. */
+            usage?: components["schemas"]["ShareUsage"];
+        };
+        AccountShareParty: {
+            /** @description Id of the user, team, project or service account; empty for the system. */
+            id?: string;
+            /**
+             * @description Kind of the party: the system, a user, a team, a project or a service account.
+             * @enum {string}
+             */
+            kind: "system" | "user" | "team" | "project" | "serviceaccount";
+            /** @description Username, or slug of the team, project or service account; empty for the system, when the row is gone, or when the caller may not see it. */
+            name?: string;
+        };
+        AccountShares: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/AccountShares.json
+             */
+            readonly $schema?: string;
+            /**
+             * Format: date-time
+             * @description Start of the usage window.
+             */
+            from: string;
+            /** @description The accounts the provider account is shared with, by name. */
+            items: components["schemas"]["AccountShare"][] | null;
+            /**
+             * Format: date-time
+             * @description End of the usage window.
+             */
+            to: string;
+        };
+        ShareAccountRef: {
+            /** @description Id of the shared account. */
+            id: string;
+            /** @description Slug of the shared account. */
+            name: string;
+        };
+        ShareUsage: {
+            /**
+             * Format: int64
+             * @description Cost of the priced ones, in nano-USD.
+             */
+            costNanos: number;
+            /**
+             * Format: int64
+             * @description Requests that reached an upstream through the shared account.
+             */
+            requests: number;
+            /**
+             * Format: int64
+             * @description Requests with no cost, left out of costNanos.
+             */
+            unpriced: number;
+        };
+        createShareInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/createShareInputBody.json
+             */
+            readonly $schema?: string;
+            /** @description Who the account is shared with. */
+            receiver: components["schemas"]["AccountReceiver"];
+        };
     };
     responses: never;
     parameters: never;
@@ -7713,7 +7828,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
+            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), account_shared (a host key naming a shared account, which holds no keys: add it to the real account), or a second default account for one owner and host. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -7803,7 +7918,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description stale_resource_version (metadata.resourceVersion no longer matches; reload and reapply), resource_in_use (an owner move would strand referencing rows; blockers lists them), managed_by_source, or duplicate_binding. */
+            /** @description stale_resource_version (metadata.resourceVersion no longer matches; reload and reapply), resource_in_use (an owner move would strand referencing rows; blockers lists them), managed_by_source, duplicate_binding, or account_shared. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -7887,7 +8002,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns, and account_managed for a team, project, personal, service or open member account, which goes with its own row. */
+            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach (for a provider account, the accounts shared from it, which detach deletes). Also managed_by_source for a row a provisioning source owns, and account_managed for a team, project, personal, service or open member account, which goes with its own row. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -8990,7 +9105,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
+            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), account_shared (a host key naming a shared account, which holds no keys: add it to the real account), or a second default account for one owner and host. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -9080,7 +9195,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description stale_resource_version (metadata.resourceVersion no longer matches; reload and reapply), resource_in_use (an owner move would strand referencing rows; blockers lists them), managed_by_source, or duplicate_binding. */
+            /** @description stale_resource_version (metadata.resourceVersion no longer matches; reload and reapply), resource_in_use (an owner move would strand referencing rows; blockers lists them), managed_by_source, duplicate_binding, or account_shared. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -9164,7 +9279,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns, and account_managed for a team, project, personal, service or open member account, which goes with its own row. */
+            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach (for a provider account, the accounts shared from it, which detach deletes). Also managed_by_source for a row a provisioning source owns, and account_managed for a team, project, personal, service or open member account, which goes with its own row. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -9776,7 +9891,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
+            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), account_shared (a host key naming a shared account, which holds no keys: add it to the real account), or a second default account for one owner and host. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -9866,7 +9981,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description stale_resource_version (metadata.resourceVersion no longer matches; reload and reapply), resource_in_use (an owner move would strand referencing rows; blockers lists them), managed_by_source, or duplicate_binding. */
+            /** @description stale_resource_version (metadata.resourceVersion no longer matches; reload and reapply), resource_in_use (an owner move would strand referencing rows; blockers lists them), managed_by_source, duplicate_binding, or account_shared. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -9950,7 +10065,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns, and account_managed for a team, project, personal, service or open member account, which goes with its own row. */
+            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach (for a provider account, the accounts shared from it, which detach deletes). Also managed_by_source for a row a provisioning source owns, and account_managed for a team, project, personal, service or open member account, which goes with its own row. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -10321,7 +10436,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
+            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), account_shared (a host key naming a shared account, which holds no keys: add it to the real account), or a second default account for one owner and host. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -10411,7 +10526,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description stale_resource_version (metadata.resourceVersion no longer matches; reload and reapply), resource_in_use (an owner move would strand referencing rows; blockers lists them), managed_by_source, or duplicate_binding. */
+            /** @description stale_resource_version (metadata.resourceVersion no longer matches; reload and reapply), resource_in_use (an owner move would strand referencing rows; blockers lists them), managed_by_source, duplicate_binding, or account_shared. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -10495,7 +10610,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns, and account_managed for a team, project, personal, service or open member account, which goes with its own row. */
+            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach (for a provider account, the accounts shared from it, which detach deletes). Also managed_by_source for a row a provisioning source owns, and account_managed for a team, project, personal, service or open member account, which goes with its own row. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -10721,7 +10836,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
+            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), account_shared (a host key naming a shared account, which holds no keys: add it to the real account), or a second default account for one owner and host. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -10811,7 +10926,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description stale_resource_version (metadata.resourceVersion no longer matches; reload and reapply), resource_in_use (an owner move would strand referencing rows; blockers lists them), managed_by_source, or duplicate_binding. */
+            /** @description stale_resource_version (metadata.resourceVersion no longer matches; reload and reapply), resource_in_use (an owner move would strand referencing rows; blockers lists them), managed_by_source, duplicate_binding, or account_shared. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -10895,7 +11010,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns, and account_managed for a team, project, personal, service or open member account, which goes with its own row. */
+            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach (for a provider account, the accounts shared from it, which detach deletes). Also managed_by_source for a row a provisioning source owns, and account_managed for a team, project, personal, service or open member account, which goes with its own row. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -11455,7 +11570,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
+            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), account_shared (a host key naming a shared account, which holds no keys: add it to the real account), or a second default account for one owner and host. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -11545,7 +11660,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description stale_resource_version (metadata.resourceVersion no longer matches; reload and reapply), resource_in_use (an owner move would strand referencing rows; blockers lists them), managed_by_source, or duplicate_binding. */
+            /** @description stale_resource_version (metadata.resourceVersion no longer matches; reload and reapply), resource_in_use (an owner move would strand referencing rows; blockers lists them), managed_by_source, duplicate_binding, or account_shared. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -11629,7 +11744,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns, and account_managed for a team, project, personal, service or open member account, which goes with its own row. */
+            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach (for a provider account, the accounts shared from it, which detach deletes). Also managed_by_source for a row a provisioning source owns, and account_managed for a team, project, personal, service or open member account, which goes with its own row. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -12237,7 +12352,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description stale_resource_version (metadata.resourceVersion no longer matches; reload and reapply), resource_in_use (an owner move would strand referencing rows; blockers lists them), managed_by_source, or duplicate_binding. */
+            /** @description stale_resource_version (metadata.resourceVersion no longer matches; reload and reapply), resource_in_use (an owner move would strand referencing rows; blockers lists them), managed_by_source, duplicate_binding, or account_shared. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -12321,7 +12436,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns, and account_managed for a team, project, personal, service or open member account, which goes with its own row. */
+            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach (for a provider account, the accounts shared from it, which detach deletes). Also managed_by_source for a row a provisioning source owns, and account_managed for a team, project, personal, service or open member account, which goes with its own row. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -12733,6 +12848,8 @@ export interface operations {
                 account_id?: string[] | null;
                 /** @description Match any of the given ids of the account the request ran in and was charged to (its lane), not the serving credential's provider account. */
                 lane_account_id?: string[] | null;
+                /** @description Match any of the given ids of the shared account the serving credential was reached through; account_id stays the real provider account. */
+                via_account_id?: string[] | null;
                 /** @description Match any of the given Project.metadata.id values. */
                 project_id?: string[] | null;
                 /** @description Match any of the given Team.metadata.id values. */
@@ -13298,7 +13415,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
+            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), account_shared (a host key naming a shared account, which holds no keys: add it to the real account), or a second default account for one owner and host. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -13388,7 +13505,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description stale_resource_version (metadata.resourceVersion no longer matches; reload and reapply), resource_in_use (an owner move would strand referencing rows; blockers lists them), managed_by_source, or duplicate_binding. */
+            /** @description stale_resource_version (metadata.resourceVersion no longer matches; reload and reapply), resource_in_use (an owner move would strand referencing rows; blockers lists them), managed_by_source, duplicate_binding, or account_shared. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -13472,7 +13589,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns, and account_managed for a team, project, personal, service or open member account, which goes with its own row. */
+            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach (for a provider account, the accounts shared from it, which detach deletes). Also managed_by_source for a row a provisioning source owns, and account_managed for a team, project, personal, service or open member account, which goes with its own row. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -14262,7 +14379,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
+            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), account_shared (a host key naming a shared account, which holds no keys: add it to the real account), or a second default account for one owner and host. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -14352,7 +14469,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description stale_resource_version (metadata.resourceVersion no longer matches; reload and reapply), resource_in_use (an owner move would strand referencing rows; blockers lists them), managed_by_source, or duplicate_binding. */
+            /** @description stale_resource_version (metadata.resourceVersion no longer matches; reload and reapply), resource_in_use (an owner move would strand referencing rows; blockers lists them), managed_by_source, duplicate_binding, or account_shared. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -14436,7 +14553,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns, and account_managed for a team, project, personal, service or open member account, which goes with its own row. */
+            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach (for a provider account, the accounts shared from it, which detach deletes). Also managed_by_source for a row a provisioning source owns, and account_managed for a team, project, personal, service or open member account, which goes with its own row. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -14950,7 +15067,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
+            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), account_shared (a host key naming a shared account, which holds no keys: add it to the real account), or a second default account for one owner and host. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -15040,7 +15157,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description stale_resource_version (metadata.resourceVersion no longer matches; reload and reapply), resource_in_use (an owner move would strand referencing rows; blockers lists them), managed_by_source, or duplicate_binding. */
+            /** @description stale_resource_version (metadata.resourceVersion no longer matches; reload and reapply), resource_in_use (an owner move would strand referencing rows; blockers lists them), managed_by_source, duplicate_binding, or account_shared. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -15124,7 +15241,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns, and account_managed for a team, project, personal, service or open member account, which goes with its own row. */
+            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach (for a provider account, the accounts shared from it, which detach deletes). Also managed_by_source for a row a provisioning source owns, and account_managed for a team, project, personal, service or open member account, which goes with its own row. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -15348,7 +15465,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
+            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), account_shared (a host key naming a shared account, which holds no keys: add it to the real account), or a second default account for one owner and host. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -15438,7 +15555,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description stale_resource_version (metadata.resourceVersion no longer matches; reload and reapply), resource_in_use (an owner move would strand referencing rows; blockers lists them), managed_by_source, or duplicate_binding. */
+            /** @description stale_resource_version (metadata.resourceVersion no longer matches; reload and reapply), resource_in_use (an owner move would strand referencing rows; blockers lists them), managed_by_source, duplicate_binding, or account_shared. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -15522,7 +15639,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns, and account_managed for a team, project, personal, service or open member account, which goes with its own row. */
+            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach (for a provider account, the accounts shared from it, which detach deletes). Also managed_by_source for a row a provisioning source owns, and account_managed for a team, project, personal, service or open member account, which goes with its own row. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -15925,7 +16042,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
+            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), account_shared (a host key naming a shared account, which holds no keys: add it to the real account), or a second default account for one owner and host. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -16015,7 +16132,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description stale_resource_version (metadata.resourceVersion no longer matches; reload and reapply), resource_in_use (an owner move would strand referencing rows; blockers lists them), managed_by_source, or duplicate_binding. */
+            /** @description stale_resource_version (metadata.resourceVersion no longer matches; reload and reapply), resource_in_use (an owner move would strand referencing rows; blockers lists them), managed_by_source, duplicate_binding, or account_shared. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -16099,7 +16216,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns, and account_managed for a team, project, personal, service or open member account, which goes with its own row. */
+            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach (for a provider account, the accounts shared from it, which detach deletes). Also managed_by_source for a row a provisioning source owns, and account_managed for a team, project, personal, service or open member account, which goes with its own row. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -16427,7 +16544,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
+            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), account_shared (a host key naming a shared account, which holds no keys: add it to the real account), or a second default account for one owner and host. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -16517,7 +16634,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description stale_resource_version (metadata.resourceVersion no longer matches; reload and reapply), resource_in_use (an owner move would strand referencing rows; blockers lists them), managed_by_source, or duplicate_binding. */
+            /** @description stale_resource_version (metadata.resourceVersion no longer matches; reload and reapply), resource_in_use (an owner move would strand referencing rows; blockers lists them), managed_by_source, duplicate_binding, or account_shared. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -16601,7 +16718,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns, and account_managed for a team, project, personal, service or open member account, which goes with its own row. */
+            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach (for a provider account, the accounts shared from it, which detach deletes). Also managed_by_source for a row a provisioning source owns, and account_managed for a team, project, personal, service or open member account, which goes with its own row. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -16935,7 +17052,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
+            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), account_shared (a host key naming a shared account, which holds no keys: add it to the real account), or a second default account for one owner and host. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -17025,7 +17142,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description stale_resource_version (metadata.resourceVersion no longer matches; reload and reapply), resource_in_use (an owner move would strand referencing rows; blockers lists them), managed_by_source, or duplicate_binding. */
+            /** @description stale_resource_version (metadata.resourceVersion no longer matches; reload and reapply), resource_in_use (an owner move would strand referencing rows; blockers lists them), managed_by_source, duplicate_binding, or account_shared. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -17109,7 +17226,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns, and account_managed for a team, project, personal, service or open member account, which goes with its own row. */
+            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach (for a provider account, the accounts shared from it, which detach deletes). Also managed_by_source for a row a provisioning source owns, and account_managed for a team, project, personal, service or open member account, which goes with its own row. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -17445,7 +17562,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
+            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), account_shared (a host key naming a shared account, which holds no keys: add it to the real account), or a second default account for one owner and host. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -17535,7 +17652,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description stale_resource_version (metadata.resourceVersion no longer matches; reload and reapply), resource_in_use (an owner move would strand referencing rows; blockers lists them), managed_by_source, or duplicate_binding. */
+            /** @description stale_resource_version (metadata.resourceVersion no longer matches; reload and reapply), resource_in_use (an owner move would strand referencing rows; blockers lists them), managed_by_source, duplicate_binding, or account_shared. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -17619,7 +17736,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns, and account_managed for a team, project, personal, service or open member account, which goes with its own row. */
+            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach (for a provider account, the accounts shared from it, which detach deletes). Also managed_by_source for a row a provisioning source owns, and account_managed for a team, project, personal, service or open member account, which goes with its own row. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -18000,7 +18117,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
+            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), account_shared (a host key naming a shared account, which holds no keys: add it to the real account), or a second default account for one owner and host. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -18090,7 +18207,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description stale_resource_version (metadata.resourceVersion no longer matches; reload and reapply), resource_in_use (an owner move would strand referencing rows; blockers lists them), managed_by_source, or duplicate_binding. */
+            /** @description stale_resource_version (metadata.resourceVersion no longer matches; reload and reapply), resource_in_use (an owner move would strand referencing rows; blockers lists them), managed_by_source, duplicate_binding, or account_shared. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -18174,7 +18291,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns, and account_managed for a team, project, personal, service or open member account, which goes with its own row. */
+            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach (for a provider account, the accounts shared from it, which detach deletes). Also managed_by_source for a row a provisioning source owns, and account_managed for a team, project, personal, service or open member account, which goes with its own row. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -18382,7 +18499,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
+            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), account_shared (a host key naming a shared account, which holds no keys: add it to the real account), or a second default account for one owner and host. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -18472,7 +18589,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description stale_resource_version (metadata.resourceVersion no longer matches; reload and reapply), resource_in_use (an owner move would strand referencing rows; blockers lists them), managed_by_source, or duplicate_binding. */
+            /** @description stale_resource_version (metadata.resourceVersion no longer matches; reload and reapply), resource_in_use (an owner move would strand referencing rows; blockers lists them), managed_by_source, duplicate_binding, or account_shared. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -18556,7 +18673,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns, and account_managed for a team, project, personal, service or open member account, which goes with its own row. */
+            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach (for a provider account, the accounts shared from it, which detach deletes). Also managed_by_source for a row a provisioning source owns, and account_managed for a team, project, personal, service or open member account, which goes with its own row. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -19490,7 +19607,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
+            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), account_shared (a host key naming a shared account, which holds no keys: add it to the real account), or a second default account for one owner and host. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -19580,7 +19697,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description stale_resource_version (metadata.resourceVersion no longer matches; reload and reapply), resource_in_use (an owner move would strand referencing rows; blockers lists them), managed_by_source, or duplicate_binding. */
+            /** @description stale_resource_version (metadata.resourceVersion no longer matches; reload and reapply), resource_in_use (an owner move would strand referencing rows; blockers lists them), managed_by_source, duplicate_binding, or account_shared. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -19664,7 +19781,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns, and account_managed for a team, project, personal, service or open member account, which goes with its own row. */
+            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach (for a provider account, the accounts shared from it, which detach deletes). Also managed_by_source for a row a provisioning source owns, and account_managed for a team, project, personal, service or open member account, which goes with its own row. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -21671,7 +21788,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
+            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), account_shared (a host key naming a shared account, which holds no keys: add it to the real account), or a second default account for one owner and host. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -21761,7 +21878,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description stale_resource_version (metadata.resourceVersion no longer matches; reload and reapply), resource_in_use (an owner move would strand referencing rows; blockers lists them), managed_by_source, or duplicate_binding. */
+            /** @description stale_resource_version (metadata.resourceVersion no longer matches; reload and reapply), resource_in_use (an owner move would strand referencing rows; blockers lists them), managed_by_source, duplicate_binding, or account_shared. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -21845,7 +21962,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns, and account_managed for a team, project, personal, service or open member account, which goes with its own row. */
+            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach (for a provider account, the accounts shared from it, which detach deletes). Also managed_by_source for a row a provisioning source owns, and account_managed for a team, project, personal, service or open member account, which goes with its own row. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -22072,6 +22189,8 @@ export interface operations {
                 account_id?: string[] | null;
                 /** @description Match any of the given ids of the account the request ran in and was charged to (its lane), not the serving credential's provider account. */
                 lane_account_id?: string[] | null;
+                /** @description Match any of the given ids of the shared account the serving credential was reached through; account_id stays the real provider account. */
+                via_account_id?: string[] | null;
                 /** @description Match any of the given Project.metadata.id values. */
                 project_id?: string[] | null;
                 /** @description Match any of the given Team.metadata.id values. */
@@ -22209,6 +22328,8 @@ export interface operations {
                 account_id?: string[] | null;
                 /** @description Match any of the given ids of the account the request ran in and was charged to (its lane), not the serving credential's provider account. */
                 lane_account_id?: string[] | null;
+                /** @description Match any of the given ids of the shared account the serving credential was reached through; account_id stays the real provider account. */
+                via_account_id?: string[] | null;
                 /** @description Match any of the given Project.metadata.id values. */
                 project_id?: string[] | null;
                 /** @description Match any of the given Team.metadata.id values. */
@@ -22346,6 +22467,8 @@ export interface operations {
                 account_id?: string[] | null;
                 /** @description Match any of the given ids of the account the request ran in and was charged to (its lane), not the serving credential's provider account. */
                 lane_account_id?: string[] | null;
+                /** @description Match any of the given ids of the shared account the serving credential was reached through; account_id stays the real provider account. */
+                via_account_id?: string[] | null;
                 /** @description Match any of the given Project.metadata.id values. */
                 project_id?: string[] | null;
                 /** @description Match any of the given Team.metadata.id values. */
@@ -22404,7 +22527,7 @@ export interface operations {
                 q?: string;
                 /** @description Caller-tag filter as "key:value" (repeatable). Same key repeated matches any of its values; different keys must all match. */
                 tag?: string[] | null;
-                /** @description "source" (default) | "none" (one row over the whole filtered set, group {}) | "model" | "host" | "policy" | "provider" | "project" | "team" | "principal" | "relay_key" (event-time slugs) | "model_id" | "host_id" | "policy_id" | "pool_id" | "account_id" | "lane_account_id" | "project_id" | "team_id" | "principal_id" | "credential_id" | "relay_key_hash" | "host_key_id" | "finish_reason" | "error_kind" | "refusal" | "tags.<key>" (group by a caller tag's value). */
+                /** @description "source" (default) | "none" (one row over the whole filtered set, group {}) | "model" | "host" | "policy" | "provider" | "project" | "team" | "principal" | "relay_key" (event-time slugs) | "model_id" | "host_id" | "policy_id" | "pool_id" | "account_id" | "lane_account_id" | "via_account_id" | "project_id" | "team_id" | "principal_id" | "credential_id" | "relay_key_hash" | "host_key_id" | "finish_reason" | "error_kind" | "refusal" | "tags.<key>" (group by a caller tag's value). */
                 group_by?: string;
                 /** @description "previous" (the only accepted value) adds each row's numbers over the window of equal length just before this one as previous, and that window's bounds as previous_from/previous_to (previous_to exclusive). Rows stay those of the requested window: a group without traffic in the previous window has no previous, and a group seen only there has no row. The window is resolved once (since counts back from the request time, an open to becomes that time); one with no start or a start after its end is a 400. Not combinable with compare_from/compare_to. */
                 compare?: string;
@@ -22412,7 +22535,7 @@ export interface operations {
                 compare_from?: string;
                 /** @description End (RFC3339, exclusive) of the explicit compare window; needs compare_from and must be after it. */
                 compare_to?: string;
-                /** @description Adds distinct to each row: the number of distinct non-empty values of this dimension among the row's events. One of "relay_key_hash" | "relay_key" | "principal_id" | "credential_id" | "pool_id" | "account_id" | "lane_account_id" | "project_id" | "team_id" | "model_id" | "host_id". Omitted means no distinct count. */
+                /** @description Adds distinct to each row: the number of distinct non-empty values of this dimension among the row's events. One of "relay_key_hash" | "relay_key" | "principal_id" | "credential_id" | "pool_id" | "account_id" | "lane_account_id" | "via_account_id" | "project_id" | "team_id" | "model_id" | "host_id". Omitted means no distinct count. */
                 distinct?: string;
             };
             header?: never;
@@ -22489,6 +22612,8 @@ export interface operations {
                 account_id?: string[] | null;
                 /** @description Match any of the given ids of the account the request ran in and was charged to (its lane), not the serving credential's provider account. */
                 lane_account_id?: string[] | null;
+                /** @description Match any of the given ids of the shared account the serving credential was reached through; account_id stays the real provider account. */
+                via_account_id?: string[] | null;
                 /** @description Match any of the given Project.metadata.id values. */
                 project_id?: string[] | null;
                 /** @description Match any of the given Team.metadata.id values. */
@@ -22549,9 +22674,9 @@ export interface operations {
                 tag?: string[] | null;
                 /** @description Bucket width (e.g. "5m", "1h", "1d"). Required. */
                 interval?: string;
-                /** @description Optional dimension to split series by: "source" | "model" | "host" | "policy" | "provider" | "project" | "team" | "principal" | "relay_key" (event-time slugs) | "model_id" | "host_id" | "policy_id" | "pool_id" | "account_id" | "lane_account_id" | "project_id" | "team_id" | "principal_id" | "credential_id" | "relay_key_hash" | "host_key_id" | "finish_reason" | "error_kind" | "refusal" | "tags.<key>". Empty returns a single series; "none" returns that series with group {}. */
+                /** @description Optional dimension to split series by: "source" | "model" | "host" | "policy" | "provider" | "project" | "team" | "principal" | "relay_key" (event-time slugs) | "model_id" | "host_id" | "policy_id" | "pool_id" | "account_id" | "lane_account_id" | "via_account_id" | "project_id" | "team_id" | "principal_id" | "credential_id" | "relay_key_hash" | "host_key_id" | "finish_reason" | "error_kind" | "refusal" | "tags.<key>". Empty returns a single series; "none" returns that series with group {}. */
                 group_by?: string;
-                /** @description Adds distinct to each point: the number of distinct non-empty values of this dimension among the bucket's events. Per-bucket values cannot be summed across buckets (a value seen in two buckets counts in each); use /usage/summary for a window total. One of "relay_key_hash" | "relay_key" | "principal_id" | "credential_id" | "pool_id" | "account_id" | "lane_account_id" | "project_id" | "team_id" | "model_id" | "host_id". Omitted means no distinct count. */
+                /** @description Adds distinct to each point: the number of distinct non-empty values of this dimension among the bucket's events. Per-bucket values cannot be summed across buckets (a value seen in two buckets counts in each); use /usage/summary for a window total. One of "relay_key_hash" | "relay_key" | "principal_id" | "credential_id" | "pool_id" | "account_id" | "lane_account_id" | "via_account_id" | "project_id" | "team_id" | "model_id" | "host_id". Omitted means no distinct count. */
                 distinct?: string;
             };
             header?: never;
@@ -22821,6 +22946,176 @@ export interface operations {
             };
             /** @description Error */
             default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    list_account_shares: {
+        parameters: {
+            query?: {
+                /** @description Relative usage window (e.g. "24h", "7d", "30d"), the same grammar as the usage endpoints. Default "30d". */
+                since?: string;
+            };
+            header?: never;
+            path: {
+                /** @description Slug or id of the provider account whose shares to list. */
+                ref: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountShares"];
+                };
+            };
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description No valid session cookie or admin bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description No such row, or one the caller may not see. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The request does not match the schema; error.details lists each failing field. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The server failed; error.message carries the cause. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    share_account: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Slug or id of the provider account to share. */
+                ref: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["createShareInputBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Account"];
+                };
+            };
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description No valid session cookie or admin bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description No such row, or one the caller may not see. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description share_exists: the account is already shared with this receiver; reshare_refused: the account is itself a share. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["conflictBody"];
+                };
+            };
+            /** @description The request does not match the schema; error.details lists each failing field. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The server failed; error.message carries the cause. */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };
