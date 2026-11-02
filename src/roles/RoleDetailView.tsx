@@ -14,6 +14,7 @@ import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { DetailCard, DetailEmpty } from "@/shared/DetailCard";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
 import { DetailPageHeader } from "@/shared/DetailPageHeader";
+import { ReferencesList } from "@/shared/ReferencesList";
 import { StatusBadge } from "@/shared/StatusBadge";
 import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 
@@ -113,23 +114,10 @@ export function RoleDetailView({ name }: { name: string }) {
 			)}
 
 			<DetailCard title="References" icon={Link2}>
-				{(refs.items ?? []).length === 0 ? (
-					<DetailEmpty>No binding names this role yet.</DetailEmpty>
-				) : (
-					<ul className="divide-y divide-border">
-						{(refs.items ?? []).map((r) => (
-							<li
-								key={`${r.kind}:${r.id}`}
-								className="flex items-center justify-between gap-3 py-2 first:pt-0 last:pb-0 text-xs"
-							>
-								<span className="text-foreground">{r.name}</span>
-								<span className="text-muted-foreground">
-									{r.kind} · <code className="font-mono">{r.via}</code>
-								</span>
-							</li>
-						))}
-					</ul>
-				)}
+				<ReferencesList
+					items={refs.items}
+					empty="No binding names this role yet."
+				/>
 			</DetailCard>
 
 			{del.target && (
