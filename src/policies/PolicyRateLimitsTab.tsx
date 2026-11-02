@@ -1,11 +1,11 @@
 import { Link } from "@tanstack/react-router";
 import { Gauge } from "lucide-react";
 import type { Policy } from "@/api/types/policy";
-import { parseDurationSeconds, windowShort } from "@/lib/timeWindow";
 import {
 	type UnthrottledModel,
 	usePolicyRateLimits,
 } from "@/policies/usePolicyRateLimits";
+import { RateLimitRuleChips } from "@/rate-limits/RateLimitRuleChips";
 import { AlertBanner } from "@/shared/AlertBanner";
 
 interface Props {
@@ -75,18 +75,7 @@ export function PolicyRateLimitsTab({ policy }: Props) {
 										No rules configured.
 									</span>
 								) : (
-									<ul className="flex flex-wrap gap-1">
-										{limits.map((l) => (
-											<li
-												key={`${l.meter}-${l.window}-${l.amount}`}
-												className="inline-flex items-center px-1.5 py-0.5 rounded bg-muted border border-border font-mono text-[10px] text-foreground"
-												title={l.strategy}
-											>
-												{l.amount.toLocaleString()} {l.meter} /{" "}
-												{windowShort(parseDurationSeconds(l.window))}
-											</li>
-										))}
-									</ul>
+									<RateLimitRuleChips limits={limits} />
 								)}
 							</div>
 
