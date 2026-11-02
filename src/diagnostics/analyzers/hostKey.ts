@@ -25,9 +25,7 @@ export function analyzeHostKey(
 		});
 	}
 
-	// A credential not listed in any policy's credentialIds is unreferenced by
-	// direct-attachment policies. Note: pool-linked credentials won't appear here
-	// because pool data isn't loaded into the graph.
+	// No policy reaches the credential, through a pool or directly.
 	const userPolicies = hkId
 		? (graph.policiesByCredentialId.get(hkId) ?? []).filter(
 				(p) => p.metadata.owner?.kind !== "host",

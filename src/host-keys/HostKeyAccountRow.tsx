@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { ScanSearch } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,7 +24,13 @@ export function HostKeyAccountRow({
 		<div className="flex flex-col gap-2">
 			<div className="flex items-center gap-2 flex-wrap">
 				{account ? (
-					<span className="text-foreground">{account.label}</span>
+					<Link
+						to="/accounts/$name"
+						params={{ name: account.name }}
+						className="text-foreground hover:underline"
+					>
+						{account.label}
+					</Link>
 				) : (
 					<span className="text-muted-foreground">— (none set)</span>
 				)}
