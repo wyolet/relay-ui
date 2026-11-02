@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import type { ReactNode } from "react";
 import {
 	Tooltip,
 	TooltipContent,
@@ -15,6 +16,32 @@ import { fmtRate } from "@/pricing/MeterGrid";
 const UNPRICED_CLASS =
 	"inline-flex shrink-0 items-center rounded border border-warning/30 bg-warning-soft px-1.5 py-0.5 text-[10px] font-medium text-warning";
 
+/** The new-pricing page, preset to one model on one host. */
+export function AddPriceLink({
+	hostId,
+	modelId,
+	className,
+	title,
+	children,
+}: {
+	hostId: string;
+	modelId: string;
+	className: string;
+	title?: string;
+	children: ReactNode;
+}) {
+	return (
+		<Link
+			to="/pricing/new"
+			search={{ host: hostId, model: modelId }}
+			className={className}
+			title={title}
+		>
+			{children}
+		</Link>
+	);
+}
+
 /** Marks a model relay can't price; links to a new sheet preset to it. */
 export function UnpricedBadge({
 	hostId,
@@ -28,14 +55,14 @@ export function UnpricedBadge({
 }) {
 	if (!link) return <span className={UNPRICED_CLASS}>Unpriced</span>;
 	return (
-		<Link
-			to="/pricing/new"
-			search={{ host: hostId, model: modelId }}
+		<AddPriceLink
+			hostId={hostId}
+			modelId={modelId}
 			className={`${UNPRICED_CLASS} hover:bg-warning/15`}
 			title="Requests to it are refused under a budget. Add a price."
 		>
 			Unpriced
-		</Link>
+		</AddPriceLink>
 	);
 }
 

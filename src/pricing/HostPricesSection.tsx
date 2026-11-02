@@ -8,6 +8,7 @@ import {
 	type RateCell,
 } from "@/lib/pricingMatrix";
 import { fmtRate } from "@/pricing/MeterGrid";
+import { AddPriceLink } from "@/pricing/ModelPrice";
 import { Section } from "@/shared/Section";
 
 /** Rows a folded host shows: its unpriced and busiest models. */
@@ -148,13 +149,13 @@ function Rate({
 function SheetCell({ row, hostId }: { row: PriceRow; hostId: string }) {
 	if (!row.sheet) {
 		return (
-			<Link
-				to="/pricing/new"
-				search={{ host: hostId, model: row.model.id }}
+			<AddPriceLink
+				hostId={hostId}
+				modelId={row.model.id}
 				className="truncate text-ink-2 hover:text-foreground"
 			>
 				Add pricing →
-			</Link>
+			</AddPriceLink>
 		);
 	}
 	return (

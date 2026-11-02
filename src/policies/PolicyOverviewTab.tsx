@@ -9,6 +9,7 @@ import {
 	LinkChoiceRow,
 } from "@/policies/PolicyLinkPicker";
 import { budgetLinkShared } from "@/policies/policyFormSpec";
+import { UnpricedUnderBudget } from "@/policies/UnpricedUnderBudget";
 import { usePolicyHosts } from "@/policies/usePolicyHosts";
 import {
 	type LinkChoice,
@@ -38,6 +39,11 @@ export function PolicyOverviewTab({ policy }: Props) {
 	return (
 		<div className="flex flex-col gap-6">
 			<PolicyIssues policyId={policy.metadata.id} />
+
+			<UnpricedUnderBudget
+				policyRef={policy.metadata.name}
+				budgetIds={(policy.spec.budgets ?? []).map((b) => b.budgetId)}
+			/>
 
 			<StatsGrid policy={policy} />
 
