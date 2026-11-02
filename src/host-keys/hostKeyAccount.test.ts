@@ -1,13 +1,17 @@
 import { describe, expect, it } from "bun:test";
 import type { Account } from "@/api/hooks/accounts";
 import { ApiError } from "@/api/types/errors";
+import type { Host } from "@/api/types/host";
 import {
 	accountFormValue,
 	accountOptions,
 	DEFAULT_ACCOUNT,
 	defaultAccountFor,
+	defaultNewAccountName,
 	detectionErrorMessage,
 	detectionVerdict,
+	keyAccountGroups,
+	nextNewAccountName,
 } from "./hostKeyAccount";
 
 const account = (
@@ -60,6 +64,47 @@ describe("accountOptions", () => {
 			"a-team",
 			"a-org",
 		]);
+	});
+});
+
+describe("keyAccountGroups", () => {
+	const host = (id: string, displayName: string): Host => ({
+		metadata: { id, name: id, displayName },
+		spec: { baseURL: "https://example.invalid" },
+	});
+	const hosts = [host("h1", "OpenAI"), host("h2", "Anthropic")];
+
+	it("groups the owner's own provider accounts by host, sorted", () => {
+		const shared = account("a-shared", "h1", system, {
+			sourceAccountId: "a-org",
+		});
+		const groups = keyAccountGroups(
+			[...accounts, shared],
+			hosts,
+			"system",
+			undefined,
+		);
+		expect(
+			groups.map((g) => [g.hostLabel, g.accounts.map((a) => a.value)]),
+		).toEqual([
+			["Anthropic", ["a-other-host"]],
+			["OpenAI", ["a-default", "a-org"]],
+		]);
+		expect(groups[1].accounts[0].isDefault).toBe(true);
+		expect(groups[1].accounts[1].orgId).toBe("org-1");
+	});
+});
+
+describe("new account name", () => {
+	it("starts from the host and follows host changes until edited", () => {
+		expect(defaultNewAccountName(undefined)).toBe("");
+		expect(nextNewAccountName("", "", "Anthropic")).toBe("Anthropic");
+		expect(nextNewAccountName("Anthropic", "Anthropic", "OpenAI")).toBe(
+			"OpenAI",
+		);
+		expect(nextNewAccountName("Research org", "Anthropic", "OpenAI")).toBe(
+			"Research org",
+		);
 	});
 });
 

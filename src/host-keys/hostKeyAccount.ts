@@ -1,7 +1,12 @@
-import { isSharedAccount } from "@/accounts/accountView";
+import {
+	hostLabel,
+	isSharedAccount,
+	PROVIDER_KIND,
+} from "@/accounts/accountView";
 import type { Account } from "@/api/hooks/accounts";
 import type { DetectedAccount } from "@/api/hooks/hostkeys";
 import { ApiError } from "@/api/types/errors";
+import type { Host } from "@/api/types/host";
 import { displayLabel } from "@/lib/displayLabel";
 import { ownerKey } from "@/lib/ownerScopes";
 
@@ -12,6 +17,89 @@ export interface AccountOption {
 
 /** Form value for "the owner's default account at the host". */
 export const DEFAULT_ACCOUNT = "";
+
+/** Create-form value for "make a provider account with the key". */
+export const NEW_ACCOUNT = "+new";
+
+export interface KeyAccountOption {
+	value: string;
+	label: string;
+	hostId: string;
+	orgId?: string;
+	isDefault: boolean;
+}
+
+export interface KeyAccountGroup {
+	hostId: string;
+	hostLabel: string;
+	host?: Host;
+	accounts: KeyAccountOption[];
+}
+
+/**
+ * The provider accounts a new key of `owner` may join, grouped by host and
+ * sorted by host then account. Shared accounts hold no keys of their own.
+ */
+export function keyAccountGroups(
+	usable: readonly Account[],
+	hosts: readonly Host[],
+	owner: string,
+	userId: string | undefined,
+): KeyAccountGroup[] {
+	const groups = new Map<string, KeyAccountGroup>();
+	for (const a of usable) {
+		const id = a.metadata.id;
+		const hostId = a.spec.hostId;
+		if (
+			!id ||
+			!hostId ||
+			a.spec.kind !== PROVIDER_KIND ||
+			isSharedAccount(a) ||
+			ownerKey(a.metadata.owner, userId) !== owner
+		)
+			continue;
+		let group = groups.get(hostId);
+		if (!group) {
+			const host = hosts.find((h) => h.metadata.id === hostId);
+			group = {
+				hostId,
+				hostLabel: hostLabel(host, hostId),
+				...(host ? { host } : {}),
+				accounts: [],
+			};
+			groups.set(hostId, group);
+		}
+		group.accounts.push({
+			value: id,
+			label: displayLabel(a.metadata),
+			hostId,
+			...(a.spec.orgId ? { orgId: a.spec.orgId } : {}),
+			isDefault: a.spec.default === true,
+		});
+	}
+	const sorted = [...groups.values()].sort((x, y) =>
+		x.hostLabel.localeCompare(y.hostLabel),
+	);
+	for (const g of sorted)
+		g.accounts.sort((x, y) => x.label.localeCompare(y.label));
+	return sorted;
+}
+
+/** The name a new account starts with: its host's. */
+export function defaultNewAccountName(host: Host | undefined): string {
+	return host ? displayLabel(host.metadata) : "";
+}
+
+/** A host change renames the new account unless the user typed their own name. */
+export function nextNewAccountName(
+	current: string,
+	previousDefault: string,
+	nextDefault: string,
+): string {
+	return current.trim() === "" || current === previousDefault
+		? nextDefault
+		: current;
+}
 
 /** Accounts a key of this owner at this host may name: provider accounts at the host, same owner. */
 function accountsFor(
