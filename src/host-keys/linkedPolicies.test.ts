@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+import type { Pool } from "@/api/hooks/pools";
 import type { HostKey } from "@/api/types/hostkey";
 import type { Policy } from "@/api/types/policy";
 import { linkedPolicyRows } from "./linkedPolicies";
@@ -24,8 +25,23 @@ const policies: Policy[] = [
 	},
 ];
 
+const pools: Pool[] = [
+	{
+		metadata: { id: "pool-1", name: "main-pool", displayName: "Main pool" },
+		spec: { hostId: "h1", credentialIds: ["hk-1"] },
+	},
+];
+
 describe("linkedPolicyRows", () => {
-	const rows = linkedPolicyRows(hk, policies);
+	const rows = linkedPolicyRows(hk, policies, pools);
+
+	it("names the pools that hold the key", () => {
+		expect(rows.map((r) => r.viaPools)).toEqual([
+			[],
+			[{ name: "main-pool", label: "Main pool" }],
+			[],
+		]);
+	});
 
 	it("marks only credentialIds links as direct", () => {
 		expect(rows.map((r) => [r.id, r.direct])).toEqual([

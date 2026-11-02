@@ -3,6 +3,7 @@ import { useAccounts } from "@/api/hooks/accounts";
 import { useDeleteHostKey, useHostKey } from "@/api/hooks/hostkeys";
 import { useHosts } from "@/api/hooks/hosts";
 import { useDetachHostKeyFromPolicy, usePolicies } from "@/api/hooks/policies";
+import { usePools } from "@/api/hooks/pools";
 import type { Host } from "@/api/types/host";
 import { useToggleHostKeyEnabled } from "@/host-keys/useToggleHostKeyEnabled";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
@@ -53,6 +54,7 @@ export function useHostKeyDetail({ name, onDeleted }: UseHostKeyDetailOptions) {
 	const { data: hk } = useHostKey(name);
 	const { data: hostsData } = useHosts();
 	const { data: policiesData } = usePolicies();
+	const { data: poolsData } = usePools();
 	const { data: accountsData } = useAccounts();
 	const del = useConfirmedDelete(useDeleteHostKey(), {
 		noun: "credential",
@@ -65,7 +67,11 @@ export function useHostKeyDetail({ name, onDeleted }: UseHostKeyDetailOptions) {
 	const [rotating, setRotating] = useState(false);
 
 	const refs = hk.policies ?? [];
-	const attachedPolicies = linkedPolicyRows(hk, policiesData.items ?? []);
+	const attachedPolicies = linkedPolicyRows(
+		hk,
+		policiesData.items ?? [],
+		poolsData.items ?? [],
+	);
 
 	const matchedHost = (hostsData.items ?? []).find(
 		(h) => h.metadata.id === hk.spec.hostId,

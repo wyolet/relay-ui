@@ -1,7 +1,6 @@
 import { Link } from "@tanstack/react-router";
-import { Building2, Globe, KeyRound, Link2, Unlink2 } from "lucide-react";
+import { Building2, Globe, KeyRound, Link2 } from "lucide-react";
 import type { HostKey, HostKeyKind } from "@/api/types/hostkey";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
 	Select,
@@ -10,6 +9,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { LinkedPolicyAction } from "@/host-keys/LinkedPolicyAction";
 import { useHostKeyForm } from "@/host-keys/useHostKeyForm";
 import { HostSelect } from "@/hosts/HostSelect";
 import { FormFooter } from "@/shared/FormFooter";
@@ -264,17 +264,11 @@ export function HostKeyForm({ hostKey, onSaved, onCancel }: HostKeyFormProps) {
 												</p>
 											)}
 										</div>
-										<Button
-											type="button"
-											variant="outline"
-											size="sm"
-											onClick={() => void detachFromPolicy(p.id)}
-											disabled={isDetachPending || !p.direct}
-											title={p.direct ? undefined : "Linked through a pool"}
-										>
-											<Unlink2 className="w-3 h-3" />
-											Detach
-										</Button>
+										<LinkedPolicyAction
+											row={p}
+											onDetach={(id) => void detachFromPolicy(id)}
+											detaching={isDetachPending}
+										/>
 									</li>
 								))}
 							</ul>

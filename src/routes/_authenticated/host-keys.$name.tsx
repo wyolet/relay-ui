@@ -10,6 +10,7 @@ import { hostsListQueryOptions } from "@/api/hooks/hosts";
 import { keysListQueryOptions } from "@/api/hooks/keys";
 import { modelsListQueryOptions } from "@/api/hooks/models";
 import { policiesListQueryOptions } from "@/api/hooks/policies";
+import { poolListQueryOptions } from "@/api/hooks/pools";
 import { providersListQueryOptions } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
 import { HostKeyDetailView } from "@/host-keys/HostKeyDetailView";
@@ -29,6 +30,7 @@ export const Route = createFileRoute("/_authenticated/host-keys/$name")({
 			queryClient.ensureQueryData(hostsListQueryOptions),
 			queryClient.ensureQueryData(policiesListQueryOptions),
 			queryClient.ensureQueryData(accountListQueryOptions),
+			queryClient.ensureQueryData(poolListQueryOptions),
 		]);
 	},
 	component: HostKeyDetailPage,

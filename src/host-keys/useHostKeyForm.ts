@@ -7,6 +7,7 @@ import { type Account, useAccounts } from "@/api/hooks/accounts";
 import { useCreateHostKey, useUpdateHostKey } from "@/api/hooks/hostkeys";
 import { useHosts } from "@/api/hooks/hosts";
 import { useDetachHostKeyFromPolicy, usePolicies } from "@/api/hooks/policies";
+import { usePools } from "@/api/hooks/pools";
 import type {
 	HostKey,
 	HostKeyCreate,
@@ -140,6 +141,7 @@ export function useHostKeyForm({
 	const { userId } = useAuth();
 	const { data: hostsData } = useHosts();
 	const { data: policiesData } = usePolicies();
+	const { data: poolsData } = usePools();
 	const { data: accountsData } = useAccounts();
 	const accounts = accountsData.items ?? [];
 	const loaded = useLoadedResourceVersion(
@@ -309,8 +311,15 @@ export function useHostKeyForm({
 	);
 
 	const attachedPolicies = useMemo(
-		() => (hostKey ? linkedPolicyRows(hostKey, policiesData.items ?? []) : []),
-		[hostKey, policiesData.items],
+		() =>
+			hostKey
+				? linkedPolicyRows(
+						hostKey,
+						policiesData.items ?? [],
+						poolsData.items ?? [],
+					)
+				: [],
+		[hostKey, policiesData.items, poolsData.items],
 	);
 
 	const hostOptions = useMemo<SelectOption[]>(

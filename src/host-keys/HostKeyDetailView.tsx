@@ -1,15 +1,10 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import {
-	ChevronLeft,
-	KeyRound,
-	Link2,
-	ShieldCheck,
-	Unlink2,
-} from "lucide-react";
+import { ChevronLeft, KeyRound, Link2, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DiagnosticList } from "@/diagnostics/DiagnosticList";
 import { useHostKeyDiagnostics } from "@/diagnostics/useDiagnostics";
 import { HostKeyAccountRow } from "@/host-keys/HostKeyAccountRow";
+import { LinkedPolicyAction } from "@/host-keys/LinkedPolicyAction";
 import type { LinkedPolicyRow } from "@/host-keys/linkedPolicies";
 import { SecretRotateDialog } from "@/host-keys/SecretRotateDialog";
 import { useHostKeyDetail } from "@/host-keys/useHostKeyDetail";
@@ -254,20 +249,11 @@ function PoliciesPanel({
 									)}
 								</Td>
 								<Td className="text-right">
-									<Button
-										type="button"
-										variant="outline"
-										onClick={() => onDetach(row.id)}
-										disabled={detaching || !row.direct}
-										title={
-											row.direct
-												? "Remove the policy's direct link to this key"
-												: "Linked through a pool; remove the key from the pool instead"
-										}
-									>
-										<Unlink2 className="size-3" />
-										Detach
-									</Button>
+									<LinkedPolicyAction
+										row={row}
+										onDetach={onDetach}
+										detaching={detaching}
+									/>
 								</Td>
 							</tr>
 						))}
