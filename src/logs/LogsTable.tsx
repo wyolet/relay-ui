@@ -11,6 +11,7 @@ import { Field } from "./Field";
 import { fmtInt, fmtLogTime, fmtMs, fmtTs, sumTokens } from "./format";
 import { LaneAccountField } from "./LaneAccountField";
 import { LogsEmpty } from "./LogsEmpty";
+import { logModelLabel } from "./logModelLabel";
 import { isErrorEvent } from "./predicates";
 import { statusDot, statusTone } from "./statusStyle";
 import type { LogLabeler } from "./useLogsFilterOptions";
@@ -163,11 +164,7 @@ function LogRow({
 	onToggle: () => void;
 	onFilter?: (key: LogFilterKey, value: string) => void;
 }) {
-	const modelLabel =
-		labelFor?.("model", event.model_id) ??
-		event.model_id ??
-		event.requested_model ??
-		event.source;
+	const modelLabel = logModelLabel(event, labelFor);
 	const hostLabel = labelFor?.("host", event.host_id) ?? event.host_id ?? "—";
 	return (
 		<tr

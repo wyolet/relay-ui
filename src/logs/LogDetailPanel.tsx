@@ -11,6 +11,7 @@ import { Field } from "./Field";
 import { fmtInt, fmtMs, fmtTs, prettyBody, sumTokens } from "./format";
 import { type ChatMessage, parseTranscript } from "./generation";
 import { LaneAccountField } from "./LaneAccountField";
+import { logModelLabel } from "./logModelLabel";
 import { isErrorEvent } from "./predicates";
 import { statusDot, statusTone } from "./statusStyle";
 import type { LogLabeler } from "./useLogsFilterOptions";
@@ -63,11 +64,7 @@ function PanelBody({
 	const transcript = parseTranscript(payload);
 
 	const [tab, setTab] = useState<"messages" | "raw">("messages");
-	const modelLabel =
-		labelFor?.("model", log.model_id) ??
-		log.model_id ??
-		log.requested_model ??
-		log.source;
+	const modelLabel = logModelLabel(log, labelFor);
 
 	return (
 		<div className="flex flex-col">
