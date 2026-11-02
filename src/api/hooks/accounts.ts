@@ -146,25 +146,6 @@ export function useDeleteAccount() {
 	});
 }
 
-/** The account's host keys, secret-free. */
-export function accountKeysQueryOptions(ref: string) {
-	return queryOptions({
-		queryKey: ["accounts", ref, "keys"] as const,
-		queryFn: async () =>
-			unwrap(
-				await apiClient.GET("/accounts/{ref}/keys", {
-					params: { path: { ref } },
-				}),
-			),
-		staleTime: 30_000,
-		gcTime: 5 * 60_000,
-	});
-}
-
-export function useAccountKeys(ref: string) {
-	return useSuspenseQuery(accountKeysQueryOptions(ref));
-}
-
 /** The signed-in user's accounts; empty for the admin token. */
 export const myAccountsQueryOptions = queryOptions({
 	queryKey: ["accounts", "me", "list"] as const,
