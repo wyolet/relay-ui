@@ -47,7 +47,7 @@ export function NewAccountFields({
 					type="text"
 					value={name}
 					onChange={(e) => onNameChange(e.currentTarget.value)}
-					placeholder="Anthropic"
+					placeholder="Named after the host"
 					className="w-full"
 					aria-label="Account name"
 					aria-invalid={nameError ? true : undefined}

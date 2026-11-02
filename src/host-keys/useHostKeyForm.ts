@@ -514,6 +514,7 @@ export function useHostKeyForm({
 				form.setFieldValue(
 					"newAccountName",
 					defaultNewAccountName(hostById(values.hostId)),
+					{ dontUpdateMeta: true },
 				);
 			}
 			return;
@@ -534,6 +535,8 @@ export function useHostKeyForm({
 				defaultNewAccountName(hostById(values.hostId)),
 				defaultNewAccountName(hostById(hostId)),
 			),
+			// A name filled in for the user isn't a user edit; no error yet.
+			{ dontUpdateMeta: true },
 		);
 	}
 
