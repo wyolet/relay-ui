@@ -163,3 +163,17 @@
     @apply font-sans;
   }
 }
+
+@layer base {
+  /* Chrome paints autofilled fields its own light blue; keep the theme's
+     colours (the long transition holds the background it would set). */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus {
+    -webkit-text-fill-color: var(--foreground);
+    caret-color: var(--foreground);
+    transition:
+      background-color 600000s 0s,
+      color 600000s 0s;
+  }
+}

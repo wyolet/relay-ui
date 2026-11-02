@@ -11,12 +11,12 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import {
 	STALE_SAVE_MESSAGE,
 	useReloadQueries,
 } from "@/hooks/useSaveErrorToast";
 import { AlertBanner } from "@/shared/AlertBanner";
+import { SecretInput } from "@/shared/SecretInput";
 import { toast } from "@/shared/Toast";
 
 interface SecretRotateDialogProps {
@@ -113,10 +113,8 @@ export function SecretRotateDialog({ hk, onClose }: SecretRotateDialogProps) {
 					>
 						New value
 					</label>
-					<Input
+					<SecretInput
 						id={inputId}
-						type="password"
-						autoComplete="new-password"
 						value={value}
 						onChange={(e) => setValue(e.currentTarget.value)}
 						placeholder="sk-…"

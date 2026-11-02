@@ -16,6 +16,7 @@ import { HostSelect } from "@/hosts/HostSelect";
 import { FormFooter } from "@/shared/FormFooter";
 import { FormSection } from "@/shared/FormSection";
 import { IdentitySection } from "@/shared/IdentitySection";
+import { SecretInput } from "@/shared/SecretInput";
 
 const KIND_OPTIONS: Record<HostKeyKind, { label: string; hint: string }> = {
 	stored: {
@@ -205,9 +206,7 @@ export function HostKeyForm({
 									<div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-1">
 										Secret value
 									</div>
-									<Input
-										type="password"
-										autoComplete="new-password"
+									<SecretInput
 										value={values.value}
 										onChange={(e) =>
 											form.setFieldValue("value", e.currentTarget.value)
