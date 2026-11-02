@@ -3,12 +3,35 @@ import {
 	canDeleteAccount,
 	canSetPayloadLogging,
 	parseAccountKind,
+	providersFirst,
 	resolveHolder,
 } from "@/accounts/accountView";
 import {
 	fromPayloadLoggingChoice,
 	toPayloadLoggingChoice,
 } from "@/accounts/payloadLogging";
+import type { Account } from "@/api/hooks/accounts";
+
+describe("providersFirst", () => {
+	const account = (name: string, kind: Account["spec"]["kind"]): Account => ({
+		metadata: { name },
+		spec: { kind },
+	});
+	test("lists provider accounts before caller accounts, keeping order", () => {
+		const sorted = providersFirst([
+			account("team-a", "team"),
+			account("openai", "provider"),
+			account("me", "personal"),
+			account("anthropic", "provider"),
+		]);
+		expect(sorted.map((a) => a.metadata.name)).toEqual([
+			"openai",
+			"anthropic",
+			"team-a",
+			"me",
+		]);
+	});
+});
 
 describe("canDeleteAccount", () => {
 	test("provider accounts are deletable", () => {
