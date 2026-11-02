@@ -1,6 +1,7 @@
 import {
 	queryOptions,
 	useMutation,
+	useQuery,
 	useQueryClient,
 	useSuspenseQuery,
 } from "@tanstack/react-query";
@@ -74,6 +75,12 @@ export function usePools() {
 
 export function usePoolsList(params: PoolsListParams) {
 	return useSuspenseQuery(poolListQuery(params));
+}
+
+/** The pools a policy owned by `usableBy` may link; empty while loading. */
+export function useUsablePools(usableBy: string | undefined): Pool[] {
+	const { data } = useQuery(poolListQuery({ usable_by: usableBy }));
+	return data?.items ?? [];
 }
 
 export function usePool(ref: string) {

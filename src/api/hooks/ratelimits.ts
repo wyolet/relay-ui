@@ -1,6 +1,7 @@
 import {
 	queryOptions,
 	useMutation,
+	useQuery,
 	useQueryClient,
 	useSuspenseQuery,
 } from "@tanstack/react-query";
@@ -12,8 +13,14 @@ import type {
 	RateLimitListResponse,
 	RateLimitUpdate,
 } from "@/api/types/ratelimit";
+import type { operations } from "@/api/types.gen";
 import { unwrap } from "@/api/unwrap";
 import { isSystemOwned } from "@/lib/systemRateLimits";
+
+/** Server-side filter/sort/page params accepted by GET /rate-limits. */
+export type RateLimitsListParams = NonNullable<
+	operations["list_rate-limits"]["parameters"]["query"]
+>;
 
 // --- Query options ---
 
@@ -26,6 +33,18 @@ export const rateLimitsListQueryOptions = queryOptions({
 	staleTime: 30_000,
 	gcTime: 5 * 60_000,
 });
+
+export function rateLimitsListQuery(params: RateLimitsListParams) {
+	return queryOptions({
+		queryKey: ["ratelimits", "list", params] as const,
+		queryFn: async (): Promise<RateLimitListResponse> =>
+			unwrap(
+				await apiClient.GET("/rate-limits", { params: { query: params } }),
+			),
+		staleTime: 30_000,
+		gcTime: 5 * 60_000,
+	});
+}
 
 export function rateLimitDetailQueryOptions(name: string) {
 	return queryOptions({
@@ -78,6 +97,12 @@ export function useUserRateLimits(): RateLimit[] {
 export function useAttachableRateLimits(): RateLimit[] {
 	const { data } = useSuspenseQuery(rateLimitsListQueryOptions);
 	return (data.items ?? []).filter((rl) => !isSystemOwned(rl));
+}
+
+/** The rate limits a policy owned by `usableBy` may link; empty while loading. */
+export function useUsableRateLimits(usableBy: string | undefined): RateLimit[] {
+	const { data } = useQuery(rateLimitsListQuery({ usable_by: usableBy }));
+	return data?.items ?? [];
 }
 
 export function useRateLimit(name: string) {

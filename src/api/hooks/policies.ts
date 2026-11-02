@@ -13,8 +13,13 @@ import type {
 	PolicyListResponse,
 	PolicyUpdate,
 } from "@/api/types/policy";
-import type { components } from "@/api/types.gen";
+import type { components, operations } from "@/api/types.gen";
 import { unwrap } from "@/api/unwrap";
+
+/** Server-side filter/sort/page params accepted by GET /policies. */
+export type PoliciesListParams = NonNullable<
+	operations["list_policies"]["parameters"]["query"]
+>;
 
 export const policiesListQueryOptions = queryOptions({
 	queryKey: ["policies"] as const,
@@ -166,6 +171,22 @@ export function policyRateLimitsQueryOptions(ref: string) {
 
 export function usePolicies() {
 	return useSuspenseQuery(policiesListQueryOptions);
+}
+
+export function policiesListQuery(params: PoliciesListParams) {
+	return queryOptions({
+		queryKey: ["policies", "list", params] as const,
+		queryFn: async (): Promise<PolicyListResponse> =>
+			unwrap(await apiClient.GET("/policies", { params: { query: params } })),
+		staleTime: 30_000,
+		gcTime: 5 * 60_000,
+	});
+}
+
+/** The policies a binding owned by `usableBy` may link; empty while loading. */
+export function useUsablePolicies(usableBy: string | undefined): Policy[] {
+	const { data } = useQuery(policiesListQuery({ usable_by: usableBy }));
+	return data?.items ?? [];
 }
 
 export function usePolicy(name: string) {
