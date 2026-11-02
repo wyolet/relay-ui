@@ -23,10 +23,10 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { cn } from "@/lib/utils";
 import { Chip } from "@/shared/Chip";
 import { Segmented } from "@/shared/Segmented";
 import { useActorAccess } from "@/shell/actorScopes";
+import { headerTriggerClass } from "@/shell/headerTrigger";
 import { type Theme, useTheme } from "@/stores/theme";
 import { TokenDialog } from "@/tokens/TokenDialog";
 
@@ -113,13 +113,7 @@ export function AccountMenu() {
 	return (
 		<>
 			<DropdownMenu>
-				<DropdownMenuTrigger
-					className={cn(
-						"flex h-8 items-center gap-2 rounded-md pl-1 pr-1.5 text-sm transition-colors",
-						"text-foreground hover:bg-muted",
-						"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-					)}
-				>
+				<DropdownMenuTrigger className={headerTriggerClass}>
 					<span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-[11px] font-medium text-primary-foreground">
 						{initial}
 					</span>
