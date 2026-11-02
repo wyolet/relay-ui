@@ -15,11 +15,10 @@ import type {
 	RateLimitUpdate,
 } from "@/api/types/ratelimit";
 import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
-import { useOwnerOptions } from "@/hooks/useOwnerOptions";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
+import { useFormOwner } from "@/hooks/useWorkContext";
 import { displayLabel } from "@/lib/displayLabel";
 import { firstError, shownError, zodFieldValidator } from "@/lib/formErrors";
-import { ALL_OWNER_SCOPES, PERSONAL_OWNER } from "@/lib/ownerScopes";
 import {
 	type SystemReqCap,
 	tightestRequestCap,
@@ -72,7 +71,6 @@ function isPresetWindow(window: string): boolean {
 export interface RateLimitFormValues {
 	displayName: string;
 	description: string;
-	owner: string;
 	enabled: boolean;
 	rules: RuleDraft[];
 }
@@ -101,7 +99,6 @@ function buildSchema(tightest: SystemReqCap | undefined) {
 				.min(1, "Display name is required — the slug is generated from it")
 				.max(120, "Display name is too long"),
 			description: z.string().trim().max(500, "Description is too long"),
-			owner: z.string().min(1, "Pick who owns this rate limit."),
 			enabled: z.boolean(),
 			rules: z.array(ruleSchema).min(1, "At least one rule is required"),
 		})
@@ -131,17 +128,16 @@ export function emptyRule(): RuleDraft {
 	};
 }
 
-function emptyValues(owner: string): RateLimitFormValues {
+function emptyValues(): RateLimitFormValues {
 	return {
 		displayName: "",
 		description: "",
-		owner,
 		enabled: true,
 		rules: [emptyRule()],
 	};
 }
 
-function rlToValues(rl: RateLimit, owner: string): RateLimitFormValues {
+function rlToValues(rl: RateLimit): RateLimitFormValues {
 	const specRules = rl.spec.rules ?? null;
 	const rules: RuleDraft[] =
 		specRules && specRules.length > 0
@@ -156,7 +152,6 @@ function rlToValues(rl: RateLimit, owner: string): RateLimitFormValues {
 	return {
 		displayName: displayLabel(rl.metadata),
 		description: rl.metadata.description ?? "",
-		owner,
 		enabled: rl.spec.enabled ?? true,
 		rules,
 	};
@@ -192,19 +187,11 @@ export function useRateLimitForm({
 	);
 	const schema = useMemo(() => buildSchema(tightestCap), [tightestCap]);
 
-	const ownerPicker = useOwnerOptions({
-		kinds: ALL_OWNER_SCOPES,
-		owner: rateLimit?.metadata.owner,
-		preset: PERSONAL_OWNER,
-	});
-	const { initialOwner } = ownerPicker;
+	const { owner, placement } = useFormOwner(rateLimit?.metadata);
 
 	const initial = useMemo<RateLimitFormValues>(
-		() =>
-			rateLimit
-				? rlToValues(rateLimit, initialOwner)
-				: emptyValues(initialOwner),
-		[rateLimit, initialOwner],
+		() => (rateLimit ? rlToValues(rateLimit) : emptyValues()),
+		[rateLimit],
 	);
 	const suffixRef = useRef<string>(
 		rateLimit?.metadata.name.match(/-(\d{4,8})$/)?.[1] ?? randomSuffix(),
@@ -240,7 +227,6 @@ export function useRateLimitForm({
 							resourceVersion: loaded.version,
 							name,
 							displayName,
-							owner: ownerPicker.toOwner(value.owner),
 							...(description
 								? { description }
 								: rateLimit.metadata.description !== undefined
@@ -260,7 +246,7 @@ export function useRateLimitForm({
 						metadata: {
 							name,
 							displayName,
-							owner: ownerPicker.toOwner(value.owner),
+							...(owner ? { owner } : {}),
 							...(description ? { description } : {}),
 						},
 						spec,
@@ -293,9 +279,6 @@ export function useRateLimitForm({
 	const slugPreview = computeSlug(values.displayName);
 	const displayNameError = useStore(form.store, (s) =>
 		shownError(s.fieldMeta?.displayName, s.submissionAttempts),
-	);
-	const ownerError = useStore(form.store, (s) =>
-		shownError(s.fieldMeta?.owner, s.submissionAttempts),
 	);
 	const rulesError = useStore(form.store, (s) =>
 		shownError(s.fieldMeta?.rules, s.submissionAttempts),
@@ -334,8 +317,7 @@ export function useRateLimitForm({
 		isEdit,
 		slugPreview,
 		displayNameError,
-		ownerOptions: ownerPicker.options,
-		ownerError,
+		placement,
 		rulesError,
 		ruleErrors,
 		addRule,

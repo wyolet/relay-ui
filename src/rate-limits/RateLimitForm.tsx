@@ -26,7 +26,6 @@ import {
 import { FormFooter } from "@/shared/FormFooter";
 import { FormSection } from "@/shared/FormSection";
 import { IdentitySection } from "@/shared/IdentitySection";
-import { OwnerSection } from "@/shared/OwnerSection";
 
 interface RateLimitFormProps {
 	rateLimit?: RateLimit;
@@ -111,8 +110,7 @@ export function RateLimitForm({
 		isEdit,
 		slugPreview,
 		displayNameError,
-		ownerOptions,
-		ownerError,
+		placement,
 		rulesError,
 		addRule,
 		removeRule,
@@ -139,13 +137,7 @@ export function RateLimitForm({
 					displayNameError={displayNameError}
 					autoFocus
 					placeholder="Default rate limit"
-				/>
-
-				<OwnerSection
-					options={ownerOptions}
-					value={values.owner}
-					onChange={(v) => form.setFieldValue("owner", v)}
-					error={ownerError}
+					placement={placement}
 				/>
 
 				<FormSection
