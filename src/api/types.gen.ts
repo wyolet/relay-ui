@@ -152,6 +152,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/accounts/{ref}/limits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read the limits a request in this account climbs
+         * @description The caller rungs a request in the account climbs (team account, project account, the account itself), each with its bound policy, the rate limits and budgets it links and current usage against them, and the tightest of them. Readable by whoever may read the account and by the user who acts in it. A team's or project's own account is a rung, not a lane: it answers 400. {ref} is a slug or id.
+         */
+        get: operations["account_limits"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/apply": {
         parameters: {
             query?: never;
@@ -1180,6 +1200,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/keys/{ref}/limits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read the limits of a key's default lane
+         * @description The limits of the account the key's requests run in by default, as GET /accounts/{ref}/limits answers them. A request that switches lane climbs that account's limits instead. Readable by whoever may read the key and by the user it authenticates as. {ref} is a slug or id.
+         */
+        get: operations["key_limits"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/license": {
         parameters: {
             query?: never;
@@ -1298,6 +1338,26 @@ export interface paths {
          * @description Returns a candidate key — the server does NOT install it. Use it as RELAY_MASTER_KEY for a new deployment, or as RELAY_MASTER_KEY_EXTRA when changing the key-encryption key.
          */
         post: operations["master_key_generate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the signed-in user's accounts
+         * @description The accounts the signed-in user can run requests in: the personal account, a member account per team or project membership (closed and token-only ones included and flagged), and provider accounts the user owns personally. Each row carries the bound policy and the user's keys that run in it by default. Service accounts' accounts are not listed. The admin token is no user and gets an empty list. Read from the published plans, so a write shows within about a second.
+         */
+        get: operations["list_my_accounts"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -3477,6 +3537,28 @@ export interface components {
              */
             kind: "user" | "serviceaccount";
         };
+        AccountKey: {
+            /** @description Key id. */
+            id: string;
+            /** @description Key slug. */
+            name: string;
+            /** @description Leading characters of the key's plaintext, for recognising it. */
+            prefix: string;
+        };
+        AccountLimits: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/AccountLimits.json
+             */
+            readonly $schema?: string;
+            /** @description The account requests run in. */
+            lane: components["schemas"]["LimitsAccount"];
+            /** @description The accounts a request in the lane climbs, outermost first: the team's account, the project's account, then the lane. Every rung only narrows. Empty for a provider account, whose own policy caps its keys upstream and is not reported here. */
+            rungs: components["schemas"]["LimitsRung"][] | null;
+            /** @description The hard limit with the least left as a share of its cap; omitted when no rung caps anything. */
+            tightest?: components["schemas"]["LimitsTightest"];
+        };
         AccountList: {
             /**
              * Format: uri
@@ -3491,6 +3573,17 @@ export interface components {
              * @description Matching rows before limit and offset apply.
              */
             total: number;
+        };
+        AccountScope: {
+            /** @description Id of the user, team or project. */
+            id: string;
+            /**
+             * @description Kind of the scope.
+             * @enum {string}
+             */
+            kind: "user" | "team" | "project";
+            /** @description Username of the user, or slug of the team or project; empty when the row is gone. */
+            name: string;
         };
         AccountSpec: {
             /** @description The membership this member account stood for has ended: its keys are refused with account_closed. Reopened when a role grants the membership again. Server-managed. */
@@ -3513,6 +3606,16 @@ export interface components {
              * @enum {string}
              */
             payloadLogging?: "on" | "off";
+        };
+        AccountSummary: {
+            /** @description The membership the account stood for has ended: its keys are refused with account_closed. */
+            closed: boolean;
+            /** @description Account display name. */
+            displayName: string;
+            /** @description Account id. */
+            id: string;
+            /** @description Account slug. */
+            name: string;
         };
         Audit: {
             /**
@@ -3792,6 +3895,12 @@ export interface components {
             snapshots?: string[] | null;
             /** @description Model name sent upstream, when it differs. */
             upstreamName?: string;
+        };
+        BoundPolicy: {
+            /** @description Policy id. */
+            id: string;
+            /** @description Policy slug. */
+            name: string;
         };
         Budget: {
             /**
@@ -4647,6 +4756,113 @@ export interface components {
             /** @description The window as a duration string, such as 1m0s. */
             window: string;
         };
+        LimitsAccount: {
+            /** @description Account id. */
+            id: string;
+            /**
+             * @description What the account is.
+             * @enum {string}
+             */
+            kind: "team" | "project" | "personal" | "member" | "service" | "provider";
+            /** @description Account slug. */
+            name: string;
+        };
+        LimitsBudget: {
+            /** @description Spend cap in USD per period, as a decimal string. */
+            amountUsd: string;
+            /** @description Budget id. */
+            budgetId: string;
+            /**
+             * @description hard refuses requests once the cap is spent; alert only reports the overrun.
+             * @enum {string}
+             */
+            mode: "hard" | "alert";
+            /** @description Budget slug. */
+            name: string;
+            /**
+             * @description Calendar period the cap covers, in UTC.
+             * @enum {string}
+             */
+            period: "day" | "week" | "month";
+            /** @description amountUsd minus spentUsd, never below zero, as a decimal string. */
+            remainingUsd: string;
+            /** @description True spends one budget for the rung's account, so spentUsd is every lane under it together; false gives each lane its own, so spentUsd is this lane's. */
+            shared: boolean;
+            /** @description USD spent in the current period, as a decimal string. */
+            spentUsd: string;
+        };
+        LimitsRateLimit: {
+            /** @description The models the link applies to, in the policy's model grammar; empty applies it to every request. */
+            models: string[] | null;
+            /** @description Rate limit slug. */
+            name: string;
+            /** @description Rate limit id. */
+            rateLimitId: string;
+            /** @description The rate limit's rules, in order. */
+            rules: components["schemas"]["LimitsRule"][] | null;
+            /** @description True counts once for the rung's account, so used is what every lane under it spent together; false counts once per lane, so used is this lane's own. */
+            shared: boolean;
+        };
+        LimitsRule: {
+            /**
+             * Format: int64
+             * @description How much of the meter the window allows.
+             */
+            amount: number;
+            /**
+             * @description What the rule counts.
+             * @enum {string}
+             */
+            meter: "requests" | "concurrency" | "tokens" | "tokens.input" | "tokens.output" | "tokens.cache_read" | "tokens.cache_creation" | "tokens.reasoning" | "tokens.server_tool_use_input" | "tokens.server_tool_use_output";
+            /**
+             * Format: int64
+             * @description amount minus used, never below zero.
+             */
+            remaining: number;
+            /**
+             * @description Counting algorithm. For a token bucket used is the tokens drawn and not yet refilled; for a leaky bucket its level.
+             * @enum {string}
+             */
+            strategy: "token-bucket" | "sliding-window" | "fixed-window" | "leaky-bucket" | "session-window";
+            /**
+             * Format: int64
+             * @description The current count as admission compares it, rounded up. Under the hybrid limiter it is this relay instance's view, which may lag other instances by up to one sync interval.
+             */
+            used: number;
+            /**
+             * Format: int64
+             * @description Measurement period, in whole seconds.
+             */
+            window: number;
+        };
+        LimitsRung: {
+            /** @description The account at this rung. */
+            account: components["schemas"]["LimitsAccount"];
+            /** @description The budgets the policy links. */
+            budgets: components["schemas"]["LimitsBudget"][] | null;
+            /** @description The policy bound to the account; omitted when none is. */
+            policy?: components["schemas"]["BoundPolicy"];
+            /** @description The rate limits the policy links, disabled ones left out. */
+            rateLimits: components["schemas"]["LimitsRateLimit"][] | null;
+        };
+        LimitsTightest: {
+            /** @description The account whose policy links the limit. */
+            accountId: string;
+            /** @description The rate limit's or the budget's id. */
+            id: string;
+            /**
+             * @description Whether the limit is a rate-limit rule or a budget.
+             * @enum {string}
+             */
+            kind: "rateLimit" | "budget";
+            /** @description A short sentence for display, such as "$50 left: team cap". */
+            label: string;
+            /**
+             * Format: double
+             * @description What is left: in the rule's meter for a rate limit, in USD for a budget.
+             */
+            remaining: number;
+        };
         Metadata: {
             /** @description Free-form key/value notes; never filtered on. */
             annotations?: {
@@ -4894,6 +5110,23 @@ export interface components {
             tags?: string[] | null;
             /** @description Version label inside the product line. */
             version?: string;
+        };
+        MyAccount: {
+            /** @description The account. */
+            account: components["schemas"]["AccountSummary"];
+            /** @description The user's relay keys whose default lane is this account, revoked keys left out. */
+            keys: components["schemas"]["AccountKey"][] | null;
+            /**
+             * @description personal is the user's own account; member is the user's account in a team or project; provider is a provider account at a host the user owns personally.
+             * @enum {string}
+             */
+            kind: "personal" | "member" | "provider";
+            /** @description The policy bound to the account. Omitted when no policy binding names it, or when two do (the account then refuses requests until one remains). */
+            policy?: components["schemas"]["BoundPolicy"];
+            /** @description Where the account sits: the user for a personal or provider account, the team or project for a member account. */
+            scope: components["schemas"]["AccountScope"];
+            /** @description True for a member account opened on first use under a group or team-level grant relay cannot list: it serves relay-minted tokens only, and keys cannot be created in it. */
+            tokenOnly: boolean;
         };
         OTLPReceiver: {
             /**
@@ -7855,6 +8088,83 @@ export interface operations {
             };
             /** @description The server failed; error.message carries the cause. */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    account_limits: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource slug or UUIDv7 id. */
+                ref: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountLimits"];
+                };
+            };
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description No valid session cookie or admin bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description No such row, or one the caller may not see. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The request does not match the schema; error.details lists each failing field. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The server failed; error.message carries the cause. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description A backend the operation needs is not configured or not reachable. */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -12139,6 +12449,74 @@ export interface operations {
             };
         };
     };
+    key_limits: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource slug or UUIDv7 id. */
+                ref: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountLimits"];
+                };
+            };
+            /** @description No valid session cookie or admin bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description No such row, or one the caller may not see. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The request does not match the schema; error.details lists each failing field. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The server failed; error.message carries the cause. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description A backend the operation needs is not configured or not reachable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
     get_license: {
         parameters: {
             query?: never;
@@ -12594,6 +12972,62 @@ export interface operations {
             };
             /** @description The server failed; error.message carries the cause. */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    list_my_accounts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyAccount"][] | null;
+                };
+            };
+            /** @description No valid session cookie or admin bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The server failed; error.message carries the cause. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description A backend the operation needs is not configured or not reachable. */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };
