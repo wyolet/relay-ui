@@ -1,49 +1,28 @@
-import { Link } from "@tanstack/react-router";
 import {
 	Activity,
 	Boxes,
-	ExternalLink,
 	KeyRound,
 	LayoutGrid,
+	type LucideIcon,
 	ScrollText,
 	ShieldCheck,
 	Sliders,
 	Users,
 } from "lucide-react";
 import { Suspense } from "react";
-import { type Account, useAccounts } from "@/api/hooks/accounts";
-import { useGovernance } from "@/api/hooks/governance";
 import type { Host } from "@/api/types/host";
-import type { HostKey } from "@/api/types/hostkey";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { DiagnosticList } from "@/diagnostics/DiagnosticList";
-import { useHostDiagnostics } from "@/diagnostics/useDiagnostics";
-import { HostLogo } from "@/hosts/HostLogo";
+import { HostConfigurationTab } from "@/hosts/HostConfigurationTab";
+import { HostCredentialsTab } from "@/hosts/HostCredentialsTab";
+import { HostDetailHeader } from "@/hosts/HostDetailHeader";
+import { EmptyState } from "@/hosts/HostDetailKit";
+import { HostModelsTab } from "@/hosts/HostModelsTab";
+import { HostOverviewTab } from "@/hosts/HostOverviewTab";
 import { HostTierPresets } from "@/hosts/HostTierPresets";
-import { useHostReferences } from "@/hosts/useHostReferences";
-import { useHostUsage } from "@/hosts/useHostUsage";
-import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
-import { resolveMutability } from "@/lib/ownership";
+import { HostUserPoliciesTab } from "@/hosts/HostUserPoliciesTab";
 import { ResourceLogs } from "@/logs/ResourceLogs";
-import { ModelsByFamily } from "@/models/ModelsByFamily";
-import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
 import { PageLoader } from "@/shared/Spinner";
-import {
-	CatalogDetachedBadge,
-	OwnerBadge,
-	StatusBadge,
-	StatusInline,
-} from "@/shared/StatusBadge";
-import { Th } from "@/shared/Th";
-import {
-	ResourceSpendCard,
-	ResourceSpendCardSkeleton,
-} from "@/usage/ResourceSpendCard";
 import { ResourceUsage } from "@/usage/ResourceUsage";
-import {
-	ResourceUsageCards,
-	UsageCardsSkeleton,
-} from "@/usage/ResourceUsageCards";
 
 export type HostDetailTab =
 	| "overview"
@@ -68,7 +47,7 @@ interface Props {
 const TABS: {
 	value: HostDetailTab;
 	label: string;
-	icon: typeof LayoutGrid;
+	icon: LucideIcon;
 }[] = [
 	{ value: "overview", label: "Overview", icon: LayoutGrid },
 	{ value: "configuration", label: "Configuration", icon: Sliders },
@@ -91,7 +70,7 @@ export function HostDetailView({
 }: Props) {
 	return (
 		<div className="flex flex-col gap-5">
-			<Header
+			<HostDetailHeader
 				host={host}
 				onToggleEnabled={onToggleEnabled}
 				toggling={toggling}
@@ -99,6 +78,8 @@ export function HostDetailView({
 				deleting={deleting}
 			/>
 
+			{/* Each tab reads its own reference lists inside its own Suspense, so the
+			    header and tab bar paint without waiting on them. */}
 			<Tabs
 				value={tab}
 				onValueChange={(v) => onTabChange((v ?? "overview") as HostDetailTab)}
@@ -114,40 +95,50 @@ export function HostDetailView({
 
 				<TabsContent value="overview">
 					<Suspense fallback={<PageLoader className="min-h-[40vh]" />}>
-						<OverviewTabLoader host={host} />
+						<HostOverviewTab host={host} />
 					</Suspense>
 				</TabsContent>
 				<TabsContent value="configuration">
-					<ConfigurationTab host={host} />
+					<HostConfigurationTab host={host} />
 				</TabsContent>
 				<TabsContent value="host-policies">
 					<Suspense fallback={<PageLoader className="min-h-[40vh]" />}>
-						<HostPoliciesTabLoader host={host} />
+						<HostTierPresets
+							hostName={host.metadata.name}
+							empty={
+								<EmptyState
+									icon={ShieldCheck}
+									title="No tier presets"
+									body="This host owns no policies. Bind your own tier policy to an account to cap its keys."
+								/>
+							}
+						/>
 					</Suspense>
 				</TabsContent>
 				<TabsContent value="user-policies">
 					<Suspense fallback={<PageLoader className="min-h-[40vh]" />}>
-						<UserPoliciesTabLoader host={host} />
+						<HostUserPoliciesTab host={host} />
 					</Suspense>
 				</TabsContent>
 				<TabsContent value="host-keys">
 					<Suspense fallback={<PageLoader className="min-h-[40vh]" />}>
-						<HostKeysTabLoader host={host} />
+						<HostCredentialsTab host={host} />
 					</Suspense>
 				</TabsContent>
 				<TabsContent value="models">
 					<Suspense fallback={<PageLoader className="min-h-[40vh]" />}>
-						<ModelsTabLoader host={host} />
+						<HostModelsTab host={host} />
 					</Suspense>
 				</TabsContent>
 				<TabsContent value="usage">
 					{host.metadata.id ? (
 						<ResourceUsage scope="host_id" id={host.metadata.id} />
 					) : (
-						<ComingSoon
+						<EmptyState
 							icon={Activity}
 							title="Usage"
 							body="Save this host to see its traffic."
+							comingSoon
 						/>
 					)}
 				</TabsContent>
@@ -155,624 +146,15 @@ export function HostDetailView({
 					{host.metadata.id ? (
 						<ResourceLogs scope="host_id" id={host.metadata.id} label="host" />
 					) : (
-						<ComingSoon
+						<EmptyState
 							icon={ScrollText}
 							title="Logs"
 							body="Save this host to see the requests routed through it."
+							comingSoon
 						/>
 					)}
 				</TabsContent>
 			</Tabs>
-		</div>
-	);
-}
-
-/* ---------------- Per-tab loaders ----------------
-
-   Each tab derives its slice from useHostReferences itself, inside the tab's
-   own Suspense boundary, so the header + tab bar paint immediately instead of
-   gating on the five underlying lists. The hook is cache-backed, so calling it
-   from several mounted tabs is free. */
-
-function OverviewTabLoader({ host }: { host: Host }) {
-	const refs = useHostReferences(host);
-	return <OverviewTab host={host} refs={refs} />;
-}
-
-function HostPoliciesTabLoader({ host }: { host: Host }) {
-	return (
-		<HostTierPresets
-			hostName={host.metadata.name}
-			empty={
-				<EmptyState
-					icon={ShieldCheck}
-					title="No tier presets"
-					body="This host owns no policies. Bind your own tier policy to an account to cap its keys."
-				/>
-			}
-		/>
-	);
-}
-
-function UserPoliciesTabLoader({ host }: { host: Host }) {
-	const refs = useHostReferences(host);
-	return <UserPoliciesTable rows={refs.userPolicies} />;
-}
-
-function HostKeysTabLoader({ host }: { host: Host }) {
-	const refs = useHostReferences(host);
-	const { data: accountsData } = useAccounts();
-	return (
-		<HostKeysTable
-			hostKeys={refs.hostKeys}
-			accounts={accountsData.items ?? []}
-		/>
-	);
-}
-
-function ModelsTabLoader({ host }: { host: Host }) {
-	const refs = useHostReferences(host);
-	return (
-		<ModelsByFamily
-			models={refs.models}
-			empty={
-				<EmptyState
-					icon={Boxes}
-					title="No models on this host"
-					body="Models are typically synced from upstream. None resolve to this host yet."
-				/>
-			}
-		/>
-	);
-}
-
-/* ---------------- Header ---------------- */
-
-function Header({
-	host,
-	onToggleEnabled,
-	toggling,
-	onDelete,
-	deleting,
-}: {
-	host: Host;
-	onToggleEnabled: () => void;
-	toggling?: boolean;
-	onDelete: () => void;
-	deleting?: boolean;
-}) {
-	const enabled = host.spec.enabled !== false;
-	const system = host.metadata.owner?.kind === "system";
-	const gov = useGovernance("host");
-	const { canEdit, canDelete } = resolveMutability(host.metadata, gov);
-
-	const links: { href: string | undefined; label: string }[] = [
-		{ href: host.spec.consoleURL, label: "Console" },
-		{ href: host.spec.docsURL, label: "Docs" },
-		{ href: host.spec.homepageURL, label: "Homepage" },
-		{ href: host.spec.statusPageURL, label: "Status" },
-	];
-	const activeLinks = links.filter((l) => l.href);
-
-	return (
-		<div className="flex items-start justify-between gap-4">
-			<div className="min-w-0 flex items-start gap-3">
-				<HostLogo host={host} size={44} className="mt-0.5 shrink-0" />
-				<div className="min-w-0">
-					<h1 className="text-xl font-semibold text-foreground truncate flex items-center gap-2">
-						{displayLabel(host.metadata)}
-						{!hasDisplayName(host.metadata) && (
-							<span className="text-[11px] text-muted-foreground font-normal">
-								(no display name)
-							</span>
-						)}
-						<StatusBadge enabled={enabled} />
-						{system && <OwnerBadge label="System" title="System-managed." />}
-						<CatalogDetachedBadge
-							detachedAt={host.metadata.catalogDetachedAt}
-						/>
-					</h1>
-					<p className="mt-1 text-xs text-muted-foreground font-mono truncate">
-						{host.metadata.name}
-					</p>
-					{host.metadata.description && (
-						<p className="mt-1.5 max-w-2xl text-sm text-muted-foreground">
-							{host.metadata.description}
-						</p>
-					)}
-					{activeLinks.length > 0 && (
-						<ul className="mt-2 flex flex-wrap gap-1.5">
-							{activeLinks.map((l) => (
-								<li key={l.label}>
-									<a
-										href={l.href}
-										target="_blank"
-										rel="noreferrer noopener"
-										className="inline-flex items-center gap-1 h-6 px-2 rounded-md border border-border bg-card text-[11px] text-foreground hover:bg-muted transition-colors"
-									>
-										{l.label}
-										<ExternalLink className="w-2.5 h-2.5 opacity-60" />
-									</a>
-								</li>
-							))}
-						</ul>
-					)}
-				</div>
-			</div>
-			<DetailHeaderActions
-				enabled={enabled}
-				onToggle={onToggleEnabled}
-				toggling={toggling}
-				showToggle={canEdit}
-				showDelete={canDelete}
-				onDelete={onDelete}
-				deleting={deleting}
-			/>
-		</div>
-	);
-}
-
-/* ---------------- Overview ---------------- */
-
-function OverviewTab({
-	host,
-	refs,
-}: {
-	host: Host;
-	refs: ReturnType<typeof useHostReferences>;
-}) {
-	const enabledModels = refs.enabledModels.length;
-	const enabledHostKeys = refs.hostKeys.filter(
-		(hk) => hk.spec.enabled !== false,
-	).length;
-
-	return (
-		<div className="flex flex-col gap-6 pt-2">
-			<IssuesPanel hostId={host.metadata.id} />
-			<section>
-				<SectionTitle>Overview</SectionTitle>
-				<div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-					<StatCard
-						label="Models"
-						value={refs.models.length}
-						sub={`${enabledModels} enabled`}
-					/>
-					<StatCard
-						label="Credentials"
-						value={refs.hostKeys.length}
-						sub={`${enabledHostKeys} enabled`}
-					/>
-					<StatCard
-						label="Tier presets"
-						value={refs.hostPolicies.length}
-						sub={refs.hostPolicies.length === 0 ? "none" : "bind to accounts"}
-					/>
-					<StatCard
-						label="User policies"
-						value={refs.userPolicies.length}
-						sub={
-							refs.userPolicies.length === 0 ? "unused" : "link its credentials"
-						}
-					/>
-					{host.metadata.id && (
-						<>
-							<Suspense fallback={<UsageCardsSkeleton />}>
-								<HostUsageCards hostId={host.metadata.id} />
-							</Suspense>
-							<Suspense fallback={<ResourceSpendCardSkeleton />}>
-								<ResourceSpendCard dimension="host_id" id={host.metadata.id} />
-							</Suspense>
-						</>
-					)}
-				</div>
-			</section>
-		</div>
-	);
-}
-
-function IssuesPanel({ hostId }: { hostId: string | undefined }) {
-	const diagnostics = useHostDiagnostics(hostId);
-	if (diagnostics.length === 0) return null;
-	const counts = {
-		error: diagnostics.filter((d) => d.severity === "error").length,
-		warn: diagnostics.filter((d) => d.severity === "warn").length,
-		info: diagnostics.filter((d) => d.severity === "info").length,
-	};
-	const summary = [
-		counts.error && `${counts.error} error${counts.error === 1 ? "" : "s"}`,
-		counts.warn && `${counts.warn} warning${counts.warn === 1 ? "" : "s"}`,
-		counts.info && `${counts.info} info`,
-	]
-		.filter(Boolean)
-		.join(" · ");
-	return (
-		<section>
-			<div className="mb-2 flex items-baseline justify-between gap-2">
-				<SectionTitle>Issues</SectionTitle>
-				<span className="text-[10px] text-muted-foreground tabular-nums">
-					{summary}
-				</span>
-			</div>
-			<DiagnosticList diagnostics={diagnostics} />
-		</section>
-	);
-}
-
-function HostUsageCards({ hostId }: { hostId: string }) {
-	const usage = useHostUsage(hostId);
-	return <ResourceUsageCards usage={usage} />;
-}
-
-/* ---------------- Configuration ---------------- */
-
-function ConfigurationTab({ host }: { host: Host }) {
-	const backendEntries = Object.entries(host.spec.backend ?? {});
-
-	return (
-		<div className="flex flex-col gap-4 pt-2">
-			<Card title="Connection" icon={Sliders}>
-				<dl className="divide-y divide-border">
-					<Row label="Base URL">
-						{host.spec.baseURL ? (
-							<code className="font-mono text-xs text-foreground break-all">
-								{host.spec.baseURL}
-							</code>
-						) : (
-							<span className="text-muted-foreground">—</span>
-						)}
-					</Row>
-				</dl>
-			</Card>
-
-			<Card title="External links" icon={ExternalLink}>
-				<dl className="divide-y divide-border">
-					<UrlRow label="Console" url={host.spec.consoleURL} />
-					<UrlRow label="Docs" url={host.spec.docsURL} />
-					<UrlRow label="Homepage" url={host.spec.homepageURL} />
-					<UrlRow label="Status page" url={host.spec.statusPageURL} />
-				</dl>
-			</Card>
-
-			<Card title="Backend config" icon={Sliders}>
-				{backendEntries.length === 0 ? (
-					<p className="text-xs text-muted-foreground">
-						No provider-specific backend settings.
-					</p>
-				) : (
-					<dl className="divide-y divide-border">
-						{backendEntries.map(([k, v]) => (
-							<Row key={k} label={k}>
-								<code className="font-mono text-xs text-foreground break-all">
-									{v}
-								</code>
-							</Row>
-						))}
-					</dl>
-				)}
-			</Card>
-		</div>
-	);
-}
-
-function UrlRow({ label, url }: { label: string; url: string | undefined }) {
-	return (
-		<Row label={label}>
-			{url ? (
-				<a
-					href={url}
-					target="_blank"
-					rel="noreferrer noopener"
-					className="inline-flex items-center gap-1 text-xs text-primary hover:underline break-all"
-				>
-					{url}
-					<ExternalLink className="w-3 h-3 shrink-0 opacity-60" />
-				</a>
-			) : (
-				<span className="text-muted-foreground">—</span>
-			)}
-		</Row>
-	);
-}
-
-/* ---------------- User policies ---------------- */
-
-function UserPoliciesTable({
-	rows,
-}: {
-	rows: ReturnType<typeof useHostReferences>["userPolicies"];
-}) {
-	if (rows.length === 0) {
-		return (
-			<EmptyState
-				icon={Users}
-				title="No user policies link this host's credentials"
-				body="Principals without a caller policy still reach credentials owned by their own scopes or the system. Link a pool at this host in a policy to steer traffic."
-			/>
-		);
-	}
-	return (
-		<div className="mt-2 rounded-md border border-border bg-card overflow-hidden">
-			<table className="w-full text-sm">
-				<thead className="bg-muted/30 text-[10px] uppercase tracking-wide text-muted-foreground">
-					<tr>
-						<Th>Policy</Th>
-						<Th className="text-right">Credentials</Th>
-						<Th className="text-right">Status</Th>
-					</tr>
-				</thead>
-				<tbody className="divide-y divide-border">
-					{rows.map(({ policy: p, hostKeyCount }) => {
-						const enabled = p.spec.enabled !== false;
-						return (
-							<tr
-								key={p.metadata.name}
-								className="hover:bg-muted/30 transition-colors"
-							>
-								<Td>
-									<Link
-										to="/policies/$name"
-										params={{ name: p.metadata.name }}
-										className="text-foreground hover:underline font-medium"
-									>
-										{displayLabel(p.metadata)}
-									</Link>
-									<div className="text-[11px] text-muted-foreground font-mono truncate">
-										{p.metadata.name}
-									</div>
-								</Td>
-								<Td className="text-right tabular-nums">
-									<span className="text-foreground">{hostKeyCount}</span>
-								</Td>
-								<Td className="text-right">
-									<StatusInline enabled={enabled} />
-								</Td>
-							</tr>
-						);
-					})}
-				</tbody>
-			</table>
-		</div>
-	);
-}
-
-/* ---------------- Host keys ---------------- */
-
-function HostKeysTable({
-	hostKeys,
-	accounts,
-}: {
-	hostKeys: HostKey[];
-	accounts: Account[];
-}) {
-	const accountLabel = new Map<string, string>();
-	for (const a of accounts) {
-		if (a.metadata.id)
-			accountLabel.set(a.metadata.id, displayLabel(a.metadata));
-	}
-
-	if (hostKeys.length === 0) {
-		return (
-			<EmptyState
-				icon={KeyRound}
-				title="No credentials yet"
-				body="Register an upstream credential to make this host live."
-			/>
-		);
-	}
-
-	return (
-		<div className="mt-2 rounded-md border border-border bg-card overflow-hidden">
-			<table className="w-full text-sm">
-				<thead className="bg-muted/30 text-[10px] uppercase tracking-wide text-muted-foreground">
-					<tr>
-						<Th>Name</Th>
-						<Th>Source</Th>
-						<Th>Account</Th>
-						<Th className="text-right">Used by</Th>
-						<Th className="text-right">Status</Th>
-					</tr>
-				</thead>
-				<tbody className="divide-y divide-border">
-					{hostKeys.map((hk) => {
-						const enabled = hk.spec.enabled !== false;
-						const stored = hk.spec.valueFrom.kind === "stored";
-						const used = hk.policies?.length ?? 0;
-						const account = hk.spec.accountId
-							? accountLabel.get(hk.spec.accountId)
-							: undefined;
-						return (
-							<tr
-								key={hk.metadata.name}
-								className="hover:bg-muted/30 transition-colors"
-							>
-								<Td>
-									<Link
-										to="/host-keys/$name"
-										params={{ name: hk.metadata.name }}
-										className="text-foreground hover:underline font-medium"
-									>
-										{displayLabel(hk.metadata)}
-									</Link>
-									<div className="text-[11px] text-muted-foreground font-mono truncate">
-										{hk.metadata.name}
-									</div>
-								</Td>
-								<Td>
-									{stored ? (
-										<span className="text-foreground text-xs">Stored</span>
-									) : (
-										<span className="flex items-center gap-1 text-xs">
-											<span className="text-foreground">Env</span>
-											{hk.spec.valueFrom.env && (
-												<code className="font-mono text-muted-foreground">
-													${hk.spec.valueFrom.env}
-												</code>
-											)}
-										</span>
-									)}
-								</Td>
-								<Td>
-									{account ? (
-										<span className="text-xs text-foreground">{account}</span>
-									) : (
-										<span className="text-xs text-muted-foreground">—</span>
-									)}
-								</Td>
-								<Td className="text-right tabular-nums">
-									<span
-										className={
-											used === 0 ? "text-muted-foreground" : "text-foreground"
-										}
-									>
-										{used}
-									</span>
-								</Td>
-								<Td className="text-right">
-									<StatusInline enabled={enabled} />
-								</Td>
-							</tr>
-						);
-					})}
-				</tbody>
-			</table>
-		</div>
-	);
-}
-
-/* ---------------- Shared sub-components ---------------- */
-
-function Card({
-	title,
-	icon: Icon,
-	children,
-}: {
-	title: string;
-	icon: typeof LayoutGrid;
-	children: React.ReactNode;
-}) {
-	return (
-		<section className="rounded-md border border-border bg-card">
-			<header className="flex items-center gap-1.5 border-b border-border px-4 py-2.5">
-				<Icon className="w-3.5 h-3.5 text-muted-foreground" aria-hidden />
-				<h2 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-					{title}
-				</h2>
-			</header>
-			<div className="px-4 py-3">{children}</div>
-		</section>
-	);
-}
-
-function Row({
-	label,
-	children,
-}: {
-	label: string;
-	children: React.ReactNode;
-}) {
-	return (
-		<div className="py-3 first:pt-0 last:pb-0 grid grid-cols-1 sm:grid-cols-[160px_1fr] gap-1 sm:gap-4">
-			<dt className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-				{label}
-			</dt>
-			<dd className="text-xs text-foreground min-w-0">{children}</dd>
-		</div>
-	);
-}
-
-function Td({
-	children,
-	className = "",
-}: {
-	children: React.ReactNode;
-	className?: string;
-}) {
-	return <td className={`px-3 py-2 align-middle ${className}`}>{children}</td>;
-}
-
-function StatCard({
-	label,
-	value,
-	sub,
-	mono,
-}: {
-	label: string;
-	value: string | number;
-	sub?: string;
-	mono?: boolean;
-}) {
-	return (
-		<div className="rounded-md border border-border bg-card px-3 py-2">
-			<div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-				{label}
-			</div>
-			<div
-				className={`mt-0.5 text-lg font-semibold text-foreground tabular-nums ${mono ? "font-mono text-base" : ""}`}
-			>
-				{value}
-			</div>
-			{sub && (
-				<div className="text-[11px] text-muted-foreground mt-0.5 truncate">
-					{sub}
-				</div>
-			)}
-		</div>
-	);
-}
-
-function SectionTitle({ children }: { children: React.ReactNode }) {
-	return (
-		<h2 className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-			{children}
-		</h2>
-	);
-}
-
-function EmptyState({
-	icon: Icon,
-	title,
-	body,
-}: {
-	icon: typeof LayoutGrid;
-	title: string;
-	body: string;
-}) {
-	return (
-		<div className="mt-4 rounded-md border border-dashed border-border bg-muted/30 px-6 py-10 text-center">
-			<Icon
-				className="mx-auto w-6 h-6 text-muted-foreground/60 mb-2"
-				aria-hidden
-			/>
-			<div className="text-sm font-medium text-foreground">{title}</div>
-			<div className="mt-1 text-xs text-muted-foreground max-w-md mx-auto">
-				{body}
-			</div>
-		</div>
-	);
-}
-
-function ComingSoon({
-	icon: Icon,
-	title,
-	body,
-}: {
-	icon: typeof LayoutGrid;
-	title: string;
-	body: string;
-}) {
-	return (
-		<div className="mt-4 rounded-md border border-dashed border-border bg-muted/30 px-6 py-10 text-center">
-			<Icon
-				className="mx-auto w-6 h-6 text-muted-foreground/60 mb-2"
-				aria-hidden
-			/>
-			<div className="text-sm font-medium text-foreground">{title}</div>
-			<div className="mt-1 text-xs text-muted-foreground max-w-md mx-auto">
-				{body}
-			</div>
-			<div className="mt-3 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground border border-border uppercase tracking-wide">
-				Coming soon
-			</div>
 		</div>
 	);
 }
