@@ -15,10 +15,16 @@ import {
 const codes = (ds: { code: string }[]) => ds.map((d) => d.code).sort();
 
 describe("analyzePolicy", () => {
-	it("flags no credentials or pools", () => {
-		const p = makePolicy({ credentialIds: [], poolIds: [] });
+	it("only notes a policy that links no pools; reach is left to others", () => {
+		const p = makePolicy({
+			credentialIds: [],
+			poolIds: [],
+			models: ["openai/gpt-4o"],
+		});
 		const ds = analyzePolicy(p, graph({ policies: [p] }));
-		expect(codes(ds)).toContain("policy.no-host-keys");
+		const note = ds.find((d) => d.code === "policy.no-host-keys");
+		expect(note?.severity).toBe("info");
+		expect(codes(ds)).not.toContain("policy.catalog-resolves-empty");
 	});
 
 	it("counts the keys of linked pools as the policy's credentials", () => {
@@ -48,23 +54,20 @@ describe("analyzePolicy", () => {
 	it("flags no credentials when a linked pool is missing", () => {
 		const p = makePolicy({ credentialIds: [], poolIds: ["pool-gone"] });
 		const ds = analyzePolicy(p, graph({ policies: [p] }));
-		expect(codes(ds)).toContain("policy.no-host-keys");
+		const err = ds.find((d) => d.code === "policy.no-host-keys");
+		expect(err?.severity).toBe("error");
 	});
 
-	it("does not flag no-credentials when a grant reaches a noAuth host", () => {
+	it("reaches a keyless host through a pool at it", () => {
 		const host = makeHost({ id: "h1", name: "ollama-self", noAuth: true });
 		const provider = makeProvider({ id: "pr1", name: "ollama" });
 		const model = makeModel({ id: "m1", name: "llama3", providerId: "pr1" });
-		const p = makePolicy({
-			id: "p1",
-			credentialIds: [],
-			poolIds: [],
-			models: ["@ollama-self"],
-		});
+		const p = makePolicy({ poolIds: ["pool-1"], models: ["@ollama-self"] });
 		const ds = analyzePolicy(
 			p,
 			graph({
 				policies: [p],
+				pools: [makePool({ id: "pool-1", hostId: "h1" })],
 				hosts: [host],
 				providers: [provider],
 				models: [model],

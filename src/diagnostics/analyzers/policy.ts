@@ -32,18 +32,29 @@ export function analyzePolicy(
 	const resolvedKeys = credentialIds.map((id) => graph.hostKeys.get(id));
 	const livingKeys = resolvedKeys.filter((k) => k !== undefined);
 	const enabledKeys = livingKeys.filter((k) => k.spec.enabled !== false);
-	// A grant on a `noAuth` host (e.g. local Ollama) reaches models with no
-	// credential — so an empty pool isn't necessarily a misconfiguration.
 	const grants = policy.spec.models ?? [];
-	const reachesWithoutKeys = grants.some(
-		(g) => modelsForRefViaPolicy(g, policy, graph).length > 0,
-	);
-	if (credentialIds.length === 0 && !reachesWithoutKeys) {
+	// A policy that links nothing leaves reach to the other rungs, or to the
+	// credentials the caller's own scopes own; only links decide reach here.
+	const linksReach =
+		(policy.spec.poolIds?.length ?? 0) +
+			(policy.spec.credentialIds?.length ?? 0) >
+		0;
+	if (!linksReach) {
+		out.push({
+			severity: "info",
+			code: "policy.no-host-keys",
+			message:
+				"Links no pools: requests reach another rung's pools, or the credentials their own scopes own.",
+		});
+	} else if (
+		credentialIds.length === 0 &&
+		!grants.some((g) => modelsForRefViaPolicy(g, policy, graph).length > 0)
+	) {
 		out.push({
 			severity: "error",
 			code: "policy.no-host-keys",
 			message:
-				"No credentials or pools attached — this policy can't authenticate any upstream request.",
+				"Its pools hold no credentials — requests under this policy are refused with no_keys.",
 		});
 	} else if (credentialIds.length > 0 && enabledKeys.length === 0) {
 		out.push({
@@ -104,7 +115,7 @@ export function analyzePolicy(
 	// Catalog coverage: if every grant resolves to zero reachable models, the
 	// policy can't serve anything. Pickers emit canonical refs so we trust
 	// the DSL syntax and just check usability against the graph.
-	if (grants.length > 0) {
+	if (linksReach && grants.length > 0) {
 		const deadGrants = grants.filter(
 			(g) => modelsForRefViaPolicy(g, policy, graph).length === 0,
 		);

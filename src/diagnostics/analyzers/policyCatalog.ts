@@ -76,8 +76,9 @@ export function hostIdsInPolicyCatalog(
 /**
  * Models reachable through the policy via the ref. A model counts if:
  *   - it matches the ref (provider / model / @host segments), AND
- *   - the binding's host is reachable: either an enabled credential the policy
- *     draws on (through a pool or directly) is at it, or the host is `noAuth`.
+ *   - the binding's host is reachable: an enabled credential the policy draws
+ *     on (through a pool or directly) is at it, or a linked pool sits at it and
+ *     the host is `noAuth` (a keyless host is reached only through a pool).
  *
  * Empty result = the grant unlocks nothing through this policy.
  */
@@ -89,7 +90,6 @@ export function modelsForRefViaPolicy(
 	const parsed = parseRef(ref);
 	if (!parsed) return [];
 
-	// `noAuth` hosts need no credential — any enabled noAuth host is reachable.
 	const reachableHostIds = new Set<string>();
 	for (const credId of policyCredentialIds(policy, graph.pools)) {
 		const hk = graph.hostKeys.get(credId);
@@ -98,11 +98,11 @@ export function modelsForRefViaPolicy(
 		if (!host || host.spec.enabled === false) continue;
 		reachableHostIds.add(hk.spec.hostId);
 	}
-	for (const host of graph.hosts.values()) {
-		if (host.spec.noAuth !== true) continue;
-		if (host.spec.enabled === false) continue;
-		const id = host.metadata.id;
-		if (id) reachableHostIds.add(id);
+	for (const poolId of policy.spec.poolIds ?? []) {
+		const hostId = graph.pools.get(poolId)?.spec.hostId;
+		const host = hostId ? graph.hosts.get(hostId) : undefined;
+		if (!hostId || !host || host.spec.enabled === false) continue;
+		if (host.spec.noAuth === true) reachableHostIds.add(hostId);
 	}
 	if (reachableHostIds.size === 0) return [];
 
