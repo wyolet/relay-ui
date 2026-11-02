@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { cn } from "@/lib/utils";
 import { SectionTitle } from "@/shared/SectionTitle";
 
 /** One compact stat tile: label, big value, optional sub-line. */
@@ -21,9 +22,11 @@ export function StatCard({
 				{label}
 			</div>
 			<div
-				className={`mt-0.5 text-lg font-semibold tabular-nums ${
-					mono ? "font-mono text-base" : ""
-				} ${valueClassName ?? "text-foreground"}`}
+				className={cn(
+					"mt-0.5 font-semibold tabular-nums",
+					mono ? "font-mono text-base" : "text-lg",
+					valueClassName ?? "text-foreground",
+				)}
 			>
 				{value}
 			</div>
