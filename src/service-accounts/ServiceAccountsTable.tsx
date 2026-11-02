@@ -1,6 +1,5 @@
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { Bot, Plus } from "lucide-react";
-import { usePolicies } from "@/api/hooks/policies";
 import {
 	type ServiceAccountsListParams,
 	useDeleteServiceAccount,
@@ -13,6 +12,7 @@ import { FilterBar } from "@/filters/FilterBar";
 import { activeFilterCount } from "@/filters/toQueryParams";
 import type { FilterDef, FilterState } from "@/filters/types";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
+import { PrincipalPolicy } from "@/policy-bindings/PrincipalPolicy";
 import { OwnerLink } from "@/projects/OwnerLink";
 import { useToggleServiceAccountEnabled } from "@/service-accounts/useToggleServiceAccountEnabled";
 import { confirm } from "@/shared/ConfirmDialog";
@@ -65,15 +65,8 @@ export function ServiceAccountsTable() {
 	const live = useSearch({ from: "/_authenticated/service-accounts/" });
 	const { search, isStale } = useDeferredSearch(live);
 	const { data } = useServiceAccountsList(toServiceAccountsParams(search));
-	const { data: policiesData } = usePolicies();
 	const deleteServiceAccount = useDeleteServiceAccount();
 	const { setEnabled } = useToggleServiceAccountEnabled();
-
-	const policyLabels = new Map<string, string>();
-	for (const p of policiesData.items ?? []) {
-		if (p.metadata.id)
-			policyLabels.set(p.metadata.id, displayLabel(p.metadata));
-	}
 
 	const items = data.items ?? [];
 	const filtered =
@@ -179,7 +172,6 @@ export function ServiceAccountsTable() {
 							<tbody>
 								{items.map((sa) => {
 									const enabled = sa.spec.enabled ?? true;
-									const policyId = sa.spec.policyId ?? "";
 									return (
 										<tr
 											key={sa.metadata.name}
@@ -209,10 +201,14 @@ export function ServiceAccountsTable() {
 													owner={{ kind: "project", id: sa.spec.projectId }}
 												/>
 											</td>
-											<td className="px-3 py-2 text-xs text-foreground">
-												{policyId
-													? (policyLabels.get(policyId) ?? policyId)
-													: "—"}
+											<td className="px-3 py-2 text-xs">
+												<PrincipalPolicy
+													principal={{
+														kind: "serviceaccount",
+														id: sa.metadata.id ?? "",
+													}}
+													compact
+												/>
 											</td>
 											<td className="px-3 py-2">
 												<Switch

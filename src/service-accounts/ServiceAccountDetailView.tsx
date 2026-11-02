@@ -2,7 +2,6 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { Bot, ChevronLeft, Link2, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { CheckAccessButton } from "@/access-review/CheckAccessButton";
-import { usePolicies } from "@/api/hooks/policies";
 import { useProjects } from "@/api/hooks/projects";
 import {
 	useDeleteServiceAccount,
@@ -12,6 +11,7 @@ import {
 import { ApiError } from "@/api/types/errors";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { EraseBodiesButton } from "@/logs/EraseBodiesButton";
+import { PrincipalPolicy } from "@/policy-bindings/PrincipalPolicy";
 import { useToggleServiceAccountEnabled } from "@/service-accounts/useToggleServiceAccountEnabled";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
@@ -21,7 +21,6 @@ import { toast } from "@/shared/Toast";
 export function ServiceAccountDetailView({ name }: { name: string }) {
 	const { data: sa } = useServiceAccount(name);
 	const { data: projectsData } = useProjects();
-	const { data: policiesData } = usePolicies();
 	const { data: refs } = useServiceAccountReferences(sa.metadata.id);
 	const deleteServiceAccount = useDeleteServiceAccount();
 	const { setEnabled, isPending: isToggling } =
@@ -33,9 +32,6 @@ export function ServiceAccountDetailView({ name }: { name: string }) {
 	const enabled = sa.spec.enabled !== false;
 	const project = (projectsData.items ?? []).find(
 		(p) => p.metadata.id === sa.spec.projectId,
-	);
-	const policy = (policiesData.items ?? []).find(
-		(p) => p.metadata.id === sa.spec.policyId,
 	);
 	const description = sa.metadata.description?.trim();
 
@@ -137,15 +133,9 @@ export function ServiceAccountDetailView({ name }: { name: string }) {
 						)}
 					</Row>
 					<Row label="Policy">
-						{policy ? (
-							<span className="text-foreground">
-								{displayLabel(policy.metadata)}
-							</span>
-						) : (
-							<span className="text-muted-foreground">
-								None — keys fall back to their own policy or a policy binding
-							</span>
-						)}
+						<PrincipalPolicy
+							principal={{ kind: "serviceaccount", id: sa.metadata.id ?? "" }}
+						/>
 					</Row>
 				</dl>
 			</Card>

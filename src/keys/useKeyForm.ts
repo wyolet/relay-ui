@@ -3,14 +3,14 @@ import { useStore } from "@tanstack/react-store";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 import { useCreateKey, useUpdateKey } from "@/api/hooks/keys";
-import type { CreateKeyInput, Key } from "@/api/types/key";
+import type { CreateKeyInput, Key, KeyPrincipal } from "@/api/types/key";
 import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
 import { randomSuffix, slugify } from "@/lib/slug";
 import { toast } from "@/shared/Toast";
 
-export type PrincipalKind = "serviceaccount" | "user";
+export type PrincipalKind = KeyPrincipal["kind"];
 
 export interface KeyFormValues {
 	displayName: string;
@@ -21,7 +21,6 @@ export interface KeyFormValues {
 	principalId: string;
 	/** RFC3339 date from the <input type="date">; "" means never expires. */
 	expiresAt: string;
-	policyId: string;
 	enabled: boolean;
 	passthroughAllowed: boolean;
 	payloadLoggingEnabled: boolean;
@@ -35,7 +34,6 @@ function emptyValues(): KeyFormValues {
 		projectId: "",
 		principalId: "",
 		expiresAt: "",
-		policyId: "",
 		enabled: true,
 		passthroughAllowed: false,
 		payloadLoggingEnabled: false,
@@ -46,12 +44,10 @@ function keyToValues(rk: Key): KeyFormValues {
 	return {
 		displayName: displayLabel(rk.metadata),
 		description: rk.metadata.description ?? "",
-		principalKind:
-			rk.spec.principal.kind === "user" ? "user" : "serviceaccount",
+		principalKind: rk.spec.principal.kind,
 		projectId: rk.metadata.owner?.id ?? "",
 		principalId: rk.spec.principal.id,
 		expiresAt: rk.spec.expiresAt?.slice(0, 10) ?? "",
-		policyId: rk.spec.policyId ?? "",
 		enabled: rk.spec.enabled ?? true,
 		passthroughAllowed: rk.spec.passthroughAllowed ?? false,
 		payloadLoggingEnabled: rk.spec.payloadLoggingEnabled ?? false,
@@ -69,7 +65,6 @@ const schema = z.object({
 	projectId: z.string(),
 	principalId: z.string().min(1, "Pick who this key authenticates as."),
 	expiresAt: z.string(),
-	policyId: z.string().min(1, "Pick the policy this key authorizes against."),
 	enabled: z.boolean(),
 	passthroughAllowed: z.boolean(),
 	payloadLoggingEnabled: z.boolean(),
@@ -157,7 +152,6 @@ export function useKeyForm({
 						},
 						spec: {
 							...apiKey.spec,
-							policyId: value.policyId,
 							...expiryPatch(value.expiresAt),
 							enabled: value.enabled,
 							passthroughAllowed: value.passthroughAllowed,
@@ -180,7 +174,6 @@ export function useKeyForm({
 								kind: value.principalKind,
 								id: value.principalId,
 							},
-							policyId: value.policyId,
 							...expiryPatch(value.expiresAt),
 							enabled: value.enabled,
 							passthroughAllowed: value.passthroughAllowed,
@@ -248,11 +241,6 @@ export function useKeyForm({
 		for (const e of errs) if (typeof e === "string") return e;
 		return undefined;
 	});
-	const policyIdError = useStore(form.store, (s) => {
-		const errs = s.fieldMeta?.policyId?.errors ?? [];
-		for (const e of errs) if (typeof e === "string") return e;
-		return undefined;
-	});
 
 	return {
 		form,
@@ -262,7 +250,6 @@ export function useKeyForm({
 		displayNameError,
 		descriptionError,
 		principalIdError,
-		policyIdError,
 		freshSecret,
 	};
 }

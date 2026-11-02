@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ChevronLeft } from "lucide-react";
 import { Suspense, useState } from "react";
-import { policiesListQueryOptions } from "@/api/hooks/policies";
+import { projectsListQueryOptions } from "@/api/hooks/projects";
 import { Button } from "@/components/ui/button";
 import { KeyForm } from "@/keys/KeyForm";
 import { CopyableValue } from "@/shared/CopyableValue";
@@ -9,7 +9,7 @@ import { PageLoader } from "@/shared/Spinner";
 
 export const Route = createFileRoute("/_authenticated/keys_/new")({
 	loader: ({ context }) =>
-		context.queryClient.ensureQueryData(policiesListQueryOptions),
+		context.queryClient.ensureQueryData(projectsListQueryOptions),
 	component: NewKeyPage,
 });
 

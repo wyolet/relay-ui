@@ -1,7 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ChevronLeft } from "lucide-react";
 import { Suspense } from "react";
-import { policiesListQueryOptions } from "@/api/hooks/policies";
 import { projectsListQueryOptions } from "@/api/hooks/projects";
 import {
 	serviceAccountDetailQueryOptions,
@@ -20,7 +19,6 @@ export const Route = createFileRoute(
 				serviceAccountDetailQueryOptions(params.name),
 			),
 			context.queryClient.ensureQueryData(projectsListQueryOptions),
-			context.queryClient.ensureQueryData(policiesListQueryOptions),
 		]),
 	component: EditServiceAccountPage,
 });

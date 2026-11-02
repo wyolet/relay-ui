@@ -11,7 +11,10 @@ import {
 import { useState } from "react";
 import { useKeysForPrincipals } from "@/api/hooks/keys";
 import { useProjectPolicies } from "@/api/hooks/policies";
-import { usePolicyBindingsInProject } from "@/api/hooks/policyBindings";
+import {
+	subjectKey,
+	usePolicyBindingsInProject,
+} from "@/api/hooks/policyBindings";
 import {
 	useDeleteProject,
 	useProject,
@@ -32,7 +35,6 @@ import { DetailCard, DetailEmpty, DetailRow } from "@/shared/DetailCard";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
 import { StatusBadge } from "@/shared/StatusBadge";
 import { toast } from "@/shared/Toast";
-import { BudgetCard } from "@/teams/BudgetCard";
 import { ScopeSpendCard } from "@/teams/ScopeSpendCard";
 
 export function ProjectDetailView({ name }: { name: string }) {
@@ -181,8 +183,6 @@ export function ProjectDetailView({ name }: { name: string }) {
 				</dl>
 			</DetailCard>
 
-			<BudgetCard budget={project.spec.budget} />
-
 			<ScopeSpendCard
 				spend={spend}
 				unavailable={unavailable}
@@ -280,9 +280,7 @@ export function ProjectDetailView({ name }: { name: string }) {
 				}
 			>
 				{(policyBindings.data?.items ?? []).length === 0 ? (
-					<DetailEmpty>
-						No policy binding routes this project's callers to a policy.
-					</DetailEmpty>
+					<DetailEmpty>This project owns no policy bindings.</DetailEmpty>
 				) : (
 					<ul className="divide-y divide-border">
 						{(policyBindings.data?.items ?? []).map((b) => (
@@ -298,8 +296,7 @@ export function ProjectDetailView({ name }: { name: string }) {
 										</Link>
 									}
 								>
-									priority {b.spec.priority ?? 0} ·{" "}
-									{(b.spec.subjects ?? []).map(subjectLabel).join(", ") ||
+									{(b.spec.subjects ?? []).map(subjectKey).join(", ") ||
 										"no subjects"}
 								</DetailRow>
 							</li>

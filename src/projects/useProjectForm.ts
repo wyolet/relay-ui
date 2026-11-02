@@ -123,10 +123,7 @@ export function useProjectForm({
 			const displayName = value.displayName.trim();
 			const description = value.description.trim();
 			const labels = fromLabelPairs(value.labels);
-			// Budget stays server-side until it is editable; carry the stored
-			// value through so a save never clears it.
 			const spec = {
-				...(project?.spec ?? {}),
 				teamId: ownerKeyId(value.owner),
 				enabled: value.enabled,
 			};

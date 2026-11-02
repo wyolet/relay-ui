@@ -43,8 +43,8 @@ function PolicyBindingsPage() {
 					Policy bindings
 				</h1>
 				<p className="text-xs text-muted-foreground mt-0.5">
-					Points the callers inside one project at one policy. The lowest
-					priority wins.
+					Attach a policy to users, service accounts, teams, projects or
+					accounts. Each subject sits in one binding.
 				</p>
 			</div>
 			<Suspense fallback={<PageLoader className="min-h-[40vh]" />}>

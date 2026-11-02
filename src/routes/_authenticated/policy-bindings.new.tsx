@@ -38,8 +38,8 @@ function NewPolicyBindingInner() {
 					New policy binding
 				</h1>
 				<p className="mt-1 text-xs text-muted-foreground">
-					A key's own policy, then its service account's, then this binding —
-					first one set wins.
+					A request must pass the policy of every rung it crosses: its
+					principal, project and team, and the account that serves it.
 				</p>
 			</div>
 			<PolicyBindingForm

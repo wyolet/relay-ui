@@ -20,7 +20,6 @@ import { TableToolbar } from "@/shared/TableToolbar";
 import { Th } from "@/shared/Th";
 import { toast } from "@/shared/Toast";
 import { useDeferredSearch } from "@/shared/useDeferredSearch";
-import { budgetSummary } from "@/teams/budget";
 import { useToggleTeamEnabled } from "@/teams/useToggleTeamEnabled";
 
 /** Filters rendered above the table, all served by GET /teams. */
@@ -145,7 +144,6 @@ export function TeamsTable() {
 							<thead className="bg-muted/40">
 								<tr>
 									<Th variant="column">Name</Th>
-									<Th variant="column">Budget</Th>
 									<th
 										scope="col"
 										className="w-12 px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground"
@@ -185,9 +183,6 @@ export function TeamsTable() {
 														{team.metadata.name}
 													</div>
 												)}
-											</td>
-											<td className="px-3 py-2 text-xs text-foreground">
-												{budgetSummary(team.spec.budget) ?? "—"}
 											</td>
 											<td className="px-3 py-2">
 												<Switch

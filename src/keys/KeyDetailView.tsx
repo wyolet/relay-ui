@@ -8,15 +8,14 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { useDeleteKey, useKey } from "@/api/hooks/keys";
-import { usePolicies } from "@/api/hooks/policies";
 import { ApiError } from "@/api/types/errors";
-import type { Policy } from "@/api/types/policy";
 import { Button } from "@/components/ui/button";
 import { DiagnosticList } from "@/diagnostics/DiagnosticList";
 import { useKeyDiagnostics } from "@/diagnostics/useDiagnostics";
 import { KeyRotateDialog } from "@/keys/KeyRotateDialog";
 import { useToggleKeyEnabled } from "@/keys/useToggleKeyEnabled";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
+import { PrincipalPolicy } from "@/policy-bindings/PrincipalPolicy";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
 import { StatusBadge } from "@/shared/StatusBadge";
@@ -25,7 +24,6 @@ import { ResourceUsage } from "@/usage/ResourceUsage";
 
 export function KeyDetailView({ name }: { name: string }) {
 	const { data: rk } = useKey(name);
-	const { data: policiesData } = usePolicies();
 	const deleteKey = useDeleteKey();
 	const { setEnabled, isPending: isToggling } = useToggleKeyEnabled();
 	const navigate = useNavigate();
@@ -35,9 +33,6 @@ export function KeyDetailView({ name }: { name: string }) {
 
 	const rkId = rk.metadata.id ?? "";
 	const diagnostics = useKeyDiagnostics(rk.metadata.id);
-	const policy = (policiesData.items ?? []).find(
-		(p) => p.metadata.id === rk.spec.policyId,
-	);
 	const description = rk.metadata.description?.trim();
 	const enabled = rk.spec.enabled !== false;
 
@@ -134,7 +129,11 @@ export function KeyDetailView({ name }: { name: string }) {
 
 			<DiagnosticList diagnostics={diagnostics} />
 
-			<PolicyCard policy={policy} policyId={rk.spec.policyId} />
+			<Card title="Policy" icon={ShieldCheck}>
+				<div className="text-xs">
+					<PrincipalPolicy principal={rk.spec.principal} />
+				</div>
+			</Card>
 
 			<Card title="Configuration" icon={KeyRound}>
 				<dl className="divide-y divide-border">
@@ -212,98 +211,6 @@ export function KeyDetailView({ name }: { name: string }) {
 					isPending={deleteKey.isPending}
 				/>
 			)}
-		</div>
-	);
-}
-
-function PolicyCard({
-	policy,
-	policyId,
-}: {
-	policy: Policy | undefined;
-	policyId: string | undefined;
-}) {
-	if (!policyId) {
-		return (
-			<Card title="Policy" icon={ShieldCheck}>
-				<p className="text-xs text-muted-foreground">
-					No policy attached — this key cannot route any requests.
-				</p>
-			</Card>
-		);
-	}
-	if (!policy) {
-		return (
-			<Card title="Policy" icon={ShieldCheck}>
-				<p className="text-xs text-destructive">
-					Unknown policy{" "}
-					<code className="font-mono text-[11px]">{policyId}</code>
-				</p>
-			</Card>
-		);
-	}
-	const enabled = policy.spec.enabled !== false;
-	const grantCount = policy.spec.models?.length ?? 0;
-	const poolSize = policy.spec.hostKeyIds?.length ?? 0;
-	const rlCount =
-		(policy.spec.rateLimitId ? 1 : 0) + (policy.spec.rlBindings?.length ?? 0);
-	const hostOwned = policy.metadata.owner?.kind === "host";
-
-	return (
-		<Card title="Policy" icon={ShieldCheck}>
-			<div className="flex items-start gap-3">
-				<div className="min-w-0 flex-1">
-					<div className="flex items-center gap-2 flex-wrap">
-						<Link
-							to="/policies/$name"
-							params={{ name: policy.metadata.name }}
-							className="text-sm font-medium text-foreground hover:underline truncate"
-						>
-							{displayLabel(policy.metadata)}
-						</Link>
-						{enabled ? (
-							<span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-success-soft text-success border border-success/30">
-								Enabled
-							</span>
-						) : (
-							<span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground border border-border">
-								Disabled
-							</span>
-						)}
-						{hostOwned && (
-							<span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground border border-border">
-								Host-owned
-							</span>
-						)}
-					</div>
-					<p className="mt-0.5 text-[11px] text-muted-foreground font-mono truncate">
-						{policy.metadata.name}
-					</p>
-					{policy.metadata.description && (
-						<p className="mt-1 text-[11px] text-muted-foreground max-w-2xl">
-							{policy.metadata.description}
-						</p>
-					)}
-					<dl className="mt-2 flex flex-wrap items-baseline gap-x-5 gap-y-1 text-[11px]">
-						<Stat label="Catalog grants" value={grantCount} />
-						<Stat label="Credential pool" value={poolSize} />
-						<Stat label="Rate limits" value={rlCount} />
-					</dl>
-				</div>
-			</div>
-		</Card>
-	);
-}
-
-function Stat({ label, value }: { label: string; value: number }) {
-	return (
-		<div className="inline-flex items-baseline gap-1">
-			<dt className="text-muted-foreground">{label}</dt>
-			<dd
-				className={`tabular-nums ${value === 0 ? "text-muted-foreground" : "text-foreground font-medium"}`}
-			>
-				{value}
-			</dd>
 		</div>
 	);
 }
