@@ -1,7 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Gauge, ShieldCheck } from "lucide-react";
 import { useMemo } from "react";
-import { useKeys } from "@/api/hooks/keys";
 import type { RateLimit, RateLimitRule } from "@/api/types/ratelimit";
 import { DiagnosticList } from "@/diagnostics/DiagnosticList";
 import { useRateLimitDiagnostics } from "@/diagnostics/useDiagnostics";
@@ -170,17 +169,6 @@ function RulesPanel({ rules }: { rules: readonly RateLimitRule[] }) {
 
 function PoliciesPanel({ rateLimit }: { rateLimit: RateLimit }) {
 	const refs = useRateLimitReferences(rateLimit.metadata.id);
-	const { data: keys } = useKeys();
-
-	const keyCountByPolicy = useMemo(() => {
-		const counts = new Map<string, number>();
-		for (const rk of keys.items ?? []) {
-			const pid = rk.spec.policyId;
-			if (!pid) continue;
-			counts.set(pid, (counts.get(pid) ?? 0) + 1);
-		}
-		return counts;
-	}, [keys]);
 
 	if (refs.length === 0) {
 		return (
@@ -216,26 +204,24 @@ function PoliciesPanel({ rateLimit }: { rateLimit: RateLimit }) {
 					<thead className="bg-muted/30 text-[10px] uppercase tracking-wide text-muted-foreground">
 						<tr>
 							<Th>Policy</Th>
-							<Th>Binding</Th>
+							<Th>Link</Th>
 							<Th className="text-right">Scope</Th>
-							<Th className="text-right">API keys</Th>
 							<Th className="text-right">Status</Th>
 						</tr>
 					</thead>
 					<tbody className="divide-y divide-border">
 						{refs.map((ref) => {
 							const name = ref.policy.metadata.name;
-							const id = ref.policy.metadata.id;
 							const enabled = ref.policy.spec.enabled !== false;
 							const hostOwned = ref.policy.metadata.owner?.kind === "host";
-							const rkCount = id ? (keyCountByPolicy.get(id) ?? 0) : 0;
-							const scopeCount = ref.isDefault
+							const unscoped = ref.models.length === 0;
+							const scopeCount = unscoped
 								? (ref.policy.spec.models?.length ?? 0)
-								: ref.refs.length;
-							const inactive = !ref.isDefault && ref.refs.length === 0;
+								: ref.models.length;
 							return (
 								<tr
-									key={`${name}:${ref.isDefault ? "default" : `b${ref.bindingIndex}`}`}
+									// Relay refuses one rate limit linked twice over the same models.
+									key={`${name}|${ref.models.join(",")}`}
 									className="hover:bg-muted/30 transition-colors"
 								>
 									<Td>
@@ -259,33 +245,20 @@ function PoliciesPanel({ rateLimit }: { rateLimit: RateLimit }) {
 										</div>
 									</Td>
 									<Td>
-										<Badge tone={ref.isDefault ? "default" : "scoped"}>
-											{ref.isDefault ? "Default" : "Scoped"}
+										<Badge tone={unscoped ? "default" : "scoped"}>
+											{unscoped ? "All models" : "Scoped"}
 										</Badge>
 									</Td>
 									<Td className="text-right tabular-nums">
-										{ref.isDefault ? (
+										{unscoped ? (
 											<span className="text-muted-foreground">
 												all ({scopeCount})
 											</span>
-										) : inactive ? (
-											<span className="text-warning text-[11px]">inactive</span>
 										) : (
 											<span className="text-foreground">
 												{scopeCount} ref{scopeCount === 1 ? "" : "s"}
 											</span>
 										)}
-									</Td>
-									<Td className="text-right tabular-nums">
-										<span
-											className={
-												rkCount === 0
-													? "text-muted-foreground"
-													: "text-foreground"
-											}
-										>
-											{rkCount}
-										</span>
 									</Td>
 									<Td className="text-right">
 										{enabled ? (

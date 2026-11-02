@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { z } from "zod";
 import { bindingsListQueryOptions } from "@/api/hooks/bindings";
+import { budgetListQueryOptions } from "@/api/hooks/budgets";
 import { governanceQueryOptions } from "@/api/hooks/governance";
 import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
@@ -16,6 +17,7 @@ import {
 	usePolicy,
 	useUpdatePolicy,
 } from "@/api/hooks/policies";
+import { poolListQueryOptions } from "@/api/hooks/pools";
 import { providersListQueryOptions } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
 import { ApiError } from "@/api/types/errors";
@@ -45,6 +47,8 @@ export const Route = createFileRoute("/_authenticated/policies/$name")({
 		void queryClient.prefetchQuery(policyModelsQueryOptions(params.name));
 		void queryClient.prefetchQuery(policyHostsQueryOptions(params.name));
 		void queryClient.prefetchQuery(policyRateLimitsQueryOptions(params.name));
+		void queryClient.prefetchQuery(poolListQueryOptions);
+		void queryClient.prefetchQuery(budgetListQueryOptions);
 		void queryClient.prefetchQuery(hostKeysListQueryOptions);
 		void queryClient.prefetchQuery(hostsListQueryOptions);
 		void queryClient.prefetchQuery(bindingsListQueryOptions);

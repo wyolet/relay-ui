@@ -8,25 +8,23 @@ import { buildConcreteCatalog } from "@/lib/concreteCatalog";
 import { displayLabel } from "@/lib/displayLabel";
 import {
 	type LabelLookups,
-	type Resolution,
-	resolveBindings,
+	type RefCoverage,
+	resolveRateLimitScopes,
 } from "@/lib/policyRLResolution";
 import { formatRulesShort } from "@/lib/rateLimitFormat";
 import type { RLMeta } from "@/rate-limits/AttachRateLimitModal";
 
 export interface PolicyRLResolution {
-	resolution: Resolution;
+	/** Per link, the coverage of each of its model-scope refs. */
+	scopes: RefCoverage[][];
 	labels: LabelLookups;
 	rlMetaById: Map<string, RLMeta>;
 }
 
-/**
- * Shared resolution for a policy's rate-limit bindings: combines the local
- * catalog, RL metadata, and label lookups. Drives both the edit picker's
- * specificity hints and the detail page's overlap warning.
- */
+/** A policy's rate-limit links against the local catalog, RL metadata and
+ * label lookups, for the edit picker's scope descriptions. */
 export function usePolicyRLResolution(
-	bindings: readonly { rateLimitId: string; models: string[] }[],
+	links: readonly { rateLimitId: string; models: string[] }[],
 	includeDeprecated: boolean,
 ): PolicyRLResolution {
 	const { data: providersData } = useProviders();
@@ -88,10 +86,10 @@ export function usePolicyRLResolution(
 		return m;
 	}, [rateLimitsData]);
 
-	const resolution = useMemo(
-		() => resolveBindings(bindings, concreteCatalog),
-		[bindings, concreteCatalog],
+	const scopes = useMemo(
+		() => resolveRateLimitScopes(links, concreteCatalog),
+		[links, concreteCatalog],
 	);
 
-	return { resolution, labels, rlMetaById };
+	return { scopes, labels, rlMetaById };
 }

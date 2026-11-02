@@ -1,7 +1,3 @@
-/**
- * Policy CRUD hooks. Wraps the /policies API (backend is still "Pool").
- * Query keys use ["policies"] so UI invalidations are consistent with the new name.
- */
 import {
 	queryOptions,
 	useMutation,
@@ -93,8 +89,6 @@ export type PolicyHostView = components["schemas"]["PolicyHostRow"];
 export type PolicyRateLimitView = components["schemas"]["PolicyRateLimitRow"];
 /** A granted model that no rate-limit covers — passes without throttling. */
 export type UnthrottledModel = components["schemas"]["UnthrottledModel"];
-/** A binding claimed by >1 rate-limit, and which one won (specificity-wins). */
-export type RateLimitOverlap = components["schemas"]["RateLimitOverlap"];
 
 /** Models the policy grants (resolved server-side), with effective limits. */
 export function policyModelsQueryOptions(ref: string) {
@@ -263,10 +257,9 @@ interface DetachHostKeyArgs {
 }
 
 /**
- * Removes a host key from a user policy's `hostKeyIds` pool. The detachment
- * surfaces on both ends — `policy.spec.hostKeyIds` and `hostKey.policies` —
- * so we invalidate both query keys on success. Lives in the api layer (below
- * every domain) so host-keys can call it without a reverse policies dependency.
+ * Removes a host key from a policy's directly linked `credentialIds`. Lives in
+ * the api layer (below every domain) so host-keys can call it without a
+ * reverse policies dependency.
  */
 export function useDetachHostKeyFromPolicy() {
 	const updatePolicy = useUpdatePolicy();
@@ -278,7 +271,7 @@ export function useDetachHostKeyFromPolicy() {
 			toast("error", "Policy not found — refresh and retry.");
 			return;
 		}
-		const nextHostKeyIds = (policy.spec.hostKeyIds ?? []).filter(
+		const nextCredentialIds = (policy.spec.credentialIds ?? []).filter(
 			(id) => id !== hostKeyId,
 		);
 		try {
@@ -288,12 +281,12 @@ export function useDetachHostKeyFromPolicy() {
 					metadata: policy.metadata,
 					spec: {
 						...policy.spec,
-						hostKeyIds: nextHostKeyIds.length > 0 ? nextHostKeyIds : null,
+						credentialIds:
+							nextCredentialIds.length > 0 ? nextCredentialIds : null,
 					},
 				},
 			});
-			// `hostKey.policies` is computed server-side; refetch host keys so the
-			// detached entry disappears from any list/detail view that reads it.
+			// Host-key views list the policies linking them, computed server-side.
 			void queryClient.invalidateQueries({ queryKey: ["host-keys"] });
 			toast("success", `Detached from "${displayLabel(policy.metadata)}".`);
 		} catch (err) {

@@ -14,7 +14,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { resolveMutability } from "@/lib/ownership";
 import { ResourceLogs } from "@/logs/ResourceLogs";
-import { PolicyAttachedKeys } from "@/policies/PolicyAttachedKeys";
 import { PolicyKeysTab } from "@/policies/PolicyKeysTab";
 import { PolicyModelsTab } from "@/policies/PolicyModelsTab";
 import { PolicyOverviewTab } from "@/policies/PolicyOverviewTab";
@@ -92,9 +91,8 @@ export function PolicyDetailView({
 
 				<TabsContent value="overview">
 					<Suspense fallback={<PageLoader className="min-h-[40vh]" />}>
-						<div className="flex flex-col gap-6 pt-2">
+						<div className="pt-2">
 							<PolicyOverviewTab policy={policy} />
-							<PolicyAttachedKeys policy={policy} />
 						</div>
 					</Suspense>
 				</TabsContent>
