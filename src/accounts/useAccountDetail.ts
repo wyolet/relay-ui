@@ -4,6 +4,7 @@ import {
 	hostLabel,
 	PROVIDER_KIND,
 } from "@/accounts/accountView";
+import { useAccountEffectiveLimits } from "@/accounts/useEffectiveLimits";
 import { useHolderResolver } from "@/accounts/useHolderResolver";
 import {
 	useAccount,
@@ -28,6 +29,7 @@ export function useAccountDetail({
 	const { data: hostsData } = useHosts();
 	const { data: bindingsData } = usePolicyBindings();
 	const { data: policiesData } = useQuery(policiesListQueryOptions);
+	const limits = useAccountEffectiveLimits(name, account.spec.kind);
 	const toHolder = useHolderResolver();
 	const del = useConfirmedDelete(useDeleteAccount(), {
 		noun: "account",
@@ -74,6 +76,7 @@ export function useAccountDetail({
 			},
 		},
 		keys: keysData.keys ?? [],
+		limits,
 		host,
 		hostLabel: hostLabel(host, hostId),
 		deletable: canDeleteAccount(spec),

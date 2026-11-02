@@ -4,6 +4,7 @@ import { AccountHolderLink } from "@/accounts/AccountHolderLink";
 import { PAYLOAD_LOGGING_RULE } from "@/accounts/accountCopy";
 import { ACCOUNT_KIND_LABELS } from "@/accounts/accountView";
 import { DefaultAccountBadge } from "@/accounts/DefaultAccountBadge";
+import { EffectiveLimits } from "@/accounts/EffectiveLimits";
 import {
 	PAYLOAD_LOGGING_LABELS,
 	toPayloadLoggingChoice,
@@ -30,6 +31,7 @@ export function AccountDetailView({ name }: { name: string }) {
 		ownerUser,
 		binding,
 		keys,
+		limits,
 		host,
 		hostLabel,
 		deletable,
@@ -194,6 +196,8 @@ export function AccountDetailView({ name }: { name: string }) {
 					<DetailEmpty>No policy binding names this account.</DetailEmpty>
 				)}
 			</DetailCard>
+
+			<EffectiveLimits state={limits} />
 
 			{isProvider && (
 				<DetailCard title={`Keys · ${keys.length}`} icon={KeyRound}>

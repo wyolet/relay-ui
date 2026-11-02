@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import {
+	Building2,
 	ChevronsUpDown,
 	Cog,
 	KeyRound,
@@ -146,6 +147,11 @@ export function AccountMenu() {
 					<ActorAccess />
 
 					<DropdownMenuSeparator />
+
+					<DropdownMenuItem render={<Link to="/me/accounts" />}>
+						<Building2 />
+						Your accounts
+					</DropdownMenuItem>
 
 					{tokensEnabled && (
 						<DropdownMenuItem onClick={() => setTokensOpen(true)}>

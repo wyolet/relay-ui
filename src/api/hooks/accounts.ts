@@ -1,6 +1,7 @@
 import {
 	queryOptions,
 	useMutation,
+	useQuery,
 	useQueryClient,
 	useSuspenseQuery,
 } from "@tanstack/react-query";
@@ -12,6 +13,8 @@ import { unwrap } from "@/api/unwrap";
 export type Account = components["schemas"]["Account"];
 export type AccountSpec = components["schemas"]["AccountSpec"];
 export type AccountList = components["schemas"]["AccountList"];
+export type MyAccount = components["schemas"]["MyAccount"];
+export type AccountLimits = components["schemas"]["AccountLimits"];
 /** Server-side filter/sort/page params accepted by GET /accounts. */
 export type AccountsListParams = NonNullable<
 	operations["list_accounts"]["parameters"]["query"]
@@ -147,4 +150,37 @@ export function accountKeysQueryOptions(ref: string) {
 
 export function useAccountKeys(ref: string) {
 	return useSuspenseQuery(accountKeysQueryOptions(ref));
+}
+
+/** The signed-in user's accounts; empty for the admin token. */
+export const myAccountsQueryOptions = queryOptions({
+	queryKey: ["accounts", "me", "list"] as const,
+	queryFn: async (): Promise<MyAccount[]> =>
+		unwrap(await apiClient.GET("/me/accounts")) ?? [],
+	staleTime: 30_000,
+	gcTime: 5 * 60_000,
+});
+
+export function useMyAccounts() {
+	return useSuspenseQuery(myAccountsQueryOptions);
+}
+
+/** The rungs a request in the account climbs, with usage against each limit. */
+export function accountLimitsQueryOptions(ref: string) {
+	return queryOptions({
+		queryKey: ["accounts", ref, "limits"] as const,
+		queryFn: async (): Promise<AccountLimits> =>
+			unwrap(
+				await apiClient.GET("/accounts/{ref}/limits", {
+					params: { path: { ref } },
+				}),
+			),
+		retry: false,
+		staleTime: 10_000,
+		gcTime: 5 * 60_000,
+	});
+}
+
+export function useAccountLimits(ref: string, enabled: boolean) {
+	return useQuery({ ...accountLimitsQueryOptions(ref), enabled });
 }
