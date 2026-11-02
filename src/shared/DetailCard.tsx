@@ -37,7 +37,7 @@ export function DetailRow({
 }) {
 	return (
 		<div className="py-3 first:pt-0 last:pb-0 grid grid-cols-1 sm:grid-cols-[160px_1fr] gap-1 sm:gap-4">
-			<dt className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground sm:flex sm:min-h-7 sm:items-center">
+			<dt className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground sm:flex sm:min-h-7 sm:items-center sm:self-start">
 				{label}
 			</dt>
 			<dd className="text-xs text-foreground min-w-0 sm:flex sm:min-h-7 sm:flex-col sm:justify-center">
