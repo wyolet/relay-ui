@@ -1,3 +1,4 @@
+import { Copy } from "lucide-react";
 import { middleTruncate } from "@/lib/middleTruncate";
 import { toast } from "@/shared/Toast";
 
@@ -17,9 +18,13 @@ export function ShortId({ value }: { value: string }) {
 			type="button"
 			onClick={() => void copy()}
 			title={`${value} · click to copy`}
-			className="cursor-copy font-mono text-[11px] text-muted-foreground hover:text-foreground"
+			className="group inline-flex cursor-pointer items-center gap-1 font-mono text-[11px] text-muted-foreground hover:text-foreground"
 		>
 			{middleTruncate(value)}
+			<Copy
+				className="size-3 opacity-0 transition-opacity group-hover:opacity-100"
+				aria-hidden
+			/>
 		</button>
 	);
 }
