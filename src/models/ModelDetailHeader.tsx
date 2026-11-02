@@ -1,10 +1,10 @@
 import { Link } from "@tanstack/react-router";
 import { AlertTriangle, Boxes } from "lucide-react";
 import type { Model } from "@/api/types/model";
+import { useMutability } from "@/hooks/useMutability";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { modelProductLine } from "@/models/groupModelsByFamily";
 import { deprecationNote } from "@/models/modelDetail";
-import { useModelMutability } from "@/models/useModelMutability";
 import type { ModelProvider } from "@/models/useModelProvider";
 import { ProviderLogo } from "@/providers/ProviderLogo";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
@@ -31,7 +31,7 @@ export function ModelDetailHeader({
 }) {
 	const enabled = model.spec.enabled !== false;
 	const isProviderOwned = model.metadata.owner?.kind === "provider";
-	const { canEdit, canDelete } = useModelMutability(model);
+	const { canEdit, canDelete } = useMutability(model.metadata, "model");
 	const dep = deprecationNote(model);
 	const productLine = modelProductLine(model);
 
