@@ -11,7 +11,7 @@ import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
 import { useOwnerOptions } from "@/hooks/useOwnerOptions";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
-import { firstError, zodFieldValidator } from "@/lib/formErrors";
+import { shownError, zodFieldValidator } from "@/lib/formErrors";
 import { ownerKeyId } from "@/lib/ownerScopes";
 import { randomSuffix, slugify } from "@/lib/slug";
 import { toast } from "@/shared/Toast";
@@ -166,13 +166,13 @@ export function useServiceAccountForm({
 		? (serviceAccount?.metadata.name ?? "")
 		: computeSlug(values.displayName);
 	const displayNameError = useStore(form.store, (s) =>
-		firstError(s.fieldMeta?.displayName?.errors),
+		shownError(s.fieldMeta?.displayName, s.submissionAttempts),
 	);
 	const descriptionError = useStore(form.store, (s) =>
-		firstError(s.fieldMeta?.description?.errors),
+		shownError(s.fieldMeta?.description, s.submissionAttempts),
 	);
 	const ownerError = useStore(form.store, (s) =>
-		firstError(s.fieldMeta?.owner?.errors),
+		shownError(s.fieldMeta?.owner, s.submissionAttempts),
 	);
 
 	return {

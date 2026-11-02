@@ -16,7 +16,7 @@ import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
 import { useOwnerOptions } from "@/hooks/useOwnerOptions";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
-import { firstError, zodFieldValidator } from "@/lib/formErrors";
+import { shownError, zodFieldValidator } from "@/lib/formErrors";
 import type { OwnerOption } from "@/lib/ownerScopes";
 import { randomSuffix, slugify } from "@/lib/slug";
 import {
@@ -265,19 +265,19 @@ export function usePolicyBindingForm({
 		? (binding?.metadata.name ?? "")
 		: computeSlug(values.displayName);
 	const displayNameError = useStore(form.store, (s) =>
-		firstError(s.fieldMeta?.displayName?.errors),
+		shownError(s.fieldMeta?.displayName, s.submissionAttempts),
 	);
 	const descriptionError = useStore(form.store, (s) =>
-		firstError(s.fieldMeta?.description?.errors),
+		shownError(s.fieldMeta?.description, s.submissionAttempts),
 	);
 	const ownerError = useStore(form.store, (s) =>
-		firstError(s.fieldMeta?.owner?.errors),
+		shownError(s.fieldMeta?.owner, s.submissionAttempts),
 	);
 	const policyIdError = useStore(form.store, (s) =>
-		firstError(s.fieldMeta?.policyId?.errors),
+		shownError(s.fieldMeta?.policyId, s.submissionAttempts),
 	);
 	const accountIdsFieldError = useStore(form.store, (s) =>
-		firstError(s.fieldMeta?.accountIds?.errors),
+		shownError(s.fieldMeta?.accountIds, s.submissionAttempts),
 	);
 
 	return {

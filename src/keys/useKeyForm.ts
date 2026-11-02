@@ -10,7 +10,7 @@ import type { CreateKeyInput, Key, KeyPrincipal } from "@/api/types/key";
 import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
-import { firstError, zodFieldValidator } from "@/lib/formErrors";
+import { shownError, zodFieldValidator } from "@/lib/formErrors";
 import { randomSuffix, slugify } from "@/lib/slug";
 import { defaultLane, laneAccounts } from "@/policy-bindings/accountLookup";
 import { toast } from "@/shared/Toast";
@@ -254,13 +254,13 @@ export function useKeyForm({
 		? (apiKey?.metadata.name ?? "")
 		: computeSlug(values.displayName);
 	const displayNameError = useStore(form.store, (s) =>
-		firstError(s.fieldMeta?.displayName?.errors),
+		shownError(s.fieldMeta?.displayName, s.submissionAttempts),
 	);
 	const descriptionError = useStore(form.store, (s) =>
-		firstError(s.fieldMeta?.description?.errors),
+		shownError(s.fieldMeta?.description, s.submissionAttempts),
 	);
 	const principalIdError = useStore(form.store, (s) =>
-		firstError(s.fieldMeta?.principalId?.errors),
+		shownError(s.fieldMeta?.principalId, s.submissionAttempts),
 	);
 
 	return {

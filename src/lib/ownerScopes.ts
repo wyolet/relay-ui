@@ -95,6 +95,7 @@ export function ownerKeyId(key: string): string {
 
 function optionLabel(key: string, names: ReadonlyMap<string, string>): string {
 	if (key === PERSONAL_OWNER) return "Personal";
+	if (key === "system") return "System";
 	const { kind, id } = splitKey(key);
 	return names.get(key) ?? (id ? `${id.slice(0, 8)}…` : kind);
 }

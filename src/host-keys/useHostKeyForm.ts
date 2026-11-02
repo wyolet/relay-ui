@@ -18,7 +18,7 @@ import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
 import { useOwnerOptions } from "@/hooks/useOwnerOptions";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
-import { firstError, zodFieldValidator } from "@/lib/formErrors";
+import { shownError, zodFieldValidator } from "@/lib/formErrors";
 import { ALL_OWNER_SCOPES, PERSONAL_OWNER } from "@/lib/ownerScopes";
 import { randomSuffix, slugify } from "@/lib/slug";
 import { toast } from "@/shared/Toast";
@@ -288,25 +288,25 @@ export function useHostKeyForm({
 		? (hostKey?.metadata.name ?? "")
 		: computeSlug(values.displayName);
 	const displayNameError = useStore(form.store, (s) =>
-		firstError(s.fieldMeta?.displayName?.errors),
+		shownError(s.fieldMeta?.displayName, s.submissionAttempts),
 	);
 	const descriptionError = useStore(form.store, (s) =>
-		firstError(s.fieldMeta?.description?.errors),
+		shownError(s.fieldMeta?.description, s.submissionAttempts),
 	);
 	const ownerError = useStore(form.store, (s) =>
-		firstError(s.fieldMeta?.owner?.errors),
+		shownError(s.fieldMeta?.owner, s.submissionAttempts),
 	);
 	const hostIdError = useStore(form.store, (s) =>
-		firstError(s.fieldMeta?.hostId?.errors),
+		shownError(s.fieldMeta?.hostId, s.submissionAttempts),
 	);
 	const envVarError = useStore(form.store, (s) =>
-		firstError(s.fieldMeta?.envVar?.errors),
+		shownError(s.fieldMeta?.envVar, s.submissionAttempts),
 	);
 	const envVarReservedPrefix = useStore(form.store, (s) =>
 		s.values.kind === "env" ? reservedEnvPrefix(s.values.envVar) : undefined,
 	);
 	const valueError = useStore(form.store, (s) =>
-		firstError(s.fieldMeta?.value?.errors),
+		shownError(s.fieldMeta?.value, s.submissionAttempts),
 	);
 
 	const attachedPolicies = useMemo(

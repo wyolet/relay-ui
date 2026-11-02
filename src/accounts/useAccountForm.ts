@@ -25,7 +25,7 @@ import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
 import { useOwnerOptions } from "@/hooks/useOwnerOptions";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
-import { firstError, zodFieldValidator } from "@/lib/formErrors";
+import { shownError, zodFieldValidator } from "@/lib/formErrors";
 import { ALL_OWNER_SCOPES, PERSONAL_OWNER } from "@/lib/ownerScopes";
 import { randomSuffix, slugify } from "@/lib/slug";
 import {
@@ -205,11 +205,11 @@ export function useAccountForm({ account, onSaved }: UseAccountFormOptions) {
 
 	const values = useStore(form.store, (s) => s.values);
 	const errors = useStore(form.store, (s) => ({
-		displayName: firstError(s.fieldMeta?.displayName?.errors),
-		description: firstError(s.fieldMeta?.description?.errors),
-		owner: firstError(s.fieldMeta?.owner?.errors),
-		hostId: firstError(s.fieldMeta?.hostId?.errors),
-		orgId: firstError(s.fieldMeta?.orgId?.errors),
+		displayName: shownError(s.fieldMeta?.displayName, s.submissionAttempts),
+		description: shownError(s.fieldMeta?.description, s.submissionAttempts),
+		owner: shownError(s.fieldMeta?.owner, s.submissionAttempts),
+		hostId: shownError(s.fieldMeta?.hostId, s.submissionAttempts),
+		orgId: shownError(s.fieldMeta?.orgId, s.submissionAttempts),
 	}));
 
 	const { isAdmin, userId, scopes } = useAuth();

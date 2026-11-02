@@ -7,6 +7,8 @@ import {
 	RotateCw,
 } from "lucide-react";
 import { useState } from "react";
+import { AccountHolderLink } from "@/accounts/AccountHolderLink";
+import { useHolderResolver } from "@/accounts/useHolderResolver";
 import { useDeleteKey, useKey } from "@/api/hooks/keys";
 import { Button } from "@/components/ui/button";
 import { DiagnosticList } from "@/diagnostics/DiagnosticList";
@@ -38,6 +40,7 @@ export function KeyDetailView({ name }: { name: string }) {
 
 	const rkId = rk.metadata.id ?? "";
 	const diagnostics = useKeyDiagnostics(rk.metadata.id);
+	const resolveHolder = useHolderResolver();
 	const enabled = rk.spec.enabled !== false;
 
 	return (
@@ -128,12 +131,7 @@ export function KeyDetailView({ name }: { name: string }) {
 			<DetailCard title="Configuration" icon={KeyRound}>
 				<dl className="divide-y divide-border">
 					<DetailRow label="Principal">
-						<span className="text-foreground">
-							{rk.spec.principal.kind === "user" ? "User" : "Service account"}{" "}
-							<code className="font-mono text-[11px] text-muted-foreground">
-								{rk.spec.principal.id}
-							</code>
-						</span>
+						<AccountHolderLink holder={resolveHolder(rk.spec.principal)} />
 					</DetailRow>
 					<DetailRow label="Expires">
 						{rk.spec.expiresAt ? (
