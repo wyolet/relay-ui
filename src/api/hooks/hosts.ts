@@ -125,3 +125,24 @@ export function useDeleteHost() {
 		},
 	});
 }
+
+export type HostPolicies = components["schemas"]["hostPoliciesOutBody"];
+
+/** The host's tier presets: policies it owns, ready to bind to an account. */
+export function hostPoliciesQueryOptions(ref: string) {
+	return queryOptions({
+		queryKey: ["hosts", ref, "policies"] as const,
+		queryFn: async (): Promise<HostPolicies> =>
+			unwrap(
+				await apiClient.GET("/hosts/{ref}/policies", {
+					params: { path: { ref } },
+				}),
+			),
+		staleTime: 30_000,
+		gcTime: 5 * 60_000,
+	});
+}
+
+export function useHostPolicies(ref: string) {
+	return useSuspenseQuery(hostPoliciesQueryOptions(ref));
+}

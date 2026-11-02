@@ -140,3 +140,22 @@ export function useDeleteHostKey() {
 		},
 	});
 }
+
+export type DetectedAccount = components["schemas"]["detectedAccount"];
+
+/** Reads the key's provider org from one cheap host call; never moves the key. */
+export function useDetectHostKeyAccount() {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: async (id: string): Promise<DetectedAccount> =>
+			unwrap(
+				await apiClient.POST("/host-keys/by-id/{id}/detect-account", {
+					params: { path: { id } },
+				}),
+			),
+		// It may fill an empty orgId on the key's current account.
+		onSuccess: () => {
+			void queryClient.invalidateQueries({ queryKey: ["accounts"] });
+		},
+	});
+}

@@ -7,7 +7,7 @@ import { unwrap } from "@/api/unwrap";
 
 /** A model↔host binding: which adapter serves a model on a host, and at what price. */
 export type Binding = components["schemas"]["Binding"];
-export type BindingSpec = components["schemas"]["Spec"];
+export type BindingSpec = components["schemas"]["BindingSpec"];
 type BindingList =
 	operations["list_host-bindings"]["responses"]["200"]["content"]["application/json"];
 

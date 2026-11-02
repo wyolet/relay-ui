@@ -24,6 +24,134 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List accounts
+         * @description Lists the accounts the caller may see. The query parameters filter, sort and page the list; an unknown or malformed parameter answers 400. total counts the matches before limit and offset.
+         */
+        get: operations["list_accounts"];
+        put?: never;
+        /**
+         * Create account
+         * @description Creates a account. The server stamps metadata.id and, when metadata.name is omitted, derives it from displayName. An omitted metadata.owner takes the kind's default scope. A referenced row the caller may not see answers 404; a body that breaks a cross-row rule answers 400.
+         */
+        post: operations["create_account"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/accounts/by-id/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Update account by id
+         * @description Replaces the account. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field.
+         */
+        put: operations["update_account"];
+        post?: never;
+        /**
+         * Delete account by id
+         * @description Deletes the account. Answers 204, or 200 with {"detached": [...]} grouped like blockers when the delete took links from rows that stay: a policy that loses a rate limit or budget, or narrows to the pools and credentials it still links. While other rows still reference it, answers 409 resource_in_use with the blockers.
+         */
+        delete: operations["delete_account"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/accounts/by-id/{id}/detach": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Release every reference to this account that can let go
+         * @description In one transaction, clears each optional field and drops each list entry naming the row, on the referencing rows the caller may update. Deletes nothing; returns what still references the row.
+         */
+        post: operations["detach_account"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/accounts/by-id/{id}/references": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List rows that reference this account
+         * @description Every row that points at the account through one of its fields, as delete would see them: blockers, and links a delete would take without refusing. Rows the caller may not see are left out. An unknown id answers an empty list.
+         */
+        get: operations["list_account_references"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/accounts/{ref}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get account by slug or id
+         * @description Reads one account by metadata.name or metadata.id; a UUID matches the id first. A row the caller may not see answers 404, as a missing one does.
+         */
+        get: operations["get_account"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/accounts/{ref}/keys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the host keys belonging to this account (secret-free)
+         * @description Host keys whose accountId names the account, without secrets; they share its upstream limits. Keys the caller may not see are left out. {ref} is a slug or id.
+         */
+        get: operations["account_keys"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/apply": {
         parameters: {
             query?: never;
@@ -73,7 +201,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Exchange username + password for a session cookie */
+        /**
+         * Exchange username + password for a session cookie
+         * @description Checks the password against the user store, then the bootstrap identity file, and sets the relay_session cookie. A wrong username or password answers 401 invalid credentials; a disabled account answers 401 account_disabled, only once the password verified.
+         */
         post: operations["auth_login"];
         delete?: never;
         options?: never;
@@ -90,7 +221,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Destroy the current session */
+        /**
+         * Destroy the current session
+         * @description Destroys the session server-side and clears the cookie. Succeeds without a session too.
+         */
         post: operations["auth_logout"];
         delete?: never;
         options?: never;
@@ -167,7 +301,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Invalidate every inference token the caller holds */
+        /**
+         * Invalidate every inference token the caller holds
+         * @description Bumps the caller's token version, so every token minted before it stops authenticating within about a second. Needs a user session, not the admin token.
+         */
         post: operations["auth_token_revoke_all"];
         delete?: never;
         options?: never;
@@ -202,8 +339,119 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Return the authenticated caller, if any */
+        /**
+         * Return the authenticated caller, if any
+         * @description Returns the caller behind the session cookie or bearer token, with the subjects and scopes its role bindings apply under. 401 when not signed in.
+         */
         get: operations["auth_whoami"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/budgets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List budgets
+         * @description Lists the budgets the caller may see. The query parameters filter, sort and page the list; an unknown or malformed parameter answers 400. total counts the matches before limit and offset.
+         */
+        get: operations["list_budgets"];
+        put?: never;
+        /**
+         * Create budget
+         * @description Creates a budget. The server stamps metadata.id and, when metadata.name is omitted, derives it from displayName. An omitted metadata.owner takes the kind's default scope. A referenced row the caller may not see answers 404; a body that breaks a cross-row rule answers 400.
+         */
+        post: operations["create_budget"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/budgets/by-id/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Update budget by id
+         * @description Replaces the budget. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field.
+         */
+        put: operations["update_budget"];
+        post?: never;
+        /**
+         * Delete budget by id
+         * @description Deletes the budget. Answers 204, or 200 with {"detached": [...]} grouped like blockers when the delete took links from rows that stay: a policy that loses a rate limit or budget, or narrows to the pools and credentials it still links. While other rows still reference it, answers 409 resource_in_use with the blockers.
+         */
+        delete: operations["delete_budget"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/budgets/by-id/{id}/detach": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Release every reference to this budget that can let go
+         * @description In one transaction, clears each optional field and drops each list entry naming the row, on the referencing rows the caller may update. Deletes nothing; returns what still references the row.
+         */
+        post: operations["detach_budget"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/budgets/by-id/{id}/references": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List rows that reference this budget
+         * @description Every row that points at the budget through one of its fields, as delete would see them: blockers, and links a delete would take without refusing. Rows the caller may not see are left out. An unknown id answers an empty list.
+         */
+        get: operations["list_budget_references"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/budgets/{ref}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get budget by slug or id
+         * @description Reads one budget by metadata.name or metadata.id; a UUID matches the id first. A row the caller may not see answers 404, as a missing one does.
+         */
+        get: operations["get_budget"];
         put?: never;
         post?: never;
         delete?: never;
@@ -219,7 +467,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Minimal catalog graph (providers, hosts, models + bindings) for the picker */
+        /**
+         * Minimal catalog graph (providers, hosts, models + bindings) for the picker
+         * @description Providers, hosts and models with their enabled bindings in one call, read from what the data plane serves now: disabled rows are absent. Deprecated models are left out unless includeDeprecated is set. The CRUD lists show every row.
+         */
         get: operations["catalog_graph"];
         put?: never;
         post?: never;
@@ -236,7 +487,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Resolve one or more modelrefs into matched catalog rows */
+        /**
+         * Resolve one or more modelrefs into matched catalog rows
+         * @description Expands each model reference (provider, provider/model, provider/model@host, with wildcards) against what the data plane serves now: per reference, and as a deduplicated union. A malformed reference answers 400; one that matches nothing is listed in unresolved.
+         */
         get: operations["catalog_resolve"];
         put?: never;
         post?: never;
@@ -253,7 +507,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Public runtime config for the embedded admin UI */
+        /**
+         * Public runtime config for the embedded admin UI
+         * @description Unauthenticated. The deployment's public URLs, mode, version and feature flags the UI reads at start. The listener also serves the same body at /config.json on its root, outside the /api prefix.
+         */
         get: operations["runtime_config"];
         put?: never;
         post?: never;
@@ -310,10 +567,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List groups */
+        /**
+         * List groups
+         * @description Lists the groups the caller may see. The query parameters filter, sort and page the list; an unknown or malformed parameter answers 400. total counts the matches before limit and offset.
+         */
         get: operations["list_groups"];
         put?: never;
-        /** Create group */
+        /**
+         * Create group
+         * @description Creates a group. The server stamps metadata.id and, when metadata.name is omitted, derives it from displayName. An omitted metadata.owner takes the kind's default scope. A referenced row the caller may not see answers 404; a body that breaks a cross-row rule answers 400.
+         */
         post: operations["create_group"];
         delete?: never;
         options?: never;
@@ -335,7 +598,10 @@ export interface paths {
          */
         put: operations["update_group"];
         post?: never;
-        /** Delete group by id */
+        /**
+         * Delete group by id
+         * @description Deletes the group. Answers 204, or 200 with {"detached": [...]} grouped like blockers when the delete took links from rows that stay: a policy that loses a rate limit or budget, or narrows to the pools and credentials it still links. While other rows still reference it, answers 409 resource_in_use with the blockers.
+         */
         delete: operations["delete_group"];
         options?: never;
         head?: never;
@@ -369,7 +635,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List rows that reference this group */
+        /**
+         * List rows that reference this group
+         * @description Every row that points at the group through one of its fields, as delete would see them: blockers, and links a delete would take without refusing. Rows the caller may not see are left out. An unknown id answers an empty list.
+         */
         get: operations["list_group_references"];
         put?: never;
         post?: never;
@@ -386,7 +655,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get group by slug or id */
+        /**
+         * Get group by slug or id
+         * @description Reads one group by metadata.name or metadata.id; a UUID matches the id first. A row the caller may not see answers 404, as a missing one does.
+         */
         get: operations["get_group"];
         put?: never;
         post?: never;
@@ -403,7 +675,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Readiness: process + backend health */
+        /**
+         * Readiness: process + backend health
+         * @description Unauthenticated. Pings each backend and answers 503 when one is unreachable. Signed-in callers also see whether a master key is configured.
+         */
         get: operations["control_healthz"];
         put?: never;
         post?: never;
@@ -420,10 +695,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List host-bindings */
+        /**
+         * List host-bindings
+         * @description Lists the host-bindings the caller may see. The query parameters filter, sort and page the list; an unknown or malformed parameter answers 400. total counts the matches before limit and offset.
+         */
         get: operations["list_host-bindings"];
         put?: never;
-        /** Create host-binding */
+        /**
+         * Create host-binding
+         * @description Creates a host-binding. The server stamps metadata.id and, when metadata.name is omitted, derives it from displayName. An omitted metadata.owner takes the kind's default scope. A referenced row the caller may not see answers 404; a body that breaks a cross-row rule answers 400.
+         */
         post: operations["create_host-binding"];
         delete?: never;
         options?: never;
@@ -445,7 +726,10 @@ export interface paths {
          */
         put: operations["update_host-binding"];
         post?: never;
-        /** Delete host-binding by id */
+        /**
+         * Delete host-binding by id
+         * @description Deletes the host-binding. Answers 204, or 200 with {"detached": [...]} grouped like blockers when the delete took links from rows that stay: a policy that loses a rate limit or budget, or narrows to the pools and credentials it still links. While other rows still reference it, answers 409 resource_in_use with the blockers.
+         */
         delete: operations["delete_host-binding"];
         options?: never;
         head?: never;
@@ -459,7 +743,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get host-binding by slug or id */
+        /**
+         * Get host-binding by slug or id
+         * @description Reads one host-binding by metadata.name or metadata.id; a UUID matches the id first. A row the caller may not see answers 404, as a missing one does.
+         */
         get: operations["get_host-binding"];
         put?: never;
         post?: never;
@@ -476,10 +763,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List host-keys */
+        /**
+         * List host-keys
+         * @description Lists the host-keys the caller may see. The query parameters filter, sort and page the list; an unknown or malformed parameter answers 400. total counts the matches before limit and offset.
+         */
         get: operations["list_host-keys"];
         put?: never;
-        /** Create host-key */
+        /**
+         * Create host-key
+         * @description Creates a host-key. The server stamps metadata.id and, when metadata.name is omitted, derives it from displayName. An omitted metadata.owner takes the kind's default scope. A referenced row the caller may not see answers 404; a body that breaks a cross-row rule answers 400.
+         */
         post: operations["create_host-key"];
         delete?: never;
         options?: never;
@@ -501,7 +794,10 @@ export interface paths {
          */
         put: operations["update_host-key"];
         post?: never;
-        /** Delete host-key by id */
+        /**
+         * Delete host-key by id
+         * @description Deletes the host-key. Answers 204, or 200 with {"detached": [...]} grouped like blockers when the delete took links from rows that stay: a policy that loses a rate limit or budget, or narrows to the pools and credentials it still links. While other rows still reference it, answers 409 resource_in_use with the blockers.
+         */
         delete: operations["delete_host-key"];
         options?: never;
         head?: never;
@@ -528,6 +824,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/host-keys/by-id/{id}/detect-account": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Detect which provider organization a HostKey belongs to
+         * @description Makes one cheap read to the key's host with the key and returns the organization id from the response headers, the key's current account, and the account of the key's owner at the host with that orgId. It never moves the key; set spec.accountId with a normal update to move it. When the current account has no orgId and no other account claims the organization, the current account's orgId is filled in, provided every other key of that account names the same organization. 422 when the host does not name organizations or the key has no value; 502 when the host refuses the call.
+         */
+        post: operations["detect_host_key_account"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/host-keys/by-id/{id}/health": {
         parameters: {
             query?: never;
@@ -535,7 +851,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Read a HostKey's circuit-breaker state */
+        /**
+         * Read a HostKey's circuit-breaker state
+         * @description Reports why requests skip the key: open indefinitely after an auth failure until the key heals or rotates, or for a timed cooldown after rate limits and server errors.
+         */
         get: operations["get_host_key_health"];
         put?: never;
         post?: never;
@@ -552,7 +871,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List rows that reference this host-key */
+        /**
+         * List rows that reference this host-key
+         * @description Every row that points at the host-key through one of its fields, as delete would see them: blockers, and links a delete would take without refusing. Rows the caller may not see are left out. An unknown id answers an empty list.
+         */
         get: operations["list_host-key_references"];
         put?: never;
         post?: never;
@@ -571,7 +893,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Rotate a stored-mode HostKey credential */
+        /**
+         * Rotate a stored-mode HostKey credential
+         * @description Replaces the sealed secret of a stored or oauth host key and leaves everything else as is. An env-mode key answers 400: change its environment variable instead.
+         */
         post: operations["rotate_host_key"];
         delete?: never;
         options?: never;
@@ -586,7 +911,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get host-key by slug or id */
+        /**
+         * Get host-key by slug or id
+         * @description Reads one host-key by metadata.name or metadata.id; a UUID matches the id first. A row the caller may not see answers 404, as a missing one does.
+         */
         get: operations["get_host-key"];
         put?: never;
         post?: never;
@@ -603,10 +931,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List hosts */
+        /**
+         * List hosts
+         * @description Lists the hosts the caller may see. The query parameters filter, sort and page the list; an unknown or malformed parameter answers 400. total counts the matches before limit and offset.
+         */
         get: operations["list_hosts"];
         put?: never;
-        /** Create host */
+        /**
+         * Create host
+         * @description Creates a host. The server stamps metadata.id and, when metadata.name is omitted, derives it from displayName. An omitted metadata.owner takes the kind's default scope. A referenced row the caller may not see answers 404; a body that breaks a cross-row rule answers 400.
+         */
         post: operations["create_host"];
         delete?: never;
         options?: never;
@@ -628,7 +962,10 @@ export interface paths {
          */
         put: operations["update_host"];
         post?: never;
-        /** Delete host by id */
+        /**
+         * Delete host by id
+         * @description Deletes the host. Answers 204, or 200 with {"detached": [...]} grouped like blockers when the delete took links from rows that stay: a policy that loses a rate limit or budget, or narrows to the pools and credentials it still links. While other rows still reference it, answers 409 resource_in_use with the blockers.
+         */
         delete: operations["delete_host"];
         options?: never;
         head?: never;
@@ -662,7 +999,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List rows that reference this host */
+        /**
+         * List rows that reference this host
+         * @description Every row that points at the host through one of its fields, as delete would see them: blockers, and links a delete would take without refusing. Rows the caller may not see are left out. An unknown id answers an empty list.
+         */
         get: operations["list_host_references"];
         put?: never;
         post?: never;
@@ -679,7 +1019,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get host by slug or id */
+        /**
+         * Get host by slug or id
+         * @description Reads one host by metadata.name or metadata.id; a UUID matches the id first. A row the caller may not see answers 404, as a missing one does.
+         */
         get: operations["get_host"];
         put?: never;
         post?: never;
@@ -696,7 +1039,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List the upstream credentials this host owns (secret-free) */
+        /**
+         * List the upstream credentials this host owns (secret-free)
+         * @description Host keys that authenticate to the host, without secrets. Keys the caller may not see are left out. {ref} is a slug or id.
+         */
         get: operations["host_keys"];
         put?: never;
         post?: never;
@@ -713,7 +1059,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List the models this host serves, with binding + pricing */
+        /**
+         * List the models this host serves, with binding + pricing
+         * @description Every model bound to the host, with the binding and its pricing. {ref} is a slug or id.
+         */
         get: operations["host_models"];
         put?: never;
         post?: never;
@@ -730,7 +1079,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List the host-tier serving policies this host owns, with limits */
+        /**
+         * List the host-tier serving policies this host owns, with limits
+         * @description The host's tier presets: policies the host owns, ready to bind to an account, host key or the host itself. Each lists the rate limits it links. {ref} is a slug or id.
+         */
         get: operations["host_policies"];
         put?: never;
         post?: never;
@@ -747,7 +1099,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List keys */
+        /**
+         * List keys
+         * @description Lists the keys the caller may see. The query parameters filter, sort and page the list; an unknown or malformed parameter answers 400. total counts the matches before limit and offset.
+         */
         get: operations["list_keys"];
         put?: never;
         /**
@@ -775,7 +1130,10 @@ export interface paths {
          */
         put: operations["update_key"];
         post?: never;
-        /** Delete key by id */
+        /**
+         * Delete key by id
+         * @description Deletes the key. Answers 204, or 200 with {"detached": [...]} grouped like blockers when the delete took links from rows that stay: a policy that loses a rate limit or budget, or narrows to the pools and credentials it still links. While other rows still reference it, answers 409 resource_in_use with the blockers.
+         */
         delete: operations["delete_key"];
         options?: never;
         head?: never;
@@ -809,7 +1167,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get key by slug or id */
+        /**
+         * Get key by slug or id
+         * @description Reads one key by metadata.name or metadata.id; a UUID matches the id first. A row the caller may not see answers 404, as a missing one does.
+         */
         get: operations["get_key"];
         put?: never;
         post?: never;
@@ -850,7 +1211,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Process liveness (no backend dependency) */
+        /**
+         * Process liveness (no backend dependency)
+         * @description Unauthenticated. Answers ok while the process serves, whatever its backends' state.
+         */
         get: operations["control_livez"];
         put?: never;
         post?: never;
@@ -947,10 +1311,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List models */
+        /**
+         * List models
+         * @description Lists the models the caller may see. The query parameters filter, sort and page the list; an unknown or malformed parameter answers 400. total counts the matches before limit and offset.
+         */
         get: operations["list_models"];
         put?: never;
-        /** Create model */
+        /**
+         * Create model
+         * @description Creates a model. The server stamps metadata.id and, when metadata.name is omitted, derives it from displayName. An omitted metadata.owner takes the kind's default scope. A referenced row the caller may not see answers 404; a body that breaks a cross-row rule answers 400.
+         */
         post: operations["create_model"];
         delete?: never;
         options?: never;
@@ -972,7 +1342,10 @@ export interface paths {
          */
         put: operations["update_model"];
         post?: never;
-        /** Delete model by id */
+        /**
+         * Delete model by id
+         * @description Deletes the model. Answers 204, or 200 with {"detached": [...]} grouped like blockers when the delete took links from rows that stay: a policy that loses a rate limit or budget, or narrows to the pools and credentials it still links. While other rows still reference it, answers 409 resource_in_use with the blockers.
+         */
         delete: operations["delete_model"];
         options?: never;
         head?: never;
@@ -1006,12 +1379,21 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Read this model's overlay: patch, pristine template, effective spec, quarantine state */
+        /**
+         * Read this model's overlay: patch, pristine template, effective spec, quarantine state
+         * @description An overlay is the operator's sparse patch over a catalog model's spec; it survives catalog re-seeds. Returns the patch, the catalog template, and the merged spec requests are served from.
+         */
         get: operations["model_overlay_get"];
-        /** Set (replace) this model's overlay patch */
+        /**
+         * Set (replace) this model's overlay patch
+         * @description Replaces the patch. A patch that does not merge into a valid spec answers 400. Governed like an edit of the model.
+         */
         put: operations["model_overlay_put"];
         post?: never;
-        /** Delete this model's overlay (factory reset to the pristine template) */
+        /**
+         * Delete this model's overlay (factory reset to the pristine template)
+         * @description Removes the patch so the model is served from the catalog template again. Answers deleted false when there was none.
+         */
         delete: operations["model_overlay_delete"];
         options?: never;
         head?: never;
@@ -1025,7 +1407,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List rows that reference this model */
+        /**
+         * List rows that reference this model
+         * @description Every row that points at the model through one of its fields, as delete would see them: blockers, and links a delete would take without refusing. Rows the caller may not see are left out. An unknown id answers an empty list.
+         */
         get: operations["list_model_references"];
         put?: never;
         post?: never;
@@ -1042,7 +1427,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get model by slug or id */
+        /**
+         * Get model by slug or id
+         * @description Reads one model by metadata.name or metadata.id; a UUID matches the id first. A row the caller may not see answers 404, as a missing one does.
+         */
         get: operations["get_model"];
         put?: never;
         post?: never;
@@ -1059,7 +1447,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List the hosts that serve this model, with binding + pricing */
+        /**
+         * List the hosts that serve this model, with binding + pricing
+         * @description Every host bound to the model, disabled ones included, with the binding and its pricing. {ref} is a slug or id.
+         */
         get: operations["model_hosts"];
         put?: never;
         post?: never;
@@ -1076,7 +1467,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List the policies that grant this model, with the limits each applies to it */
+        /**
+         * List the policies that grant this model, with the limits each applies to it
+         * @description Policies the caller may see whose model list allows the model, host tier presets included, each with the rate-limit rules it applies to the model. {ref} is a slug or id.
+         */
         get: operations["model_policies"];
         put?: never;
         post?: never;
@@ -1093,7 +1487,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List this model's pricing per host */
+        /**
+         * List this model's pricing per host
+         * @description The pricing sheet each host applies to the model. {ref} is a slug or id.
+         */
         get: operations["model_pricing"];
         put?: never;
         post?: never;
@@ -1110,10 +1507,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List policies */
+        /**
+         * List policies
+         * @description Lists the policies the caller may see. The query parameters filter, sort and page the list; an unknown or malformed parameter answers 400. total counts the matches before limit and offset.
+         */
         get: operations["list_policies"];
         put?: never;
-        /** Create policy */
+        /**
+         * Create policy
+         * @description Creates a policy. The server stamps metadata.id and, when metadata.name is omitted, derives it from displayName. An omitted metadata.owner takes the kind's default scope. A referenced row the caller may not see answers 404; a body that breaks a cross-row rule answers 400.
+         */
         post: operations["create_policy"];
         delete?: never;
         options?: never;
@@ -1135,7 +1538,10 @@ export interface paths {
          */
         put: operations["update_policy"];
         post?: never;
-        /** Delete policy by id */
+        /**
+         * Delete policy by id
+         * @description Deletes the policy. Answers 204, or 200 with {"detached": [...]} grouped like blockers when the delete took links from rows that stay: a policy that loses a rate limit or budget, or narrows to the pools and credentials it still links. While other rows still reference it, answers 409 resource_in_use with the blockers.
+         */
         delete: operations["delete_policy"];
         options?: never;
         head?: never;
@@ -1162,30 +1568,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/policies/by-id/{id}/keys/{keyId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Attach a Key to this Policy
-         * @description Sets Key.Spec.PolicyID to this policy. Overwrites any prior attachment (moving a key from A to B is the common case).
-         */
-        post: operations["attach_relay_key_to_policy"];
-        /**
-         * Detach a Key from this Policy
-         * @description Clears Key.Spec.PolicyID. Returns 409 if the key currently points at a different policy (the caller is acting on stale state).
-         */
-        delete: operations["detach_relay_key_from_policy"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/policies/by-id/{id}/references": {
         parameters: {
             query?: never;
@@ -1193,7 +1575,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List rows that reference this policy */
+        /**
+         * List rows that reference this policy
+         * @description Every row that points at the policy through one of its fields, as delete would see them: blockers, and links a delete would take without refusing. Rows the caller may not see are left out. An unknown id answers an empty list.
+         */
         get: operations["list_policy_references"];
         put?: never;
         post?: never;
@@ -1210,7 +1595,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get policy by slug or id */
+        /**
+         * Get policy by slug or id
+         * @description Reads one policy by metadata.name or metadata.id; a UUID matches the id first. A row the caller may not see answers 404, as a missing one does.
+         */
         get: operations["get_policy"];
         put?: never;
         post?: never;
@@ -1227,7 +1615,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List the hosts this policy can reach, with the host-keys that reach each */
+        /**
+         * List the hosts this policy can reach, with the host-keys that reach each
+         * @description Hosts the policy's pools and host keys reach, each with those keys and whether it alone serves some allowed model. A policy the caller may not see answers 404. {ref} is a slug or id.
+         */
         get: operations["policy_hosts"];
         put?: never;
         post?: never;
@@ -1244,7 +1635,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List the models this policy grants, with the limits it applies to each */
+        /**
+         * List the models this policy grants, with the limits it applies to each
+         * @description One row per (model, host) binding the policy allows and reaches through its pools and keys (a tier preset reaches its own host), with the matching model entries and the rate-limit rules. debug=true adds the models it does not allow, with why. A policy the caller may not see answers 404. {ref} is a slug or id.
+         */
         get: operations["policy_models"];
         put?: never;
         post?: never;
@@ -1261,7 +1655,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List the rate-limit rule sets this policy references */
+        /**
+         * List the rate-limit rule sets this policy references
+         * @description The rate limits the policy links, each with its model scope and rules, and the allowed models no linked limit covers. A policy the caller may not see answers 404. {ref} is a slug or id.
+         */
         get: operations["policy_rate_limits"];
         put?: never;
         post?: never;
@@ -1278,10 +1675,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List policy-bindings */
+        /**
+         * List policy-bindings
+         * @description Lists the policy-bindings the caller may see. The query parameters filter, sort and page the list; an unknown or malformed parameter answers 400. total counts the matches before limit and offset.
+         */
         get: operations["list_policy-bindings"];
         put?: never;
-        /** Create policy-binding */
+        /**
+         * Create policy-binding
+         * @description Creates a policy-binding. The server stamps metadata.id and, when metadata.name is omitted, derives it from displayName. An omitted metadata.owner takes the kind's default scope. A referenced row the caller may not see answers 404; a body that breaks a cross-row rule answers 400.
+         */
         post: operations["create_policy-binding"];
         delete?: never;
         options?: never;
@@ -1303,7 +1706,10 @@ export interface paths {
          */
         put: operations["update_policy-binding"];
         post?: never;
-        /** Delete policy-binding by id */
+        /**
+         * Delete policy-binding by id
+         * @description Deletes the policy-binding. Answers 204, or 200 with {"detached": [...]} grouped like blockers when the delete took links from rows that stay: a policy that loses a rate limit or budget, or narrows to the pools and credentials it still links. While other rows still reference it, answers 409 resource_in_use with the blockers.
+         */
         delete: operations["delete_policy-binding"];
         options?: never;
         head?: never;
@@ -1317,8 +1723,139 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get policy-binding by slug or id */
+        /**
+         * Get policy-binding by slug or id
+         * @description Reads one policy-binding by metadata.name or metadata.id; a UUID matches the id first. A row the caller may not see answers 404, as a missing one does.
+         */
         get: operations["get_policy-binding"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/pools": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List pools
+         * @description Lists the pools the caller may see. The query parameters filter, sort and page the list; an unknown or malformed parameter answers 400. total counts the matches before limit and offset.
+         */
+        get: operations["list_pools"];
+        put?: never;
+        /**
+         * Create pool
+         * @description Creates a pool. The server stamps metadata.id and, when metadata.name is omitted, derives it from displayName. An omitted metadata.owner takes the kind's default scope. A referenced row the caller may not see answers 404; a body that breaks a cross-row rule answers 400.
+         */
+        post: operations["create_pool"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/pools/by-id/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Update pool by id
+         * @description Replaces the pool. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field.
+         */
+        put: operations["update_pool"];
+        post?: never;
+        /**
+         * Delete pool by id
+         * @description Deletes the pool. Answers 204, or 200 with {"detached": [...]} grouped like blockers when the delete took links from rows that stay: a policy that loses a rate limit or budget, or narrows to the pools and credentials it still links. While other rows still reference it, answers 409 resource_in_use with the blockers.
+         */
+        delete: operations["delete_pool"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/pools/by-id/{id}/detach": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Release every reference to this pool that can let go
+         * @description In one transaction, clears each optional field and drops each list entry naming the row, on the referencing rows the caller may update. Deletes nothing; returns what still references the row.
+         */
+        post: operations["detach_pool"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/pools/by-id/{id}/references": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List rows that reference this pool
+         * @description Every row that points at the pool through one of its fields, as delete would see them: blockers, and links a delete would take without refusing. Rows the caller may not see are left out. An unknown id answers an empty list.
+         */
+        get: operations["list_pool_references"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/pools/{ref}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get pool by slug or id
+         * @description Reads one pool by metadata.name or metadata.id; a UUID matches the id first. A row the caller may not see answers 404, as a missing one does.
+         */
+        get: operations["get_pool"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/pools/{ref}/keys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the pool's keys in pool order (secret-free)
+         * @description The pool's host keys in the order prioritized selection tries them, without secrets. Keys the caller may not see are left out. {ref} is a slug or id.
+         */
+        get: operations["pool_keys"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1334,10 +1871,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List pricings */
+        /**
+         * List pricings
+         * @description Lists the pricings the caller may see. The query parameters filter, sort and page the list; an unknown or malformed parameter answers 400. total counts the matches before limit and offset.
+         */
         get: operations["list_pricings"];
         put?: never;
-        /** Create pricing */
+        /**
+         * Create pricing
+         * @description Creates a pricing. The server stamps metadata.id and, when metadata.name is omitted, derives it from displayName. An omitted metadata.owner takes the kind's default scope. A referenced row the caller may not see answers 404; a body that breaks a cross-row rule answers 400.
+         */
         post: operations["create_pricing"];
         delete?: never;
         options?: never;
@@ -1359,7 +1902,10 @@ export interface paths {
          */
         put: operations["update_pricing"];
         post?: never;
-        /** Delete pricing by id */
+        /**
+         * Delete pricing by id
+         * @description Deletes the pricing. Answers 204, or 200 with {"detached": [...]} grouped like blockers when the delete took links from rows that stay: a policy that loses a rate limit or budget, or narrows to the pools and credentials it still links. While other rows still reference it, answers 409 resource_in_use with the blockers.
+         */
         delete: operations["delete_pricing"];
         options?: never;
         head?: never;
@@ -1393,7 +1939,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List rows that reference this pricing */
+        /**
+         * List rows that reference this pricing
+         * @description Every row that points at the pricing through one of its fields, as delete would see them: blockers, and links a delete would take without refusing. Rows the caller may not see are left out. An unknown id answers an empty list.
+         */
         get: operations["list_pricing_references"];
         put?: never;
         post?: never;
@@ -1410,7 +1959,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get pricing by slug or id */
+        /**
+         * Get pricing by slug or id
+         * @description Reads one pricing by metadata.name or metadata.id; a UUID matches the id first. A row the caller may not see answers 404, as a missing one does.
+         */
         get: operations["get_pricing"];
         put?: never;
         post?: never;
@@ -1427,10 +1979,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List projects */
+        /**
+         * List projects
+         * @description Lists the projects the caller may see. The query parameters filter, sort and page the list; an unknown or malformed parameter answers 400. total counts the matches before limit and offset.
+         */
         get: operations["list_projects"];
         put?: never;
-        /** Create project */
+        /**
+         * Create project
+         * @description Creates a project. The server stamps metadata.id and, when metadata.name is omitted, derives it from displayName. An omitted metadata.owner takes the kind's default scope. A referenced row the caller may not see answers 404; a body that breaks a cross-row rule answers 400.
+         */
         post: operations["create_project"];
         delete?: never;
         options?: never;
@@ -1452,7 +2010,10 @@ export interface paths {
          */
         put: operations["update_project"];
         post?: never;
-        /** Delete project by id */
+        /**
+         * Delete project by id
+         * @description Deletes the project. Answers 204, or 200 with {"detached": [...]} grouped like blockers when the delete took links from rows that stay: a policy that loses a rate limit or budget, or narrows to the pools and credentials it still links. While other rows still reference it, answers 409 resource_in_use with the blockers.
+         */
         delete: operations["delete_project"];
         options?: never;
         head?: never;
@@ -1486,7 +2047,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List rows that reference this project */
+        /**
+         * List rows that reference this project
+         * @description Every row that points at the project through one of its fields, as delete would see them: blockers, and links a delete would take without refusing. Rows the caller may not see are left out. An unknown id answers an empty list.
+         */
         get: operations["list_project_references"];
         put?: never;
         post?: never;
@@ -1503,7 +2067,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get project by slug or id */
+        /**
+         * Get project by slug or id
+         * @description Reads one project by metadata.name or metadata.id; a UUID matches the id first. A row the caller may not see answers 404, as a missing one does.
+         */
         get: operations["get_project"];
         put?: never;
         post?: never;
@@ -1520,10 +2087,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List providers */
+        /**
+         * List providers
+         * @description Lists the providers the caller may see. The query parameters filter, sort and page the list; an unknown or malformed parameter answers 400. total counts the matches before limit and offset.
+         */
         get: operations["list_providers"];
         put?: never;
-        /** Create provider */
+        /**
+         * Create provider
+         * @description Creates a provider. The server stamps metadata.id and, when metadata.name is omitted, derives it from displayName. An omitted metadata.owner takes the kind's default scope. A referenced row the caller may not see answers 404; a body that breaks a cross-row rule answers 400.
+         */
         post: operations["create_provider"];
         delete?: never;
         options?: never;
@@ -1545,7 +2118,10 @@ export interface paths {
          */
         put: operations["update_provider"];
         post?: never;
-        /** Delete provider by id */
+        /**
+         * Delete provider by id
+         * @description Deletes the provider. Answers 204, or 200 with {"detached": [...]} grouped like blockers when the delete took links from rows that stay: a policy that loses a rate limit or budget, or narrows to the pools and credentials it still links. While other rows still reference it, answers 409 resource_in_use with the blockers.
+         */
         delete: operations["delete_provider"];
         options?: never;
         head?: never;
@@ -1579,7 +2155,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List rows that reference this provider */
+        /**
+         * List rows that reference this provider
+         * @description Every row that points at the provider through one of its fields, as delete would see them: blockers, and links a delete would take without refusing. Rows the caller may not see are left out. An unknown id answers an empty list.
+         */
         get: operations["list_provider_references"];
         put?: never;
         post?: never;
@@ -1596,7 +2175,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get provider by slug or id */
+        /**
+         * Get provider by slug or id
+         * @description Reads one provider by metadata.name or metadata.id; a UUID matches the id first. A row the caller may not see answers 404, as a missing one does.
+         */
         get: operations["get_provider"];
         put?: never;
         post?: never;
@@ -1613,10 +2195,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List rate-limits */
+        /**
+         * List rate-limits
+         * @description Lists the rate-limits the caller may see. The query parameters filter, sort and page the list; an unknown or malformed parameter answers 400. total counts the matches before limit and offset.
+         */
         get: operations["list_rate-limits"];
         put?: never;
-        /** Create rate-limit */
+        /**
+         * Create rate-limit
+         * @description Creates a rate-limit. The server stamps metadata.id and, when metadata.name is omitted, derives it from displayName. An omitted metadata.owner takes the kind's default scope. A referenced row the caller may not see answers 404; a body that breaks a cross-row rule answers 400.
+         */
         post: operations["create_rate-limit"];
         delete?: never;
         options?: never;
@@ -1638,7 +2226,10 @@ export interface paths {
          */
         put: operations["update_rate-limit"];
         post?: never;
-        /** Delete rate-limit by id */
+        /**
+         * Delete rate-limit by id
+         * @description Deletes the rate-limit. Answers 204, or 200 with {"detached": [...]} grouped like blockers when the delete took links from rows that stay: a policy that loses a rate limit or budget, or narrows to the pools and credentials it still links. While other rows still reference it, answers 409 resource_in_use with the blockers.
+         */
         delete: operations["delete_rate-limit"];
         options?: never;
         head?: never;
@@ -1672,7 +2263,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List rows that reference this rate-limit */
+        /**
+         * List rows that reference this rate-limit
+         * @description Every row that points at the rate-limit through one of its fields, as delete would see them: blockers, and links a delete would take without refusing. Rows the caller may not see are left out. An unknown id answers an empty list.
+         */
         get: operations["list_rate-limit_references"];
         put?: never;
         post?: never;
@@ -1689,7 +2283,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get rate-limit by slug or id */
+        /**
+         * Get rate-limit by slug or id
+         * @description Reads one rate-limit by metadata.name or metadata.id; a UUID matches the id first. A row the caller may not see answers 404, as a missing one does.
+         */
         get: operations["get_rate-limit"];
         put?: never;
         post?: never;
@@ -1726,10 +2323,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List role-bindings */
+        /**
+         * List role-bindings
+         * @description Lists the role-bindings the caller may see. The query parameters filter, sort and page the list; an unknown or malformed parameter answers 400. total counts the matches before limit and offset.
+         */
         get: operations["list_role-bindings"];
         put?: never;
-        /** Create role-binding */
+        /**
+         * Create role-binding
+         * @description Creates a role-binding. The server stamps metadata.id and, when metadata.name is omitted, derives it from displayName. An omitted metadata.owner takes the kind's default scope. A referenced row the caller may not see answers 404; a body that breaks a cross-row rule answers 400.
+         */
         post: operations["create_role-binding"];
         delete?: never;
         options?: never;
@@ -1751,7 +2354,10 @@ export interface paths {
          */
         put: operations["update_role-binding"];
         post?: never;
-        /** Delete role-binding by id */
+        /**
+         * Delete role-binding by id
+         * @description Deletes the role-binding. Answers 204, or 200 with {"detached": [...]} grouped like blockers when the delete took links from rows that stay: a policy that loses a rate limit or budget, or narrows to the pools and credentials it still links. While other rows still reference it, answers 409 resource_in_use with the blockers.
+         */
         delete: operations["delete_role-binding"];
         options?: never;
         head?: never;
@@ -1765,7 +2371,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get role-binding by slug or id */
+        /**
+         * Get role-binding by slug or id
+         * @description Reads one role-binding by metadata.name or metadata.id; a UUID matches the id first. A row the caller may not see answers 404, as a missing one does.
+         */
         get: operations["get_role-binding"];
         put?: never;
         post?: never;
@@ -1782,10 +2391,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List roles */
+        /**
+         * List roles
+         * @description Lists the roles the caller may see. The query parameters filter, sort and page the list; an unknown or malformed parameter answers 400. total counts the matches before limit and offset.
+         */
         get: operations["list_roles"];
         put?: never;
-        /** Create role */
+        /**
+         * Create role
+         * @description Creates a role. The server stamps metadata.id and, when metadata.name is omitted, derives it from displayName. An omitted metadata.owner takes the kind's default scope. A referenced row the caller may not see answers 404; a body that breaks a cross-row rule answers 400.
+         */
         post: operations["create_role"];
         delete?: never;
         options?: never;
@@ -1807,7 +2422,10 @@ export interface paths {
          */
         put: operations["update_role"];
         post?: never;
-        /** Delete role by id */
+        /**
+         * Delete role by id
+         * @description Deletes the role. Answers 204, or 200 with {"detached": [...]} grouped like blockers when the delete took links from rows that stay: a policy that loses a rate limit or budget, or narrows to the pools and credentials it still links. While other rows still reference it, answers 409 resource_in_use with the blockers.
+         */
         delete: operations["delete_role"];
         options?: never;
         head?: never;
@@ -1841,7 +2459,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List rows that reference this role */
+        /**
+         * List rows that reference this role
+         * @description Every row that points at the role through one of its fields, as delete would see them: blockers, and links a delete would take without refusing. Rows the caller may not see are left out. An unknown id answers an empty list.
+         */
         get: operations["list_role_references"];
         put?: never;
         post?: never;
@@ -1858,7 +2479,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get role by slug or id */
+        /**
+         * Get role by slug or id
+         * @description Reads one role by metadata.name or metadata.id; a UUID matches the id first. A row the caller may not see answers 404, as a missing one does.
+         */
         get: operations["get_role"];
         put?: never;
         post?: never;
@@ -1875,10 +2499,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List SCIM clients */
+        /**
+         * List SCIM clients
+         * @description Every identity provider issued a SCIM token, with when it was last used. Admin only.
+         */
         get: operations["scim_clients_list"];
         put?: never;
-        /** Create a SCIM client and return its token once */
+        /**
+         * Create a SCIM client and return its token once
+         * @description Issues a bearer token for an identity provider to call /scim/v2 with. The name is issued once: a taken or previously revoked name answers 409. Admin only.
+         */
         post: operations["scim_clients_create"];
         delete?: never;
         options?: never;
@@ -2013,10 +2643,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List service-accounts */
+        /**
+         * List service-accounts
+         * @description Lists the service-accounts the caller may see. The query parameters filter, sort and page the list; an unknown or malformed parameter answers 400. total counts the matches before limit and offset.
+         */
         get: operations["list_service-accounts"];
         put?: never;
-        /** Create service-account */
+        /**
+         * Create service-account
+         * @description Creates a service-account. The server stamps metadata.id and, when metadata.name is omitted, derives it from displayName. An omitted metadata.owner takes the kind's default scope. A referenced row the caller may not see answers 404; a body that breaks a cross-row rule answers 400.
+         */
         post: operations["create_service-account"];
         delete?: never;
         options?: never;
@@ -2038,7 +2674,10 @@ export interface paths {
          */
         put: operations["update_service-account"];
         post?: never;
-        /** Delete service-account by id */
+        /**
+         * Delete service-account by id
+         * @description Deletes the service-account. Answers 204, or 200 with {"detached": [...]} grouped like blockers when the delete took links from rows that stay: a policy that loses a rate limit or budget, or narrows to the pools and credentials it still links. While other rows still reference it, answers 409 resource_in_use with the blockers.
+         */
         delete: operations["delete_service-account"];
         options?: never;
         head?: never;
@@ -2072,7 +2711,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List rows that reference this service-account */
+        /**
+         * List rows that reference this service-account
+         * @description Every row that points at the service-account through one of its fields, as delete would see them: blockers, and links a delete would take without refusing. Rows the caller may not see are left out. An unknown id answers an empty list.
+         */
         get: operations["list_service-account_references"];
         put?: never;
         post?: never;
@@ -2089,7 +2731,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get service-account by slug or id */
+        /**
+         * Get service-account by slug or id
+         * @description Reads one service-account by metadata.name or metadata.id; a UUID matches the id first. A row the caller may not see answers 404, as a missing one does.
+         */
         get: operations["get_service-account"];
         put?: never;
         post?: never;
@@ -2248,12 +2893,12 @@ export interface paths {
         };
         /**
          * Get settings section: governance:host
-         * @description Mutation guardrail for catalog-managed host rows. allowEdit/allowDelete gate generic-CRUD edit/delete; editing defaults on (rare but safe), deleting off (the accidental-click guard). System-owned rows are protected in code regardless; user-owned rows bypass this. Not per-user authz — that arrives with multi-tenant RBAC. Hot-reloaded.
+         * @description Mutation guardrail for catalog-managed host rows. allowEdit and allowDelete gate API edits and deletes of rows the catalog owns; editing defaults on, deleting off. System-owned rows take an admin regardless; user-, team- and project-owned rows are not governed by it. Not authorization: roles decide who may write at all. Hot-reloaded.
          */
         get: operations["get_settings_governance_host"];
         /**
          * Update settings section: governance:host
-         * @description Mutation guardrail for catalog-managed host rows. allowEdit/allowDelete gate generic-CRUD edit/delete; editing defaults on (rare but safe), deleting off (the accidental-click guard). System-owned rows are protected in code regardless; user-owned rows bypass this. Not per-user authz — that arrives with multi-tenant RBAC. Hot-reloaded.
+         * @description Mutation guardrail for catalog-managed host rows. allowEdit and allowDelete gate API edits and deletes of rows the catalog owns; editing defaults on, deleting off. System-owned rows take an admin regardless; user-, team- and project-owned rows are not governed by it. Not authorization: roles decide who may write at all. Hot-reloaded.
          */
         put: operations["update_settings_governance_host"];
         post?: never;
@@ -2272,12 +2917,12 @@ export interface paths {
         };
         /**
          * Get settings section: governance:model
-         * @description Mutation guardrail for catalog-managed model rows. allowEdit/allowDelete gate generic-CRUD edit/delete; editing defaults on (rare but safe), deleting off (the accidental-click guard). System-owned rows are protected in code regardless; user-owned rows bypass this. Not per-user authz — that arrives with multi-tenant RBAC. Hot-reloaded.
+         * @description Mutation guardrail for catalog-managed model rows. allowEdit and allowDelete gate API edits and deletes of rows the catalog owns; editing defaults on, deleting off. System-owned rows take an admin regardless; user-, team- and project-owned rows are not governed by it. Not authorization: roles decide who may write at all. Hot-reloaded.
          */
         get: operations["get_settings_governance_model"];
         /**
          * Update settings section: governance:model
-         * @description Mutation guardrail for catalog-managed model rows. allowEdit/allowDelete gate generic-CRUD edit/delete; editing defaults on (rare but safe), deleting off (the accidental-click guard). System-owned rows are protected in code regardless; user-owned rows bypass this. Not per-user authz — that arrives with multi-tenant RBAC. Hot-reloaded.
+         * @description Mutation guardrail for catalog-managed model rows. allowEdit and allowDelete gate API edits and deletes of rows the catalog owns; editing defaults on, deleting off. System-owned rows take an admin regardless; user-, team- and project-owned rows are not governed by it. Not authorization: roles decide who may write at all. Hot-reloaded.
          */
         put: operations["update_settings_governance_model"];
         post?: never;
@@ -2296,12 +2941,12 @@ export interface paths {
         };
         /**
          * Get settings section: governance:policy
-         * @description Mutation guardrail for catalog-managed policy rows. allowEdit/allowDelete gate generic-CRUD edit/delete; editing defaults on (rare but safe), deleting off (the accidental-click guard). System-owned rows are protected in code regardless; user-owned rows bypass this. Not per-user authz — that arrives with multi-tenant RBAC. Hot-reloaded.
+         * @description Mutation guardrail for catalog-managed policy rows. allowEdit and allowDelete gate API edits and deletes of rows the catalog owns; editing defaults on, deleting off. System-owned rows take an admin regardless; user-, team- and project-owned rows are not governed by it. Not authorization: roles decide who may write at all. Hot-reloaded.
          */
         get: operations["get_settings_governance_policy"];
         /**
          * Update settings section: governance:policy
-         * @description Mutation guardrail for catalog-managed policy rows. allowEdit/allowDelete gate generic-CRUD edit/delete; editing defaults on (rare but safe), deleting off (the accidental-click guard). System-owned rows are protected in code regardless; user-owned rows bypass this. Not per-user authz — that arrives with multi-tenant RBAC. Hot-reloaded.
+         * @description Mutation guardrail for catalog-managed policy rows. allowEdit and allowDelete gate API edits and deletes of rows the catalog owns; editing defaults on, deleting off. System-owned rows take an admin regardless; user-, team- and project-owned rows are not governed by it. Not authorization: roles decide who may write at all. Hot-reloaded.
          */
         put: operations["update_settings_governance_policy"];
         post?: never;
@@ -2320,12 +2965,12 @@ export interface paths {
         };
         /**
          * Get settings section: governance:provider
-         * @description Mutation guardrail for catalog-managed provider rows. allowEdit/allowDelete gate generic-CRUD edit/delete; editing defaults on (rare but safe), deleting off (the accidental-click guard). System-owned rows are protected in code regardless; user-owned rows bypass this. Not per-user authz — that arrives with multi-tenant RBAC. Hot-reloaded.
+         * @description Mutation guardrail for catalog-managed provider rows. allowEdit and allowDelete gate API edits and deletes of rows the catalog owns; editing defaults on, deleting off. System-owned rows take an admin regardless; user-, team- and project-owned rows are not governed by it. Not authorization: roles decide who may write at all. Hot-reloaded.
          */
         get: operations["get_settings_governance_provider"];
         /**
          * Update settings section: governance:provider
-         * @description Mutation guardrail for catalog-managed provider rows. allowEdit/allowDelete gate generic-CRUD edit/delete; editing defaults on (rare but safe), deleting off (the accidental-click guard). System-owned rows are protected in code regardless; user-owned rows bypass this. Not per-user authz — that arrives with multi-tenant RBAC. Hot-reloaded.
+         * @description Mutation guardrail for catalog-managed provider rows. allowEdit and allowDelete gate API edits and deletes of rows the catalog owns; editing defaults on, deleting off. System-owned rows take an admin regardless; user-, team- and project-owned rows are not governed by it. Not authorization: roles decide who may write at all. Hot-reloaded.
          */
         put: operations["update_settings_governance_provider"];
         post?: never;
@@ -2344,12 +2989,12 @@ export interface paths {
         };
         /**
          * Get settings section: inference
-         * @description Authenticated /v1/* behavior. AllowMissingPolicy lets Keys with no Spec.PolicyID reach any host the relay has hostkeys for, bypassing the per-policy authorization gate. Default off.
+         * @description Authenticated /v1/* behavior: the cap on a rotated key's grace window.
          */
         get: operations["get_settings_inference"];
         /**
          * Update settings section: inference
-         * @description Authenticated /v1/* behavior. AllowMissingPolicy lets Keys with no Spec.PolicyID reach any host the relay has hostkeys for, bypassing the per-policy authorization gate. Default off.
+         * @description Authenticated /v1/* behavior: the cap on a rotated key's grace window.
          */
         put: operations["update_settings_inference"];
         post?: never;
@@ -2506,10 +3151,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List teams */
+        /**
+         * List teams
+         * @description Lists the teams the caller may see. The query parameters filter, sort and page the list; an unknown or malformed parameter answers 400. total counts the matches before limit and offset.
+         */
         get: operations["list_teams"];
         put?: never;
-        /** Create team */
+        /**
+         * Create team
+         * @description Creates a team. The server stamps metadata.id and, when metadata.name is omitted, derives it from displayName. An omitted metadata.owner takes the kind's default scope. A referenced row the caller may not see answers 404; a body that breaks a cross-row rule answers 400.
+         */
         post: operations["create_team"];
         delete?: never;
         options?: never;
@@ -2531,7 +3182,10 @@ export interface paths {
          */
         put: operations["update_team"];
         post?: never;
-        /** Delete team by id */
+        /**
+         * Delete team by id
+         * @description Deletes the team. Answers 204, or 200 with {"detached": [...]} grouped like blockers when the delete took links from rows that stay: a policy that loses a rate limit or budget, or narrows to the pools and credentials it still links. While other rows still reference it, answers 409 resource_in_use with the blockers.
+         */
         delete: operations["delete_team"];
         options?: never;
         head?: never;
@@ -2565,7 +3219,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List rows that reference this team */
+        /**
+         * List rows that reference this team
+         * @description Every row that points at the team through one of its fields, as delete would see them: blockers, and links a delete would take without refusing. Rows the caller may not see are left out. An unknown id answers an empty list.
+         */
         get: operations["list_team_references"];
         put?: never;
         post?: never;
@@ -2582,7 +3239,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get team by slug or id */
+        /**
+         * Get team by slug or id
+         * @description Reads one team by metadata.name or metadata.id; a UUID matches the id first. A row the caller may not see answers 404, as a missing one does.
+         */
         get: operations["get_team"];
         put?: never;
         post?: never;
@@ -2721,7 +3381,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Invalidate every inference token a user holds */
+        /**
+         * Invalidate every inference token a user holds
+         * @description Bumps the user's token version, so every token minted for them before it stops authenticating. Needs permission to update users.
+         */
         post: operations["user_revoke_tokens"];
         delete?: never;
         options?: never;
@@ -2736,7 +3399,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Relay build version */
+        /**
+         * Relay build version
+         * @description Unauthenticated. Signed-in callers also get the live license summary.
+         */
         get: operations["version"];
         put?: never;
         post?: never;
@@ -2757,13 +3423,53 @@ export interface components {
              * @example https://example.com/schemas/APIError.json
              */
             readonly $schema?: string;
+            /** @description The error. */
             error: components["schemas"]["APIErrorBody"];
         };
         APIErrorBody: {
+            /** @description Stable machine-readable code, such as not_found, resource_in_use, stale_resource_version, duplicate_binding, model_not_allowed, budget_exceeded. */
             code?: string;
+            /** @description Per-field failures of a 422 schema validation. */
             details?: components["schemas"]["ErrorDetail"][] | null;
+            /** @description Human-readable explanation. */
             message: string;
+            /** @description Error class, such as invalid_request_error (the request's fault), rate_limit_error, server_error or upstream_error. */
             type: string;
+        };
+        Account: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Account.json
+             */
+            readonly $schema?: string;
+            /** @description Identity and provenance: id, name, owner, labels. */
+            metadata: components["schemas"]["Metadata"];
+            /** @description The row's configuration. */
+            spec: components["schemas"]["AccountSpec"];
+        };
+        AccountList: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/AccountList.json
+             */
+            readonly $schema?: string;
+            /** @description The page of matching rows the caller may see. */
+            items: components["schemas"]["Account"][] | null;
+            /**
+             * Format: int64
+             * @description Matching rows before limit and offset apply.
+             */
+            total: number;
+        };
+        AccountSpec: {
+            /** @description The account a host key of the same owner at this host joins when it names none. Created on first use; an owner has at most one per host, and a second answers 409. */
+            default?: boolean;
+            /** @description Id of the host this account is held at. */
+            hostId: string;
+            /** @description The provider's organization id (the org, never a person or an email). Empty until known. */
+            orgId?: string;
         };
         Audit: {
             /**
@@ -2772,17 +3478,29 @@ export interface components {
              * @example https://example.com/schemas/Audit.json
              */
             readonly $schema?: string;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Days audit rows are kept; 0 keeps them forever.
+             */
             retentionDays: number;
         };
         AuditActor: {
+            /** @description User id, when a user acted. */
             id?: string;
+            /** @description Client address, honouring trusted proxies. */
             ip?: string;
-            kind: string;
+            /**
+             * @description Who acted: a signed-in user, the admin token, an unauthenticated caller (such as a failed login), a SCIM client, or a relay CLI command run against the database.
+             * @enum {string}
+             */
+            kind: "user" | "admin-token" | "anonymous" | "scim-client" | "cli";
+            /** @description Username, attempted username, SCIM client name or OS user. */
             name?: string;
+            /** @description Session the request came on, for a signed-in user. */
             sessionId?: string;
         };
         AuditChange: {
+            /** @description JSON paths the write changed; values are never recorded. */
             fields?: string[] | null;
         };
         AuditEnvelope: {
@@ -2797,34 +3515,60 @@ export interface components {
              * @enum {string}
              */
             section: "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            /** @description The section's current value. */
             value: components["schemas"]["Audit"];
         };
         AuditEvent: {
+            /** @description The authorized action, such as policies.update. */
             action: string;
+            /** @description Who made the request. */
             actor: components["schemas"]["AuditActor"];
+            /** @description What a write changed; absent for reads and refusals. */
             change?: components["schemas"]["AuditChange"];
+            /** @description Event id. */
             id: string;
+            /** @description The verdict and the status returned. */
             outcome: components["schemas"]["AuditOutcome"];
+            /** @description The HTTP request. */
             request: components["schemas"]["AuditRequest"];
+            /** @description What the action targeted. */
             resource: components["schemas"]["AuditResource"];
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When the request was handled.
+             */
             ts: string;
         };
         AuditOutcome: {
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description HTTP status the caller received.
+             */
             code: number;
-            status: string;
+            /**
+             * @description The authorization verdict; error is an authorizer failure, not a denial.
+             * @enum {string}
+             */
+            status: "allowed" | "denied" | "error";
         };
         AuditRequest: {
+            /** @description Request id. */
             id?: string;
+            /** @description HTTP method. */
             method?: string;
+            /** @description Request path. */
             path?: string;
         };
         AuditResource: {
+            /** @description Target id. */
             id?: string;
+            /** @description Target kind, as an API singular. */
             kind: string;
+            /** @description Target slug. */
             name?: string;
+            /** @description The target's owner. */
             owner?: components["schemas"]["Owner"];
+            /** @description The owner's scope chain as project:<id> and team:<id>, most specific first; the system scope is left out. */
             scope?: string[] | null;
         };
         AuthOIDC: {
@@ -2834,17 +3578,30 @@ export interface components {
              * @example https://example.com/schemas/AuthOIDC.json
              */
             readonly $schema?: string;
+            /** @description Extra query parameters some providers require on the authorization URL. */
             authParams?: {
                 [key: string]: string;
             };
+            /** @description OAuth client id registered with the provider. */
             clientId?: string;
+            /** @description Environment variable holding the client secret; must start with RELAY_OIDC_ or WYOLET_OIDC_. */
             clientSecretEnv?: string;
+            /** @description Offer OIDC sign-in on the control plane. */
             enabled: boolean;
+            /** @description id_token claim carrying the user's groups. Omitted means groups; an empty string means the provider asserts none. */
             groupsClaim?: string;
+            /** @description The provider's https issuer URL; endpoints are discovered from it. */
             issuer?: string;
+            /** @description Where the browser goes after sign-in; set it when the UI is served from another origin. Omitted means /. */
             postLoginUrl?: string;
+            /** @description This relay's public callback URL, registered with the provider. Required when enabled. */
             redirectUrl?: string;
-            registration?: string;
+            /**
+             * @description open creates a user on first sign-in; closed refuses subjects without a user. Omitted means closed.
+             * @enum {string}
+             */
+            registration?: "open" | "closed";
+            /** @description Scopes requested at sign-in. Omitted means openid, profile, email. */
             scopes?: string[] | null;
         };
         AuthOIDCEnvelope: {
@@ -2859,6 +3616,7 @@ export interface components {
              * @enum {string}
              */
             section: "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            /** @description The section's current value. */
             value: components["schemas"]["AuthOIDC"];
         };
         AuthSCIM: {
@@ -2868,9 +3626,15 @@ export interface components {
              * @example https://example.com/schemas/AuthSCIM.json
              */
             readonly $schema?: string;
+            /** @description A SCIM DELETE disables the user instead of deleting it, keeping its audit trail and bindings. */
             deleteDisables?: boolean;
+            /** @description Serve SCIM 2.0 at /scim/v2; it answers 404 while off. */
             enabled: boolean;
-            linkClaim?: string;
+            /**
+             * @description id_token claim a first OIDC sign-in matches against a provisioned user's externalId. Omitted means sub; Entra uses oid.
+             * @enum {string}
+             */
+            linkClaim?: "sub" | "oid";
         };
         AuthSCIMEnvelope: {
             /**
@@ -2884,6 +3648,7 @@ export interface components {
              * @enum {string}
              */
             section: "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            /** @description The section's current value. */
             value: components["schemas"]["AuthSCIM"];
         };
         AuthTokens: {
@@ -2893,14 +3658,26 @@ export interface components {
              * @example https://example.com/schemas/AuthTokens.json
              */
             readonly $schema?: string;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Lifetime of a token whose mint names no ttl, in nanoseconds.
+             */
             defaultTTL: number;
+            /** @description Let signed-in users mint inference tokens. */
             enabled: boolean;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Longest lifetime a mint may ask for, in nanoseconds.
+             */
             maxTTL: number;
-            previousSigningKey?: components["schemas"]["Ref"];
-            signingKey?: components["schemas"]["Ref"];
-            /** Format: int64 */
+            /** @description Reference to the key the last rotation replaced; tokens it signed still verify. Set by relay. */
+            previousSigningKey?: components["schemas"]["SecretRef"];
+            /** @description Reference to the stored signing key. Set by relay; changed only by POST /auth/token/keys/rotate. */
+            signingKey?: components["schemas"]["SecretRef"];
+            /**
+             * Format: int64
+             * @description Verified tokens each inference pod caches; 0 uses the default, negative turns the cache off.
+             */
             verifyCacheSize?: number;
         };
         AuthTokensEnvelope: {
@@ -2915,6 +3692,7 @@ export interface components {
              * @enum {string}
              */
             section: "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            /** @description The section's current value. */
             value: components["schemas"]["AuthTokens"];
         };
         Binding: {
@@ -2924,15 +3702,94 @@ export interface components {
              * @example https://example.com/schemas/Binding.json
              */
             readonly $schema?: string;
+            /** @description Identity and provenance: id, name, owner, labels. */
             metadata: components["schemas"]["Metadata"];
-            spec: components["schemas"]["Spec"];
+            /** @description The row's configuration. */
+            spec: components["schemas"]["BindingSpec"];
+        };
+        BindingList: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/BindingList.json
+             */
+            readonly $schema?: string;
+            /** @description The page of matching rows the caller may see. */
+            items: components["schemas"]["Binding"][] | null;
+            /**
+             * Format: int64
+             * @description Matching rows before limit and offset apply.
+             */
+            total: number;
+        };
+        BindingSpec: {
+            /** @description Wire shape relay speaks to the host for this model, such as openai, openai_responses, openai_embeddings, anthropic or gemini. */
+            adapter: string;
+            /** @description False stops routing the model to this host. Omitted means true. */
+            enabled?: boolean;
+            /** @description Id of the host serving the model. */
+            hostId: string;
+            /** @description Id of the model the host serves. One binding per (model, host) pair. */
+            modelId: string;
+            /** @description Id of the pricing that costs this binding's traffic. Empty leaves it unpriced: requests governed by a budget refuse it with unpriced_under_budget. */
+            pricingId?: string;
+            /** @description The model's snapshot names this host serves. Empty serves them all. */
+            snapshots?: string[] | null;
+            /** @description Model name sent upstream. Empty sends the model's own name. */
+            upstreamName?: string;
         };
         BindingView: {
+            /** @description Wire shape relay speaks to the host for the model. */
             adapter: string;
+            /** @description Whether the binding is enabled. */
             enabled: boolean;
+            /** @description Host binding id. */
             id: string;
+            /** @description Snapshots the host serves; empty means all. */
             snapshots?: string[] | null;
+            /** @description Model name sent upstream, when it differs. */
             upstreamName?: string;
+        };
+        Budget: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Budget.json
+             */
+            readonly $schema?: string;
+            /** @description Identity and provenance: id, name, owner, labels. */
+            metadata: components["schemas"]["Metadata"];
+            /** @description The row's configuration. */
+            spec: components["schemas"]["BudgetSpec"];
+        };
+        BudgetList: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/BudgetList.json
+             */
+            readonly $schema?: string;
+            /** @description The page of matching rows the caller may see. */
+            items: components["schemas"]["Budget"][] | null;
+            /**
+             * Format: int64
+             * @description Matching rows before limit and offset apply.
+             */
+            total: number;
+        };
+        BudgetSpec: {
+            /** @description Spend cap in USD per period, as a decimal string with at most two fractional digits, such as "2000" or "49.50". */
+            amountUsd: string;
+            /**
+             * @description hard refuses requests once the cap is spent (429 budget_exceeded); alert reports the overrun and lets them through. Omitted means hard.
+             * @enum {string}
+             */
+            mode?: "hard" | "alert";
+            /**
+             * @description Calendar period the cap covers, in UTC. Omitted means month.
+             * @enum {string}
+             */
+            period?: "day" | "week" | "month";
         };
         CatalogSource: {
             /**
@@ -2941,7 +3798,9 @@ export interface components {
              * @example https://example.com/schemas/CatalogSource.json
              */
             readonly $schema?: string;
+            /** @description When that seed completed, RFC 3339. */
             seededAt?: string;
+            /** @description Catalog release tag the last versioned seed ran from; empty when seeded from a directory or never. Blank it to force a re-seed on the next boot. */
             version?: string;
         };
         CatalogSourceEnvelope: {
@@ -2956,6 +3815,7 @@ export interface components {
              * @enum {string}
              */
             section: "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            /** @description The section's current value. */
             value: components["schemas"]["CatalogSource"];
         };
         ControlHealth: {
@@ -2978,19 +3838,40 @@ export interface components {
             status: "ok" | "degraded";
         };
         Counts: {
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Rows another writer changed since the plan.
+             */
             conflict: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Rows created.
+             */
             create: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Rows deleted by prune.
+             */
             delete: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Rows the caller may not read.
+             */
             forbidden: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Operator-edited rows left alone.
+             */
             skipDirty: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Rows already matching.
+             */
             unchanged: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Rows updated.
+             */
             update: number;
         };
         DataKeyStatus: {
@@ -3000,41 +3881,101 @@ export interface components {
              * @example https://example.com/schemas/DataKeyStatus.json
              */
             readonly $schema?: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When the key was created.
+             */
             createdAt: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When the key stopped being primary.
+             */
             demotedAt?: string;
+            /** @description Data key id. */
             id: string;
+            /** @description Id of the master key the data key is wrapped under. */
             kek: string;
+            /** @description A live key this process cannot unwrap, normally because it lacks the key's master key. */
             locked: boolean;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Stored secrets sealed under the key.
+             */
             rows: number;
+            /** @description Owner scope whose secrets the key seals. */
             scope: string;
-            state: string;
+            /**
+             * @description primary encrypts new secrets for its scope; decrypt only opens older ones; destroyed keeps a tombstone.
+             * @enum {string}
+             */
+            state: "primary" | "decrypt" | "destroyed";
         };
         DeprecationView: {
+            /** @description Id of the replacement model. */
             replacement?: string;
-            status: string;
+            /**
+             * @description Lifecycle state.
+             * @enum {string}
+             */
+            status: "active" | "deprecated" | "sunset";
+            /** @description Date the vendor stops serving the model, YYYY-MM-DD. */
             sunsetDate?: string;
         };
+        DetachedLinks: {
+            /** @description The policy field that loses the link, such as spec.budgetIds. */
+            field: string;
+            /**
+             * Format: int64
+             * @description Affected policies the caller may not see.
+             */
+            hidden?: number;
+            /** @description Slugs of the affected policies the caller may see. */
+            policies?: string[] | null;
+        };
         DurationStats: {
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Mean.
+             */
             avg: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Maximum.
+             */
             max: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Median.
+             */
             p50: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description 95th percentile.
+             */
             p95: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description 99th percentile.
+             */
             p99: number;
         };
         Entry: {
-            action: string;
+            /**
+             * @description What happens to the row: skip-dirty leaves an operator-edited row alone (force overrides), conflict means another writer changed it since the plan, forbidden means the caller may not read it.
+             * @enum {string}
+             */
+            action: "create" | "update" | "unchanged" | "skip-dirty" | "delete" | "conflict" | "forbidden";
+            /** @description JSON paths that differ from the stored row, named as in audit change.fields. */
             changedFields?: string[] | null;
+            /** @description On a delete: the policies that lose a link to the row. */
+            detached?: components["schemas"]["DetachedLinks"];
+            /** @description Id of the stored row, when one exists. */
             id?: string;
+            /** @description The document's metadata.id when it differs from the stored row's; ids stay server-owned, so it is ignored. */
             idMismatch?: string;
+            /** @description Manifest kind of the document, such as Policy or HostKey. */
             kind: string;
+            /** @description metadata.name of the row. */
             name: string;
         };
         ErrorDetail: {
@@ -3046,62 +3987,125 @@ export interface components {
             value?: unknown;
         };
         Event: {
-            /** Format: int64 */
+            /** @description Id of the provider account the serving host key belongs to. */
+            account_id?: string;
+            /**
+             * Format: int64
+             * @description Upstream attempts, counting failover; 0 when not tracked.
+             */
             attempts?: number;
+            /** @description Cost in nano-USD per meter, such as tokens.input. */
             cost_breakdown?: {
                 [key: string]: number;
             };
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Cost in nano-USD (1 USD = 1e9), computed from the pricing in effect at request time. Absent means unpriced, which is not the same as 0.
+             */
             cost_nanos?: number;
+            /** @description Id of the credential presented: the relay key's id or the token's jti. */
             credential_id?: string;
+            /** @description Kind of credential presented, such as key or token. */
             credential_kind?: string;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Milliseconds from request start until the response closed.
+             */
             duration_ms: number;
+            /** @description Error code of a failed request, such as model_not_allowed, rate_limit_exceeded or upstream_error. */
             error_kind?: string;
+            /** @description Error message of a failed request. */
             error_message?: string;
+            /** @description Relay-recorded details, such as client_ip for anonymous proxy traffic. */
             extras?: {
                 [key: string]: string;
             };
+            /** @description Why generation stopped: stop, length, tool_calls, content_filter, refusal or other. */
             finish_reason?: string;
+            /** @description The host's slug at request time. */
             host?: string;
+            /** @description Id of the host that served the request. */
             host_id?: string;
+            /** @description Hash of the upstream credential's value (not the host key's row id), so a rotated key records a new value. */
             host_key_id?: string;
+            /** @description The model's slug at request time. */
             model?: string;
+            /** @description Id of the resolved model. */
             model_id?: string;
+            /** @description The policy's slug at request time. */
             policy?: string;
+            /** @description Id of the innermost caller policy that governed the request. */
             policy_id?: string;
+            /** @description Id of the pool the serving host key was drawn from; empty when the policy linked the key directly. */
+            pool_id?: string;
+            /** @description Slug of the pricing sheet that applied. */
             pricing?: string;
+            /** @description The service account's slug at request time; empty for a user. */
             principal?: string;
+            /** @description Id of the principal. */
             principal_id?: string;
-            principal_kind?: string;
+            /**
+             * @description Kind of the principal the request acted as.
+             * @enum {string}
+             */
+            principal_kind?: "serviceaccount" | "user";
+            /** @description The project's slug at request time. */
             project?: string;
+            /** @description Id of the caller's project. */
             project_id?: string;
+            /** @description The model provider's slug at request time. */
             provider?: string;
+            /** @description The reasoning span, for a translated stream that carried reasoning. */
             reasoning?: components["schemas"]["ReasoningTiming"];
+            /** @description The relay key's slug at request time; empty when no key was presented. */
             relay_key?: string;
+            /** @description Hash of the relay key presented; empty for tokens and anonymous proxy traffic. */
             relay_key_hash?: string;
+            /** @description Request id. */
             request_id: string;
+            /** @description The model string as the caller sent it. */
             requested_model?: string;
-            source: string;
-            /** Format: int64 */
+            /**
+             * @description Which path served the request: pipeline (relay-routed), proxy (caller's own upstream credential), ws (WebSocket), batch, count (token counting), or otlp (reported by a client).
+             * @enum {string}
+             */
+            source: "pipeline" | "proxy" | "ws" | "batch" | "count" | "otlp";
+            /**
+             * Format: int64
+             * @description HTTP status the caller received; 0 for a request refused before reaching an upstream.
+             */
             status: number;
+            /** @description The response was streamed. */
             streamed?: boolean;
+            /** @description Tags the caller sent in X-WR-Request-Tags. */
             tags?: {
                 [key: string]: string;
             };
+            /** @description The team's slug at request time. */
             team?: string;
+            /** @description Id of the caller's team. */
             team_id?: string;
+            /** @description Token counts by kind (input, output, cache_read, reasoning, …) as the upstream reported them. */
             tokens?: {
                 [key: string]: number;
             };
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When the request started.
+             */
             ts: string;
+            /** @description Upstream timing marks; absent when the request never reached an upstream. */
             upstream?: components["schemas"]["UpstreamTiming"];
         };
         FacetValue: {
+            /** @description Display name for an id value, such as its slug. */
             label?: string;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Requests with this value in the window.
+             */
             requests: number;
+            /** @description The dimension value, as filters accept it. */
             value: string;
         };
         FacetsResult: {
@@ -3111,12 +4115,19 @@ export interface components {
              * @example https://example.com/schemas/FacetsResult.json
              */
             readonly $schema?: string;
+            /** @description Top values per requested dimension, busiest first. */
             facets: {
                 [key: string]: components["schemas"]["FacetValue"][] | null;
             };
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Start of the window the counts cover.
+             */
             from: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description End of the window the counts cover.
+             */
             to: string;
         };
         Governance: {
@@ -3126,7 +4137,9 @@ export interface components {
              * @example https://example.com/schemas/Governance.json
              */
             readonly $schema?: string;
+            /** @description Allow API deletes of the kind's catalog-owned rows. Default false. */
             allowDelete: boolean;
+            /** @description Allow API edits of the kind's catalog-owned rows. Default true. */
             allowEdit: boolean;
         };
         GovernanceEnvelope: {
@@ -3141,6 +4154,7 @@ export interface components {
              * @enum {string}
              */
             section: "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            /** @description The section's current value. */
             value: components["schemas"]["Governance"];
         };
         Group: {
@@ -3152,11 +4166,15 @@ export interface components {
             readonly $schema?: string;
             /** @description The provisioning source (a SCIM client) that manages the group, and its id there. Only that source, or an apply with force, changes the group. */
             readonly external?: components["schemas"]["GroupExternal"];
+            /** @description Identity and provenance: id, name, owner, labels. */
             metadata: components["schemas"]["Metadata"];
+            /** @description The row's configuration. */
             spec: components["schemas"]["GroupSpec"];
         };
         GroupExternal: {
+            /** @description The group's id at that source. */
             id?: string;
+            /** @description Name of the SCIM client that provisioned the group. */
             source: string;
         };
         GroupList: {
@@ -3166,12 +4184,18 @@ export interface components {
              * @example https://example.com/schemas/GroupList.json
              */
             readonly $schema?: string;
+            /** @description The page of matching rows the caller may see. */
             items: components["schemas"]["Group"][] | null;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Matching rows before limit and offset apply.
+             */
             total: number;
         };
         GroupSpec: {
+            /** @description False stops role bindings on the group from granting anything. Omitted means true. */
             enabled?: boolean;
+            /** @description Ids of the member users. */
             memberIds?: string[] | null;
         };
         Host: {
@@ -3181,9 +4205,12 @@ export interface components {
              * @example https://example.com/schemas/Host.json
              */
             readonly $schema?: string;
+            /** @description Identity and provenance: id, name, owner, labels. */
             metadata: components["schemas"]["Metadata"];
+            /** @description The row's configuration. */
             spec: components["schemas"]["HostSpec"];
-            status?: components["schemas"]["HostStatus"];
+            /** @description Reachability observed from live traffic. Absent until the host has been dialled. Ignored on write. */
+            readonly status?: components["schemas"]["HostStatus"];
         };
         HostKey: {
             /**
@@ -3192,20 +4219,38 @@ export interface components {
              * @example https://example.com/schemas/HostKey.json
              */
             readonly $schema?: string;
+            /** @description Identity and provenance: id, name, owner, labels. */
             metadata: components["schemas"]["Metadata"];
-            policies?: components["schemas"]["HostKeyPolicyRef"][] | null;
+            /** @description Policies that link this key, directly or through a pool. Derived on read; ignored on write. */
+            readonly policies?: components["schemas"]["HostKeyPolicyRef"][] | null;
+            /** @description The row's configuration. */
             spec: components["schemas"]["HostKeySpec"];
-            status?: components["schemas"]["HostKeyStatus"];
+            /** @description Observed state of the credential. Ignored on write. */
+            readonly status?: components["schemas"]["HostKeyStatus"];
         };
         HostKeyCredentialStatus: {
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When this observation was recorded.
+             */
             at: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When the current access token expires.
+             */
             expiresAt?: string;
+            /** @description The last renewal error, when it failed. */
             lastError?: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When the token was last renewed.
+             */
             renewedAt?: string;
-            state: string;
+            /**
+             * @description ok after a successful renewal; revoked when the provider rejected the grant, until a new value is uploaded.
+             * @enum {string}
+             */
+            state: "ok" | "revoked";
         };
         HostKeyList: {
             /**
@@ -3214,47 +4259,92 @@ export interface components {
              * @example https://example.com/schemas/HostKeyList.json
              */
             readonly $schema?: string;
+            /** @description The page of matching rows the caller may see. */
             items: components["schemas"]["HostKey"][] | null;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Matching rows before limit and offset apply.
+             */
             total: number;
         };
         HostKeyPolicyRef: {
+            /** @description Policy id. */
             id: string;
+            /** @description Policy slug. */
             name: string;
         };
         HostKeyRef: {
+            /** @description Whether the key is enabled. */
             enabled: boolean;
+            /** @description Host key id. */
             id: string;
+            /** @description Host key slug. */
             name: string;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description How many other policies link this key, directly or through a pool.
+             */
             sharedWithPolicyCount: number;
         };
         HostKeySpec: {
+            /** @description Id of the provider account (organization) the key belongs to. Keys of one account share its upstream limits, and the policy bound to the account caps them. The account must be at hostId and have the key's owner. Omitted on create joins the owner's default account at the host; omitted on update keeps the stored account. */
+            accountId?: string;
+            /**
+             * @deprecated
+             * @description Stored but not applied to requests. Upstream tier limits come from the policy bound to the key's account.
+             */
             defaultTier?: string;
+            /** @description False stops routing requests to this key. Omitted means true. */
             enabled?: boolean;
+            /** @description Id of the host this key authenticates to. */
             hostId: string;
-            policyId: string;
-            pricingStrategy?: string;
+            /**
+             * @description How the key's spend is accounted: api is metered spend that counts toward budgets; sub is a flat-rate subscription whose computed cost is a reference figure only. Must be one of the host's pricingStrategies. Omitted means api.
+             * @enum {string}
+             */
+            pricingStrategy?: "api" | "sub";
+            /** @description The secret, for valueFrom.kind stored or oauth (an OAuth token blob). Sealed at rest and never returned. Set on create only: an update keeps the stored value and refuses a new one (use POST /host-keys/by-id/{id}/rotate). */
             value?: string;
+            /** @description Where the secret comes from. */
             valueFrom: components["schemas"]["HostKeyValueFrom"];
         };
         HostKeyStatus: {
+            /** @description Refresh health of an oauth credential. Absent for other kinds and before the first renewal. */
             credential?: components["schemas"]["HostKeyCredentialStatus"];
+            /** @description Set when the secret could not be read at load; the key is not routed until repaired. */
             unresolved?: components["schemas"]["HostKeyUnresolvedStatus"];
         };
         HostKeyUnresolvedStatus: {
+            /** @description Why the secret could not be read, such as an unset environment variable. */
             reason: string;
         };
         HostKeyValueFrom: {
+            /** @description Environment variable holding the secret, for kind env. RELAY_* and WYOLET_* names are refused. */
             env?: string;
-            kind: string;
+            /**
+             * @description env reads the secret from an environment variable; stored seals the value sent in spec.value; oauth stores an OAuth token blob from spec.value and refreshes it.
+             * @enum {string}
+             */
+            kind: "env" | "stored" | "oauth";
+            /** @description OAuth provider whose settings section refreshes the token, for kind oauth. */
             provider?: string;
         };
         HostKeyView: {
+            /**
+             * @deprecated
+             * @description Stored but not applied to requests.
+             */
             defaultTier?: string;
+            /** @description Whether the key is enabled. */
             enabled: boolean;
+            /** @description Host key id. */
             id: string;
-            kind: string;
+            /**
+             * @description Where the secret comes from; the secret itself is never shown.
+             * @enum {string}
+             */
+            kind: "env" | "stored" | "oauth";
+            /** @description Host key slug. */
             name: string;
         };
         HostList: {
@@ -3264,44 +4354,70 @@ export interface components {
              * @example https://example.com/schemas/HostList.json
              */
             readonly $schema?: string;
+            /** @description The page of matching rows the caller may see. */
             items: components["schemas"]["Host"][] | null;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Matching rows before limit and offset apply.
+             */
             total: number;
         };
         HostModelRow: {
+            /** @description The binding of the model at the host. */
             binding: components["schemas"]["BindingView"];
+            /** @description The model. */
             model: components["schemas"]["ModelRef"];
+            /** @description The binding's pricing; null when unpriced. */
             pricing: components["schemas"]["PricingView"];
         };
         HostPolicyRow: {
+            /** @description Whether the policy is enabled. */
             enabled: boolean;
+            /** @description Policy id. */
             id: string;
+            /** @description Policy slug. */
             name: string;
+            /** @description The rate limits the preset links, model-scoped and unscoped. */
             rateLimits: components["schemas"]["PolicyRateLimitRow"][] | null;
         };
         HostRef: {
+            /** @description Upstream root URL. */
             baseURL?: string;
+            /** @description Display name. */
             displayName?: string;
+            /** @description Whether the host is enabled. */
             enabled: boolean;
+            /** @description Host icon. */
             icon?: components["schemas"]["IconView"];
+            /** @description Host id. */
             id: string;
+            /** @description Host slug. */
             name: string;
         };
         HostSpec: {
+            /** @description Backend-specific settings, such as a region or deployment name; each adapter reads the keys it needs. */
             backend?: {
                 [key: string]: string;
             };
+            /** @description Upstream root URL. Empty is accepted but leaves the host unroutable until set. */
             baseURL: string;
+            /** @description Where keys for the host are managed. */
             consoleURL?: string;
-            defaultPolicy?: string;
+            /** @description Host API documentation. */
             docsURL?: string;
+            /** @description False stops routing to the host. Omitted means true. */
             enabled?: boolean;
+            /** @description Host homepage. */
             homepageURL?: string;
+            /** @description Icon shown for the host. */
             icon?: components["schemas"]["Icon"];
+            /** @description The upstream needs no API key (such as a self-hosted Ollama). Requests go out without credentials, reached through a pool that names the host. */
             noAuth?: boolean;
+            /** @description Upstream path used instead of the wire shape's default. An empty string means baseURL is the complete endpoint; omitted keeps the default. */
             path?: string;
-            policies?: string[] | null;
-            pricingStrategies?: string[] | null;
+            /** @description Billing modes the host offers: api (per-token metered) and sub (flat-rate subscription). A host key picks one. Omitted means [api]. */
+            pricingStrategies?: ("api" | "sub")[] | null;
+            /** @description Host status page. */
             statusPageURL?: string;
         };
         HostStatus: {
@@ -3310,8 +4426,11 @@ export interface components {
              * @description Consecutive dial failures; 0 when healthy.
              */
             consecutiveFailures?: number;
-            /** @description unknown | healthy | unreachable. */
-            health: string;
+            /**
+             * @description healthy after a successful dial, unreachable after dial failures.
+             * @enum {string}
+             */
+            health: "healthy" | "unreachable";
             /** @description Last dial-failure error excerpt; set while unreachable. */
             lastError?: string;
             /**
@@ -3326,9 +4445,11 @@ export interface components {
             lastTransition?: string;
         };
         Icon: {
+            /** @description Asset path relative to the UI's asset base, such as /provider/anthropic.svg. */
             path?: string;
         };
         IconView: {
+            /** @description Icon asset path. */
             path?: string;
         };
         Inference: {
@@ -3338,8 +4459,10 @@ export interface components {
              * @example https://example.com/schemas/Inference.json
              */
             readonly $schema?: string;
-            allowMissingPolicy: boolean;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Longest graceSeconds a key rotation may ask for; 0 means the default of one day.
+             */
             keyRotateMaxGrace: number;
         };
         InferenceEnvelope: {
@@ -3354,6 +4477,7 @@ export interface components {
              * @enum {string}
              */
             section: "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            /** @description The section's current value. */
             value: components["schemas"]["Inference"];
         };
         Info: {
@@ -3384,7 +4508,9 @@ export interface components {
              * @example https://example.com/schemas/Key.json
              */
             readonly $schema?: string;
+            /** @description Identity and provenance: id, name, owner, labels. */
             metadata: components["schemas"]["Metadata"];
+            /** @description The row's configuration. */
             spec: components["schemas"]["KeySpec"];
         };
         KeyList: {
@@ -3394,28 +4520,52 @@ export interface components {
              * @example https://example.com/schemas/KeyList.json
              */
             readonly $schema?: string;
+            /** @description The page of matching rows the caller may see. */
             items: components["schemas"]["Key"][] | null;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Matching rows before limit and offset apply.
+             */
             total: number;
         };
         KeyPrincipal: {
+            /** @description Id of the service account or user. */
             id: string;
-            kind: string;
+            /**
+             * @description Whether the key acts as a service account or a user.
+             * @enum {string}
+             */
+            kind: "serviceaccount" | "user";
         };
         KeySpec: {
+            /** @description False stops the key authenticating (401) until re-enabled. Omitted means true. */
             enabled?: boolean;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When the key stops authenticating. Omitted never expires.
+             */
             expiresAt?: string;
-            /** Format: date-time */
-            graceUntil?: string;
-            keyHash: string;
+            /**
+             * Format: date-time
+             * @description Until when the pre-rotation plaintext still authenticates. Server-managed.
+             */
+            readonly graceUntil?: string;
+            /** @description Hex SHA-256 of the plaintext key. Server-managed; an update cannot change it. */
+            readonly keyHash: string;
+            /** @description Let the key send its own upstream credential in proxy mode. Needs proxy mode enabled in settings. */
             passthroughAllowed?: boolean;
+            /** @description Capture request and response bodies of this key's requests. A governing policy's flag overrides it. */
             payloadLoggingEnabled?: boolean;
-            policyId?: string;
-            prefix?: string;
-            previousKeyHash?: string;
+            /** @description Leading characters of the plaintext, for recognising the key. Server-managed. */
+            readonly prefix?: string;
+            /** @description Hash of the plaintext the last rotation replaced; it still authenticates until graceUntil. Server-managed. */
+            readonly previousKeyHash?: string;
+            /** @description The service account or user the key authenticates as; its policies govern the key's requests. Fixed at create. */
             principal: components["schemas"]["KeyPrincipal"];
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When the key was revoked; a revoked key never authenticates again.
+             */
             revokedAt?: string;
         };
         KeyStatus: {
@@ -3425,24 +4575,35 @@ export interface components {
              * @example https://example.com/schemas/KeyStatus.json
              */
             readonly $schema?: string;
+            /** @description Every data key, with how many stored secrets it seals. */
             dataKeys: components["schemas"]["DataKeyStatus"][] | null;
+            /** @description Ids of the master keys this process holds, RELAY_MASTER_KEY first. */
             heldKeks: string[] | null;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Stored secrets still sealed directly under a master key, not yet under a data key.
+             */
             legacyRows: number;
+            /** @description Id of the master key (KEK) new data keys are wrapped under; empty until the first data key exists. */
             targetKek?: string;
+            /** @description Ids of stored secrets this process cannot decrypt: legacy rows no held master key opens, and rows under a locked, destroyed or unknown data key. */
             undecryptableRows: string[] | null;
         };
-        LicenseStruct: {
-            error: string;
-        };
         Limit: {
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description How much of the meter the window allows.
+             */
             amount: number;
+            /** @description What the rule counts. */
             meter: string;
+            /** @description Counting algorithm. */
             strategy: string;
+            /** @description The window as a duration string, such as 1m0s. */
             window: string;
         };
         Metadata: {
+            /** @description Free-form key/value notes; never filtered on. */
             annotations?: {
                 [key: string]: string;
             };
@@ -3450,26 +4611,35 @@ export interface components {
              * Format: date-time
              * @description Set when the catalog version this relay seeds no longer ships the row. The row keeps working and is governed as the operator's own. Server-managed; ignored on write.
              */
-            catalogDetachedAt?: string;
-            /** Format: date-time */
-            createdAt?: string;
+            readonly catalogDetachedAt?: string;
+            /**
+             * Format: date-time
+             * @description When the row was created. Server-managed; ignored on write.
+             */
+            readonly createdAt?: string;
+            /** @description Free-text description of the row. */
             description?: string;
-            dirty?: boolean;
+            /** @description True once the row was edited through the API; a catalog re-seed leaves it alone. Server-managed; ignored on write. */
+            readonly dirty?: boolean;
+            /** @description Free-text name shown in the UI. Nothing references it. */
             displayName?: string;
-            id?: string;
+            /** @description Immutable UUIDv7 id, stamped by the server on create; ignored in create bodies. Cross-references in spec fields hold this id. */
+            readonly id?: string;
+            /** @description Key/value selectors; list endpoints filter on them with ?label=key=value. */
             labels?: {
                 [key: string]: string;
             };
+            /** @description DNS-1123 slug, unique per kind. Derived from displayName on create when omitted; may change on update. Used in URLs and manifests. */
             name: string;
+            /** @description Scope that owns the row. Each kind defaults it on create when omitted; an omitted owner on update keeps the stored one. */
             owner?: components["schemas"]["Owner"];
             /** @description Opaque version of the stored row; changes on every write. Send the value you read on update: a mismatch fails with 409 stale_resource_version. Omit to update unconditionally. */
             resourceVersion?: string;
-            /** Format: date-time */
-            updatedAt?: string;
-        };
-        MetadataStruct: {
-            displayName?: string;
-            name?: string;
+            /**
+             * Format: date-time
+             * @description When the row last changed. Server-managed; ignored on write.
+             */
+            readonly updatedAt?: string;
         };
         Model: {
             /**
@@ -3478,41 +4648,77 @@ export interface components {
              * @example https://example.com/schemas/Model.json
              */
             readonly $schema?: string;
+            /** @description Identity and provenance: id, name, owner, labels. */
             metadata: components["schemas"]["Metadata"];
+            /** @description The row's configuration. */
             spec: components["schemas"]["ModelSpec"];
         };
         ModelCapabilities: {
+            /** @description Continues from a prefilled assistant message. */
             assistantPrefill?: boolean;
+            /** @description Handles audio, in either direction. */
             audio?: boolean;
+            /** @description Accepts audio input. */
             audioInput?: boolean;
+            /** @description Produces audio output. */
             audioOutput?: boolean;
+            /** @description Available through the provider's batch API. */
             batch?: boolean;
+            /** @description Generates chat or text responses. */
             chat?: boolean;
+            /** @description Supports computer-use tools. */
             computerUse?: boolean;
-            defaultReasoningEffort?: string;
+            /**
+             * @description Effort level used when a request names none; one of reasoningEfforts.
+             * @enum {string}
+             */
+            defaultReasoningEffort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
+            /** @description Produces embeddings. */
             embeddings?: boolean;
+            /** @description Accepts file input, such as PDFs. */
             fileInput?: boolean;
+            /** @description Supports JSON output mode. */
             jsonMode?: boolean;
+            /** @description Calls several tools in one turn. */
             parallelTools?: boolean;
+            /** @description Supports prompt caching. */
             promptCache?: boolean;
+            /** @description Produces reasoning before answering. */
             reasoning?: boolean;
-            reasoningEfforts?: string[] | null;
+            /** @description Reasoning effort levels the model accepts, low to high. Empty means no effort control. Needs reasoning. */
+            reasoningEfforts?: ("none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max")[] | null;
+            /** @description Streams responses. */
             streaming?: boolean;
+            /** @description Follows a supplied JSON schema for its output. */
             structuredOutputs?: boolean;
+            /** @description Accepts system instructions. */
             systemMessages?: boolean;
+            /** @description Calls tools. */
             tools?: boolean;
+            /** @description Request parameters (canonical sampling names such as temperature, top_p, top_k) the upstream rejects for this model; relay strips them before sending and reports the drop. */
             unsupportedParams?: string[] | null;
+            /** @description Accepts image input. */
             vision?: boolean;
+            /** @description Supports the provider's web search tool. */
             webSearch?: boolean;
         };
         ModelDeprecation: {
+            /** @description Id of the model that replaces this one. */
             replacement?: string;
-            status?: string;
+            /**
+             * @description active, deprecated (still served, left out of policy wildcards) or sunset (retired by the vendor).
+             * @enum {string}
+             */
+            status?: "active" | "deprecated" | "sunset";
+            /** @description Date the vendor stops serving the model, YYYY-MM-DD. */
             sunsetDate?: string;
         };
         ModelHostRow: {
+            /** @description The binding of the model at the host. */
             binding: components["schemas"]["BindingView"];
+            /** @description The host. */
             host: components["schemas"]["HostRef"];
+            /** @description The binding's pricing; null when unpriced. */
             pricing: components["schemas"]["PricingView"];
         };
         ModelList: {
@@ -3522,68 +4728,126 @@ export interface components {
              * @example https://example.com/schemas/ModelList.json
              */
             readonly $schema?: string;
+            /** @description The page of matching rows the caller may see. */
             items: components["schemas"]["Model"][] | null;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Matching rows before limit and offset apply.
+             */
             total: number;
         };
         ModelModalities: {
+            /** @description Media the model accepts, such as text, image, audio, video, pdf. */
             input?: string[] | null;
+            /** @description Media the model produces. */
             output?: string[] | null;
         };
         ModelPolicyRow: {
+            /** @description Policy id. */
             id: string;
+            /** @description Rules of every rate limit the policy applies to this model. */
             limits: components["schemas"]["Limit"][] | null;
+            /** @description Policy slug. */
             name: string;
+            /** @description The policy's owner; a host for a tier preset. */
             owner: components["schemas"]["OwnerRef"];
         };
         ModelPriceRow: {
+            /** @description Currency of the amounts. */
             currency: string;
+            /** @description The pricing host. */
             host: components["schemas"]["HostRef"];
+            /** @description Pricing id. */
             id: string;
+            /** @description Pricing slug. */
             name: string;
+            /** @description The sheet's rates. */
             rates: components["schemas"]["Rate"][] | null;
         };
         ModelRef: {
+            /** @description Names of the capabilities the model has, such as chat, tools, vision. */
             capabilities?: string[] | null;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Published input cap in tokens.
+             */
             contextWindowInput?: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Context window in tokens.
+             */
             contextWindowTotal?: number;
+            /** @description Lifecycle state; absent means active. */
             deprecation?: components["schemas"]["DeprecationView"];
+            /** @description Display name. */
             displayName?: string;
+            /** @description Model id. */
             id: string;
+            /** @description Model slug. */
             name: string;
         };
         ModelSnapshot: {
+            /** @description Snapshot slug, usable as a model name in requests. */
             name: string;
+            /** @description The vendor's own name for the snapshot when it differs from name. */
             originalName?: string;
+            /** @description Snapshot release date, YYYY-MM-DD. */
             releasedAt?: string;
         };
         ModelSpec: {
+            /** @description Extra request names that resolve to this model's pointer snapshot when no catalog name matches; the caller's string goes upstream unchanged. One * wildcard with a literal prefix is allowed, such as claude-opus-5[*]. Never usable in policies. */
             aliases?: string[] | null;
+            /** @description What the model supports. */
             capabilities?: components["schemas"]["ModelCapabilities"];
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Published input cap in tokens, for models that have one. Informational.
+             */
             contextWindowInput?: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Published output share of the context window in tokens. Informational.
+             */
             contextWindowOutput?: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Context window in tokens.
+             */
             contextWindowTotal?: number;
+            /** @description Lifecycle state. Absent means active. */
             deprecation?: components["schemas"]["ModelDeprecation"];
+            /** @description Date the vendor deprecated the model, YYYY-MM-DD. */
             deprecationDate?: string;
+            /** @description Link to the model's documentation. */
             documentation?: string;
+            /** @description False stops routing to the model (403 model_disabled). Omitted means true. */
             enabled?: boolean;
+            /** @description Model family, such as claude or gpt. */
             family?: string;
+            /** @description Training-data cutoff, YYYY-MM or YYYY-MM-DD. */
             knowledgeCutoff?: string;
+            /** @description License the weights are published under, for open models. */
             license?: string;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Most tokens one response may generate.
+             */
             maxOutputTokens?: number;
+            /** @description Input and output modalities. */
             modalities?: components["schemas"]["ModelModalities"];
+            /** @description Name of the snapshot the bare model name resolves to. */
             pointer: string;
+            /** @description The vendor's named variant inside the family, such as opus or flash-lite; never a version or size. */
             productLine?: string;
+            /** @description The provider's page for the model. */
             providerModelPageURL?: string;
+            /** @description Release date, YYYY-MM-DD. */
             releaseDate?: string;
+            /** @description Dated checkpoints of the model; at least one. */
             snapshots: components["schemas"]["ModelSnapshot"][] | null;
+            /** @description Free-form tags; list endpoints filter on them with ?tag=. */
             tags?: string[] | null;
+            /** @description Version label inside the product line. */
             version?: string;
         };
         OTLPReceiver: {
@@ -3593,7 +4857,9 @@ export interface components {
              * @example https://example.com/schemas/OTLPReceiver.json
              */
             readonly $schema?: string;
+            /** @description Also store the message content clients report, in the payload store, while payload logging is enabled and the governing policy allows it. */
             captureContent?: boolean;
+            /** @description Accept OTLP/HTTP exports at /otlp/v1/traces and /otlp/v1/logs on the inference listener and record the calls they describe as usage. */
             enabled: boolean;
         };
         OTLPReceiverEnvelope: {
@@ -3608,15 +4874,24 @@ export interface components {
              * @enum {string}
              */
             section: "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            /** @description The section's current value. */
             value: components["schemas"]["OTLPReceiver"];
         };
         Owner: {
+            /** @description Id of the owning provider, host, user, team or project; empty for system. Defaults to the caller for user-owned rows. */
             id?: string;
-            kind?: string;
+            /**
+             * @description Owning scope: system (the deployment), provider or host (catalog rows), user, team or project.
+             * @enum {string}
+             */
+            kind?: "system" | "provider" | "host" | "user" | "team" | "project";
         };
         OwnerRef: {
+            /** @description Owner id; for a host's tier preset, the host id. */
             id?: string;
+            /** @description Owner kind: system, host, user, team or project. */
             kind: string;
+            /** @description Owner slug, when it has one. */
             name?: string;
         };
         Parsing: {
@@ -3626,6 +4901,7 @@ export interface components {
              * @example https://example.com/schemas/Parsing.json
              */
             readonly $schema?: string;
+            /** @description Extract per-request metadata and messages for attribution and logs; false reads only the routing fields. Default true. */
             richParsing: boolean;
         };
         ParsingEnvelope: {
@@ -3640,13 +4916,17 @@ export interface components {
              * @enum {string}
              */
             section: "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            /** @description The section's current value. */
             value: components["schemas"]["Parsing"];
         };
         PayloadClickHouse: {
+            /** @description Store each distinct message, tool list and system prompt once, with request bodies referencing them. Rows written either way stay readable. */
             dedup?: boolean;
+            /** @description Local write-ahead-log directory; empty uses the boot default. */
             walDir?: string;
         };
         PayloadFile: {
+            /** @description JSONL file path; empty uses the boot default. */
             path: string;
         };
         PayloadLogging: {
@@ -3656,14 +4936,28 @@ export interface components {
              * @example https://example.com/schemas/PayloadLogging.json
              */
             readonly $schema?: string;
-            backend: string;
+            /**
+             * @description Where captured bodies are stored. Empty means file.
+             * @enum {string}
+             */
+            backend: "" | "file" | "s3" | "clickhouse";
+            /** @description ClickHouse backend settings. */
             clickhouse: components["schemas"]["PayloadClickHouse"];
+            /** @description Master switch; while off nothing is captured whatever a key or policy asks. */
             enabled: boolean;
+            /** @description File backend settings. */
             file: components["schemas"]["PayloadFile"];
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Cap on each stored body in decoded bytes; 0 is unlimited.
+             */
             maxBytes: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Days the clickhouse backend keeps bodies; 0 keeps them forever. A section saved without it reads as 30.
+             */
             retentionDays: number;
+            /** @description S3 backend settings. */
             s3: components["schemas"]["PayloadS3"];
         };
         PayloadLoggingEnvelope: {
@@ -3678,15 +4972,23 @@ export interface components {
              * @enum {string}
              */
             section: "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            /** @description The section's current value. */
             value: components["schemas"]["PayloadLogging"];
         };
         PayloadS3: {
-            accessKey: components["schemas"]["Ref"];
+            /** @description Reference to the access key id: an environment variable (RELAY_PAYLOAD_S3_*) or a stored secret. */
+            accessKey: components["schemas"]["SecretRef"];
+            /** @description Bucket name; required for the s3 backend. */
             bucket: string;
+            /** @description S3 endpoint host, such as s3.amazonaws.com. */
             endpoint: string;
+            /** @description Key prefix for stored objects. */
             prefix?: string;
+            /** @description Bucket region. */
             region?: string;
-            secretKey: components["schemas"]["Ref"];
+            /** @description Reference to the secret access key, like accessKey. */
+            secretKey: components["schemas"]["SecretRef"];
+            /** @description Use TLS; required unless plain HTTP is allowed by the deployment. */
             useSSL: boolean;
         };
         Policy: {
@@ -3696,7 +4998,9 @@ export interface components {
              * @example https://example.com/schemas/Policy.json
              */
             readonly $schema?: string;
+            /** @description Identity and provenance: id, name, owner, labels. */
             metadata: components["schemas"]["Metadata"];
+            /** @description The row's configuration. */
             spec: components["schemas"]["PolicySpec"];
         };
         PolicyBinding: {
@@ -3706,7 +5010,9 @@ export interface components {
              * @example https://example.com/schemas/PolicyBinding.json
              */
             readonly $schema?: string;
+            /** @description Identity and provenance: id, name, owner, labels. */
             metadata: components["schemas"]["Metadata"];
+            /** @description The row's configuration. */
             spec: components["schemas"]["PolicyBindingSpec"];
         };
         PolicyBindingList: {
@@ -3716,30 +5022,58 @@ export interface components {
              * @example https://example.com/schemas/PolicyBindingList.json
              */
             readonly $schema?: string;
+            /** @description The page of matching rows the caller may see. */
             items: components["schemas"]["PolicyBinding"][] | null;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Matching rows before limit and offset apply.
+             */
             total: number;
         };
         PolicyBindingRow: {
+            /** @description The binding of the model at the host. */
             binding: components["schemas"]["BindingView"];
+            /** @description The serving host. */
             host: components["schemas"]["HostRef"];
+            /** @description Rules of every rate limit the policy applies to this binding. */
             limits: components["schemas"]["Limit"][] | null;
+            /** @description The policy's model entries that allow this binding; * when the policy lists no models. */
             matchedBy: string[] | null;
+            /** @description The model. */
             model: components["schemas"]["ModelRef"];
+            /** @description The model's provider. */
             provider: components["schemas"]["ProviderRef"];
         };
         PolicyBindingSpec: {
+            /** @description False stops the binding from governing its subjects. Omitted means true. */
             enabled?: boolean;
+            /** @description Id of the policy the subjects are bound to. */
             policyId: string;
-            /** Format: int64 */
-            priority?: number;
-            projectId: string;
-            subjects: components["schemas"]["RoleBindingSubject"][] | null;
+            /** @description Id of the owning project; set it for a project-owned binding (the owner follows it). Empty when a team, a user or the system owns the binding. */
+            projectId?: string;
+            /** @description Rungs the policy governs, each inside the binding owner's scope. A subject is held by at most one binding (a user once per scope); a second answers 409 duplicate_binding. Only a system-owned binding may name a host. */
+            subjects: components["schemas"]["PolicyBindingSubject"][] | null;
+        };
+        /** @description One rung a policy binding governs. */
+        PolicyBindingSubject: {
+            /** @description Id of the subject row. */
+            id: string;
+            /**
+             * @description What the subject is: a principal (user, serviceaccount), a tenancy scope (team, project), or an upstream rung (host, account, credential, meaning a host key). Groups are not policy subjects.
+             * @enum {string}
+             */
+            kind: "user" | "serviceaccount" | "host" | "account" | "credential" | "team" | "project";
         };
         PolicyHostRow: {
+            /** @description The host. */
             host: components["schemas"]["HostRef"];
+            /** @description Host keys reaching it through the policy's pools and keys; empty for a tier preset's own host. */
             hostKeys: components["schemas"]["HostKeyRef"][] | null;
-            requirement: string;
+            /**
+             * @description required when the host alone serves some allowed model, so losing its keys would drop that model; optional when other hosts cover everything it serves.
+             * @enum {string}
+             */
+            requirement: "required" | "optional";
         };
         PolicyList: {
             /**
@@ -3748,42 +5082,105 @@ export interface components {
              * @example https://example.com/schemas/PolicyList.json
              */
             readonly $schema?: string;
+            /** @description The page of matching rows the caller may see. */
             items: components["schemas"]["Policy"][] | null;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Matching rows before limit and offset apply.
+             */
             total: number;
         };
         PolicyModelExclusion: {
+            /** @description The model. */
             model: components["schemas"]["ModelRef"];
+            /** @description Why the policy does not allow it, such as no matching entry, deprecated, or no host the policy reaches. */
             reason: string;
         };
-        PolicyRLBinding: {
-            models: string[] | null;
+        PolicyRateLimitLink: {
+            /** @description Model references the limit applies to; empty applies it to every request. Only policies bound to a host, account or host key may scope a limit to models. */
+            models?: string[] | null;
+            /** @description Id of the linked rate limit. */
             rateLimitId: string;
         };
         PolicyRateLimitRow: {
+            /** @description The link has no model scope and applies to every model. */
             default: boolean;
+            /** @description Rate limit id. */
             id: string;
+            /** @description The rate limit's rules. */
             limits: components["schemas"]["Limit"][] | null;
+            /** @description Model references the link is scoped to. */
             models?: string[] | null;
+            /** @description Rate limit slug. */
             name: string;
         };
         PolicyRef: {
+            /** @description Display name. */
             displayName?: string;
+            /** @description Whether the policy is enabled. */
             enabled: boolean;
+            /** @description Policy id. */
             id: string;
+            /** @description Policy slug. */
             name: string;
+            /** @description The policy's owner. */
             owner: components["schemas"]["OwnerRef"];
         };
         PolicySpec: {
+            /** @description Ids of the budgets every request under this policy must fit. Unpriced models are refused under a budget. */
+            budgetIds?: string[] | null;
+            /** @description Ids of host keys linked directly, each one a pool of one, tried after poolIds. Only on policies bound to a team, project, user or service account. */
+            credentialIds?: string[] | null;
+            /** @description False refuses every request this policy governs with policy_disabled. Omitted means true. */
             enabled?: boolean;
-            hostKeyIds?: string[] | null;
+            /** @description Let wildcard entries in models match deprecated and sunset models. Models named literally always match. */
             includeDeprecated?: boolean;
-            keySelection?: string;
-            modelIds?: string[] | null;
+            /** @description Model references this policy allows, in the model-reference grammar: provider/model@host for one binding, provider/model for every host serving it, provider or provider/* for every model of a provider. Wildcards expand against the live catalog. Empty does not constrain this rung: the request is held to the other rungs' lists. */
             models?: string[] | null;
+            /** @description Capture request and response bodies of every request this policy governs, overriding the key's own flag. */
             payloadLoggingEnabled?: boolean;
-            rateLimitId?: string;
-            rlBindings?: components["schemas"]["PolicyRLBinding"][] | null;
+            /** @description Ids of the pools requests draw host keys from, tried in this order: a later pool is the failover for an earlier one. Only on policies bound to a team, project, user or service account. */
+            poolIds?: string[] | null;
+            /** @description Rate limits every request under this policy must fit. */
+            rateLimits?: components["schemas"]["PolicyRateLimitLink"][] | null;
+        };
+        Pool: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Pool.json
+             */
+            readonly $schema?: string;
+            /** @description Identity and provenance: id, name, owner, labels. */
+            metadata: components["schemas"]["Metadata"];
+            /** @description The row's configuration. */
+            spec: components["schemas"]["PoolSpec"];
+        };
+        PoolList: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/PoolList.json
+             */
+            readonly $schema?: string;
+            /** @description The page of matching rows the caller may see. */
+            items: components["schemas"]["Pool"][] | null;
+            /**
+             * Format: int64
+             * @description Matching rows before limit and offset apply.
+             */
+            total: number;
+        };
+        PoolSpec: {
+            /** @description Ids of the pool's host keys, all at hostId. The order is the preference for prioritized selection. May be empty. */
+            credentialIds?: string[] | null;
+            /** @description Id of the one host every key in the pool authenticates to. */
+            hostId: string;
+            /**
+             * @description How a request picks a key: prioritized takes the first healthy key in order, round-robin rotates, least-recently-used takes the key idle longest. Omitted means prioritized.
+             * @enum {string}
+             */
+            selection?: "prioritized" | "round-robin" | "least-recently-used";
         };
         Pricing: {
             /**
@@ -3792,7 +5189,9 @@ export interface components {
              * @example https://example.com/schemas/Pricing.json
              */
             readonly $schema?: string;
+            /** @description Identity and provenance: id, name, owner, labels. */
             metadata: components["schemas"]["Metadata"];
+            /** @description The row's configuration. */
             spec: components["schemas"]["PricingSpec"];
         };
         PricingList: {
@@ -3802,29 +5201,56 @@ export interface components {
              * @example https://example.com/schemas/PricingList.json
              */
             readonly $schema?: string;
+            /** @description The page of matching rows the caller may see. */
             items: components["schemas"]["Pricing"][] | null;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Matching rows before limit and offset apply.
+             */
             total: number;
         };
         PricingRate: {
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Context tier: the rate applies once the request's prompt reaches this many tokens; the largest qualifying tier wins. 0 is the base tier.
+             */
             aboveTokens?: number;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Price per unit, in the sheet's currency. 0 is an explicit free meter, not a missing rate.
+             */
             amount: number;
-            meter: string;
+            /**
+             * @description Usage counter this rate prices.
+             * @enum {string}
+             */
+            meter: "tokens.input" | "tokens.output" | "tokens.cache_read" | "tokens.cache_creation" | "tokens.cache_creation_1h" | "tokens.reasoning" | "tokens.audio_input" | "tokens.audio_output" | "tokens.accepted_prediction" | "tokens.rejected_prediction" | "tokens.server_tool_use_input" | "tokens.server_tool_use_output";
+            /** @description Upstream service tier name this rate applies to, as the upstream reports it. Empty is the base rate. */
             serviceTier?: string;
-            unit: string;
+            /**
+             * @description per_million prices a million units of the meter; per_unit prices one.
+             * @enum {string}
+             */
+            unit: "per_million" | "per_unit";
         };
         PricingSpec: {
+            /** @description ISO 4217 currency of the amounts, such as USD. */
             currency: string;
+            /** @description False stops costing traffic with this sheet, leaving it unpriced. Omitted means true. */
             enabled?: boolean;
+            /** @description One entry per priced meter, context tier and service tier. */
             rates: components["schemas"]["PricingRate"][] | null;
+            /** @description Ids of the models this rate sheet prices at its host. */
             targetModels: string[] | null;
         };
         PricingView: {
+            /** @description Currency of the amounts. */
             currency: string;
+            /** @description Pricing id. */
             id: string;
+            /** @description Pricing slug. */
             name: string;
+            /** @description The sheet's rates. */
             rates: components["schemas"]["Rate"][] | null;
         };
         Project: {
@@ -3834,7 +5260,9 @@ export interface components {
              * @example https://example.com/schemas/Project.json
              */
             readonly $schema?: string;
+            /** @description Identity and provenance: id, name, owner, labels. */
             metadata: components["schemas"]["Metadata"];
+            /** @description The row's configuration. */
             spec: components["schemas"]["ProjectSpec"];
         };
         ProjectList: {
@@ -3844,13 +5272,18 @@ export interface components {
              * @example https://example.com/schemas/ProjectList.json
              */
             readonly $schema?: string;
+            /** @description The page of matching rows the caller may see. */
             items: components["schemas"]["Project"][] | null;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Matching rows before limit and offset apply.
+             */
             total: number;
         };
         ProjectSpec: {
-            budget?: components["schemas"]["TeamBudget"];
+            /** @description False refuses inference from inside the project with 403 subject_disabled. Omitted means true. */
             enabled?: boolean;
+            /** @description Id of the team the project belongs to. The project's owner follows it. */
             teamId: string;
         };
         Provider: {
@@ -3860,7 +5293,9 @@ export interface components {
              * @example https://example.com/schemas/Provider.json
              */
             readonly $schema?: string;
+            /** @description Identity and provenance: id, name, owner, labels. */
             metadata: components["schemas"]["Metadata"];
+            /** @description The row's configuration. */
             spec: components["schemas"]["ProviderSpec"];
         };
         ProviderList: {
@@ -3870,20 +5305,32 @@ export interface components {
              * @example https://example.com/schemas/ProviderList.json
              */
             readonly $schema?: string;
+            /** @description The page of matching rows the caller may see. */
             items: components["schemas"]["Provider"][] | null;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Matching rows before limit and offset apply.
+             */
             total: number;
         };
         ProviderRef: {
+            /** @description Display name. */
             displayName?: string;
+            /** @description Provider id. */
             id: string;
+            /** @description Provider slug. */
             name: string;
         };
         ProviderSpec: {
+            /** @description Provider documentation. */
             docsURL?: string;
+            /** @description False takes the provider out of the serving catalog. Omitted means true. */
             enabled?: boolean;
+            /** @description Provider homepage. */
             homepageURL?: string;
+            /** @description Icon shown for the provider. */
             icon?: components["schemas"]["Icon"];
+            /** @description Provider status page. */
             statusPageURL?: string;
         };
         ProxyMode: {
@@ -3893,7 +5340,9 @@ export interface components {
              * @example https://example.com/schemas/ProxyMode.json
              */
             readonly $schema?: string;
+            /** @description Let proxy callers through without a relay key, forwarding their Authorization header as is. False still requires a relay key, with the upstream credential from the caller. */
             allowUnauthenticated: boolean;
+            /** @description Accept requests that carry the caller's own upstream credential; while off they are refused with 403 proxy_disabled. */
             enabled: boolean;
         };
         ProxyModeEnvelope: {
@@ -3908,16 +5357,29 @@ export interface components {
              * @enum {string}
              */
             section: "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            /** @description The section's current value. */
             value: components["schemas"]["ProxyMode"];
         };
         Rate: {
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Context tier threshold in prompt tokens; 0 is the base tier.
+             */
             aboveTokens?: number;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Price per unit.
+             */
             amount: number;
+            /** @description Usage counter the rate prices. */
             meter: string;
+            /** @description Upstream service tier the rate applies to; empty is the base rate. */
             serviceTier?: string;
-            unit: string;
+            /**
+             * @description Unit the amount prices.
+             * @enum {string}
+             */
+            unit: "per_million" | "per_unit";
         };
         RateLimit: {
             /**
@@ -3926,7 +5388,9 @@ export interface components {
              * @example https://example.com/schemas/RateLimit.json
              */
             readonly $schema?: string;
+            /** @description Identity and provenance: id, name, owner, labels. */
             metadata: components["schemas"]["Metadata"];
+            /** @description The row's configuration. */
             spec: components["schemas"]["RateLimitSpec"];
         };
         RateLimitList: {
@@ -3936,23 +5400,30 @@ export interface components {
              * @example https://example.com/schemas/RateLimitList.json
              */
             readonly $schema?: string;
+            /** @description The page of matching rows the caller may see. */
             items: components["schemas"]["RateLimit"][] | null;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Matching rows before limit and offset apply.
+             */
             total: number;
         };
-        RateLimitOverlap: {
-            host: string;
-            losers: string[] | null;
-            model: string;
-            provider: string;
-            winner: string;
-        };
         RateLimitRule: {
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description How much of the meter the window allows.
+             */
             amount: number;
-            /** @enum {string} */
+            /**
+             * @description What the rule counts: requests, concurrent requests, all tokens, or one token kind.
+             * @enum {string}
+             */
             meter: "requests" | "concurrency" | "tokens" | "tokens.input" | "tokens.output" | "tokens.cache_read" | "tokens.cache_creation" | "tokens.reasoning" | "tokens.server_tool_use_input" | "tokens.server_tool_use_output";
-            strategy: string;
+            /**
+             * @description Counting algorithm. session-window starts its window at the first request and idles after it ends, as subscription quotas do.
+             * @enum {string}
+             */
+            strategy: "token-bucket" | "sliding-window" | "fixed-window" | "leaky-bucket" | "session-window";
             /**
              * Format: int64
              * @description Measurement period, in whole seconds.
@@ -3960,21 +5431,22 @@ export interface components {
             window: number;
         };
         RateLimitSpec: {
+            /** @description False stops enforcing the rules. Omitted means true. */
             enabled?: boolean;
+            /** @description Rules a request must fit, each counted separately. An enabled rate limit needs at least one; no two may share meter, strategy and window. */
             rules: components["schemas"]["RateLimitRule"][] | null;
         };
         ReasoningTiming: {
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Microseconds from request start until the last reasoning frame.
+             */
             end: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Microseconds from request start until the first reasoning frame.
+             */
             start: number;
-        };
-        Ref: {
-            env?: string;
-            id?: string;
-            kind: string;
-            path?: string;
-            provider?: string;
         };
         RewrapResult: {
             /**
@@ -3983,9 +5455,14 @@ export interface components {
              * @example https://example.com/schemas/RewrapResult.json
              */
             readonly $schema?: string;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Data keys rewrapped.
+             */
             rewrapped: number;
+            /** @description Ids of live data keys left under another KEK this process cannot unwrap; rerun where both KEKs are held. */
             skipped: string[] | null;
+            /** @description Id of the master key (KEK) the data keys are now wrapped under. */
             target: string;
         };
         Role: {
@@ -3995,7 +5472,9 @@ export interface components {
              * @example https://example.com/schemas/Role.json
              */
             readonly $schema?: string;
+            /** @description Identity and provenance: id, name, owner, labels. */
             metadata: components["schemas"]["Metadata"];
+            /** @description The row's configuration. */
             spec: components["schemas"]["RoleSpec"];
         };
         RoleBinding: {
@@ -4005,7 +5484,9 @@ export interface components {
              * @example https://example.com/schemas/RoleBinding.json
              */
             readonly $schema?: string;
+            /** @description Identity and provenance: id, name, owner, labels. */
             metadata: components["schemas"]["Metadata"];
+            /** @description The row's configuration. */
             spec: components["schemas"]["RoleBindingSpec"];
         };
         RoleBindingList: {
@@ -4015,19 +5496,33 @@ export interface components {
              * @example https://example.com/schemas/RoleBindingList.json
              */
             readonly $schema?: string;
+            /** @description The page of matching rows the caller may see. */
             items: components["schemas"]["RoleBinding"][] | null;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Matching rows before limit and offset apply.
+             */
             total: number;
         };
         RoleBindingSpec: {
+            /** @description False suspends the grant. Omitted means true. */
             enabled?: boolean;
+            /** @description Id of the granted role. */
             roleId: string;
+            /** @description Where the grant applies: system, or a team or project by id. It covers every resource in that scope and below; the binding's owner follows it. */
             scope: components["schemas"]["Owner"];
+            /** @description Users, groups and service accounts granted the role. */
             subjects: components["schemas"]["RoleBindingSubject"][] | null;
         };
         RoleBindingSubject: {
+            /** @description Id of the subject row. Required for every kind except group. */
             id?: string;
-            kind: string;
+            /**
+             * @description What the subject is.
+             * @enum {string}
+             */
+            kind: "user" | "group" | "serviceaccount";
+            /** @description Group name, local or from the identity provider (such as system:authenticated). Only for kind group. */
             name?: string;
         };
         RoleList: {
@@ -4037,16 +5532,24 @@ export interface components {
              * @example https://example.com/schemas/RoleList.json
              */
             readonly $schema?: string;
+            /** @description The page of matching rows the caller may see. */
             items: components["schemas"]["Role"][] | null;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Matching rows before limit and offset apply.
+             */
             total: number;
         };
         RoleRule: {
-            kinds: string[] | null;
-            verbs: string[] | null;
+            /** @description Control-API kinds (plurals, such as policies or host-keys) the rule covers; * covers every kind. */
+            kinds: ("*" | "accounts" | "audit" | "budgets" | "debug" | "groups" | "host-bindings" | "host-keys" | "hosts" | "keys" | "license" | "logs" | "master-key" | "models" | "policies" | "policy-bindings" | "pools" | "pricings" | "projects" | "providers" | "rate-limits" | "role-bindings" | "roles" | "scim-clients" | "secret-keys" | "service-accounts" | "settings" | "system" | "teams" | "tokens" | "usage" | "users")[] | null;
+            /** @description Verbs the rule grants on those kinds, such as list, get, create, update, delete, rotate; * grants every verb. */
+            verbs: ("*" | "apply" | "attach" | "create" | "delete" | "destroy" | "detach" | "generate" | "get" | "health" | "list" | "mint" | "read" | "reload" | "revoke" | "rewrap" | "rotate" | "snapshot" | "update")[] | null;
         };
         RoleSpec: {
+            /** @description False makes bindings of this role grant nothing. Omitted means true. */
             enabled?: boolean;
+            /** @description Rules the role grants; a request is allowed when any rule covers its kind and verb. */
             rules: components["schemas"]["RoleRule"][] | null;
         };
         RuntimeConfig: {
@@ -4056,19 +5559,33 @@ export interface components {
              * @example https://example.com/schemas/RuntimeConfig.json
              */
             readonly $schema?: string;
+            /** @description Base URL of the control API; empty means /api on the UI's own origin. */
             controlApiUrl?: string;
+            /** @description Documentation link shown in the UI. */
             docsUrl?: string;
+            /** @description Feature flags the UI gates on: tokens, users, audit and accessReview are always present; oidc only when enabled. */
             features?: {
                 [key: string]: boolean;
             };
+            /** @description Public base URL of the inference API; empty when not configured. */
             inferenceApiUrl?: string;
-            mode?: string;
+            /**
+             * @description Deployment flavour the UI adapts to.
+             * @enum {string}
+             */
+            mode?: "oss" | "cloud";
+            /** @description Support link shown in the UI. */
             supportUrl?: string;
+            /** @description Public client-side error reporting config. */
             telemetry?: components["schemas"]["Telemetry"];
+            /** @description Relay build version. */
             version?: string;
         };
         SCIMClientRow: {
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When the client was created.
+             */
             createdAt: string;
             /**
              * Format: date-time
@@ -4077,9 +5594,22 @@ export interface components {
             lastUsedAt?: string;
             /** @description The client's name, stamped as the source of every user and group it provisions. */
             name: string;
+            /** @description The token was revoked and no longer authenticates. */
             revoked: boolean;
             /** @description The start of the token, for telling tokens apart. */
             tokenPrefix: string;
+        };
+        SecretRef: {
+            /** @description Environment variable name, for kind env. */
+            env?: string;
+            /** @description Id of the stored secret, for kind stored or oauth. */
+            id?: string;
+            /** @description Where the secret lives: env, stored, oauth, or an external backend (aws, gcp, azure, bitwarden, onepassword). */
+            kind: string;
+            /** @description Backend-specific locator, for the external backends. */
+            path?: string;
+            /** @description OAuth provider configuration that refreshes the credential, for kind oauth. */
+            provider?: string;
         };
         ServiceAccount: {
             /**
@@ -4088,7 +5618,9 @@ export interface components {
              * @example https://example.com/schemas/ServiceAccount.json
              */
             readonly $schema?: string;
+            /** @description Identity and provenance: id, name, owner, labels. */
             metadata: components["schemas"]["Metadata"];
+            /** @description The row's configuration. */
             spec: components["schemas"]["ServiceAccountSpec"];
         };
         ServiceAccountList: {
@@ -4098,54 +5630,68 @@ export interface components {
              * @example https://example.com/schemas/ServiceAccountList.json
              */
             readonly $schema?: string;
+            /** @description The page of matching rows the caller may see. */
             items: components["schemas"]["ServiceAccount"][] | null;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Matching rows before limit and offset apply.
+             */
             total: number;
         };
         ServiceAccountSpec: {
+            /** @description False refuses inference with the service account's keys (403 subject_disabled). Omitted means true. */
             enabled?: boolean;
-            policyId?: string;
+            /** @description Id of the project the service account belongs to. The owner follows it. */
             projectId: string;
         };
-        Spec: {
-            adapter: string;
-            enabled?: boolean;
-            hostId: string;
-            modelId: string;
-            pricingId?: string;
-            snapshots?: string[] | null;
-            upstreamName?: string;
-        };
-        SpecStruct: {
-            enabled?: boolean;
-            /** Format: date-time */
-            expiresAt?: string;
-            passthroughAllowed?: boolean;
-            payloadLoggingEnabled?: boolean;
-            policyId?: string;
-            principal: components["schemas"]["KeyPrincipal"];
-        };
         SummaryPrevious: {
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Cost of the priced requests, in nano-USD.
+             */
             cost_nanos: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Distinct non-empty values of the distinct dimension. Present only with distinct set.
+             */
             distinct?: number;
+            /** @description Request duration statistics in milliseconds. */
             duration_ms: components["schemas"]["DurationStats"];
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Requests with status 400 or above.
+             */
             error_count: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Requests with a 4xx status.
+             */
             errors_4xx: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Requests with a status of 500 or above.
+             */
             errors_5xx: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Requests in the previous window.
+             */
             requests: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Requests answered 429; part of errors_4xx.
+             */
             throttled: number;
+            /** @description Token sums by kind. */
             tokens: {
                 [key: string]: number;
             };
+            /** @description Upstream time-to-first-byte statistics in milliseconds; absent when no request carried upstream timing. */
             ttft_ms?: components["schemas"]["DurationStats"];
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Requests with no cost, left out of cost_nanos.
+             */
             unpriced: number;
         };
         SummaryResult: {
@@ -4155,51 +5701,97 @@ export interface components {
              * @example https://example.com/schemas/SummaryResult.json
              */
             readonly $schema?: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Start of the window.
+             */
             from: string;
+            /** @description For an id group_by: each group value's latest slug, or its current name. Absent for other groupings. */
             labels?: {
                 [key: string]: string;
             };
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Start of the window rows' previous covers; with a comparison only.
+             */
             previous_from?: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description End (exclusive) of the window rows' previous covers; with a comparison only.
+             */
             previous_to?: string;
+            /** @description One row per group, by request count descending. */
             rows: components["schemas"]["SummaryRow"][] | null;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description End of the window.
+             */
             to: string;
         };
         SummaryRow: {
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Cost of the priced requests, in nano-USD.
+             */
             cost_nanos: number;
             /**
              * Format: int64
              * @description Number of distinct non-empty values of the distinct dimension among this row's events (keyless traffic is not a key). Present only with distinct set.
              */
             distinct?: number;
+            /** @description Request duration statistics in milliseconds. */
             duration_ms: components["schemas"]["DurationStats"];
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Requests with status 400 or above; equals errors_4xx + errors_5xx.
+             */
             error_count: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Requests with a 4xx status.
+             */
             errors_4xx: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Requests with a status of 500 or above.
+             */
             errors_5xx: number;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Earliest request in the group.
+             */
             first_seen: string;
+            /** @description The group's dimension values, keyed by dimension; empty for group_by=none. */
             group: {
                 [key: string]: string;
             };
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Latest request in the group.
+             */
             last_seen: string;
+            /** @description The same group over the previous window, with compare=previous; absent when the group had no traffic there. */
             previous?: components["schemas"]["SummaryPrevious"];
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Requests in the group.
+             */
             requests: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Requests answered 429; part of errors_4xx.
+             */
             throttled: number;
+            /** @description Token sums by kind. */
             tokens: {
                 [key: string]: number;
             };
+            /** @description Upstream time-to-first-byte statistics in milliseconds; absent when no request carried upstream timing. */
             ttft_ms?: components["schemas"]["DurationStats"];
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Requests with no cost, left out of cost_nanos.
+             */
             unpriced: number;
         };
         Team: {
@@ -4209,12 +5801,10 @@ export interface components {
              * @example https://example.com/schemas/Team.json
              */
             readonly $schema?: string;
+            /** @description Identity and provenance: id, name, owner, labels. */
             metadata: components["schemas"]["Metadata"];
+            /** @description The row's configuration. */
             spec: components["schemas"]["TeamSpec"];
-        };
-        TeamBudget: {
-            amount: string;
-            period?: string;
         };
         TeamList: {
             /**
@@ -4223,44 +5813,77 @@ export interface components {
              * @example https://example.com/schemas/TeamList.json
              */
             readonly $schema?: string;
+            /** @description The page of matching rows the caller may see. */
             items: components["schemas"]["Team"][] | null;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Matching rows before limit and offset apply.
+             */
             total: number;
         };
         TeamSpec: {
-            budget?: components["schemas"]["TeamBudget"];
+            /** @description False refuses inference from inside the team with 403 subject_disabled. Omitted means true. */
             enabled?: boolean;
         };
         Telemetry: {
+            /** @description Environment name attached to reported errors. */
             environment?: string;
+            /** @description Public Sentry DSN the UI reports errors to. */
             sentryDsn?: string;
         };
         TimeSeriesPoint: {
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Start of the bucket.
+             */
             bucket: string;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Cost of the priced requests, in nano-USD.
+             */
             cost_nanos: number;
             /**
              * Format: int64
              * @description Number of distinct non-empty values of the distinct dimension among this bucket's events. Per-bucket values cannot be summed across buckets; use /usage/summary for a window total. Present only with distinct set.
              */
             distinct?: number;
+            /** @description Request duration statistics in milliseconds. */
             duration_ms: components["schemas"]["DurationStats"];
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Requests with status 400 or above; equals errors_4xx + errors_5xx.
+             */
             error_count: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Requests with a 4xx status.
+             */
             errors_4xx: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Requests with a status of 500 or above.
+             */
             errors_5xx: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Requests in the bucket.
+             */
             requests: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Requests answered 429; part of errors_4xx.
+             */
             throttled: number;
+            /** @description Token sums by kind. */
             tokens: {
                 [key: string]: number;
             };
+            /** @description Upstream time-to-first-byte statistics in milliseconds; absent when no request carried upstream timing. */
             ttft_ms?: components["schemas"]["DurationStats"];
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Requests with no cost, left out of cost_nanos.
+             */
             unpriced: number;
         };
         TimeSeriesResult: {
@@ -4270,37 +5893,68 @@ export interface components {
              * @example https://example.com/schemas/TimeSeriesResult.json
              */
             readonly $schema?: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Start of the window.
+             */
             from: string;
+            /** @description Bucket width, as requested. */
             interval: string;
+            /** @description For an id group_by: each series value's latest slug across the window. */
             labels?: {
                 [key: string]: string;
             };
+            /** @description One series per group, or a single series without group_by. */
             rows: components["schemas"]["TimeSeriesRow"][] | null;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description End of the window.
+             */
             to: string;
         };
         TimeSeriesRow: {
+            /** @description The series' dimension values; absent without group_by. */
             group?: {
                 [key: string]: string;
             };
+            /** @description Non-empty buckets in time order; zero-fill the gaps. */
             points: components["schemas"]["TimeSeriesPoint"][] | null;
         };
         UnthrottledModel: {
+            /** @description An allowed model no linked rate limit covers. */
             model: components["schemas"]["ModelRef"];
         };
+        UpstreamRef: {
+            /** @description Id of the host its keys authenticate to. */
+            hostId: string;
+            /** @description Pool or account id. */
+            id: string;
+            /** @description Pool or account slug. */
+            name: string;
+        };
         UpstreamTiming: {
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Microseconds from request start until the upstream response ended.
+             */
             response_end: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Microseconds from request start until the first upstream byte.
+             */
             response_start: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Microseconds from request start until the upstream call began.
+             */
             start: number;
         };
         UsageClickHouse: {
+            /** @description Local write-ahead-log directory; empty uses the boot default. */
             walDir?: string;
         };
         UsageFile: {
+            /** @description JSONL file path; empty uses the boot default. */
             path?: string;
         };
         UsageLogging: {
@@ -4310,10 +5964,19 @@ export interface components {
              * @example https://example.com/schemas/UsageLogging.json
              */
             readonly $schema?: string;
-            backend: string;
+            /**
+             * @description Where usage events are written and read. Empty means file.
+             * @enum {string}
+             */
+            backend: "" | "file" | "clickhouse" | "postgres" | "valkey";
+            /** @description ClickHouse backend settings. */
             clickhouse: components["schemas"]["UsageClickHouse"];
+            /** @description File backend settings. */
             file: components["schemas"]["UsageFile"];
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Days the clickhouse and postgres backends keep events; 0 keeps them forever. Shortening it deletes older events.
+             */
             retentionDays: number;
         };
         UsageLoggingEnvelope: {
@@ -4328,6 +5991,7 @@ export interface components {
              * @enum {string}
              */
             section: "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            /** @description The section's current value. */
             value: components["schemas"]["UsageLogging"];
         };
         accessReview: {
@@ -4337,7 +6001,9 @@ export interface components {
              * @example https://example.com/schemas/accessReview.json
              */
             readonly $schema?: string;
+            /** @description The checked action, such as policies.update. */
             action: string;
+            /** @description Whether the subject may perform the action. */
             allowed: boolean;
             /** @description The role binding that granted the action. */
             binding?: components["schemas"]["reviewedBinding"];
@@ -4350,9 +6016,11 @@ export interface components {
              * @enum {string}
              */
             reason: "admin" | "rule" | "binding" | "credential" | "none";
+            /** @description What it was checked against. */
             resource: components["schemas"]["reviewedResource"];
             /** @description The relay rule that decided: personal-row, catalog-read, shared-policy-read, system-role-read, scoped-list or parent-team-read. */
             rule?: string;
+            /** @description Who was checked. */
             subject: components["schemas"]["reviewedSubject"];
         };
         accessReviewInputBody: {
@@ -4364,6 +6032,7 @@ export interface components {
             readonly $schema?: string;
             /** @description The action a handler authorizes, e.g. keys.get. A bare verb takes the resource kind's plural. */
             action: string;
+            /** @description What to check the action against. */
             resource: components["schemas"]["reviewResourceInput"];
             /** @description Who to check. Omit to check yourself; anyone else takes an admin. */
             subject?: components["schemas"]["reviewSubjectInput"];
@@ -4377,7 +6046,9 @@ export interface components {
             readonly $schema?: string;
             /** @description False for a dry run. */
             applied: boolean;
+            /** @description How many entries took each action. */
             counts: components["schemas"]["Counts"];
+            /** @description One entry per document, with the action taken or planned. */
             plan: components["schemas"]["Entry"][] | null;
         };
         auditListOutputBody: {
@@ -4387,7 +6058,9 @@ export interface components {
              * @example https://example.com/schemas/auditListOutputBody.json
              */
             readonly $schema?: string;
+            /** @description Matching audit events, newest first. */
             events: components["schemas"]["AuditEvent"][] | null;
+            /** @description Pass back as ?cursor= for the next page; absent on the last page. */
             next_cursor?: string;
         };
         authResponseBody: {
@@ -4397,27 +6070,54 @@ export interface components {
              * @example https://example.com/schemas/authResponseBody.json
              */
             readonly $schema?: string;
+            /** @description Names of the roles bound to the caller. */
             roles?: string[] | null;
             /** @description Scopes the caller holds a role binding at, as "team:<id>" / "project:<id>". */
             scopes?: string[] | null;
             /** @description RBAC subject strings this caller acts under. */
             subjects?: string[] | null;
+            /** @description The caller's user id; empty for the admin token. */
             user_id: string;
+            /** @description The caller's username. */
             username: string;
         };
         blockerGroup: {
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Every referencing row, including the hidden ones.
+             */
             count: number;
+            /** @description The rows can let go of the target (POST …/detach does it); otherwise reassign or delete them first. */
             detachable: boolean;
+            /** @description Field path on those rows that names the target, such as spec.poolIds. */
             field: string;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Referencing rows in scopes the caller may not see; they are counted but not listed.
+             */
             hidden: number;
+            /** @description The referencing rows the caller may see. */
             items: components["schemas"]["blockerItem"][] | null;
+            /** @description Kind of the referencing rows, as an API singular (policy, host-key, policy-binding, …). */
             kind: string;
         };
         blockerItem: {
+            /** @description Id of the referencing row. */
             id: string;
+            /** @description Slug of the referencing row. */
             name: string;
+        };
+        conflictBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/conflictBody.json
+             */
+            readonly $schema?: string;
+            /** @description With resource_in_use: the rows that still reference the target, grouped by kind and field. */
+            blockers?: components["schemas"]["blockerGroup"][] | null;
+            /** @description The error. code says which conflict: resource_in_use, stale_resource_version, managed_by_source, duplicate_binding, or a duplicate default account. */
+            error: components["schemas"]["APIErrorBody"];
         };
         createKeyInputBody: {
             /**
@@ -4426,8 +6126,16 @@ export interface components {
              * @example https://example.com/schemas/createKeyInputBody.json
              */
             readonly $schema?: string;
-            metadata: components["schemas"]["MetadataStruct"];
-            spec: components["schemas"]["SpecStruct"];
+            /** @description Name of the new key. */
+            metadata: components["schemas"]["createKeyMetadata"];
+            /** @description The new key's principal and flags. */
+            spec: components["schemas"]["createKeySpec"];
+        };
+        createKeyMetadata: {
+            /** @description Free-text name shown in the UI. */
+            displayName?: string;
+            /** @description Slug for the key; derived from displayName when omitted. */
+            name?: string;
         };
         createKeyResponseBody: {
             /**
@@ -4436,17 +6144,56 @@ export interface components {
              * @example https://example.com/schemas/createKeyResponseBody.json
              */
             readonly $schema?: string;
+            /** @description The stored key. */
             key: components["schemas"]["Key"];
+            /** @description The bearer token to send as Authorization: Bearer. Returned only here; store it now. */
             plaintext: string;
         };
+        createKeySpec: {
+            /** @description False creates the key disabled. Omitted means true. */
+            enabled?: boolean;
+            /**
+             * Format: date-time
+             * @description When the key stops authenticating. Omitted never expires.
+             */
+            expiresAt?: string;
+            /** @description Let the key send its own upstream credential in proxy mode. */
+            passthroughAllowed?: boolean;
+            /** @description Capture request and response bodies of this key's requests. A governing policy's flag overrides it. */
+            payloadLoggingEnabled?: boolean;
+            /** @description The service account or user the key acts as. Its owner becomes the key's owner. */
+            principal: components["schemas"]["KeyPrincipal"];
+        };
         debugPolicyJoin: {
-            /** Format: int64 */
-            hostKeys: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Budgets it links.
+             */
+            budgets: number;
+            /**
+             * Format: int64
+             * @description Host keys it links directly.
+             */
+            credentials: number;
+            /**
+             * Format: int64
+             * @description Model references the policy lists.
+             */
             models: number;
+            /** @description Policy id. */
             policyId: string;
+            /** @description Policy slug. */
             policyName: string;
-            rateLimited: boolean;
+            /**
+             * Format: int64
+             * @description Pools it links.
+             */
+            pools: number;
+            /**
+             * Format: int64
+             * @description Rate-limit links.
+             */
+            rateLimits: number;
         };
         debugSnapshotBody: {
             /**
@@ -4455,34 +6202,78 @@ export interface components {
              * @example https://example.com/schemas/debugSnapshotBody.json
              */
             readonly $schema?: string;
+            /** @description Row counts per kind. */
             counts: components["schemas"]["debugSnapshotCounts"];
+            /** @description Host keys, secret-free. Full dump only. */
             hostKeys?: components["schemas"]["HostKey"][] | null;
+            /** @description Hosts. Full dump only. */
             hosts?: components["schemas"]["Host"][] | null;
+            /** @description Relay keys. Full dump only. */
             keys?: components["schemas"]["Key"][] | null;
+            /** @description Models. Full dump only. */
             models?: components["schemas"]["Model"][] | null;
+            /** @description Policies. Full dump only. */
             policies?: components["schemas"]["Policy"][] | null;
+            /** @description Per-policy link counts. */
             policyJoins?: components["schemas"]["debugPolicyJoin"][] | null;
+            /** @description Pricing sheets. Full dump only. */
             pricings?: components["schemas"]["Pricing"][] | null;
+            /** @description Providers. Full dump only. */
             providers?: components["schemas"]["Provider"][] | null;
+            /** @description Rate limits. Full dump only. */
             rateLimits?: components["schemas"]["RateLimit"][] | null;
         };
         debugSnapshotCounts: {
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Host keys in the snapshot.
+             */
             hostKeys: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Hosts in the snapshot.
+             */
             hosts: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Relay keys in the snapshot.
+             */
             keys: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Models in the snapshot.
+             */
             models: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Policies in the snapshot.
+             */
             policies: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Pricing sheets in the snapshot.
+             */
             pricings: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Providers in the snapshot.
+             */
             providers: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Rate limits in the snapshot.
+             */
             rateLimits: number;
+        };
+        deleteDetachedBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/deleteDetachedBody.json
+             */
+            readonly $schema?: string;
+            /** @description Links the delete took from rows that stay, grouped like blockers: a policy that lost a rate limit or budget, or narrowed to the pools and credentials it still links. */
+            detached: components["schemas"]["blockerGroup"][] | null;
         };
         detachOutputBody: {
             /**
@@ -4496,29 +6287,66 @@ export interface components {
             /** @description References this call released, grouped like blockers. */
             detached: components["schemas"]["blockerGroup"][] | null;
         };
+        detectedAccount: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/detectedAccount.json
+             */
+            readonly $schema?: string;
+            /** @description The account the key is in now. */
+            currentAccountId: string;
+            /** @description An account of the key's owner at the same host whose orgId is the detected one: the current account when the key is already there. Absent when there is none; the key is never moved by this call. */
+            matchingAccountId?: string;
+            /** @description The organization id the host named for the key. */
+            orgId: string;
+            /** @description The organization's display name, when the host sends one. */
+            orgName?: string;
+        };
         graphBinding: {
+            /** @description Wire shape relay speaks to that host for the model. */
             adapter: string;
+            /** @description Id of a host serving the model. */
             hostId: string;
         };
         graphHost: {
+            /** @description Display name. */
             displayName?: string;
+            /** @description Icon asset path. */
             iconPath?: string;
+            /** @description Host id. */
             id: string;
+            /** @description Host slug. */
             name: string;
         };
         graphModel: {
+            /** @description Enabled hosts serving the model. */
             bindings: components["schemas"]["graphBinding"][] | null;
+            /** @description What the model supports. */
             capabilities?: components["schemas"]["ModelCapabilities"];
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Published input cap in tokens.
+             */
             contextWindowInput?: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Context window in tokens.
+             */
             contextWindowTotal?: number;
+            /** @description Deprecation status, when not active. */
             deprecated?: string;
+            /** @description Display name. */
             displayName?: string;
+            /** @description The catalog marks the model as featured. */
             featured?: boolean;
+            /** @description Model id. */
             id: string;
+            /** @description Model slug. */
             name: string;
+            /** @description Snapshot the bare model name resolves to. */
             pointer?: string;
+            /** @description Id of the model's provider. */
             providerId: string;
         };
         graphOutputBody: {
@@ -4528,13 +6356,19 @@ export interface components {
              * @example https://example.com/schemas/graphOutputBody.json
              */
             readonly $schema?: string;
+            /** @description Hosts in the catalog. */
             hosts: components["schemas"]["graphHost"][] | null;
+            /** @description Models, each with the hosts that serve it. */
             models: components["schemas"]["graphModel"][] | null;
+            /** @description Providers in the catalog. */
             providers: components["schemas"]["graphProvider"][] | null;
         };
         graphProvider: {
+            /** @description Display name. */
             displayName?: string;
+            /** @description Provider id. */
             id: string;
+            /** @description Provider slug. */
             name: string;
         };
         hostKeyHealth: {
@@ -4570,8 +6404,11 @@ export interface components {
             open_until?: string;
             /** @description Why the circuit opened (cooldown reason), when open. */
             reason?: string;
-            /** @description closed | open | half_open | unknown. */
-            state: string;
+            /**
+             * @description Breaker state.
+             * @enum {string}
+             */
+            state: "closed" | "open" | "half_open" | "unknown";
         };
         hostKeysOutBody: {
             /**
@@ -4580,7 +6417,9 @@ export interface components {
              * @example https://example.com/schemas/hostKeysOutBody.json
              */
             readonly $schema?: string;
+            /** @description The host. */
             host: components["schemas"]["HostRef"];
+            /** @description Host keys for the host the caller may see, secret-free. */
             keys: components["schemas"]["HostKeyView"][] | null;
         };
         hostModelsOutBody: {
@@ -4590,7 +6429,9 @@ export interface components {
              * @example https://example.com/schemas/hostModelsOutBody.json
              */
             readonly $schema?: string;
+            /** @description The host. */
             host: components["schemas"]["HostRef"];
+            /** @description Models bound to the host. */
             models: components["schemas"]["HostModelRow"][] | null;
         };
         hostPoliciesOutBody: {
@@ -4600,7 +6441,9 @@ export interface components {
              * @example https://example.com/schemas/hostPoliciesOutBody.json
              */
             readonly $schema?: string;
+            /** @description The host. */
             host: components["schemas"]["HostRef"];
+            /** @description Policies the host owns: its tier presets. */
             policies: components["schemas"]["HostPolicyRow"][] | null;
         };
         licenseInputBody: {
@@ -4612,17 +6455,6 @@ export interface components {
             readonly $schema?: string;
             /** @description The signed license file, verbatim. Empty clears the stored license (the deployment falls back to the environment, else community). */
             value: string;
-        };
-        listBody_github_com_wyolet_relay_app_binding_Binding_: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example https://example.com/schemas/listBody_github_com_wyolet_relay_app_binding_Binding_.json
-             */
-            readonly $schema?: string;
-            items: components["schemas"]["Binding"][] | null;
-            /** Format: int64 */
-            total: number;
         };
         livezOutputBody: {
             /**
@@ -4644,13 +6476,19 @@ export interface components {
              * @example https://example.com/schemas/logGetOutputBody.json
              */
             readonly $schema?: string;
+            /** @description The request's usage record. */
             log: components["schemas"]["Event"];
+            /** @description The captured bodies; absent when payload logging was off for the request or the capture has aged out. */
             payload?: components["schemas"]["logPayload"];
         };
         logPayload: {
+            /** @description The captured request body. */
             request_body?: string;
+            /** @description The request body was cut at the capture size cap. */
             request_truncated?: boolean;
+            /** @description The captured response body; for a stream, the raw stream. */
             response_body?: string;
+            /** @description The response body was cut at the capture size cap. */
             response_truncated?: boolean;
         };
         loginInputBody: {
@@ -4697,7 +6535,9 @@ export interface components {
              * @example https://example.com/schemas/logsListOutputBody.json
              */
             readonly $schema?: string;
+            /** @description Matching log records, newest first. */
             logs: components["schemas"]["Event"][] | null;
+            /** @description Pass back as ?cursor= for the next page; absent on the last page. */
             next_cursor?: string;
             /**
              * Format: int64
@@ -4736,11 +6576,18 @@ export interface components {
              * @example https://example.com/schemas/mintTokenOutputBody.json
              */
             readonly $schema?: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When the token expires.
+             */
             expiresAt: string;
+            /** @description The token's id, for revoking it with DELETE /auth/token/{jti}. */
             jti: string;
+            /** @description Id of the project the token acts in. */
             project: string;
+            /** @description Id of the project's team, which revoking the jti needs. */
             teamId: string;
+            /** @description The signed inference token, sent as Authorization: Bearer to the inference API. */
             token: string;
         };
         modelHostsOutBody: {
@@ -4750,7 +6597,9 @@ export interface components {
              * @example https://example.com/schemas/modelHostsOutBody.json
              */
             readonly $schema?: string;
+            /** @description Hosts bound to the model, disabled ones included. */
             hosts: components["schemas"]["ModelHostRow"][] | null;
+            /** @description The model. */
             model: components["schemas"]["ModelRef"];
         };
         modelPoliciesOutBody: {
@@ -4760,7 +6609,9 @@ export interface components {
              * @example https://example.com/schemas/modelPoliciesOutBody.json
              */
             readonly $schema?: string;
+            /** @description The model. */
             model: components["schemas"]["ModelRef"];
+            /** @description Policies the caller may see that allow the model. */
             policies: components["schemas"]["ModelPolicyRow"][] | null;
         };
         modelPricingOutBody: {
@@ -4770,12 +6621,17 @@ export interface components {
              * @example https://example.com/schemas/modelPricingOutBody.json
              */
             readonly $schema?: string;
+            /** @description The model. */
             model: components["schemas"]["ModelRef"];
+            /** @description One pricing sheet per host that prices the model. */
             pricing: components["schemas"]["ModelPriceRow"][] | null;
         };
         namedRef: {
+            /** @description Row id, when it has one. */
             id?: string;
+            /** @description Kind of the named row, such as user, group, role, team, project or system. */
             kind: string;
+            /** @description Row slug or group name. */
             name?: string;
         };
         overlayDeleteOutBody: {
@@ -4785,6 +6641,7 @@ export interface components {
              * @example https://example.com/schemas/overlayDeleteOutBody.json
              */
             readonly $schema?: string;
+            /** @description True when an overlay existed and was removed. */
             deleted: boolean;
         };
         overlayPutInputBody: {
@@ -4804,14 +6661,24 @@ export interface components {
              * @example https://example.com/schemas/overlayView.json
              */
             readonly $schema?: string;
+            /** @description The template with the patch merged: what requests are served from. Equals template without an overlay or while it is quarantined. */
             effective: components["schemas"]["ModelSpec"];
+            /** @description Kind of the overlaid row; model. */
             kind: string;
+            /** @description The stored sparse spec patch; absent when the model has no overlay. */
             patch?: unknown;
+            /** @description Why the patch is quarantined. */
             quarantineReason?: string;
+            /** @description The patch no longer merges into a valid spec (usually after a template change), so the template is served. Fix or delete the patch. */
             quarantined?: boolean;
+            /** @description Id of the overlaid row. */
             resourceId: string;
+            /** @description The catalog's own spec, which a re-seed keeps current. */
             template: components["schemas"]["ModelSpec"];
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When the patch last changed.
+             */
             updatedAt?: string;
         };
         policyHostsOutBody: {
@@ -4821,7 +6688,9 @@ export interface components {
              * @example https://example.com/schemas/policyHostsOutBody.json
              */
             readonly $schema?: string;
+            /** @description Hosts serving a model the policy allows, with the host keys that reach each. */
             hosts: components["schemas"]["PolicyHostRow"][] | null;
+            /** @description The policy. */
             policy: components["schemas"]["PolicyRef"];
         };
         policyModelsOutBody: {
@@ -4831,8 +6700,11 @@ export interface components {
              * @example https://example.com/schemas/policyModelsOutBody.json
              */
             readonly $schema?: string;
+            /** @description With debug=true: the models it does not allow, each with the reason. */
             excluded?: components["schemas"]["PolicyModelExclusion"][] | null;
+            /** @description One row per (model, host) binding the policy allows, with the limits it applies there. */
             models: components["schemas"]["PolicyBindingRow"][] | null;
+            /** @description The policy. */
             policy: components["schemas"]["PolicyRef"];
         };
         policyRateLimitsOutBody: {
@@ -4842,16 +6714,23 @@ export interface components {
              * @example https://example.com/schemas/policyRateLimitsOutBody.json
              */
             readonly $schema?: string;
-            overlaps: components["schemas"]["RateLimitOverlap"][] | null;
+            /** @description The policy. */
             policy: components["schemas"]["PolicyRef"];
+            /** @description The rate limits the policy links. */
             rateLimits: components["schemas"]["PolicyRateLimitRow"][] | null;
+            /** @description Allowed models no linked rate limit covers. */
             unthrottled: components["schemas"]["UnthrottledModel"][] | null;
         };
         refResult: {
+            /** @description The (model, host) bindings it matches. */
             bindings: components["schemas"]["resolveBindingRef"][] | null;
+            /** @description provider/model@host for each binding it matches, sorted; empty for a dead reference. */
             expanded: string[] | null;
+            /** @description Ids of the hosts it matches. */
             hostIds: string[] | null;
+            /** @description Ids of the models it matches. */
             modelIds: string[] | null;
+            /** @description The input reference. */
             ref: string;
         };
         referenceItem: {
@@ -4871,7 +6750,12 @@ export interface components {
              * @example https://example.com/schemas/referencesOutputBody.json
              */
             readonly $schema?: string;
+            /** @description Rows the caller may see that reference the target, including links a delete would take without refusing. */
             items: components["schemas"]["referenceItem"][] | null;
+        };
+        reloadLicense: {
+            /** @description Why the stored license does not verify. */
+            error: string;
         };
         reloadOutputBody: {
             /**
@@ -4880,17 +6764,25 @@ export interface components {
              * @example https://example.com/schemas/reloadOutputBody.json
              */
             readonly $schema?: string;
-            license?: components["schemas"]["LicenseStruct"];
+            /** @description Present when the stored license no longer verifies. The reload still succeeded and the previous license stays live. */
+            license?: components["schemas"]["reloadLicense"];
+            /** @description ok once the snapshot is rebuilt. */
             status: string;
         };
         resolveBindingRef: {
+            /** @description Host id. */
             hostId: string;
+            /** @description Model id. */
             modelId: string;
         };
         resolveEntity: {
+            /** @description The model's deprecation status, when not active. */
             deprecated?: string;
+            /** @description Display name. */
             displayName?: string;
+            /** @description Row id. */
             id: string;
+            /** @description Row slug. */
             name: string;
         };
         resolveOutputBody: {
@@ -4900,12 +6792,19 @@ export interface components {
              * @example https://example.com/schemas/resolveOutputBody.json
              */
             readonly $schema?: string;
+            /** @description Every matched (model, host) binding, deduplicated. */
             bindings: components["schemas"]["resolveBindingRef"][] | null;
+            /** @description provider/model@host for every matched binding, sorted and deduplicated. */
             expanded: string[] | null;
+            /** @description Every matched host, deduplicated across references. */
             hosts: components["schemas"]["resolveEntity"][] | null;
+            /** @description Every matched model, deduplicated across references. */
             models: components["schemas"]["resolveEntity"][] | null;
+            /** @description The input references, in request order. */
             refs: string[] | null;
+            /** @description Each input reference's own expansion, in request order. */
             results: components["schemas"]["refResult"][] | null;
+            /** @description Input references that match no enabled binding. */
             unresolved: string[] | null;
         };
         reviewOwnerInput: {
@@ -4941,17 +6840,25 @@ export interface components {
             name?: string;
         };
         reviewedBinding: {
+            /** @description Role binding id. */
             id?: string;
+            /** @description Role binding slug. */
             name?: string;
+            /** @description The granted role. */
             role: components["schemas"]["namedRef"];
+            /** @description The scope the grant applies at. */
             scope: components["schemas"]["namedRef"];
             /** @description The binding subject the caller matched. */
             subject: components["schemas"]["namedRef"];
         };
         reviewedResource: {
+            /** @description Resource id, when a row was named. */
             id?: string;
+            /** @description Resource kind, as an API singular. */
             kind: string;
+            /** @description Resource slug, when a row was named. */
             name?: string;
+            /** @description The row's owner, when the decision read it. */
             owner?: components["schemas"]["namedRef"];
         };
         reviewedSubject: {
@@ -4959,9 +6866,11 @@ export interface components {
             admin: boolean;
             /** @description The account is disabled and cannot sign in; the decision is what it would hold if enabled. */
             disabled?: boolean;
+            /** @description Id of the user or service account. */
             id?: string;
             /** @description user, serviceaccount or admin-token. */
             kind: string;
+            /** @description Username or service-account slug. */
             name?: string;
             /** @description Binding subjects the decision was evaluated under. */
             subjects?: string[] | null;
@@ -4993,7 +6902,10 @@ export interface components {
              * @example https://example.com/schemas/rotateKeyBody.json
              */
             readonly $schema?: string;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Seconds the previous plaintext keeps authenticating, from 0 up to inference.keyRotateMaxGrace (default one day). 0 cuts over immediately.
+             */
             graceSeconds?: number;
         };
         rotateKeyResponseBody: {
@@ -5003,7 +6915,9 @@ export interface components {
              * @example https://example.com/schemas/rotateKeyResponseBody.json
              */
             readonly $schema?: string;
+            /** @description The rotated key. */
             key: components["schemas"]["Key"];
+            /** @description The new bearer token. Returned only here; store it now. */
             plaintext: string;
         };
         scimClientCreateInputBody: {
@@ -5023,7 +6937,10 @@ export interface components {
              * @example https://example.com/schemas/scimClientCreateOutputBody.json
              */
             readonly $schema?: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When the client was created.
+             */
             createdAt: string;
             /**
              * Format: date-time
@@ -5032,6 +6949,7 @@ export interface components {
             lastUsedAt?: string;
             /** @description The client's name, stamped as the source of every user and group it provisions. */
             name: string;
+            /** @description The token was revoked and no longer authenticates. */
             revoked: boolean;
             /** @description The bearer token the identity provider sends. Returned once; only its hash is kept. */
             token: string;
@@ -5045,6 +6963,7 @@ export interface components {
              * @example https://example.com/schemas/scimClientListOutputBody.json
              */
             readonly $schema?: string;
+            /** @description Every SCIM client, revoked ones included. */
             clients: components["schemas"]["SCIMClientRow"][] | null;
         };
         secretKeyDestroyBody: {
@@ -5090,6 +7009,7 @@ export interface components {
             keys: components["schemas"]["DataKeyStatus"][] | null;
         };
         settingsCatalogItem: {
+            /** @description What the section configures. */
             description?: string;
             /**
              * @description One of the relay's registered settings section keys.
@@ -5106,6 +7026,7 @@ export interface components {
              * @example https://example.com/schemas/settingsCatalogOutputBody.json
              */
             readonly $schema?: string;
+            /** @description Every settings section this relay knows. */
             items: components["schemas"]["settingsCatalogItem"][] | null;
         };
         settingsListItem: {
@@ -5114,6 +7035,7 @@ export interface components {
              * @enum {string}
              */
             section: "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            /** @description The section's current value; its shape is the section's schema (see GET /settings/sections). */
             value: unknown;
         };
         settingsListOutputBody: {
@@ -5123,7 +7045,20 @@ export interface components {
              * @example https://example.com/schemas/settingsListOutputBody.json
              */
             readonly $schema?: string;
+            /** @description Every section's current value. */
             items: components["schemas"]["settingsListItem"][] | null;
+        };
+        upstreamKeysOutBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/upstreamKeysOutBody.json
+             */
+            readonly $schema?: string;
+            /** @description The keys, secret-free; for a pool, in pool order. */
+            keys: components["schemas"]["HostKeyView"][] | null;
+            /** @description The pool or account the keys belong to. */
+            owner: components["schemas"]["UpstreamRef"];
         };
         usageEventsOutputBody: {
             /**
@@ -5132,7 +7067,9 @@ export interface components {
              * @example https://example.com/schemas/usageEventsOutputBody.json
              */
             readonly $schema?: string;
+            /** @description Matching events, newest first. */
             events: components["schemas"]["Event"][] | null;
+            /** @description Pass back as ?cursor= for the next page; absent on the last page. */
             next_cursor?: string;
         };
         userRow: {
@@ -5142,10 +7079,15 @@ export interface components {
              * @example https://example.com/schemas/userRow.json
              */
             readonly $schema?: string;
+            /** @description A disabled user cannot sign in and its tokens and keys stop authenticating. */
             disabled: boolean;
+            /** @description Email address, when known. */
             email?: string;
+            /** @description User id. */
             id: string;
+            /** @description Names of the roles bound to the user. */
             roles?: string[] | null;
+            /** @description Sign-in name. */
             username: string;
         };
         userUpdateInputBody: {
@@ -5167,8 +7109,12 @@ export interface components {
              * @example https://example.com/schemas/usersListOutputBody.json
              */
             readonly $schema?: string;
+            /** @description The page of users. */
             items: components["schemas"]["userRow"][] | null;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Users matching before limit and offset apply.
+             */
             total: number;
         };
         versionOutputBody: {
@@ -5214,7 +7160,7 @@ export interface operations {
                     "application/json": components["schemas"]["accessReview"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -5223,7 +7169,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -5232,7 +7178,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -5241,7 +7187,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -5250,7 +7196,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -5259,7 +7205,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -5268,8 +7214,579 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Implemented */
+            /** @description This deployment has not wired the backend the operation needs. */
             501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    list_accounts: {
+        parameters: {
+            query?: {
+                /** @description Match name exactly. */
+                name?: string;
+                /** @description Match owner exactly. */
+                owner?: string;
+                /** @description Match any of the given host_id values. */
+                host_id?: string[];
+                /** @description Match org_id exactly. */
+                org_id?: string;
+                /** @description created lower bound (RFC3339). */
+                created_from?: string;
+                /** @description created upper bound (RFC3339). */
+                created_to?: string;
+                /** @description updated lower bound (RFC3339). */
+                updated_from?: string;
+                /** @description updated upper bound (RFC3339). */
+                updated_to?: string;
+                /** @description Free-text search. */
+                q?: string;
+                /** @description Label selector key=value (repeatable, all must match). */
+                label?: string[];
+                /** @description Sort field; prefix with '-' for descending. */
+                sort?: "name" | "-name" | "created" | "-created" | "updated" | "-updated";
+                /** @description Max items to return (page size). */
+                limit?: number;
+                /** @description Items to skip before the page. */
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountList"];
+                };
+            };
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description No valid session cookie or admin bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The server failed; error.message carries the cause. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    create_account: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Account"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Account"];
+                };
+            };
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description No valid session cookie or admin bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description No such row, or one the caller may not see. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description A conflict with stored rows: duplicate_binding (a policy-binding subject another binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["conflictBody"];
+                };
+            };
+            /** @description The request does not match the schema; error.details lists each failing field. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The server failed; error.message carries the cause. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    update_account: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource id (UUIDv7). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Account"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Account"];
+                };
+            };
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description No valid session cookie or admin bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description No such row, or one the caller may not see. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description stale_resource_version (metadata.resourceVersion no longer matches; reload and reapply), resource_in_use (an owner move would strand referencing rows; blockers lists them), managed_by_source, or duplicate_binding. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["conflictBody"];
+                };
+            };
+            /** @description The request does not match the schema; error.details lists each failing field. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The server failed; error.message carries the cause. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    delete_account: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource id (UUIDv7). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The row is deleted; the body lists the links it took from rows that stay. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["deleteDetachedBody"];
+                };
+            };
+            /** @description The row is deleted and no other row lost a link. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No valid session cookie or admin bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description No such row, or one the caller may not see. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["conflictBody"];
+                };
+            };
+            /** @description The request does not match the schema; error.details lists each failing field. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The server failed; error.message carries the cause. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    detach_account: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource id (UUIDv7). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["detachOutputBody"];
+                };
+            };
+            /** @description No valid session cookie or admin bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description No such row, or one the caller may not see. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The request conflicts with the stored state; error.code says how. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The request does not match the schema; error.details lists each failing field. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The server failed; error.message carries the cause. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    list_account_references: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Target resource id. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["referencesOutputBody"];
+                };
+            };
+            /** @description No valid session cookie or admin bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The request does not match the schema; error.details lists each failing field. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The server failed; error.message carries the cause. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    get_account: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource slug or UUIDv7 id. */
+                ref: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Account"];
+                };
+            };
+            /** @description No valid session cookie or admin bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description No such row, or one the caller may not see. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The request does not match the schema; error.details lists each failing field. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The server failed; error.message carries the cause. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    account_keys: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource slug or UUIDv7 id. */
+                ref: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["upstreamKeysOutBody"];
+                };
+            };
+            /** @description No valid session cookie or admin bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description No such row, or one the caller may not see. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The request does not match the schema; error.details lists each failing field. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The server failed; error.message carries the cause. */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5313,7 +7830,7 @@ export interface operations {
                     "application/json": components["schemas"]["applyOutputBody"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -5322,7 +7839,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -5331,7 +7848,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -5340,7 +7857,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -5349,7 +7866,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -5401,7 +7918,7 @@ export interface operations {
                     "application/json": components["schemas"]["auditListOutputBody"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -5410,7 +7927,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -5419,7 +7936,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -5428,7 +7945,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -5437,7 +7954,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -5470,7 +7987,7 @@ export interface operations {
                     "application/json": components["schemas"]["authResponseBody"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -5479,7 +7996,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -5488,7 +8005,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -5497,7 +8014,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Service Unavailable */
+            /** @description A backend the operation needs is not configured or not reachable. */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -5557,7 +8074,7 @@ export interface operations {
                     "application/json": components["schemas"]["mintTokenOutputBody"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -5566,7 +8083,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -5575,7 +8092,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -5584,7 +8101,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -5593,7 +8110,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -5602,7 +8119,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Too Many Requests */
+            /** @description Too many requests; retry after the Retry-After header. */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -5611,7 +8128,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -5620,7 +8137,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Service Unavailable */
+            /** @description A backend the operation needs is not configured or not reachable. */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -5647,7 +8164,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -5656,7 +8173,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -5665,7 +8182,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -5674,7 +8191,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Service Unavailable */
+            /** @description A backend the operation needs is not configured or not reachable. */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -5705,7 +8222,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -5714,7 +8231,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -5723,7 +8240,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -5732,7 +8249,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -5741,7 +8258,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Service Unavailable */
+            /** @description A backend the operation needs is not configured or not reachable. */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -5768,7 +8285,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -5777,7 +8294,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -5786,7 +8303,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Service Unavailable */
+            /** @description A backend the operation needs is not configured or not reachable. */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -5807,6 +8324,7 @@ export interface operations {
             };
             header?: never;
             path: {
+                /** @description The token's jti, from the mint response. */
                 jti: string;
             };
             cookie?: never;
@@ -5820,7 +8338,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -5829,7 +8347,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -5838,7 +8356,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -5847,7 +8365,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -5856,7 +8374,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -5865,7 +8383,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Service Unavailable */
+            /** @description A backend the operation needs is not configured or not reachable. */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -5894,7 +8412,7 @@ export interface operations {
                     "application/json": components["schemas"]["authResponseBody"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -5903,7 +8421,519 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    list_budgets: {
+        parameters: {
+            query?: {
+                /** @description Match name exactly. */
+                name?: string;
+                /** @description Match owner exactly. */
+                owner?: string;
+                /** @description Match period exactly. */
+                period?: "day" | "week" | "month";
+                /** @description Match mode exactly. */
+                mode?: "hard" | "alert";
+                /** @description created lower bound (RFC3339). */
+                created_from?: string;
+                /** @description created upper bound (RFC3339). */
+                created_to?: string;
+                /** @description updated lower bound (RFC3339). */
+                updated_from?: string;
+                /** @description updated upper bound (RFC3339). */
+                updated_to?: string;
+                /** @description Free-text search. */
+                q?: string;
+                /** @description Label selector key=value (repeatable, all must match). */
+                label?: string[];
+                /** @description Sort field; prefix with '-' for descending. */
+                sort?: "name" | "-name" | "created" | "-created" | "updated" | "-updated";
+                /** @description Max items to return (page size). */
+                limit?: number;
+                /** @description Items to skip before the page. */
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BudgetList"];
+                };
+            };
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description No valid session cookie or admin bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The server failed; error.message carries the cause. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    create_budget: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Budget"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Budget"];
+                };
+            };
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description No valid session cookie or admin bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description No such row, or one the caller may not see. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description A conflict with stored rows: duplicate_binding (a policy-binding subject another binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["conflictBody"];
+                };
+            };
+            /** @description The request does not match the schema; error.details lists each failing field. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The server failed; error.message carries the cause. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    update_budget: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource id (UUIDv7). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Budget"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Budget"];
+                };
+            };
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description No valid session cookie or admin bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description No such row, or one the caller may not see. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description stale_resource_version (metadata.resourceVersion no longer matches; reload and reapply), resource_in_use (an owner move would strand referencing rows; blockers lists them), managed_by_source, or duplicate_binding. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["conflictBody"];
+                };
+            };
+            /** @description The request does not match the schema; error.details lists each failing field. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The server failed; error.message carries the cause. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    delete_budget: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource id (UUIDv7). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The row is deleted; the body lists the links it took from rows that stay. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["deleteDetachedBody"];
+                };
+            };
+            /** @description The row is deleted and no other row lost a link. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No valid session cookie or admin bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description No such row, or one the caller may not see. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["conflictBody"];
+                };
+            };
+            /** @description The request does not match the schema; error.details lists each failing field. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The server failed; error.message carries the cause. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    detach_budget: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource id (UUIDv7). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["detachOutputBody"];
+                };
+            };
+            /** @description No valid session cookie or admin bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description No such row, or one the caller may not see. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The request conflicts with the stored state; error.code says how. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The request does not match the schema; error.details lists each failing field. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The server failed; error.message carries the cause. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    list_budget_references: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Target resource id. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["referencesOutputBody"];
+                };
+            };
+            /** @description No valid session cookie or admin bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The request does not match the schema; error.details lists each failing field. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The server failed; error.message carries the cause. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    get_budget: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource slug or UUIDv7 id. */
+                ref: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Budget"];
+                };
+            };
+            /** @description No valid session cookie or admin bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description No such row, or one the caller may not see. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The request does not match the schema; error.details lists each failing field. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -5937,7 +8967,16 @@ export interface operations {
                     "application/json": components["schemas"]["graphOutputBody"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -5946,7 +8985,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -5955,7 +8994,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -5989,7 +9028,7 @@ export interface operations {
                     "application/json": components["schemas"]["resolveOutputBody"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -5998,7 +9037,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -6007,7 +9046,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -6016,7 +9055,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -6078,7 +9117,7 @@ export interface operations {
                     "application/json": components["schemas"]["debugSnapshotBody"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -6087,7 +9126,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -6096,7 +9135,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -6105,7 +9144,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -6144,7 +9183,7 @@ export interface operations {
                     "application/json": string;
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -6153,7 +9192,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -6162,7 +9201,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -6171,7 +9210,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -6180,7 +9219,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -6224,7 +9263,7 @@ export interface operations {
                     "application/json": components["schemas"]["GroupList"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -6233,7 +9272,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -6242,7 +9281,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -6275,7 +9314,7 @@ export interface operations {
                     "application/json": components["schemas"]["Group"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -6284,7 +9323,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -6293,7 +9332,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -6302,7 +9341,25 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description No such row, or one the caller may not see. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description A conflict with stored rows: duplicate_binding (a policy-binding subject another binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["conflictBody"];
+                };
+            };
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -6311,7 +9368,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -6347,7 +9404,7 @@ export interface operations {
                     "application/json": components["schemas"]["Group"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -6356,7 +9413,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -6365,7 +9422,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -6374,7 +9431,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -6383,16 +9440,16 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Conflict */
+            /** @description stale_resource_version (metadata.resourceVersion no longer matches; reload and reapply), resource_in_use (an owner move would strand referencing rows; blockers lists them), managed_by_source, or duplicate_binding. */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["APIError"];
+                    "application/json": components["schemas"]["conflictBody"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -6401,7 +9458,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -6424,14 +9481,23 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description No Content */
+            /** @description The row is deleted; the body lists the links it took from rows that stay. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["deleteDetachedBody"];
+                };
+            };
+            /** @description The row is deleted and no other row lost a link. */
             204: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content?: never;
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -6440,7 +9506,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -6449,7 +9515,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -6458,16 +9524,16 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Conflict */
+            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns. */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["APIError"];
+                    "application/json": components["schemas"]["conflictBody"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -6476,7 +9542,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -6508,7 +9574,7 @@ export interface operations {
                     "application/json": components["schemas"]["detachOutputBody"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -6517,7 +9583,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -6526,7 +9592,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Conflict */
+            /** @description The request conflicts with the stored state; error.code says how. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -6535,7 +9601,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -6544,7 +9610,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -6576,7 +9642,7 @@ export interface operations {
                     "application/json": components["schemas"]["referencesOutputBody"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -6585,7 +9651,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -6594,7 +9660,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -6626,7 +9692,7 @@ export interface operations {
                     "application/json": components["schemas"]["Group"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -6635,7 +9701,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -6644,7 +9710,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -6653,7 +9719,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -6739,10 +9805,10 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["listBody_github_com_wyolet_relay_app_binding_Binding_"];
+                    "application/json": components["schemas"]["BindingList"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -6751,7 +9817,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -6760,7 +9826,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -6793,7 +9859,7 @@ export interface operations {
                     "application/json": components["schemas"]["Binding"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -6802,7 +9868,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -6811,7 +9877,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -6820,7 +9886,25 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description No such row, or one the caller may not see. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description A conflict with stored rows: duplicate_binding (a policy-binding subject another binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["conflictBody"];
+                };
+            };
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -6829,7 +9913,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -6865,7 +9949,7 @@ export interface operations {
                     "application/json": components["schemas"]["Binding"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -6874,7 +9958,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -6883,7 +9967,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -6892,7 +9976,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -6901,16 +9985,16 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Conflict */
+            /** @description stale_resource_version (metadata.resourceVersion no longer matches; reload and reapply), resource_in_use (an owner move would strand referencing rows; blockers lists them), managed_by_source, or duplicate_binding. */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["APIError"];
+                    "application/json": components["schemas"]["conflictBody"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -6919,7 +10003,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -6942,14 +10026,23 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description No Content */
+            /** @description The row is deleted; the body lists the links it took from rows that stay. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["deleteDetachedBody"];
+                };
+            };
+            /** @description The row is deleted and no other row lost a link. */
             204: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content?: never;
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -6958,7 +10051,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -6967,7 +10060,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -6976,16 +10069,16 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Conflict */
+            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns. */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["APIError"];
+                    "application/json": components["schemas"]["conflictBody"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -6994,7 +10087,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -7026,7 +10119,7 @@ export interface operations {
                     "application/json": components["schemas"]["Binding"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -7035,7 +10128,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -7044,7 +10137,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -7053,7 +10146,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -7073,8 +10166,8 @@ export interface operations {
                 enabled?: boolean;
                 /** @description Match any of the given host_id values. */
                 host_id?: string[];
-                /** @description Match any of the given policy_id values. */
-                policy_id?: string[];
+                /** @description Match any of the given account_id values. */
+                account_id?: string[];
                 /** @description Match default_tier exactly. */
                 default_tier?: string;
                 /** @description Match value_kind exactly. */
@@ -7113,7 +10206,7 @@ export interface operations {
                     "application/json": components["schemas"]["HostKeyList"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -7122,7 +10215,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -7131,7 +10224,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -7164,7 +10257,7 @@ export interface operations {
                     "application/json": components["schemas"]["HostKey"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -7173,7 +10266,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -7182,7 +10275,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -7191,7 +10284,25 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description No such row, or one the caller may not see. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description A conflict with stored rows: duplicate_binding (a policy-binding subject another binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["conflictBody"];
+                };
+            };
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -7200,7 +10311,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -7236,7 +10347,7 @@ export interface operations {
                     "application/json": components["schemas"]["HostKey"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -7245,7 +10356,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -7254,7 +10365,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -7263,7 +10374,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -7272,16 +10383,16 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Conflict */
+            /** @description stale_resource_version (metadata.resourceVersion no longer matches; reload and reapply), resource_in_use (an owner move would strand referencing rows; blockers lists them), managed_by_source, or duplicate_binding. */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["APIError"];
+                    "application/json": components["schemas"]["conflictBody"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -7290,7 +10401,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -7313,14 +10424,23 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description No Content */
+            /** @description The row is deleted; the body lists the links it took from rows that stay. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["deleteDetachedBody"];
+                };
+            };
+            /** @description The row is deleted and no other row lost a link. */
             204: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content?: never;
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -7329,7 +10449,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -7338,7 +10458,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -7347,16 +10467,16 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Conflict */
+            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns. */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["APIError"];
+                    "application/json": components["schemas"]["conflictBody"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -7365,7 +10485,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -7397,7 +10517,7 @@ export interface operations {
                     "application/json": components["schemas"]["detachOutputBody"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -7406,7 +10526,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -7415,7 +10535,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Conflict */
+            /** @description The request conflicts with the stored state; error.code says how. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -7424,7 +10544,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -7433,8 +10553,85 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    detect_host_key_account: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description HostKey id (UUIDv7). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["detectedAccount"];
+                };
+            };
+            /** @description No valid session cookie or admin bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description No such row, or one the caller may not see. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The request does not match the schema; error.details lists each failing field. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The server failed; error.message carries the cause. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -7465,7 +10662,7 @@ export interface operations {
                     "application/json": components["schemas"]["hostKeyHealth"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -7474,7 +10671,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -7483,7 +10680,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -7492,7 +10689,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -7524,7 +10721,7 @@ export interface operations {
                     "application/json": components["schemas"]["referencesOutputBody"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -7533,7 +10730,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -7542,7 +10739,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -7578,7 +10775,7 @@ export interface operations {
                     "application/json": components["schemas"]["HostKey"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -7587,7 +10784,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -7596,7 +10793,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -7605,7 +10802,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -7614,7 +10811,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Conflict */
+            /** @description The request conflicts with the stored state; error.code says how. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -7623,7 +10820,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -7632,7 +10829,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -7664,7 +10861,7 @@ export interface operations {
                     "application/json": components["schemas"]["HostKey"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -7673,7 +10870,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -7682,7 +10879,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -7691,7 +10888,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -7709,12 +10906,6 @@ export interface operations {
                 name?: string;
                 /** @description Match enabled (true/false). */
                 enabled?: boolean;
-                /** @description Match has_default_policy (true/false). */
-                has_default_policy?: boolean;
-                /** @description Match default_policy exactly. */
-                default_policy?: string;
-                /** @description Match any of the given policy_id values. */
-                policy_id?: string[];
                 /** @description created lower bound (RFC3339). */
                 created_from?: string;
                 /** @description created upper bound (RFC3339). */
@@ -7749,7 +10940,7 @@ export interface operations {
                     "application/json": components["schemas"]["HostList"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -7758,7 +10949,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -7767,7 +10958,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -7800,7 +10991,7 @@ export interface operations {
                     "application/json": components["schemas"]["Host"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -7809,7 +11000,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -7818,7 +11009,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -7827,7 +11018,25 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description No such row, or one the caller may not see. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description A conflict with stored rows: duplicate_binding (a policy-binding subject another binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["conflictBody"];
+                };
+            };
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -7836,7 +11045,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -7872,7 +11081,7 @@ export interface operations {
                     "application/json": components["schemas"]["Host"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -7881,7 +11090,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -7890,7 +11099,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -7899,7 +11108,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -7908,16 +11117,16 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Conflict */
+            /** @description stale_resource_version (metadata.resourceVersion no longer matches; reload and reapply), resource_in_use (an owner move would strand referencing rows; blockers lists them), managed_by_source, or duplicate_binding. */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["APIError"];
+                    "application/json": components["schemas"]["conflictBody"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -7926,7 +11135,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -7949,14 +11158,23 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description No Content */
+            /** @description The row is deleted; the body lists the links it took from rows that stay. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["deleteDetachedBody"];
+                };
+            };
+            /** @description The row is deleted and no other row lost a link. */
             204: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content?: never;
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -7965,7 +11183,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -7974,7 +11192,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -7983,16 +11201,16 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Conflict */
+            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns. */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["APIError"];
+                    "application/json": components["schemas"]["conflictBody"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -8001,7 +11219,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -8033,7 +11251,7 @@ export interface operations {
                     "application/json": components["schemas"]["detachOutputBody"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -8042,7 +11260,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -8051,7 +11269,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Conflict */
+            /** @description The request conflicts with the stored state; error.code says how. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -8060,7 +11278,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -8069,7 +11287,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -8101,7 +11319,7 @@ export interface operations {
                     "application/json": components["schemas"]["referencesOutputBody"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -8110,7 +11328,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -8119,7 +11337,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -8151,7 +11369,7 @@ export interface operations {
                     "application/json": components["schemas"]["Host"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -8160,7 +11378,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -8169,7 +11387,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -8178,7 +11396,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -8210,7 +11428,7 @@ export interface operations {
                     "application/json": components["schemas"]["hostKeysOutBody"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -8219,7 +11437,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -8228,7 +11446,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -8237,7 +11455,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -8269,7 +11487,7 @@ export interface operations {
                     "application/json": components["schemas"]["hostModelsOutBody"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -8278,7 +11496,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -8287,7 +11505,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -8296,7 +11514,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -8328,7 +11546,7 @@ export interface operations {
                     "application/json": components["schemas"]["hostPoliciesOutBody"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -8337,7 +11555,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -8346,7 +11564,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -8355,7 +11573,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -8379,8 +11597,6 @@ export interface operations {
                 passthrough?: boolean;
                 /** @description Match payload_logging (true/false). */
                 payload_logging?: boolean;
-                /** @description Match any of the given policy_id values. */
-                policy_id?: string[];
                 /** @description Match any of the given principal_kind values. */
                 principal_kind?: ("serviceaccount" | "user")[];
                 /** @description Match any of the given principal_id values. */
@@ -8423,7 +11639,7 @@ export interface operations {
                     "application/json": components["schemas"]["KeyList"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -8432,7 +11648,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -8441,7 +11657,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -8474,7 +11690,7 @@ export interface operations {
                     "application/json": components["schemas"]["createKeyResponseBody"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -8483,7 +11699,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -8492,7 +11708,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -8501,7 +11717,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -8510,7 +11726,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -8519,7 +11735,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -8555,7 +11771,7 @@ export interface operations {
                     "application/json": components["schemas"]["Key"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -8564,7 +11780,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -8573,7 +11789,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -8582,7 +11798,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -8591,16 +11807,16 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Conflict */
+            /** @description stale_resource_version (metadata.resourceVersion no longer matches; reload and reapply), resource_in_use (an owner move would strand referencing rows; blockers lists them), managed_by_source, or duplicate_binding. */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["APIError"];
+                    "application/json": components["schemas"]["conflictBody"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -8609,7 +11825,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -8632,14 +11848,23 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description No Content */
+            /** @description The row is deleted; the body lists the links it took from rows that stay. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["deleteDetachedBody"];
+                };
+            };
+            /** @description The row is deleted and no other row lost a link. */
             204: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content?: never;
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -8648,7 +11873,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -8657,7 +11882,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -8666,16 +11891,16 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Conflict */
+            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns. */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["APIError"];
+                    "application/json": components["schemas"]["conflictBody"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -8684,7 +11909,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -8720,7 +11945,7 @@ export interface operations {
                     "application/json": components["schemas"]["rotateKeyResponseBody"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -8729,7 +11954,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -8738,7 +11963,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -8747,7 +11972,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -8756,7 +11981,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Conflict */
+            /** @description The request conflicts with the stored state; error.code says how. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -8765,7 +11990,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -8774,7 +11999,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -8806,7 +12031,7 @@ export interface operations {
                     "application/json": components["schemas"]["Key"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -8815,7 +12040,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -8824,7 +12049,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -8833,7 +12058,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -8862,7 +12087,7 @@ export interface operations {
                     "application/json": components["schemas"]["Info"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -8871,7 +12096,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -8880,7 +12105,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -8913,7 +12138,7 @@ export interface operations {
                     "application/json": components["schemas"]["Info"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -8922,7 +12147,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -8931,7 +12156,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -8940,7 +12165,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -8949,7 +12174,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -9004,6 +12229,10 @@ export interface operations {
                 relay_key_hash?: string[] | null;
                 /** @description Match any of the given Policy.metadata.id values. */
                 policy_id?: string[] | null;
+                /** @description Match any of the given ids of the pool the serving credential was drawn from. */
+                pool_id?: string[] | null;
+                /** @description Match any of the given ids of the provider account the serving credential belongs to. */
+                account_id?: string[] | null;
                 /** @description Match any of the given Project.metadata.id values. */
                 project_id?: string[] | null;
                 /** @description Match any of the given Team.metadata.id values. */
@@ -9082,7 +12311,7 @@ export interface operations {
                     "application/json": components["schemas"]["logsListOutputBody"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -9091,7 +12320,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -9100,7 +12329,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -9109,7 +12338,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -9142,7 +12371,7 @@ export interface operations {
                     "application/json": components["schemas"]["logsEraseOutputBody"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -9151,7 +12380,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -9160,7 +12389,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -9169,7 +12398,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -9178,7 +12407,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -9187,7 +12416,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Implemented */
+            /** @description This deployment has not wired the backend the operation needs. */
             501: {
                 headers: {
                     [name: string]: unknown;
@@ -9219,7 +12448,7 @@ export interface operations {
                     "application/json": components["schemas"]["logGetOutputBody"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -9228,7 +12457,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -9237,7 +12466,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -9246,7 +12475,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -9275,7 +12504,7 @@ export interface operations {
                     "application/json": components["schemas"]["masterKeyGenerateOutputBody"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -9284,7 +12513,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -9293,7 +12522,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -9377,7 +12606,7 @@ export interface operations {
                     "application/json": components["schemas"]["ModelList"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -9386,7 +12615,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -9395,7 +12624,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -9428,7 +12657,7 @@ export interface operations {
                     "application/json": components["schemas"]["Model"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -9437,7 +12666,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -9446,7 +12675,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -9455,7 +12684,25 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description No such row, or one the caller may not see. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description A conflict with stored rows: duplicate_binding (a policy-binding subject another binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["conflictBody"];
+                };
+            };
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -9464,7 +12711,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -9500,7 +12747,7 @@ export interface operations {
                     "application/json": components["schemas"]["Model"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -9509,7 +12756,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -9518,7 +12765,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -9527,7 +12774,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -9536,16 +12783,16 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Conflict */
+            /** @description stale_resource_version (metadata.resourceVersion no longer matches; reload and reapply), resource_in_use (an owner move would strand referencing rows; blockers lists them), managed_by_source, or duplicate_binding. */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["APIError"];
+                    "application/json": components["schemas"]["conflictBody"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -9554,7 +12801,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -9577,14 +12824,23 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description No Content */
+            /** @description The row is deleted; the body lists the links it took from rows that stay. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["deleteDetachedBody"];
+                };
+            };
+            /** @description The row is deleted and no other row lost a link. */
             204: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content?: never;
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -9593,7 +12849,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -9602,7 +12858,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -9611,16 +12867,16 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Conflict */
+            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns. */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["APIError"];
+                    "application/json": components["schemas"]["conflictBody"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -9629,7 +12885,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -9661,7 +12917,7 @@ export interface operations {
                     "application/json": components["schemas"]["detachOutputBody"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -9670,7 +12926,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -9679,7 +12935,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Conflict */
+            /** @description The request conflicts with the stored state; error.code says how. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -9688,7 +12944,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -9697,7 +12953,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -9729,7 +12985,7 @@ export interface operations {
                     "application/json": components["schemas"]["overlayView"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -9738,7 +12994,16 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -9747,7 +13012,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -9756,7 +13021,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -9792,7 +13057,7 @@ export interface operations {
                     "application/json": components["schemas"]["overlayView"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -9801,7 +13066,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -9810,7 +13075,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -9819,7 +13084,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -9828,7 +13093,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -9837,7 +13102,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -9869,7 +13134,7 @@ export interface operations {
                     "application/json": components["schemas"]["overlayDeleteOutBody"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -9878,7 +13143,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -9887,7 +13152,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -9896,7 +13161,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -9905,7 +13170,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -9937,7 +13202,7 @@ export interface operations {
                     "application/json": components["schemas"]["referencesOutputBody"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -9946,7 +13211,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -9955,7 +13220,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -9987,7 +13252,7 @@ export interface operations {
                     "application/json": components["schemas"]["Model"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -9996,7 +13261,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -10005,7 +13270,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -10014,7 +13279,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -10046,7 +13311,7 @@ export interface operations {
                     "application/json": components["schemas"]["modelHostsOutBody"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -10055,7 +13320,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -10064,7 +13329,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -10073,7 +13338,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -10105,7 +13370,7 @@ export interface operations {
                     "application/json": components["schemas"]["modelPoliciesOutBody"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -10114,7 +13379,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -10123,7 +13388,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -10132,7 +13397,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -10164,7 +13429,7 @@ export interface operations {
                     "application/json": components["schemas"]["modelPricingOutBody"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -10173,7 +13438,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -10182,7 +13447,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -10191,7 +13456,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -10213,16 +13478,16 @@ export interface operations {
                 payload_logging?: boolean;
                 /** @description Match include_deprecated (true/false). */
                 include_deprecated?: boolean;
-                /** @description Match rate_limit_id exactly. */
-                rate_limit_id?: string;
-                /** @description Match key_selection exactly. */
-                key_selection?: string;
                 /** @description Match owner exactly. */
                 owner?: string;
-                /** @description Match any of the given model_id values. */
-                model_id?: string[];
-                /** @description Match any of the given host_key_id values. */
-                host_key_id?: string[];
+                /** @description Match any of the given pool_id values. */
+                pool_id?: string[];
+                /** @description Match any of the given credential_id values. */
+                credential_id?: string[];
+                /** @description Match any of the given rate_limit_id values. */
+                rate_limit_id?: string[];
+                /** @description Match any of the given budget_id values. */
+                budget_id?: string[];
                 /** @description created lower bound (RFC3339). */
                 created_from?: string;
                 /** @description created upper bound (RFC3339). */
@@ -10257,7 +13522,7 @@ export interface operations {
                     "application/json": components["schemas"]["PolicyList"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -10266,7 +13531,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -10275,7 +13540,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -10308,7 +13573,7 @@ export interface operations {
                     "application/json": components["schemas"]["Policy"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -10317,7 +13582,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -10326,7 +13591,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -10335,7 +13600,25 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description No such row, or one the caller may not see. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description A conflict with stored rows: duplicate_binding (a policy-binding subject another binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["conflictBody"];
+                };
+            };
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -10344,7 +13627,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -10380,7 +13663,7 @@ export interface operations {
                     "application/json": components["schemas"]["Policy"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -10389,7 +13672,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -10398,7 +13681,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -10407,7 +13690,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -10416,16 +13699,16 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Conflict */
+            /** @description stale_resource_version (metadata.resourceVersion no longer matches; reload and reapply), resource_in_use (an owner move would strand referencing rows; blockers lists them), managed_by_source, or duplicate_binding. */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["APIError"];
+                    "application/json": components["schemas"]["conflictBody"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -10434,7 +13717,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -10457,14 +13740,23 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description No Content */
+            /** @description The row is deleted; the body lists the links it took from rows that stay. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["deleteDetachedBody"];
+                };
+            };
+            /** @description The row is deleted and no other row lost a link. */
             204: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content?: never;
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -10473,7 +13765,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -10482,7 +13774,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -10491,16 +13783,16 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Conflict */
+            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns. */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["APIError"];
+                    "application/json": components["schemas"]["conflictBody"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -10509,7 +13801,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -10541,7 +13833,7 @@ export interface operations {
                     "application/json": components["schemas"]["detachOutputBody"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -10550,7 +13842,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -10559,7 +13851,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Conflict */
+            /** @description The request conflicts with the stored state; error.code says how. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -10568,7 +13860,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -10577,183 +13869,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIError"];
-                };
-            };
-        };
-    };
-    attach_relay_key_to_policy: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Policy id (UUIDv7). */
-                id: string;
-                /** @description Key id (UUIDv7). */
-                keyId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Key"];
-                };
-            };
-            /** @description Bad Request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIError"];
-                };
-            };
-            /** @description Unauthorized */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIError"];
-                };
-            };
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIError"];
-                };
-            };
-            /** @description Not Found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIError"];
-                };
-            };
-            /** @description Conflict */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIError"];
-                };
-            };
-            /** @description Unprocessable Entity */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIError"];
-                };
-            };
-            /** @description Internal Server Error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIError"];
-                };
-            };
-        };
-    };
-    detach_relay_key_from_policy: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Policy id (UUIDv7). */
-                id: string;
-                /** @description Key id (UUIDv7). */
-                keyId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Key"];
-                };
-            };
-            /** @description Bad Request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIError"];
-                };
-            };
-            /** @description Unauthorized */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIError"];
-                };
-            };
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIError"];
-                };
-            };
-            /** @description Not Found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIError"];
-                };
-            };
-            /** @description Conflict */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIError"];
-                };
-            };
-            /** @description Unprocessable Entity */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIError"];
-                };
-            };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -10785,7 +13901,7 @@ export interface operations {
                     "application/json": components["schemas"]["referencesOutputBody"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -10794,7 +13910,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -10803,7 +13919,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -10835,7 +13951,7 @@ export interface operations {
                     "application/json": components["schemas"]["Policy"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -10844,7 +13960,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -10853,7 +13969,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -10862,7 +13978,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -10894,7 +14010,7 @@ export interface operations {
                     "application/json": components["schemas"]["policyHostsOutBody"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -10903,7 +14019,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -10912,7 +14028,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -10921,7 +14037,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -10956,7 +14072,7 @@ export interface operations {
                     "application/json": components["schemas"]["policyModelsOutBody"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -10965,7 +14081,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -10974,7 +14090,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -10983,7 +14099,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -11015,7 +14131,7 @@ export interface operations {
                     "application/json": components["schemas"]["policyRateLimitsOutBody"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -11024,7 +14140,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -11033,7 +14149,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -11042,7 +14158,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -11092,7 +14208,7 @@ export interface operations {
                     "application/json": components["schemas"]["PolicyBindingList"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -11101,7 +14217,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -11110,7 +14226,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -11143,7 +14259,7 @@ export interface operations {
                     "application/json": components["schemas"]["PolicyBinding"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -11152,7 +14268,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -11161,7 +14277,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -11170,7 +14286,25 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description No such row, or one the caller may not see. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description A conflict with stored rows: duplicate_binding (a policy-binding subject another binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["conflictBody"];
+                };
+            };
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -11179,7 +14313,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -11215,7 +14349,7 @@ export interface operations {
                     "application/json": components["schemas"]["PolicyBinding"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -11224,7 +14358,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -11233,7 +14367,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -11242,7 +14376,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -11251,16 +14385,16 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Conflict */
+            /** @description stale_resource_version (metadata.resourceVersion no longer matches; reload and reapply), resource_in_use (an owner move would strand referencing rows; blockers lists them), managed_by_source, or duplicate_binding. */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["APIError"];
+                    "application/json": components["schemas"]["conflictBody"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -11269,7 +14403,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -11292,14 +14426,23 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description No Content */
+            /** @description The row is deleted; the body lists the links it took from rows that stay. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["deleteDetachedBody"];
+                };
+            };
+            /** @description The row is deleted and no other row lost a link. */
             204: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content?: never;
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -11308,7 +14451,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -11317,7 +14460,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -11326,16 +14469,16 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Conflict */
+            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns. */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["APIError"];
+                    "application/json": components["schemas"]["conflictBody"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -11344,7 +14487,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -11376,7 +14519,7 @@ export interface operations {
                     "application/json": components["schemas"]["PolicyBinding"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -11385,7 +14528,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -11394,7 +14537,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -11403,7 +14546,580 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    list_pools: {
+        parameters: {
+            query?: {
+                /** @description Match name exactly. */
+                name?: string;
+                /** @description Match owner exactly. */
+                owner?: string;
+                /** @description Match any of the given host_id values. */
+                host_id?: string[];
+                /** @description Match any of the given credential_id values. */
+                credential_id?: string[];
+                /** @description Match selection exactly. */
+                selection?: "prioritized" | "round-robin" | "least-recently-used";
+                /** @description created lower bound (RFC3339). */
+                created_from?: string;
+                /** @description created upper bound (RFC3339). */
+                created_to?: string;
+                /** @description updated lower bound (RFC3339). */
+                updated_from?: string;
+                /** @description updated upper bound (RFC3339). */
+                updated_to?: string;
+                /** @description Free-text search. */
+                q?: string;
+                /** @description Label selector key=value (repeatable, all must match). */
+                label?: string[];
+                /** @description Sort field; prefix with '-' for descending. */
+                sort?: "name" | "-name" | "created" | "-created" | "updated" | "-updated";
+                /** @description Max items to return (page size). */
+                limit?: number;
+                /** @description Items to skip before the page. */
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PoolList"];
+                };
+            };
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description No valid session cookie or admin bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The server failed; error.message carries the cause. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    create_pool: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Pool"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Pool"];
+                };
+            };
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description No valid session cookie or admin bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description No such row, or one the caller may not see. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description A conflict with stored rows: duplicate_binding (a policy-binding subject another binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["conflictBody"];
+                };
+            };
+            /** @description The request does not match the schema; error.details lists each failing field. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The server failed; error.message carries the cause. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    update_pool: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource id (UUIDv7). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Pool"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Pool"];
+                };
+            };
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description No valid session cookie or admin bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description No such row, or one the caller may not see. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description stale_resource_version (metadata.resourceVersion no longer matches; reload and reapply), resource_in_use (an owner move would strand referencing rows; blockers lists them), managed_by_source, or duplicate_binding. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["conflictBody"];
+                };
+            };
+            /** @description The request does not match the schema; error.details lists each failing field. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The server failed; error.message carries the cause. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    delete_pool: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource id (UUIDv7). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The row is deleted; the body lists the links it took from rows that stay. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["deleteDetachedBody"];
+                };
+            };
+            /** @description The row is deleted and no other row lost a link. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No valid session cookie or admin bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description No such row, or one the caller may not see. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["conflictBody"];
+                };
+            };
+            /** @description The request does not match the schema; error.details lists each failing field. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The server failed; error.message carries the cause. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    detach_pool: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource id (UUIDv7). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["detachOutputBody"];
+                };
+            };
+            /** @description No valid session cookie or admin bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description No such row, or one the caller may not see. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The request conflicts with the stored state; error.code says how. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The request does not match the schema; error.details lists each failing field. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The server failed; error.message carries the cause. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    list_pool_references: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Target resource id. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["referencesOutputBody"];
+                };
+            };
+            /** @description No valid session cookie or admin bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The request does not match the schema; error.details lists each failing field. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The server failed; error.message carries the cause. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    get_pool: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource slug or UUIDv7 id. */
+                ref: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Pool"];
+                };
+            };
+            /** @description No valid session cookie or admin bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description No such row, or one the caller may not see. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The request does not match the schema; error.details lists each failing field. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The server failed; error.message carries the cause. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    pool_keys: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource slug or UUIDv7 id. */
+                ref: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["upstreamKeysOutBody"];
+                };
+            };
+            /** @description No valid session cookie or admin bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description No such row, or one the caller may not see. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The request does not match the schema; error.details lists each failing field. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -11465,7 +15181,7 @@ export interface operations {
                     "application/json": components["schemas"]["PricingList"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -11474,7 +15190,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -11483,7 +15199,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -11516,7 +15232,7 @@ export interface operations {
                     "application/json": components["schemas"]["Pricing"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -11525,7 +15241,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -11534,7 +15250,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -11543,7 +15259,25 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description No such row, or one the caller may not see. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description A conflict with stored rows: duplicate_binding (a policy-binding subject another binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["conflictBody"];
+                };
+            };
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -11552,7 +15286,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -11588,7 +15322,7 @@ export interface operations {
                     "application/json": components["schemas"]["Pricing"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -11597,7 +15331,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -11606,7 +15340,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -11615,7 +15349,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -11624,16 +15358,16 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Conflict */
+            /** @description stale_resource_version (metadata.resourceVersion no longer matches; reload and reapply), resource_in_use (an owner move would strand referencing rows; blockers lists them), managed_by_source, or duplicate_binding. */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["APIError"];
+                    "application/json": components["schemas"]["conflictBody"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -11642,7 +15376,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -11665,14 +15399,23 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description No Content */
+            /** @description The row is deleted; the body lists the links it took from rows that stay. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["deleteDetachedBody"];
+                };
+            };
+            /** @description The row is deleted and no other row lost a link. */
             204: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content?: never;
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -11681,7 +15424,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -11690,7 +15433,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -11699,16 +15442,16 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Conflict */
+            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns. */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["APIError"];
+                    "application/json": components["schemas"]["conflictBody"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -11717,7 +15460,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -11749,7 +15492,7 @@ export interface operations {
                     "application/json": components["schemas"]["detachOutputBody"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -11758,7 +15501,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -11767,7 +15510,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Conflict */
+            /** @description The request conflicts with the stored state; error.code says how. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -11776,7 +15519,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -11785,7 +15528,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -11817,7 +15560,7 @@ export interface operations {
                     "application/json": components["schemas"]["referencesOutputBody"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -11826,7 +15569,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -11835,7 +15578,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -11867,7 +15610,7 @@ export interface operations {
                     "application/json": components["schemas"]["Pricing"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -11876,7 +15619,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -11885,7 +15628,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -11894,7 +15637,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -11940,7 +15683,7 @@ export interface operations {
                     "application/json": components["schemas"]["ProjectList"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -11949,7 +15692,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -11958,7 +15701,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -11991,7 +15734,7 @@ export interface operations {
                     "application/json": components["schemas"]["Project"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -12000,7 +15743,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -12009,7 +15752,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -12018,7 +15761,25 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description No such row, or one the caller may not see. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description A conflict with stored rows: duplicate_binding (a policy-binding subject another binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["conflictBody"];
+                };
+            };
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -12027,7 +15788,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -12063,7 +15824,7 @@ export interface operations {
                     "application/json": components["schemas"]["Project"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -12072,7 +15833,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -12081,7 +15842,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -12090,7 +15851,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -12099,16 +15860,16 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Conflict */
+            /** @description stale_resource_version (metadata.resourceVersion no longer matches; reload and reapply), resource_in_use (an owner move would strand referencing rows; blockers lists them), managed_by_source, or duplicate_binding. */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["APIError"];
+                    "application/json": components["schemas"]["conflictBody"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -12117,7 +15878,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -12140,14 +15901,23 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description No Content */
+            /** @description The row is deleted; the body lists the links it took from rows that stay. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["deleteDetachedBody"];
+                };
+            };
+            /** @description The row is deleted and no other row lost a link. */
             204: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content?: never;
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -12156,7 +15926,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -12165,7 +15935,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -12174,16 +15944,16 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Conflict */
+            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns. */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["APIError"];
+                    "application/json": components["schemas"]["conflictBody"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -12192,7 +15962,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -12224,7 +15994,7 @@ export interface operations {
                     "application/json": components["schemas"]["detachOutputBody"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -12233,7 +16003,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -12242,7 +16012,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Conflict */
+            /** @description The request conflicts with the stored state; error.code says how. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -12251,7 +16021,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -12260,7 +16030,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -12292,7 +16062,7 @@ export interface operations {
                     "application/json": components["schemas"]["referencesOutputBody"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -12301,7 +16071,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -12310,7 +16080,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -12342,7 +16112,7 @@ export interface operations {
                     "application/json": components["schemas"]["Project"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -12351,7 +16121,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -12360,7 +16130,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -12369,7 +16139,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -12421,7 +16191,7 @@ export interface operations {
                     "application/json": components["schemas"]["ProviderList"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -12430,7 +16200,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -12439,7 +16209,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -12472,7 +16242,7 @@ export interface operations {
                     "application/json": components["schemas"]["Provider"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -12481,7 +16251,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -12490,7 +16260,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -12499,7 +16269,25 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description No such row, or one the caller may not see. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description A conflict with stored rows: duplicate_binding (a policy-binding subject another binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["conflictBody"];
+                };
+            };
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -12508,7 +16296,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -12544,7 +16332,7 @@ export interface operations {
                     "application/json": components["schemas"]["Provider"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -12553,7 +16341,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -12562,7 +16350,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -12571,7 +16359,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -12580,16 +16368,16 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Conflict */
+            /** @description stale_resource_version (metadata.resourceVersion no longer matches; reload and reapply), resource_in_use (an owner move would strand referencing rows; blockers lists them), managed_by_source, or duplicate_binding. */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["APIError"];
+                    "application/json": components["schemas"]["conflictBody"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -12598,7 +16386,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -12621,14 +16409,23 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description No Content */
+            /** @description The row is deleted; the body lists the links it took from rows that stay. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["deleteDetachedBody"];
+                };
+            };
+            /** @description The row is deleted and no other row lost a link. */
             204: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content?: never;
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -12637,7 +16434,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -12646,7 +16443,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -12655,16 +16452,16 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Conflict */
+            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns. */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["APIError"];
+                    "application/json": components["schemas"]["conflictBody"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -12673,7 +16470,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -12705,7 +16502,7 @@ export interface operations {
                     "application/json": components["schemas"]["detachOutputBody"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -12714,7 +16511,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -12723,7 +16520,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Conflict */
+            /** @description The request conflicts with the stored state; error.code says how. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -12732,7 +16529,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -12741,7 +16538,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -12773,7 +16570,7 @@ export interface operations {
                     "application/json": components["schemas"]["referencesOutputBody"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -12782,7 +16579,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -12791,7 +16588,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -12823,7 +16620,7 @@ export interface operations {
                     "application/json": components["schemas"]["Provider"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -12832,7 +16629,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -12841,7 +16638,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -12850,7 +16647,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -12902,7 +16699,7 @@ export interface operations {
                     "application/json": components["schemas"]["RateLimitList"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -12911,7 +16708,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -12920,7 +16717,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -12953,7 +16750,7 @@ export interface operations {
                     "application/json": components["schemas"]["RateLimit"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -12962,7 +16759,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -12971,7 +16768,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -12980,7 +16777,25 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description No such row, or one the caller may not see. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description A conflict with stored rows: duplicate_binding (a policy-binding subject another binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["conflictBody"];
+                };
+            };
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -12989,7 +16804,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -13025,7 +16840,7 @@ export interface operations {
                     "application/json": components["schemas"]["RateLimit"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -13034,7 +16849,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -13043,7 +16858,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -13052,7 +16867,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -13061,16 +16876,16 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Conflict */
+            /** @description stale_resource_version (metadata.resourceVersion no longer matches; reload and reapply), resource_in_use (an owner move would strand referencing rows; blockers lists them), managed_by_source, or duplicate_binding. */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["APIError"];
+                    "application/json": components["schemas"]["conflictBody"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -13079,7 +16894,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -13102,14 +16917,23 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description No Content */
+            /** @description The row is deleted; the body lists the links it took from rows that stay. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["deleteDetachedBody"];
+                };
+            };
+            /** @description The row is deleted and no other row lost a link. */
             204: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content?: never;
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -13118,7 +16942,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -13127,7 +16951,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -13136,16 +16960,16 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Conflict */
+            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns. */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["APIError"];
+                    "application/json": components["schemas"]["conflictBody"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -13154,7 +16978,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -13186,7 +17010,7 @@ export interface operations {
                     "application/json": components["schemas"]["detachOutputBody"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -13195,7 +17019,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -13204,7 +17028,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Conflict */
+            /** @description The request conflicts with the stored state; error.code says how. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -13213,7 +17037,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -13222,7 +17046,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -13254,7 +17078,7 @@ export interface operations {
                     "application/json": components["schemas"]["referencesOutputBody"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -13263,7 +17087,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -13272,7 +17096,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -13304,7 +17128,7 @@ export interface operations {
                     "application/json": components["schemas"]["RateLimit"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -13313,7 +17137,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -13322,7 +17146,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -13331,7 +17155,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -13360,7 +17184,7 @@ export interface operations {
                     "application/json": components["schemas"]["reloadOutputBody"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -13369,7 +17193,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -13378,7 +17202,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -13430,7 +17254,7 @@ export interface operations {
                     "application/json": components["schemas"]["RoleBindingList"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -13439,7 +17263,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -13448,7 +17272,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -13481,7 +17305,7 @@ export interface operations {
                     "application/json": components["schemas"]["RoleBinding"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -13490,7 +17314,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -13499,7 +17323,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -13508,7 +17332,25 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description No such row, or one the caller may not see. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description A conflict with stored rows: duplicate_binding (a policy-binding subject another binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["conflictBody"];
+                };
+            };
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -13517,7 +17359,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -13553,7 +17395,7 @@ export interface operations {
                     "application/json": components["schemas"]["RoleBinding"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -13562,7 +17404,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -13571,7 +17413,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -13580,7 +17422,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -13589,16 +17431,16 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Conflict */
+            /** @description stale_resource_version (metadata.resourceVersion no longer matches; reload and reapply), resource_in_use (an owner move would strand referencing rows; blockers lists them), managed_by_source, or duplicate_binding. */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["APIError"];
+                    "application/json": components["schemas"]["conflictBody"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -13607,7 +17449,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -13630,14 +17472,23 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description No Content */
+            /** @description The row is deleted; the body lists the links it took from rows that stay. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["deleteDetachedBody"];
+                };
+            };
+            /** @description The row is deleted and no other row lost a link. */
             204: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content?: never;
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -13646,7 +17497,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -13655,7 +17506,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -13664,16 +17515,16 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Conflict */
+            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns. */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["APIError"];
+                    "application/json": components["schemas"]["conflictBody"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -13682,7 +17533,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -13714,7 +17565,7 @@ export interface operations {
                     "application/json": components["schemas"]["RoleBinding"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -13723,7 +17574,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -13732,7 +17583,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -13741,7 +17592,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -13785,7 +17636,7 @@ export interface operations {
                     "application/json": components["schemas"]["RoleList"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -13794,7 +17645,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -13803,7 +17654,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -13836,7 +17687,7 @@ export interface operations {
                     "application/json": components["schemas"]["Role"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -13845,7 +17696,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -13854,7 +17705,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -13863,7 +17714,25 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description No such row, or one the caller may not see. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description A conflict with stored rows: duplicate_binding (a policy-binding subject another binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["conflictBody"];
+                };
+            };
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -13872,7 +17741,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -13908,7 +17777,7 @@ export interface operations {
                     "application/json": components["schemas"]["Role"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -13917,7 +17786,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -13926,7 +17795,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -13935,7 +17804,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -13944,16 +17813,16 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Conflict */
+            /** @description stale_resource_version (metadata.resourceVersion no longer matches; reload and reapply), resource_in_use (an owner move would strand referencing rows; blockers lists them), managed_by_source, or duplicate_binding. */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["APIError"];
+                    "application/json": components["schemas"]["conflictBody"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -13962,7 +17831,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -13985,14 +17854,23 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description No Content */
+            /** @description The row is deleted; the body lists the links it took from rows that stay. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["deleteDetachedBody"];
+                };
+            };
+            /** @description The row is deleted and no other row lost a link. */
             204: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content?: never;
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -14001,7 +17879,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -14010,7 +17888,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -14019,16 +17897,16 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Conflict */
+            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns. */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["APIError"];
+                    "application/json": components["schemas"]["conflictBody"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -14037,7 +17915,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -14069,7 +17947,7 @@ export interface operations {
                     "application/json": components["schemas"]["detachOutputBody"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -14078,7 +17956,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -14087,7 +17965,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Conflict */
+            /** @description The request conflicts with the stored state; error.code says how. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -14096,7 +17974,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -14105,7 +17983,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -14137,7 +18015,7 @@ export interface operations {
                     "application/json": components["schemas"]["referencesOutputBody"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -14146,7 +18024,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -14155,7 +18033,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -14187,7 +18065,7 @@ export interface operations {
                     "application/json": components["schemas"]["Role"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -14196,7 +18074,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -14205,7 +18083,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -14214,7 +18092,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -14243,7 +18121,7 @@ export interface operations {
                     "application/json": components["schemas"]["scimClientListOutputBody"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -14252,7 +18130,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -14261,7 +18139,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -14294,7 +18172,7 @@ export interface operations {
                     "application/json": components["schemas"]["scimClientCreateOutputBody"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -14303,7 +18181,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -14312,7 +18190,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -14321,7 +18199,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Conflict */
+            /** @description The request conflicts with the stored state; error.code says how. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -14330,7 +18208,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -14339,7 +18217,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -14355,6 +18233,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description The SCIM client's name. */
                 name: string;
             };
             cookie?: never;
@@ -14368,7 +18247,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -14377,7 +18256,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -14386,7 +18265,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -14395,7 +18274,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -14404,7 +18283,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -14420,6 +18299,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description The SCIM client's name. */
                 name: string;
             };
             cookie?: never;
@@ -14435,7 +18315,7 @@ export interface operations {
                     "application/json": components["schemas"]["scimClientCreateOutputBody"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -14444,7 +18324,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -14453,7 +18333,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -14462,7 +18342,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Conflict */
+            /** @description The request conflicts with the stored state; error.code says how. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -14471,7 +18351,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -14480,7 +18360,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -14509,7 +18389,7 @@ export interface operations {
                     "application/json": components["schemas"]["KeyStatus"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -14518,7 +18398,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -14527,7 +18407,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -14536,7 +18416,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Service Unavailable */
+            /** @description A backend the operation needs is not configured or not reachable. */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -14572,7 +18452,7 @@ export interface operations {
                     "application/json": components["schemas"]["DataKeyStatus"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -14581,7 +18461,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -14590,7 +18470,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -14599,7 +18479,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -14608,7 +18488,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Conflict */
+            /** @description The request conflicts with the stored state; error.code says how. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -14617,7 +18497,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -14626,7 +18506,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -14635,7 +18515,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Service Unavailable */
+            /** @description A backend the operation needs is not configured or not reachable. */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -14668,7 +18548,7 @@ export interface operations {
                     "application/json": components["schemas"]["RewrapResult"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -14677,7 +18557,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -14686,7 +18566,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -14695,7 +18575,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Conflict */
+            /** @description The request conflicts with the stored state; error.code says how. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -14704,7 +18584,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -14713,7 +18593,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -14722,7 +18602,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Service Unavailable */
+            /** @description A backend the operation needs is not configured or not reachable. */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -14755,7 +18635,7 @@ export interface operations {
                     "application/json": components["schemas"]["secretKeysRotateOutputBody"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -14764,7 +18644,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -14773,7 +18653,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -14782,7 +18662,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -14791,7 +18671,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Conflict */
+            /** @description The request conflicts with the stored state; error.code says how. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -14800,7 +18680,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -14809,7 +18689,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -14818,7 +18698,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Service Unavailable */
+            /** @description A backend the operation needs is not configured or not reachable. */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -14838,8 +18718,6 @@ export interface operations {
                 enabled?: boolean;
                 /** @description Match any of the given project_id values. */
                 project_id?: string[];
-                /** @description Match any of the given policy_id values. */
-                policy_id?: string[];
                 /** @description Free-text search. */
                 q?: string;
                 /** @description Label selector key=value (repeatable, all must match). */
@@ -14866,7 +18744,7 @@ export interface operations {
                     "application/json": components["schemas"]["ServiceAccountList"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -14875,7 +18753,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -14884,7 +18762,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -14917,7 +18795,7 @@ export interface operations {
                     "application/json": components["schemas"]["ServiceAccount"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -14926,7 +18804,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -14935,7 +18813,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -14944,7 +18822,25 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description No such row, or one the caller may not see. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description A conflict with stored rows: duplicate_binding (a policy-binding subject another binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["conflictBody"];
+                };
+            };
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -14953,7 +18849,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -14989,7 +18885,7 @@ export interface operations {
                     "application/json": components["schemas"]["ServiceAccount"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -14998,7 +18894,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -15007,7 +18903,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -15016,7 +18912,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -15025,16 +18921,16 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Conflict */
+            /** @description stale_resource_version (metadata.resourceVersion no longer matches; reload and reapply), resource_in_use (an owner move would strand referencing rows; blockers lists them), managed_by_source, or duplicate_binding. */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["APIError"];
+                    "application/json": components["schemas"]["conflictBody"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -15043,7 +18939,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -15066,14 +18962,23 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description No Content */
+            /** @description The row is deleted; the body lists the links it took from rows that stay. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["deleteDetachedBody"];
+                };
+            };
+            /** @description The row is deleted and no other row lost a link. */
             204: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content?: never;
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -15082,7 +18987,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -15091,7 +18996,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -15100,16 +19005,16 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Conflict */
+            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns. */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["APIError"];
+                    "application/json": components["schemas"]["conflictBody"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -15118,7 +19023,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -15150,7 +19055,7 @@ export interface operations {
                     "application/json": components["schemas"]["detachOutputBody"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -15159,7 +19064,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -15168,7 +19073,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Conflict */
+            /** @description The request conflicts with the stored state; error.code says how. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -15177,7 +19082,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -15186,7 +19091,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -15218,7 +19123,7 @@ export interface operations {
                     "application/json": components["schemas"]["referencesOutputBody"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -15227,7 +19132,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -15236,7 +19141,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -15268,7 +19173,7 @@ export interface operations {
                     "application/json": components["schemas"]["ServiceAccount"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -15277,7 +19182,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -15286,7 +19191,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -15295,7 +19200,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -15324,7 +19229,7 @@ export interface operations {
                     "application/json": components["schemas"]["settingsListOutputBody"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -15333,7 +19238,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -15362,7 +19267,7 @@ export interface operations {
                     "application/json": components["schemas"]["AuditEnvelope"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -15371,7 +19276,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -15404,7 +19309,7 @@ export interface operations {
                     "application/json": components["schemas"]["AuditEnvelope"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -15413,7 +19318,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -15422,7 +19327,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -15431,7 +19336,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -15440,7 +19345,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -15469,7 +19374,7 @@ export interface operations {
                     "application/json": components["schemas"]["AuthOIDCEnvelope"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -15478,7 +19383,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -15511,7 +19416,7 @@ export interface operations {
                     "application/json": components["schemas"]["AuthOIDCEnvelope"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -15520,7 +19425,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -15529,7 +19434,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -15538,7 +19443,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -15547,7 +19452,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -15576,7 +19481,7 @@ export interface operations {
                     "application/json": components["schemas"]["AuthSCIMEnvelope"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -15585,7 +19490,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -15618,7 +19523,7 @@ export interface operations {
                     "application/json": components["schemas"]["AuthSCIMEnvelope"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -15627,7 +19532,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -15636,7 +19541,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -15645,7 +19550,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -15654,7 +19559,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -15683,7 +19588,7 @@ export interface operations {
                     "application/json": components["schemas"]["AuthTokensEnvelope"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -15692,7 +19597,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -15725,7 +19630,7 @@ export interface operations {
                     "application/json": components["schemas"]["AuthTokensEnvelope"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -15734,7 +19639,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -15743,7 +19648,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -15752,7 +19657,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -15761,7 +19666,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -15790,7 +19695,7 @@ export interface operations {
                     "application/json": components["schemas"]["CatalogSourceEnvelope"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -15799,7 +19704,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -15832,7 +19737,7 @@ export interface operations {
                     "application/json": components["schemas"]["CatalogSourceEnvelope"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -15841,7 +19746,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -15850,7 +19755,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -15859,7 +19764,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -15868,7 +19773,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -15897,7 +19802,7 @@ export interface operations {
                     "application/json": components["schemas"]["GovernanceEnvelope"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -15906,7 +19811,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -15939,7 +19844,7 @@ export interface operations {
                     "application/json": components["schemas"]["GovernanceEnvelope"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -15948,7 +19853,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -15957,7 +19862,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -15966,7 +19871,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -15975,7 +19880,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -16004,7 +19909,7 @@ export interface operations {
                     "application/json": components["schemas"]["GovernanceEnvelope"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -16013,7 +19918,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -16046,7 +19951,7 @@ export interface operations {
                     "application/json": components["schemas"]["GovernanceEnvelope"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -16055,7 +19960,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -16064,7 +19969,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -16073,7 +19978,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -16082,7 +19987,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -16111,7 +20016,7 @@ export interface operations {
                     "application/json": components["schemas"]["GovernanceEnvelope"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -16120,7 +20025,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -16153,7 +20058,7 @@ export interface operations {
                     "application/json": components["schemas"]["GovernanceEnvelope"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -16162,7 +20067,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -16171,7 +20076,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -16180,7 +20085,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -16189,7 +20094,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -16218,7 +20123,7 @@ export interface operations {
                     "application/json": components["schemas"]["GovernanceEnvelope"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -16227,7 +20132,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -16260,7 +20165,7 @@ export interface operations {
                     "application/json": components["schemas"]["GovernanceEnvelope"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -16269,7 +20174,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -16278,7 +20183,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -16287,7 +20192,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -16296,7 +20201,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -16325,7 +20230,7 @@ export interface operations {
                     "application/json": components["schemas"]["InferenceEnvelope"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -16334,7 +20239,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -16367,7 +20272,7 @@ export interface operations {
                     "application/json": components["schemas"]["InferenceEnvelope"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -16376,7 +20281,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -16385,7 +20290,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -16394,7 +20299,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -16403,7 +20308,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -16432,7 +20337,7 @@ export interface operations {
                     "application/json": components["schemas"]["OTLPReceiverEnvelope"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -16441,7 +20346,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -16474,7 +20379,7 @@ export interface operations {
                     "application/json": components["schemas"]["OTLPReceiverEnvelope"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -16483,7 +20388,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -16492,7 +20397,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -16501,7 +20406,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -16510,7 +20415,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -16539,7 +20444,7 @@ export interface operations {
                     "application/json": components["schemas"]["ParsingEnvelope"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -16548,7 +20453,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -16581,7 +20486,7 @@ export interface operations {
                     "application/json": components["schemas"]["ParsingEnvelope"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -16590,7 +20495,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -16599,7 +20504,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -16608,7 +20513,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -16617,7 +20522,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -16646,7 +20551,7 @@ export interface operations {
                     "application/json": components["schemas"]["PayloadLoggingEnvelope"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -16655,7 +20560,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -16688,7 +20593,7 @@ export interface operations {
                     "application/json": components["schemas"]["PayloadLoggingEnvelope"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -16697,7 +20602,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -16706,7 +20611,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -16715,7 +20620,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -16724,7 +20629,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -16753,7 +20658,7 @@ export interface operations {
                     "application/json": components["schemas"]["ProxyModeEnvelope"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -16762,7 +20667,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -16795,7 +20700,7 @@ export interface operations {
                     "application/json": components["schemas"]["ProxyModeEnvelope"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -16804,7 +20709,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -16813,7 +20718,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -16822,7 +20727,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -16831,7 +20736,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -16860,7 +20765,7 @@ export interface operations {
                     "application/json": components["schemas"]["settingsCatalogOutputBody"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -16869,7 +20774,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -16898,7 +20803,7 @@ export interface operations {
                     "application/json": components["schemas"]["UsageLoggingEnvelope"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -16907,7 +20812,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -16940,7 +20845,7 @@ export interface operations {
                     "application/json": components["schemas"]["UsageLoggingEnvelope"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -16949,7 +20854,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -16958,7 +20863,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -16967,7 +20872,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -16976,7 +20881,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -17020,7 +20925,7 @@ export interface operations {
                     "application/json": components["schemas"]["TeamList"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -17029,7 +20934,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -17038,7 +20943,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -17071,7 +20976,7 @@ export interface operations {
                     "application/json": components["schemas"]["Team"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -17080,7 +20985,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -17089,7 +20994,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -17098,7 +21003,25 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description No such row, or one the caller may not see. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description A conflict with stored rows: duplicate_binding (a policy-binding subject another binding already holds), managed_by_source (a provisioning source owns the row), or a second default account for one owner and host. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["conflictBody"];
+                };
+            };
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -17107,7 +21030,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -17143,7 +21066,7 @@ export interface operations {
                     "application/json": components["schemas"]["Team"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -17152,7 +21075,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -17161,7 +21084,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -17170,7 +21093,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -17179,16 +21102,16 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Conflict */
+            /** @description stale_resource_version (metadata.resourceVersion no longer matches; reload and reapply), resource_in_use (an owner move would strand referencing rows; blockers lists them), managed_by_source, or duplicate_binding. */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["APIError"];
+                    "application/json": components["schemas"]["conflictBody"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -17197,7 +21120,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -17220,14 +21143,23 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description No Content */
+            /** @description The row is deleted; the body lists the links it took from rows that stay. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["deleteDetachedBody"];
+                };
+            };
+            /** @description The row is deleted and no other row lost a link. */
             204: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content?: never;
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -17236,7 +21168,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -17245,7 +21177,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -17254,16 +21186,16 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Conflict */
+            /** @description resource_in_use: other rows still reference the target; blockers lists them, and groups marked detachable can be released with POST …/detach. Also managed_by_source for a row a provisioning source owns. */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["APIError"];
+                    "application/json": components["schemas"]["conflictBody"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -17272,7 +21204,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -17304,7 +21236,7 @@ export interface operations {
                     "application/json": components["schemas"]["detachOutputBody"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -17313,7 +21245,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -17322,7 +21254,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Conflict */
+            /** @description The request conflicts with the stored state; error.code says how. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -17331,7 +21263,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -17340,7 +21272,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -17372,7 +21304,7 @@ export interface operations {
                     "application/json": components["schemas"]["referencesOutputBody"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -17381,7 +21313,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -17390,7 +21322,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -17422,7 +21354,7 @@ export interface operations {
                     "application/json": components["schemas"]["Team"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -17431,7 +21363,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -17440,7 +21372,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -17449,7 +21381,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -17475,6 +21407,10 @@ export interface operations {
                 relay_key_hash?: string[] | null;
                 /** @description Match any of the given Policy.metadata.id values. */
                 policy_id?: string[] | null;
+                /** @description Match any of the given ids of the pool the serving credential was drawn from. */
+                pool_id?: string[] | null;
+                /** @description Match any of the given ids of the provider account the serving credential belongs to. */
+                account_id?: string[] | null;
                 /** @description Match any of the given Project.metadata.id values. */
                 project_id?: string[] | null;
                 /** @description Match any of the given Team.metadata.id values. */
@@ -17551,7 +21487,7 @@ export interface operations {
                     "application/json": components["schemas"]["usageEventsOutputBody"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -17560,7 +21496,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -17569,7 +21505,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -17578,7 +21514,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -17604,6 +21540,10 @@ export interface operations {
                 relay_key_hash?: string[] | null;
                 /** @description Match any of the given Policy.metadata.id values. */
                 policy_id?: string[] | null;
+                /** @description Match any of the given ids of the pool the serving credential was drawn from. */
+                pool_id?: string[] | null;
+                /** @description Match any of the given ids of the provider account the serving credential belongs to. */
+                account_id?: string[] | null;
                 /** @description Match any of the given Project.metadata.id values. */
                 project_id?: string[] | null;
                 /** @description Match any of the given Team.metadata.id values. */
@@ -17680,7 +21620,7 @@ export interface operations {
                     "application/json": components["schemas"]["FacetsResult"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -17689,7 +21629,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -17698,7 +21638,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -17707,7 +21647,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -17733,6 +21673,10 @@ export interface operations {
                 relay_key_hash?: string[] | null;
                 /** @description Match any of the given Policy.metadata.id values. */
                 policy_id?: string[] | null;
+                /** @description Match any of the given ids of the pool the serving credential was drawn from. */
+                pool_id?: string[] | null;
+                /** @description Match any of the given ids of the provider account the serving credential belongs to. */
+                account_id?: string[] | null;
                 /** @description Match any of the given Project.metadata.id values. */
                 project_id?: string[] | null;
                 /** @description Match any of the given Team.metadata.id values. */
@@ -17789,7 +21733,7 @@ export interface operations {
                 q?: string;
                 /** @description Caller-tag filter as "key:value" (repeatable). Same key repeated matches any of its values; different keys must all match. */
                 tag?: string[] | null;
-                /** @description "source" (default) | "none" (one row over the whole filtered set, group {}) | "model" | "host" | "policy" | "provider" | "project" | "team" | "principal" | "relay_key" (event-time slugs) | "model_id" | "host_id" | "policy_id" | "project_id" | "team_id" | "principal_id" | "credential_id" | "relay_key_hash" | "host_key_id" | "finish_reason" | "error_kind" | "tags.<key>" (group by a caller tag's value). */
+                /** @description "source" (default) | "none" (one row over the whole filtered set, group {}) | "model" | "host" | "policy" | "provider" | "project" | "team" | "principal" | "relay_key" (event-time slugs) | "model_id" | "host_id" | "policy_id" | "pool_id" | "account_id" | "project_id" | "team_id" | "principal_id" | "credential_id" | "relay_key_hash" | "host_key_id" | "finish_reason" | "error_kind" | "tags.<key>" (group by a caller tag's value). */
                 group_by?: string;
                 /** @description "previous" (the only accepted value) adds each row's numbers over the window of equal length just before this one as previous, and that window's bounds as previous_from/previous_to (previous_to exclusive). Rows stay those of the requested window: a group without traffic in the previous window has no previous, and a group seen only there has no row. The window is resolved once (since counts back from the request time, an open to becomes that time); one with no start or a start after its end is a 400. Not combinable with compare_from/compare_to. */
                 compare?: string;
@@ -17797,7 +21741,7 @@ export interface operations {
                 compare_from?: string;
                 /** @description End (RFC3339, exclusive) of the explicit compare window; needs compare_from and must be after it. */
                 compare_to?: string;
-                /** @description Adds distinct to each row: the number of distinct non-empty values of this dimension among the row's events. One of "relay_key_hash" | "relay_key" | "principal_id" | "credential_id" | "project_id" | "team_id" | "model_id" | "host_id". Omitted means no distinct count. */
+                /** @description Adds distinct to each row: the number of distinct non-empty values of this dimension among the row's events. One of "relay_key_hash" | "relay_key" | "principal_id" | "credential_id" | "pool_id" | "account_id" | "project_id" | "team_id" | "model_id" | "host_id". Omitted means no distinct count. */
                 distinct?: string;
             };
             header?: never;
@@ -17815,7 +21759,7 @@ export interface operations {
                     "application/json": components["schemas"]["SummaryResult"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -17824,7 +21768,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -17833,7 +21777,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -17842,7 +21786,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -17868,6 +21812,10 @@ export interface operations {
                 relay_key_hash?: string[] | null;
                 /** @description Match any of the given Policy.metadata.id values. */
                 policy_id?: string[] | null;
+                /** @description Match any of the given ids of the pool the serving credential was drawn from. */
+                pool_id?: string[] | null;
+                /** @description Match any of the given ids of the provider account the serving credential belongs to. */
+                account_id?: string[] | null;
                 /** @description Match any of the given Project.metadata.id values. */
                 project_id?: string[] | null;
                 /** @description Match any of the given Team.metadata.id values. */
@@ -17926,9 +21874,9 @@ export interface operations {
                 tag?: string[] | null;
                 /** @description Bucket width (e.g. "5m", "1h", "1d"). Required. */
                 interval?: string;
-                /** @description Optional dimension to split series by: "source" | "model" | "host" | "policy" | "provider" | "project" | "team" | "principal" | "relay_key" (event-time slugs) | "model_id" | "host_id" | "policy_id" | "project_id" | "team_id" | "principal_id" | "credential_id" | "relay_key_hash" | "host_key_id" | "finish_reason" | "error_kind" | "tags.<key>". Empty returns a single series; "none" returns that series with group {}. */
+                /** @description Optional dimension to split series by: "source" | "model" | "host" | "policy" | "provider" | "project" | "team" | "principal" | "relay_key" (event-time slugs) | "model_id" | "host_id" | "policy_id" | "pool_id" | "account_id" | "project_id" | "team_id" | "principal_id" | "credential_id" | "relay_key_hash" | "host_key_id" | "finish_reason" | "error_kind" | "tags.<key>". Empty returns a single series; "none" returns that series with group {}. */
                 group_by?: string;
-                /** @description Adds distinct to each point: the number of distinct non-empty values of this dimension among the bucket's events. Per-bucket values cannot be summed across buckets (a value seen in two buckets counts in each); use /usage/summary for a window total. One of "relay_key_hash" | "relay_key" | "principal_id" | "credential_id" | "project_id" | "team_id" | "model_id" | "host_id". Omitted means no distinct count. */
+                /** @description Adds distinct to each point: the number of distinct non-empty values of this dimension among the bucket's events. Per-bucket values cannot be summed across buckets (a value seen in two buckets counts in each); use /usage/summary for a window total. One of "relay_key_hash" | "relay_key" | "principal_id" | "credential_id" | "pool_id" | "account_id" | "project_id" | "team_id" | "model_id" | "host_id". Omitted means no distinct count. */
                 distinct?: string;
             };
             header?: never;
@@ -17946,7 +21894,7 @@ export interface operations {
                     "application/json": components["schemas"]["TimeSeriesResult"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -17955,7 +21903,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -17964,7 +21912,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -17973,7 +21921,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -18002,7 +21950,7 @@ export interface operations {
                     "application/json": components["schemas"]["usersListOutputBody"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -18011,7 +21959,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -18020,7 +21968,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -18036,6 +21984,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description User id. */
                 id: string;
             };
             cookie?: never;
@@ -18055,7 +22004,7 @@ export interface operations {
                     "application/json": components["schemas"]["userRow"];
                 };
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -18064,7 +22013,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -18073,7 +22022,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -18082,7 +22031,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -18091,7 +22040,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -18107,6 +22056,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description User id. */
                 id: string;
             };
             cookie?: never;
@@ -18120,7 +22070,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Unauthorized */
+            /** @description No valid session cookie or admin bearer token. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -18129,7 +22079,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -18138,7 +22088,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Not Found */
+            /** @description No such row, or one the caller may not see. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -18147,7 +22097,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description The request does not match the schema; error.details lists each failing field. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -18156,7 +22106,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Internal Server Error */
+            /** @description The server failed; error.message carries the cause. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -18165,7 +22115,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Service Unavailable */
+            /** @description A backend the operation needs is not configured or not reachable. */
             503: {
                 headers: {
                     [name: string]: unknown;
