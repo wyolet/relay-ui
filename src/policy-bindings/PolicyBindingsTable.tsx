@@ -20,6 +20,7 @@ import { useSubjectOptions } from "@/policy-bindings/useSubjectOptions";
 import { confirm } from "@/shared/ConfirmDialog";
 import { RowMenu } from "@/shared/RowMenu";
 import { StaleContent } from "@/shared/StaleContent";
+import { TableEmpty } from "@/shared/TableEmpty";
 import { TableToolbar } from "@/shared/TableToolbar";
 import { Th } from "@/shared/Th";
 import { toast } from "@/shared/Toast";
@@ -163,8 +164,7 @@ export function PolicyBindingsTable() {
 
 			<StaleContent stale={isStale}>
 				{items.length === 0 ? (
-					<div className="rounded-lg border border-dashed border-input bg-card px-6 py-14 text-center">
-						<ShieldCheck className="w-6 h-6 mx-auto mb-3 text-muted-foreground/50" />
+					<TableEmpty icon={ShieldCheck}>
 						{!filtered ? (
 							<>
 								<p className="text-sm font-medium text-foreground mb-1">
@@ -188,7 +188,7 @@ export function PolicyBindingsTable() {
 								No policy bindings match this filter.
 							</p>
 						)}
-					</div>
+					</TableEmpty>
 				) : (
 					<div className="overflow-x-auto rounded-lg border border-border bg-card">
 						<table className="w-full border-collapse">

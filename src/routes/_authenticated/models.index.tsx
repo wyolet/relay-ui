@@ -35,6 +35,7 @@ import { useModelFilters } from "@/models/useModelFilters";
 import { SearchBox } from "@/shared/SearchBox";
 import { PageLoader } from "@/shared/Spinner";
 import { StaleContent } from "@/shared/StaleContent";
+import { TableEmpty } from "@/shared/TableEmpty";
 import { TablePager } from "@/shared/TablePager";
 import { TableToolbar } from "@/shared/TableToolbar";
 import { useDeferredSearch } from "@/shared/useDeferredSearch";
@@ -184,8 +185,7 @@ function ModelsList() {
 				</div>
 
 				{items.length === 0 ? (
-					<div className="rounded-lg border border-dashed border-input bg-card px-6 py-14 text-center">
-						<Boxes className="w-6 h-6 mx-auto mb-3 text-muted-foreground/50" />
+					<TableEmpty icon={Boxes}>
 						<p className="text-sm text-muted-foreground">
 							{featured
 								? "No featured models match. Browse the full catalog under All models."
@@ -193,7 +193,7 @@ function ModelsList() {
 									? "No models configured."
 									: "No models match the current filter."}
 						</p>
-					</div>
+					</TableEmpty>
 				) : (
 					<>
 						<ModelsTable
@@ -250,13 +250,13 @@ function HostsList() {
 			/>
 
 			{visible.length === 0 ? (
-				<div className="rounded-lg border border-dashed border-input bg-card px-6 py-14 text-center">
+				<TableEmpty>
 					<p className="text-sm text-muted-foreground">
 						{items.length === 0
 							? "No hosts configured."
 							: "No hosts match the current filter."}
 					</p>
-				</div>
+				</TableEmpty>
 			) : (
 				<HostsTable
 					items={visible}
