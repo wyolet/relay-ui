@@ -35,6 +35,7 @@ const searchSchema = z.object({
 	project_id: z.array(z.string()).default([]),
 	principal_id: z.array(z.string()).default([]),
 	lane_account_id: z.array(z.string()).default([]),
+	via_account_id: z.array(z.string()).default([]),
 	relay_key_hash: z.array(z.string()).default([]),
 	policy_id: z.array(z.string()).default([]),
 	host_key_id: z.array(z.string()).default([]),

@@ -33,6 +33,7 @@ export const explorerSearchSchema = z.object({
 	project_id: ids,
 	principal_id: ids,
 	lane_account_id: ids,
+	via_account_id: ids,
 	relay_key_hash: ids,
 	policy_id: ids,
 	host_key_id: ids,

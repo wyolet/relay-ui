@@ -15,6 +15,11 @@ export type AccountSpec = components["schemas"]["AccountSpec"];
 export type AccountList = components["schemas"]["AccountList"];
 export type MyAccount = components["schemas"]["MyAccount"];
 export type AccountLimits = components["schemas"]["AccountLimits"];
+export type AccountShares = components["schemas"]["AccountShares"];
+export type AccountShare = components["schemas"]["AccountShare"];
+export type AccountShareParty = components["schemas"]["AccountShareParty"];
+export type AccountReceiver = components["schemas"]["AccountReceiver"];
+export type UpstreamKeys = components["schemas"]["upstreamKeysOutBody"];
 /** Server-side filter/sort/page params accepted by GET /accounts. */
 export type AccountsListParams = NonNullable<
 	operations["list_accounts"]["parameters"]["query"]
@@ -67,7 +72,12 @@ export function accountReferencesQueryOptions(id: string) {
 function invalidateAccountDependents(
 	queryClient: ReturnType<typeof useQueryClient>,
 ): void {
-	for (const key of [["accounts"], ["host-keys"], ["policy-bindings"]]) {
+	for (const key of [
+		["accounts"],
+		["host-keys"],
+		["policy-bindings"],
+		["pools"],
+	]) {
 		void queryClient.invalidateQueries({ queryKey: key });
 	}
 }
@@ -177,4 +187,64 @@ export function accountLimitsQueryOptions(ref: string) {
 
 export function useAccountLimits(ref: string, enabled: boolean) {
 	return useQuery({ ...accountLimitsQueryOptions(ref), enabled });
+}
+
+/** The account's keys, secret-free; a shared account lists its real account's, marked readOnly. */
+export function accountKeysQueryOptions(ref: string) {
+	return queryOptions({
+		queryKey: ["accounts", ref, "keys"] as const,
+		queryFn: async (): Promise<UpstreamKeys> =>
+			unwrap(
+				await apiClient.GET("/accounts/{ref}/keys", {
+					params: { path: { ref } },
+				}),
+			),
+		staleTime: 30_000,
+		gcTime: 5 * 60_000,
+	});
+}
+
+export function useAccountKeys(ref: string) {
+	return useSuspenseQuery(accountKeysQueryOptions(ref));
+}
+
+/** The accounts a provider account is shared with, with usage over the server's default window (30 days). */
+export function accountSharesQueryOptions(ref: string) {
+	return queryOptions({
+		queryKey: ["accounts", ref, "shares"] as const,
+		queryFn: async (): Promise<AccountShares> =>
+			unwrap(
+				await apiClient.GET("/accounts/{ref}/shares", {
+					params: { path: { ref } },
+				}),
+			),
+		retry: false,
+		staleTime: 30_000,
+		gcTime: 5 * 60_000,
+	});
+}
+
+export function useAccountShares(ref: string, enabled: boolean) {
+	return useQuery({ ...accountSharesQueryOptions(ref), enabled });
+}
+
+/** Resolves to the shared account the receiver now owns. */
+export function useShareAccount() {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: async ({
+			ref,
+			receiver,
+		}: {
+			ref: string;
+			receiver: AccountReceiver;
+		}): Promise<Account> =>
+			unwrap(
+				await apiClient.POST("/accounts/{ref}/shares", {
+					params: { path: { ref } },
+					body: { receiver },
+				}),
+			),
+		onSuccess: () => invalidateAccountDependents(queryClient),
+	});
 }

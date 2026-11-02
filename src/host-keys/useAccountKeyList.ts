@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useAccount } from "@/api/hooks/accounts";
+import { isSharedAccount } from "@/accounts/accountView";
+import { useAccount, useAccountKeys } from "@/api/hooks/accounts";
 import { useAccountHostKeys, useHostKeysHealth } from "@/api/hooks/hostkeys";
 import type { HostKey } from "@/api/types/hostkey";
 import { type KeyHealthView, keyHealthView } from "@/host-keys/keyHealth";
@@ -13,6 +14,18 @@ export interface AccountKeyRow {
 	enabled: boolean;
 	hostKey: HostKey;
 	health: KeyHealthView;
+}
+
+/** Whether the account is a shared one, whose keys belong to its real account. */
+export function useIsSharedAccount(accountName: string): boolean {
+	const { data: account } = useAccount(accountName);
+	return isSharedAccount(account);
+}
+
+/** A shared account's keys: its real account's, read-only. */
+export function useSharedAccountKeyList(accountName: string) {
+	const { data } = useAccountKeys(accountName);
+	return { rows: data.keys ?? [] };
 }
 
 /** A provider account's keys with their breaker health and per-key actions. */

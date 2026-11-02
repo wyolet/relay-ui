@@ -4,6 +4,7 @@ import { AccountHolderLink } from "@/accounts/AccountHolderLink";
 import { ACCOUNT_SUMMARY } from "@/accounts/accountCopy";
 import { ACCOUNT_KIND_LABELS } from "@/accounts/accountView";
 import { DefaultAccountBadge } from "@/accounts/DefaultAccountBadge";
+import { SharedByBadge } from "@/accounts/SharedByBadge";
 import { ACCOUNT_FILTERS, useAccountRows } from "@/accounts/useAccountRows";
 import { useDeleteAccount } from "@/api/hooks/accounts";
 import { buttonVariants } from "@/components/ui/button";
@@ -75,85 +76,90 @@ export function AccountsTable() {
 							</tr>
 						</thead>
 						<tbody>
-							{rows.map(({ account, holder, provider, deletable }) => {
-								const name = account.metadata.name;
-								const actions: MenuAction[] = [
-									{
-										label: "Edit",
-										render: (
-											<Link to="/accounts/$name/edit" params={{ name }} />
-										),
-									},
-								];
-								if (deletable) {
-									actions.push({
-										label: "Delete",
-										danger: true,
-										onClick: () =>
-											del.request({
-												id: account.metadata.id ?? "",
-												name,
-												label: displayLabel(account.metadata),
-											}),
-									});
-								}
-								return (
-									<tr
-										key={account.metadata.id ?? name}
-										className="border-t border-border hover:bg-muted/40 transition-colors"
-									>
-										<td className="px-3 py-2">
-											<Link
-												to="/accounts/$name"
-												params={{ name }}
-												className="block rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-											>
-												<div className="flex items-center gap-2 text-sm font-medium text-foreground">
-													<span>{displayLabel(account.metadata)}</span>
-													{account.spec.default && <DefaultAccountBadge />}
-													{account.spec.closed && (
-														<StatusBadge
-															enabled={false}
-															disabledLabel="Closed"
-														/>
-													)}
-												</div>
-												{hasDisplayName(account.metadata) && (
-													<div className="font-mono text-[11px] text-muted-foreground">
-														{name}
+							{rows.map(
+								({ account, holder, provider, sharedBy, deletable }) => {
+									const name = account.metadata.name;
+									const actions: MenuAction[] = [
+										{
+											label: "Edit",
+											render: (
+												<Link to="/accounts/$name/edit" params={{ name }} />
+											),
+										},
+									];
+									if (deletable) {
+										actions.push({
+											label: "Delete",
+											danger: true,
+											onClick: () =>
+												del.request({
+													id: account.metadata.id ?? "",
+													name,
+													label: displayLabel(account.metadata),
+												}),
+										});
+									}
+									return (
+										<tr
+											key={account.metadata.id ?? name}
+											className="border-t border-border hover:bg-muted/40 transition-colors"
+										>
+											<td className="px-3 py-2">
+												<Link
+													to="/accounts/$name"
+													params={{ name }}
+													className="block rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+												>
+													<div className="flex items-center gap-2 text-sm font-medium text-foreground">
+														<span>{displayLabel(account.metadata)}</span>
+														{account.spec.default && <DefaultAccountBadge />}
+														{sharedBy !== undefined && (
+															<SharedByBadge name={sharedBy} />
+														)}
+														{account.spec.closed && (
+															<StatusBadge
+																enabled={false}
+																disabledLabel="Closed"
+															/>
+														)}
 													</div>
+													{hasDisplayName(account.metadata) && (
+														<div className="font-mono text-[11px] text-muted-foreground">
+															{name}
+														</div>
+													)}
+												</Link>
+											</td>
+											<td className="px-3 py-2 text-xs text-foreground">
+												{ACCOUNT_KIND_LABELS[account.spec.kind]}
+											</td>
+											<td className="px-3 py-2">
+												{holder ? <AccountHolderLink holder={holder} /> : dash}
+											</td>
+											<td className="px-3 py-2">
+												{provider ? (
+													<HostCell
+														host={provider.host}
+														fallbackLabel={provider.hostLabel}
+														size="sm"
+													/>
+												) : (
+													dash
 												)}
-											</Link>
-										</td>
-										<td className="px-3 py-2 text-xs text-foreground">
-											{ACCOUNT_KIND_LABELS[account.spec.kind]}
-										</td>
-										<td className="px-3 py-2">
-											{holder ? <AccountHolderLink holder={holder} /> : dash}
-										</td>
-										<td className="px-3 py-2">
-											{provider ? (
-												<HostCell
-													host={provider.host}
-													fallbackLabel={provider.hostLabel}
-													size="sm"
-												/>
-											) : (
-												dash
-											)}
-										</td>
-										<td className="px-3 py-2 font-mono text-[11px] text-foreground">
-											{(provider && account.spec.orgId) || dash}
-										</td>
-										<td className="px-3 py-2 text-right text-xs tabular-nums text-foreground">
-											{provider ? provider.keyCount : dash}
-										</td>
-										<td className="px-3 py-2 text-right">
-											<RowMenu actions={actions} />
-										</td>
-									</tr>
-								);
-							})}
+											</td>
+											<td className="px-3 py-2 font-mono text-[11px] text-foreground">
+												{(provider && account.spec.orgId) || dash}
+											</td>
+											<td className="px-3 py-2 text-right text-xs tabular-nums text-foreground">
+												{provider ? provider.keyCount : dash}
+											</td>
+											<td className="px-3 py-2 text-right">
+												<RowMenu actions={actions} />
+											</td>
+										</tr>
+									);
+								},
+							)}
 						</tbody>
 					</table>
 				</div>

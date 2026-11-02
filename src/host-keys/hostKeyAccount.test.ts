@@ -43,6 +43,15 @@ describe("accountOptions", () => {
 		]);
 	});
 
+	it("leaves out shared accounts, which hold no keys", () => {
+		const shared = account("a-shared", "h1", system, {
+			sourceAccountId: "a-org",
+		});
+		expect(
+			accountOptions([...accounts, shared], "h1").map((o) => o.value),
+		).not.toContain("a-shared");
+	});
+
 	it("keeps the key's current account outside the usable set", () => {
 		const team = accounts.filter((a) => a.metadata.id === "a-team");
 		const current = accounts.find((a) => a.metadata.id === "a-org");

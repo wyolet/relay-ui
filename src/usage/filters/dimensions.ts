@@ -9,6 +9,7 @@ export const FILTER_DIMENSIONS = [
 	"project_id",
 	"principal_id",
 	"lane_account_id",
+	"via_account_id",
 	"relay_key_hash",
 	"policy_id",
 	"host_key_id",

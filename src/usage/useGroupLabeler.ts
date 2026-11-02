@@ -68,7 +68,9 @@ export function useGroupLabeler(
 	});
 	const accounts = useQuery({
 		...accountListQueryOptions,
-		enabled: groupBy === "lane_account_id" && !served,
+		enabled:
+			(groupBy === "lane_account_id" || groupBy === "via_account_id") &&
+			!served,
 	});
 
 	return useMemo(() => {
@@ -137,7 +139,7 @@ export function useGroupLabeler(
 			);
 			for (const u of users.data ?? [])
 				map.set(u.id, u.username || u.email || u.id);
-		} else if (groupBy === "lane_account_id")
+		} else if (groupBy === "lane_account_id" || groupBy === "via_account_id")
 			map = index(
 				accounts.data?.items,
 				(r) => r.metadata.id,
