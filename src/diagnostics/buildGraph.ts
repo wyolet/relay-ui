@@ -1,5 +1,6 @@
 import type { Binding } from "@/api/hooks/bindings";
 import { bindingsByHost, bindingsByModel } from "@/api/hooks/bindings";
+import type { Pool } from "@/api/hooks/pools";
 import type { Host } from "@/api/types/host";
 import type { HostKey } from "@/api/types/hostkey";
 import type { Key } from "@/api/types/key";
@@ -15,6 +16,7 @@ interface GraphInput {
 	hosts: Host[];
 	models: Model[];
 	rateLimits: RateLimit[];
+	pools: Pool[];
 	keys: Key[];
 	providers: Provider[];
 	bindings: Binding[];
@@ -30,33 +32,36 @@ function byId<T extends { metadata: { id?: string } }>(
 	return out;
 }
 
-export function buildDiagnosticGraph(input: GraphInput): DiagnosticGraph {
-	const keysByPolicyId = new Map<string, Key[]>();
-	for (const rk of input.keys) {
-		const pid = rk.spec.policyId;
-		if (!pid) continue;
-		const list = keysByPolicyId.get(pid);
-		if (list) list.push(rk);
-		else keysByPolicyId.set(pid, [rk]);
+/**
+ * Credentials a policy draws on: its pools' keys in failover order, then the
+ * keys it links directly, without repeats. Pools the graph lacks add nothing.
+ */
+export function policyCredentialIds(
+	policy: Policy,
+	pools: ReadonlyMap<string, Pool>,
+): string[] {
+	const ids = new Set<string>();
+	for (const poolId of policy.spec.poolIds ?? []) {
+		for (const id of pools.get(poolId)?.spec.credentialIds ?? []) ids.add(id);
 	}
+	for (const id of policy.spec.credentialIds ?? []) ids.add(id);
+	return [...ids];
+}
 
-	const policiesByHostKeyId = new Map<string, Policy[]>();
+export function buildDiagnosticGraph(input: GraphInput): DiagnosticGraph {
+	const pools = byId(input.pools);
+	const policiesByCredentialId = new Map<string, Policy[]>();
 	const policiesByRateLimitId = new Map<string, Policy[]>();
 	for (const p of input.policies) {
-		for (const hkId of p.spec.hostKeyIds ?? []) {
-			const list = policiesByHostKeyId.get(hkId);
+		for (const credId of policyCredentialIds(p, pools)) {
+			const list = policiesByCredentialId.get(credId);
 			if (list) list.push(p);
-			else policiesByHostKeyId.set(hkId, [p]);
+			else policiesByCredentialId.set(credId, [p]);
 		}
-		const rlIds = new Set<string>();
-		if (p.spec.rateLimitId) rlIds.add(p.spec.rateLimitId);
-		for (const b of p.spec.rlBindings ?? []) {
-			if (b.rateLimitId) rlIds.add(b.rateLimitId);
-		}
-		for (const rlId of rlIds) {
-			const list = policiesByRateLimitId.get(rlId);
+		for (const rl of p.spec.rateLimits ?? []) {
+			const list = policiesByRateLimitId.get(rl.rateLimitId);
 			if (list) list.push(p);
-			else policiesByRateLimitId.set(rlId, [p]);
+			else policiesByRateLimitId.set(rl.rateLimitId, [p]);
 		}
 	}
 
@@ -66,12 +71,12 @@ export function buildDiagnosticGraph(input: GraphInput): DiagnosticGraph {
 		hosts: byId(input.hosts),
 		models: byId(input.models),
 		rateLimits: byId(input.rateLimits),
+		pools,
 		keys: byId(input.keys),
 		providers: byId(input.providers),
 		bindingsByModel: bindingsByModel(input.bindings),
 		bindingsByHost: bindingsByHost(input.bindings),
-		keysByPolicyId,
-		policiesByHostKeyId,
+		policiesByCredentialId,
 		policiesByRateLimitId,
 	};
 }

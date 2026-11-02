@@ -1,19 +1,13 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import {
-	ChevronLeft,
-	KeyRound,
-	Link2,
-	ShieldCheck,
-	Unlink2,
-} from "lucide-react";
+import { ChevronLeft, KeyRound, Link2, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DiagnosticList } from "@/diagnostics/DiagnosticList";
 import { useHostKeyDiagnostics } from "@/diagnostics/useDiagnostics";
+import { HostKeyAccountRow } from "@/host-keys/HostKeyAccountRow";
+import { LinkedPolicyAction } from "@/host-keys/LinkedPolicyAction";
+import type { LinkedPolicyRow } from "@/host-keys/linkedPolicies";
 import { SecretRotateDialog } from "@/host-keys/SecretRotateDialog";
-import {
-	type AttachedPolicyRow,
-	useHostKeyDetail,
-} from "@/host-keys/useHostKeyDetail";
+import { useHostKeyDetail } from "@/host-keys/useHostKeyDetail";
 import { HostLogo } from "@/hosts/HostLogo";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
@@ -29,6 +23,7 @@ export function HostKeyDetailView({ name }: { name: string }) {
 		confirming,
 		rotating,
 		isDeletingPending,
+		deleteError,
 		attemptDelete,
 		confirmDelete,
 		cancelDelete,
@@ -79,7 +74,8 @@ export function HostKeyDetailView({ name }: { name: string }) {
 							on{" "}
 							{view.hostName ? (
 								<Link
-									to="/host-keys"
+									to="/hosts/$name"
+									params={{ name: view.hostName }}
 									className="text-foreground hover:underline"
 								>
 									{view.hostLabel}
@@ -116,24 +112,12 @@ export function HostKeyDetailView({ name }: { name: string }) {
 
 			<Card title="Configuration" icon={ShieldCheck}>
 				<dl className="divide-y divide-border">
-					<Row label="Host policy">
-						{view.hostPolicyLabel === null ? (
-							<span className="text-muted-foreground">— (none set)</span>
-						) : view.hostPolicyName ? (
-							<Link
-								to="/policies/$name"
-								params={{ name: view.hostPolicyName }}
-								className="text-primary hover:underline"
-							>
-								{view.hostPolicyLabel}
-							</Link>
-						) : (
-							<span className="text-foreground">{view.hostPolicyLabel}</span>
-						)}
-						<p className="mt-0.5 text-[11px] text-muted-foreground leading-snug">
-							Mirrors the provider's own tier — acts as a hard cap on user
-							policies that route through this key.
-						</p>
+					<Row label="Account">
+						<HostKeyAccountRow
+							key={view.id}
+							hostKeyId={view.id}
+							account={view.account}
+						/>
 					</Row>
 					{view.defaultTier && (
 						<Row label="Default tier">
@@ -188,6 +172,7 @@ export function HostKeyDetailView({ name }: { name: string }) {
 					onConfirm={() => void confirmDelete()}
 					onCancel={cancelDelete}
 					isPending={isDeletingPending}
+					error={deleteError}
 				/>
 			)}
 		</div>
@@ -199,16 +184,16 @@ function PoliciesPanel({
 	onDetach,
 	detaching,
 }: {
-	rows: AttachedPolicyRow[];
+	rows: LinkedPolicyRow[];
 	onDetach: (policyId: string) => void;
 	detaching: boolean;
 }) {
 	if (rows.length === 0) {
 		return (
-			<Card title="Attached to user policies" icon={Link2}>
+			<Card title="Linked by policies" icon={Link2}>
 				<p className="text-xs text-muted-foreground">
-					This credential is not attached to any user policy. Attach it from a
-					policy's credential pool to start routing traffic through it.
+					No policy links this credential. Principals without a caller policy
+					still reach it when it belongs to their own scope or to the system.
 				</p>
 			</Card>
 		);
@@ -218,7 +203,7 @@ function PoliciesPanel({
 		<section>
 			<div className="mb-2 flex items-baseline justify-between gap-2">
 				<h2 className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-					Attached to user policies
+					Linked by policies
 				</h2>
 				<span className="text-[10px] text-muted-foreground tabular-nums">
 					{rows.length} polic{rows.length === 1 ? "y" : "ies"}
@@ -229,8 +214,7 @@ function PoliciesPanel({
 					<thead className="bg-muted/30 text-[10px] uppercase tracking-wide text-muted-foreground">
 						<tr>
 							<Th>Policy</Th>
-							<Th className="text-right">Pool</Th>
-							<Th className="text-right">API keys</Th>
+							<Th className="text-right">Link</Th>
 							<Th className="text-right">Status</Th>
 							<Th className="text-right">Action</Th>
 						</tr>
@@ -249,36 +233,11 @@ function PoliciesPanel({
 										</Link>
 										<div className="text-[11px] text-muted-foreground font-mono truncate">
 											{row.name}
-											{row.hostOwned && (
-												<span className="ml-1.5 text-[9px] uppercase tracking-wide">
-													· host-owned
-												</span>
-											)}
 										</div>
 									</div>
 								</Td>
-								<Td className="text-right tabular-nums">
-									<span
-										className={
-											row.poolSize <= 1
-												? "text-muted-foreground"
-												: "text-foreground"
-										}
-										title={`${row.poolSize} credential${row.poolSize === 1 ? "" : "s"} in this policy's pool`}
-									>
-										1 / {row.poolSize}
-									</span>
-								</Td>
-								<Td className="text-right tabular-nums">
-									<span
-										className={
-											row.keyCount === 0
-												? "text-muted-foreground"
-												: "text-foreground"
-										}
-									>
-										{row.keyCount}
-									</span>
+								<Td className="text-right text-[11px] text-muted-foreground">
+									{row.direct ? "Direct" : "Pool"}
 								</Td>
 								<Td className="text-right">
 									{row.enabled ? (
@@ -290,20 +249,11 @@ function PoliciesPanel({
 									)}
 								</Td>
 								<Td className="text-right">
-									<Button
-										type="button"
-										variant="outline"
-										onClick={() => onDetach(row.id)}
-										disabled={detaching || row.hostOwned}
-										title={
-											row.hostOwned
-												? "Host-owned policy — managed by Relay"
-												: "Remove this key from the policy's pool"
-										}
-									>
-										<Unlink2 className="size-3" />
-										Detach
-									</Button>
+									<LinkedPolicyAction
+										row={row}
+										onDetach={onDetach}
+										detaching={detaching}
+									/>
 								</Td>
 							</tr>
 						))}

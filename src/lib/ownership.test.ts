@@ -7,38 +7,42 @@ const none = { canEdit: false, canDelete: false };
 
 describe("resolveMutability", () => {
 	it("gates catalog rows by governance", () => {
-		expect(resolveMutability({ owner: { kind: "provider" } }, locked)).toEqual(
-			none,
-		);
+		expect(
+			resolveMutability({ owner: { kind: "provider" } }, locked, true),
+		).toEqual(none);
 		expect(
 			resolveMutability(
 				{ owner: { kind: "host" } },
 				{ allowEdit: true, allowDelete: false },
+				true,
 			),
 		).toEqual({ canEdit: true, canDelete: false });
 	});
 
-	it("never lets system rows mutate", () => {
-		expect(
-			resolveMutability(
-				{ owner: { kind: "system" } },
-				{ allowEdit: true, allowDelete: true },
-			),
-		).toEqual(none);
+	it("lets only an admin change system rows", () => {
+		const system = { owner: { kind: "system" as const } };
+		expect(resolveMutability(system, locked, true)).toEqual(both);
+		expect(resolveMutability(system, locked, false)).toEqual(none);
 	});
 
-	it("treats user-owned and unowned rows as mutable", () => {
-		expect(resolveMutability({ owner: { kind: "user" } }, locked)).toEqual(
-			both,
-		);
-		expect(resolveMutability({}, locked)).toEqual(both);
+	it("always lets tenant-owned and unowned rows change", () => {
+		for (const kind of ["team", "project", "user"] as const) {
+			expect(resolveMutability({ owner: { kind } }, locked, false)).toEqual(
+				both,
+			);
+		}
+		expect(resolveMutability({}, locked, false)).toEqual(both);
 	});
 
 	it("governs detached catalog rows as user-owned", () => {
 		const catalogDetachedAt = "2026-10-18T12:00:00Z";
-		for (const kind of ["provider", "host", "system"]) {
+		for (const kind of ["provider", "host", "system"] as const) {
 			expect(
-				resolveMutability({ owner: { kind }, catalogDetachedAt }, locked),
+				resolveMutability(
+					{ owner: { kind }, catalogDetachedAt },
+					locked,
+					false,
+				),
 			).toEqual(both);
 		}
 	});

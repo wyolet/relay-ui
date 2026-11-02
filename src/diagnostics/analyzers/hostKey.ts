@@ -12,7 +12,6 @@ export function analyzeHostKey(
 
 	const host = graph.hosts.get(hk.spec.hostId);
 	if (!host) {
-		// BE-soon B2 makes hosts non-deletable; until then this can occur.
 		out.push({
 			severity: "error",
 			code: "host-key.host-dangling",
@@ -26,24 +25,9 @@ export function analyzeHostKey(
 		});
 	}
 
-	const hostPolicy = graph.policies.get(hk.spec.policyId);
-	if (!hostPolicy) {
-		// BE-soon A1 will reject host-key writes that don't match host ownership.
-		out.push({
-			severity: "error",
-			code: "host-key.host-policy-dangling",
-			message: "Referenced host policy no longer exists.",
-		});
-	} else if (hostPolicy.spec.enabled === false) {
-		out.push({
-			severity: "warn",
-			code: "host-key.host-policy-disabled",
-			message: `Host policy "${displayLabel(hostPolicy.metadata)}" is disabled.`,
-		});
-	}
-
+	// No policy reaches the credential, through a pool or directly.
 	const userPolicies = hkId
-		? (graph.policiesByHostKeyId.get(hkId) ?? []).filter(
+		? (graph.policiesByCredentialId.get(hkId) ?? []).filter(
 				(p) => p.metadata.owner?.kind !== "host",
 			)
 		: [];

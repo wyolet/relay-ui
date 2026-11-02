@@ -9,8 +9,6 @@ import {
 	useDeleteRole,
 	useRolesList,
 } from "@/api/hooks/roles";
-import { ApiError } from "@/api/types/errors";
-import type { Role } from "@/api/types/role";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { FilterBar } from "@/filters/FilterBar";
 import { activeFilterCount } from "@/filters/toQueryParams";
@@ -20,12 +18,13 @@ import { CustomRolesNotice } from "@/roles/CustomRolesNotice";
 import { ruleSummary } from "@/roles/RuleChips";
 import { isBuiltinRole } from "@/roles/vocabulary";
 import { Chip } from "@/shared/Chip";
-import { confirm } from "@/shared/ConfirmDialog";
+import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { RowMenu } from "@/shared/RowMenu";
 import { StaleContent } from "@/shared/StaleContent";
+import { TableEmpty } from "@/shared/TableEmpty";
 import { TableToolbar } from "@/shared/TableToolbar";
 import { Th } from "@/shared/Th";
-import { toast } from "@/shared/Toast";
+import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 import { useDeferredSearch } from "@/shared/useDeferredSearch";
 
 /** Filters rendered above the table, all served by GET /roles. */
@@ -68,32 +67,13 @@ export function RolesTable() {
 	const { search, isStale } = useDeferredSearch(live);
 	const { data } = useRolesList(toRolesParams(search));
 	const canAuthor = useHasLicenseFeature(FEATURE_CUSTOM_ROLES);
-	const deleteRole = useDeleteRole();
+	const del = useConfirmedDelete(useDeleteRole(), { noun: "role" });
 
 	const items = data.items ?? [];
 	const filtered = activeFilterCount(ROLE_FILTERS, { ...search }) > 0;
 
 	function patch(next: FilterState) {
 		void navigate({ search: (prev) => ({ ...prev, ...next }), replace: true });
-	}
-
-	async function handleDelete(role: Role) {
-		const ok = await confirm({
-			title: `Delete ${displayLabel(role.metadata)}?`,
-			description: "Bindings that name this role stop granting anything.",
-			confirmLabel: "Delete",
-			danger: true,
-		});
-		if (!ok) return;
-		try {
-			await deleteRole.mutateAsync(role.metadata.id ?? "");
-			toast("success", `Role "${displayLabel(role.metadata)}" deleted.`);
-		} catch (err) {
-			toast(
-				"error",
-				err instanceof ApiError ? err.body.message : "Failed to delete role.",
-			);
-		}
 	}
 
 	return (
@@ -132,12 +112,11 @@ export function RolesTable() {
 
 			<StaleContent stale={isStale}>
 				{items.length === 0 ? (
-					<div className="rounded-lg border border-dashed border-input bg-card px-6 py-14 text-center">
-						<ShieldCheck className="w-6 h-6 mx-auto mb-3 text-muted-foreground/50" />
+					<TableEmpty icon={ShieldCheck}>
 						<p className="text-sm text-muted-foreground">
 							{filtered ? "No roles match this filter." : "No roles yet."}
 						</p>
-					</div>
+					</TableEmpty>
 				) : (
 					<div className="overflow-x-auto rounded-lg border border-border bg-card">
 						<table className="w-full border-collapse">
@@ -196,7 +175,12 @@ export function RolesTable() {
 															{
 																label: "Delete",
 																danger: true,
-																onClick: () => void handleDelete(role),
+																onClick: () =>
+																	del.request({
+																		id: role.metadata.id ?? "",
+																		name: role.metadata.name,
+																		label: displayLabel(role.metadata),
+																	}),
 															},
 														]}
 													/>
@@ -210,6 +194,15 @@ export function RolesTable() {
 					</div>
 				)}
 			</StaleContent>
+			{del.target && (
+				<DeleteConfirm
+					resourceName={del.target.name}
+					onConfirm={() => void del.confirm()}
+					onCancel={del.cancel}
+					isPending={del.isPending}
+					error={del.error}
+				/>
+			)}
 		</div>
 	);
 }

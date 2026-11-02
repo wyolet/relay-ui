@@ -2,11 +2,13 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ChevronLeft } from "lucide-react";
 import { Suspense } from "react";
 import { z } from "zod";
+import { accountListQueryOptions } from "@/api/hooks/accounts";
 import { bindingsListQueryOptions } from "@/api/hooks/bindings";
 import { governanceQueryOptions } from "@/api/hooks/governance";
 import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
 import {
 	hostDetailQueryOptions,
+	hostPoliciesQueryOptions,
 	hostsListQueryOptions,
 	useDeleteHost,
 	useHost,
@@ -17,13 +19,13 @@ import { modelsListQueryOptions } from "@/api/hooks/models";
 import { policiesListQueryOptions } from "@/api/hooks/policies";
 import { providersListQueryOptions } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
-import { ApiError } from "@/api/types/errors";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { type HostDetailTab, HostDetailView } from "@/hosts/HostDetailView";
 import { displayLabel } from "@/lib/displayLabel";
-import { confirm } from "@/shared/ConfirmDialog";
+import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { PageLoader } from "@/shared/Spinner";
 import { toast } from "@/shared/Toast";
+import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 
 const searchSchema = z.object({
 	tab: z
@@ -56,6 +58,8 @@ export const Route = createFileRoute("/_authenticated/hosts/$name")({
 		void queryClient.prefetchQuery(rateLimitsListQueryOptions);
 		void queryClient.prefetchQuery(keysListQueryOptions);
 		void queryClient.prefetchQuery(providersListQueryOptions);
+		void queryClient.prefetchQuery(accountListQueryOptions);
+		void queryClient.prefetchQuery(hostPoliciesQueryOptions(params.name));
 		return Promise.all([
 			queryClient.ensureQueryData(hostDetailQueryOptions(params.name)),
 			queryClient.ensureQueryData(governanceQueryOptions("host")),
@@ -71,28 +75,10 @@ function HostDetailInner() {
 	const { data: host } = useHost(name);
 	const updateHost = useUpdateHost();
 	const toastSaveError = useSaveErrorToast();
-	const deleteHost = useDeleteHost();
-
-	async function handleDelete() {
-		const ok = await confirm({
-			title: `Delete host ${name}?`,
-			description:
-				"Models and keys bound to this host will lose access until reattached.",
-			confirmLabel: "Delete",
-			danger: true,
-		});
-		if (!ok) return;
-		try {
-			await deleteHost.mutateAsync(host.metadata.id ?? "");
-			toast("success", `Host "${displayLabel(host.metadata)}" deleted.`);
-			void navigate({ to: "/models", search: { tab: "hosts" } });
-		} catch (err) {
-			toast(
-				"error",
-				err instanceof ApiError ? err.body.message : "Failed to delete host.",
-			);
-		}
-	}
+	const del = useConfirmedDelete(useDeleteHost(), {
+		noun: "host",
+		onDeleted: () => void navigate({ to: "/models", search: { tab: "hosts" } }),
+	});
 
 	async function handleToggleEnabled() {
 		const next = !(host.spec.enabled !== false);
@@ -128,9 +114,24 @@ function HostDetailInner() {
 				}
 				onToggleEnabled={() => void handleToggleEnabled()}
 				toggling={updateHost.isPending}
-				onDelete={() => void handleDelete()}
-				deleting={deleteHost.isPending}
+				onDelete={() =>
+					del.request({
+						id: host.metadata.id ?? "",
+						name: host.metadata.name,
+						label: displayLabel(host.metadata),
+					})
+				}
+				deleting={del.isPending}
 			/>
+			{del.target && (
+				<DeleteConfirm
+					resourceName={del.target.name}
+					onConfirm={() => void del.confirm()}
+					onCancel={del.cancel}
+					isPending={del.isPending}
+					error={del.error}
+				/>
+			)}
 		</div>
 	);
 }

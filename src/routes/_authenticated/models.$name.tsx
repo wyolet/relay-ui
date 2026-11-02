@@ -19,13 +19,13 @@ import {
 import { policiesListQueryOptions } from "@/api/hooks/policies";
 import { providersListQueryOptions } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
-import { ApiError } from "@/api/types/errors";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
 import { type ModelDetailTab, ModelDetailView } from "@/models/ModelDetailView";
-import { confirm } from "@/shared/ConfirmDialog";
+import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { PageLoader } from "@/shared/Spinner";
 import { toast } from "@/shared/Toast";
+import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 
 const searchSchema = z.object({
 	tab: z
@@ -71,28 +71,10 @@ function ModelDetailInner() {
 	const { data: model } = useModel(name);
 	const updateModel = useUpdateModel();
 	const toastSaveError = useSaveErrorToast();
-	const deleteModel = useDeleteModel();
-
-	async function handleDelete() {
-		const ok = await confirm({
-			title: `Delete model ${name}?`,
-			description:
-				"Policies and keys referencing this model will lose access until reattached.",
-			confirmLabel: "Delete",
-			danger: true,
-		});
-		if (!ok) return;
-		try {
-			await deleteModel.mutateAsync(model.metadata.id ?? "");
-			toast("success", `Model "${displayLabel(model.metadata)}" deleted.`);
-			void navigate({ to: "/models" });
-		} catch (err) {
-			toast(
-				"error",
-				err instanceof ApiError ? err.body.message : "Failed to delete model.",
-			);
-		}
-	}
+	const del = useConfirmedDelete(useDeleteModel(), {
+		noun: "model",
+		onDeleted: () => void navigate({ to: "/models" }),
+	});
 
 	async function handleToggleEnabled() {
 		const next = !(model.spec.enabled !== false);
@@ -127,9 +109,24 @@ function ModelDetailInner() {
 				}
 				onToggleEnabled={() => void handleToggleEnabled()}
 				toggling={updateModel.isPending}
-				onDelete={() => void handleDelete()}
-				deleting={deleteModel.isPending}
+				onDelete={() =>
+					del.request({
+						id: model.metadata.id ?? "",
+						name: model.metadata.name,
+						label: displayLabel(model.metadata),
+					})
+				}
+				deleting={del.isPending}
 			/>
+			{del.target && (
+				<DeleteConfirm
+					resourceName={del.target.name}
+					onConfirm={() => void del.confirm()}
+					onCancel={del.cancel}
+					isPending={del.isPending}
+					error={del.error}
+				/>
+			)}
 		</div>
 	);
 }

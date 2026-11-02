@@ -246,6 +246,8 @@ function Step2Models({
 			/>
 			<p className="text-[10px] text-muted-foreground">
 				No selection = this rate limit applies to every request to the policy.
+				Relay refuses a model scope on a policy bound to a team, project, user
+				or service account.
 			</p>
 		</div>
 	);

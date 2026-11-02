@@ -3,6 +3,7 @@ import {
 	hostIdsInPolicyCatalog,
 	modelsForRefViaPolicy,
 } from "@/diagnostics/analyzers/policyCatalog";
+import { policyCredentialIds } from "@/diagnostics/buildGraph";
 import type { Diagnostic, DiagnosticGraph } from "@/diagnostics/types";
 import {
 	type CatalogRef,
@@ -19,34 +20,32 @@ export function analyzePolicy(
 	graph: DiagnosticGraph,
 ): Diagnostic[] {
 	const out: Diagnostic[] = [];
-	const policyId = policy.metadata.id;
-	const enabled = policy.spec.enabled !== false;
 	// Host-owned policies (provider tiers) are reference shapes pointed AT
-	// by host keys; they don't pool keys, can't be attached to keys,
-	// and their rate-limit / catalog state is the provider's contract, not
-	// something an operator can fix from this UI. Skip every check.
+	// by accounts; they don't pool credentials, can't be attached to user
+	// policies, and their rate-limit / catalog state is the provider's
+	// contract, not something an operator can fix from this UI. Skip every check.
 	if (policy.metadata.owner?.kind === "host") {
 		return out;
 	}
 
-	const hostKeyIds = policy.spec.hostKeyIds ?? [];
-	const resolvedKeys = hostKeyIds.map((id) => graph.hostKeys.get(id));
+	const credentialIds = policyCredentialIds(policy, graph.pools);
+	const resolvedKeys = credentialIds.map((id) => graph.hostKeys.get(id));
 	const livingKeys = resolvedKeys.filter((k) => k !== undefined);
 	const enabledKeys = livingKeys.filter((k) => k.spec.enabled !== false);
 	// A grant on a `noAuth` host (e.g. local Ollama) reaches models with no
-	// credential — so an empty key pool isn't necessarily a misconfiguration.
+	// credential — so an empty pool isn't necessarily a misconfiguration.
 	const grants = policy.spec.models ?? [];
 	const reachesWithoutKeys = grants.some(
 		(g) => modelsForRefViaPolicy(g, policy, graph).length > 0,
 	);
-	if (hostKeyIds.length === 0 && !reachesWithoutKeys) {
+	if (credentialIds.length === 0 && !reachesWithoutKeys) {
 		out.push({
 			severity: "error",
 			code: "policy.no-host-keys",
 			message:
-				"No credentials attached — this policy can't authenticate any upstream request.",
+				"No credentials or pools attached — this policy can't authenticate any upstream request.",
 		});
-	} else if (hostKeyIds.length > 0 && enabledKeys.length === 0) {
+	} else if (credentialIds.length > 0 && enabledKeys.length === 0) {
 		out.push({
 			severity: "error",
 			code: "policy.host-keys-all-disabled",
@@ -65,7 +64,7 @@ export function analyzePolicy(
 		});
 	}
 
-	// Transitive: at least one enabled host key has its host disabled / missing.
+	// Transitive: at least one enabled credential has its host disabled / missing.
 	if (enabledKeys.length > 0) {
 		const allHostsUnreachable = enabledKeys.every((k) => {
 			const host = graph.hosts.get(k.spec.hostId);
@@ -82,14 +81,13 @@ export function analyzePolicy(
 	}
 
 	// Rate-limit checks: surface disabled / missing referenced RLs.
-	const refRateLimitIds = new Set<string>();
-	if (policy.spec.rateLimitId) refRateLimitIds.add(policy.spec.rateLimitId);
-	for (const b of policy.spec.rlBindings ?? []) {
-		if (b.rateLimitId) refRateLimitIds.add(b.rateLimitId);
-	}
+	// In v0.20, rateLimits replaces the old rateLimitId + rlBindings fields.
+	const refRateLimitIds = new Set(
+		(policy.spec.rateLimits ?? []).map((rl) => rl.rateLimitId),
+	);
 	for (const rlId of refRateLimitIds) {
 		const rl = graph.rateLimits.get(rlId);
-		if (!rl) continue; // BE-soon B3 strips these; rendering "missing" RL is low signal until then.
+		if (!rl) continue;
 		if (rl.spec.enabled === false) {
 			out.push({
 				severity: "warn",
@@ -127,10 +125,8 @@ export function analyzePolicy(
 		}
 	}
 
-	// Host keys whose host isn't covered by the policy's catalog refs. Happens
-	// after operator removes a host/provider from the model picker but leaves
-	// the key attached. Diagnostic mirrors the per-row "not in catalog" badge.
-	if (grants.length > 0 && hostKeyIds.length > 0) {
+	// Credentials whose host isn't covered by the policy's catalog refs.
+	if (grants.length > 0 && credentialIds.length > 0) {
 		const catalogHostIds = hostIdsInPolicyCatalog(policy, graph);
 		const stray: { keyLabel: string; hostLabel: string }[] = [];
 		for (const hk of livingKeys) {
@@ -156,27 +152,21 @@ export function analyzePolicy(
 		}
 	}
 
-	// Dead rl-binding: the RL's scope shares no concrete (provider, model, host)
-	// triple with any policy grant. We use refsOverlap rather than refIncludesRef
-	// here — a host-only RL scope like `@bedrock` isn't strictly *contained* by
-	// a provider grant like `anthropic`, but their intersection (anthropic on
-	// bedrock) is non-empty, which is what we actually care about.
+	// Dead rl entry: the RL's model scope shares no concrete triple with any grant.
 	if (grants.length > 0) {
 		const grantRefs = grants
 			.filter((g) => !validateCatalogRef(g))
 			.map((g) => parseCatalogRef(g));
-		for (const b of policy.spec.rlBindings ?? []) {
-			const scopeRaws = b.models ?? [];
+		for (const rlEntry of policy.spec.rateLimits ?? []) {
+			const scopeRaws = rlEntry.models ?? [];
 			if (scopeRaws.length === 0) continue;
 			const orphans = scopeRaws.filter((raw) => {
-				if (validateCatalogRef(raw)) return false; // syntax-invalid → skip (separate diagnostic)
+				if (validateCatalogRef(raw)) return false;
 				const scope = parseCatalogRef(raw);
 				return !grantRefs.some((g) => refsOverlap(g, scope));
 			});
 			if (orphans.length === scopeRaws.length) {
-				const rl = b.rateLimitId
-					? graph.rateLimits.get(b.rateLimitId)
-					: undefined;
+				const rl = graph.rateLimits.get(rlEntry.rateLimitId);
 				const rlLabel = rl ? `"${displayLabel(rl.metadata)}"` : "Rate limit";
 				const targets = orphans.map((m) => `"${m}"`).join(", ");
 				const isPlural = orphans.length > 1;
@@ -191,16 +181,14 @@ export function analyzePolicy(
 		}
 	}
 
-	// Unthrottled models: catalog grants reach (model, host) triples that no
-	// rate-limit binding covers. Surfaced as info — the RL tab has the table
-	// detail; this entry just acknowledges the count in the Issues section so
-	// operators don't miss it.
-	if (grants.length > 0 && !policy.spec.rateLimitId) {
+	// Unthrottled models: grants reach triples that no rate-limit entry covers.
+	const rateLimits = policy.spec.rateLimits ?? [];
+	if (grants.length > 0 && rateLimits.length === 0) {
 		const grantParsed = grants
 			.filter((g) => !validateCatalogRef(g))
 			.map((g) => parseCatalogRef(g));
-		const scopeParsedByBinding = (policy.spec.rlBindings ?? []).map((b) =>
-			(b.models ?? [])
+		const scopeParsedByEntry = rateLimits.map((rl) =>
+			(rl.models ?? [])
 				.filter((m) => !validateCatalogRef(m))
 				.map((m) => parseCatalogRef(m)),
 		);
@@ -214,7 +202,7 @@ export function analyzePolicy(
 		const uncovered = new Set<string>();
 		for (const bnd of catalog) {
 			if (!grantParsed.some((g) => refCovers(g, bnd))) continue;
-			const covered = scopeParsedByBinding.some((scopes) =>
+			const covered = scopeParsedByEntry.some((scopes) =>
 				scopes.some((s) => refCovers(s, bnd)),
 			);
 			if (!covered) uncovered.add(`${bnd.provider}/${bnd.model}`);
@@ -228,35 +216,12 @@ export function analyzePolicy(
 		}
 	}
 
-	{
-		const attachedKeys = policyId
-			? (graph.keysByPolicyId.get(policyId) ?? [])
-			: [];
-		const enabledKeys = attachedKeys.filter((rk) => rk.spec.enabled !== false);
-
-		if (!enabled && enabledKeys.length > 0) {
-			out.push({
-				severity: "warn",
-				code: "policy.disabled-with-keys",
-				message: `Policy is disabled but ${enabledKeys.length} enabled key${enabledKeys.length === 1 ? "" : "s"} reference it — they will reject requests.`,
-			});
-		}
-
-		if (attachedKeys.length === 0) {
-			out.push({
-				severity: "info",
-				code: "policy.no-keys",
-				message: "No keys are attached — this policy receives no traffic.",
-			});
-		}
-	}
-
 	return out;
 }
 
 /**
  * Per-grant explanation for `policy.catalog-resolves-empty`. `modelsForRefViaPolicy`
- * returns 0 in three families of cases: no key for the host that serves the
+ * returns 0 in three families of cases: no credential for the host that serves the
  * ref, host/model/provider not in catalog, or matching things are disabled.
  * The phrasing leans on the action the operator can take.
  */

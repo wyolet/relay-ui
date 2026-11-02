@@ -17,16 +17,16 @@ import {
 	useUpdateProvider,
 } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
-import { ApiError } from "@/api/types/errors";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
 import {
 	type ProviderDetailTab,
 	ProviderDetailView,
 } from "@/providers/ProviderDetailView";
-import { confirm } from "@/shared/ConfirmDialog";
+import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { PageLoader } from "@/shared/Spinner";
 import { toast } from "@/shared/Toast";
+import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 
 const searchSchema = z.object({
 	tab: z.enum(["overview", "models", "hosts"]).optional().default("overview"),
@@ -59,33 +59,10 @@ function ProviderDetailInner() {
 	const { data: provider } = useProvider(name);
 	const updateProvider = useUpdateProvider();
 	const toastSaveError = useSaveErrorToast();
-	const deleteProvider = useDeleteProvider();
-
-	async function handleDelete() {
-		const ok = await confirm({
-			title: `Delete provider ${name}?`,
-			description:
-				"Models and hosts synced from this provider will lose their origin reference.",
-			confirmLabel: "Delete",
-			danger: true,
-		});
-		if (!ok) return;
-		try {
-			await deleteProvider.mutateAsync(provider.metadata.id ?? "");
-			toast(
-				"success",
-				`Provider "${displayLabel(provider.metadata)}" deleted.`,
-			);
-			void navigate({ to: "/models" });
-		} catch (err) {
-			toast(
-				"error",
-				err instanceof ApiError
-					? err.body.message
-					: "Failed to delete provider.",
-			);
-		}
-	}
+	const del = useConfirmedDelete(useDeleteProvider(), {
+		noun: "provider",
+		onDeleted: () => void navigate({ to: "/models" }),
+	});
 
 	async function handleToggleEnabled() {
 		const next = !(provider.spec.enabled !== false);
@@ -120,9 +97,24 @@ function ProviderDetailInner() {
 				}
 				onToggleEnabled={() => void handleToggleEnabled()}
 				toggling={updateProvider.isPending}
-				onDelete={() => void handleDelete()}
-				deleting={deleteProvider.isPending}
+				onDelete={() =>
+					del.request({
+						id: provider.metadata.id ?? "",
+						name: provider.metadata.name,
+						label: displayLabel(provider.metadata),
+					})
+				}
+				deleting={del.isPending}
 			/>
+			{del.target && (
+				<DeleteConfirm
+					resourceName={del.target.name}
+					onConfirm={() => void del.confirm()}
+					onCancel={del.cancel}
+					isPending={del.isPending}
+					error={del.error}
+				/>
+			)}
 		</div>
 	);
 }

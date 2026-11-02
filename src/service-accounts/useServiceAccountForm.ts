@@ -11,6 +11,7 @@ import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
 import { useOwnerOptions } from "@/hooks/useOwnerOptions";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
+import { firstError, zodFieldValidator } from "@/lib/formErrors";
 import { ownerKeyId } from "@/lib/ownerScopes";
 import { randomSuffix, slugify } from "@/lib/slug";
 import { toast } from "@/shared/Toast";
@@ -20,7 +21,6 @@ export interface ServiceAccountFormValues {
 	description: string;
 	/** "project:<id>"; spec.projectId is taken from it. */
 	owner: string;
-	policyId: string;
 	enabled: boolean;
 }
 
@@ -29,7 +29,6 @@ function emptyValues(owner: string): ServiceAccountFormValues {
 		displayName: "",
 		description: "",
 		owner,
-		policyId: "",
 		enabled: true,
 	};
 }
@@ -39,7 +38,6 @@ function toValues(sa: ServiceAccount, owner: string): ServiceAccountFormValues {
 		displayName: displayLabel(sa.metadata),
 		description: sa.metadata.description ?? "",
 		owner,
-		policyId: sa.spec.policyId ?? "",
 		enabled: sa.spec.enabled ?? true,
 	};
 }
@@ -52,7 +50,6 @@ const schema = z.object({
 		.max(120, "Display name is too long"),
 	description: z.string().trim().max(500, "Description is too long"),
 	owner: z.string().min(1, "Pick the project this account belongs to."),
-	policyId: z.string(),
 	enabled: z.boolean(),
 });
 
@@ -101,16 +98,7 @@ export function useServiceAccountForm({
 		return `${base}-${suffixRef.current}`;
 	};
 
-	function runValidation({ value }: { value: ServiceAccountFormValues }) {
-		const r = schema.safeParse(value);
-		if (r.success) return undefined;
-		const fields: Record<string, string> = {};
-		for (const issue of r.error.issues) {
-			const key = issue.path.join(".");
-			if (key && !fields[key]) fields[key] = issue.message;
-		}
-		return { fields };
-	}
+	const runValidation = zodFieldValidator<ServiceAccountFormValues>(schema);
 
 	const form = useForm({
 		defaultValues: initial,
@@ -120,7 +108,6 @@ export function useServiceAccountForm({
 			const description = value.description.trim();
 			const spec = {
 				projectId: ownerKeyId(value.owner),
-				...(value.policyId ? { policyId: value.policyId } : {}),
 				enabled: value.enabled,
 			};
 			try {
@@ -178,21 +165,15 @@ export function useServiceAccountForm({
 	const slugPreview = isEdit
 		? (serviceAccount?.metadata.name ?? "")
 		: computeSlug(values.displayName);
-	const displayNameError = useStore(form.store, (s) => {
-		const errs = s.fieldMeta?.displayName?.errors ?? [];
-		for (const e of errs) if (typeof e === "string") return e;
-		return undefined;
-	});
-	const descriptionError = useStore(form.store, (s) => {
-		const errs = s.fieldMeta?.description?.errors ?? [];
-		for (const e of errs) if (typeof e === "string") return e;
-		return undefined;
-	});
-	const ownerError = useStore(form.store, (s) => {
-		const errs = s.fieldMeta?.owner?.errors ?? [];
-		for (const e of errs) if (typeof e === "string") return e;
-		return undefined;
-	});
+	const displayNameError = useStore(form.store, (s) =>
+		firstError(s.fieldMeta?.displayName?.errors),
+	);
+	const descriptionError = useStore(form.store, (s) =>
+		firstError(s.fieldMeta?.description?.errors),
+	);
+	const ownerError = useStore(form.store, (s) =>
+		firstError(s.fieldMeta?.owner?.errors),
+	);
 
 	return {
 		form,

@@ -159,7 +159,7 @@ export function HostsTable({ items, sort, dir, onSort }: HostsTableProps) {
 						</Th>
 						<CountTh label="Models" />
 						<CountTh label="Credentials" />
-						<CountTh label="Host policies" />
+						<CountTh label="Tier presets" />
 						<CountTh label="User policies" />
 						<th
 							scope="col"

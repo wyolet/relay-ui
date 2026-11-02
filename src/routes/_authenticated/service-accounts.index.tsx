@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { z } from "zod";
 import { policiesListQueryOptions } from "@/api/hooks/policies";
+import { policyBindingsAllQueryOptions } from "@/api/hooks/policyBindings";
 import { projectsListQueryOptions } from "@/api/hooks/projects";
 import { serviceAccountsListQuery } from "@/api/hooks/serviceAccounts";
 import { awaitOnEnter } from "@/lib/awaitOnEnter";
@@ -24,17 +25,19 @@ export const Route = createFileRoute("/_authenticated/service-accounts/")({
 		enabled: search.enabled,
 		project_id: search.project_id,
 	}),
-	loader: ({ context, deps, cause }) =>
-		awaitOnEnter(
+	loader: ({ context, deps, cause }) => {
+		void context.queryClient.prefetchQuery(policiesListQueryOptions);
+		void context.queryClient.prefetchQuery(policyBindingsAllQueryOptions);
+		return awaitOnEnter(
 			cause,
 			Promise.all([
 				context.queryClient.ensureQueryData(
 					serviceAccountsListQuery(toServiceAccountsParams(deps)),
 				),
 				context.queryClient.ensureQueryData(projectsListQueryOptions),
-				context.queryClient.ensureQueryData(policiesListQueryOptions),
 			]),
-		),
+		);
+	},
 	component: ServiceAccountsPage,
 });
 

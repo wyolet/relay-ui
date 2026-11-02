@@ -4,17 +4,13 @@ import type { Policy } from "@/api/types/policy";
 
 export interface RateLimitPolicyRef {
 	policy: Policy;
-	/** True when this RL is the policy's default (spec.rateLimitId). */
-	isDefault: boolean;
-	/** Scoped catalog refs from a binding; empty for default ref. */
-	refs: readonly string[];
-	/** Stable index for keying bindings. */
-	bindingIndex: number;
+	/** The link's model scope; empty applies the limit to every request. */
+	models: readonly string[];
 }
 
 /**
- * Every policy reference to this rate limit. Each policy can appear more than
- * once: once as the default, plus one entry per matching rlBinding.
+ * Every policy link to this rate limit. A policy can appear more than once,
+ * one entry per `rateLimits` link with its own model scope.
  */
 export function useRateLimitReferences(
 	rateLimitId: string | undefined,
@@ -22,22 +18,10 @@ export function useRateLimitReferences(
 	const { data } = usePolicies();
 	return useMemo(() => {
 		if (!rateLimitId) return [];
-		const out: RateLimitPolicyRef[] = [];
-		for (const policy of data.items ?? []) {
-			if (policy.spec.rateLimitId === rateLimitId) {
-				out.push({ policy, isDefault: true, refs: [], bindingIndex: -1 });
-			}
-			(policy.spec.rlBindings ?? []).forEach((b, i) => {
-				if (b.rateLimitId === rateLimitId) {
-					out.push({
-						policy,
-						isDefault: false,
-						refs: b.models ?? [],
-						bindingIndex: i,
-					});
-				}
-			});
-		}
-		return out;
+		return (data.items ?? []).flatMap((policy) =>
+			(policy.spec.rateLimits ?? [])
+				.filter((l) => l.rateLimitId === rateLimitId)
+				.map((l) => ({ policy, models: l.models ?? [] })),
+		);
 	}, [data, rateLimitId]);
 }

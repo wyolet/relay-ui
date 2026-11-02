@@ -1,4 +1,5 @@
 import type { Binding } from "@/api/hooks/bindings";
+import type { Pool } from "@/api/hooks/pools";
 import type { Host } from "@/api/types/host";
 import type { HostKey } from "@/api/types/hostkey";
 import type { Key } from "@/api/types/key";
@@ -11,9 +12,6 @@ export type Severity = "error" | "warn" | "info";
 
 export type DiagCode =
 	// Relay Key
-	| "key.policy-dangling"
-	| "key.policy-broken"
-	| "key.policy-disabled"
 	| "key.disabled"
 	// Policy
 	| "policy.no-host-keys"
@@ -25,18 +23,13 @@ export type DiagCode =
 	| "policy.rl-binding-dead"
 	| "policy.host-keys-outside-catalog"
 	| "policy.models-unthrottled"
-	| "policy.disabled-with-keys"
-	| "policy.no-keys"
 	// Host Key
 	| "host-key.host-dangling"
-	| "host-key.host-policy-dangling"
 	| "host-key.host-disabled"
-	| "host-key.host-policy-disabled"
 	| "host-key.orphan"
 	| "host-key.disabled"
 	// Host
 	| "host.disabled-with-refs"
-	| "host.default-policy-dangling"
 	| "host.no-keys"
 	| "host.no-bindings"
 	// Model
@@ -67,14 +60,15 @@ export interface DiagnosticGraph {
 	hosts: ReadonlyMap<string, Host>;
 	models: ReadonlyMap<string, Model>;
 	rateLimits: ReadonlyMap<string, RateLimit>;
+	pools: ReadonlyMap<string, Pool>;
 	keys: ReadonlyMap<string, Key>;
 	providers: ReadonlyMap<string, Provider>;
 	// Host-bindings, indexed both ways (a model is served on a host via a binding).
 	bindingsByModel: ReadonlyMap<string, Binding[]>;
 	bindingsByHost: ReadonlyMap<string, Binding[]>;
-	// Reverse indexes
-	keysByPolicyId: ReadonlyMap<string, Key[]>;
-	policiesByHostKeyId: ReadonlyMap<string, Policy[]>;
+	// Reverse indexes: policies reaching a credential (through a pool or
+	// directly) or referencing a rate limit, by id.
+	policiesByCredentialId: ReadonlyMap<string, Policy[]>;
 	policiesByRateLimitId: ReadonlyMap<string, Policy[]>;
 }
 

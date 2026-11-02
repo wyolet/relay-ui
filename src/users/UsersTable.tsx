@@ -5,6 +5,7 @@ import { useUsers } from "@/api/hooks/users";
 import { Chip } from "@/shared/Chip";
 import { SearchBox } from "@/shared/SearchBox";
 import { StatusBadge } from "@/shared/StatusBadge";
+import { TableEmpty } from "@/shared/TableEmpty";
 import { TableToolbar } from "@/shared/TableToolbar";
 import { Th } from "@/shared/Th";
 
@@ -40,19 +41,18 @@ export function UsersTable() {
 			/>
 
 			{users.length === 0 ? (
-				<div className="rounded-lg border border-dashed border-input bg-card px-6 py-14 text-center">
-					<UserRound className="mx-auto mb-3 h-6 w-6 text-muted-foreground/50" />
+				<TableEmpty icon={UserRound}>
 					<p className="mb-1 text-sm font-medium text-foreground">No users</p>
 					<p className="mx-auto max-w-sm text-sm text-muted-foreground">
 						Accounts come from the bootstrap YAML or your identity provider.
 					</p>
-				</div>
+				</TableEmpty>
 			) : shown.length === 0 ? (
-				<div className="rounded-lg border border-dashed border-input bg-card px-6 py-14 text-center">
+				<TableEmpty>
 					<p className="text-sm text-muted-foreground">
 						No users match this search.
 					</p>
-				</div>
+				</TableEmpty>
 			) : (
 				<div className="overflow-x-auto rounded-lg border border-border bg-card">
 					<table className="w-full border-collapse">

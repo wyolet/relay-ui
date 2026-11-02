@@ -7,9 +7,14 @@ import {
 	useUpdateRoleBinding,
 } from "@/api/hooks/roleBindings";
 import type { RoleBinding } from "@/api/types/roleBinding";
+import type { components } from "@/api/types.gen";
+
+type Owner = components["schemas"]["Owner"];
+
 import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
+import { firstError, zodFieldValidator } from "@/lib/formErrors";
 import { randomSuffix, slugify } from "@/lib/slug";
 import {
 	fromSubjectRows,
@@ -25,13 +30,6 @@ import {
 import { toast } from "@/shared/Toast";
 
 /** The first string error a field carries, or undefined. */
-function firstError(
-	errors: readonly unknown[] | undefined,
-): string | undefined {
-	for (const e of errors ?? []) if (typeof e === "string") return e;
-	return undefined;
-}
-
 /** `system` is the global scope on the wire — there is no `global` alias. */
 export type ScopeKind = "system" | "team" | "project";
 
@@ -147,16 +145,7 @@ export function useRoleBindingForm({
 		return `${base}-${suffixRef.current}`;
 	};
 
-	function runValidation({ value }: { value: RoleBindingFormValues }) {
-		const r = schema.safeParse(value);
-		if (r.success) return undefined;
-		const fields: Record<string, string> = {};
-		for (const issue of r.error.issues) {
-			const key = issue.path.join(".");
-			if (key && !fields[key]) fields[key] = issue.message;
-		}
-		return { fields };
-	}
+	const runValidation = zodFieldValidator<RoleBindingFormValues>(schema);
 
 	const form = useForm({
 		defaultValues: initial,
@@ -167,7 +156,7 @@ export function useRoleBindingForm({
 			const labels = fromLabelPairs(value.labels);
 			// The global scope carries no id, and the server re-derives the
 			// owner from the scope on every write.
-			const scope =
+			const scope: Owner =
 				value.scopeKind === "system"
 					? { kind: "system" }
 					: { kind: value.scopeKind, id: value.scopeId };

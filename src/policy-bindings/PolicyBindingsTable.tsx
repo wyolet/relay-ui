@@ -7,22 +7,21 @@ import {
 	usePolicyBindingsList,
 } from "@/api/hooks/policyBindings";
 import { useProjects } from "@/api/hooks/projects";
-import { ApiError } from "@/api/types/errors";
-import type { PolicyBinding } from "@/api/types/policyBinding";
 import { buttonVariants } from "@/components/ui/button";
 import { FilterBar } from "@/filters/FilterBar";
 import { activeFilterCount } from "@/filters/toQueryParams";
 import type { FilterDef, FilterState } from "@/filters/types";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
-import { OwnerLink } from "@/projects/OwnerLink";
-import { subjectLabel } from "@/role-bindings/SubjectsEditor";
-import { Chip } from "@/shared/Chip";
-import { confirm } from "@/shared/ConfirmDialog";
+import { BindingOwner } from "@/policy-bindings/BindingOwner";
+import { SubjectChips } from "@/policy-bindings/SubjectChips";
+import { useSubjectOptions } from "@/policy-bindings/useSubjectOptions";
+import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { RowMenu } from "@/shared/RowMenu";
 import { StaleContent } from "@/shared/StaleContent";
+import { TableEmpty } from "@/shared/TableEmpty";
 import { TableToolbar } from "@/shared/TableToolbar";
 import { Th } from "@/shared/Th";
-import { toast } from "@/shared/Toast";
+import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 import { useDeferredSearch } from "@/shared/useDeferredSearch";
 
 export interface PolicyBindingsSearch {
@@ -47,7 +46,7 @@ const STATIC_FILTERS = [
 		key: "subject",
 		type: "search",
 		label: "Subject",
-		placeholder: "user:… / group:…",
+		placeholder: "serviceaccount:<id>",
 		default: "",
 	},
 ] as const satisfies readonly FilterDef[];
@@ -73,7 +72,10 @@ export function PolicyBindingsTable() {
 	const { data } = usePolicyBindingsList(toPolicyBindingsParams(search));
 	const { data: projectsData } = useProjects();
 	const { data: policiesData } = usePolicies();
-	const deleteBinding = useDeletePolicyBinding();
+	const { subjectName } = useSubjectOptions();
+	const del = useConfirmedDelete(useDeletePolicyBinding(), {
+		noun: "policy binding",
+	});
 
 	const policyNames = new Map(
 		(policiesData.items ?? []).map((p) => [
@@ -119,30 +121,6 @@ export function PolicyBindingsTable() {
 		void navigate({ search: (prev) => ({ ...prev, ...next }), replace: true });
 	}
 
-	async function handleDelete(binding: PolicyBinding) {
-		const ok = await confirm({
-			title: `Delete ${displayLabel(binding.metadata)}?`,
-			description: "Its subjects fall back to the next matching binding.",
-			confirmLabel: "Delete",
-			danger: true,
-		});
-		if (!ok) return;
-		try {
-			await deleteBinding.mutateAsync(binding.metadata.id ?? "");
-			toast(
-				"success",
-				`Policy binding "${displayLabel(binding.metadata)}" deleted.`,
-			);
-		} catch (err) {
-			toast(
-				"error",
-				err instanceof ApiError
-					? err.body.message
-					: "Failed to delete policy binding.",
-			);
-		}
-	}
-
 	return (
 		<div>
 			<TableToolbar
@@ -162,16 +140,16 @@ export function PolicyBindingsTable() {
 
 			<StaleContent stale={isStale}>
 				{items.length === 0 ? (
-					<div className="rounded-lg border border-dashed border-input bg-card px-6 py-14 text-center">
-						<ShieldCheck className="w-6 h-6 mx-auto mb-3 text-muted-foreground/50" />
+					<TableEmpty icon={ShieldCheck}>
 						{!filtered ? (
 							<>
 								<p className="text-sm font-medium text-foreground mb-1">
 									No policy bindings yet
 								</p>
 								<p className="text-sm text-muted-foreground mb-5 max-w-sm mx-auto">
-									A policy binding points the callers inside one project at one
-									policy. The lowest priority wins.
+									A policy binding attaches one policy to its subjects: users,
+									service accounts, teams, projects or accounts. Each subject
+									sits in one binding.
 								</p>
 								<Link
 									to="/policy-bindings/new"
@@ -186,16 +164,15 @@ export function PolicyBindingsTable() {
 								No policy bindings match this filter.
 							</p>
 						)}
-					</div>
+					</TableEmpty>
 				) : (
 					<div className="overflow-x-auto rounded-lg border border-border bg-card">
 						<table className="w-full border-collapse">
 							<thead className="bg-muted/40">
 								<tr>
 									<Th variant="column">Name</Th>
-									<Th variant="column">Project</Th>
+									<Th variant="column">Owner</Th>
 									<Th variant="column">Policy</Th>
-									<Th variant="column">Priority</Th>
 									<Th variant="column">Subjects</Th>
 									<th
 										scope="col"
@@ -227,11 +204,9 @@ export function PolicyBindingsTable() {
 												)}
 											</td>
 											<td className="px-3 py-2 text-xs">
-												<OwnerLink
-													owner={{
-														kind: "project",
-														id: binding.spec.projectId,
-													}}
+												<BindingOwner
+													binding={binding}
+													subjectName={subjectName}
 												/>
 											</td>
 											<td className="px-3 py-2 text-xs">
@@ -249,20 +224,11 @@ export function PolicyBindingsTable() {
 													</code>
 												)}
 											</td>
-											<td className="px-3 py-2 text-xs text-muted-foreground">
-												{binding.spec.priority ?? "—"}
-											</td>
 											<td className="px-3 py-2">
-												<div className="flex flex-wrap gap-1">
-													{(binding.spec.subjects ?? []).map((s) => (
-														<Chip
-															key={subjectLabel(s)}
-															label={subjectLabel(s)}
-															mono
-															shape="box"
-														/>
-													))}
-												</div>
+												<SubjectChips
+													subjects={binding.spec.subjects ?? []}
+													subjectName={subjectName}
+												/>
 											</td>
 											<td className="px-3 py-2 text-right">
 												<RowMenu
@@ -279,7 +245,12 @@ export function PolicyBindingsTable() {
 														{
 															label: "Delete",
 															danger: true,
-															onClick: () => void handleDelete(binding),
+															onClick: () =>
+																del.request({
+																	id: binding.metadata.id ?? "",
+																	name: binding.metadata.name,
+																	label: displayLabel(binding.metadata),
+																}),
 														},
 													]}
 												/>
@@ -292,6 +263,15 @@ export function PolicyBindingsTable() {
 					</div>
 				)}
 			</StaleContent>
+			{del.target && (
+				<DeleteConfirm
+					resourceName={del.target.name}
+					onConfirm={() => void del.confirm()}
+					onCancel={del.cancel}
+					isPending={del.isPending}
+					error={del.error}
+				/>
+			)}
 		</div>
 	);
 }

@@ -2,7 +2,8 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ChevronLeft } from "lucide-react";
 import { Suspense } from "react";
 import { bindingsListQueryOptions } from "@/api/hooks/bindings";
-import { governanceQueryOptions, useGovernance } from "@/api/hooks/governance";
+import { budgetListQueryOptions } from "@/api/hooks/budgets";
+import { governanceQueryOptions } from "@/api/hooks/governance";
 import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
 import { keysListQueryOptions } from "@/api/hooks/keys";
@@ -12,10 +13,11 @@ import {
 	policyDetailQueryOptions,
 	usePolicy,
 } from "@/api/hooks/policies";
+import { poolListQueryOptions } from "@/api/hooks/pools";
 import { providersListQueryOptions } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
+import { useMutability } from "@/hooks/useMutability";
 import { displayLabel } from "@/lib/displayLabel";
-import { resolveMutability } from "@/lib/ownership";
 import { PolicyForm } from "@/policies/PolicyForm";
 import { PageLoader } from "@/shared/Spinner";
 
@@ -23,8 +25,9 @@ export const Route = createFileRoute("/_authenticated/policies/$name_/edit")({
 	loader: ({ context, params }) => {
 		const { queryClient } = context;
 		// PolicyForm's field pickers stream in behind its own render; warm them
-		// (incl. bindings for usePolicyHostRequirements, previously missing and
-		// causing a post-mount suspense waterfall) without blocking the route.
+		// without blocking the route so they don't suspend one after another.
+		void queryClient.prefetchQuery(poolListQueryOptions);
+		void queryClient.prefetchQuery(budgetListQueryOptions);
 		void queryClient.prefetchQuery(hostKeysListQueryOptions);
 		void queryClient.prefetchQuery(hostsListQueryOptions);
 		void queryClient.prefetchQuery(providersListQueryOptions);
@@ -45,8 +48,7 @@ function EditPolicyInner() {
 	const { name } = Route.useParams();
 	const { data: policy } = usePolicy(name);
 	const navigate = useNavigate();
-	const gov = useGovernance("policy");
-	const { canEdit } = resolveMutability(policy.metadata, gov);
+	const { canEdit } = useMutability(policy.metadata, "policy");
 
 	if (!canEdit) {
 		return (

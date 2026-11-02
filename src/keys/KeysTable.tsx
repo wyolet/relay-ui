@@ -7,9 +7,7 @@ import {
 	useKeysList,
 	useUpdateKey,
 } from "@/api/hooks/keys";
-import { usePolicies } from "@/api/hooks/policies";
 import { useServiceAccounts } from "@/api/hooks/serviceAccounts";
-import { ApiError } from "@/api/types/errors";
 import type { Key } from "@/api/types/key";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { DiagnosticDot } from "@/diagnostics/DiagnosticDot";
@@ -19,14 +17,17 @@ import { activeFilterCount } from "@/filters/toQueryParams";
 import type { FilterDef, FilterState } from "@/filters/types";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
+import { PrincipalPolicy } from "@/policy-bindings/PrincipalPolicy";
 import { OwnerLink } from "@/projects/OwnerLink";
-import { confirm } from "@/shared/ConfirmDialog";
+import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { RowMenu } from "@/shared/RowMenu";
 import { StaleContent } from "@/shared/StaleContent";
 import { Switch } from "@/shared/Switch";
+import { TableEmpty } from "@/shared/TableEmpty";
 import { TableToolbar } from "@/shared/TableToolbar";
 import { Th } from "@/shared/Th";
 import { toast } from "@/shared/Toast";
+import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 import { useDeferredSearch } from "@/shared/useDeferredSearch";
 
 function KeyDiagDot({ id }: { id: string | undefined }) {
@@ -149,16 +150,9 @@ export function KeysTable() {
 	const { search, isStale } = useDeferredSearch(live);
 	const { data: keysData } = useKeysList(toKeysParams(search));
 	const { data: accountsData } = useServiceAccounts();
-	const { data: policiesData } = usePolicies();
 	const updateKey = useUpdateKey();
 	const toastSaveError = useSaveErrorToast();
-	const deleteKey = useDeleteKey();
-
-	const policyLabels = new Map<string, string>();
-	for (const p of policiesData.items ?? []) {
-		if (p.metadata.id)
-			policyLabels.set(p.metadata.id, displayLabel(p.metadata));
-	}
+	const del = useConfirmedDelete(useDeleteKey(), { noun: "key" });
 
 	const accountLabels = new Map<string, string>();
 	for (const sa of accountsData.items ?? []) {
@@ -192,25 +186,6 @@ export function KeysTable() {
 		}
 	}
 
-	async function handleDelete(rk: Key) {
-		const ok = await confirm({
-			title: `Delete ${displayLabel(rk.metadata)}?`,
-			description: "Apps using this key will start returning 401.",
-			confirmLabel: "Delete",
-			danger: true,
-		});
-		if (!ok) return;
-		try {
-			await deleteKey.mutateAsync(rk.metadata.id ?? "");
-			toast("success", `Key "${displayLabel(rk.metadata)}" deleted.`);
-		} catch (err) {
-			toast(
-				"error",
-				err instanceof ApiError ? err.body.message : "Failed to delete key.",
-			);
-		}
-	}
-
 	return (
 		<div>
 			<TableToolbar
@@ -238,8 +213,7 @@ export function KeysTable() {
 
 			<StaleContent stale={isStale}>
 				{items.length === 0 ? (
-					<div className="rounded-lg border border-dashed border-input bg-card px-6 py-14 text-center">
-						<KeyRound className="w-6 h-6 mx-auto mb-3 text-muted-foreground/50" />
+					<TableEmpty icon={KeyRound}>
 						{!filtered ? (
 							<>
 								<p className="text-sm font-medium text-foreground mb-1">
@@ -265,7 +239,7 @@ export function KeysTable() {
 								No keys match this filter.
 							</p>
 						)}
-					</div>
+					</TableEmpty>
 				) : (
 					<div className="overflow-x-auto rounded-lg border border-border bg-card">
 						<table className="w-full border-collapse">
@@ -299,10 +273,6 @@ export function KeysTable() {
 								{items.map((rk) => {
 									const status = relayStatus(rk);
 									const enabled = rk.spec.enabled ?? true;
-									const pid = rk.spec.policyId ?? "";
-									const policyLabel = pid
-										? (policyLabels.get(pid) ?? `Unknown (${pid.slice(0, 6)}…)`)
-										: "—";
 									return (
 										<tr
 											key={rk.metadata.name}
@@ -354,8 +324,11 @@ export function KeysTable() {
 													: (accountLabels.get(rk.spec.principal.id) ??
 														`Service account (${rk.spec.principal.id.slice(0, 6)}…)`)}
 											</td>
-											<td className="px-3 py-2 text-xs text-foreground">
-												{policyLabel}
+											<td className="px-3 py-2 text-xs">
+												<PrincipalPolicy
+													principal={rk.spec.principal}
+													compact
+												/>
 											</td>
 											<td className="px-3 py-2 text-xs text-muted-foreground">
 												{rk.spec.expiresAt
@@ -389,7 +362,12 @@ export function KeysTable() {
 														{
 															label: "Delete",
 															danger: true,
-															onClick: () => void handleDelete(rk),
+															onClick: () =>
+																del.request({
+																	id: rk.metadata.id ?? "",
+																	name: rk.metadata.name,
+																	label: displayLabel(rk.metadata),
+																}),
 														},
 													]}
 												/>
@@ -402,6 +380,15 @@ export function KeysTable() {
 					</div>
 				)}
 			</StaleContent>
+			{del.target && (
+				<DeleteConfirm
+					resourceName={del.target.name}
+					onConfirm={() => void del.confirm()}
+					onCancel={del.cancel}
+					isPending={del.isPending}
+					error={del.error}
+				/>
+			)}
 		</div>
 	);
 }

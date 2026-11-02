@@ -3,6 +3,7 @@ import { AlertTriangle, KeyRound, Plus } from "lucide-react";
 import type { Policy } from "@/api/types/policy";
 import { HostLogo, hostRefLogo } from "@/hosts/HostLogo";
 import { type PolicyHostView, usePolicyHosts } from "@/policies/usePolicyHosts";
+import { EmptyPanel } from "@/shared/EmptyPanel";
 
 interface Props {
 	policy: Policy;
@@ -11,7 +12,7 @@ interface Props {
 /**
  * Host keys reaching the hosts this policy can serve, resolved server-side via
  * `GET /policies/{ref}/hosts`. Each row is a host the policy's catalog reaches,
- * with the host-keys attached to it. A host with no key is flagged — `required`
+ * with the host keys its pools and credentials give it. A host with no key is flagged — `required`
  * means requests there will fail; `optional` means a sibling host can cover the
  * same models. All state (host/key enabled, sharing, requirement) is server-fed.
  */
@@ -21,15 +22,9 @@ export function PolicyKeysTab({ policy }: Props) {
 
 	if (hosts.length === 0) {
 		return (
-			<div className="rounded-md border border-dashed border-border bg-muted/30 px-4 py-6 text-center mt-2">
-				<div className="text-sm font-medium text-foreground">
-					Nothing to show
-				</div>
-				<div className="mt-0.5 text-xs text-muted-foreground">
-					Pick models on the Models tab, then attach credentials in the edit
-					form.
-				</div>
-			</div>
+			<EmptyPanel title="Nothing to show" className="mt-2">
+				Pick models on the Models tab, then link pools in the edit form.
+			</EmptyPanel>
 		);
 	}
 
@@ -155,7 +150,7 @@ function HostRow({
 							className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline"
 						>
 							<Plus className="w-3 h-3" />
-							Attach key
+							Link a pool
 						</Link>
 					) : (
 						<StatusPill tone="muted">optional</StatusPill>

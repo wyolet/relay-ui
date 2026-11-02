@@ -31,6 +31,9 @@ import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedTeamsRouteImport } from './routes/_authenticated/teams'
 import { Route as AuthenticatedUsageRouteImport } from './routes/_authenticated/usage'
 import { Route as AuthenticatedUsersRouteImport } from './routes/_authenticated/users'
+import { Route as AuthenticatedAccountsIndexRouteImport } from './routes/_authenticated/accounts.index'
+import { Route as AuthenticatedAccountsNameRouteImport } from './routes/_authenticated/accounts.$name'
+import { Route as AuthenticatedAccountsNewRouteImport } from './routes/_authenticated/accounts.new'
 import { Route as AuthenticatedGroupsIndexRouteImport } from './routes/_authenticated/groups.index'
 import { Route as AuthenticatedGroupsNameRouteImport } from './routes/_authenticated/groups.$name'
 import { Route as AuthenticatedGroupsNewRouteImport } from './routes/_authenticated/groups.new'
@@ -51,6 +54,9 @@ import { Route as AuthenticatedPoliciesNewRouteImport } from './routes/_authenti
 import { Route as AuthenticatedPolicyBindingsIndexRouteImport } from './routes/_authenticated/policy-bindings.index'
 import { Route as AuthenticatedPolicyBindingsNameRouteImport } from './routes/_authenticated/policy-bindings.$name'
 import { Route as AuthenticatedPolicyBindingsNewRouteImport } from './routes/_authenticated/policy-bindings.new'
+import { Route as AuthenticatedPoolsIndexRouteImport } from './routes/_authenticated/pools.index'
+import { Route as AuthenticatedPoolsNameRouteImport } from './routes/_authenticated/pools.$name'
+import { Route as AuthenticatedPoolsNewRouteImport } from './routes/_authenticated/pools.new'
 import { Route as AuthenticatedPricingIndexRouteImport } from './routes/_authenticated/pricing.index'
 import { Route as AuthenticatedPricingNameRouteImport } from './routes/_authenticated/pricing.$name'
 import { Route as AuthenticatedPricingNewRouteImport } from './routes/_authenticated/pricing.new'
@@ -81,20 +87,25 @@ import { Route as AuthenticatedTeamsNameRouteImport } from './routes/_authentica
 import { Route as AuthenticatedTeamsNewRouteImport } from './routes/_authenticated/teams.new'
 import { Route as AuthenticatedUsersIndexRouteImport } from './routes/_authenticated/users.index'
 import { Route as AuthenticatedUsersIdRouteImport } from './routes/_authenticated/users.$id'
+import { Route as AuthenticatedAccountsNameEditRouteImport } from './routes/_authenticated/accounts.$name_.edit'
 import { Route as AuthenticatedGroupsNameEditRouteImport } from './routes/_authenticated/groups.$name_.edit'
 import { Route as AuthenticatedHostKeysNameEditRouteImport } from './routes/_authenticated/host-keys.$name_.edit'
 import { Route as AuthenticatedKeysNameEditRouteImport } from './routes/_authenticated/keys_.$name_.edit'
 import { Route as AuthenticatedModelsNameEditRouteImport } from './routes/_authenticated/models.$name.edit'
 import { Route as AuthenticatedPoliciesNameEditRouteImport } from './routes/_authenticated/policies.$name_.edit'
+import { Route as AuthenticatedPoliciesBudgetsNameRouteImport } from './routes/_authenticated/policies.budgets.$name'
+import { Route as AuthenticatedPoliciesBudgetsNewRouteImport } from './routes/_authenticated/policies.budgets.new'
 import { Route as AuthenticatedPoliciesRateLimitsNameRouteImport } from './routes/_authenticated/policies.rate-limits.$name'
 import { Route as AuthenticatedPoliciesRateLimitsNewRouteImport } from './routes/_authenticated/policies.rate-limits.new'
 import { Route as AuthenticatedPolicyBindingsNameEditRouteImport } from './routes/_authenticated/policy-bindings.$name_.edit'
+import { Route as AuthenticatedPoolsNameEditRouteImport } from './routes/_authenticated/pools.$name_.edit'
 import { Route as AuthenticatedPricingNameEditRouteImport } from './routes/_authenticated/pricing.$name_.edit'
 import { Route as AuthenticatedProjectsNameEditRouteImport } from './routes/_authenticated/projects.$name_.edit'
 import { Route as AuthenticatedRoleBindingsNameEditRouteImport } from './routes/_authenticated/role-bindings.$name_.edit'
 import { Route as AuthenticatedRolesNameEditRouteImport } from './routes/_authenticated/roles.$name_.edit'
 import { Route as AuthenticatedServiceAccountsNameEditRouteImport } from './routes/_authenticated/service-accounts.$name_.edit'
 import { Route as AuthenticatedTeamsNameEditRouteImport } from './routes/_authenticated/teams.$name_.edit'
+import { Route as AuthenticatedPoliciesBudgetsNameEditRouteImport } from './routes/_authenticated/policies.budgets.$name_.edit'
 import { Route as AuthenticatedPoliciesRateLimitsNameEditRouteImport } from './routes/_authenticated/policies.rate-limits.$name_.edit'
 
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
@@ -210,6 +221,24 @@ const AuthenticatedUsersRoute = AuthenticatedUsersRouteImport.update({
   path: '/users',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedAccountsIndexRoute =
+  AuthenticatedAccountsIndexRouteImport.update({
+    id: '/accounts/',
+    path: '/accounts/',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedAccountsNameRoute =
+  AuthenticatedAccountsNameRouteImport.update({
+    id: '/accounts/$name',
+    path: '/accounts/$name',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedAccountsNewRoute =
+  AuthenticatedAccountsNewRouteImport.update({
+    id: '/accounts/new',
+    path: '/accounts/new',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedGroupsIndexRoute =
   AuthenticatedGroupsIndexRouteImport.update({
     id: '/',
@@ -322,6 +351,21 @@ const AuthenticatedPolicyBindingsNewRoute =
     path: '/new',
     getParentRoute: () => AuthenticatedPolicyBindingsRoute,
   } as any)
+const AuthenticatedPoolsIndexRoute = AuthenticatedPoolsIndexRouteImport.update({
+  id: '/pools/',
+  path: '/pools/',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedPoolsNameRoute = AuthenticatedPoolsNameRouteImport.update({
+  id: '/pools/$name',
+  path: '/pools/$name',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedPoolsNewRoute = AuthenticatedPoolsNewRouteImport.update({
+  id: '/pools/new',
+  path: '/pools/new',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedPricingIndexRoute =
   AuthenticatedPricingIndexRouteImport.update({
     id: '/',
@@ -493,6 +537,12 @@ const AuthenticatedUsersIdRoute = AuthenticatedUsersIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => AuthenticatedUsersRoute,
 } as any)
+const AuthenticatedAccountsNameEditRoute =
+  AuthenticatedAccountsNameEditRouteImport.update({
+    id: '/accounts/$name_/edit',
+    path: '/accounts/$name/edit',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedGroupsNameEditRoute =
   AuthenticatedGroupsNameEditRouteImport.update({
     id: '/$name_/edit',
@@ -523,6 +573,18 @@ const AuthenticatedPoliciesNameEditRoute =
     path: '/$name/edit',
     getParentRoute: () => AuthenticatedPoliciesRoute,
   } as any)
+const AuthenticatedPoliciesBudgetsNameRoute =
+  AuthenticatedPoliciesBudgetsNameRouteImport.update({
+    id: '/budgets/$name',
+    path: '/budgets/$name',
+    getParentRoute: () => AuthenticatedPoliciesRoute,
+  } as any)
+const AuthenticatedPoliciesBudgetsNewRoute =
+  AuthenticatedPoliciesBudgetsNewRouteImport.update({
+    id: '/budgets/new',
+    path: '/budgets/new',
+    getParentRoute: () => AuthenticatedPoliciesRoute,
+  } as any)
 const AuthenticatedPoliciesRateLimitsNameRoute =
   AuthenticatedPoliciesRateLimitsNameRouteImport.update({
     id: '/rate-limits/$name',
@@ -540,6 +602,12 @@ const AuthenticatedPolicyBindingsNameEditRoute =
     id: '/$name_/edit',
     path: '/$name/edit',
     getParentRoute: () => AuthenticatedPolicyBindingsRoute,
+  } as any)
+const AuthenticatedPoolsNameEditRoute =
+  AuthenticatedPoolsNameEditRouteImport.update({
+    id: '/pools/$name_/edit',
+    path: '/pools/$name/edit',
+    getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedPricingNameEditRoute =
   AuthenticatedPricingNameEditRouteImport.update({
@@ -577,6 +645,12 @@ const AuthenticatedTeamsNameEditRoute =
     path: '/$name/edit',
     getParentRoute: () => AuthenticatedTeamsRoute,
   } as any)
+const AuthenticatedPoliciesBudgetsNameEditRoute =
+  AuthenticatedPoliciesBudgetsNameEditRouteImport.update({
+    id: '/budgets/$name_/edit',
+    path: '/budgets/$name/edit',
+    getParentRoute: () => AuthenticatedPoliciesRoute,
+  } as any)
 const AuthenticatedPoliciesRateLimitsNameEditRoute =
   AuthenticatedPoliciesRateLimitsNameEditRouteImport.update({
     id: '/rate-limits/$name_/edit',
@@ -606,6 +680,8 @@ export interface FileRoutesByFullPath {
   '/teams': typeof AuthenticatedTeamsRouteWithChildren
   '/usage': typeof AuthenticatedUsageRoute
   '/users': typeof AuthenticatedUsersRouteWithChildren
+  '/accounts/$name': typeof AuthenticatedAccountsNameRoute
+  '/accounts/new': typeof AuthenticatedAccountsNewRoute
   '/groups/$name': typeof AuthenticatedGroupsNameRoute
   '/groups/new': typeof AuthenticatedGroupsNewRoute
   '/host-keys/$name': typeof AuthenticatedHostKeysNameRoute
@@ -620,6 +696,8 @@ export interface FileRoutesByFullPath {
   '/policies/new': typeof AuthenticatedPoliciesNewRoute
   '/policy-bindings/$name': typeof AuthenticatedPolicyBindingsNameRoute
   '/policy-bindings/new': typeof AuthenticatedPolicyBindingsNewRoute
+  '/pools/$name': typeof AuthenticatedPoolsNameRoute
+  '/pools/new': typeof AuthenticatedPoolsNewRoute
   '/pricing/$name': typeof AuthenticatedPricingNameRoute
   '/pricing/new': typeof AuthenticatedPricingNewRoute
   '/projects/$name': typeof AuthenticatedProjectsNameRoute
@@ -642,12 +720,14 @@ export interface FileRoutesByFullPath {
   '/teams/$name': typeof AuthenticatedTeamsNameRoute
   '/teams/new': typeof AuthenticatedTeamsNewRoute
   '/users/$id': typeof AuthenticatedUsersIdRoute
+  '/accounts/': typeof AuthenticatedAccountsIndexRoute
   '/groups/': typeof AuthenticatedGroupsIndexRoute
   '/host-keys/': typeof AuthenticatedHostKeysIndexRoute
   '/logs/': typeof AuthenticatedLogsIndexRoute
   '/models/': typeof AuthenticatedModelsIndexRoute
   '/policies/': typeof AuthenticatedPoliciesIndexRoute
   '/policy-bindings/': typeof AuthenticatedPolicyBindingsIndexRoute
+  '/pools/': typeof AuthenticatedPoolsIndexRoute
   '/pricing/': typeof AuthenticatedPricingIndexRoute
   '/projects/': typeof AuthenticatedProjectsIndexRoute
   '/role-bindings/': typeof AuthenticatedRoleBindingsIndexRoute
@@ -656,20 +736,25 @@ export interface FileRoutesByFullPath {
   '/settings/': typeof AuthenticatedSettingsIndexRoute
   '/teams/': typeof AuthenticatedTeamsIndexRoute
   '/users/': typeof AuthenticatedUsersIndexRoute
+  '/accounts/$name/edit': typeof AuthenticatedAccountsNameEditRoute
   '/groups/$name/edit': typeof AuthenticatedGroupsNameEditRoute
   '/host-keys/$name/edit': typeof AuthenticatedHostKeysNameEditRoute
   '/keys/$name/edit': typeof AuthenticatedKeysNameEditRoute
   '/models/$name/edit': typeof AuthenticatedModelsNameEditRoute
   '/policies/$name/edit': typeof AuthenticatedPoliciesNameEditRoute
+  '/policies/budgets/$name': typeof AuthenticatedPoliciesBudgetsNameRoute
+  '/policies/budgets/new': typeof AuthenticatedPoliciesBudgetsNewRoute
   '/policies/rate-limits/$name': typeof AuthenticatedPoliciesRateLimitsNameRoute
   '/policies/rate-limits/new': typeof AuthenticatedPoliciesRateLimitsNewRoute
   '/policy-bindings/$name/edit': typeof AuthenticatedPolicyBindingsNameEditRoute
+  '/pools/$name/edit': typeof AuthenticatedPoolsNameEditRoute
   '/pricing/$name/edit': typeof AuthenticatedPricingNameEditRoute
   '/projects/$name/edit': typeof AuthenticatedProjectsNameEditRoute
   '/role-bindings/$name/edit': typeof AuthenticatedRoleBindingsNameEditRoute
   '/roles/$name/edit': typeof AuthenticatedRolesNameEditRoute
   '/service-accounts/$name/edit': typeof AuthenticatedServiceAccountsNameEditRoute
   '/teams/$name/edit': typeof AuthenticatedTeamsNameEditRoute
+  '/policies/budgets/$name/edit': typeof AuthenticatedPoliciesBudgetsNameEditRoute
   '/policies/rate-limits/$name/edit': typeof AuthenticatedPoliciesRateLimitsNameEditRoute
 }
 export interface FileRoutesByTo {
@@ -681,6 +766,8 @@ export interface FileRoutesByTo {
   '/scim-clients': typeof AuthenticatedScimClientsRoute
   '/usage': typeof AuthenticatedUsageRoute
   '/': typeof AuthenticatedIndexRoute
+  '/accounts/$name': typeof AuthenticatedAccountsNameRoute
+  '/accounts/new': typeof AuthenticatedAccountsNewRoute
   '/groups/$name': typeof AuthenticatedGroupsNameRoute
   '/groups/new': typeof AuthenticatedGroupsNewRoute
   '/host-keys/$name': typeof AuthenticatedHostKeysNameRoute
@@ -695,6 +782,8 @@ export interface FileRoutesByTo {
   '/policies/new': typeof AuthenticatedPoliciesNewRoute
   '/policy-bindings/$name': typeof AuthenticatedPolicyBindingsNameRoute
   '/policy-bindings/new': typeof AuthenticatedPolicyBindingsNewRoute
+  '/pools/$name': typeof AuthenticatedPoolsNameRoute
+  '/pools/new': typeof AuthenticatedPoolsNewRoute
   '/pricing/$name': typeof AuthenticatedPricingNameRoute
   '/pricing/new': typeof AuthenticatedPricingNewRoute
   '/projects/$name': typeof AuthenticatedProjectsNameRoute
@@ -717,12 +806,14 @@ export interface FileRoutesByTo {
   '/teams/$name': typeof AuthenticatedTeamsNameRoute
   '/teams/new': typeof AuthenticatedTeamsNewRoute
   '/users/$id': typeof AuthenticatedUsersIdRoute
+  '/accounts': typeof AuthenticatedAccountsIndexRoute
   '/groups': typeof AuthenticatedGroupsIndexRoute
   '/host-keys': typeof AuthenticatedHostKeysIndexRoute
   '/logs': typeof AuthenticatedLogsIndexRoute
   '/models': typeof AuthenticatedModelsIndexRoute
   '/policies': typeof AuthenticatedPoliciesIndexRoute
   '/policy-bindings': typeof AuthenticatedPolicyBindingsIndexRoute
+  '/pools': typeof AuthenticatedPoolsIndexRoute
   '/pricing': typeof AuthenticatedPricingIndexRoute
   '/projects': typeof AuthenticatedProjectsIndexRoute
   '/role-bindings': typeof AuthenticatedRoleBindingsIndexRoute
@@ -731,20 +822,25 @@ export interface FileRoutesByTo {
   '/settings': typeof AuthenticatedSettingsIndexRoute
   '/teams': typeof AuthenticatedTeamsIndexRoute
   '/users': typeof AuthenticatedUsersIndexRoute
+  '/accounts/$name/edit': typeof AuthenticatedAccountsNameEditRoute
   '/groups/$name/edit': typeof AuthenticatedGroupsNameEditRoute
   '/host-keys/$name/edit': typeof AuthenticatedHostKeysNameEditRoute
   '/keys/$name/edit': typeof AuthenticatedKeysNameEditRoute
   '/models/$name/edit': typeof AuthenticatedModelsNameEditRoute
   '/policies/$name/edit': typeof AuthenticatedPoliciesNameEditRoute
+  '/policies/budgets/$name': typeof AuthenticatedPoliciesBudgetsNameRoute
+  '/policies/budgets/new': typeof AuthenticatedPoliciesBudgetsNewRoute
   '/policies/rate-limits/$name': typeof AuthenticatedPoliciesRateLimitsNameRoute
   '/policies/rate-limits/new': typeof AuthenticatedPoliciesRateLimitsNewRoute
   '/policy-bindings/$name/edit': typeof AuthenticatedPolicyBindingsNameEditRoute
+  '/pools/$name/edit': typeof AuthenticatedPoolsNameEditRoute
   '/pricing/$name/edit': typeof AuthenticatedPricingNameEditRoute
   '/projects/$name/edit': typeof AuthenticatedProjectsNameEditRoute
   '/role-bindings/$name/edit': typeof AuthenticatedRoleBindingsNameEditRoute
   '/roles/$name/edit': typeof AuthenticatedRolesNameEditRoute
   '/service-accounts/$name/edit': typeof AuthenticatedServiceAccountsNameEditRoute
   '/teams/$name/edit': typeof AuthenticatedTeamsNameEditRoute
+  '/policies/budgets/$name/edit': typeof AuthenticatedPoliciesBudgetsNameEditRoute
   '/policies/rate-limits/$name/edit': typeof AuthenticatedPoliciesRateLimitsNameEditRoute
 }
 export interface FileRoutesById {
@@ -771,6 +867,8 @@ export interface FileRoutesById {
   '/_authenticated/usage': typeof AuthenticatedUsageRoute
   '/_authenticated/users': typeof AuthenticatedUsersRouteWithChildren
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/accounts/$name': typeof AuthenticatedAccountsNameRoute
+  '/_authenticated/accounts/new': typeof AuthenticatedAccountsNewRoute
   '/_authenticated/groups/$name': typeof AuthenticatedGroupsNameRoute
   '/_authenticated/groups/new': typeof AuthenticatedGroupsNewRoute
   '/_authenticated/host-keys/$name': typeof AuthenticatedHostKeysNameRoute
@@ -785,6 +883,8 @@ export interface FileRoutesById {
   '/_authenticated/policies/new': typeof AuthenticatedPoliciesNewRoute
   '/_authenticated/policy-bindings/$name': typeof AuthenticatedPolicyBindingsNameRoute
   '/_authenticated/policy-bindings/new': typeof AuthenticatedPolicyBindingsNewRoute
+  '/_authenticated/pools/$name': typeof AuthenticatedPoolsNameRoute
+  '/_authenticated/pools/new': typeof AuthenticatedPoolsNewRoute
   '/_authenticated/pricing/$name': typeof AuthenticatedPricingNameRoute
   '/_authenticated/pricing/new': typeof AuthenticatedPricingNewRoute
   '/_authenticated/projects/$name': typeof AuthenticatedProjectsNameRoute
@@ -807,12 +907,14 @@ export interface FileRoutesById {
   '/_authenticated/teams/$name': typeof AuthenticatedTeamsNameRoute
   '/_authenticated/teams/new': typeof AuthenticatedTeamsNewRoute
   '/_authenticated/users/$id': typeof AuthenticatedUsersIdRoute
+  '/_authenticated/accounts/': typeof AuthenticatedAccountsIndexRoute
   '/_authenticated/groups/': typeof AuthenticatedGroupsIndexRoute
   '/_authenticated/host-keys/': typeof AuthenticatedHostKeysIndexRoute
   '/_authenticated/logs/': typeof AuthenticatedLogsIndexRoute
   '/_authenticated/models/': typeof AuthenticatedModelsIndexRoute
   '/_authenticated/policies/': typeof AuthenticatedPoliciesIndexRoute
   '/_authenticated/policy-bindings/': typeof AuthenticatedPolicyBindingsIndexRoute
+  '/_authenticated/pools/': typeof AuthenticatedPoolsIndexRoute
   '/_authenticated/pricing/': typeof AuthenticatedPricingIndexRoute
   '/_authenticated/projects/': typeof AuthenticatedProjectsIndexRoute
   '/_authenticated/role-bindings/': typeof AuthenticatedRoleBindingsIndexRoute
@@ -821,20 +923,25 @@ export interface FileRoutesById {
   '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
   '/_authenticated/teams/': typeof AuthenticatedTeamsIndexRoute
   '/_authenticated/users/': typeof AuthenticatedUsersIndexRoute
+  '/_authenticated/accounts/$name_/edit': typeof AuthenticatedAccountsNameEditRoute
   '/_authenticated/groups/$name_/edit': typeof AuthenticatedGroupsNameEditRoute
   '/_authenticated/host-keys/$name_/edit': typeof AuthenticatedHostKeysNameEditRoute
   '/_authenticated/keys_/$name_/edit': typeof AuthenticatedKeysNameEditRoute
   '/_authenticated/models/$name/edit': typeof AuthenticatedModelsNameEditRoute
   '/_authenticated/policies/$name_/edit': typeof AuthenticatedPoliciesNameEditRoute
+  '/_authenticated/policies/budgets/$name': typeof AuthenticatedPoliciesBudgetsNameRoute
+  '/_authenticated/policies/budgets/new': typeof AuthenticatedPoliciesBudgetsNewRoute
   '/_authenticated/policies/rate-limits/$name': typeof AuthenticatedPoliciesRateLimitsNameRoute
   '/_authenticated/policies/rate-limits/new': typeof AuthenticatedPoliciesRateLimitsNewRoute
   '/_authenticated/policy-bindings/$name_/edit': typeof AuthenticatedPolicyBindingsNameEditRoute
+  '/_authenticated/pools/$name_/edit': typeof AuthenticatedPoolsNameEditRoute
   '/_authenticated/pricing/$name_/edit': typeof AuthenticatedPricingNameEditRoute
   '/_authenticated/projects/$name_/edit': typeof AuthenticatedProjectsNameEditRoute
   '/_authenticated/role-bindings/$name_/edit': typeof AuthenticatedRoleBindingsNameEditRoute
   '/_authenticated/roles/$name_/edit': typeof AuthenticatedRolesNameEditRoute
   '/_authenticated/service-accounts/$name_/edit': typeof AuthenticatedServiceAccountsNameEditRoute
   '/_authenticated/teams/$name_/edit': typeof AuthenticatedTeamsNameEditRoute
+  '/_authenticated/policies/budgets/$name_/edit': typeof AuthenticatedPoliciesBudgetsNameEditRoute
   '/_authenticated/policies/rate-limits/$name_/edit': typeof AuthenticatedPoliciesRateLimitsNameEditRoute
 }
 export interface FileRouteTypes {
@@ -861,6 +968,8 @@ export interface FileRouteTypes {
     | '/teams'
     | '/usage'
     | '/users'
+    | '/accounts/$name'
+    | '/accounts/new'
     | '/groups/$name'
     | '/groups/new'
     | '/host-keys/$name'
@@ -875,6 +984,8 @@ export interface FileRouteTypes {
     | '/policies/new'
     | '/policy-bindings/$name'
     | '/policy-bindings/new'
+    | '/pools/$name'
+    | '/pools/new'
     | '/pricing/$name'
     | '/pricing/new'
     | '/projects/$name'
@@ -897,12 +1008,14 @@ export interface FileRouteTypes {
     | '/teams/$name'
     | '/teams/new'
     | '/users/$id'
+    | '/accounts/'
     | '/groups/'
     | '/host-keys/'
     | '/logs/'
     | '/models/'
     | '/policies/'
     | '/policy-bindings/'
+    | '/pools/'
     | '/pricing/'
     | '/projects/'
     | '/role-bindings/'
@@ -911,20 +1024,25 @@ export interface FileRouteTypes {
     | '/settings/'
     | '/teams/'
     | '/users/'
+    | '/accounts/$name/edit'
     | '/groups/$name/edit'
     | '/host-keys/$name/edit'
     | '/keys/$name/edit'
     | '/models/$name/edit'
     | '/policies/$name/edit'
+    | '/policies/budgets/$name'
+    | '/policies/budgets/new'
     | '/policies/rate-limits/$name'
     | '/policies/rate-limits/new'
     | '/policy-bindings/$name/edit'
+    | '/pools/$name/edit'
     | '/pricing/$name/edit'
     | '/projects/$name/edit'
     | '/role-bindings/$name/edit'
     | '/roles/$name/edit'
     | '/service-accounts/$name/edit'
     | '/teams/$name/edit'
+    | '/policies/budgets/$name/edit'
     | '/policies/rate-limits/$name/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -936,6 +1054,8 @@ export interface FileRouteTypes {
     | '/scim-clients'
     | '/usage'
     | '/'
+    | '/accounts/$name'
+    | '/accounts/new'
     | '/groups/$name'
     | '/groups/new'
     | '/host-keys/$name'
@@ -950,6 +1070,8 @@ export interface FileRouteTypes {
     | '/policies/new'
     | '/policy-bindings/$name'
     | '/policy-bindings/new'
+    | '/pools/$name'
+    | '/pools/new'
     | '/pricing/$name'
     | '/pricing/new'
     | '/projects/$name'
@@ -972,12 +1094,14 @@ export interface FileRouteTypes {
     | '/teams/$name'
     | '/teams/new'
     | '/users/$id'
+    | '/accounts'
     | '/groups'
     | '/host-keys'
     | '/logs'
     | '/models'
     | '/policies'
     | '/policy-bindings'
+    | '/pools'
     | '/pricing'
     | '/projects'
     | '/role-bindings'
@@ -986,20 +1110,25 @@ export interface FileRouteTypes {
     | '/settings'
     | '/teams'
     | '/users'
+    | '/accounts/$name/edit'
     | '/groups/$name/edit'
     | '/host-keys/$name/edit'
     | '/keys/$name/edit'
     | '/models/$name/edit'
     | '/policies/$name/edit'
+    | '/policies/budgets/$name'
+    | '/policies/budgets/new'
     | '/policies/rate-limits/$name'
     | '/policies/rate-limits/new'
     | '/policy-bindings/$name/edit'
+    | '/pools/$name/edit'
     | '/pricing/$name/edit'
     | '/projects/$name/edit'
     | '/role-bindings/$name/edit'
     | '/roles/$name/edit'
     | '/service-accounts/$name/edit'
     | '/teams/$name/edit'
+    | '/policies/budgets/$name/edit'
     | '/policies/rate-limits/$name/edit'
   id:
     | '__root__'
@@ -1025,6 +1154,8 @@ export interface FileRouteTypes {
     | '/_authenticated/usage'
     | '/_authenticated/users'
     | '/_authenticated/'
+    | '/_authenticated/accounts/$name'
+    | '/_authenticated/accounts/new'
     | '/_authenticated/groups/$name'
     | '/_authenticated/groups/new'
     | '/_authenticated/host-keys/$name'
@@ -1039,6 +1170,8 @@ export interface FileRouteTypes {
     | '/_authenticated/policies/new'
     | '/_authenticated/policy-bindings/$name'
     | '/_authenticated/policy-bindings/new'
+    | '/_authenticated/pools/$name'
+    | '/_authenticated/pools/new'
     | '/_authenticated/pricing/$name'
     | '/_authenticated/pricing/new'
     | '/_authenticated/projects/$name'
@@ -1061,12 +1194,14 @@ export interface FileRouteTypes {
     | '/_authenticated/teams/$name'
     | '/_authenticated/teams/new'
     | '/_authenticated/users/$id'
+    | '/_authenticated/accounts/'
     | '/_authenticated/groups/'
     | '/_authenticated/host-keys/'
     | '/_authenticated/logs/'
     | '/_authenticated/models/'
     | '/_authenticated/policies/'
     | '/_authenticated/policy-bindings/'
+    | '/_authenticated/pools/'
     | '/_authenticated/pricing/'
     | '/_authenticated/projects/'
     | '/_authenticated/role-bindings/'
@@ -1075,20 +1210,25 @@ export interface FileRouteTypes {
     | '/_authenticated/settings/'
     | '/_authenticated/teams/'
     | '/_authenticated/users/'
+    | '/_authenticated/accounts/$name_/edit'
     | '/_authenticated/groups/$name_/edit'
     | '/_authenticated/host-keys/$name_/edit'
     | '/_authenticated/keys_/$name_/edit'
     | '/_authenticated/models/$name/edit'
     | '/_authenticated/policies/$name_/edit'
+    | '/_authenticated/policies/budgets/$name'
+    | '/_authenticated/policies/budgets/new'
     | '/_authenticated/policies/rate-limits/$name'
     | '/_authenticated/policies/rate-limits/new'
     | '/_authenticated/policy-bindings/$name_/edit'
+    | '/_authenticated/pools/$name_/edit'
     | '/_authenticated/pricing/$name_/edit'
     | '/_authenticated/projects/$name_/edit'
     | '/_authenticated/role-bindings/$name_/edit'
     | '/_authenticated/roles/$name_/edit'
     | '/_authenticated/service-accounts/$name_/edit'
     | '/_authenticated/teams/$name_/edit'
+    | '/_authenticated/policies/budgets/$name_/edit'
     | '/_authenticated/policies/rate-limits/$name_/edit'
   fileRoutesById: FileRoutesById
 }
@@ -1254,6 +1394,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedUsersRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/accounts/': {
+      id: '/_authenticated/accounts/'
+      path: '/accounts'
+      fullPath: '/accounts/'
+      preLoaderRoute: typeof AuthenticatedAccountsIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/accounts/$name': {
+      id: '/_authenticated/accounts/$name'
+      path: '/accounts/$name'
+      fullPath: '/accounts/$name'
+      preLoaderRoute: typeof AuthenticatedAccountsNameRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/accounts/new': {
+      id: '/_authenticated/accounts/new'
+      path: '/accounts/new'
+      fullPath: '/accounts/new'
+      preLoaderRoute: typeof AuthenticatedAccountsNewRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/groups/': {
       id: '/_authenticated/groups/'
       path: '/'
@@ -1393,6 +1554,27 @@ declare module '@tanstack/react-router' {
       fullPath: '/policy-bindings/new'
       preLoaderRoute: typeof AuthenticatedPolicyBindingsNewRouteImport
       parentRoute: typeof AuthenticatedPolicyBindingsRoute
+    }
+    '/_authenticated/pools/': {
+      id: '/_authenticated/pools/'
+      path: '/pools'
+      fullPath: '/pools/'
+      preLoaderRoute: typeof AuthenticatedPoolsIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/pools/$name': {
+      id: '/_authenticated/pools/$name'
+      path: '/pools/$name'
+      fullPath: '/pools/$name'
+      preLoaderRoute: typeof AuthenticatedPoolsNameRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/pools/new': {
+      id: '/_authenticated/pools/new'
+      path: '/pools/new'
+      fullPath: '/pools/new'
+      preLoaderRoute: typeof AuthenticatedPoolsNewRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/pricing/': {
       id: '/_authenticated/pricing/'
@@ -1604,6 +1786,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedUsersIdRouteImport
       parentRoute: typeof AuthenticatedUsersRoute
     }
+    '/_authenticated/accounts/$name_/edit': {
+      id: '/_authenticated/accounts/$name_/edit'
+      path: '/accounts/$name/edit'
+      fullPath: '/accounts/$name/edit'
+      preLoaderRoute: typeof AuthenticatedAccountsNameEditRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/groups/$name_/edit': {
       id: '/_authenticated/groups/$name_/edit'
       path: '/$name/edit'
@@ -1639,6 +1828,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPoliciesNameEditRouteImport
       parentRoute: typeof AuthenticatedPoliciesRoute
     }
+    '/_authenticated/policies/budgets/$name': {
+      id: '/_authenticated/policies/budgets/$name'
+      path: '/budgets/$name'
+      fullPath: '/policies/budgets/$name'
+      preLoaderRoute: typeof AuthenticatedPoliciesBudgetsNameRouteImport
+      parentRoute: typeof AuthenticatedPoliciesRoute
+    }
+    '/_authenticated/policies/budgets/new': {
+      id: '/_authenticated/policies/budgets/new'
+      path: '/budgets/new'
+      fullPath: '/policies/budgets/new'
+      preLoaderRoute: typeof AuthenticatedPoliciesBudgetsNewRouteImport
+      parentRoute: typeof AuthenticatedPoliciesRoute
+    }
     '/_authenticated/policies/rate-limits/$name': {
       id: '/_authenticated/policies/rate-limits/$name'
       path: '/rate-limits/$name'
@@ -1659,6 +1862,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/policy-bindings/$name/edit'
       preLoaderRoute: typeof AuthenticatedPolicyBindingsNameEditRouteImport
       parentRoute: typeof AuthenticatedPolicyBindingsRoute
+    }
+    '/_authenticated/pools/$name_/edit': {
+      id: '/_authenticated/pools/$name_/edit'
+      path: '/pools/$name/edit'
+      fullPath: '/pools/$name/edit'
+      preLoaderRoute: typeof AuthenticatedPoolsNameEditRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/pricing/$name_/edit': {
       id: '/_authenticated/pricing/$name_/edit'
@@ -1701,6 +1911,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/teams/$name/edit'
       preLoaderRoute: typeof AuthenticatedTeamsNameEditRouteImport
       parentRoute: typeof AuthenticatedTeamsRoute
+    }
+    '/_authenticated/policies/budgets/$name_/edit': {
+      id: '/_authenticated/policies/budgets/$name_/edit'
+      path: '/budgets/$name/edit'
+      fullPath: '/policies/budgets/$name/edit'
+      preLoaderRoute: typeof AuthenticatedPoliciesBudgetsNameEditRouteImport
+      parentRoute: typeof AuthenticatedPoliciesRoute
     }
     '/_authenticated/policies/rate-limits/$name_/edit': {
       id: '/_authenticated/policies/rate-limits/$name_/edit'
@@ -1782,8 +1999,11 @@ interface AuthenticatedPoliciesRouteChildren {
   AuthenticatedPoliciesNewRoute: typeof AuthenticatedPoliciesNewRoute
   AuthenticatedPoliciesIndexRoute: typeof AuthenticatedPoliciesIndexRoute
   AuthenticatedPoliciesNameEditRoute: typeof AuthenticatedPoliciesNameEditRoute
+  AuthenticatedPoliciesBudgetsNameRoute: typeof AuthenticatedPoliciesBudgetsNameRoute
+  AuthenticatedPoliciesBudgetsNewRoute: typeof AuthenticatedPoliciesBudgetsNewRoute
   AuthenticatedPoliciesRateLimitsNameRoute: typeof AuthenticatedPoliciesRateLimitsNameRoute
   AuthenticatedPoliciesRateLimitsNewRoute: typeof AuthenticatedPoliciesRateLimitsNewRoute
+  AuthenticatedPoliciesBudgetsNameEditRoute: typeof AuthenticatedPoliciesBudgetsNameEditRoute
   AuthenticatedPoliciesRateLimitsNameEditRoute: typeof AuthenticatedPoliciesRateLimitsNameEditRoute
 }
 
@@ -1792,10 +2012,14 @@ const AuthenticatedPoliciesRouteChildren: AuthenticatedPoliciesRouteChildren = {
   AuthenticatedPoliciesNewRoute: AuthenticatedPoliciesNewRoute,
   AuthenticatedPoliciesIndexRoute: AuthenticatedPoliciesIndexRoute,
   AuthenticatedPoliciesNameEditRoute: AuthenticatedPoliciesNameEditRoute,
+  AuthenticatedPoliciesBudgetsNameRoute: AuthenticatedPoliciesBudgetsNameRoute,
+  AuthenticatedPoliciesBudgetsNewRoute: AuthenticatedPoliciesBudgetsNewRoute,
   AuthenticatedPoliciesRateLimitsNameRoute:
     AuthenticatedPoliciesRateLimitsNameRoute,
   AuthenticatedPoliciesRateLimitsNewRoute:
     AuthenticatedPoliciesRateLimitsNewRoute,
+  AuthenticatedPoliciesBudgetsNameEditRoute:
+    AuthenticatedPoliciesBudgetsNameEditRoute,
   AuthenticatedPoliciesRateLimitsNameEditRoute:
     AuthenticatedPoliciesRateLimitsNameEditRoute,
 }
@@ -2004,13 +2228,21 @@ interface AuthenticatedRouteChildren {
   AuthenticatedUsageRoute: typeof AuthenticatedUsageRoute
   AuthenticatedUsersRoute: typeof AuthenticatedUsersRouteWithChildren
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedAccountsNameRoute: typeof AuthenticatedAccountsNameRoute
+  AuthenticatedAccountsNewRoute: typeof AuthenticatedAccountsNewRoute
   AuthenticatedHostsNameRoute: typeof AuthenticatedHostsNameRoute
   AuthenticatedKeysNameRoute: typeof AuthenticatedKeysNameRoute
   AuthenticatedKeysNewRoute: typeof AuthenticatedKeysNewRoute
   AuthenticatedLogsRequestIdRoute: typeof AuthenticatedLogsRequestIdRoute
+  AuthenticatedPoolsNameRoute: typeof AuthenticatedPoolsNameRoute
+  AuthenticatedPoolsNewRoute: typeof AuthenticatedPoolsNewRoute
   AuthenticatedProvidersNameRoute: typeof AuthenticatedProvidersNameRoute
+  AuthenticatedAccountsIndexRoute: typeof AuthenticatedAccountsIndexRoute
   AuthenticatedLogsIndexRoute: typeof AuthenticatedLogsIndexRoute
+  AuthenticatedPoolsIndexRoute: typeof AuthenticatedPoolsIndexRoute
+  AuthenticatedAccountsNameEditRoute: typeof AuthenticatedAccountsNameEditRoute
   AuthenticatedKeysNameEditRoute: typeof AuthenticatedKeysNameEditRoute
+  AuthenticatedPoolsNameEditRoute: typeof AuthenticatedPoolsNameEditRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
@@ -2035,13 +2267,21 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedUsageRoute: AuthenticatedUsageRoute,
   AuthenticatedUsersRoute: AuthenticatedUsersRouteWithChildren,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedAccountsNameRoute: AuthenticatedAccountsNameRoute,
+  AuthenticatedAccountsNewRoute: AuthenticatedAccountsNewRoute,
   AuthenticatedHostsNameRoute: AuthenticatedHostsNameRoute,
   AuthenticatedKeysNameRoute: AuthenticatedKeysNameRoute,
   AuthenticatedKeysNewRoute: AuthenticatedKeysNewRoute,
   AuthenticatedLogsRequestIdRoute: AuthenticatedLogsRequestIdRoute,
+  AuthenticatedPoolsNameRoute: AuthenticatedPoolsNameRoute,
+  AuthenticatedPoolsNewRoute: AuthenticatedPoolsNewRoute,
   AuthenticatedProvidersNameRoute: AuthenticatedProvidersNameRoute,
+  AuthenticatedAccountsIndexRoute: AuthenticatedAccountsIndexRoute,
   AuthenticatedLogsIndexRoute: AuthenticatedLogsIndexRoute,
+  AuthenticatedPoolsIndexRoute: AuthenticatedPoolsIndexRoute,
+  AuthenticatedAccountsNameEditRoute: AuthenticatedAccountsNameEditRoute,
   AuthenticatedKeysNameEditRoute: AuthenticatedKeysNameEditRoute,
+  AuthenticatedPoolsNameEditRoute: AuthenticatedPoolsNameEditRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(

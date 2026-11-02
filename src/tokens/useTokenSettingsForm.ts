@@ -10,6 +10,7 @@ import {
 	draftFromNanos,
 	nanosFromDraft,
 } from "@/lib/durationNanos";
+import { firstError } from "@/lib/formErrors";
 import { tokenLifetimeErrors } from "@/lib/tokenLifetimes";
 import { toast } from "@/shared/Toast";
 
@@ -32,11 +33,6 @@ function toValues({ value }: AuthTokensEnvelope): TokenSettingsValues {
 function validate({ value }: { value: TokenSettingsValues }) {
 	const fields = tokenLifetimeErrors(value.defaultTTL, value.maxTTL);
 	return fields.defaultTTL || fields.maxTTL ? { fields } : undefined;
-}
-
-function firstString(errors: readonly unknown[] | undefined) {
-	for (const e of errors ?? []) if (typeof e === "string") return e;
-	return undefined;
 }
 
 export function useTokenSettingsForm(envelope: AuthTokensEnvelope) {
@@ -73,8 +69,8 @@ export function useTokenSettingsForm(envelope: AuthTokensEnvelope) {
 		s.submissionAttempts === 0
 			? {}
 			: {
-					defaultTTL: firstString(s.fieldMeta.defaultTTL?.errors),
-					maxTTL: firstString(s.fieldMeta.maxTTL?.errors),
+					defaultTTL: firstError(s.fieldMeta.defaultTTL?.errors),
+					maxTTL: firstError(s.fieldMeta.maxTTL?.errors),
 				},
 	);
 

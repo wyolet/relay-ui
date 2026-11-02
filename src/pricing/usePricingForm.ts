@@ -9,18 +9,25 @@ import type {
 	PricingRate,
 	PricingUpdate,
 } from "@/api/types/pricing";
+import type { components } from "@/api/types.gen";
 import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
+import { firstError, zodFieldValidator } from "@/lib/formErrors";
 import { randomSuffix, slugify } from "@/lib/slug";
-import { PRICING_METERS } from "@/lib/usage-math/pricing";
+import { PRICING_METERS, type PRICING_UNITS } from "@/lib/usage-math/pricing";
 import { toast } from "@/shared/Toast";
 
-export type PricingMeter = (typeof PRICING_METERS)[number];
+type Owner = components["schemas"]["Owner"];
+
+// Derived from the generated PricingRate schema — the full set the server accepts.
+// PRICING_METERS is the UI subset offered in pickers.
+export type PricingMeter = components["schemas"]["PricingRate"]["meter"];
+export type PricingUnit = (typeof PRICING_UNITS)[number];
 
 export interface RateDraft {
-	meter: string;
-	unit: string;
+	meter: PricingMeter;
+	unit: PricingUnit;
 	/** Decimal string, e.g. "3" or "0.30". */
 	amount: string;
 	/** Tier threshold; "" marks the meter's base rate. */
@@ -93,7 +100,7 @@ const schema = z
 		});
 	});
 
-export function emptyRate(meter: string = "tokens.input"): RateDraft {
+export function emptyRate(meter: PricingMeter = "tokens.input"): RateDraft {
 	return { meter, unit: "per_million", amount: "", aboveTokens: "" };
 }
 
@@ -172,30 +179,11 @@ export function usePricingForm({
 		return `${base}-${suffixRef.current}`;
 	};
 
+	const runValidation = zodFieldValidator<PricingFormValues>(schema);
+
 	const form = useForm({
 		defaultValues: initial,
-		validators: {
-			onSubmit: ({ value }) => {
-				const r = schema.safeParse(value);
-				if (r.success) return undefined;
-				const fields: Record<string, string> = {};
-				for (const issue of r.error.issues) {
-					const key = issue.path.join(".");
-					if (key && !fields[key]) fields[key] = issue.message;
-				}
-				return { fields };
-			},
-			onChange: ({ value }) => {
-				const r = schema.safeParse(value);
-				if (r.success) return undefined;
-				const fields: Record<string, string> = {};
-				for (const issue of r.error.issues) {
-					const key = issue.path.join(".");
-					if (key && !fields[key]) fields[key] = issue.message;
-				}
-				return { fields };
-			},
-		},
+		validators: { onSubmit: runValidation, onChange: runValidation },
 		onSubmit: async ({ value }) => {
 			const rates: PricingRate[] = value.rates.map((r) => ({
 				meter: r.meter,
@@ -212,7 +200,7 @@ export function usePricingForm({
 			};
 			// The relay requires pricing rows to be host-owned (rate sheets
 			// belong to the billing host).
-			const owner = { kind: "host", id: value.host };
+			const owner: Owner = { kind: "host", id: value.host };
 			try {
 				const name = computeSlug(displayName);
 				if (isEdit && pricing) {
@@ -271,31 +259,21 @@ export function usePricingForm({
 
 	const values = useStore(form.store, (s) => s.values);
 	const slugPreview = computeSlug(values.displayName);
-	const displayNameError = useStore(form.store, (s) => {
-		const errs = s.fieldMeta?.displayName?.errors ?? [];
-		for (const e of errs) if (typeof e === "string") return e;
-		return undefined;
-	});
-	const currencyError = useStore(form.store, (s) => {
-		const errs = s.fieldMeta?.currency?.errors ?? [];
-		for (const e of errs) if (typeof e === "string") return e;
-		return undefined;
-	});
-	const hostError = useStore(form.store, (s) => {
-		const errs = s.fieldMeta?.host?.errors ?? [];
-		for (const e of errs) if (typeof e === "string") return e;
-		return undefined;
-	});
-	const targetModelsError = useStore(form.store, (s) => {
-		const errs = s.fieldMeta?.targetModels?.errors ?? [];
-		for (const e of errs) if (typeof e === "string") return e;
-		return undefined;
-	});
-	const ratesError = useStore(form.store, (s) => {
-		const errs = s.fieldMeta?.rates?.errors ?? [];
-		for (const e of errs) if (typeof e === "string") return e;
-		return undefined;
-	});
+	const displayNameError = useStore(form.store, (s) =>
+		firstError(s.fieldMeta?.displayName?.errors),
+	);
+	const currencyError = useStore(form.store, (s) =>
+		firstError(s.fieldMeta?.currency?.errors),
+	);
+	const hostError = useStore(form.store, (s) =>
+		firstError(s.fieldMeta?.host?.errors),
+	);
+	const targetModelsError = useStore(form.store, (s) =>
+		firstError(s.fieldMeta?.targetModels?.errors),
+	);
+	const ratesError = useStore(form.store, (s) =>
+		firstError(s.fieldMeta?.rates?.errors),
+	);
 	const rateErrors = useStore(form.store, (s) => {
 		const meta = s.fieldMeta ?? {};
 		const byIdx: Record<number, { amount?: string; aboveTokens?: string }> = {};
@@ -304,13 +282,8 @@ export function usePricingForm({
 			if (!m) continue;
 			const idx = Number(m[1]);
 			const field = m[2] === "amount" ? "amount" : "aboveTokens";
-			const errs = value?.errors ?? [];
-			for (const e of errs) {
-				if (typeof e === "string") {
-					byIdx[idx] = { ...byIdx[idx], [field]: e };
-					break;
-				}
-			}
+			const e = firstError(value?.errors);
+			if (e !== undefined) byIdx[idx] = { ...byIdx[idx], [field]: e };
 		}
 		return byIdx;
 	});

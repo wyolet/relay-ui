@@ -5,22 +5,20 @@ import {
 	useDeleteTeam,
 	useTeamsList,
 } from "@/api/hooks/teams";
-import { ApiError } from "@/api/types/errors";
-import type { Team } from "@/api/types/team";
 import { buttonVariants } from "@/components/ui/button";
 import { FilterBar } from "@/filters/FilterBar";
 import { activeFilterCount } from "@/filters/toQueryParams";
 import type { FilterDef, FilterState } from "@/filters/types";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
-import { confirm } from "@/shared/ConfirmDialog";
+import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { RowMenu } from "@/shared/RowMenu";
 import { StaleContent } from "@/shared/StaleContent";
 import { Switch } from "@/shared/Switch";
+import { TableEmpty } from "@/shared/TableEmpty";
 import { TableToolbar } from "@/shared/TableToolbar";
 import { Th } from "@/shared/Th";
-import { toast } from "@/shared/Toast";
+import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 import { useDeferredSearch } from "@/shared/useDeferredSearch";
-import { budgetSummary } from "@/teams/budget";
 import { useToggleTeamEnabled } from "@/teams/useToggleTeamEnabled";
 
 /** Filters rendered above the table, all served by GET /teams. */
@@ -62,7 +60,7 @@ export function TeamsTable() {
 	const live = useSearch({ from: "/_authenticated/teams/" });
 	const { search, isStale } = useDeferredSearch(live);
 	const { data } = useTeamsList(toTeamsParams(search));
-	const deleteTeam = useDeleteTeam();
+	const del = useConfirmedDelete(useDeleteTeam(), { noun: "team" });
 	const { setEnabled } = useToggleTeamEnabled();
 
 	const items = data.items ?? [];
@@ -70,25 +68,6 @@ export function TeamsTable() {
 
 	function patch(next: FilterState) {
 		void navigate({ search: (prev) => ({ ...prev, ...next }), replace: true });
-	}
-
-	async function handleDelete(team: Team) {
-		const ok = await confirm({
-			title: `Delete ${displayLabel(team.metadata)}?`,
-			description: "Its projects and everything they own go with it.",
-			confirmLabel: "Delete",
-			danger: true,
-		});
-		if (!ok) return;
-		try {
-			await deleteTeam.mutateAsync(team.metadata.id ?? "");
-			toast("success", `Team "${displayLabel(team.metadata)}" deleted.`);
-		} catch (err) {
-			toast(
-				"error",
-				err instanceof ApiError ? err.body.message : "Failed to delete team.",
-			);
-		}
 	}
 
 	return (
@@ -114,8 +93,7 @@ export function TeamsTable() {
 
 			<StaleContent stale={isStale}>
 				{items.length === 0 ? (
-					<div className="rounded-lg border border-dashed border-input bg-card px-6 py-14 text-center">
-						<Users className="w-6 h-6 mx-auto mb-3 text-muted-foreground/50" />
+					<TableEmpty icon={Users}>
 						{!filtered ? (
 							<>
 								<p className="text-sm font-medium text-foreground mb-1">
@@ -138,14 +116,13 @@ export function TeamsTable() {
 								No teams match this filter.
 							</p>
 						)}
-					</div>
+					</TableEmpty>
 				) : (
 					<div className="overflow-x-auto rounded-lg border border-border bg-card">
 						<table className="w-full border-collapse">
 							<thead className="bg-muted/40">
 								<tr>
 									<Th variant="column">Name</Th>
-									<Th variant="column">Budget</Th>
 									<th
 										scope="col"
 										className="w-12 px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground"
@@ -186,9 +163,6 @@ export function TeamsTable() {
 													</div>
 												)}
 											</td>
-											<td className="px-3 py-2 text-xs text-foreground">
-												{budgetSummary(team.spec.budget) ?? "—"}
-											</td>
 											<td className="px-3 py-2">
 												<Switch
 													checked={enabled}
@@ -211,7 +185,12 @@ export function TeamsTable() {
 														{
 															label: "Delete",
 															danger: true,
-															onClick: () => void handleDelete(team),
+															onClick: () =>
+																del.request({
+																	id: team.metadata.id ?? "",
+																	name: team.metadata.name,
+																	label: displayLabel(team.metadata),
+																}),
 														},
 													]}
 												/>
@@ -224,6 +203,15 @@ export function TeamsTable() {
 					</div>
 				)}
 			</StaleContent>
+			{del.target && (
+				<DeleteConfirm
+					resourceName={del.target.name}
+					onConfirm={() => void del.confirm()}
+					onCancel={del.cancel}
+					isPending={del.isPending}
+					error={del.error}
+				/>
+			)}
 		</div>
 	);
 }

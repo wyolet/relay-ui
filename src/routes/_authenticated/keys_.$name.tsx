@@ -6,6 +6,7 @@ import { hostsListQueryOptions } from "@/api/hooks/hosts";
 import { keyDetailQueryOptions, keysListQueryOptions } from "@/api/hooks/keys";
 import { modelsListQueryOptions } from "@/api/hooks/models";
 import { policiesListQueryOptions } from "@/api/hooks/policies";
+import { policyBindingsAllQueryOptions } from "@/api/hooks/policyBindings";
 import { providersListQueryOptions } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
 import { KeyDetailView } from "@/keys/KeyDetailView";
@@ -21,10 +22,9 @@ export const Route = createFileRoute("/_authenticated/keys_/$name")({
 		void queryClient.prefetchQuery(rateLimitsListQueryOptions);
 		void queryClient.prefetchQuery(providersListQueryOptions);
 		void queryClient.prefetchQuery(bindingsListQueryOptions);
-		return Promise.all([
-			queryClient.ensureQueryData(keyDetailQueryOptions(params.name)),
-			queryClient.ensureQueryData(policiesListQueryOptions),
-		]);
+		void queryClient.prefetchQuery(policiesListQueryOptions);
+		void queryClient.prefetchQuery(policyBindingsAllQueryOptions);
+		return queryClient.ensureQueryData(keyDetailQueryOptions(params.name));
 	},
 	component: KeyDetailPage,
 });

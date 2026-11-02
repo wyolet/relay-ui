@@ -9,10 +9,10 @@ type OwnershipMetadata = Pick<
  * Resolves whether a catalog resource may be edited/deleted from the UI,
  * combining its owner kind with the server's governance guardrail.
  *
- * Three tiers, matching the relay's own enforcement:
- *  - system-owned → protected in code regardless; never mutable.
- *  - user-owned (or unowned) → bypasses governance; always mutable.
- *  - catalog-managed (host/provider-synced) → gated by the governance flags.
+ * Mirrors relay's governance tiers for these kinds (policies, models, hosts,
+ * providers): system-owned rows change only for an admin; team-, project- and
+ * user-owned (or unowned) rows always may; catalog-managed rows (host- or
+ * provider-owned) follow the governance flags.
  *
  * A row the catalog no longer ships (`catalogDetachedAt`) keeps its stored
  * owner but is governed as user-owned, as the relay does.
@@ -23,12 +23,13 @@ type OwnershipMetadata = Pick<
 export function resolveMutability(
 	metadata: OwnershipMetadata,
 	gov: { allowEdit: boolean; allowDelete: boolean },
+	isAdmin: boolean,
 ): { canEdit: boolean; canDelete: boolean } {
 	const ownerKind = metadata.catalogDetachedAt ? "user" : metadata.owner?.kind;
-	if (ownerKind === "system") return { canEdit: false, canDelete: false };
-	if (!ownerKind || ownerKind === "user")
-		return { canEdit: true, canDelete: true };
-	return { canEdit: gov.allowEdit, canDelete: gov.allowDelete };
+	if (ownerKind === "host" || ownerKind === "provider")
+		return { canEdit: gov.allowEdit, canDelete: gov.allowDelete };
+	if (ownerKind === "system") return { canEdit: isAdmin, canDelete: isAdmin };
+	return { canEdit: true, canDelete: true };
 }
 
 /**

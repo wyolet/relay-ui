@@ -3,6 +3,7 @@ import type { ScimClient } from "@/api/hooks/scimClients";
 import { fmtTs } from "@/lib/format";
 import { RowMenu } from "@/shared/RowMenu";
 import { StatusBadge } from "@/shared/StatusBadge";
+import { TableEmpty } from "@/shared/TableEmpty";
 import { Th } from "@/shared/Th";
 
 interface ScimClientsTableProps {
@@ -20,8 +21,7 @@ export function ScimClientsTable({
 }: ScimClientsTableProps) {
 	if (clients.length === 0) {
 		return (
-			<div className="rounded-lg border border-dashed border-input bg-card px-6 py-14 text-center">
-				<Network className="mx-auto mb-3 h-6 w-6 text-muted-foreground/50" />
+			<TableEmpty icon={Network}>
 				<p className="mb-1 text-sm font-medium text-foreground">
 					No SCIM clients
 				</p>
@@ -29,7 +29,7 @@ export function ScimClientsTable({
 					Create one per identity provider and paste its token into the
 					provider's provisioning settings.
 				</p>
-			</div>
+			</TableEmpty>
 		);
 	}
 

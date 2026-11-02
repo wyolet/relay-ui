@@ -1,24 +1,34 @@
 import { useForm } from "@tanstack/react-form";
 import { useStore } from "@tanstack/react-store";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
+import { useAuth } from "@/api/auth";
 import {
 	useCreatePolicyBinding,
 	useUpdatePolicyBinding,
 } from "@/api/hooks/policyBindings";
 import type { PolicyBinding } from "@/api/types/policyBinding";
+import type { components } from "@/api/types.gen";
 import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
 import { useOwnerOptions } from "@/hooks/useOwnerOptions";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
-import { ownerKeyId } from "@/lib/ownerScopes";
+import { firstError, zodFieldValidator } from "@/lib/formErrors";
+import { type OwnerOption, ownerKeyId } from "@/lib/ownerScopes";
 import { randomSuffix, slugify } from "@/lib/slug";
 import {
+	type DuplicateSubject,
+	describeDuplicate,
 	fromSubjectRows,
+	isDuplicateBinding,
 	newSubjectRow,
+	SUBJECT_KIND_LABEL,
+	SUBJECT_KINDS,
 	type SubjectRow,
+	subjectRowKey,
 	toSubjectRows,
-} from "@/role-bindings/SubjectsEditor";
+} from "@/policy-bindings/subjects";
+import { useSubjectOptions } from "@/policy-bindings/useSubjectOptions";
 import {
 	fromLabelPairs,
 	type LabelPair,
@@ -26,25 +36,24 @@ import {
 } from "@/shared/LabelsEditor";
 import { toast } from "@/shared/Toast";
 
-/** What the server applies when a binding declares no priority. Lower wins.
- * A blank field stays blank (null) so the binding keeps deferring to it. */
-export const DEFAULT_PRIORITY = 100;
+type Owner = components["schemas"]["Owner"];
+
+/** Form value of a system-owned binding; the other owners use the owner-picker keys. */
+const SYSTEM_OWNER = "system";
+
+const SYSTEM_OPTION: OwnerOption = {
+	value: SYSTEM_OWNER,
+	kind: "system",
+	label: "System",
+};
 
 /** The first string error a field carries, or undefined. */
-function firstError(
-	errors: readonly unknown[] | undefined,
-): string | undefined {
-	for (const e of errors ?? []) if (typeof e === "string") return e;
-	return undefined;
-}
-
 export interface PolicyBindingFormValues {
 	displayName: string;
 	description: string;
-	/** "project:<id>"; spec.projectId is taken from it. */
+	/** {@link SYSTEM_OWNER}, personal, or "team:<id>" / "project:<id>". */
 	owner: string;
 	policyId: string;
-	priority: number | null;
 	subjects: SubjectRow[];
 	enabled: boolean;
 	labels: LabelPair[];
@@ -56,7 +65,6 @@ function emptyValues(owner: string): PolicyBindingFormValues {
 		description: "",
 		owner,
 		policyId: "",
-		priority: null,
 		subjects: [newSubjectRow()],
 		enabled: true,
 		labels: [],
@@ -72,7 +80,6 @@ function toValues(
 		description: binding.metadata.description ?? "",
 		owner,
 		policyId: binding.spec.policyId,
-		priority: binding.spec.priority ?? null,
 		subjects: toSubjectRows(binding.spec.subjects),
 		enabled: binding.spec.enabled ?? true,
 		labels: toLabelPairs(binding.metadata.labels),
@@ -86,19 +93,13 @@ const schema = z.object({
 		.min(1, "Display name is required — the slug is generated from it")
 		.max(120, "Display name is too long"),
 	description: z.string().trim().max(500, "Description is too long"),
-	owner: z.string().min(1, "Pick the project this binding lives in."),
-	policyId: z.string().min(1, "Pick the policy callers resolve to."),
-	priority: z
-		.number()
-		.int("Priority is a whole number")
-		.min(0, "Priority starts at 0")
-		.max(10000, "Priority tops out at 10000")
-		.nullable(),
+	owner: z.string().min(1, "Pick who owns this binding."),
+	policyId: z.string().min(1, "Pick the policy the subjects are bound to."),
 	subjects: z
 		.array(
 			z.object({
-				id: z.string(),
-				kind: z.enum(["user", "group", "serviceaccount"]),
+				rowId: z.string(),
+				kind: z.enum(SUBJECT_KINDS),
 				value: z.string(),
 			}),
 		)
@@ -111,6 +112,13 @@ const schema = z.object({
 		z.object({ id: z.string(), key: z.string(), value: z.string() }),
 	),
 });
+
+/** The stored owner as a form value; a project-owned binding follows spec.projectId. */
+function bindingOwner(binding: PolicyBinding): Owner | undefined {
+	if (binding.spec.projectId)
+		return { kind: "project", id: binding.spec.projectId };
+	return binding.metadata.owner;
+}
 
 interface UsePolicyBindingFormOptions {
 	open?: boolean;
@@ -127,22 +135,37 @@ export function usePolicyBindingForm({
 	onSaved,
 }: UsePolicyBindingFormOptions) {
 	const isEdit = binding !== undefined;
+	const { isAdmin } = useAuth();
 	const createBinding = useCreatePolicyBinding();
 	const updateBinding = useUpdatePolicyBinding();
 	const toastSaveError = useSaveErrorToast();
+	const subjectOptions = useSubjectOptions();
 	const loaded = useLoadedResourceVersion(
 		`${open}:${binding?.metadata.id ?? ""}`,
 		binding?.metadata.resourceVersion,
 	);
+	const [duplicate, setDuplicate] = useState<DuplicateSubject | null>(null);
 
+	const storedOwner = binding ? bindingOwner(binding) : undefined;
 	const ownerPicker = useOwnerOptions({
-		kinds: ["project"],
-		owner: binding
-			? { kind: "project", id: binding.spec.projectId }
-			: undefined,
-		preset: projectId ? `project:${projectId}` : "",
+		kinds: ["user", "team", "project"],
+		owner: storedOwner,
+		preset: projectId ? `project:${projectId}` : isAdmin ? SYSTEM_OWNER : "",
 	});
 	const { initialOwner } = ownerPicker;
+	const ownerOptions = [
+		...(isAdmin || initialOwner === SYSTEM_OWNER ? [SYSTEM_OPTION] : []),
+		...ownerPicker.options.filter((o) => o.value !== SYSTEM_OWNER),
+	];
+
+	/** spec.projectId is set only for a project-owned binding; the owner follows it. */
+	function ownerFields(key: string): { owner: Owner; projectId?: string } {
+		if (key === SYSTEM_OWNER) return { owner: { kind: "system" } };
+		const owner = ownerPicker.toOwner(key);
+		return owner.kind === "project"
+			? { owner, projectId: ownerKeyId(key) }
+			: { owner };
+	}
 
 	const initial = useMemo<PolicyBindingFormValues>(
 		() =>
@@ -159,16 +182,7 @@ export function usePolicyBindingForm({
 		return `${base}-${suffixRef.current}`;
 	};
 
-	function runValidation({ value }: { value: PolicyBindingFormValues }) {
-		const r = schema.safeParse(value);
-		if (r.success) return undefined;
-		const fields: Record<string, string> = {};
-		for (const issue of r.error.issues) {
-			const key = issue.path.join(".");
-			if (key && !fields[key]) fields[key] = issue.message;
-		}
-		return { fields };
-	}
+	const runValidation = zodFieldValidator<PolicyBindingFormValues>(schema);
 
 	const form = useForm({
 		defaultValues: initial,
@@ -177,17 +191,14 @@ export function usePolicyBindingForm({
 			const displayName = value.displayName.trim();
 			const description = value.description.trim();
 			const labels = fromLabelPairs(value.labels);
-			// The scope of a policy binding is always its project; the server
-			// re-derives the owner from spec.projectId.
-			const owner = ownerPicker.toOwner(value.owner);
+			const { owner, projectId: ownerProjectId } = ownerFields(value.owner);
 			const spec = {
-				projectId: ownerKeyId(value.owner),
+				...(ownerProjectId ? { projectId: ownerProjectId } : {}),
 				policyId: value.policyId,
-				// Absent, not 0: the server reads a missing priority as its default.
-				priority: value.priority ?? undefined,
 				subjects: fromSubjectRows(value.subjects),
 				enabled: value.enabled,
 			};
+			setDuplicate(null);
 			try {
 				if (isEdit && binding) {
 					const saved = await updateBinding.mutateAsync({
@@ -222,6 +233,18 @@ export function usePolicyBindingForm({
 					onSaved(created.metadata.name);
 				}
 			} catch (err) {
+				if (isDuplicateBinding(err)) {
+					setDuplicate(
+						describeDuplicate(err.body.message, (key) => {
+							const row = value.subjects.find((r) => subjectRowKey(r) === key);
+							const name = subjectOptions.nameOfKey(key);
+							return row && name
+								? `${SUBJECT_KIND_LABEL[row.kind]} "${name}"`
+								: undefined;
+						}),
+					);
+					return;
+				}
 				toastSaveError(
 					err,
 					isEdit
@@ -241,6 +264,11 @@ export function usePolicyBindingForm({
 		form.reset(open ? initial : emptyValues(initialOwner));
 	}, [resetKey, open, initial, initialOwner, form]);
 
+	function setSubjects(next: SubjectRow[]) {
+		form.setFieldValue("subjects", next);
+		setDuplicate(null);
+	}
+
 	const values = useStore(form.store, (s) => s.values);
 	const slugPreview = isEdit
 		? (binding?.metadata.name ?? "")
@@ -257,10 +285,7 @@ export function usePolicyBindingForm({
 	const policyIdError = useStore(form.store, (s) =>
 		firstError(s.fieldMeta?.policyId?.errors),
 	);
-	const priorityError = useStore(form.store, (s) =>
-		firstError(s.fieldMeta?.priority?.errors),
-	);
-	const subjectsError = useStore(form.store, (s) =>
+	const subjectsFieldError = useStore(form.store, (s) =>
 		firstError(s.fieldMeta?.subjects?.errors),
 	);
 
@@ -271,10 +296,13 @@ export function usePolicyBindingForm({
 		slugPreview,
 		displayNameError,
 		descriptionError,
-		ownerOptions: ownerPicker.options,
+		ownerOptions,
 		ownerError,
 		policyIdError,
-		priorityError,
-		subjectsError,
+		subjectOptions: subjectOptions.options,
+		subjectName: subjectOptions.subjectName,
+		setSubjects,
+		subjectsError: subjectsFieldError ?? duplicate?.message,
+		duplicateSubjectKey: duplicate?.subjectKey,
 	};
 }

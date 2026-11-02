@@ -1,17 +1,13 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ChevronLeft } from "lucide-react";
 import { Suspense } from "react";
-import { policiesListQueryOptions } from "@/api/hooks/policies";
 import { projectsListQueryOptions } from "@/api/hooks/projects";
 import { ServiceAccountForm } from "@/service-accounts/ServiceAccountForm";
 import { PageLoader } from "@/shared/Spinner";
 
 export const Route = createFileRoute("/_authenticated/service-accounts/new")({
 	loader: ({ context }) =>
-		Promise.all([
-			context.queryClient.ensureQueryData(projectsListQueryOptions),
-			context.queryClient.ensureQueryData(policiesListQueryOptions),
-		]),
+		context.queryClient.ensureQueryData(projectsListQueryOptions),
 	component: NewServiceAccountPage,
 });
 

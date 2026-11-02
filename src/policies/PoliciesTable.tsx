@@ -1,7 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Plus, ShieldCheck } from "lucide-react";
 import { useState } from "react";
-import { useGovernance } from "@/api/hooks/governance";
 import {
 	useDeletePolicy,
 	usePolicies,
@@ -13,11 +12,11 @@ import type { RateLimit } from "@/api/types/ratelimit";
 import { buttonVariants } from "@/components/ui/button";
 import { DiagnosticDot } from "@/diagnostics/DiagnosticDot";
 import { usePolicyDiagnostics } from "@/diagnostics/useDiagnostics";
+import { useMutability } from "@/hooks/useMutability";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
-import { resolveMutability } from "@/lib/ownership";
 import { OwnerLink } from "@/projects/OwnerLink";
-import { confirm } from "@/shared/ConfirmDialog";
+import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import {
 	matchesOwnerFilter,
 	type OwnerFilter,
@@ -27,9 +26,10 @@ import { RowMenu } from "@/shared/RowMenu";
 import { SearchBox } from "@/shared/SearchBox";
 import { CatalogDetachedBadge } from "@/shared/StatusBadge";
 import { Switch } from "@/shared/Switch";
+import { TableEmpty } from "@/shared/TableEmpty";
 import { TableToolbar } from "@/shared/TableToolbar";
 import { Th } from "@/shared/Th";
-import { toast } from "@/shared/Toast";
+import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 
 function describeCatalog(p: Policy): {
 	label: string;
@@ -48,7 +48,7 @@ function describeCatalog(p: Policy): {
 export function PoliciesTable() {
 	const { data: policiesData } = usePolicies();
 	const rateLimits = useAttachableRateLimits();
-	const deletePolicy = useDeletePolicy();
+	const del = useConfirmedDelete(useDeletePolicy(), { noun: "policy" });
 	const navigate = useNavigate({ from: "/policies" });
 	const [q, setQ] = useState("");
 	const [ownerFilter, setOwnerFilter] = useState<OwnerFilter>("user");
@@ -66,26 +66,6 @@ export function PoliciesTable() {
 	const rateLimitById = new Map<string, RateLimit>();
 	for (const rl of rateLimits) {
 		if (rl.metadata.id) rateLimitById.set(rl.metadata.id, rl);
-	}
-
-	async function handleDelete(p: Policy) {
-		const ok = await confirm({
-			title: `Delete policy ${p.metadata.name}?`,
-			description:
-				"API keys using this policy will lose access until reattached.",
-			confirmLabel: "Delete",
-			danger: true,
-		});
-		if (!ok) return;
-		try {
-			await deletePolicy.mutateAsync(p.metadata.id ?? "");
-			toast("success", `Policy "${displayLabel(p.metadata)}" deleted.`);
-		} catch (err) {
-			toast(
-				"error",
-				err instanceof Error ? err.message : "Failed to delete policy.",
-			);
-		}
 	}
 
 	return (
@@ -109,16 +89,15 @@ export function PoliciesTable() {
 			/>
 
 			{items.length === 0 ? (
-				<div className="rounded-lg border border-dashed border-input bg-card px-6 py-14 text-center">
-					<ShieldCheck className="w-6 h-6 mx-auto mb-3 text-muted-foreground/50" />
+				<TableEmpty icon={ShieldCheck}>
 					{allItems.length === 0 ? (
 						<>
 							<p className="text-sm font-medium text-foreground mb-1">
 								No policies yet
 							</p>
 							<p className="text-sm text-muted-foreground mb-5">
-								Bundle upstream secrets, allowed models, and rate limits — then
-								attach to keys.
+								Bundle pools, allowed models, rate limits and budgets — then
+								bind the policy where it applies.
 							</p>
 							<Link
 								to="/policies/new"
@@ -133,7 +112,7 @@ export function PoliciesTable() {
 							No policies match the current filter.
 						</p>
 					)}
-				</div>
+				</TableEmpty>
 			) : (
 				<div className="overflow-x-auto rounded-lg border border-border bg-card">
 					<table className="w-full border-collapse">
@@ -142,9 +121,12 @@ export function PoliciesTable() {
 								<Th variant="column">Name</Th>
 								<Th variant="column">Catalog</Th>
 								<Th variant="column" align="right">
-									Credentials
+									Pools
 								</Th>
-								<Th variant="column">Rate limit</Th>
+								<Th variant="column">Rate limits</Th>
+								<Th variant="column" align="right">
+									Budgets
+								</Th>
 								<th
 									scope="col"
 									className="w-12 px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground"
@@ -163,23 +145,34 @@ export function PoliciesTable() {
 								<PolicyRow
 									key={p.metadata.name}
 									policy={p}
-									rateLimit={
-										p.spec.rateLimitId
-											? rateLimitById.get(p.spec.rateLimitId)
-											: undefined
-									}
+									rateLimitById={rateLimitById}
 									onEdit={() =>
 										void navigate({
 											to: "/policies/$name",
 											params: { name: p.metadata.name },
 										})
 									}
-									onDelete={() => void handleDelete(p)}
+									onDelete={() =>
+										del.request({
+											id: p.metadata.id ?? "",
+											name: p.metadata.name,
+											label: displayLabel(p.metadata),
+										})
+									}
 								/>
 							))}
 						</tbody>
 					</table>
 				</div>
+			)}
+			{del.target && (
+				<DeleteConfirm
+					resourceName={del.target.name}
+					onConfirm={() => void del.confirm()}
+					onCancel={del.cancel}
+					isPending={del.isPending}
+					error={del.error}
+				/>
 			)}
 		</div>
 	);
@@ -187,22 +180,26 @@ export function PoliciesTable() {
 
 function PolicyRow({
 	policy,
-	rateLimit,
+	rateLimitById,
 	onEdit,
 	onDelete,
 }: {
 	policy: Policy;
-	rateLimit: RateLimit | undefined;
+	rateLimitById: Map<string, RateLimit>;
 	onEdit: () => void;
 	onDelete: () => void;
 }) {
+	const rateLimitLinks = policy.spec.rateLimits ?? [];
+	const onlyRateLimit =
+		rateLimitLinks.length === 1 && rateLimitLinks[0]
+			? rateLimitById.get(rateLimitLinks[0].rateLimitId)
+			: undefined;
 	const updatePolicy = useUpdatePolicy();
 	const toastSaveError = useSaveErrorToast();
 	const diagnostics = usePolicyDiagnostics(policy.metadata.id);
 	const catalog = describeCatalog(policy);
 	const enabled = policy.spec.enabled !== false;
-	const gov = useGovernance("policy");
-	const { canEdit, canDelete } = resolveMutability(policy.metadata, gov);
+	const { canEdit, canDelete } = useMutability(policy.metadata, "policy");
 
 	async function toggleEnabled(next: boolean) {
 		try {
@@ -261,24 +258,28 @@ function PolicyRow({
 				</span>
 			</td>
 			<td className="px-3 py-2 text-sm text-foreground text-right tabular-nums">
-				{(policy.spec.hostKeyIds ?? []).length}
+				{(policy.spec.poolIds ?? []).length}
 			</td>
 			<td className="px-3 py-2 text-sm">
-				{rateLimit ? (
+				{onlyRateLimit ? (
 					<Link
 						to="/policies/rate-limits/$name"
-						params={{ name: rateLimit.metadata.name }}
+						params={{ name: onlyRateLimit.metadata.name }}
 						className="text-foreground hover:underline"
 					>
-						{displayLabel(rateLimit.metadata)}
+						{displayLabel(onlyRateLimit.metadata)}
 					</Link>
-				) : (policy.spec.rlBindings ?? []).length > 0 ? (
+				) : rateLimitLinks.length > 0 ? (
 					<span className="text-muted-foreground">
-						{(policy.spec.rlBindings ?? []).length} rate limits
+						{rateLimitLinks.length} rate limit
+						{rateLimitLinks.length === 1 ? "" : "s"}
 					</span>
 				) : (
 					<span className="text-muted-foreground/70">—</span>
 				)}
+			</td>
+			<td className="px-3 py-2 text-sm text-foreground text-right tabular-nums">
+				{(policy.spec.budgetIds ?? []).length}
 			</td>
 			<td className="px-3 py-2">
 				{canEdit ? (

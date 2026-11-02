@@ -1,15 +1,8 @@
-import {
-	CalendarClock,
-	ShieldCheck,
-	ToggleLeft,
-	UserRound,
-} from "lucide-react";
+import { CalendarClock, ToggleLeft, UserRound } from "lucide-react";
 import { useAuth } from "@/api/auth";
-import { usePolicies } from "@/api/hooks/policies";
 import { useProjects } from "@/api/hooks/projects";
 import { useServiceAccountsInProject } from "@/api/hooks/serviceAccounts";
 import type { Key } from "@/api/types/key";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
 	Select,
@@ -20,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import { useKeyForm } from "@/keys/useKeyForm";
 import { displayLabel } from "@/lib/displayLabel";
+import { FormFooter } from "@/shared/FormFooter";
 import { FormSection } from "@/shared/FormSection";
 import { IdentitySection } from "@/shared/IdentitySection";
 import { Segmented } from "@/shared/Segmented";
@@ -46,7 +40,6 @@ export function KeyForm({
 		displayNameError,
 		descriptionError,
 		principalIdError,
-		policyIdError,
 	} = useKeyForm({ open: true, apiKey, onSaved, onCreated });
 
 	const { userId } = useAuth();
@@ -59,12 +52,6 @@ export function KeyForm({
 	const accountOptions = (accountsData?.items ?? []).map((sa) => ({
 		value: sa.metadata.id ?? "",
 		label: displayLabel(sa.metadata),
-	}));
-
-	const { data: policiesData } = usePolicies();
-	const policyOptions = (policiesData.items ?? []).map((p) => ({
-		value: p.metadata.id ?? "",
-		label: displayLabel(p.metadata),
 	}));
 
 	return (
@@ -184,39 +171,6 @@ export function KeyForm({
 				</FormSection>
 
 				<FormSection
-					icon={ShieldCheck}
-					title="Policy"
-					description="Which policy authorizes requests made with this key — controls allowed models, hosts, and rate limits."
-				>
-					<div>
-						<Select
-							value={values.policyId}
-							items={policyOptions}
-							onValueChange={(v) => form.setFieldValue("policyId", v ?? "")}
-						>
-							<SelectTrigger
-								className="w-full max-w-md"
-								aria-invalid={policyIdError ? true : undefined}
-							>
-								<SelectValue placeholder="Pick a policy…" />
-							</SelectTrigger>
-							<SelectContent>
-								{policyOptions.map((p) => (
-									<SelectItem key={p.value} value={p.value}>
-										{p.label}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-						{policyIdError && (
-							<p className="mt-1.5 text-[11px] text-destructive">
-								{policyIdError}
-							</p>
-						)}
-					</div>
-				</FormSection>
-
-				<FormSection
 					icon={CalendarClock}
 					title="Expiry"
 					description="After this date the key stops authenticating. Leave empty for a key that never expires."
@@ -250,18 +204,15 @@ export function KeyForm({
 				</FormSection>
 			</div>
 
-			<div className="sticky bottom-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-t border-border mt-6 -mx-6 px-6 py-3 flex items-center justify-end gap-2">
-				<Button type="button" variant="ghost" onClick={onCancel}>
-					Cancel
-				</Button>
-				<form.Subscribe selector={(s) => s.isSubmitting}>
-					{(isSubmitting) => (
-						<Button type="submit" variant="cta" disabled={isSubmitting}>
-							{isSubmitting ? "Saving…" : isEdit ? "Save changes" : "Create"}
-						</Button>
-					)}
-				</form.Subscribe>
-			</div>
+			<form.Subscribe selector={(s) => s.isSubmitting}>
+				{(isSubmitting) => (
+					<FormFooter
+						isEdit={isEdit}
+						isSubmitting={isSubmitting}
+						onCancel={onCancel}
+					/>
+				)}
+			</form.Subscribe>
 		</form>
 	);
 }

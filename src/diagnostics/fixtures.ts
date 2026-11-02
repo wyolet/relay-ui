@@ -1,4 +1,5 @@
 import type { Binding } from "@/api/hooks/bindings";
+import type { Pool } from "@/api/hooks/pools";
 import type { Host } from "@/api/types/host";
 import type { HostKey } from "@/api/types/hostkey";
 import type { Key } from "@/api/types/key";
@@ -6,6 +7,7 @@ import type { Model } from "@/api/types/model";
 import type { Policy } from "@/api/types/policy";
 import type { Provider } from "@/api/types/provider";
 import type { RateLimit } from "@/api/types/ratelimit";
+import type { components } from "@/api/types.gen";
 import { buildDiagnosticGraph } from "@/diagnostics/buildGraph";
 import type { DiagnosticGraph } from "@/diagnostics/types";
 
@@ -15,15 +17,17 @@ import type { DiagnosticGraph } from "@/diagnostics/types";
  * enabled, nothing broken" so a test only has to set what it cares about.
  */
 
+type OwnerKind = NonNullable<components["schemas"]["Owner"]["kind"]>;
+
 interface PolicyOpts {
 	id?: string;
 	name?: string;
 	enabled?: boolean;
-	hostKeyIds?: string[];
+	credentialIds?: string[];
+	poolIds?: string[];
 	models?: string[];
-	rateLimitId?: string;
-	rlBindings?: { rateLimitId: string; models?: string[] }[];
-	owner?: { kind: string; id?: string };
+	rateLimits?: { rateLimitId: string; models?: string[] }[];
+	owner?: { kind: OwnerKind; id?: string };
 }
 export function makePolicy(o: PolicyOpts = {}): Policy {
 	return {
@@ -34,12 +38,12 @@ export function makePolicy(o: PolicyOpts = {}): Policy {
 		},
 		spec: {
 			enabled: o.enabled ?? true,
-			hostKeyIds: o.hostKeyIds ?? [],
+			credentialIds: o.credentialIds ?? [],
+			poolIds: o.poolIds ?? [],
 			models: o.models ?? [],
-			rateLimitId: o.rateLimitId,
-			rlBindings: o.rlBindings?.map((b) => ({
-				rateLimitId: b.rateLimitId,
-				models: b.models ?? null,
+			rateLimits: o.rateLimits?.map((rl) => ({
+				rateLimitId: rl.rateLimitId,
+				models: rl.models ?? null,
 			})),
 		},
 	};
@@ -49,7 +53,7 @@ interface HostKeyOpts {
 	id?: string;
 	name?: string;
 	hostId: string;
-	policyId: string;
+	accountId?: string;
 	enabled?: boolean;
 }
 export function makeHostKey(o: HostKeyOpts): HostKey {
@@ -61,10 +65,22 @@ export function makeHostKey(o: HostKeyOpts): HostKey {
 		},
 		spec: {
 			hostId: o.hostId,
-			policyId: o.policyId,
+			accountId: o.accountId,
 			enabled: o.enabled ?? true,
 			valueFrom: { kind: "stored" },
 		},
+	};
+}
+
+interface PoolOpts {
+	id: string;
+	hostId: string;
+	credentialIds?: string[];
+}
+export function makePool(o: PoolOpts): Pool {
+	return {
+		metadata: { id: o.id, name: o.id, owner: { kind: "user" } },
+		spec: { hostId: o.hostId, credentialIds: o.credentialIds ?? [] },
 	};
 }
 
@@ -72,7 +88,6 @@ interface HostOpts {
 	id?: string;
 	name: string;
 	enabled?: boolean;
-	defaultPolicy?: string;
 	noAuth?: boolean;
 }
 export function makeHost(o: HostOpts): Host {
@@ -84,7 +99,6 @@ export function makeHost(o: HostOpts): Host {
 		spec: {
 			baseURL: `https://${o.name}.example`,
 			enabled: o.enabled ?? true,
-			defaultPolicy: o.defaultPolicy,
 			noAuth: o.noAuth,
 		},
 	};
@@ -161,7 +175,6 @@ export function makeRateLimit(o: RateLimitOpts = {}): RateLimit {
 interface KeyOpts {
 	id?: string;
 	name?: string;
-	policyId: string;
 	enabled?: boolean;
 }
 export function makeKey(o: KeyOpts): Key {
@@ -174,7 +187,6 @@ export function makeKey(o: KeyOpts): Key {
 		spec: {
 			enabled: o.enabled ?? true,
 			keyHash: "hash",
-			policyId: o.policyId,
 			principal: { kind: "user", id: "u-1" },
 		},
 	};
@@ -197,6 +209,7 @@ interface GraphOpts {
 	hosts?: Host[];
 	models?: Model[];
 	rateLimits?: RateLimit[];
+	pools?: Pool[];
 	keys?: Key[];
 	providers?: Provider[];
 	bindings?: Binding[];
@@ -208,6 +221,7 @@ export function graph(o: GraphOpts = {}): DiagnosticGraph {
 		hosts: o.hosts ?? [],
 		models: o.models ?? [],
 		rateLimits: o.rateLimits ?? [],
+		pools: o.pools ?? [],
 		keys: o.keys ?? [],
 		providers: o.providers ?? [],
 		bindings: o.bindings ?? [],

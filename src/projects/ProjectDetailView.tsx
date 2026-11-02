@@ -8,10 +8,12 @@ import {
 	ShieldCheck,
 	Users,
 } from "lucide-react";
-import { useState } from "react";
 import { useKeysForPrincipals } from "@/api/hooks/keys";
 import { useProjectPolicies } from "@/api/hooks/policies";
-import { usePolicyBindingsInProject } from "@/api/hooks/policyBindings";
+import {
+	subjectKey,
+	usePolicyBindingsInProject,
+} from "@/api/hooks/policyBindings";
 import {
 	useDeleteProject,
 	useProject,
@@ -21,8 +23,7 @@ import { useRoleBindingsAtScope } from "@/api/hooks/roleBindings";
 import { useServiceAccountsInProject } from "@/api/hooks/serviceAccounts";
 import { useTeams } from "@/api/hooks/teams";
 import { resolveWindow, useScopeSpend } from "@/api/hooks/usage";
-import { ApiError } from "@/api/types/errors";
-import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
+import { displayLabel } from "@/lib/displayLabel";
 import { EraseBodiesButton } from "@/logs/EraseBodiesButton";
 import { useToggleProjectEnabled } from "@/projects/useToggleProjectEnabled";
 import { subjectLabel } from "@/role-bindings/SubjectsEditor";
@@ -30,9 +31,9 @@ import { Chip } from "@/shared/Chip";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { DetailCard, DetailEmpty, DetailRow } from "@/shared/DetailCard";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
+import { DetailPageHeader } from "@/shared/DetailPageHeader";
 import { StatusBadge } from "@/shared/StatusBadge";
-import { toast } from "@/shared/Toast";
-import { BudgetCard } from "@/teams/BudgetCard";
+import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 import { ScopeSpendCard } from "@/teams/ScopeSpendCard";
 
 export function ProjectDetailView({ name }: { name: string }) {
@@ -55,14 +56,14 @@ export function ProjectDetailView({ name }: { name: string }) {
 		"model",
 		period,
 	);
-	const deleteProject = useDeleteProject();
-	const { setEnabled, isPending: isToggling } = useToggleProjectEnabled();
 	const navigate = useNavigate();
-
-	const [confirming, setConfirming] = useState(false);
+	const del = useConfirmedDelete(useDeleteProject(), {
+		noun: "project",
+		onDeleted: () => void navigate({ to: "/projects" }),
+	});
+	const { setEnabled, isPending: isToggling } = useToggleProjectEnabled();
 
 	const enabled = project.spec.enabled !== false;
-	const description = project.metadata.description?.trim();
 	const labels = Object.entries(project.metadata.labels ?? {});
 	const team = (teamsData.items ?? []).find(
 		(t) => t.metadata.id === project.spec.teamId,
@@ -74,21 +75,6 @@ export function ProjectDetailView({ name }: { name: string }) {
 		]),
 	);
 
-	async function handleDelete() {
-		try {
-			await deleteProject.mutateAsync(projectId);
-			toast("success", `Project "${displayLabel(project.metadata)}" deleted.`);
-			void navigate({ to: "/projects" });
-		} catch (err) {
-			toast(
-				"error",
-				err instanceof ApiError
-					? err.body.message
-					: "Failed to delete project.",
-			);
-		}
-	}
-
 	return (
 		<div className="flex flex-col gap-5">
 			<Link
@@ -99,36 +85,22 @@ export function ProjectDetailView({ name }: { name: string }) {
 				Projects
 			</Link>
 
-			<header className="flex items-start justify-between gap-4">
-				<div className="min-w-0 flex items-start gap-3">
-					<div className="mt-0.5 w-9 h-9 rounded-md bg-muted border border-border shrink-0 flex items-center justify-center">
-						<Boxes className="w-4 h-4 text-muted-foreground" aria-hidden />
-					</div>
-					<div className="min-w-0">
-						<h1 className="text-xl font-semibold text-foreground truncate flex items-center gap-2">
-							{displayLabel(project.metadata)}
-							{!hasDisplayName(project.metadata) && (
-								<span className="text-[11px] text-muted-foreground font-normal">
-									(no display name)
-								</span>
-							)}
-							<StatusBadge enabled={enabled} />
-						</h1>
-						<p className="mt-1 text-xs text-muted-foreground font-mono truncate">
-							{project.metadata.name}
-						</p>
-						{description && (
-							<p className="mt-1.5 max-w-2xl text-sm text-muted-foreground">
-								{description}
-							</p>
-						)}
-					</div>
-				</div>
+			<DetailPageHeader
+				icon={Boxes}
+				metadata={project.metadata}
+				badges={<StatusBadge enabled={enabled} />}
+			>
 				<DetailHeaderActions
 					enabled={enabled}
 					onToggle={() => void setEnabled(project, !enabled)}
 					toggling={isToggling}
-					onDelete={() => setConfirming(true)}
+					onDelete={() =>
+						del.request({
+							id: projectId,
+							name: project.metadata.name,
+							label: displayLabel(project.metadata),
+						})
+					}
 					editLink={({ className, content }) => (
 						<Link
 							to="/projects/$name/edit"
@@ -150,7 +122,7 @@ export function ProjectDetailView({ name }: { name: string }) {
 						}}
 					/>
 				</DetailHeaderActions>
-			</header>
+			</DetailPageHeader>
 
 			<DetailCard title="Configuration" icon={Users}>
 				<dl className="divide-y divide-border">
@@ -180,8 +152,6 @@ export function ProjectDetailView({ name }: { name: string }) {
 					)}
 				</dl>
 			</DetailCard>
-
-			<BudgetCard budget={project.spec.budget} />
 
 			<ScopeSpendCard
 				spend={spend}
@@ -280,9 +250,7 @@ export function ProjectDetailView({ name }: { name: string }) {
 				}
 			>
 				{(policyBindings.data?.items ?? []).length === 0 ? (
-					<DetailEmpty>
-						No policy binding routes this project's callers to a policy.
-					</DetailEmpty>
+					<DetailEmpty>This project owns no policy bindings.</DetailEmpty>
 				) : (
 					<ul className="divide-y divide-border">
 						{(policyBindings.data?.items ?? []).map((b) => (
@@ -298,8 +266,7 @@ export function ProjectDetailView({ name }: { name: string }) {
 										</Link>
 									}
 								>
-									priority {b.spec.priority ?? 0} ·{" "}
-									{(b.spec.subjects ?? []).map(subjectLabel).join(", ") ||
+									{(b.spec.subjects ?? []).map(subjectKey).join(", ") ||
 										"no subjects"}
 								</DetailRow>
 							</li>
@@ -369,12 +336,13 @@ export function ProjectDetailView({ name }: { name: string }) {
 				)}
 			</DetailCard>
 
-			{confirming && (
+			{del.target && (
 				<DeleteConfirm
-					resourceName={project.metadata.name}
-					onConfirm={() => void handleDelete()}
-					onCancel={() => setConfirming(false)}
-					isPending={deleteProject.isPending}
+					resourceName={del.target.name}
+					onConfirm={() => void del.confirm()}
+					onCancel={del.cancel}
+					isPending={del.isPending}
+					error={del.error}
 				/>
 			)}
 		</div>

@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Suspense } from "react";
+import { accountListQueryOptions } from "@/api/hooks/accounts";
 import { bindingsListQueryOptions } from "@/api/hooks/bindings";
 import {
 	hostKeyDetailQueryOptions,
@@ -9,6 +10,7 @@ import { hostsListQueryOptions } from "@/api/hooks/hosts";
 import { keysListQueryOptions } from "@/api/hooks/keys";
 import { modelsListQueryOptions } from "@/api/hooks/models";
 import { policiesListQueryOptions } from "@/api/hooks/policies";
+import { poolListQueryOptions } from "@/api/hooks/pools";
 import { providersListQueryOptions } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
 import { HostKeyDetailView } from "@/host-keys/HostKeyDetailView";
@@ -22,11 +24,13 @@ export const Route = createFileRoute("/_authenticated/host-keys/$name")({
 		void queryClient.prefetchQuery(rateLimitsListQueryOptions);
 		void queryClient.prefetchQuery(providersListQueryOptions);
 		void queryClient.prefetchQuery(bindingsListQueryOptions);
+		void queryClient.prefetchQuery(keysListQueryOptions);
 		return Promise.all([
 			queryClient.ensureQueryData(hostKeyDetailQueryOptions(params.name)),
 			queryClient.ensureQueryData(hostsListQueryOptions),
 			queryClient.ensureQueryData(policiesListQueryOptions),
-			queryClient.ensureQueryData(keysListQueryOptions),
+			queryClient.ensureQueryData(accountListQueryOptions),
+			queryClient.ensureQueryData(poolListQueryOptions),
 		]);
 	},
 	component: HostKeyDetailPage,

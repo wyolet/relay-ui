@@ -6,23 +6,21 @@ import {
 	useProjectsList,
 } from "@/api/hooks/projects";
 import { useTeams } from "@/api/hooks/teams";
-import { ApiError } from "@/api/types/errors";
-import type { Project } from "@/api/types/project";
 import { buttonVariants } from "@/components/ui/button";
 import { FilterBar } from "@/filters/FilterBar";
 import { activeFilterCount } from "@/filters/toQueryParams";
 import type { FilterDef, FilterState } from "@/filters/types";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { useToggleProjectEnabled } from "@/projects/useToggleProjectEnabled";
-import { confirm } from "@/shared/ConfirmDialog";
+import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { RowMenu } from "@/shared/RowMenu";
 import { StaleContent } from "@/shared/StaleContent";
 import { Switch } from "@/shared/Switch";
+import { TableEmpty } from "@/shared/TableEmpty";
 import { TableToolbar } from "@/shared/TableToolbar";
 import { Th } from "@/shared/Th";
-import { toast } from "@/shared/Toast";
+import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 import { useDeferredSearch } from "@/shared/useDeferredSearch";
-import { budgetSummary } from "@/teams/budget";
 
 /** Filters rendered above the table, all served by GET /projects. */
 export const PROJECT_FILTERS = [
@@ -66,7 +64,7 @@ export function ProjectsTable() {
 	const { search, isStale } = useDeferredSearch(live);
 	const { data } = useProjectsList(toProjectsParams(search));
 	const { data: teamsData } = useTeams();
-	const deleteProject = useDeleteProject();
+	const del = useConfirmedDelete(useDeleteProject(), { noun: "project" });
 	const { setEnabled } = useToggleProjectEnabled();
 
 	const teams = new Map<string, { name: string; label: string }>();
@@ -83,27 +81,6 @@ export function ProjectsTable() {
 
 	function patch(next: FilterState) {
 		void navigate({ search: (prev) => ({ ...prev, ...next }), replace: true });
-	}
-
-	async function handleDelete(project: Project) {
-		const ok = await confirm({
-			title: `Delete ${displayLabel(project.metadata)}?`,
-			description: "Its service accounts, keys, and policies go with it.",
-			confirmLabel: "Delete",
-			danger: true,
-		});
-		if (!ok) return;
-		try {
-			await deleteProject.mutateAsync(project.metadata.id ?? "");
-			toast("success", `Project "${displayLabel(project.metadata)}" deleted.`);
-		} catch (err) {
-			toast(
-				"error",
-				err instanceof ApiError
-					? err.body.message
-					: "Failed to delete project.",
-			);
-		}
 	}
 
 	return (
@@ -129,8 +106,7 @@ export function ProjectsTable() {
 
 			<StaleContent stale={isStale}>
 				{items.length === 0 ? (
-					<div className="rounded-lg border border-dashed border-input bg-card px-6 py-14 text-center">
-						<Boxes className="w-6 h-6 mx-auto mb-3 text-muted-foreground/50" />
+					<TableEmpty icon={Boxes}>
 						{!filtered ? (
 							<>
 								<p className="text-sm font-medium text-foreground mb-1">
@@ -153,7 +129,7 @@ export function ProjectsTable() {
 								No projects match this filter.
 							</p>
 						)}
-					</div>
+					</TableEmpty>
 				) : (
 					<div className="overflow-x-auto rounded-lg border border-border bg-card">
 						<table className="w-full border-collapse">
@@ -161,7 +137,6 @@ export function ProjectsTable() {
 								<tr>
 									<Th variant="column">Name</Th>
 									<Th variant="column">Team</Th>
-									<Th variant="column">Budget</Th>
 									<th
 										scope="col"
 										className="w-12 px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground"
@@ -216,9 +191,6 @@ export function ProjectsTable() {
 													`Unknown (${project.spec.teamId.slice(0, 6)}…)`
 												)}
 											</td>
-											<td className="px-3 py-2 text-xs text-foreground">
-												{budgetSummary(project.spec.budget) ?? "—"}
-											</td>
 											<td className="px-3 py-2">
 												<Switch
 													checked={enabled}
@@ -241,7 +213,12 @@ export function ProjectsTable() {
 														{
 															label: "Delete",
 															danger: true,
-															onClick: () => void handleDelete(project),
+															onClick: () =>
+																del.request({
+																	id: project.metadata.id ?? "",
+																	name: project.metadata.name,
+																	label: displayLabel(project.metadata),
+																}),
 														},
 													]}
 												/>
@@ -254,6 +231,15 @@ export function ProjectsTable() {
 					</div>
 				)}
 			</StaleContent>
+			{del.target && (
+				<DeleteConfirm
+					resourceName={del.target.name}
+					onConfirm={() => void del.confirm()}
+					onCancel={del.cancel}
+					isPending={del.isPending}
+					error={del.error}
+				/>
+			)}
 		</div>
 	);
 }

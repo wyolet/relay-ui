@@ -2,11 +2,13 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ChevronLeft } from "lucide-react";
 import { Suspense } from "react";
 import { bindingsListQueryOptions } from "@/api/hooks/bindings";
+import { budgetListQueryOptions } from "@/api/hooks/budgets";
 import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
 import { keysListQueryOptions } from "@/api/hooks/keys";
 import { modelsListQueryOptions } from "@/api/hooks/models";
 import { policiesListQueryOptions } from "@/api/hooks/policies";
+import { poolListQueryOptions } from "@/api/hooks/pools";
 import { providersListQueryOptions } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
 import { PolicyForm } from "@/policies/PolicyForm";
@@ -16,7 +18,9 @@ export const Route = createFileRoute("/_authenticated/policies/new")({
 	loader: ({ context }) => {
 		const { queryClient } = context;
 		// Nothing gates first paint — PolicyForm's pickers stream in behind its
-		// own render; warm them all (incl. bindings for usePolicyHostRequirements).
+		// own render; warm them all.
+		void queryClient.prefetchQuery(poolListQueryOptions);
+		void queryClient.prefetchQuery(budgetListQueryOptions);
 		void queryClient.prefetchQuery(providersListQueryOptions);
 		void queryClient.prefetchQuery(hostKeysListQueryOptions);
 		void queryClient.prefetchQuery(hostsListQueryOptions);
@@ -47,8 +51,8 @@ function NewPolicyInner() {
 					New policy
 				</h1>
 				<p className="mt-1 text-xs text-muted-foreground">
-					Bundle upstream credentials, allowed models, and rate limits, then
-					attach to keys.
+					Bundle pools, allowed models, rate limits and budgets, then bind the
+					policy where it applies.
 				</p>
 			</div>
 			<PolicyForm

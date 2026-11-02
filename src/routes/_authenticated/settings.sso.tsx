@@ -51,7 +51,7 @@ interface FormState {
 	clientSecretEnv: string;
 	redirectUrl: string;
 	postLoginUrl: string;
-	registration: string;
+	registration: "open" | "closed";
 }
 
 function toState(value: AuthOIDC): FormState {

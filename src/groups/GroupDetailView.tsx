@@ -1,39 +1,25 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { ChevronLeft, Users } from "lucide-react";
-import { useState } from "react";
 import { useDeleteGroup, useGroup } from "@/api/hooks/groups";
-import { ApiError } from "@/api/types/errors";
 import { useToggleGroupEnabled } from "@/groups/useToggleGroupEnabled";
-import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
+import { displayLabel } from "@/lib/displayLabel";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
+import { DetailPageHeader } from "@/shared/DetailPageHeader";
 import { StatusBadge } from "@/shared/StatusBadge";
-import { toast } from "@/shared/Toast";
+import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 
 export function GroupDetailView({ name }: { name: string }) {
 	const { data: g } = useGroup(name);
-	const deleteGroup = useDeleteGroup();
 	const { setEnabled, isPending: isToggling } = useToggleGroupEnabled();
 	const navigate = useNavigate();
-
-	const [confirming, setConfirming] = useState(false);
+	const del = useConfirmedDelete(useDeleteGroup(), {
+		noun: "group",
+		onDeleted: () => void navigate({ to: "/groups" }),
+	});
 
 	const enabled = g.spec.enabled !== false;
 	const members = g.spec.memberIds ?? [];
-	const description = g.metadata.description?.trim();
-
-	async function handleDelete() {
-		try {
-			await deleteGroup.mutateAsync(g.metadata.id ?? "");
-			toast("success", `Group "${displayLabel(g.metadata)}" deleted.`);
-			void navigate({ to: "/groups" });
-		} catch (err) {
-			toast(
-				"error",
-				err instanceof ApiError ? err.body.message : "Failed to delete group.",
-			);
-		}
-	}
 
 	return (
 		<div className="flex flex-col gap-5">
@@ -45,36 +31,22 @@ export function GroupDetailView({ name }: { name: string }) {
 				Groups
 			</Link>
 
-			<header className="flex items-start justify-between gap-4">
-				<div className="min-w-0 flex items-start gap-3">
-					<div className="mt-0.5 w-9 h-9 rounded-md bg-muted border border-border shrink-0 flex items-center justify-center">
-						<Users className="w-4 h-4 text-muted-foreground" aria-hidden />
-					</div>
-					<div className="min-w-0">
-						<h1 className="text-xl font-semibold text-foreground truncate flex items-center gap-2">
-							{displayLabel(g.metadata)}
-							{!hasDisplayName(g.metadata) && (
-								<span className="text-[11px] text-muted-foreground font-normal">
-									(no display name)
-								</span>
-							)}
-							<StatusBadge enabled={enabled} />
-						</h1>
-						<p className="mt-1 text-xs text-muted-foreground font-mono truncate">
-							{g.metadata.name}
-						</p>
-						{description && (
-							<p className="mt-1.5 max-w-2xl text-sm text-muted-foreground">
-								{description}
-							</p>
-						)}
-					</div>
-				</div>
+			<DetailPageHeader
+				icon={Users}
+				metadata={g.metadata}
+				badges={<StatusBadge enabled={enabled} />}
+			>
 				<DetailHeaderActions
 					enabled={enabled}
 					onToggle={() => void setEnabled(g, !enabled)}
 					toggling={isToggling}
-					onDelete={() => setConfirming(true)}
+					onDelete={() =>
+						del.request({
+							id: g.metadata.id ?? "",
+							name: g.metadata.name,
+							label: displayLabel(g.metadata),
+						})
+					}
 					editLink={({ className, content }) => (
 						<Link
 							to="/groups/$name/edit"
@@ -85,7 +57,7 @@ export function GroupDetailView({ name }: { name: string }) {
 						</Link>
 					)}
 				/>
-			</header>
+			</DetailPageHeader>
 
 			<section className="rounded-md border border-border bg-card">
 				<header className="flex items-center gap-1.5 border-b border-border px-4 py-2.5">
@@ -117,12 +89,13 @@ export function GroupDetailView({ name }: { name: string }) {
 				</div>
 			</section>
 
-			{confirming && (
+			{del.target && (
 				<DeleteConfirm
-					resourceName={g.metadata.name}
-					onConfirm={() => void handleDelete()}
-					onCancel={() => setConfirming(false)}
-					isPending={deleteGroup.isPending}
+					resourceName={del.target.name}
+					onConfirm={() => void del.confirm()}
+					onCancel={del.cancel}
+					isPending={del.isPending}
+					error={del.error}
 				/>
 			)}
 		</div>

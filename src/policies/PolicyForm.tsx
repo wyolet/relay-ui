@@ -1,36 +1,26 @@
 import {
 	Boxes,
 	Gauge,
-	KeyRound,
+	Layers,
 	type LucideIcon,
 	ScrollText,
-	ShieldCheck,
+	Wallet,
 } from "lucide-react";
 import { useMemo } from "react";
 import type { Policy } from "@/api/types/policy";
-import { Button } from "@/components/ui/button";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
-import {
-	KEY_SELECTION_OPTIONS,
-	KEY_SELECTION_VALUES,
-	type KeySelection,
-} from "@/config/policy";
 import { analyzePolicy } from "@/diagnostics/analyzers/policy";
 import { DiagnosticList } from "@/diagnostics/DiagnosticList";
 import { useDiagnosticGraph } from "@/diagnostics/useDiagnostics";
 import { ModelPicker } from "@/models/ModelPicker";
 import { IncludeDeprecatedSwitch } from "@/policies/IncludeDeprecatedSwitch";
-import { PolicyAttachedKeys } from "@/policies/PolicyAttachedKeys";
-import { PolicyHostRequirements } from "@/policies/PolicyHostRequirements";
+import { PolicyLinkPicker } from "@/policies/PolicyLinkPicker";
 import { PolicyRLPicker } from "@/policies/PolicyRLPicker";
 import { policyFromFormValues, usePolicyForm } from "@/policies/usePolicyForm";
-import { usePolicyHostRequirements } from "@/policies/usePolicyHostRequirements";
+import {
+	useBudgetChoices,
+	usePoolChoices,
+} from "@/policies/usePolicyLinkChoices";
+import { FormFooter } from "@/shared/FormFooter";
 import { IdentitySection } from "@/shared/IdentitySection";
 import { OwnerSection } from "@/shared/OwnerSection";
 import { ToggleSwitch } from "@/shared/ToggleSwitch";
@@ -57,15 +47,11 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 		onSaved,
 	});
 
-	// Live diagnostics: synthesize a draft policy from form values and run
-	// the analyzer against it. Updates on every field change so warnings
-	// disappear as soon as the user fixes them — no Save round-trip needed.
-	const hostRequirements = usePolicyHostRequirements(
-		values.models,
-		values.hostKeyIds,
-		values.includeDeprecated,
-	);
+	const pools = usePoolChoices(values.poolIds);
+	const budgets = useBudgetChoices(values.budgetIds);
 
+	// Live diagnostics: synthesize a draft policy from form values and run
+	// the analyzer against it, so warnings clear without a Save round-trip.
 	const graph = useDiagnosticGraph();
 	const draftDiagnostics = useMemo(
 		() =>
@@ -126,52 +112,17 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 				</Section>
 
 				<Section
-					icon={KeyRound}
-					title="Credentials"
-					description="Credentials Relay rotates through when calls hit this policy."
+					icon={Layers}
+					title="Pools"
+					description="Pools requests draw host keys from, tried in order: a later pool is the failover for an earlier one. Only for policies bound to a team, project, user or service account."
 				>
-					<PolicyHostRequirements
-						requirements={hostRequirements}
-						selectedHostKeyIds={values.hostKeyIds}
-						onChange={(next) => form.setFieldValue("hostKeyIds", next)}
+					<PolicyLinkPicker
+						choices={pools}
+						onChange={(next) => form.setFieldValue("poolIds", next)}
+						ordered
+						addLabel="Add pool"
+						emptyText="No pools linked."
 					/>
-
-					<div className="mt-4">
-						<div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-1">
-							Selection strategy
-						</div>
-						<Select
-							value={values.keySelection}
-							items={KEY_SELECTION_VALUES.map((k) => ({
-								value: k,
-								label: KEY_SELECTION_OPTIONS[k].label,
-							}))}
-							onValueChange={(v) =>
-								form.setFieldValue("keySelection", v as KeySelection)
-							}
-						>
-							<SelectTrigger className="w-full max-w-md">
-								<SelectValue />
-							</SelectTrigger>
-							<SelectContent>
-								{KEY_SELECTION_VALUES.map((k) => (
-									<SelectItem key={k} value={k}>
-										<span className="flex flex-col items-start gap-0.5 whitespace-normal">
-											<span className="text-sm text-foreground">
-												{KEY_SELECTION_OPTIONS[k].label}
-											</span>
-											<span className="text-[11px] leading-snug text-muted-foreground">
-												{KEY_SELECTION_OPTIONS[k].hint}
-											</span>
-										</span>
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-						<p className="mt-1.5 text-[11px] text-muted-foreground">
-							{KEY_SELECTION_OPTIONS[values.keySelection].hint}
-						</p>
-					</div>
 				</Section>
 
 				<Section
@@ -190,44 +141,39 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 				<Section
 					icon={Gauge}
 					title="Rate limits"
-					description="Attach one or more rate limits and pick which models each governs."
+					description="Every linked rate limit applies; a model scope narrows one to those models."
 				>
 					<PolicyRLPicker
-						bindings={values.rlBindings}
+						links={values.rateLimits}
 						allowedModels={values.models}
 						includeDeprecated={values.includeDeprecated}
-						onChange={(next) => form.setFieldValue("rlBindings", next)}
+						onChange={(next) => form.setFieldValue("rateLimits", next)}
 					/>
 				</Section>
 
-				{policy && (
-					<Section
-						icon={ShieldCheck}
-						title="API keys"
-						description="API keys that resolve to this policy. Use Reassign to move a key to a different policy."
-					>
-						<PolicyAttachedKeys policy={policy} />
-					</Section>
-				)}
+				<Section
+					icon={Wallet}
+					title="Budgets"
+					description="Spend caps every request under this policy must fit. Unpriced models are refused under a budget."
+				>
+					<PolicyLinkPicker
+						choices={budgets}
+						onChange={(next) => form.setFieldValue("budgetIds", next)}
+						addLabel="Add budget"
+						emptyText="No budgets linked."
+					/>
+				</Section>
 			</div>
 
-			<div className="sticky bottom-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-t border-border mt-6 -mx-6 px-6 py-3 flex items-center justify-end gap-2">
-				<Button type="button" variant="outline" size="lg" onClick={onCancel}>
-					Cancel
-				</Button>
-				<form.Subscribe selector={(s) => s.isSubmitting}>
-					{(isSubmitting) => (
-						<Button
-							type="submit"
-							variant="cta"
-							size="lg"
-							disabled={isSubmitting}
-						>
-							{isSubmitting ? "Saving…" : isEdit ? "Save changes" : "Create"}
-						</Button>
-					)}
-				</form.Subscribe>
-			</div>
+			<form.Subscribe selector={(s) => s.isSubmitting}>
+				{(isSubmitting) => (
+					<FormFooter
+						isEdit={isEdit}
+						isSubmitting={isSubmitting}
+						onCancel={onCancel}
+					/>
+				)}
+			</form.Subscribe>
 		</form>
 	);
 }

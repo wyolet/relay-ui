@@ -1,61 +1,38 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Bot, ChevronLeft, Link2, ShieldCheck } from "lucide-react";
-import { useState } from "react";
 import { CheckAccessButton } from "@/access-review/CheckAccessButton";
-import { usePolicies } from "@/api/hooks/policies";
 import { useProjects } from "@/api/hooks/projects";
 import {
 	useDeleteServiceAccount,
 	useServiceAccount,
 	useServiceAccountReferences,
 } from "@/api/hooks/serviceAccounts";
-import { ApiError } from "@/api/types/errors";
-import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
+import { displayLabel } from "@/lib/displayLabel";
 import { EraseBodiesButton } from "@/logs/EraseBodiesButton";
+import { PrincipalPolicy } from "@/policy-bindings/PrincipalPolicy";
 import { useToggleServiceAccountEnabled } from "@/service-accounts/useToggleServiceAccountEnabled";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
+import { DetailPageHeader } from "@/shared/DetailPageHeader";
 import { StatusBadge } from "@/shared/StatusBadge";
-import { toast } from "@/shared/Toast";
+import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 
 export function ServiceAccountDetailView({ name }: { name: string }) {
 	const { data: sa } = useServiceAccount(name);
 	const { data: projectsData } = useProjects();
-	const { data: policiesData } = usePolicies();
 	const { data: refs } = useServiceAccountReferences(sa.metadata.id);
-	const deleteServiceAccount = useDeleteServiceAccount();
 	const { setEnabled, isPending: isToggling } =
 		useToggleServiceAccountEnabled();
 	const navigate = useNavigate();
-
-	const [confirming, setConfirming] = useState(false);
+	const del = useConfirmedDelete(useDeleteServiceAccount(), {
+		noun: "service account",
+		onDeleted: () => void navigate({ to: "/service-accounts" }),
+	});
 
 	const enabled = sa.spec.enabled !== false;
 	const project = (projectsData.items ?? []).find(
 		(p) => p.metadata.id === sa.spec.projectId,
 	);
-	const policy = (policiesData.items ?? []).find(
-		(p) => p.metadata.id === sa.spec.policyId,
-	);
-	const description = sa.metadata.description?.trim();
-
-	async function handleDelete() {
-		try {
-			await deleteServiceAccount.mutateAsync(sa.metadata.id ?? "");
-			toast(
-				"success",
-				`Service account "${displayLabel(sa.metadata)}" deleted.`,
-			);
-			void navigate({ to: "/service-accounts" });
-		} catch (err) {
-			toast(
-				"error",
-				err instanceof ApiError
-					? err.body.message
-					: "Failed to delete service account.",
-			);
-		}
-	}
 
 	return (
 		<div className="flex flex-col gap-5">
@@ -67,36 +44,22 @@ export function ServiceAccountDetailView({ name }: { name: string }) {
 				Service accounts
 			</Link>
 
-			<header className="flex items-start justify-between gap-4">
-				<div className="min-w-0 flex items-start gap-3">
-					<div className="mt-0.5 w-9 h-9 rounded-md bg-muted border border-border shrink-0 flex items-center justify-center">
-						<Bot className="w-4 h-4 text-muted-foreground" aria-hidden />
-					</div>
-					<div className="min-w-0">
-						<h1 className="text-xl font-semibold text-foreground truncate flex items-center gap-2">
-							{displayLabel(sa.metadata)}
-							{!hasDisplayName(sa.metadata) && (
-								<span className="text-[11px] text-muted-foreground font-normal">
-									(no display name)
-								</span>
-							)}
-							<StatusBadge enabled={enabled} />
-						</h1>
-						<p className="mt-1 text-xs text-muted-foreground font-mono truncate">
-							{sa.metadata.name}
-						</p>
-						{description && (
-							<p className="mt-1.5 max-w-2xl text-sm text-muted-foreground">
-								{description}
-							</p>
-						)}
-					</div>
-				</div>
+			<DetailPageHeader
+				icon={Bot}
+				metadata={sa.metadata}
+				badges={<StatusBadge enabled={enabled} />}
+			>
 				<DetailHeaderActions
 					enabled={enabled}
 					onToggle={() => void setEnabled(sa, !enabled)}
 					toggling={isToggling}
-					onDelete={() => setConfirming(true)}
+					onDelete={() =>
+						del.request({
+							id: sa.metadata.id ?? "",
+							name: sa.metadata.name,
+							label: displayLabel(sa.metadata),
+						})
+					}
 					editLink={({ className, content }) => (
 						<Link
 							to="/service-accounts/$name/edit"
@@ -123,7 +86,7 @@ export function ServiceAccountDetailView({ name }: { name: string }) {
 						}}
 					/>
 				</DetailHeaderActions>
-			</header>
+			</DetailPageHeader>
 
 			<Card title="Configuration" icon={ShieldCheck}>
 				<dl className="divide-y divide-border">
@@ -137,15 +100,9 @@ export function ServiceAccountDetailView({ name }: { name: string }) {
 						)}
 					</Row>
 					<Row label="Policy">
-						{policy ? (
-							<span className="text-foreground">
-								{displayLabel(policy.metadata)}
-							</span>
-						) : (
-							<span className="text-muted-foreground">
-								None — keys fall back to their own policy or a policy binding
-							</span>
-						)}
+						<PrincipalPolicy
+							principal={{ kind: "serviceaccount", id: sa.metadata.id ?? "" }}
+						/>
 					</Row>
 				</dl>
 			</Card>
@@ -172,12 +129,13 @@ export function ServiceAccountDetailView({ name }: { name: string }) {
 				)}
 			</Card>
 
-			{confirming && (
+			{del.target && (
 				<DeleteConfirm
-					resourceName={sa.metadata.name}
-					onConfirm={() => void handleDelete()}
-					onCancel={() => setConfirming(false)}
-					isPending={deleteServiceAccount.isPending}
+					resourceName={del.target.name}
+					onConfirm={() => void del.confirm()}
+					onCancel={del.cancel}
+					isPending={del.isPending}
+					error={del.error}
 				/>
 			)}
 		</div>

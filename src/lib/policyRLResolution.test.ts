@@ -3,10 +3,9 @@ import type { ConcreteBinding } from "@/lib/catalogRef";
 import {
 	describeRef,
 	formatScope,
-	formatScopeFromConcrete,
 	joinList,
 	type LabelLookups,
-	resolveBindings,
+	resolveRateLimitScopes,
 } from "./policyRLResolution";
 
 const CATALOG: ConcreteBinding[] = [
@@ -67,29 +66,6 @@ describe("formatScope", () => {
 	it("mixed singular/plural", () => {
 		expect(formatScope(1, 2)).toBe("1 model · 2 hosts");
 		expect(formatScope(2, 1)).toBe("2 models · 1 host");
-	});
-});
-
-describe("formatScopeFromConcrete", () => {
-	it("deduplicates models across hosts", () => {
-		const items: ConcreteBinding[] = [
-			{ provider: "anthropic", model: "claude-opus", host: "anthropic" },
-			{ provider: "anthropic", model: "claude-opus", host: "bedrock" },
-		];
-		expect(formatScopeFromConcrete(items)).toBe("1 model · 2 hosts");
-	});
-	it("handles single item", () => {
-		const items: ConcreteBinding[] = [
-			{ provider: "openai", model: "gpt-4o", host: "openai" },
-		];
-		expect(formatScopeFromConcrete(items)).toBe("1 model · 1 host");
-	});
-	it("deduplicates host axis too", () => {
-		const items: ConcreteBinding[] = [
-			{ provider: "anthropic", model: "claude-opus", host: "bedrock" },
-			{ provider: "anthropic", model: "claude-sonnet", host: "bedrock" },
-		];
-		expect(formatScopeFromConcrete(items)).toBe("2 models · 1 host");
 	});
 });
 
@@ -227,54 +203,45 @@ describe("describeRef", () => {
 	});
 });
 
-describe("resolveBindings", () => {
-	it("returns empty resolution for empty input", () => {
-		const result = resolveBindings([], CATALOG);
-		expect(result.perBinding).toHaveLength(0);
-		expect(result.carveouts).toHaveLength(0);
+describe("resolveRateLimitScopes", () => {
+	it("returns nothing for no links", () => {
+		expect(resolveRateLimitScopes([], CATALOG)).toHaveLength(0);
 	});
 
-	it("single binding with no overlaps — all kept", () => {
-		const bindings = [{ rateLimitId: "rl-1", models: ["anthropic"] }];
-		const result = resolveBindings(bindings, CATALOG);
-		expect(result.perBinding).toHaveLength(1);
-		const ref = result.perBinding[0]?.refs[0];
-		expect(ref?.kept).toBe(ref?.covered);
-		expect(result.carveouts).toHaveLength(0);
-	});
-
-	it("more-specific host ref wins over broader provider ref", () => {
-		const bindings = [
-			{ rateLimitId: "rl-1", models: ["anthropic"] },
-			{ rateLimitId: "rl-2", models: ["anthropic@bedrock"] },
-		];
-		const result = resolveBindings(bindings, CATALOG);
-		// rl-2 (index 1) has a more-specific host ref that should win the bedrock binding
-		const rl2Ref = result.perBinding[1]?.refs[0];
-		expect(rl2Ref?.kept).toBeGreaterThan(0);
-		// The carveout should reflect that rl-2 won bedrock bindings from rl-1
-		const bedrocKCarveouts = result.carveouts.filter(
-			(c) => c.binding.host === "bedrock",
+	it("counts distinct models and hosts a ref covers", () => {
+		const [scopes] = resolveRateLimitScopes(
+			[{ models: ["anthropic"] }],
+			CATALOG,
 		);
-		expect(bedrocKCarveouts.every((c) => c.winner === 1)).toBe(true);
+		expect(scopes?.[0]?.models).toBe(2);
+		expect(scopes?.[0]?.hosts).toBe(2);
+		expect(scopes?.[0]?.coveredBindings).toHaveLength(3);
+	});
+
+	it("keeps full coverage on overlapping links", () => {
+		const result = resolveRateLimitScopes(
+			[{ models: ["anthropic"] }, { models: ["anthropic@bedrock"] }],
+			CATALOG,
+		);
+		expect(result[0]?.[0]?.coveredBindings).toHaveLength(3);
+		expect(result[1]?.[0]?.coveredBindings).toHaveLength(1);
 	});
 
 	it("ref that doesn't parse produces null parsed with no coverage", () => {
-		const bindings = [{ rateLimitId: "rl-1", models: ["***invalid***"] }];
-		const result = resolveBindings(bindings, CATALOG);
-		const ref = result.perBinding[0]?.refs[0];
-		expect(ref?.parsed).toBeNull();
-		expect(ref?.covered).toBe(0);
-		expect(ref?.kept).toBe(0);
+		const [scopes] = resolveRateLimitScopes(
+			[{ models: ["***invalid***"] }],
+			CATALOG,
+		);
+		expect(scopes?.[0]?.parsed).toBeNull();
+		expect(scopes?.[0]?.coveredBindings).toHaveLength(0);
 	});
 
 	it("ref that covers nothing in catalog has zero coverage", () => {
-		const bindings = [
-			{ rateLimitId: "rl-1", models: ["nonexistent-provider"] },
-		];
-		const result = resolveBindings(bindings, CATALOG);
-		const ref = result.perBinding[0]?.refs[0];
-		expect(ref?.covered).toBe(0);
-		expect(ref?.kept).toBe(0);
+		const [scopes] = resolveRateLimitScopes(
+			[{ models: ["nonexistent-provider"] }],
+			CATALOG,
+		);
+		expect(scopes?.[0]?.models).toBe(0);
+		expect(scopes?.[0]?.hosts).toBe(0);
 	});
 });

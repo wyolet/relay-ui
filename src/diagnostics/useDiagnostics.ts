@@ -6,6 +6,7 @@ import { hostsListQueryOptions } from "@/api/hooks/hosts";
 import { keysListQueryOptions } from "@/api/hooks/keys";
 import { modelsListQueryOptions } from "@/api/hooks/models";
 import { policiesListQueryOptions } from "@/api/hooks/policies";
+import { poolListQueryOptions } from "@/api/hooks/pools";
 import { providersListQueryOptions } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
 import { analyzeHost } from "@/diagnostics/analyzers/host";
@@ -18,7 +19,7 @@ import { buildDiagnosticGraph } from "@/diagnostics/buildGraph";
 import type { Diagnostic, DiagnosticGraph } from "@/diagnostics/types";
 
 /**
- * Builds the cross-resource diagnostic graph from the eight domain lists,
+ * Builds the cross-resource diagnostic graph from the domain lists,
  * non-blocking. Each list is a plain `useQuery`, so an unresolved (or failed)
  * fetch yields `undefined` rather than suspending or throwing — diagnostics
  * simply stream in once every list has loaded.
@@ -32,6 +33,7 @@ export function useDiagnosticGraph(): DiagnosticGraph | undefined {
 	const { data: hosts } = useQuery(hostsListQueryOptions);
 	const { data: models } = useQuery(modelsListQueryOptions);
 	const { data: rateLimits } = useQuery(rateLimitsListQueryOptions);
+	const { data: pools } = useQuery(poolListQueryOptions);
 	const { data: keys } = useQuery(keysListQueryOptions);
 	const { data: providers } = useQuery(providersListQueryOptions);
 	const { data: bindings } = useQuery(bindingsListQueryOptions);
@@ -43,6 +45,7 @@ export function useDiagnosticGraph(): DiagnosticGraph | undefined {
 			!hosts ||
 			!models ||
 			!rateLimits ||
+			!pools ||
 			!keys ||
 			!providers ||
 			!bindings
@@ -55,6 +58,7 @@ export function useDiagnosticGraph(): DiagnosticGraph | undefined {
 			hosts: hosts.items ?? [],
 			models: models.items ?? [],
 			rateLimits: rateLimits.items ?? [],
+			pools: pools.items ?? [],
 			keys: keys.items ?? [],
 			providers: providers.items ?? [],
 			bindings: bindings.items ?? [],
@@ -65,6 +69,7 @@ export function useDiagnosticGraph(): DiagnosticGraph | undefined {
 		hosts,
 		models,
 		rateLimits,
+		pools,
 		keys,
 		providers,
 		bindings,

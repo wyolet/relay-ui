@@ -8,6 +8,7 @@ import {
 	useAccessReview,
 } from "@/api/hooks/accessReview";
 import { accessCheckFailure } from "@/lib/accessReview";
+import { firstError, zodFieldValidator } from "@/lib/formErrors";
 import { RULE_KINDS, RULE_VERBS, RULE_WILDCARD } from "@/roles/vocabulary";
 
 export const RESOURCE_KINDS = RULE_KINDS.filter((k) => k !== RULE_WILDCARD);
@@ -95,25 +96,11 @@ function toRequest(
 	};
 }
 
-function firstError(errors: unknown[] | undefined): string | undefined {
-	for (const e of errors ?? []) if (typeof e === "string") return e;
-	return undefined;
-}
-
 /** Omit `subject` to check the signed-in caller. */
 export function useAccessCheckForm(subject?: AccessReviewSubject) {
 	const review = useAccessReview();
 
-	function runValidation({ value }: { value: AccessCheckFormValues }) {
-		const r = schema.safeParse(value);
-		if (r.success) return undefined;
-		const fields: Record<string, string> = {};
-		for (const issue of r.error.issues) {
-			const key = issue.path.join(".");
-			if (key && !fields[key]) fields[key] = issue.message;
-		}
-		return { fields };
-	}
+	const runValidation = zodFieldValidator<AccessCheckFormValues>(schema);
 
 	const form = useForm({
 		defaultValues: DEFAULT_VALUES,

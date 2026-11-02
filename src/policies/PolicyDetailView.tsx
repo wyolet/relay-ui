@@ -8,13 +8,11 @@ import {
 	ScrollText,
 } from "lucide-react";
 import { Suspense } from "react";
-import { useGovernance } from "@/api/hooks/governance";
 import type { Policy } from "@/api/types/policy";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useMutability } from "@/hooks/useMutability";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
-import { resolveMutability } from "@/lib/ownership";
 import { ResourceLogs } from "@/logs/ResourceLogs";
-import { PolicyAttachedKeys } from "@/policies/PolicyAttachedKeys";
 import { PolicyKeysTab } from "@/policies/PolicyKeysTab";
 import { PolicyModelsTab } from "@/policies/PolicyModelsTab";
 import { PolicyOverviewTab } from "@/policies/PolicyOverviewTab";
@@ -92,9 +90,8 @@ export function PolicyDetailView({
 
 				<TabsContent value="overview">
 					<Suspense fallback={<PageLoader className="min-h-[40vh]" />}>
-						<div className="flex flex-col gap-6 pt-2">
+						<div className="pt-2">
 							<PolicyOverviewTab policy={policy} />
-							<PolicyAttachedKeys policy={policy} />
 						</div>
 					</Suspense>
 				</TabsContent>
@@ -163,8 +160,7 @@ function Header({
 }: HeaderProps) {
 	const name = policy.metadata.name;
 	const isHostOwned = policy.metadata.owner?.kind === "host";
-	const gov = useGovernance("policy");
-	const { canEdit, canDelete } = resolveMutability(policy.metadata, gov);
+	const { canEdit, canDelete } = useMutability(policy.metadata, "policy");
 	return (
 		<div className="flex items-start justify-between gap-4">
 			<div className="min-w-0">

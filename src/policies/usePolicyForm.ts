@@ -4,23 +4,19 @@ import { useEffect, useMemo, useRef } from "react";
 import { z } from "zod";
 import { useCreatePolicy, useUpdatePolicy } from "@/api/hooks/policies";
 import type { Policy, PolicyCreate, PolicyUpdate } from "@/api/types/policy";
-import {
-	DEFAULT_KEY_SELECTION,
-	KEY_SELECTION_VALUES,
-	type KeySelection,
-} from "@/config/policy";
 import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
 import { useOwnerOptions } from "@/hooks/useOwnerOptions";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
+import { firstError, zodFieldValidator } from "@/lib/formErrors";
 import { ALL_OWNER_SCOPES, PERSONAL_OWNER } from "@/lib/ownerScopes";
 import { randomSuffix, slugify } from "@/lib/slug";
+import {
+	type PolicySpecValues,
+	specFromFormValues,
+	specToFormValues,
+} from "@/policies/policyFormSpec";
 import { toast } from "@/shared/Toast";
-
-export interface RLBindingValue {
-	rateLimitId: string;
-	models: string[];
-}
 
 /**
  * Build a Policy snapshot from the current form values + the base policy
@@ -32,43 +28,16 @@ export function policyFromFormValues(
 	base: Policy | undefined,
 	values: PolicyFormValues,
 ): Policy {
-	const cleanedBindings = values.rlBindings.filter((b) => b.rateLimitId);
-	const single =
-		cleanedBindings.length === 1 && cleanedBindings[0]?.models.length === 0
-			? cleanedBindings[0]
-			: null;
 	return {
 		metadata: base?.metadata ?? { name: "" },
-		spec: {
-			enabled: values.enabled,
-			hostKeyIds: values.hostKeyIds.length > 0 ? values.hostKeyIds : null,
-			keySelection: values.keySelection,
-			models: values.models.length > 0 ? values.models : null,
-			rateLimitId: single ? single.rateLimitId : undefined,
-			rlBindings:
-				!single && cleanedBindings.length > 0
-					? cleanedBindings.map((b) => ({
-							rateLimitId: b.rateLimitId,
-							models: b.models.length > 0 ? b.models : null,
-						}))
-					: null,
-			includeDeprecated: values.includeDeprecated,
-			payloadLoggingEnabled: values.payloadLoggingEnabled,
-		},
+		spec: { ...base?.spec, ...specFromFormValues(values) },
 	};
 }
 
-export interface PolicyFormValues {
+export interface PolicyFormValues extends PolicySpecValues {
 	displayName: string;
 	description: string;
 	owner: string;
-	hostKeyIds: string[];
-	keySelection: KeySelection;
-	models: string[];
-	rlBindings: RLBindingValue[];
-	enabled: boolean;
-	includeDeprecated: boolean;
-	payloadLoggingEnabled: boolean;
 }
 
 const schema = z.object({
@@ -79,17 +48,15 @@ const schema = z.object({
 		.max(120, "Display name is too long"),
 	description: z.string().trim().max(500, "Description is too long"),
 	owner: z.string().min(1, "Pick who owns this policy."),
-	hostKeyIds: z.array(z.string()),
-	keySelection: z.enum(
-		KEY_SELECTION_VALUES as readonly [KeySelection, ...KeySelection[]],
-	),
+	poolIds: z.array(z.string()),
 	models: z.array(z.string()),
-	rlBindings: z.array(
+	rateLimits: z.array(
 		z.object({
 			rateLimitId: z.string().min(1, "Pick a rate limit"),
 			models: z.array(z.string()),
 		}),
 	),
+	budgetIds: z.array(z.string()),
 	enabled: z.boolean(),
 	includeDeprecated: z.boolean(),
 	payloadLoggingEnabled: z.boolean(),
@@ -100,35 +67,16 @@ function emptyValues(owner: string): PolicyFormValues {
 		displayName: "",
 		description: "",
 		owner,
-		hostKeyIds: [],
-		keySelection: DEFAULT_KEY_SELECTION,
-		models: [],
-		rlBindings: [],
-		enabled: true,
-		includeDeprecated: false,
-		payloadLoggingEnabled: false,
+		...specToFormValues({}),
 	};
 }
 
 function policyToValues(policy: Policy, owner: string): PolicyFormValues {
-	const bindings: RLBindingValue[] = (policy.spec.rlBindings ?? []).map(
-		(b) => ({ rateLimitId: b.rateLimitId, models: b.models ?? [] }),
-	);
-	// Migrate legacy single rateLimitId → one binding covering everything.
-	if (bindings.length === 0 && policy.spec.rateLimitId) {
-		bindings.push({ rateLimitId: policy.spec.rateLimitId, models: [] });
-	}
 	return {
 		displayName: displayLabel(policy.metadata),
 		description: policy.metadata.description ?? "",
 		owner,
-		hostKeyIds: policy.spec.hostKeyIds ?? [],
-		keySelection: policy.spec.keySelection ?? DEFAULT_KEY_SELECTION,
-		models: policy.spec.models ?? [],
-		rlBindings: bindings,
-		enabled: policy.spec.enabled ?? true,
-		includeDeprecated: policy.spec.includeDeprecated ?? false,
-		payloadLoggingEnabled: policy.spec.payloadLoggingEnabled ?? false,
+		...specToFormValues(policy.spec),
 	};
 }
 
@@ -170,16 +118,7 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 		return `${base}-${suffixRef.current}`;
 	};
 
-	function runValidation({ value }: { value: PolicyFormValues }) {
-		const r = schema.safeParse(value);
-		if (r.success) return undefined;
-		const fields: Record<string, string> = {};
-		for (const issue of r.error.issues) {
-			const key = issue.path.join(".");
-			if (key && !fields[key]) fields[key] = issue.message;
-		}
-		return { fields };
-	}
+	const runValidation = zodFieldValidator<PolicyFormValues>(schema);
 
 	const form = useForm({
 		defaultValues: initial,
@@ -190,29 +129,7 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 		onSubmit: async ({ value }) => {
 			const displayName = value.displayName.trim();
 			const description = value.description.trim();
-			const cleanedBindings = value.rlBindings.filter((b) => b.rateLimitId);
-			// A single binding with no model scope collapses back to the legacy
-			// single-RL representation on the wire.
-			const single =
-				cleanedBindings.length === 1 && cleanedBindings[0]?.models.length === 0
-					? cleanedBindings[0]
-					: null;
-			const spec = {
-				enabled: value.enabled,
-				hostKeyIds: value.hostKeyIds.length > 0 ? value.hostKeyIds : null,
-				keySelection: value.keySelection,
-				models: value.models.length > 0 ? value.models : null,
-				rateLimitId: single ? single.rateLimitId : undefined,
-				rlBindings:
-					!single && cleanedBindings.length > 0
-						? cleanedBindings.map((b) => ({
-								rateLimitId: b.rateLimitId,
-								models: b.models.length > 0 ? b.models : null,
-							}))
-						: null,
-				includeDeprecated: value.includeDeprecated,
-				payloadLoggingEnabled: value.payloadLoggingEnabled,
-			};
+			const spec = specFromFormValues(value);
 			try {
 				if (isEdit && policy) {
 					const payload: PolicyUpdate = {
@@ -275,21 +192,15 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 	const slugPreview = isEdit
 		? (policy?.metadata.name ?? "")
 		: computeSlug(values.displayName);
-	const displayNameError = useStore(form.store, (s) => {
-		const errs = s.fieldMeta?.displayName?.errors ?? [];
-		for (const e of errs) if (typeof e === "string") return e;
-		return undefined;
-	});
-	const descriptionError = useStore(form.store, (s) => {
-		const errs = s.fieldMeta?.description?.errors ?? [];
-		for (const e of errs) if (typeof e === "string") return e;
-		return undefined;
-	});
-	const ownerError = useStore(form.store, (s) => {
-		const errs = s.fieldMeta?.owner?.errors ?? [];
-		for (const e of errs) if (typeof e === "string") return e;
-		return undefined;
-	});
+	const displayNameError = useStore(form.store, (s) =>
+		firstError(s.fieldMeta?.displayName?.errors),
+	);
+	const descriptionError = useStore(form.store, (s) =>
+		firstError(s.fieldMeta?.description?.errors),
+	);
+	const ownerError = useStore(form.store, (s) =>
+		firstError(s.fieldMeta?.owner?.errors),
+	);
 
 	return {
 		form,

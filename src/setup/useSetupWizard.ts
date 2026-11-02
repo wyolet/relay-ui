@@ -5,17 +5,13 @@ import { useCatalogGraph } from "@/api/hooks/catalog";
 import { useCreateHostKey } from "@/api/hooks/hostkeys";
 import { useHosts, useUpdateHost } from "@/api/hooks/hosts";
 import { useCreateKey } from "@/api/hooks/keys";
-import {
-	useCreatePolicy,
-	usePolicies,
-	useUpdatePolicy,
-} from "@/api/hooks/policies";
+import { useCreatePolicy, useUpdatePolicy } from "@/api/hooks/policies";
+import { useCreatePolicyBinding } from "@/api/hooks/policyBindings";
+import { useCreatePool } from "@/api/hooks/pools";
 import { useCreateRateLimit } from "@/api/hooks/ratelimits";
 import { ApiError } from "@/api/types/errors";
 import type { Host } from "@/api/types/host";
-import type { Policy, PolicyCreate } from "@/api/types/policy";
-import { defaultTierPolicyId } from "@/host-keys/tierPolicy";
-import { displayLabel } from "@/lib/displayLabel";
+import type { Policy, PolicySpec } from "@/api/types/policy";
 import { slugWithSuffix } from "@/lib/slug";
 import type {
 	RateLimitMeter as CanonicalMeter,
@@ -81,6 +77,13 @@ const PER_SECONDS: Record<RateLimitPer, number> = {
 /** How many of a host's models to surface in the snippet picker. */
 const MAX_SAMPLE_MODELS = 6;
 
+/** A host key connected in this session that no pool holds yet. */
+interface UnpooledKey {
+	hostId: string;
+	hostKeyId: string;
+	label: string;
+}
+
 function errMessage(err: unknown, fallback: string): string {
 	if (err instanceof ApiError) return err.body.message || fallback;
 	if (err instanceof Error && err.message) return err.message;
@@ -92,7 +95,6 @@ export function useSetupWizard() {
 	const setDismissed = useSetupStore((s) => s.setDismissed);
 
 	const { data: hostsData } = useHosts();
-	const { data: policiesData } = usePolicies();
 	const { data: graph } = useCatalogGraph();
 	// Separate, server-filtered graph of just the curated models for the snippet
 	// picker. Kept apart from the full graph (used for provider cards / counts).
@@ -100,10 +102,11 @@ export function useSetupWizard() {
 
 	const [step, setStep] = useState<SetupStep>("provider");
 	const [providerId, setProviderId] = useState<ProviderId | null>(null);
-	const [hostKeyId, setHostKeyId] = useState<string>("");
-	// Carried across "add another provider" so later host keys join the same
-	// policy and reuse the already-issued key.
+	// The caller's own keys reach the host keys they create without a policy.
+	// One is created, and bound to the caller, only for a rate limit or a
+	// keyless host; it's carried across "add another provider".
 	const [policy, setPolicy] = useState<Policy | null>(null);
+	const [unpooledKeys, setUnpooledKeys] = useState<UnpooledKey[]>([]);
 	const [apiKey, setApiKey] = useState<CreatedKey | null>(null);
 	const [sampleModels, setSampleModels] = useState<SampleModel[]>([]);
 	const [busy, setBusy] = useState(false);
@@ -171,19 +174,62 @@ export function useSetupWizard() {
 		? modelsForHost(selectedHost.metadata.id).length
 		: 0;
 
-	function resolveProviderPolicyId(host: Host): string | undefined {
-		return defaultTierPolicyId(host, policiesData.items ?? []);
-	}
-
 	// --- mutations --------------------------------------------------------
 
 	const createHostKey = useCreateHostKey();
 	const updateHost = useUpdateHost();
 	const createPolicy = useCreatePolicy();
 	const updatePolicy = useUpdatePolicy();
+	const createBinding = useCreatePolicyBinding();
+	const createPool = useCreatePool();
 	const createRateLimit = useCreateRateLimit();
 	const createKey = useCreateKey();
 	const { userId } = useAuth();
+
+	async function createPoolFor(
+		label: string,
+		hostId: string,
+		credentialIds: string[],
+	): Promise<string> {
+		const poolLabel = `${label} pool`;
+		const pool = await createPool.mutateAsync({
+			metadata: { name: slugWithSuffix(poolLabel), displayName: poolLabel },
+			spec: { hostId, credentialIds },
+		});
+		return pool.metadata.id ?? "";
+	}
+
+	/** Updates the wizard's policy, or creates it and binds it to the caller. */
+	async function savePolicy(patch: Partial<PolicySpec>): Promise<void> {
+		if (policy) {
+			const saved = await updatePolicy.mutateAsync({
+				id: policy.metadata.id ?? "",
+				body: { ...policy, spec: { ...policy.spec, ...patch } },
+			});
+			setPolicy(saved);
+			return;
+		}
+		if (!userId) throw new Error("Sign in again to finish setup.");
+		const label = "Setup policy";
+		const created = await createPolicy.mutateAsync({
+			metadata: { name: slugWithSuffix(label), displayName: label },
+			spec: { enabled: true, ...patch },
+		});
+		// Owned like its policy: a system policy takes a system binding, a
+		// caller-owned one the caller's own binding.
+		await createBinding.mutateAsync({
+			metadata: {
+				name: slugWithSuffix(label),
+				displayName: label,
+				owner: created.metadata.owner,
+			},
+			spec: {
+				policyId: created.metadata.id ?? "",
+				subjects: [{ kind: "user", id: userId }],
+			},
+		});
+		setPolicy(created);
+	}
 
 	// --- step actions -----------------------------------------------------
 
@@ -205,12 +251,6 @@ export function useSetupWizard() {
 		try {
 			const hostId = selectedHost.metadata.id;
 			if (!hostId) throw new Error("Selected host is missing an id.");
-			const policyId = resolveProviderPolicyId(selectedHost);
-			if (!policyId) {
-				throw new Error(
-					"No provider policy is seeded for this host yet. Check the relay deployment.",
-				);
-			}
 
 			// Ollama: persist a reachable base URL before storing the credential.
 			const nextBaseURL = input.baseURL.trim();
@@ -228,49 +268,56 @@ export function useSetupWizard() {
 				});
 			}
 
-			// Unauthenticated local provider (e.g. Ollama with no key): nothing to
-			// store — the base-URL update above is enough, and the policy grants the
-			// host directly via `@host`. Only create a host key when a key is given.
-			const apiKey = input.apiKey.trim();
+			// Unauthenticated local provider (e.g. Ollama with no key): no host
+			// key to store. Only create one when a key is given.
+			const keyValue = input.apiKey.trim();
+			const label = selectedProvider.label;
 			let newHostKeyId = "";
-			if (apiKey) {
-				const label = `${selectedProvider.label} key`;
+			if (keyValue) {
+				const keyLabel = `${label} key`;
 				const hk = await createHostKey.mutateAsync({
-					metadata: { name: slugWithSuffix(label), displayName: label },
+					metadata: { name: slugWithSuffix(keyLabel), displayName: keyLabel },
 					spec: {
 						hostId,
-						policyId,
 						enabled: true,
-						value: apiKey,
+						value: keyValue,
 						valueFrom: { kind: "stored" },
 					},
 				});
 				newHostKeyId = hk.metadata.id ?? "";
 			}
-			setHostKeyId(newHostKeyId);
+
+			// A keyless host is reached only through a pool a caller policy links,
+			// and once a policy links pools, ownership no longer reaches the other
+			// keys: from then on every key this session connects goes in a pool.
+			const linkedPools = policy?.spec.poolIds ?? [];
+			if (!newHostKeyId || linkedPools.length > 0) {
+				const earlier =
+					linkedPools.length > 0
+						? []
+						: await Promise.all(
+								unpooledKeys.map((k) =>
+									createPoolFor(k.label, k.hostId, [k.hostKeyId]),
+								),
+							);
+				const added = await createPoolFor(
+					label,
+					hostId,
+					newHostKeyId ? [newHostKeyId] : [],
+				);
+				await savePolicy({ poolIds: [...linkedPools, ...earlier, added] });
+				setUnpooledKeys([]);
+			} else {
+				setUnpooledKeys((prev) => [
+					...prev,
+					{ hostId, hostKeyId: newHostKeyId, label },
+				]);
+			}
 
 			setSampleModels(sampleModelsForHost(selectedHost.metadata.id));
 
-			// "Add another provider" path: a policy + key already exist, so
-			// just widen the policy — by host key when keyed, by host grant when not.
-			if (policy) {
-				const grant = newHostKeyId
-					? { hostKeyIds: [...(policy.spec.hostKeyIds ?? []), newHostKeyId] }
-					: {
-							models: [
-								...(policy.spec.models ?? []),
-								`@${selectedHost.metadata.name}`,
-							],
-						};
-				const updated: Policy = {
-					...policy,
-					spec: { ...policy.spec, ...grant },
-				};
-				const saved = await updatePolicy.mutateAsync({
-					id: policy.metadata.id ?? "",
-					body: updated,
-				});
-				setPolicy(saved);
+			// "Add another provider" path: the key is already issued.
+			if (apiKey !== null) {
 				toast("success", `${selectedProvider.label} connected.`);
 				setStep("done");
 				return;
@@ -291,7 +338,6 @@ export function useSetupWizard() {
 		setBusy(true);
 		setError(null);
 		try {
-			let rateLimitId: string | undefined;
 			const strategy: RateLimitStrategy = "sliding-window";
 			const meters: RateLimitMeter[] = ["requests", "tokens"];
 			const rules = meters.flatMap((meter) => {
@@ -314,29 +360,15 @@ export function useSetupWizard() {
 					metadata: { name: slugWithSuffix(rlLabel), displayName: rlLabel },
 					spec: { enabled: true, rules },
 				});
-				rateLimitId = rl.metadata.id;
+				// No `models` scope: a policy bound to a user may only hold
+				// limits that cover every model.
+				await savePolicy({
+					rateLimits: [
+						...(policy?.spec.rateLimits ?? []),
+						{ rateLimitId: rl.metadata.id ?? "" },
+					],
+				});
 			}
-
-			const polLabel = `${selectedProvider.label} default`;
-			// Keyed providers scope by host key; keyless (unauthenticated Ollama)
-			// grant the host's bindings directly via `@host`.
-			const grant = hostKeyId
-				? { hostKeyIds: [hostKeyId] }
-				: { models: [`@${selectedHost.metadata.name}`] };
-			const body: PolicyCreate = {
-				metadata: { name: slugWithSuffix(polLabel), displayName: polLabel },
-				spec: {
-					enabled: true,
-					...grant,
-					// Legacy single rateLimitId = "applies to the whole policy / all
-					// models". We deliberately avoid rlBindings here: each binding
-					// requires a non-empty Models list, which we don't have (and don't
-					// want — the wizard's limit is policy-wide).
-					...(rateLimitId ? { rateLimitId } : {}),
-				},
-			};
-			const createdPolicy = await createPolicy.mutateAsync(body);
-			setPolicy(createdPolicy);
 
 			const rk = await createKey.mutateAsync({
 				metadata: {
@@ -347,7 +379,6 @@ export function useSetupWizard() {
 					// The wizard runs as the signed-in operator, so the first key is
 					// theirs — no service account exists yet.
 					principal: { kind: "user", id: userId ?? "" },
-					policyId: createdPolicy.metadata.id,
 					enabled: true,
 				},
 			});
@@ -365,7 +396,6 @@ export function useSetupWizard() {
 
 	function addAnotherProvider() {
 		setProviderId(null);
-		setHostKeyId("");
 		setError(null);
 		setStep("provider");
 	}
@@ -387,7 +417,6 @@ export function useSetupWizard() {
 		apiKey,
 		// derived: have we already issued a key (reuse mode)?
 		hasIssuedKey: apiKey !== null,
-		policyName: policy ? displayLabel(policy.metadata) : "",
 		selectProvider,
 		backToProviders,
 		submitCredentials,

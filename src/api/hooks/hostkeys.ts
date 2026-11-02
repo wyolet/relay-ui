@@ -5,6 +5,7 @@ import {
 	useSuspenseQuery,
 } from "@tanstack/react-query";
 import { apiClient } from "@/api/client";
+import type { DetachedLinks } from "@/api/types/errors";
 import type {
 	HostKey,
 	HostKeyCreate,
@@ -125,18 +126,39 @@ export function useUpdateHostKey() {
 	});
 }
 
+/** Resolves to the links the delete took from rows that stay (empty on 204). */
 export function useDeleteHostKey() {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: async (id: string): Promise<void> => {
-			unwrap(
+		mutationFn: async (id: string): Promise<DetachedLinks[]> => {
+			const data = unwrap(
 				await apiClient.DELETE("/host-keys/by-id/{id}", {
 					params: { path: { id } },
 				}),
 			);
+			return data?.detached ?? [];
 		},
 		onSuccess: () => {
 			invalidateHostKeyDependents(queryClient);
+		},
+	});
+}
+
+export type DetectedAccount = components["schemas"]["detectedAccount"];
+
+/** Reads the key's provider org from one cheap host call; never moves the key. */
+export function useDetectHostKeyAccount() {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: async (id: string): Promise<DetectedAccount> =>
+			unwrap(
+				await apiClient.POST("/host-keys/by-id/{id}/detect-account", {
+					params: { path: { id } },
+				}),
+			),
+		// It may fill an empty orgId on the key's current account.
+		onSuccess: () => {
+			void queryClient.invalidateQueries({ queryKey: ["accounts"] });
 		},
 	});
 }

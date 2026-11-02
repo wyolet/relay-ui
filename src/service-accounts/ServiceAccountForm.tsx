@@ -1,16 +1,7 @@
-import { Boxes, ShieldCheck, ToggleLeft } from "lucide-react";
-import { usePolicies } from "@/api/hooks/policies";
+import { Boxes, ToggleLeft } from "lucide-react";
 import type { ServiceAccount } from "@/api/types/serviceAccount";
-import { Button } from "@/components/ui/button";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
-import { displayLabel } from "@/lib/displayLabel";
 import { useServiceAccountForm } from "@/service-accounts/useServiceAccountForm";
+import { FormFooter } from "@/shared/FormFooter";
 import { FormSection } from "@/shared/FormSection";
 import { IdentitySection } from "@/shared/IdentitySection";
 import { OwnerSection } from "@/shared/OwnerSection";
@@ -37,12 +28,6 @@ export function ServiceAccountForm({
 		ownerOptions,
 		ownerError,
 	} = useServiceAccountForm({ open: true, serviceAccount, onSaved });
-
-	const { data: policiesData } = usePolicies();
-	const policyOptions = (policiesData.items ?? []).map((p) => ({
-		value: p.metadata.id ?? "",
-		label: displayLabel(p.metadata),
-	}));
 
 	return (
 		<form
@@ -78,29 +63,6 @@ export function ServiceAccountForm({
 				/>
 
 				<FormSection
-					icon={ShieldCheck}
-					title="Policy"
-					description="Optional. A key of this account with no policy of its own resolves to this one."
-				>
-					<Select
-						value={values.policyId}
-						items={policyOptions}
-						onValueChange={(v) => form.setFieldValue("policyId", v ?? "")}
-					>
-						<SelectTrigger className="w-full max-w-md">
-							<SelectValue placeholder="No policy override" />
-						</SelectTrigger>
-						<SelectContent>
-							{policyOptions.map((p) => (
-								<SelectItem key={p.value} value={p.value}>
-									{p.label}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
-				</FormSection>
-
-				<FormSection
 					icon={ToggleLeft}
 					title="Behavior"
 					description="A disabled account's keys stop authenticating."
@@ -113,18 +75,15 @@ export function ServiceAccountForm({
 				</FormSection>
 			</div>
 
-			<div className="sticky bottom-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-t border-border mt-6 -mx-6 px-6 py-3 flex items-center justify-end gap-2">
-				<Button type="button" variant="ghost" onClick={onCancel}>
-					Cancel
-				</Button>
-				<form.Subscribe selector={(s) => s.isSubmitting}>
-					{(isSubmitting) => (
-						<Button type="submit" variant="cta" disabled={isSubmitting}>
-							{isSubmitting ? "Saving…" : isEdit ? "Save changes" : "Create"}
-						</Button>
-					)}
-				</form.Subscribe>
-			</div>
+			<form.Subscribe selector={(s) => s.isSubmitting}>
+				{(isSubmitting) => (
+					<FormFooter
+						isEdit={isEdit}
+						isSubmitting={isSubmitting}
+						onCancel={onCancel}
+					/>
+				)}
+			</form.Subscribe>
 		</form>
 	);
 }

@@ -1,14 +1,15 @@
-/**
- * The closed sets a role rule may name. The OpenAPI schema types both as plain
- * strings, so they are mirrored from the server's source of truth — the `Kinds`
- * and `Verbs` vars in relay's `app/role/role.go`.
- */
+import type { components } from "@/api/types.gen";
 
+type RoleRule = components["schemas"]["RoleRule"];
+
+/** The closed sets a role rule may name, in picker order; the schema checks each entry. */
 export const RULE_WILDCARD = "*";
 
 export const RULE_KINDS = [
 	"*",
+	"accounts",
 	"audit",
+	"budgets",
 	"debug",
 	"groups",
 	"host-bindings",
@@ -21,6 +22,7 @@ export const RULE_KINDS = [
 	"models",
 	"policies",
 	"policy-bindings",
+	"pools",
 	"pricings",
 	"projects",
 	"providers",
@@ -36,7 +38,7 @@ export const RULE_KINDS = [
 	"tokens",
 	"usage",
 	"users",
-] as const;
+] as const satisfies readonly NonNullable<RoleRule["kinds"]>[number][];
 
 export const RULE_VERBS = [
 	"*",
@@ -58,7 +60,7 @@ export const RULE_VERBS = [
 	"rotate",
 	"snapshot",
 	"update",
-] as const;
+] as const satisfies readonly NonNullable<RoleRule["verbs"]>[number][];
 
 /** Built-in roles are seeded with `owner.kind: system` and are read-only. */
 export function isBuiltinRole(ownerKind: string | undefined): boolean {

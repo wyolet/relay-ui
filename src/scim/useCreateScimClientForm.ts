@@ -7,6 +7,7 @@ import {
 	useCreateScimClient,
 } from "@/api/hooks/scimClients";
 import { ApiError } from "@/api/types/errors";
+import { firstError } from "@/lib/formErrors";
 import { scimClientNameError } from "@/lib/scim";
 
 interface UseCreateScimClientFormOptions {
@@ -52,10 +53,7 @@ export function useCreateScimClientForm({
 	// Errors wait for the first submit rather than flagging a half-typed name.
 	const fieldError = useStore(form.store, (s) => {
 		if (s.submissionAttempts === 0) return undefined;
-		for (const e of s.fieldMeta.name?.errors ?? []) {
-			if (typeof e === "string") return e;
-		}
-		return undefined;
+		return firstError(s.fieldMeta.name?.errors);
 	});
 
 	return {

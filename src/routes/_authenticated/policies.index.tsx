@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { z } from "zod";
 import { bindingsListQueryOptions } from "@/api/hooks/bindings";
+import { budgetListQueryOptions } from "@/api/hooks/budgets";
 import { governanceQueryOptions } from "@/api/hooks/governance";
 import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
@@ -10,15 +11,16 @@ import { modelsListQueryOptions } from "@/api/hooks/models";
 import { policiesListQueryOptions } from "@/api/hooks/policies";
 import { providersListQueryOptions } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
+import { BudgetsTable } from "@/budgets/BudgetsTable";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PoliciesTable } from "@/policies/PoliciesTable";
 import { RateLimitsTable } from "@/rate-limits/RateLimitsTable";
 import { PageLoader } from "@/shared/Spinner";
 
-type Tab = "policies" | "ratelimits";
+const TABS = ["policies", "ratelimits", "budgets"] as const;
 
 const searchSchema = z.object({
-	tab: z.enum(["policies", "ratelimits"]).default("policies"),
+	tab: z.enum(TABS).default("policies"),
 });
 
 export const Route = createFileRoute("/_authenticated/policies/")({
@@ -31,6 +33,7 @@ export const Route = createFileRoute("/_authenticated/policies/")({
 		void queryClient.prefetchQuery(modelsListQueryOptions);
 		void queryClient.prefetchQuery(keysListQueryOptions);
 		void queryClient.prefetchQuery(providersListQueryOptions);
+		void queryClient.prefetchQuery(budgetListQueryOptions);
 		return Promise.all([
 			queryClient.ensureQueryData(policiesListQueryOptions),
 			queryClient.ensureQueryData(rateLimitsListQueryOptions),
@@ -44,7 +47,8 @@ function PoliciesPage() {
 	const navigate = useNavigate({ from: "/policies" });
 	const search = Route.useSearch();
 
-	function setTab(tab: Tab) {
+	function setTab(value: unknown) {
+		const tab = TABS.find((t) => t === value) ?? "policies";
 		void navigate({ search: (prev) => ({ ...prev, tab }) });
 	}
 
@@ -60,11 +64,7 @@ function PoliciesPage() {
 						</p>
 					</div>
 				</div>
-				<Tabs
-					value={search.tab}
-					onValueChange={(v) => setTab((v ?? "policies") as Tab)}
-					className="mb-4"
-				>
+				<Tabs value={search.tab} onValueChange={setTab} className="mb-4">
 					<TabsList variant="underline">
 						<TabsTrigger value="policies" className="px-3 h-9">
 							Policies
@@ -72,10 +72,18 @@ function PoliciesPage() {
 						<TabsTrigger value="ratelimits" className="px-3 h-9">
 							Rate limits
 						</TabsTrigger>
+						<TabsTrigger value="budgets" className="px-3 h-9">
+							Budgets
+						</TabsTrigger>
 					</TabsList>
 				</Tabs>
 				{search.tab === "policies" && <PoliciesTable />}
 				{search.tab === "ratelimits" && <RateLimitsTable />}
+				{search.tab === "budgets" && (
+					<Suspense fallback={<PageLoader className="min-h-[40vh]" />}>
+						<BudgetsTable />
+					</Suspense>
+				)}
 			</div>
 		</Suspense>
 	);

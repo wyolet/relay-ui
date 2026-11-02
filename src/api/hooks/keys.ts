@@ -6,7 +6,7 @@ import {
 	useSuspenseQuery,
 } from "@tanstack/react-query";
 import { apiClient } from "@/api/client";
-import { ApiError } from "@/api/types/errors";
+import { ApiError, type DetachedLinks } from "@/api/types/errors";
 import type {
 	CreateKeyInput,
 	CreateKeyResponse,
@@ -77,16 +77,10 @@ export function keyDetailQueryOptions(ref: string) {
 	});
 }
 
-/**
- * A key references a policy; a mutation dirties that policy's
- * "references" view (which keys use it).
- */
 function invalidateKeyDependents(
 	queryClient: ReturnType<typeof useQueryClient>,
 ): void {
-	for (const key of [["keys"], ["policies", "references"]]) {
-		void queryClient.invalidateQueries({ queryKey: key });
-	}
+	void queryClient.invalidateQueries({ queryKey: ["keys"] });
 }
 
 export function useKeys() {
@@ -166,15 +160,17 @@ export function useRotateKey() {
 	});
 }
 
+/** Resolves to the links the delete took from rows that stay (empty on 204). */
 export function useDeleteKey() {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: async (id: string): Promise<void> => {
-			unwrap(
+		mutationFn: async (id: string): Promise<DetachedLinks[]> => {
+			const data = unwrap(
 				await apiClient.DELETE("/keys/by-id/{id}", {
 					params: { path: { id } },
 				}),
 			);
+			return data?.detached ?? [];
 		},
 		onSuccess: () => {
 			invalidateKeyDependents(queryClient);
