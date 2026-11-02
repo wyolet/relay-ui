@@ -3,7 +3,6 @@ import { useProjects } from "@/api/hooks/projects";
 import { useRoles } from "@/api/hooks/roles";
 import { useTeams } from "@/api/hooks/teams";
 import type { RoleBinding } from "@/api/types/roleBinding";
-import { Button } from "@/components/ui/button";
 import {
 	Select,
 	SelectContent,
@@ -17,6 +16,7 @@ import {
 	type ScopeKind,
 	useRoleBindingForm,
 } from "@/role-bindings/useRoleBindingForm";
+import { FormFooter } from "@/shared/FormFooter";
 import { FormSection } from "@/shared/FormSection";
 import { IdentitySection } from "@/shared/IdentitySection";
 import { LabelsEditor } from "@/shared/LabelsEditor";
@@ -226,18 +226,15 @@ export function RoleBindingForm({
 				</FormSection>
 			</div>
 
-			<div className="sticky bottom-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-t border-border mt-6 -mx-6 px-6 py-3 flex items-center justify-end gap-2">
-				<Button type="button" variant="ghost" onClick={onCancel}>
-					Cancel
-				</Button>
-				<form.Subscribe selector={(s) => s.isSubmitting}>
-					{(isSubmitting) => (
-						<Button type="submit" variant="cta" disabled={isSubmitting}>
-							{isSubmitting ? "Saving…" : isEdit ? "Save changes" : "Create"}
-						</Button>
-					)}
-				</form.Subscribe>
-			</div>
+			<form.Subscribe selector={(s) => s.isSubmitting}>
+				{(isSubmitting) => (
+					<FormFooter
+						isEdit={isEdit}
+						isSubmitting={isSubmitting}
+						onCancel={onCancel}
+					/>
+				)}
+			</form.Subscribe>
 		</form>
 	);
 }
