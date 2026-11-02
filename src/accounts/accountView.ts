@@ -104,16 +104,19 @@ export function resolveHolder(
 ): HolderView {
 	if (holder.kind === "user") {
 		const user = users.find((u) => u.id === holder.id);
-		return { ...holder, label: user?.username ?? shortId(holder.id) };
+		return {
+			...holder,
+			label: holder.name ?? user?.username ?? shortId(holder.id),
+		};
 	}
 	const sa = serviceAccounts.find((s) => s.metadata.id === holder.id);
 	return sa
 		? {
 				...holder,
-				label: displayLabel(sa.metadata),
+				label: holder.name ?? displayLabel(sa.metadata),
 				serviceAccountName: sa.metadata.name,
 			}
-		: { ...holder, label: shortId(holder.id) };
+		: { ...holder, label: holder.name ?? shortId(holder.id) };
 }
 
 /** What the UI knows about the caller: its admin role, id and membership scopes ("team:<id>", "project:<id>"). */

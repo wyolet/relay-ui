@@ -78,6 +78,11 @@ describe("resolveHolder", () => {
 			serviceAccountName: "ci-bot",
 		});
 	});
+	test("the name relay sends wins, even for a holder no list holds", () => {
+		expect(
+			resolveHolder({ kind: "user", id: "u9", name: "bob" }, sources).label,
+		).toBe("bob");
+	});
 	test("an unknown holder falls back to a short id", () => {
 		const view = resolveHolder(
 			{ kind: "serviceaccount", id: "0192f0aa-bbbb-7ccc" },

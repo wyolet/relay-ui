@@ -3585,6 +3585,8 @@ export interface components {
              * @enum {string}
              */
             kind: "user" | "serviceaccount";
+            /** @description Username of the user, or display name of the service account. Read-only: filled on reads for a caller who sees the account; ignored on writes. */
+            readonly name?: string;
         };
         AccountKey: {
             /** @description Key id. */
@@ -4804,6 +4806,8 @@ export interface components {
              * @enum {string}
              */
             kind: "serviceaccount" | "user";
+            /** @description Username of the user, or display name of the service account. Read-only: filled on reads for a caller who sees the key; ignored on writes. */
+            readonly name?: string;
         };
         KeySpec: {
             /** @description Id of the account the key's requests run in by default: the service account's account, the user's personal account, a member account a role binding grants the user, or a provider account the user owns personally. Any other answers 403 account_not_held. Optional on create: a service account's key defaults to its account, a user's key to the personal account. */
