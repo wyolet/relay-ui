@@ -1,15 +1,6 @@
-import { Boxes, ShieldCheck, ToggleLeft } from "lucide-react";
-import { usePolicies } from "@/api/hooks/policies";
+import { Boxes, ToggleLeft } from "lucide-react";
 import type { ServiceAccount } from "@/api/types/serviceAccount";
 import { Button } from "@/components/ui/button";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
-import { displayLabel } from "@/lib/displayLabel";
 import { useServiceAccountForm } from "@/service-accounts/useServiceAccountForm";
 import { FormSection } from "@/shared/FormSection";
 import { IdentitySection } from "@/shared/IdentitySection";
@@ -37,12 +28,6 @@ export function ServiceAccountForm({
 		ownerOptions,
 		ownerError,
 	} = useServiceAccountForm({ open: true, serviceAccount, onSaved });
-
-	const { data: policiesData } = usePolicies();
-	const policyOptions = (policiesData.items ?? []).map((p) => ({
-		value: p.metadata.id ?? "",
-		label: displayLabel(p.metadata),
-	}));
 
 	return (
 		<form
@@ -76,29 +61,6 @@ export function ServiceAccountForm({
 					onChange={(v) => form.setFieldValue("owner", v)}
 					error={ownerError}
 				/>
-
-				<FormSection
-					icon={ShieldCheck}
-					title="Policy"
-					description="Optional. A key of this account with no policy of its own resolves to this one."
-				>
-					<Select
-						value={values.policyId}
-						items={policyOptions}
-						onValueChange={(v) => form.setFieldValue("policyId", v ?? "")}
-					>
-						<SelectTrigger className="w-full max-w-md">
-							<SelectValue placeholder="No policy override" />
-						</SelectTrigger>
-						<SelectContent>
-							{policyOptions.map((p) => (
-								<SelectItem key={p.value} value={p.value}>
-									{p.label}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
-				</FormSection>
 
 				<FormSection
 					icon={ToggleLeft}

@@ -20,7 +20,6 @@ export interface ServiceAccountFormValues {
 	description: string;
 	/** "project:<id>"; spec.projectId is taken from it. */
 	owner: string;
-	policyId: string;
 	enabled: boolean;
 }
 
@@ -29,7 +28,6 @@ function emptyValues(owner: string): ServiceAccountFormValues {
 		displayName: "",
 		description: "",
 		owner,
-		policyId: "",
 		enabled: true,
 	};
 }
@@ -39,7 +37,6 @@ function toValues(sa: ServiceAccount, owner: string): ServiceAccountFormValues {
 		displayName: displayLabel(sa.metadata),
 		description: sa.metadata.description ?? "",
 		owner,
-		policyId: sa.spec.policyId ?? "",
 		enabled: sa.spec.enabled ?? true,
 	};
 }
@@ -52,7 +49,6 @@ const schema = z.object({
 		.max(120, "Display name is too long"),
 	description: z.string().trim().max(500, "Description is too long"),
 	owner: z.string().min(1, "Pick the project this account belongs to."),
-	policyId: z.string(),
 	enabled: z.boolean(),
 });
 
@@ -120,7 +116,6 @@ export function useServiceAccountForm({
 			const description = value.description.trim();
 			const spec = {
 				projectId: ownerKeyId(value.owner),
-				...(value.policyId ? { policyId: value.policyId } : {}),
 				enabled: value.enabled,
 			};
 			try {

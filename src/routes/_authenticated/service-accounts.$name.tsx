@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { policiesListQueryOptions } from "@/api/hooks/policies";
+import { policyBindingsAllQueryOptions } from "@/api/hooks/policyBindings";
 import { projectsListQueryOptions } from "@/api/hooks/projects";
 import {
 	serviceAccountDetailQueryOptions,
@@ -13,6 +14,7 @@ export const Route = createFileRoute("/_authenticated/service-accounts/$name")({
 	loader: async ({ context, params }) => {
 		const { queryClient } = context;
 		void queryClient.prefetchQuery(policiesListQueryOptions);
+		void queryClient.prefetchQuery(policyBindingsAllQueryOptions);
 		const sa = await queryClient.ensureQueryData(
 			serviceAccountDetailQueryOptions(params.name),
 		);

@@ -9,6 +9,7 @@ import { apiClient } from "@/api/client";
 import type {
 	PolicyBinding,
 	PolicyBindingList,
+	PolicyBindingSubject,
 } from "@/api/types/policyBinding";
 import type { operations } from "@/api/types.gen";
 import { unwrap } from "@/api/unwrap";
@@ -17,6 +18,11 @@ import { unwrap } from "@/api/unwrap";
 export type PolicyBindingsListParams = NonNullable<
 	operations["list_policy-bindings"]["parameters"]["query"]
 >;
+
+/** "<kind>:<id>", the form the server keys a subject in and the `subject` filter matches. */
+export function subjectKey(subject: PolicyBindingSubject): string {
+	return `${subject.kind}:${subject.id}`;
+}
 
 export function policyBindingsListQuery(params: PolicyBindingsListParams) {
 	return queryOptions({
@@ -57,12 +63,29 @@ export function usePolicyBindingsInProject(projectId: string) {
 	});
 }
 
+/** Every binding the caller may see; the list has no default page size. */
+export const policyBindingsAllQueryOptions = policyBindingsListQuery({});
+
+/** Every visible binding, non-suspending: the pages that read it render without it. */
+export function usePolicyBindings() {
+	return useQuery(policyBindingsAllQueryOptions);
+}
+
 export function usePolicyBindingsList(params: PolicyBindingsListParams) {
 	return useSuspenseQuery(policyBindingsListQuery(params));
 }
 
 export function usePolicyBinding(ref: string) {
 	return useSuspenseQuery(policyBindingDetailQueryOptions(ref));
+}
+
+/** A binding links a policy, so a write dirties that policy's references. */
+function invalidatePolicyBindingDependents(
+	queryClient: ReturnType<typeof useQueryClient>,
+): void {
+	for (const key of [["policy-bindings"], ["policies", "references"]]) {
+		void queryClient.invalidateQueries({ queryKey: key });
+	}
 }
 
 export function useCreatePolicyBinding() {
@@ -73,7 +96,7 @@ export function useCreatePolicyBinding() {
 			return data;
 		},
 		onSuccess: () => {
-			void queryClient.invalidateQueries({ queryKey: ["policy-bindings"] });
+			invalidatePolicyBindingDependents(queryClient);
 		},
 	});
 }
@@ -97,7 +120,7 @@ export function useUpdatePolicyBinding() {
 			return data;
 		},
 		onSuccess: () => {
-			void queryClient.invalidateQueries({ queryKey: ["policy-bindings"] });
+			invalidatePolicyBindingDependents(queryClient);
 		},
 	});
 }
@@ -113,7 +136,7 @@ export function useDeletePolicyBinding() {
 			);
 		},
 		onSuccess: () => {
-			void queryClient.invalidateQueries({ queryKey: ["policy-bindings"] });
+			invalidatePolicyBindingDependents(queryClient);
 		},
 	});
 }

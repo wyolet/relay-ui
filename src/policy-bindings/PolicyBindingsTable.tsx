@@ -14,9 +14,9 @@ import { FilterBar } from "@/filters/FilterBar";
 import { activeFilterCount } from "@/filters/toQueryParams";
 import type { FilterDef, FilterState } from "@/filters/types";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
-import { OwnerLink } from "@/projects/OwnerLink";
-import { subjectLabel } from "@/role-bindings/SubjectsEditor";
-import { Chip } from "@/shared/Chip";
+import { BindingOwner } from "@/policy-bindings/BindingOwner";
+import { SubjectChips } from "@/policy-bindings/SubjectChips";
+import { useSubjectOptions } from "@/policy-bindings/useSubjectOptions";
 import { confirm } from "@/shared/ConfirmDialog";
 import { RowMenu } from "@/shared/RowMenu";
 import { StaleContent } from "@/shared/StaleContent";
@@ -47,7 +47,7 @@ const STATIC_FILTERS = [
 		key: "subject",
 		type: "search",
 		label: "Subject",
-		placeholder: "user:… / group:…",
+		placeholder: "serviceaccount:<id>",
 		default: "",
 	},
 ] as const satisfies readonly FilterDef[];
@@ -73,6 +73,7 @@ export function PolicyBindingsTable() {
 	const { data } = usePolicyBindingsList(toPolicyBindingsParams(search));
 	const { data: projectsData } = useProjects();
 	const { data: policiesData } = usePolicies();
+	const { subjectName } = useSubjectOptions();
 	const deleteBinding = useDeletePolicyBinding();
 
 	const policyNames = new Map(
@@ -122,7 +123,7 @@ export function PolicyBindingsTable() {
 	async function handleDelete(binding: PolicyBinding) {
 		const ok = await confirm({
 			title: `Delete ${displayLabel(binding.metadata)}?`,
-			description: "Its subjects fall back to the next matching binding.",
+			description: "Its subjects are no longer governed by its policy.",
 			confirmLabel: "Delete",
 			danger: true,
 		});
@@ -170,8 +171,9 @@ export function PolicyBindingsTable() {
 									No policy bindings yet
 								</p>
 								<p className="text-sm text-muted-foreground mb-5 max-w-sm mx-auto">
-									A policy binding points the callers inside one project at one
-									policy. The lowest priority wins.
+									A policy binding attaches one policy to its subjects: users,
+									service accounts, teams, projects or accounts. Each subject
+									sits in one binding.
 								</p>
 								<Link
 									to="/policy-bindings/new"
@@ -193,9 +195,8 @@ export function PolicyBindingsTable() {
 							<thead className="bg-muted/40">
 								<tr>
 									<Th variant="column">Name</Th>
-									<Th variant="column">Project</Th>
+									<Th variant="column">Owner</Th>
 									<Th variant="column">Policy</Th>
-									<Th variant="column">Priority</Th>
 									<Th variant="column">Subjects</Th>
 									<th
 										scope="col"
@@ -227,11 +228,9 @@ export function PolicyBindingsTable() {
 												)}
 											</td>
 											<td className="px-3 py-2 text-xs">
-												<OwnerLink
-													owner={{
-														kind: "project",
-														id: binding.spec.projectId,
-													}}
+												<BindingOwner
+													binding={binding}
+													subjectName={subjectName}
 												/>
 											</td>
 											<td className="px-3 py-2 text-xs">
@@ -249,20 +248,11 @@ export function PolicyBindingsTable() {
 													</code>
 												)}
 											</td>
-											<td className="px-3 py-2 text-xs text-muted-foreground">
-												{binding.spec.priority ?? "—"}
-											</td>
 											<td className="px-3 py-2">
-												<div className="flex flex-wrap gap-1">
-													{(binding.spec.subjects ?? []).map((s) => (
-														<Chip
-															key={subjectLabel(s)}
-															label={subjectLabel(s)}
-															mono
-															shape="box"
-														/>
-													))}
-												</div>
+												<SubjectChips
+													subjects={binding.spec.subjects ?? []}
+													subjectName={subjectName}
+												/>
 											</td>
 											<td className="px-3 py-2 text-right">
 												<RowMenu

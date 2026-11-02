@@ -1,15 +1,8 @@
-import {
-	Boxes,
-	ListOrdered,
-	ShieldCheck,
-	Tags,
-	ToggleLeft,
-	Users,
-} from "lucide-react";
+import { ShieldCheck, Tags, ToggleLeft, UserRound, Users } from "lucide-react";
+import { useId } from "react";
 import { usePolicies } from "@/api/hooks/policies";
 import type { PolicyBinding } from "@/api/types/policyBinding";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
 	Select,
 	SelectContent,
@@ -18,11 +11,8 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { displayLabel } from "@/lib/displayLabel";
-import {
-	DEFAULT_PRIORITY,
-	usePolicyBindingForm,
-} from "@/policy-bindings/usePolicyBindingForm";
-import { SubjectsEditor } from "@/role-bindings/SubjectsEditor";
+import { SubjectsEditor } from "@/policy-bindings/SubjectsEditor";
+import { usePolicyBindingForm } from "@/policy-bindings/usePolicyBindingForm";
 import { FormSection } from "@/shared/FormSection";
 import { IdentitySection } from "@/shared/IdentitySection";
 import { LabelsEditor } from "@/shared/LabelsEditor";
@@ -53,9 +43,13 @@ export function PolicyBindingForm({
 		ownerOptions,
 		ownerError,
 		policyIdError,
-		priorityError,
+		subjectOptions,
+		subjectName,
+		setSubjects,
 		subjectsError,
+		duplicateSubjectKey,
 	} = usePolicyBindingForm({ open: true, binding, projectId, onSaved });
+	const subjectsErrorId = useId();
 
 	const { data: policiesData } = usePolicies();
 	const policyOptions = (policiesData.items ?? []).map((p) => ({
@@ -86,10 +80,8 @@ export function PolicyBindingForm({
 				/>
 
 				<OwnerSection
-					icon={Boxes}
-					title="Project"
-					description="A policy binding always lives in one project. Its subjects are the callers inside it."
-					placeholder="Pick a project…"
+					icon={UserRound}
+					description="The system, a team, a project, or a user. Subjects must sit inside the owner's scope; a user-owned binding names only that user."
 					options={ownerOptions}
 					value={values.owner}
 					onChange={(v) => form.setFieldValue("owner", v)}
@@ -99,7 +91,7 @@ export function PolicyBindingForm({
 				<FormSection
 					icon={ShieldCheck}
 					title="Policy"
-					description="The policy the matched callers resolve to at request time."
+					description="The policy that governs the subjects."
 				>
 					<div>
 						<Select
@@ -130,44 +122,24 @@ export function PolicyBindingForm({
 				</FormSection>
 
 				<FormSection
-					icon={ListOrdered}
-					title="Priority"
-					description={`Lower wins when several bindings match one caller. Leave blank to take the server's default of ${DEFAULT_PRIORITY}.`}
-				>
-					<div className="max-w-[10rem]">
-						<Input
-							type="number"
-							min={0}
-							max={10000}
-							placeholder={String(DEFAULT_PRIORITY)}
-							value={values.priority === null ? "" : String(values.priority)}
-							onChange={(e) => {
-								const n = Number.parseInt(e.currentTarget.value, 10);
-								form.setFieldValue("priority", Number.isNaN(n) ? null : n);
-							}}
-							aria-label="Priority"
-							aria-invalid={priorityError ? true : undefined}
-						/>
-						{priorityError && (
-							<p className="mt-1.5 text-[11px] text-destructive">
-								{priorityError}
-							</p>
-						)}
-					</div>
-				</FormSection>
-
-				<FormSection
 					icon={Users}
 					title="Subjects"
-					description="Who resolves to this policy. Group subjects name an IdP or local group; users and service accounts are named by id."
+					description="Who the policy governs. A subject sits in at most one binding; a user once per owner scope."
 				>
 					<div>
 						<SubjectsEditor
 							rows={values.subjects}
-							onChange={(next) => form.setFieldValue("subjects", next)}
+							onChange={setSubjects}
+							options={subjectOptions}
+							subjectName={subjectName}
+							invalidKey={duplicateSubjectKey}
+							describedBy={subjectsErrorId}
 						/>
 						{subjectsError && (
-							<p className="mt-2 text-[11px] text-destructive">
+							<p
+								id={subjectsErrorId}
+								className="mt-2 text-[11px] text-destructive"
+							>
 								{subjectsError}
 							</p>
 						)}
@@ -188,7 +160,7 @@ export function PolicyBindingForm({
 				<FormSection
 					icon={ToggleLeft}
 					title="Behavior"
-					description="A disabled binding stops routing its subjects to the policy."
+					description="A disabled binding governs none of its subjects."
 				>
 					<ToggleSwitch
 						value={values.enabled}

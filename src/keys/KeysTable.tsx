@@ -7,7 +7,6 @@ import {
 	useKeysList,
 	useUpdateKey,
 } from "@/api/hooks/keys";
-import { usePolicies } from "@/api/hooks/policies";
 import { useServiceAccounts } from "@/api/hooks/serviceAccounts";
 import { ApiError } from "@/api/types/errors";
 import type { Key } from "@/api/types/key";
@@ -19,6 +18,7 @@ import { activeFilterCount } from "@/filters/toQueryParams";
 import type { FilterDef, FilterState } from "@/filters/types";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
+import { PrincipalPolicy } from "@/policy-bindings/PrincipalPolicy";
 import { OwnerLink } from "@/projects/OwnerLink";
 import { confirm } from "@/shared/ConfirmDialog";
 import { RowMenu } from "@/shared/RowMenu";
@@ -149,16 +149,9 @@ export function KeysTable() {
 	const { search, isStale } = useDeferredSearch(live);
 	const { data: keysData } = useKeysList(toKeysParams(search));
 	const { data: accountsData } = useServiceAccounts();
-	const { data: policiesData } = usePolicies();
 	const updateKey = useUpdateKey();
 	const toastSaveError = useSaveErrorToast();
 	const deleteKey = useDeleteKey();
-
-	const policyLabels = new Map<string, string>();
-	for (const p of policiesData.items ?? []) {
-		if (p.metadata.id)
-			policyLabels.set(p.metadata.id, displayLabel(p.metadata));
-	}
 
 	const accountLabels = new Map<string, string>();
 	for (const sa of accountsData.items ?? []) {
@@ -299,10 +292,6 @@ export function KeysTable() {
 								{items.map((rk) => {
 									const status = relayStatus(rk);
 									const enabled = rk.spec.enabled ?? true;
-									const pid = rk.spec.policyId ?? "";
-									const policyLabel = pid
-										? (policyLabels.get(pid) ?? `Unknown (${pid.slice(0, 6)}…)`)
-										: "—";
 									return (
 										<tr
 											key={rk.metadata.name}
@@ -354,8 +343,11 @@ export function KeysTable() {
 													: (accountLabels.get(rk.spec.principal.id) ??
 														`Service account (${rk.spec.principal.id.slice(0, 6)}…)`)}
 											</td>
-											<td className="px-3 py-2 text-xs text-foreground">
-												{policyLabel}
+											<td className="px-3 py-2 text-xs">
+												<PrincipalPolicy
+													principal={rk.spec.principal}
+													compact
+												/>
 											</td>
 											<td className="px-3 py-2 text-xs text-muted-foreground">
 												{rk.spec.expiresAt

@@ -77,16 +77,10 @@ export function keyDetailQueryOptions(ref: string) {
 	});
 }
 
-/**
- * A key references a policy; a mutation dirties that policy's
- * "references" view (which keys use it).
- */
 function invalidateKeyDependents(
 	queryClient: ReturnType<typeof useQueryClient>,
 ): void {
-	for (const key of [["keys"], ["policies", "references"]]) {
-		void queryClient.invalidateQueries({ queryKey: key });
-	}
+	void queryClient.invalidateQueries({ queryKey: ["keys"] });
 }
 
 export function useKeys() {

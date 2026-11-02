@@ -8,9 +8,9 @@ import {
 } from "@/api/hooks/policyBindings";
 import { ApiError } from "@/api/types/errors";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
-import { DEFAULT_PRIORITY } from "@/policy-bindings/usePolicyBindingForm";
-import { OwnerLink } from "@/projects/OwnerLink";
-import { subjectLabel } from "@/role-bindings/SubjectsEditor";
+import { BindingOwner } from "@/policy-bindings/BindingOwner";
+import { SubjectChips } from "@/policy-bindings/SubjectChips";
+import { useSubjectOptions } from "@/policy-bindings/useSubjectOptions";
 import { Chip } from "@/shared/Chip";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { DetailCard, DetailEmpty, DetailRow } from "@/shared/DetailCard";
@@ -21,6 +21,7 @@ import { toast } from "@/shared/Toast";
 export function PolicyBindingDetailView({ name }: { name: string }) {
 	const { data: binding } = usePolicyBinding(name);
 	const { data: policiesData } = usePolicies();
+	const { subjectName } = useSubjectOptions();
 	const deleteBinding = useDeletePolicyBinding();
 	const navigate = useNavigate();
 
@@ -109,10 +110,8 @@ export function PolicyBindingDetailView({ name }: { name: string }) {
 
 			<DetailCard title="Configuration" icon={ShieldCheck}>
 				<dl className="divide-y divide-border">
-					<DetailRow label="Project">
-						<OwnerLink
-							owner={{ kind: "project", id: binding.spec.projectId }}
-						/>
+					<DetailRow label="Owner">
+						<BindingOwner binding={binding} subjectName={subjectName} />
 					</DetailRow>
 					<DetailRow label="Policy">
 						{policy ? (
@@ -128,10 +127,6 @@ export function PolicyBindingDetailView({ name }: { name: string }) {
 								{binding.spec.policyId}
 							</code>
 						)}
-					</DetailRow>
-					<DetailRow label="Priority">
-						{binding.spec.priority ?? DEFAULT_PRIORITY}{" "}
-						<span className="text-muted-foreground">(lower wins)</span>
 					</DetailRow>
 					{labels.length > 0 && (
 						<DetailRow label="Labels">
@@ -149,16 +144,7 @@ export function PolicyBindingDetailView({ name }: { name: string }) {
 				{subjects.length === 0 ? (
 					<DetailEmpty>This binding names no subjects.</DetailEmpty>
 				) : (
-					<div className="flex flex-wrap gap-1.5">
-						{subjects.map((s) => (
-							<Chip
-								key={subjectLabel(s)}
-								label={subjectLabel(s)}
-								mono
-								shape="box"
-							/>
-						))}
-					</div>
+					<SubjectChips subjects={subjects} subjectName={subjectName} />
 				)}
 			</DetailCard>
 
