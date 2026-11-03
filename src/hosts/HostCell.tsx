@@ -51,7 +51,8 @@ export function HostCell({
 	return (
 		<div className="flex items-center gap-2.5 min-w-0">
 			<HostLogo host={host} size={logoSize} />
-			<div className="min-w-0">
+			{/* Baseline from the name, not the logo, so a row's label lines up with it. */}
+			<div className="min-w-0 self-baseline">
 				<div className="flex items-center gap-1.5 min-w-0">
 					<span className={`${labelClass} truncate`}>
 						{displayLabel(host.metadata)}

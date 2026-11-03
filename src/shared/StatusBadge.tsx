@@ -27,6 +27,11 @@ export function StatusBadge({
 	);
 }
 
+/** A neutral tag: a kind, a default, a storage note. */
+export function QuietBadge({ children }: { children: React.ReactNode }) {
+	return <span className={quietBadgeClass}>{children}</span>;
+}
+
 export function OwnerBadge({
 	label,
 	title = `${label}-owned and managed by Relay.`,

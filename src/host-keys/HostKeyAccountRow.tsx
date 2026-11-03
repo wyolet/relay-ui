@@ -7,6 +7,8 @@ import {
 	useHostKeyAccountDetection,
 } from "@/host-keys/useHostKeyAccountDetection";
 import type { HostKeyAccountView } from "@/host-keys/useHostKeyDetail";
+import { DetailInline } from "@/shared/DetailCard";
+import { ShortId } from "@/shared/ShortId";
 
 interface HostKeyAccountRowProps {
 	hostKeyId: string;
@@ -23,7 +25,7 @@ export function HostKeyAccountRow({
 
 	return (
 		<div className="flex flex-col gap-2">
-			<div className="flex items-center gap-2 flex-wrap">
+			<DetailInline>
 				{account ? (
 					<Link
 						to="/accounts/$name"
@@ -36,11 +38,7 @@ export function HostKeyAccountRow({
 					<span className="text-muted-foreground">— (none set)</span>
 				)}
 				{account?.groupedByRelay && <GroupedByRelayBadge />}
-				{account?.orgId && (
-					<code className="font-mono text-[11px] text-muted-foreground">
-						{account.orgId}
-					</code>
-				)}
+				{account?.orgId && <ShortId value={account.orgId} />}
 				<Button
 					type="button"
 					variant="outline"
@@ -50,7 +48,7 @@ export function HostKeyAccountRow({
 					<ScanSearch className="size-3" />
 					{isPending ? "Detecting…" : "Detect account"}
 				</Button>
-			</div>
+			</DetailInline>
 			<p className="text-[11px] text-muted-foreground leading-snug">
 				Keys of one account share its upstream limits, and the policy bound to
 				the account caps them.
