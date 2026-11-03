@@ -28,6 +28,7 @@ import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { useFormOwner } from "@/hooks/useWorkContext";
 import { displayLabel } from "@/lib/displayLabel";
 import { shownError, zodFieldValidator } from "@/lib/formErrors";
+import { accountOwnerError } from "@/lib/personalAccount";
 import { randomSuffix, slugify } from "@/lib/slug";
 import {
 	fromLabelPairs,
@@ -186,6 +187,8 @@ export function useAccountForm({
 					onSaved(created);
 				}
 			} catch (err) {
+				// A refused owner renders by the placement line.
+				if (accountOwnerError(err)) return;
 				toastSaveError(
 					err,
 					isEdit ? "Failed to update account." : "Failed to create account.",
@@ -236,6 +239,7 @@ export function useAccountForm({
 			? account.metadata.name
 			: computeSlug(values.displayName),
 		placement,
+		placementError: accountOwnerError(createAccount.error),
 		hostOptions,
 	};
 }

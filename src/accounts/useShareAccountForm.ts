@@ -5,7 +5,7 @@ import { z } from "zod";
 import {
 	RECEIVER_KINDS,
 	type ReceiverKind,
-	shareConflictMessage,
+	shareReceiverError,
 } from "@/accounts/sharing";
 import { type Account, useShareAccount } from "@/api/hooks/accounts";
 import { projectsListQueryOptions } from "@/api/hooks/projects";
@@ -87,8 +87,8 @@ export function useShareAccountForm(account: Account, onShared: () => void) {
 				);
 				onShared();
 			} catch (err) {
-				// A conflict renders by the receiver field; anything else is a toast.
-				if (shareConflictMessage(err)) return;
+				// A receiver refusal renders by the receiver field; anything else is a toast.
+				if (shareReceiverError(err)) return;
 				toast(
 					"error",
 					err instanceof ApiError ? err.body.message : "Failed to share.",
@@ -118,7 +118,7 @@ export function useShareAccountForm(account: Account, onShared: () => void) {
 		form,
 		values,
 		options,
-		receiverError: fieldError ?? shareConflictMessage(share.error),
+		receiverError: fieldError ?? shareReceiverError(share.error),
 		isSubmitting,
 		setKind,
 		setReceiver,

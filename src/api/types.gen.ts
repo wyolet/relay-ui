@@ -4516,7 +4516,7 @@ export interface components {
             /** @description Ids of the member users. */
             memberIds?: string[] | null;
             /**
-             * @description Turns its members' personal accounts on or off. A member's own value wins over it; between groups, off wins. Omitted leaves it to the deployment's accounts setting; a disabled group says nothing. Set by an admin only, whoever owns the group (403 otherwise); a non-admin's write that leaves it out keeps the stored value.
+             * @description Turns its members' personal accounts on or off. A member's own value wins over it; between groups, off wins. Omitted leaves it to the deployment's accounts setting; a disabled group says nothing. Only on a group the system owns (400 on a user's group), set by an admin only (403 otherwise), also on a group a SCIM client manages; while a group carries it, only an admin edits or deletes the group. A non-admin's write that leaves it out keeps the stored value.
              * @enum {string}
              */
             personalAccount?: "on" | "off";
