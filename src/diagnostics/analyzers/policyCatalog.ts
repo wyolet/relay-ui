@@ -1,6 +1,9 @@
 import type { Model } from "@/api/types/model";
 import type { Policy } from "@/api/types/policy";
-import { policyCredentialIds } from "@/diagnostics/buildGraph";
+import {
+	policyCredentialIds,
+	policyUnlistedAccountHostIds,
+} from "@/diagnostics/buildGraph";
 import type { DiagnosticGraph } from "@/diagnostics/types";
 
 interface ParsedRef {
@@ -90,7 +93,11 @@ export function modelsForRefViaPolicy(
 	if (!parsed) return [];
 
 	const reachableHostIds = new Set<string>();
-	for (const credId of policyCredentialIds(policy, graph.pools)) {
+	for (const hostId of policyUnlistedAccountHostIds(policy, graph)) {
+		const host = graph.hosts.get(hostId);
+		if (host && host.spec.enabled !== false) reachableHostIds.add(hostId);
+	}
+	for (const credId of policyCredentialIds(policy, graph)) {
 		const hk = graph.hostKeys.get(credId);
 		if (!hk || hk.spec.enabled === false) continue;
 		const host = graph.hosts.get(hk.spec.hostId);

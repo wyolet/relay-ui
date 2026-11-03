@@ -1,9 +1,9 @@
 import { Link } from "@tanstack/react-router";
-import { Building2, Plus } from "lucide-react";
+import { Building2, KeyRound, Plus } from "lucide-react";
 import { AccountHolderLink } from "@/accounts/AccountHolderLink";
 import { ACCOUNT_SUMMARY } from "@/accounts/accountCopy";
 import { ACCOUNT_KIND_LABELS } from "@/accounts/accountView";
-import { DefaultAccountBadge } from "@/accounts/DefaultAccountBadge";
+import { GroupedByRelayBadge } from "@/accounts/GroupedByRelayBadge";
 import { SharedByBadge } from "@/accounts/SharedByBadge";
 import { ACCOUNT_FILTERS, useAccountRows } from "@/accounts/useAccountRows";
 import { useDeleteAccount } from "@/api/hooks/accounts";
@@ -37,13 +37,22 @@ export function AccountsTable() {
 					/>
 				}
 				actions={
-					<Link
-						to="/accounts/new"
-						className={buttonVariants({ variant: "default", size: "lg" })}
-					>
-						<Plus className="w-3.5 h-3.5" />
-						New provider account
-					</Link>
+					<>
+						<Link
+							to="/accounts/new"
+							className={buttonVariants({ variant: "outline", size: "lg" })}
+						>
+							<Plus className="w-3.5 h-3.5" />
+							New provider account
+						</Link>
+						<Link
+							to="/host-keys/new"
+							className={buttonVariants({ variant: "default", size: "lg" })}
+						>
+							<KeyRound className="w-3.5 h-3.5" />
+							Add key
+						</Link>
+					</>
 				}
 			/>
 
@@ -112,7 +121,9 @@ export function AccountsTable() {
 												>
 													<div className="flex items-center gap-2 text-sm font-medium text-foreground">
 														<span>{displayLabel(account.metadata)}</span>
-														{account.spec.default && <DefaultAccountBadge />}
+														{account.spec.groupedByRelay && (
+															<GroupedByRelayBadge />
+														)}
 														{sharedBy !== undefined && (
 															<SharedByBadge name={sharedBy} />
 														)}

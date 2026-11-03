@@ -33,6 +33,7 @@ export function useWorkContext() {
 
 	return {
 		contexts,
+		contextsLoaded: data !== undefined,
 		current,
 		select,
 		owner: contextOwner(ref),
