@@ -3,6 +3,10 @@ import { useCatalogGraph } from "@/api/hooks/catalog";
 import type { HostLogoLike } from "@/hosts/HostLogo";
 import { type CatalogRef, parseCatalogRef, refCovers } from "@/lib/catalogRef";
 import { displayLabel } from "@/lib/displayLabel";
+import {
+	narrowPickerIndex,
+	type PickerReach,
+} from "@/models/narrowPickerIndex";
 
 export interface ProviderRow {
 	id: string;
@@ -63,6 +67,17 @@ export function usePickerCatalog(restrictTo?: readonly string[]): PickerIndex {
 	}, [restrictTo]);
 
 	return useMemo(() => buildIndex(graph, restrictRefs), [graph, restrictRefs]);
+}
+
+/** The rows the picker lists: `index`, trimmed to `reach` when given. */
+export function usePickerListIndex(
+	index: PickerIndex,
+	reach: PickerReach | undefined,
+): PickerIndex {
+	return useMemo(
+		() => (reach ? narrowPickerIndex(index, reach) : index),
+		[index, reach],
+	);
 }
 
 type Graph = ReturnType<typeof useCatalogGraph>["data"];

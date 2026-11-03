@@ -11,6 +11,7 @@ import {
 import { ReleaseReadiness } from "@/dashboard/ReleaseReadiness";
 import { ScopedHome } from "@/dashboard/ScopedHome";
 import { useCatalogEmpty } from "@/dashboard/useCatalogEmpty";
+import { DelayedFallback } from "@/shared/DelayedFallback";
 import { PageLoader } from "@/shared/Spinner";
 import { useSetupStore } from "@/stores/setup";
 
@@ -70,7 +71,13 @@ function AdminHome() {
 			<ReleaseReadiness />
 			<div className="grid gap-6">
 				<DashboardRange />
-				<Suspense fallback={<DashboardUsageSkeleton />}>
+				<Suspense
+					fallback={
+						<DelayedFallback>
+							<DashboardUsageSkeleton />
+						</DelayedFallback>
+					}
+				>
 					<DashboardUsage />
 				</Suspense>
 			</div>

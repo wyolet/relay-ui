@@ -58,6 +58,14 @@ export function usePolicyBindingsOwnedBy(ownerId: string) {
 	});
 }
 
+/** The bindings of one policy, none until it has an id. Non-suspending. */
+export function usePolicyBindingsOf(policyId: string | undefined) {
+	return useQuery({
+		...policyBindingsListQuery({ policy_id: [policyId ?? ""] }),
+		enabled: policyId !== undefined && policyId.length > 0,
+	});
+}
+
 /** Every binding the caller may see; the list has no default page size. */
 export const policyBindingsAllQueryOptions = policyBindingsListQuery({});
 

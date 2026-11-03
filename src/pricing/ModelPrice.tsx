@@ -112,7 +112,7 @@ export function ModelPrice({
 function PriceBreakdown({ summary }: { summary: ModelPriceSummary }) {
 	return (
 		<div className="flex flex-col gap-2 text-left">
-			<span className="text-background/70">
+			<span className="text-tip-ink/70">
 				Blended 3:1 input to output, base tier
 			</span>
 			<ul className="flex flex-col gap-1.5">
@@ -148,14 +148,14 @@ function HostPriceLine({ price }: { price: HostPrice }) {
 				</span>
 			</span>
 			{!unpriced && rates.length > 0 && (
-				<span className="text-background/70 tabular-nums">
+				<span className="text-tip-ink/70 tabular-nums">
 					{rates.join(" · ")}
 					{row.extra > 0 &&
 						` · +${row.extra} meter${row.extra === 1 ? "" : "s"}`}
 				</span>
 			)}
 			{tiered && (
-				<span className="text-background/70">
+				<span className="text-tip-ink/70">
 					+ higher rates above a token threshold
 				</span>
 			)}

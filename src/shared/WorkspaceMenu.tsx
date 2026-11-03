@@ -25,6 +25,8 @@ interface WorkspaceMenuProps {
 	children: ReactNode;
 	"aria-label"?: string;
 	align?: "start" | "center" | "end";
+	/** A form's own pick: the menu sets it instead of the workspace. */
+	formPick?: { value: string; onSelect: (key: string) => void };
 }
 
 /** Picks the workspace new rows land in; the sidebar switcher and create forms open it. */
@@ -33,9 +35,12 @@ export function WorkspaceMenu({
 	children,
 	"aria-label": ariaLabel,
 	align = "start",
+	formPick,
 }: WorkspaceMenuProps) {
 	const { rows, currentKey, selectKey, onOpenChange, personalOffNote } =
 		useContextSwitcher();
+	const value = formPick?.value ?? currentKey;
+	const onSelect = formPick?.onSelect ?? selectKey;
 
 	return (
 		<DropdownMenu onOpenChange={onOpenChange}>
@@ -43,12 +48,14 @@ export function WorkspaceMenu({
 				{children}
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align={align} sideOffset={6} className="min-w-60">
-				<DropdownMenuRadioGroup value={currentKey} onValueChange={selectKey}>
+				<DropdownMenuRadioGroup value={value} onValueChange={onSelect}>
 					<DropdownMenuLabel className="pb-0 font-medium text-foreground">
-						Workspace
+						{formPick ? "Create in" : "Workspace"}
 					</DropdownMenuLabel>
 					<p className="px-2 pb-1.5 text-[11px] text-muted-foreground">
-						New items you create land here.
+						{formPick
+							? "Only this form; your workspace stays as it is."
+							: "New items you create land here."}
 					</p>
 					{rows.map(({ context, nested }) => {
 						const Icon = WORKSPACE_ICON[context.kind];

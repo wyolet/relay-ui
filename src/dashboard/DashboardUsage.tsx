@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Suspense } from "react";
+import { DelayedFallback } from "@/shared/DelayedFallback";
 import { FigureRowSkeleton } from "@/shared/FigureRow";
 import { NO_TRAFFIC_ACTION, NoTraffic } from "@/shared/NoTraffic";
 import { Section, SectionSkeleton } from "@/shared/Section";
@@ -16,7 +17,13 @@ const SPLIT = "grid gap-14 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]";
 function AttentionSection() {
 	return (
 		<Section title="Needs attention" meta="last 24h">
-			<Suspense fallback={<p className="text-label text-ink-3">Checking…</p>}>
+			<Suspense
+				fallback={
+					<DelayedFallback>
+						<p className="text-label text-ink-3">Checking…</p>
+					</DelayedFallback>
+				}
+			>
 				<AttentionList />
 			</Suspense>
 		</Section>
