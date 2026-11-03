@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { LogsEmpty } from "@/logs/LogsEmpty";
 import { OwnerLink } from "@/projects/OwnerLink";
 import { Chip } from "@/shared/Chip";
+import { scopeBeyondOwner } from "./auditFilterConfig";
 import { ScopeChips } from "./ScopeChips";
 
 /** Which facet a click-to-filter affordance targets. */
@@ -216,6 +217,11 @@ function AuditRow({
  * team/project, and the JSON paths a write touched (values are never recorded). */
 function ExpandedDetail({ event }: { event: AuditEvent }) {
 	const fields = event.change?.fields ?? [];
+	// The scope chain starts at the owner; only what encloses it adds anything.
+	const enclosing = scopeBeyondOwner(
+		event.resource.scope,
+		event.resource.owner,
+	);
 	return (
 		<div className="flex flex-col gap-3 px-4 py-3">
 			<div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs sm:grid-cols-4">
@@ -234,8 +240,19 @@ function ExpandedDetail({ event }: { event: AuditEvent }) {
 					<span className="text-[10px] uppercase tracking-wide text-muted-foreground">
 						Owner
 					</span>
-					<OwnerLink owner={event.resource.owner} />
-					<ScopeChips scope={event.resource.scope} />
+					{event.resource.owner ? (
+						<>
+							<OwnerLink owner={event.resource.owner} />
+							{enclosing.length > 0 && (
+								<>
+									<span className="text-[11px] text-muted-foreground">in</span>
+									<ScopeChips scope={enclosing} />
+								</>
+							)}
+						</>
+					) : (
+						<ScopeChips scope={event.resource.scope} />
+					)}
 				</div>
 			)}
 
