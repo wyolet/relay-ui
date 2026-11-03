@@ -81,7 +81,8 @@ function KeysPage() {
 
 	function setTab(value: unknown) {
 		const tab = TABS.find((t) => t === value) ?? "relay";
-		void navigate({ search: (prev) => ({ ...prev, tab }) });
+		// "Mine" belongs to the Accounts tab; leaving it resets the filter.
+		void navigate({ search: (prev) => ({ ...prev, tab, mine: false }) });
 	}
 
 	return (
