@@ -1,8 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useUpdateHost } from "@/api/hooks/hosts";
 import type { Host } from "@/api/types/host";
-import { DiagnosticDot } from "@/diagnostics/DiagnosticDot";
-import { useHostDiagnostics } from "@/diagnostics/useDiagnostics";
+import { PlanIssueDot } from "@/diagnostics/DiagnosticDot";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { HostCell } from "@/hosts/HostCell";
 import { useHostReferences } from "@/hosts/useHostReferences";
@@ -52,7 +51,6 @@ function HostRow({ h }: { h: Host }) {
 	const enabled = h.spec.enabled !== false;
 	const update = useUpdateHost();
 	const toastSaveError = useSaveErrorToast();
-	const diagnostics = useHostDiagnostics(h.metadata.id);
 	const refs = useHostReferences(h);
 	const enabledModels = refs.enabledModels.length;
 	const enabledKeys = refs.hostKeys.filter(
@@ -82,7 +80,7 @@ function HostRow({ h }: { h: Host }) {
 						host={h}
 						accessory={
 							<>
-								<DiagnosticDot diagnostics={diagnostics} />
+								<PlanIssueDot kind="host" id={h.metadata.id} />
 								<CatalogDetachedBadge
 									detachedAt={h.metadata.catalogDetachedAt}
 								/>

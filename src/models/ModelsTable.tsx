@@ -11,8 +11,7 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { DiagnosticDot } from "@/diagnostics/DiagnosticDot";
-import { useModelDiagnostics } from "@/diagnostics/useDiagnostics";
+import { PlanIssueDot } from "@/diagnostics/DiagnosticDot";
 import { useMutability } from "@/hooks/useMutability";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { HostLogo } from "@/hosts/HostLogo";
@@ -140,7 +139,6 @@ function ModelRow({
 	const enabled = m.spec.enabled !== false;
 	const updateModel = useUpdateModel();
 	const toastSaveError = useSaveErrorToast();
-	const diagnostics = useModelDiagnostics(m.metadata.id);
 	const { canEdit, canDelete } = useMutability(m.metadata, "model");
 	async function toggleEnabled(next: boolean) {
 		try {
@@ -172,7 +170,7 @@ function ModelRow({
 								aria-label={dep}
 							/>
 						)}
-						<DiagnosticDot diagnostics={diagnostics} />
+						<PlanIssueDot kind="model" id={m.metadata.id} />
 						<CatalogDetachedBadge detachedAt={m.metadata.catalogDetachedAt} />
 					</div>
 					{(hasDisplayName(m.metadata) || dep) && (

@@ -1,15 +1,11 @@
 import { Boxes, Gauge, Layers, type LucideIcon, Wallet } from "lucide-react";
-import { useMemo } from "react";
 import type { Policy } from "@/api/types/policy";
-import { analyzePolicy } from "@/diagnostics/analyzers/policy";
-import { DiagnosticList } from "@/diagnostics/DiagnosticList";
-import { useDiagnosticGraph } from "@/diagnostics/useDiagnostics";
 import { ModelPicker } from "@/models/ModelPicker";
 import { PolicyLinkPicker } from "@/policies/PolicyLinkPicker";
 import { PolicyRLPicker } from "@/policies/PolicyRLPicker";
 import { budgetLinkShared } from "@/policies/policyFormSpec";
 import { SharedLinkSwitch } from "@/policies/SharedLinkSwitch";
-import { policyFromFormValues, usePolicyForm } from "@/policies/usePolicyForm";
+import { usePolicyForm } from "@/policies/usePolicyForm";
 import {
 	useBudgetChoices,
 	usePoolChoices,
@@ -47,15 +43,6 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 		usableBy,
 	);
 
-	// Live diagnostics: synthesize a draft policy from form values and run
-	// the analyzer against it, so warnings clear without a Save round-trip.
-	const graph = useDiagnosticGraph();
-	const draftDiagnostics = useMemo(
-		() =>
-			graph ? analyzePolicy(policyFromFormValues(policy, values), graph) : [],
-		[policy, values, graph],
-	);
-
 	return (
 		<form
 			onSubmit={(e) => {
@@ -65,11 +52,6 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 			}}
 			className="flex flex-col"
 		>
-			{draftDiagnostics.length > 0 && (
-				<div className="mb-4">
-					<DiagnosticList diagnostics={draftDiagnostics} />
-				</div>
-			)}
 			<div className="divide-y divide-border">
 				<IdentitySection
 					displayName={values.displayName}

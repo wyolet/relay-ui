@@ -8,6 +8,7 @@ const issue = (o: Partial<PlanIssue>): PlanIssue => ({
 	kind: "policy",
 	id: "p1",
 	name: "team",
+	field: "",
 	severity: "warning",
 	refs: [],
 	...o,

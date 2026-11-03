@@ -1,8 +1,9 @@
-import { QueryCache, QueryClient } from "@tanstack/react-query";
+import { MutationCache, QueryCache, QueryClient } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
 import ReactDOM from "react-dom/client";
 import { removeAccountQueries, whoamiQueryOptions } from "@/api/auth";
 import { onAccountDisabled } from "@/api/client";
+import { refreshPlanIssues } from "@/api/hooks/planIssues";
 import { ApiError, isAccountDisabled } from "@/api/types/errors";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ACCOUNT_DISABLED } from "@/lib/signInError";
@@ -35,7 +36,11 @@ export function mountApp(): void {
 
 	// A session-expiry (401) from any query drops auth state and routes to
 	// /login; a disabled account does the same from any call, with a notice.
-	const queryClient = new QueryClient({
+	const queryClient: QueryClient = new QueryClient({
+		// Any control write can change what relay's plan reports.
+		mutationCache: new MutationCache({
+			onSuccess: (): void => refreshPlanIssues(queryClient),
+		}),
 		queryCache: new QueryCache({
 			onError: (error) => {
 				if (!(error instanceof ApiError) || error.status !== 401) return;

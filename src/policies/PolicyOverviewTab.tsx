@@ -1,8 +1,8 @@
 import { type ReactNode, Suspense } from "react";
+import { objectRef } from "@/api/hooks/planIssues";
 import { usePolicyReferences } from "@/api/hooks/policies";
 import type { Policy } from "@/api/types/policy";
-import { IssuesPanel } from "@/diagnostics/IssuesPanel";
-import { usePolicyDiagnostics } from "@/diagnostics/useDiagnostics";
+import { PlanIssuesPanel } from "@/diagnostics/IssuesPanel";
 import { HostLogo, hostRefLogo } from "@/hosts/HostLogo";
 import {
 	type LinkChoiceRoute,
@@ -37,7 +37,7 @@ interface Props {
 export function PolicyOverviewTab({ policy }: Props) {
 	return (
 		<div className="flex flex-col gap-6">
-			<PolicyIssues policyId={policy.metadata.id} />
+			<PolicyIssues policy={policy} />
 
 			<StatsGrid policy={policy} />
 
@@ -209,7 +209,13 @@ function PolicyUsageCards({ policyId }: { policyId: string }) {
 	return <ResourceUsageCards usage={usage} />;
 }
 
-function PolicyIssues({ policyId }: { policyId: string | undefined }) {
-	const diagnostics = usePolicyDiagnostics(policyId);
-	return <IssuesPanel diagnostics={diagnostics} />;
+/** The policy's issues and its pools': pool issues don't name the policy. */
+function PolicyIssues({ policy }: { policy: Policy }) {
+	return (
+		<PlanIssuesPanel
+			kind="policy"
+			id={policy.metadata.id}
+			related={(policy.spec.poolIds ?? []).map((id) => objectRef("pool", id))}
+		/>
+	);
 }

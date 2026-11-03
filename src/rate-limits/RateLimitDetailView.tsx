@@ -2,8 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Gauge, ShieldCheck } from "lucide-react";
 import { useMemo } from "react";
 import type { RateLimit, RateLimitRule } from "@/api/types/ratelimit";
-import { IssuesPanel } from "@/diagnostics/IssuesPanel";
-import { useRateLimitDiagnostics } from "@/diagnostics/useDiagnostics";
+import { PlanIssuesPanel } from "@/diagnostics/IssuesPanel";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { compactNumber } from "@/lib/rateLimitFormat";
 import { isProviderOwned, isSystemOwned } from "@/lib/systemRateLimits";
@@ -44,7 +43,7 @@ export function RateLimitDetailView({
 				deleting={deleting}
 				toggling={toggling}
 			/>
-			<RateLimitIssues rateLimitId={rateLimit.metadata.id} />
+			<PlanIssuesPanel kind="ratelimit" id={rateLimit.metadata.id} />
 			<RulesPanel rules={rateLimit.spec.rules ?? []} />
 			<PoliciesPanel rateLimit={rateLimit} />
 		</div>
@@ -269,11 +268,6 @@ const POLICY_COLUMNS = [
 	{ label: "Scope", className: "text-right" },
 	{ label: "Status", className: "text-right" },
 ];
-
-function RateLimitIssues({ rateLimitId }: { rateLimitId: string | undefined }) {
-	const diagnostics = useRateLimitDiagnostics(rateLimitId);
-	return <IssuesPanel diagnostics={diagnostics} />;
-}
 
 interface RuleGroup {
 	label: string;

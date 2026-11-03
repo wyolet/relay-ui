@@ -10,8 +10,7 @@ import {
 import { useServiceAccounts } from "@/api/hooks/serviceAccounts";
 import type { Key } from "@/api/types/key";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { DiagnosticDot } from "@/diagnostics/DiagnosticDot";
-import { useKeyDiagnostics } from "@/diagnostics/useDiagnostics";
+import { PlanIssueDot } from "@/diagnostics/DiagnosticDot";
 import { FilterBar } from "@/filters/FilterBar";
 import { activeFilterCount } from "@/filters/toQueryParams";
 import type { FilterDef, FilterState } from "@/filters/types";
@@ -29,11 +28,6 @@ import { Th } from "@/shared/Th";
 import { toast } from "@/shared/Toast";
 import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 import { useDeferredSearch } from "@/shared/useDeferredSearch";
-
-function KeyDiagDot({ id }: { id: string | undefined }) {
-	const diagnostics = useKeyDiagnostics(id);
-	return <DiagnosticDot diagnostics={diagnostics} />;
-}
 
 type StatusTone = "active" | "muted" | "danger" | "warn";
 
@@ -295,7 +289,7 @@ export function KeysTable() {
 													>
 														{displayLabel(rk.metadata)}
 													</Link>
-													<KeyDiagDot id={rk.metadata.id} />
+													<PlanIssueDot kind="key" id={rk.metadata.id} />
 												</div>
 												{hasDisplayName(rk.metadata) && (
 													<div className="font-mono text-[11px] text-muted-foreground">

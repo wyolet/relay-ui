@@ -2,7 +2,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { ChevronLeft, KeyRound, Link2, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DiagnosticList } from "@/diagnostics/DiagnosticList";
-import { useHostKeyDiagnostics } from "@/diagnostics/useDiagnostics";
+import { usePlanDiagnostics } from "@/diagnostics/usePlanDiagnostics";
 import { HostKeyAccountRow } from "@/host-keys/HostKeyAccountRow";
 import { LinkedPolicyAction } from "@/host-keys/LinkedPolicyAction";
 import type { LinkedPolicyRow } from "@/host-keys/linkedPolicies";
@@ -48,7 +48,7 @@ export function HostKeyDetailView({ name }: { name: string }) {
 				? navigate({ to: "/accounts/$name", params: { name: accountName } })
 				: navigate({ to: "/keys", search: { tab: "accounts" } })),
 	});
-	const diagnostics = useHostKeyDiagnostics(hk.metadata.id);
+	const diagnostics = usePlanDiagnostics("credential", hk.metadata.id);
 	const { account } = view;
 
 	return (

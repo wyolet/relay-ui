@@ -10,8 +10,7 @@ import { useAttachableRateLimits } from "@/api/hooks/ratelimits";
 import type { Policy } from "@/api/types/policy";
 import type { RateLimit } from "@/api/types/ratelimit";
 import { buttonVariants } from "@/components/ui/button";
-import { DiagnosticDot } from "@/diagnostics/DiagnosticDot";
-import { usePolicyDiagnostics } from "@/diagnostics/useDiagnostics";
+import { PlanIssueDot } from "@/diagnostics/DiagnosticDot";
 import { useMutability } from "@/hooks/useMutability";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
@@ -196,7 +195,6 @@ function PolicyRow({
 			: undefined;
 	const updatePolicy = useUpdatePolicy();
 	const toastSaveError = useSaveErrorToast();
-	const diagnostics = usePolicyDiagnostics(policy.metadata.id);
 	const catalog = describeCatalog(policy);
 	const enabled = policy.spec.enabled !== false;
 	const { canEdit, canDelete } = useMutability(policy.metadata, "policy");
@@ -230,7 +228,7 @@ function PolicyRow({
 								(no display name)
 							</span>
 						)}
-						<DiagnosticDot diagnostics={diagnostics} />
+						<PlanIssueDot kind="policy" id={policy.metadata.id} />
 						<CatalogDetachedBadge
 							detachedAt={policy.metadata.catalogDetachedAt}
 						/>

@@ -1,6 +1,6 @@
 import type { PlanIssue } from "@/api/hooks/planIssues";
-import { objectLabel, objectRoute } from "@/diagnostics/objectRoutes";
-import { planIssueMessage } from "@/diagnostics/planIssues";
+import { objectRoute } from "@/diagnostics/objectRoutes";
+import { planIssueSubject } from "@/diagnostics/planIssues";
 import type { AttentionItem } from "./useAttention";
 
 /** Beyond this many, the rest fold into one count line. */
@@ -19,7 +19,7 @@ export function planIssueAttention(
 		return {
 			key: `plan-${issue.kind}-${issue.id}-${issue.code}`,
 			tone: issue.severity === "error" ? "alert" : "warn",
-			text: `${objectLabel(issue.kind)}${issue.name ? ` ${issue.name}` : ""}: ${planIssueMessage(issue)}`,
+			text: `${planIssueSubject(issue)}: ${issue.message}`,
 			target: to && ref ? { kind: "object", to, name: ref } : { kind: "none" },
 		};
 	});

@@ -1,13 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ChevronLeft } from "lucide-react";
 import { Suspense } from "react";
-import { bindingsListQueryOptions } from "@/api/hooks/bindings";
-import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
-import { hostsListQueryOptions } from "@/api/hooks/hosts";
-import { keysListQueryOptions } from "@/api/hooks/keys";
-import { modelsListQueryOptions } from "@/api/hooks/models";
-import { policiesListQueryOptions } from "@/api/hooks/policies";
-import { providersListQueryOptions } from "@/api/hooks/providers";
 import {
 	rateLimitDetailQueryOptions,
 	rateLimitsListQueryOptions,
@@ -15,7 +8,7 @@ import {
 } from "@/api/hooks/ratelimits";
 import { proxyModeQueryOptions } from "@/api/hooks/settings";
 import { DiagnosticList } from "@/diagnostics/DiagnosticList";
-import { useRateLimitDiagnostics } from "@/diagnostics/useDiagnostics";
+import { usePlanDiagnostics } from "@/diagnostics/usePlanDiagnostics";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { RateLimitForm } from "@/rate-limits/RateLimitForm";
 import { PageLoader } from "@/shared/Spinner";
@@ -25,16 +18,8 @@ export const Route = createFileRoute(
 )({
 	loader: ({ context, params }) => {
 		const { queryClient } = context;
-		// rateLimits + bindings feed the DiagnosticList this edit view renders
-		// (non-blocking now); warm them alongside the form pickers.
+		// The form's system-limit lookup reads the full list.
 		void queryClient.prefetchQuery(rateLimitsListQueryOptions);
-		void queryClient.prefetchQuery(policiesListQueryOptions);
-		void queryClient.prefetchQuery(hostKeysListQueryOptions);
-		void queryClient.prefetchQuery(hostsListQueryOptions);
-		void queryClient.prefetchQuery(modelsListQueryOptions);
-		void queryClient.prefetchQuery(keysListQueryOptions);
-		void queryClient.prefetchQuery(providersListQueryOptions);
-		void queryClient.prefetchQuery(bindingsListQueryOptions);
 		return Promise.all([
 			queryClient.ensureQueryData(rateLimitDetailQueryOptions(params.name)),
 			queryClient.ensureQueryData(proxyModeQueryOptions),
@@ -47,7 +32,7 @@ function RateLimitEditInner() {
 	const { name } = Route.useParams();
 	const navigate = useNavigate({ from: "/policies/rate-limits/$name/edit" });
 	const { data: rateLimit } = useRateLimit(name);
-	const diagnostics = useRateLimitDiagnostics(rateLimit.metadata.id);
+	const diagnostics = usePlanDiagnostics("ratelimit", rateLimit.metadata.id);
 
 	const back = () =>
 		void navigate({

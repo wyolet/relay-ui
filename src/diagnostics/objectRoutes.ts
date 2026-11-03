@@ -1,7 +1,4 @@
-/**
- * Detail route per relay object kind, as the plan engine names kinds. Issue
- * refs carry ids, which every detail route accepts in place of the slug.
- */
+/** Detail route per relay object kind, as the plan engine names kinds; each takes the slug. */
 export const OBJECT_ROUTES = {
 	account: "/accounts/$name",
 	budget: "/policies/budgets/$name",
