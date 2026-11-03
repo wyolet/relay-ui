@@ -1,6 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import type { Account } from "@/api/hooks/accounts";
-import { availableAccounts, chosenAccounts } from "@/pools/poolMembers";
+import type { HostKey } from "@/api/types/hostkey";
+import {
+	accountMeta,
+	availableAccounts,
+	chosenAccounts,
+	keyCountByAccount,
+} from "@/pools/poolMembers";
 
 const provider = (
 	id: string,
@@ -47,5 +53,35 @@ describe("chosenAccounts", () => {
 		]);
 		expect(chosen.map((o) => o.known)).toEqual([true, false, true]);
 		expect(chosen[2]?.sharedBy).toBeUndefined();
+	});
+});
+
+describe("keyCountByAccount", () => {
+	test("counts keys per account, skipping keys with none", () => {
+		const key = (id: string, accountId?: string): HostKey => ({
+			metadata: { id, name: id },
+			spec: {
+				hostId: "h1",
+				valueFrom: { kind: "stored" },
+				...(accountId ? { accountId } : {}),
+			},
+		});
+		const counts = keyCountByAccount([
+			key("a", "acc"),
+			key("b", "acc"),
+			key("c"),
+		]);
+		expect(counts.get("acc")).toBe(2);
+		expect(counts.size).toBe(1);
+	});
+});
+
+describe("accountMeta", () => {
+	test("names the count when keys are visible", () => {
+		expect(accountMeta(1)).toBe("Account · 1 key, and any added later");
+		expect(accountMeta(3)).toBe("Account · 3 keys, and any added later");
+		expect(accountMeta(undefined)).toBe(
+			"Account · all its keys, now and later",
+		);
 	});
 });
