@@ -5,9 +5,13 @@ import {
 	useSuspenseQuery,
 } from "@tanstack/react-query";
 import { apiClient } from "@/api/client";
+import { invalidatePersonalAccountReads } from "@/api/hooks/users";
 import type { components } from "@/api/types.gen";
 import { unwrap } from "@/api/unwrap";
 
+export type AccountsSettings = components["schemas"]["Accounts"];
+export type AccountsSettingsEnvelope =
+	components["schemas"]["AccountsEnvelope"];
 export type ProxyMode = components["schemas"]["ProxyMode"];
 export type ProxyModeEnvelope = components["schemas"]["ProxyModeEnvelope"];
 export type AuthOIDC = components["schemas"]["AuthOIDC"];
@@ -19,6 +23,32 @@ export type AuthTokensEnvelope = components["schemas"]["AuthTokensEnvelope"];
 export type PayloadLogging = components["schemas"]["PayloadLogging"];
 export type PayloadLoggingEnvelope =
 	components["schemas"]["PayloadLoggingEnvelope"];
+
+export const accountsSettingsQueryOptions = queryOptions({
+	queryKey: ["settings", "accounts"] as const,
+	queryFn: async (): Promise<AccountsSettingsEnvelope> =>
+		unwrap(await apiClient.GET("/settings/accounts")),
+	staleTime: 30_000,
+	gcTime: 5 * 60_000,
+});
+
+export function useAccountsSettings() {
+	return useSuspenseQuery(accountsSettingsQueryOptions);
+}
+
+export function useUpdateAccountsSettings() {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: async (
+			value: AccountsSettings,
+		): Promise<AccountsSettingsEnvelope> =>
+			unwrap(await apiClient.PUT("/settings/accounts", { body: value })),
+		onSuccess: () => {
+			void queryClient.invalidateQueries({ queryKey: ["settings"] });
+			void invalidatePersonalAccountReads(queryClient);
+		},
+	});
+}
 
 export const proxyModeQueryOptions = queryOptions({
 	queryKey: ["settings", "proxy-mode"] as const,

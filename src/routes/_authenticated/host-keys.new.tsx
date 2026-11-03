@@ -58,9 +58,7 @@ function NewHostKeyInner({ account }: { account?: Account }) {
 						Accounts
 					</Link>
 				)}
-				<h1 className="mt-2 text-xl font-semibold text-foreground">
-					{account ? "New key" : "New credential"}
-				</h1>
+				<h1 className="mt-2 text-xl font-semibold text-foreground">New key</h1>
 				<p className="mt-1 text-xs text-muted-foreground">
 					Register an upstream credential — stored encrypted by Relay, or
 					sourced from an environment variable on your deployment.

@@ -1,3 +1,4 @@
+import type { Account } from "@/api/hooks/accounts";
 import type { Binding } from "@/api/hooks/bindings";
 import type { Pool } from "@/api/hooks/pools";
 import type { Host } from "@/api/types/host";
@@ -74,11 +75,33 @@ interface PoolOpts {
 	id: string;
 	hostId: string;
 	credentialIds?: string[];
+	accountIds?: string[];
 }
 export function makePool(o: PoolOpts): Pool {
 	return {
 		metadata: { id: o.id, name: o.id, owner: { kind: "user" } },
-		spec: { hostId: o.hostId, credentialIds: o.credentialIds ?? [] },
+		spec: {
+			hostId: o.hostId,
+			credentialIds: o.credentialIds ?? [],
+			accountIds: o.accountIds ?? [],
+		},
+	};
+}
+
+interface AccountOpts {
+	id: string;
+	hostId: string;
+	/** Set on a shared account: its keys sit in this real account. */
+	sourceAccountId?: string;
+}
+export function makeAccount(o: AccountOpts): Account {
+	return {
+		metadata: { id: o.id, name: o.id, owner: { kind: "user" } },
+		spec: {
+			kind: "provider",
+			hostId: o.hostId,
+			...(o.sourceAccountId ? { sourceAccountId: o.sourceAccountId } : {}),
+		},
 	};
 }
 
@@ -202,6 +225,7 @@ export function makeProvider(o: ProviderOpts): Provider {
 }
 
 interface GraphOpts {
+	accounts?: Account[];
 	policies?: Policy[];
 	hostKeys?: HostKey[];
 	hosts?: Host[];
@@ -214,6 +238,7 @@ interface GraphOpts {
 }
 export function graph(o: GraphOpts = {}): DiagnosticGraph {
 	return buildDiagnosticGraph({
+		accounts: o.accounts ?? [],
 		policies: o.policies ?? [],
 		hostKeys: o.hostKeys ?? [],
 		hosts: o.hosts ?? [],

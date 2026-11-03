@@ -2,6 +2,7 @@ import type { Pool } from "@/api/hooks/pools";
 import type { HostKey } from "@/api/types/hostkey";
 import type { Policy } from "@/api/types/policy";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
+import { poolHoldsKey } from "@/pools/poolKeys";
 
 export interface LinkedPolicyRow {
 	id: string;
@@ -20,7 +21,6 @@ export function linkedPolicyRows(
 	policies: readonly Policy[],
 	pools: readonly Pool[],
 ): LinkedPolicyRow[] {
-	const hkId = hk.metadata.id ?? "";
 	const poolsById = new Map(pools.map((p) => [p.metadata.id, p]));
 	return (hk.policies ?? []).map((ref) => {
 		const match = policies.find((p) => p.metadata.id === ref.id);
@@ -33,7 +33,7 @@ export function linkedPolicyRows(
 			enabled: match ? match.spec.enabled !== false : true,
 			viaPools: (match?.spec.poolIds ?? []).flatMap((id) => {
 				const pool = poolsById.get(id);
-				return pool?.spec.credentialIds?.includes(hkId)
+				return pool && poolHoldsKey(pool, hk)
 					? [{ name: pool.metadata.name, label: displayLabel(pool.metadata) }]
 					: [];
 			}),

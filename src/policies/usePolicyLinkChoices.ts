@@ -3,6 +3,7 @@ import { useHosts } from "@/api/hooks/hosts";
 import { type Pool, usePools, useUsablePools } from "@/api/hooks/pools";
 import type { Host } from "@/api/types/host";
 import { displayLabel } from "@/lib/displayLabel";
+import { poolMemberSummary } from "@/pools/poolKeys";
 
 /** One linkable row (pool, budget) as the policy pickers show it. */
 export interface LinkChoice {
@@ -44,7 +45,6 @@ function selectedChoices(
 
 function poolChoice(pool: Pool, hosts: readonly Host[]): LinkChoice {
 	const host = hosts.find((h) => h.metadata.id === pool.spec.hostId);
-	const keys = pool.spec.credentialIds?.length ?? 0;
 	return {
 		id: pool.metadata.id ?? pool.metadata.name,
 		name: pool.metadata.name,
@@ -52,7 +52,7 @@ function poolChoice(pool: Pool, hosts: readonly Host[]): LinkChoice {
 		meta: [
 			host ? displayLabel(host.metadata) : pool.spec.hostId,
 			pool.spec.selection ?? "prioritized",
-			`${keys} key${keys === 1 ? "" : "s"}`,
+			poolMemberSummary(pool),
 		].join(" · "),
 		host,
 	};
