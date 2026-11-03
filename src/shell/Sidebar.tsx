@@ -8,7 +8,6 @@ import {
 	KeyRound,
 	KeySquare,
 	LayoutDashboard,
-	Link2,
 	Network,
 	ScrollText,
 	ShieldCheck,
@@ -47,7 +46,6 @@ interface NavItem {
 		| "/projects"
 		| "/roles"
 		| "/role-bindings"
-		| "/policy-bindings"
 		| "/audit"
 		| "/users"
 		| "/scim-clients";
@@ -164,13 +162,6 @@ const NAV_GROUPS: NavGroup[] = [
 				icon: KeySquare,
 				prefix: "/role-bindings",
 				capability: "role-bindings",
-			},
-			{
-				to: "/policy-bindings",
-				label: "Policy bindings",
-				icon: Link2,
-				prefix: "/policy-bindings",
-				capability: "policy-bindings",
 			},
 			{
 				to: "/users",

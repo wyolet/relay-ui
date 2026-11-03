@@ -23,7 +23,8 @@ export function PolicyBindingDetailView({ name }: { name: string }) {
 	const navigate = useNavigate();
 	const del = useConfirmedDelete(useDeletePolicyBinding(), {
 		noun: "policy binding",
-		onDeleted: () => void navigate({ to: "/policy-bindings" }),
+		onDeleted: () =>
+			void navigate({ to: "/policies", search: { tab: "bindings" } }),
 	});
 
 	const enabled = binding.spec.enabled !== false;
@@ -36,7 +37,8 @@ export function PolicyBindingDetailView({ name }: { name: string }) {
 	return (
 		<div className="flex flex-col gap-5">
 			<Link
-				to="/policy-bindings"
+				to="/policies"
+				search={{ tab: "bindings" }}
 				className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
 			>
 				<ChevronLeft className="w-3.5 h-3.5" />
