@@ -139,14 +139,16 @@ export function AccountMenu() {
 						<ThemeSegment />
 					</div>
 
-					<div className="flex items-center justify-between gap-2 px-2 pb-1 pt-0.5 text-[10px] text-muted-foreground">
-						<span title="The Relay server this interface talks to">
-							Relay {versionLabel(versionData?.version)}
-						</span>
-						<span title="This interface's build">
-							UI {versionLabel(import.meta.env.VITE_UI_VERSION)}
-						</span>
-					</div>
+					<dl className="grid grid-cols-[auto_1fr] gap-x-3 px-2 pb-1 pt-0.5 text-[10px] text-muted-foreground">
+						<dt title="The Relay server this interface talks to">Relay</dt>
+						<dd className="truncate text-right font-mono">
+							{versionLabel(versionData?.version)}
+						</dd>
+						<dt title="This interface's build">UI</dt>
+						<dd className="truncate text-right font-mono">
+							{versionLabel(import.meta.env.VITE_UI_VERSION)}
+						</dd>
+					</dl>
 				</DropdownMenuContent>
 			</DropdownMenu>
 			{tokensOpen && <TokenDialog onClose={() => setTokensOpen(false)} />}
