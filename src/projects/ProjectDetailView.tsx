@@ -24,6 +24,7 @@ import { displayLabel } from "@/lib/displayLabel";
 import { EraseBodiesButton } from "@/logs/EraseBodiesButton";
 import { AccountChips } from "@/policy-bindings/AccountChips";
 import { AccountPolicy } from "@/policy-bindings/AccountPolicy";
+import { InheritedPolicies } from "@/policy-bindings/InheritedPolicies";
 import { useToggleProjectEnabled } from "@/projects/useToggleProjectEnabled";
 import { subjectLabel } from "@/role-bindings/SubjectsEditor";
 import { Chip } from "@/shared/Chip";
@@ -142,6 +143,14 @@ export function ProjectDetailView({ name }: { name: string }) {
 						)}
 					</DetailRow>
 					<AccountPolicy
+						accountRef={{ ownerOf: { kind: "project", id: projectId } }}
+						attach={{
+							slug: project.metadata.name,
+							label: displayLabel(project.metadata),
+							owner: { kind: "project", id: projectId },
+						}}
+					/>
+					<InheritedPolicies
 						accountRef={{ ownerOf: { kind: "project", id: projectId } }}
 					/>
 					{labels.length > 0 && (

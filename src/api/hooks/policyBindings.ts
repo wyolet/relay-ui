@@ -74,13 +74,17 @@ export function usePolicyBinding(ref: string) {
 	return useSuspenseQuery(policyBindingDetailQueryOptions(ref));
 }
 
-/** A binding links a policy, so a write dirties that policy's references. */
+/** A binding links a policy to accounts, so a write dirties that policy's references and the accounts' limits. */
 function invalidatePolicyBindingDependents(
 	queryClient: ReturnType<typeof useQueryClient>,
 ): void {
 	for (const key of [["policy-bindings"], ["policies", "references"]]) {
 		void queryClient.invalidateQueries({ queryKey: key });
 	}
+	void queryClient.invalidateQueries({
+		queryKey: ["accounts"],
+		predicate: (q) => q.queryKey[2] === "limits",
+	});
 }
 
 export function useCreatePolicyBinding() {

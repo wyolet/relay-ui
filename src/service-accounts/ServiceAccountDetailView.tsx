@@ -10,6 +10,8 @@ import {
 import { displayLabel } from "@/lib/displayLabel";
 import { EraseBodiesButton } from "@/logs/EraseBodiesButton";
 import { AccountPolicy } from "@/policy-bindings/AccountPolicy";
+import { InheritedPolicies } from "@/policy-bindings/InheritedPolicies";
+import type { AccountRef } from "@/policy-bindings/useAccountPolicy";
 import { useToggleServiceAccountEnabled } from "@/service-accounts/useToggleServiceAccountEnabled";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { DetailCard, DetailRow } from "@/shared/DetailCard";
@@ -35,6 +37,9 @@ export function ServiceAccountDetailView({ name }: { name: string }) {
 	const project = (projectsData.items ?? []).find(
 		(p) => p.metadata.id === sa.spec.projectId,
 	);
+	const accountRef: AccountRef = {
+		ownerOf: { kind: "serviceaccount", id: sa.metadata.id ?? "" },
+	};
 
 	return (
 		<div className="flex flex-col gap-5">
@@ -102,10 +107,14 @@ export function ServiceAccountDetailView({ name }: { name: string }) {
 						)}
 					</DetailRow>
 					<AccountPolicy
-						accountRef={{
-							ownerOf: { kind: "serviceaccount", id: sa.metadata.id ?? "" },
+						accountRef={accountRef}
+						attach={{
+							slug: sa.metadata.name,
+							label: displayLabel(sa.metadata),
+							owner: { kind: "project", id: sa.spec.projectId },
 						}}
 					/>
+					<InheritedPolicies accountRef={accountRef} />
 				</dl>
 			</DetailCard>
 
