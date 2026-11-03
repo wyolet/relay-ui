@@ -34,10 +34,11 @@ export function WorkspaceMenu({
 	"aria-label": ariaLabel,
 	align = "start",
 }: WorkspaceMenuProps) {
-	const { rows, currentKey, selectKey, personalOffNote } = useContextSwitcher();
+	const { rows, currentKey, selectKey, onOpenChange, personalOffNote } =
+		useContextSwitcher();
 
 	return (
-		<DropdownMenu>
+		<DropdownMenu onOpenChange={onOpenChange}>
 			<DropdownMenuTrigger render={trigger} aria-label={ariaLabel}>
 				{children}
 			</DropdownMenuTrigger>

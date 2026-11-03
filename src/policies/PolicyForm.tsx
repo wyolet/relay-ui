@@ -16,6 +16,7 @@ import {
 } from "@/policies/usePolicyLinkChoices";
 import { FormFooter } from "@/shared/FormFooter";
 import { IdentitySection } from "@/shared/IdentitySection";
+import { ScopedPicker } from "@/shared/ScopeNotes";
 
 interface PolicyFormProps {
 	policy?: Policy;
@@ -35,6 +36,9 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 		descriptionError,
 		placement,
 		usableBy,
+		updatingFor,
+		unavailable,
+		unavailableErrors,
 	} = usePolicyForm({
 		open: true,
 		policy,
@@ -101,13 +105,19 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 					title="Pools"
 					description="Pools requests draw host keys from, tried in order: a later pool is the failover for an earlier one. Only for policies bound to a team, project, user or service account."
 				>
-					<PolicyLinkPicker
-						choices={pools}
-						onChange={(next) => form.setFieldValue("poolIds", next)}
-						ordered
-						addLabel="Add pool"
-						emptyText="No pools linked."
-					/>
+					<ScopedPicker
+						updatingFor={updatingFor.pools}
+						error={unavailableErrors.pools}
+					>
+						<PolicyLinkPicker
+							choices={pools}
+							onChange={(next) => form.setFieldValue("poolIds", next)}
+							ordered
+							addLabel="Add pool"
+							emptyText="No pools linked."
+							unavailable={unavailable.pools}
+						/>
+					</ScopedPicker>
 				</Section>
 
 				<Section
@@ -115,12 +125,18 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 					title="Rate limits"
 					description="Every linked rate limit applies; a model scope narrows one to those models. Shared is one count for the bound account; off is one count per member under it."
 				>
-					<PolicyRLPicker
-						links={values.rateLimits}
-						allowedModels={values.models}
-						onChange={(next) => form.setFieldValue("rateLimits", next)}
-						usableBy={usableBy}
-					/>
+					<ScopedPicker
+						updatingFor={updatingFor.rateLimits}
+						error={unavailableErrors.rateLimits}
+					>
+						<PolicyRLPicker
+							links={values.rateLimits}
+							allowedModels={values.models}
+							onChange={(next) => form.setFieldValue("rateLimits", next)}
+							usableBy={usableBy}
+							unavailable={unavailable.rateLimits}
+						/>
+					</ScopedPicker>
 				</Section>
 
 				<Section
@@ -128,19 +144,25 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 					title="Budgets"
 					description="Spend caps every request under this policy must fit. Unpriced models are refused under a budget. Shared is one budget for the bound account; off is one budget per member under it."
 				>
-					<PolicyLinkPicker
-						choices={budgets}
-						onChange={setBudgetIds}
-						renderRowControl={(c) => (
-							<SharedLinkSwitch
-								value={budgetLinkShared(values.budgets, c.id)}
-								onChange={(next) => setBudgetShared(c.id, next)}
-								linkLabel={c.label}
-							/>
-						)}
-						addLabel="Add budget"
-						emptyText="No budgets linked."
-					/>
+					<ScopedPicker
+						updatingFor={updatingFor.budgets}
+						error={unavailableErrors.budgets}
+					>
+						<PolicyLinkPicker
+							choices={budgets}
+							onChange={setBudgetIds}
+							renderRowControl={(c) => (
+								<SharedLinkSwitch
+									value={budgetLinkShared(values.budgets, c.id)}
+									onChange={(next) => setBudgetShared(c.id, next)}
+									linkLabel={c.label}
+								/>
+							)}
+							addLabel="Add budget"
+							emptyText="No budgets linked."
+							unavailable={unavailable.budgets}
+						/>
+					</ScopedPicker>
 				</Section>
 			</div>
 

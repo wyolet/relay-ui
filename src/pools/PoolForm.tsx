@@ -7,6 +7,7 @@ import { usePoolForm } from "@/pools/usePoolForm";
 import { FormFooter } from "@/shared/FormFooter";
 import { FormSection } from "@/shared/FormSection";
 import { IdentitySection } from "@/shared/IdentitySection";
+import { ScopedPicker } from "@/shared/ScopeNotes";
 import { Segmented } from "@/shared/Segmented";
 
 const SELECTION_OPTIONS = POOL_SELECTIONS.map((s) => ({
@@ -28,6 +29,10 @@ export function PoolForm({ pool, onSaved, onCancel }: PoolFormProps) {
 		isEdit,
 		slugPreview,
 		placement,
+		updatingFor,
+		unavailableAccounts,
+		unavailableKeys,
+		membersError,
 		hostOptions,
 		chosenAccounts,
 		availableAccounts,
@@ -101,28 +106,34 @@ export function PoolForm({ pool, onSaved, onCancel }: PoolFormProps) {
 									Accounts are tried first, in this order, each with all of its
 									keys; then the single keys below.
 								</p>
-								<PoolMemberPicker
-									chosenTitle="Accounts in the pool · in order"
-									availableTitle="Provider accounts at this host"
-									emptyChosen="No accounts yet. An account brings every key it holds, now and later."
-									emptyAvailable="No other provider accounts at this host, own or shared."
-									chosen={chosenAccounts}
-									available={availableAccounts}
-									onAdd={accountEdits.add}
-									onRemove={accountEdits.remove}
-									onMove={accountEdits.move}
-								/>
-								<PoolMemberPicker
-									chosenTitle="Keys in the pool · in order"
-									availableTitle="Credentials at this host"
-									emptyChosen="No single keys yet. A pool may stay empty; add credentials below."
-									emptyAvailable="No other credentials at this host."
-									chosen={chosenKeys}
-									available={availableKeys}
-									onAdd={keyEdits.add}
-									onRemove={keyEdits.remove}
-									onMove={keyEdits.move}
-								/>
+								<ScopedPicker updatingFor={updatingFor} error={membersError}>
+									<div className="flex flex-col gap-4">
+										<PoolMemberPicker
+											chosenTitle="Accounts in the pool · in order"
+											availableTitle="Provider accounts at this host"
+											emptyChosen="No accounts yet. An account brings every key it holds, now and later."
+											emptyAvailable="No other provider accounts at this host, own or shared."
+											chosen={chosenAccounts}
+											available={availableAccounts}
+											onAdd={accountEdits.add}
+											onRemove={accountEdits.remove}
+											onMove={accountEdits.move}
+											unavailable={unavailableAccounts}
+										/>
+										<PoolMemberPicker
+											chosenTitle="Keys in the pool · in order"
+											availableTitle="Credentials at this host"
+											emptyChosen="No single keys yet. A pool may stay empty; add credentials below."
+											emptyAvailable="No other credentials at this host."
+											chosen={chosenKeys}
+											available={availableKeys}
+											onAdd={keyEdits.add}
+											onRemove={keyEdits.remove}
+											onMove={keyEdits.move}
+											unavailable={unavailableKeys}
+										/>
+									</div>
+								</ScopedPicker>
 							</>
 						)}
 					</div>

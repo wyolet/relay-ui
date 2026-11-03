@@ -8,10 +8,12 @@ import {
 	PopoverTrigger,
 } from "@/components/ui/popover";
 import { HostLogo } from "@/hosts/HostLogo";
+import type { UnavailablePicks } from "@/lib/workContext";
 import { moveItem } from "@/policies/policyFormSpec";
 import type { LinkChoice, LinkChoices } from "@/policies/usePolicyLinkChoices";
 import { filterTriggerClassName } from "@/shared/MultiSelect";
 import { OptionRow } from "@/shared/OptionRow";
+import { NotAvailableTag } from "@/shared/ScopeNotes";
 
 interface Props {
 	choices: LinkChoices;
@@ -22,6 +24,8 @@ interface Props {
 	renderRowControl?: (choice: LinkChoice) => ReactNode;
 	addLabel: string;
 	emptyText: string;
+	/** Linked rows the form's workspace can't use. */
+	unavailable?: UnavailablePicks;
 }
 
 /** Linked rows of one kind (pools, budgets) plus an add popover. */
@@ -32,6 +36,7 @@ export function PolicyLinkPicker({
 	renderRowControl,
 	addLabel,
 	emptyText,
+	unavailable,
 }: Props) {
 	const ids = choices.selected.map((c) => c.id);
 	return (
@@ -46,6 +51,9 @@ export function PolicyLinkPicker({
 							choice={c}
 							rank={ordered ? i + 1 : undefined}
 						>
+							{unavailable?.ids.includes(c.id) && (
+								<NotAvailableTag scope={unavailable.scope} />
+							)}
 							{ordered && (
 								<>
 									<IconButton
