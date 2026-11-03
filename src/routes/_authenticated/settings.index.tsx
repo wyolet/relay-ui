@@ -70,7 +70,7 @@ const ITEMS: SettingItem[] = [
 		to: "/settings/sso",
 		label: "SSO",
 		description:
-			"Sign operators in through your identity provider (OIDC). Licensed feature; password login always works.",
+			"Sign operators in through your identity provider (OIDC); password login always works.",
 		icon: LogIn,
 	},
 	{
@@ -91,7 +91,7 @@ const ITEMS: SettingItem[] = [
 		to: "/settings/license",
 		label: "License",
 		description:
-			"Install or review the license file that unlocks SSO and custom roles.",
+			"Install or review the license file that unlocks custom roles.",
 		icon: BadgeCheck,
 	},
 	{
