@@ -1,15 +1,20 @@
 import { useForm } from "@tanstack/react-form";
+import { useQuery } from "@tanstack/react-query";
 import { useStore } from "@tanstack/react-store";
 import { useEffect, useMemo, useRef } from "react";
 import { z } from "zod";
+import { usableBudgetsQuery } from "@/api/hooks/budgets";
 import { useCreatePolicy, useUpdatePolicy } from "@/api/hooks/policies";
+import { usablePoolsQuery } from "@/api/hooks/pools";
+import { usableRateLimitsQuery } from "@/api/hooks/ratelimits";
 import type { Policy, PolicyCreate, PolicyUpdate } from "@/api/types/policy";
 import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
-import { useFormOwner } from "@/hooks/useWorkContext";
+import { useClearPicksOnSwitch, useFormOwner } from "@/hooks/useWorkContext";
 import { displayLabel } from "@/lib/displayLabel";
 import { shownError, zodFieldValidator } from "@/lib/formErrors";
 import { randomSuffix, slugify } from "@/lib/slug";
+import { usablePicks } from "@/lib/workContext";
 import {
 	budgetLinksForIds,
 	type PolicySpecValues,
@@ -186,6 +191,48 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 	const descriptionError = useStore(form.store, (s) =>
 		shownError(s.fieldMeta?.description, s.submissionAttempts),
 	);
+
+	const poolsResult = useQuery(usablePoolsQuery(usableBy));
+	const budgetsResult = useQuery(usableBudgetsQuery(usableBy));
+	const rateLimitsResult = useQuery(usableRateLimitsQuery(usableBy));
+	function clearUnusablePicks(): boolean {
+		const { poolIds, budgets, rateLimits } = form.state.values;
+		const keptPools = usablePicks(poolIds, poolsResult.data?.items ?? []);
+		const keptBudgetIds = usablePicks(
+			budgets.map((b) => b.budgetId),
+			budgetsResult.data?.items ?? [],
+		);
+		const usableRateLimitIds = usablePicks(
+			rateLimits.map((l) => l.rateLimitId),
+			rateLimitsResult.data?.items ?? [],
+		);
+		// A rate-limit row keeps its model scope; only its pick is cleared.
+		const keptRateLimits = rateLimits.map((l) =>
+			l.rateLimitId && !usableRateLimitIds.includes(l.rateLimitId)
+				? { ...l, rateLimitId: "" }
+				: l,
+		);
+		const poolsDropped = keptPools.length < poolIds.length;
+		const budgetsDropped = keptBudgetIds.length < budgets.length;
+		const rateLimitsDropped = keptRateLimits.some(
+			(l, i) => l !== rateLimits[i],
+		);
+		if (poolsDropped) form.setFieldValue("poolIds", keptPools);
+		if (budgetsDropped) {
+			form.setFieldValue("budgets", budgetLinksForIds(keptBudgetIds, budgets));
+		}
+		if (rateLimitsDropped) form.setFieldValue("rateLimits", keptRateLimits);
+		return poolsDropped || budgetsDropped || rateLimitsDropped;
+	}
+	const shownPlacement = useClearPicksOnSwitch(
+		placement,
+		usableBy,
+		poolsResult.isSuccess &&
+			budgetsResult.isSuccess &&
+			rateLimitsResult.isSuccess,
+		clearUnusablePicks,
+	);
+
 	function setBudgetIds(ids: string[]) {
 		form.setFieldValue("budgets", budgetLinksForIds(ids, values.budgets));
 	}
@@ -207,7 +254,7 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 		slugPreview,
 		displayNameError,
 		descriptionError,
-		placement,
+		placement: shownPlacement,
 		usableBy,
 	};
 }

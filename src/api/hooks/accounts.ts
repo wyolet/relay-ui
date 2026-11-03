@@ -93,7 +93,8 @@ export function useAccountsList(params: AccountsListParams) {
 /** What a row owned by `usableBy` may link: a binding's accounts, or a pool's. */
 export type AccountUse = NonNullable<AccountsListParams["usable_for"]>;
 
-function usableAccountsQuery(
+/** The accounts a `use` row owned by `usableBy` may link, narrowed by `params`. */
+export function usableAccountsQuery(
 	usableBy: string | undefined,
 	params: AccountsListParams,
 	use: AccountUse,
@@ -105,23 +106,7 @@ function usableAccountsQuery(
 	});
 }
 
-/** The accounts a `use` row owned by `usableBy` may link, narrowed by `params`; empty while loading. */
-export function useUsableAccounts(
-	usableBy: string | undefined,
-	params: AccountsListParams = {},
-	{
-		use = "binding",
-		enabled = true,
-	}: { use?: AccountUse; enabled?: boolean } = {},
-): Account[] {
-	const { data } = useQuery({
-		...usableAccountsQuery(usableBy, params, use),
-		enabled,
-	});
-	return data?.items ?? [];
-}
-
-/** {@link useUsableAccounts} for binding use, suspending until the list loads. */
+/** The accounts a binding owned by `usableBy` may link, suspending until the list loads. */
 export function useUsableAccountsSuspense(
 	usableBy: string | undefined,
 	params: AccountsListParams = {},

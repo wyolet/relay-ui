@@ -99,9 +99,13 @@ export function useAttachableRateLimits(): RateLimit[] {
 	return (data.items ?? []).filter((rl) => !isSystemOwned(rl));
 }
 
+export function usableRateLimitsQuery(usableBy: string | undefined) {
+	return rateLimitsListQuery({ usable_by: usableBy });
+}
+
 /** The rate limits a policy owned by `usableBy` may link; empty while loading. */
 export function useUsableRateLimits(usableBy: string | undefined): RateLimit[] {
-	const { data } = useQuery(rateLimitsListQuery({ usable_by: usableBy }));
+	const { data } = useQuery(usableRateLimitsQuery(usableBy));
 	return data?.items ?? [];
 }
 

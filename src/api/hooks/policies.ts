@@ -183,9 +183,13 @@ export function policiesListQuery(params: PoliciesListParams) {
 	});
 }
 
+export function usablePoliciesQuery(usableBy: string | undefined) {
+	return policiesListQuery({ usable_by: usableBy });
+}
+
 /** The policies a binding owned by `usableBy` may link; empty while loading. */
 export function useUsablePolicies(usableBy: string | undefined): Policy[] {
-	const { data } = useQuery(policiesListQuery({ usable_by: usableBy }));
+	const { data } = useQuery(usablePoliciesQuery(usableBy));
 	return data?.items ?? [];
 }
 

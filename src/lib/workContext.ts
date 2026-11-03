@@ -111,38 +111,87 @@ export function contextLabel(ctx: WorkContext): string {
 	return ctx.kind === "personal" ? "Personal" : ctx.displayName;
 }
 
-/** "In Team Platform": where a create in this context lands. */
-export function contextPlacement(ctx: WorkContext): string {
+/** The switcher trigger's main line; personal shows whose it is. */
+export function contextTitle(ctx: WorkContext): string {
+	return ctx.kind === "personal"
+		? ctx.displayName || "Personal"
+		: ctx.displayName;
+}
+
+/** The switcher trigger's second line: a project's team, else the kind. */
+export function contextSubtitle(
+	ctx: WorkContext,
+	contexts: readonly WorkContext[],
+): string {
 	switch (ctx.kind) {
 		case "personal":
-			return "In Personal";
+			return "Personal";
 		case "system":
-			return "In System";
+			return "Relay-wide";
+		case "team":
+			return KIND_LABEL.team;
+		case "project":
+			return (
+				contexts.find((c) => c.kind === "team" && c.id === ctx.teamId)
+					?.displayName ?? KIND_LABEL.project
+			);
+	}
+}
+
+/** "Team Platform": the context a create lands in. */
+export function contextName(ctx: WorkContext): string {
+	switch (ctx.kind) {
+		case "personal":
+			return "Personal";
+		case "system":
+			return "System";
 		default:
-			return `In ${KIND_LABEL[ctx.kind]} ${ctx.displayName}`;
+			return `${KIND_LABEL[ctx.kind]} ${ctx.displayName}`;
 	}
 }
 
 /** Where an existing row sits, named from the caller's contexts when listed there. */
-export function ownerPlacement(
+export function ownerName(
 	owner: Owner | undefined,
 	contexts: readonly WorkContext[],
 	actorUserId: string | undefined,
 ): string {
 	const kind = owner?.kind ?? "user";
 	const id = owner?.id ?? "";
-	if (kind === "system") return "In System";
+	if (kind === "system") return "System";
 	if (kind === "user") {
-		return !id || id === actorUserId
-			? "In Personal"
-			: `In user ${id.slice(0, 8)}…`;
+		return !id || id === actorUserId ? "Personal" : `user ${id.slice(0, 8)}…`;
 	}
 	if (kind === "team" || kind === "project") {
 		const listed = contexts.find((c) => c.kind === kind && c.id === id);
-		if (listed) return contextPlacement(listed);
-		return `In ${KIND_LABEL[kind]} ${id.slice(0, 8)}…`;
+		if (listed) return contextName(listed);
+		return `${KIND_LABEL[kind]} ${id.slice(0, 8)}…`;
 	}
-	return `In ${kind}`;
+	return kind;
+}
+
+/** Where a form's row sits, as its identity line shows it. */
+export interface FormPlacement {
+	/** e.g. "Team Platform". */
+	scope: string;
+	/** Placed by the work context, so switching the context moves the create. */
+	editable: boolean;
+	/** Why picks were cleared after a switch. */
+	note?: string;
+}
+
+/** The note a create form shows once a switch dropped picks. */
+export function scopeSwitchNote(scope: string): string {
+	return `Switched to ${scope}; picks that ${scope} can't use were cleared.`;
+}
+
+/** The picked ids still among the `usable` rows, in pick order. */
+export function usablePicks(
+	picked: readonly string[],
+	usable: readonly { metadata: { id?: string } }[],
+): string[] {
+	const allowed = new Set(usable.map((row) => row.metadata.id));
+	return picked.filter((id) => allowed.has(id));
 }
 
 export interface ContextRow {

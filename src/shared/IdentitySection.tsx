@@ -1,7 +1,32 @@
 import { Tag } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import type { FormPlacement } from "@/lib/workContext";
 import { FormSection } from "@/shared/FormSection";
+import { WorkspaceMenu } from "@/shared/WorkspaceMenu";
+
+function PlacementText({ placement }: { placement: FormPlacement }) {
+	if (!placement.editable) return <span> · In {placement.scope}</span>;
+	return (
+		<span>
+			{" · "}Creating in{" "}
+			<span className="font-medium text-foreground">{placement.scope}</span>
+			{" · "}
+			<WorkspaceMenu
+				aria-label="Change workspace"
+				trigger={
+					<Button
+						variant="link"
+						className="h-auto border-0 p-0 text-[11px] font-normal"
+					/>
+				}
+			>
+				change
+			</WorkspaceMenu>
+		</span>
+	);
+}
 
 interface IdentitySectionProps {
 	displayName: string;
@@ -14,8 +39,8 @@ interface IdentitySectionProps {
 	descriptionError?: string;
 	autoFocus?: boolean;
 	placeholder?: string;
-	/** Where the row sits, e.g. "In Team Platform"; read-only. */
-	placement?: string;
+	/** Where the row sits; a create placed by the work context offers a switch. */
+	placement?: FormPlacement;
 	/** Why the server refused the row's owner. */
 	placementError?: string;
 }
@@ -67,8 +92,13 @@ export function IdentityFields({
 					<code className="font-mono text-foreground/80">
 						{slugPreview || "—"}
 					</code>
-					{placement && <span> · {placement}</span>}
+					{placement && <PlacementText placement={placement} />}
 				</p>
+				{placement?.note && (
+					<p className="mt-1 text-[11px] text-muted-foreground">
+						{placement.note}
+					</p>
+				)}
 				{placementError && (
 					<p className="mt-1.5 text-[11px] text-destructive">
 						{placementError}

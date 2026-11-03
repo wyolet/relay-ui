@@ -5,17 +5,18 @@ import { useEffect, useMemo, useRef } from "react";
 import { z } from "zod";
 import {
 	accountListQueryOptions,
-	useUsableAccounts,
+	usableAccountsQuery,
 } from "@/api/hooks/accounts";
-import { useHostKeys, useUsableHostKeys } from "@/api/hooks/hostkeys";
+import { usableHostKeysQuery, useHostKeys } from "@/api/hooks/hostkeys";
 import { useHosts } from "@/api/hooks/hosts";
 import { type Pool, useCreatePool, useUpdatePool } from "@/api/hooks/pools";
 import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
-import { useFormOwner } from "@/hooks/useWorkContext";
+import { useClearPicksOnSwitch, useFormOwner } from "@/hooks/useWorkContext";
 import { displayLabel } from "@/lib/displayLabel";
 import { shownError, zodFieldValidator } from "@/lib/formErrors";
 import { randomSuffix, slugify } from "@/lib/slug";
+import { usablePicks } from "@/lib/workContext";
 import {
 	moveItem,
 	POOL_SELECTIONS,
@@ -170,11 +171,36 @@ export function usePoolForm({ pool, onSaved }: UsePoolFormOptions) {
 	}, [loaded.resetKey, initial, form]);
 
 	const values = useStore(form.store, (s) => s.values);
-	const usableKeys = useUsableHostKeys(usableBy, values.hostId);
-	const usableAccounts = useUsableAccounts(
+	const keysResult = useQuery(usableHostKeysQuery(usableBy, values.hostId));
+	const accountsResult = useQuery({
+		...usableAccountsQuery(
+			usableBy,
+			{ kind: ["provider"], host_id: [values.hostId] },
+			"pool",
+		),
+		enabled: values.hostId !== "",
+	});
+	const usableKeys = keysResult.data?.items ?? [];
+	const usableAccounts = accountsResult.data?.items ?? [];
+
+	function clearUnusablePicks(): boolean {
+		const { accountIds, credentialIds } = form.state.values;
+		const keptAccounts = usablePicks(accountIds, usableAccounts);
+		const keptKeys = usablePicks(credentialIds, usableKeys);
+		const dropped =
+			keptAccounts.length < accountIds.length ||
+			keptKeys.length < credentialIds.length;
+		if (dropped) {
+			form.setFieldValue("accountIds", keptAccounts);
+			form.setFieldValue("credentialIds", keptKeys);
+		}
+		return dropped;
+	}
+	const shownPlacement = useClearPicksOnSwitch(
+		placement,
 		usableBy,
-		{ kind: ["provider"], host_id: [values.hostId] },
-		{ use: "pool", enabled: values.hostId !== "" },
+		values.hostId === "" || (keysResult.isSuccess && accountsResult.isSuccess),
+		clearUnusablePicks,
 	);
 	// Names accounts already in the pool that the current scope may no longer use.
 	const { data: visibleAccounts } = useQuery(accountListQueryOptions);
@@ -240,7 +266,7 @@ export function usePoolForm({ pool, onSaved }: UsePoolFormOptions) {
 		errors,
 		isEdit,
 		slugPreview: pool ? pool.metadata.name : computeSlug(values.displayName),
-		placement,
+		placement: shownPlacement,
 		hostOptions,
 		chosenAccounts: chosenAccounts(values.accountIds, [
 			...usableAccounts,

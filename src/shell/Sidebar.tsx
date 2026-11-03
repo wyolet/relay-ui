@@ -26,6 +26,7 @@ import {
 	Sidebar as SidebarRoot,
 } from "@/components/ui/sidebar";
 import { BrandMark } from "@/shared/BrandMark";
+import { WorkspaceSwitcher } from "@/shell/WorkspaceSwitcher";
 import { USERS_PAGE_TABS } from "@/users/useUsersPageTabs";
 
 interface NavItem {
@@ -183,6 +184,7 @@ export function Sidebar() {
 						</span>
 					</div>
 				</div>
+				<WorkspaceSwitcher />
 			</SidebarHeader>
 
 			<SidebarContent>

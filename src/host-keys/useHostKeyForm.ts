@@ -1,4 +1,5 @@
 import { useForm } from "@tanstack/react-form";
+import { useQuery } from "@tanstack/react-query";
 import { useStore } from "@tanstack/react-store";
 import { useEffect, useMemo, useRef } from "react";
 import { z } from "zod";
@@ -11,7 +12,7 @@ import {
 import { useCreateHostKey, useUpdateHostKey } from "@/api/hooks/hostkeys";
 import { useHosts } from "@/api/hooks/hosts";
 import { usePolicies } from "@/api/hooks/policies";
-import { usePools, useUpdatePool, useUsablePools } from "@/api/hooks/pools";
+import { usablePoolsQuery, usePools, useUpdatePool } from "@/api/hooks/pools";
 import type {
 	HostKey,
 	HostKeyCreate,
@@ -20,11 +21,12 @@ import type {
 } from "@/api/types/hostkey";
 import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
-import { useFormOwner } from "@/hooks/useWorkContext";
+import { useClearPicksOnSwitch, useFormOwner } from "@/hooks/useWorkContext";
 import { displayLabel } from "@/lib/displayLabel";
 import { shownError, zodFieldValidator } from "@/lib/formErrors";
 import { ownerKey } from "@/lib/ownerScopes";
 import { randomSuffix, slugify } from "@/lib/slug";
+import { usablePicks } from "@/lib/workContext";
 import type { CheckOption } from "@/shared/MultiSelect";
 import { toast } from "@/shared/Toast";
 import { keyAccountGroups } from "./hostKeyAccount";
@@ -364,14 +366,38 @@ export function useHostKeyForm({
 	);
 
 	const poolsShown = !isEdit && values.hostId !== "" && values.accountId !== "";
-	const usablePools = useUsablePools(
-		usableBy,
-		{ host_id: [values.hostId] },
-		{ enabled: poolsShown },
-	);
+	const poolsResult = useQuery({
+		...usablePoolsQuery(usableBy, { host_id: [values.hostId] }),
+		enabled: poolsShown,
+	});
+	const usablePools = poolsResult.data?.items ?? [];
 	const poolChoices = poolsShown
 		? keyPoolChoices(usablePools, values.hostId, values.accountId)
 		: [];
+
+	// A dropped account takes its host and pools with it, as a re-pick would.
+	function clearUnusablePicks(): boolean {
+		const { accountId, poolIds } = form.state.values;
+		if (
+			accountId !== "" &&
+			!usableAccounts.some((a) => a.metadata.id === accountId)
+		) {
+			form.setFieldValue("accountId", "");
+			form.setFieldValue("hostId", "");
+			form.setFieldValue("poolIds", []);
+			return true;
+		}
+		const keptPools = usablePicks(poolIds, usablePools);
+		if (keptPools.length === poolIds.length) return false;
+		form.setFieldValue("poolIds", keptPools);
+		return true;
+	}
+	const shownPlacement = useClearPicksOnSwitch(
+		placement,
+		usableBy,
+		!poolsShown || poolsResult.isSuccess,
+		clearUnusablePicks,
+	);
 	const poolOptions: CheckOption[] = poolChoices.map((c) => ({
 		value: c.id,
 		label: c.label,
@@ -419,7 +445,7 @@ export function useHostKeyForm({
 		slugPreview,
 		displayNameError,
 		descriptionError,
-		placement,
+		placement: shownPlacement,
 		accountIdError,
 		envVarError,
 		envVarReservedPrefix,

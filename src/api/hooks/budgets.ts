@@ -78,9 +78,13 @@ export function useBudgetsList(params: BudgetsListParams) {
 	return useSuspenseQuery(budgetListQuery(params));
 }
 
+export function usableBudgetsQuery(usableBy: string | undefined) {
+	return budgetListQuery({ usable_by: usableBy });
+}
+
 /** The budgets a policy owned by `usableBy` may link; empty while loading. */
 export function useUsableBudgets(usableBy: string | undefined): Budget[] {
-	const { data } = useQuery(budgetListQuery({ usable_by: usableBy }));
+	const { data } = useQuery(usableBudgetsQuery(usableBy));
 	return data?.items ?? [];
 }
 

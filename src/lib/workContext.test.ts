@@ -2,16 +2,20 @@ import { describe, expect, test } from "bun:test";
 import type { components } from "@/api/types.gen";
 import {
 	contextLabel,
+	contextName,
 	contextOwner,
-	contextPlacement,
 	contextRows,
+	contextSubtitle,
 	contextTeamId,
+	contextTitle,
 	contextUsableBy,
-	ownerPlacement,
+	ownerName,
 	ownerUsableBy,
 	resolveWorkContext,
 	SYSTEM_CONTEXT,
 	scopeOptions,
+	scopeSwitchNote,
+	usablePicks,
 	type WorkContext,
 	workContexts,
 } from "@/lib/workContext";
@@ -161,30 +165,71 @@ describe("placement", () => {
 	const contexts = workContexts(mine, false);
 
 	test("names the context a create lands in", () => {
-		expect(contextPlacement(personal)).toBe("In Personal");
-		expect(contextPlacement(SYSTEM_CONTEXT)).toBe("In System");
-		expect(contextPlacement(team)).toBe("In Team Platform");
-		expect(contextPlacement(project)).toBe("In Project Search");
+		expect(contextName(personal)).toBe("Personal");
+		expect(contextName(SYSTEM_CONTEXT)).toBe("System");
+		expect(contextName(team)).toBe("Team Platform");
+		expect(contextName(project)).toBe("Project Search");
 	});
 
 	test("names a row's owner from the caller's contexts", () => {
-		expect(ownerPlacement({ kind: "team", id: "t1" }, contexts, "u1")).toBe(
-			"In Team Platform",
+		expect(ownerName({ kind: "team", id: "t1" }, contexts, "u1")).toBe(
+			"Team Platform",
 		);
-		expect(ownerPlacement({ kind: "user", id: "u1" }, contexts, "u1")).toBe(
-			"In Personal",
+		expect(ownerName({ kind: "user", id: "u1" }, contexts, "u1")).toBe(
+			"Personal",
 		);
-		expect(ownerPlacement({ kind: "system" }, contexts, "u1")).toBe(
-			"In System",
-		);
+		expect(ownerName({ kind: "system" }, contexts, "u1")).toBe("System");
 	});
 
 	test("falls back to a short id outside the caller's contexts", () => {
 		expect(
-			ownerPlacement({ kind: "project", id: "0123456789" }, contexts, "u1"),
-		).toBe("In Project 01234567…");
-		expect(ownerPlacement({ kind: "user", id: "u2" }, contexts, "u1")).toBe(
-			"In user u2…",
+			ownerName({ kind: "project", id: "0123456789" }, contexts, "u1"),
+		).toBe("Project 01234567…");
+		expect(ownerName({ kind: "user", id: "u2" }, contexts, "u1")).toBe(
+			"user u2…",
+		);
+	});
+});
+
+describe("switcher trigger", () => {
+	const contexts = workContexts(mine, true);
+
+	test("personal shows whose it is; the rest by display name", () => {
+		expect(contextTitle(personal)).toBe("ana");
+		expect(contextTitle({ ...personal, displayName: "" })).toBe("Personal");
+		expect(contextTitle(team)).toBe("Platform");
+	});
+
+	test("a project's subtitle is its team, else the kind", () => {
+		expect(contextSubtitle(project, contexts)).toBe("Platform");
+		expect(contextSubtitle({ ...project, teamId: "t9" }, contexts)).toBe(
+			"Project",
+		);
+		expect(contextSubtitle(team, contexts)).toBe("Team");
+		expect(contextSubtitle(personal, contexts)).toBe("Personal");
+		expect(contextSubtitle(SYSTEM_CONTEXT, contexts)).toBe("Relay-wide");
+	});
+});
+
+describe("usablePicks", () => {
+	test("keeps the usable picks in pick order", () => {
+		const rows = [{ metadata: { id: "a" } }, { metadata: { id: "b" } }];
+		expect(usablePicks(["b", "x", "a"], rows)).toEqual(["b", "a"]);
+	});
+
+	test("an id-less row allows nothing", () => {
+		expect(usablePicks(["a"], [{ metadata: {} }])).toEqual([]);
+	});
+
+	test("drops everything when nothing is usable", () => {
+		expect(usablePicks(["a"], [])).toEqual([]);
+	});
+});
+
+describe("scopeSwitchNote", () => {
+	test("names the new scope", () => {
+		expect(scopeSwitchNote("Team Platform")).toBe(
+			"Switched to Team Platform; picks that Team Platform can't use were cleared.",
 		);
 	});
 });

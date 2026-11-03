@@ -1,6 +1,6 @@
+import { useContextSwitcher } from "@/hooks/useContextSwitcher";
 import { NO_LANE_MESSAGE } from "@/lib/personalAccount";
 import { AlertBanner } from "@/shared/AlertBanner";
-import { useContextSwitcher } from "@/shell/useContextSwitcher";
 
 /** Tells a caller with no context to work in why, once, above every page. */
 export function NoLaneBanner() {

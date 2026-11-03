@@ -77,6 +77,13 @@ export function usePoolsList(params: PoolsListParams) {
 	return useSuspenseQuery(poolListQuery(params));
 }
 
+export function usablePoolsQuery(
+	usableBy: string | undefined,
+	params: PoolsListParams = {},
+) {
+	return poolListQuery({ ...params, usable_by: usableBy });
+}
+
 /** The pools a policy owned by `usableBy` may link, narrowed by `params`; empty while loading. */
 export function useUsablePools(
 	usableBy: string | undefined,
@@ -84,7 +91,7 @@ export function useUsablePools(
 	{ enabled = true }: { enabled?: boolean } = {},
 ): Pool[] {
 	const { data } = useQuery({
-		...poolListQuery({ ...params, usable_by: usableBy }),
+		...usablePoolsQuery(usableBy, params),
 		enabled,
 	});
 	return data?.items ?? [];

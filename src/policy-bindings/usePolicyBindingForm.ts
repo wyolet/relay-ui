@@ -1,10 +1,11 @@
 import { useForm } from "@tanstack/react-form";
+import { useQuery } from "@tanstack/react-query";
 import { useStore } from "@tanstack/react-store";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 import { accountLabel } from "@/accounts/accountView";
-import { useAccounts, useUsableAccounts } from "@/api/hooks/accounts";
-import { usePolicies, useUsablePolicies } from "@/api/hooks/policies";
+import { usableAccountsQuery, useAccounts } from "@/api/hooks/accounts";
+import { usablePoliciesQuery, usePolicies } from "@/api/hooks/policies";
 import {
 	useCreatePolicyBinding,
 	useUpdatePolicyBinding,
@@ -12,10 +13,11 @@ import {
 import type { PolicyBinding } from "@/api/types/policyBinding";
 import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
-import { useFormOwner } from "@/hooks/useWorkContext";
+import { useClearPicksOnSwitch, useFormOwner } from "@/hooks/useWorkContext";
 import { displayLabel } from "@/lib/displayLabel";
 import { shownError, zodFieldValidator } from "@/lib/formErrors";
 import { randomSuffix, slugify } from "@/lib/slug";
+import { usablePicks } from "@/lib/workContext";
 import {
 	bindingPolicyOptions,
 	type DuplicateAccount,
@@ -109,8 +111,10 @@ export function usePolicyBindingForm({
 			? { owner: { kind: "project", id: projectId } }
 			: binding?.metadata,
 	);
-	const usablePolicies = useUsablePolicies(usableBy);
-	const usableAccounts = useUsableAccounts(usableBy);
+	const policiesResult = useQuery(usablePoliciesQuery(usableBy));
+	const accountsResult = useQuery(usableAccountsQuery(usableBy, {}, "binding"));
+	const usablePolicies = policiesResult.data?.items ?? [];
+	const usableAccounts = accountsResult.data?.items ?? [];
 
 	const initial = useMemo<PolicyBindingFormValues>(
 		() => (binding ? toValues(binding) : emptyValues()),
@@ -210,6 +214,24 @@ export function usePolicyBindingForm({
 
 	const values = useStore(form.store, (s) => s.values);
 
+	function clearUnusablePicks(): boolean {
+		const { policyId, accountIds } = form.state.values;
+		const keptAccounts = usablePicks(accountIds, usableAccounts);
+		const policyDropped =
+			policyId !== "" &&
+			!usablePolicies.some((p) => p.metadata.id === policyId);
+		const accountsDropped = keptAccounts.length < accountIds.length;
+		if (policyDropped) form.setFieldValue("policyId", "");
+		if (accountsDropped) setAccountIds(keptAccounts);
+		return policyDropped || accountsDropped;
+	}
+	const shownPlacement = useClearPicksOnSwitch(
+		placement,
+		usableBy,
+		policiesResult.isSuccess && accountsResult.isSuccess,
+		clearUnusablePicks,
+	);
+
 	// The owner's usable set, plus what the binding already names so an edit keeps it.
 	const usableAccountIds = new Set(usableAccounts.map((a) => a.metadata.id));
 	const accountOptions = [
@@ -251,7 +273,7 @@ export function usePolicyBindingForm({
 		slugPreview,
 		displayNameError,
 		descriptionError,
-		placement,
+		placement: shownPlacement,
 		policyIdError,
 		policyOptions,
 		accountOptions,

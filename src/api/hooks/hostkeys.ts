@@ -2,7 +2,6 @@ import {
 	queryOptions,
 	useMutation,
 	useQueries,
-	useQuery,
 	useQueryClient,
 	useSuspenseQuery,
 } from "@tanstack/react-query";
@@ -118,16 +117,15 @@ export function useHostKeysHealth(ids: readonly string[]) {
 	});
 }
 
-/** The host keys at `hostId` a pool owned by `usableBy` may link; empty while loading. */
-export function useUsableHostKeys(
+/** The host keys at `hostId` a pool owned by `usableBy` may link. */
+export function usableHostKeysQuery(
 	usableBy: string | undefined,
 	hostId: string,
-): HostKey[] {
-	const { data } = useQuery({
+) {
+	return queryOptions({
 		...hostKeysListQuery({ usable_by: usableBy, host_id: [hostId] }),
 		enabled: hostId !== "",
 	});
-	return data?.items ?? [];
 }
 
 export function useHostKey(ref: string) {
