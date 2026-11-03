@@ -74,6 +74,15 @@ export function scopeValue(kind: "team" | "project", id: string): string {
 }
 
 /** Split "team:<id>" back into its parts; null for anything else. */
+/** The scope chain past the owner itself: the scopes that enclose it. */
+export function scopeBeyondOwner(
+	scope: readonly string[] | null | undefined,
+	owner: { kind?: string; id?: string } | undefined,
+): string[] {
+	const own = owner?.kind && owner.id ? `${owner.kind}:${owner.id}` : "";
+	return (scope ?? []).filter((s) => s !== own);
+}
+
 export function parseScope(
 	value: string,
 ): { kind: "team" | "project"; id: string } | null {
