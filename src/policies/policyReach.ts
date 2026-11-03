@@ -5,6 +5,7 @@ import type {
 	ReachRef,
 	ReachVia,
 } from "@/api/hooks/reachable";
+import type { PolicyBinding } from "@/api/types/policyBinding";
 import type { CatalogRef } from "@/lib/catalogRef";
 import { parseValidRefs } from "@/lib/catalogRefToggle";
 import {
@@ -44,15 +45,83 @@ export function poolIdsOnReachSwitch(
 	};
 }
 
-/** The draft-reach read for `owner` (a `kind:id` scope); none until the reach names something. */
+/**
+ * The draft-reach read for `owner` (a `kind:id` scope), as the policy of
+ * `account` when given; none until the reach names something.
+ */
 export function draftReachRequest(
 	owner: string | undefined,
 	choice: ReachChoice | undefined,
 	poolIds: readonly string[],
+	account?: string,
 ): DraftReachRequest | undefined {
 	if (!owner || !choice) return undefined;
-	if (choice === "scope") return { owner, poolIds: [] };
-	return poolIds.length > 0 ? { owner, poolIds } : undefined;
+	if (choice === "pools" && poolIds.length === 0) return undefined;
+	return {
+		owner,
+		poolIds: choice === "scope" ? [] : poolIds,
+		...(account ? { account } : {}),
+	};
+}
+
+/** The accounts `policyId` governs, in binding order; a disabled binding governs none. */
+export function boundAccountIds(
+	bindings: readonly Pick<PolicyBinding, "spec">[],
+	policyId: string,
+): string[] {
+	const ids = bindings.flatMap((b) =>
+		b.spec.policyId === policyId && b.spec.enabled !== false
+			? (b.spec.accountIds ?? [])
+			: [],
+	);
+	return unique(ids);
+}
+
+/** Which bound account the reach was read for, when the policy has more than one. */
+export function boundAccountNote(
+	accountLabel: string,
+	otherCount: number,
+): string | undefined {
+	if (otherCount <= 0) return undefined;
+	const others =
+		otherCount === 1
+			? "1 other bound account may differ"
+			: `${otherCount} other bound accounts may differ`;
+	return `Checked for ${accountLabel}; ${others}.`;
+}
+
+/** Reasons for linked pools, accounts and keys that bring nothing: on the pool row that's linked, else apart. */
+export interface DroppedNotes {
+	byPool: ReadonlyMap<string, readonly string[]>;
+	other: readonly string[];
+}
+
+export function droppedNotes(
+	dropped: Reachable["dropped"],
+	poolIds: readonly string[],
+): DroppedNotes {
+	const byPool = new Map<string, string[]>();
+	const other: string[] = [];
+	for (const d of dropped ?? []) {
+		const poolId = d.pool?.id;
+		if (poolId && poolIds.includes(poolId)) {
+			byPool.set(poolId, [...(byPool.get(poolId) ?? []), d.reason]);
+		} else {
+			other.push(d.reason);
+		}
+	}
+	return { byPool, other };
+}
+
+/** Why a reach that serves nothing does: the ladder's refusal, else the first dropped link or excluded model. */
+export function emptyReachReason(reachable: Reachable): string | undefined {
+	if ((reachable.models ?? []).length > 0) return undefined;
+	return (
+		reachable.refused?.reason ??
+		reachable.dropped?.[0]?.reason ??
+		reachable.excluded?.[0]?.reason ??
+		"no host it reaches serves a model"
+	);
 }
 
 function refLabel(ref: ReachRef): string {
@@ -155,34 +224,31 @@ function reachRow(m: {
 	};
 }
 
+export const NOT_SERVED = "Not served through this reach.";
+
 /**
- * A warning per picked entry the reach can't serve, keyed by the entry as
- * written. An entry matching any served model is fine, so a provider entry
- * warns only when every model of it the reach binds is excluded; one matching
- * nothing the reach binds warns that the reach doesn't serve it.
+ * Warnings per picked entry the reach can't serve, keyed by the entry as
+ * written: relay's distinct reasons, verbatim. An entry matching any served
+ * model is fine, so a provider entry warns only when every model of it the
+ * reach binds is excluded; one matching nothing the reach binds gets
+ * {@link NOT_SERVED}.
  */
 export function entryWarnings(
 	entries: readonly string[],
 	reachable: Reachable,
-): Map<string, string> {
+): Map<string, readonly string[]> {
 	const served = (reachable.models ?? []).map(reachRow);
 	const excluded = (reachable.excluded ?? []).map((e) => ({
 		row: reachRow(e),
-		reason: e.reason.replace(/\.$/, ""),
+		reason: e.reason,
 	}));
-	const warnings = new Map<string, string>();
+	const warnings = new Map<string, readonly string[]>();
 	for (const ref of parseValidRefs(entries)) {
 		if (served.some((row) => refMatchesRow(ref, row))) continue;
 		const reasons = unique(
 			excluded.filter((e) => refMatchesRow(ref, e.row)).map((e) => e.reason),
 		);
-		const [first] = reasons;
-		if (first === undefined) {
-			warnings.set(ref.raw, "Not served through this reach.");
-			continue;
-		}
-		const more = reasons.length > 1 ? ` (and ${reasons.length - 1} more)` : "";
-		warnings.set(ref.raw, `Requests for it will be refused: ${first}${more}.`);
+		warnings.set(ref.raw, reasons.length > 0 ? reasons : [NOT_SERVED]);
 	}
 	return warnings;
 }
@@ -193,25 +259,35 @@ export interface DraftReachView {
 	note?: string;
 	/** The reach the list is narrowed to; picked entries are checked against it. */
 	checked?: Reachable;
-	/** Set with `checked`; the picker then lists only its models. */
+	/** Set when the reach serves something; the picker then lists only its models. */
 	pickerReach?: PickerReach;
 	excluded: ExcludedRow[];
+	dropped: DroppedNotes;
+	/** Which bound account the read stands for, when there are several. */
+	accountNote?: string;
 }
 
 const CHECKING = "Checking what this reach serves…";
+const NO_DROPPED: DroppedNotes = { byPool: new Map(), other: [] };
 
 export function draftReachView({
 	choice,
 	poolIds,
+	accountPending,
 	requested,
+	otherBoundAccounts,
 	data,
 	isError,
 	isStale,
 }: {
 	choice: ReachChoice | undefined;
 	poolIds: readonly string[];
+	/** The bound account to read for is still loading. */
+	accountPending: boolean;
 	/** Whether a read was sent: false when the owner has no scope to read in. */
 	requested: boolean;
+	/** Bound accounts besides the one read for. */
+	otherBoundAccounts: number;
 	data: Reachable | undefined;
 	isError: boolean;
 	/** `data` is the previous reach's, shown while this one loads. */
@@ -220,6 +296,7 @@ export function draftReachView({
 	const unnarrowed = (note: string): DraftReachView => ({
 		note,
 		excluded: [],
+		dropped: NO_DROPPED,
 	});
 	if (!choice) {
 		return unnarrowed("Choose a reach above to see which models it serves.");
@@ -227,19 +304,35 @@ export function draftReachView({
 	if (choice === "pools" && poolIds.length === 0) {
 		return unnarrowed("Add a pool to see which models it serves.");
 	}
+	if (accountPending) return unnarrowed(CHECKING);
 	if (!requested || isError) {
 		return unnarrowed("Couldn't check what this reach serves.");
 	}
 	if (!data) return unnarrowed(CHECKING);
+	const read = {
+		dropped: droppedNotes(data.dropped, poolIds),
+		accountNote: data.account
+			? boundAccountNote(refLabel(data.account), otherBoundAccounts)
+			: undefined,
+	};
 	if (data.refused) {
-		return unnarrowed(
-			`Requests under this reach are refused: ${data.refused.reason.replace(/\.$/, "")}.`,
-		);
+		return {
+			...read,
+			note: `Requests under this reach are refused: ${data.refused.reason}`,
+			excluded: [],
+		};
 	}
+	const emptyReason = emptyReachReason(data);
+	// An empty reach keeps the whole catalog listed, so the entries stay editable.
 	return {
-		note: isStale ? CHECKING : undefined,
+		...read,
+		note: emptyReason
+			? `This reach serves no models: ${emptyReason}`
+			: isStale
+				? CHECKING
+				: undefined,
 		checked: data,
-		pickerReach: pickerReachFrom(data, poolIds),
+		pickerReach: emptyReason ? undefined : pickerReachFrom(data, poolIds),
 		excluded: excludedRows(data),
 	};
 }

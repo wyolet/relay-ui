@@ -9,6 +9,7 @@ import type { LinkChoice, LinkChoices } from "@/policies/usePolicyLinkChoices";
 import { AddPopover } from "@/shared/AddPopover";
 import { RankControls } from "@/shared/RankControls";
 import { NotAvailableTag } from "@/shared/ScopeNotes";
+import { WarningNotes } from "@/shared/WarningNotes";
 
 interface Props {
 	choices: LinkChoices;
@@ -21,6 +22,8 @@ interface Props {
 	emptyText: string;
 	/** Linked rows the form's workspace can't use. */
 	unavailable?: UnavailablePicks;
+	/** Warnings under a linked row, keyed by its id. */
+	rowWarnings?: ReadonlyMap<string, readonly string[]>;
 }
 
 /** Linked rows of one kind (pools, budgets) plus an add popover. */
@@ -32,6 +35,7 @@ export function PolicyLinkPicker({
 	addLabel,
 	emptyText,
 	unavailable,
+	rowWarnings,
 }: Props) {
 	const ids = choices.selected.map((c) => c.id);
 	return (
@@ -45,6 +49,7 @@ export function PolicyLinkPicker({
 							key={c.id}
 							choice={c}
 							rank={ordered ? i + 1 : undefined}
+							warnings={rowWarnings?.get(c.id)}
 						>
 							{unavailable?.ids.includes(c.id) && (
 								<NotAvailableTag scope={unavailable.scope} />
@@ -84,37 +89,42 @@ export function PolicyLinkPicker({
 /** Detail routes a linked row can open, keyed by slug. */
 export type LinkChoiceRoute = "/pools/$name" | "/policies/budgets/$name";
 
-/** One linked row; `rank` marks an ordered list, `children` are trailing actions. */
+/** One linked row; `rank` marks an ordered list, `children` are trailing actions, `warnings` sit under it. */
 export function LinkChoiceRow({
 	choice,
 	rank,
 	linkTo,
+	warnings,
 	children,
 }: {
 	choice: LinkChoice;
 	rank?: number;
 	linkTo?: LinkChoiceRoute;
+	warnings?: readonly string[];
 	children?: ReactNode;
 }) {
 	return (
-		<li className="flex items-center gap-3 px-3 py-2">
-			{rank !== undefined && (
-				<span className="w-4 text-[11px] text-muted-foreground tabular-nums">
-					{rank}
-				</span>
-			)}
-			{linkTo ? (
-				<Link
-					to={linkTo}
-					params={{ name: choice.name }}
-					className="flex min-w-0 flex-1 hover:underline"
-				>
+		<li className="px-3 py-2">
+			<div className="flex items-center gap-3">
+				{rank !== undefined && (
+					<span className="w-4 text-[11px] text-muted-foreground tabular-nums">
+						{rank}
+					</span>
+				)}
+				{linkTo ? (
+					<Link
+						to={linkTo}
+						params={{ name: choice.name }}
+						className="flex min-w-0 flex-1 hover:underline"
+					>
+						<LinkChoiceLabel choice={choice} />
+					</Link>
+				) : (
 					<LinkChoiceLabel choice={choice} />
-				</Link>
-			) : (
-				<LinkChoiceLabel choice={choice} />
-			)}
-			{children}
+				)}
+				{children}
+			</div>
+			{warnings && <WarningNotes notes={warnings} className="mt-1.5" />}
 		</li>
 	);
 }

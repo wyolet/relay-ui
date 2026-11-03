@@ -18,6 +18,7 @@ import { FormFooter } from "@/shared/FormFooter";
 import { FormSection } from "@/shared/FormSection";
 import { IdentitySection } from "@/shared/IdentitySection";
 import { ScopedPicker } from "@/shared/ScopeNotes";
+import { WarningNotes } from "@/shared/WarningNotes";
 
 interface PolicyFormProps {
 	policy?: Policy;
@@ -56,6 +57,7 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 	);
 	const reach = useDraftReach({
 		owner: usableBy,
+		policyId: policy?.metadata.id,
 		choice: values.reach,
 		poolIds: values.poolIds,
 		entries: values.models,
@@ -102,9 +104,11 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 								addLabel="Add pool"
 								emptyText="No pools linked."
 								unavailable={unavailable.pools}
+								rowWarnings={reach.dropped.byPool}
 							/>
 						</ScopedPicker>
 					</PolicyReachPicker>
+					<WarningNotes notes={reach.dropped.other} className="mt-2" />
 				</FormSection>
 
 				<FormSection
@@ -119,7 +123,11 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 						reach={reach.pickerReach}
 						refWarnings={reach.warnings}
 					/>
-					<DraftReachNotes note={reach.note} excluded={reach.excluded} />
+					<DraftReachNotes
+						note={reach.note}
+						accountNote={reach.accountNote}
+						excluded={reach.excluded}
+					/>
 				</FormSection>
 
 				<FormSection

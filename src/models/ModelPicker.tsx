@@ -30,8 +30,8 @@ interface ModelPickerProps {
 	restrictTo?: readonly string[];
 	/** The models the caller's reach serves; rows outside it aren't listed. */
 	reach?: PickerReach;
-	/** A warning per picked ref, keyed by the ref as written. */
-	refWarnings?: ReadonlyMap<string, string>;
+	/** Warnings per picked ref, keyed by the ref as written. */
+	refWarnings?: ReadonlyMap<string, readonly string[]>;
 }
 
 /**

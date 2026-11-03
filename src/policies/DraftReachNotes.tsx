@@ -4,22 +4,30 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { ExcludedRow } from "@/policies/policyReach";
 
-/** Under the models picker: why it isn't narrowed to the reach, and the models the reach can't serve. */
+/**
+ * Under the models picker: why it isn't narrowed to the reach, which bound
+ * account it was checked for, and the models the reach can't serve.
+ */
 export function DraftReachNotes({
 	note,
+	accountNote,
 	excluded,
 }: {
 	note: string | undefined;
+	accountNote: string | undefined;
 	excluded: readonly ExcludedRow[];
 }) {
 	const [showExcluded, setShowExcluded] = useState(false);
-	if (!note && excluded.length === 0) return null;
+	if (!note && !accountNote && excluded.length === 0) return null;
 	return (
 		<div className="mt-2 flex flex-col gap-1.5">
 			{note && (
 				<p role="status" className="text-[11px] text-muted-foreground">
 					{note}
 				</p>
+			)}
+			{accountNote && (
+				<p className="text-[11px] text-muted-foreground">{accountNote}</p>
 			)}
 			{excluded.length > 0 && (
 				<>

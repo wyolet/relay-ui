@@ -13,18 +13,31 @@ export type ExcludedModel = components["schemas"]["ExcludedModel"];
 export type ReachRef = components["schemas"]["ReachRef"];
 export type ReachVia = components["schemas"]["ReachVia"];
 
-/** What a draft policy owned by `owner` (`kind:id` or `system`) and linking `poolIds` would reach. */
+/**
+ * What a draft policy owned by `owner` (`kind:id` or `system`) and linking
+ * `poolIds` would reach, read as the policy of `account` (an account id inside
+ * `owner`) when given, else of the owner's own account.
+ */
 export interface DraftReachRequest {
 	owner: string;
 	poolIds: readonly string[];
+	account?: string;
 }
 
-export function draftReachQueryOptions({ owner, poolIds }: DraftReachRequest) {
+export function draftReachQueryOptions({
+	owner,
+	poolIds,
+	account,
+}: DraftReachRequest) {
 	// Keyed by the pool set: reordering pools only reorders failover, which
 	// callers re-sort locally, so it needn't refetch.
 	const poolSet = [...poolIds].sort();
 	return queryOptions({
-		queryKey: ["catalog", "reachable", { owner, pool: poolSet }] as const,
+		queryKey: [
+			"catalog",
+			"reachable",
+			{ owner, pool: poolSet, account },
+		] as const,
 		queryFn: async (): Promise<Reachable> =>
 			unwrap(
 				await apiClient.GET("/catalog/reachable", {
@@ -32,13 +45,15 @@ export function draftReachQueryOptions({ owner, poolIds }: DraftReachRequest) {
 						query: {
 							owner,
 							...(poolIds.length > 0 ? { pool: [...poolIds] } : {}),
+							...(account ? { account } : {}),
 						},
 					},
 				}),
 			),
 		staleTime: 30_000,
 		gcTime: 5 * 60_000,
-		// Optional read: a relay without it, or an owner the caller can't create in, answers an error.
+		// Optional read: a relay without it, an owner the caller can't create in,
+		// or an account outside the owner answers an error.
 		retry: false,
 	});
 }
