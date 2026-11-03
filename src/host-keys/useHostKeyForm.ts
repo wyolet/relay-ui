@@ -1,18 +1,26 @@
 import { useForm } from "@tanstack/react-form";
-import { useQuery } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { useStore } from "@tanstack/react-store";
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 import { useAuth } from "@/api/auth";
 import {
 	type Account,
+	type AccountsListParams,
+	usableAccountsQuery,
 	useAccounts,
-	useUsableAccountsSuspense,
+	useUsableAccounts,
 } from "@/api/hooks/accounts";
 import { useCreateHostKey, useUpdateHostKey } from "@/api/hooks/hostkeys";
 import { useHosts } from "@/api/hooks/hosts";
 import { usePolicies } from "@/api/hooks/policies";
-import { usablePoolsQuery, usePools, useUpdatePool } from "@/api/hooks/pools";
+import {
+	type PoolsListParams,
+	usablePoolsQuery,
+	usePools,
+	useUpdatePool,
+	useUsablePools,
+} from "@/api/hooks/pools";
 import type {
 	HostKey,
 	HostKeyCreate,
@@ -21,12 +29,17 @@ import type {
 } from "@/api/types/hostkey";
 import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
-import { useClearPicksOnSwitch, useFormOwner } from "@/hooks/useWorkContext";
+import { useScopePrefetch } from "@/hooks/useScopePrefetch";
+import { useFormOwner } from "@/hooks/useWorkContext";
 import { displayLabel } from "@/lib/displayLabel";
 import { shownError, zodFieldValidator } from "@/lib/formErrors";
 import { ownerKey } from "@/lib/ownerScopes";
 import { randomSuffix, slugify } from "@/lib/slug";
-import { usablePicks } from "@/lib/workContext";
+import {
+	unavailablePicks,
+	unavailablePicksError,
+	updatingScope,
+} from "@/lib/workContext";
 import type { CheckOption } from "@/shared/MultiSelect";
 import { toast } from "@/shared/Toast";
 import { keyAccountGroups } from "./hostKeyAccount";
@@ -43,6 +56,14 @@ import { reservedEnvPrefix } from "./reservedEnv";
 export interface SelectOption {
 	value: string;
 	label: string;
+}
+
+/** The accounts a key may join: provider accounts only. */
+const KEY_ACCOUNTS: AccountsListParams = { kind: ["provider"] };
+
+/** The pools at the key's host. */
+function hostPools(hostId: string): PoolsListParams {
+	return { host_id: [hostId] };
 }
 
 export interface HostKeyFormValues {
@@ -154,6 +175,7 @@ export function useHostKeyForm({
 	const updateHostKey = useUpdateHostKey();
 	const updatePool = useUpdatePool();
 	const toastSaveError = useSaveErrorToast();
+	const queryClient = useQueryClient();
 	const { userId } = useAuth();
 	const { data: hostsData } = useHosts();
 	const { data: policiesData } = usePolicies();
@@ -170,11 +192,21 @@ export function useHostKeyForm({
 	const { owner, usableBy, placement } = useFormOwner(
 		hostKey?.metadata ?? account?.metadata,
 	);
-	const accountLocked = !hostKey && account !== undefined;
-	const usableAccounts = useUsableAccountsSuspense(usableBy, {
-		kind: ["provider"],
-	});
 	// An omitted owner is the caller's own scope.
+	const formOwner = ownerKey(owner ?? { kind: "user" }, userId);
+	const accountLocked = !hostKey && account !== undefined;
+	const accountsList = useUsableAccounts(usableBy, KEY_ACCOUNTS, "binding");
+	const [createdAccount, setCreatedAccount] = useState<Account>();
+	// The account made in the dialog is usable before the list's refetch shows it.
+	const justCreated =
+		createdAccount &&
+		ownerKey(createdAccount.metadata.owner, userId) === formOwner &&
+		!accountsList.items.some(
+			(a) => a.metadata.id === createdAccount.metadata.id,
+		)
+			? [createdAccount]
+			: [];
+	const usableAccounts = [...accountsList.items, ...justCreated];
 	// The key's own account stays listed even if the scope's list no longer has it.
 	const currentAccount = accounts.find(
 		(a) => a.metadata.id === hostKey?.spec.accountId,
@@ -187,7 +219,7 @@ export function useHostKeyForm({
 	const accountGroups = keyAccountGroups(
 		accountLocked && account ? [account] : listedAccounts,
 		hosts,
-		ownerKey(owner ?? { kind: "user" }, userId),
+		formOwner,
 		userId,
 	);
 
@@ -215,6 +247,8 @@ export function useHostKeyForm({
 			onChange: runValidation,
 		},
 		onSubmit: async ({ value }) => {
+			// Flagged picks block the save; their field errors say what to do.
+			if (unavailableAccount || unavailablePools) return;
 			const displayName = value.displayName.trim();
 			const description = value.description.trim();
 			const envVar = value.envVar.trim();
@@ -365,39 +399,52 @@ export function useHostKeyForm({
 		[hostKey, policiesData.items, poolsData.items],
 	);
 
-	const poolsShown = !isEdit && values.hostId !== "" && values.accountId !== "";
-	const poolsResult = useQuery({
-		...usablePoolsQuery(usableBy, { host_id: [values.hostId] }),
+	const { hostId } = values;
+	const poolsShown = !isEdit && hostId !== "" && values.accountId !== "";
+	const poolsList = useUsablePools(usableBy, hostPools(hostId), {
 		enabled: poolsShown,
 	});
-	const usablePools = poolsResult.data?.items ?? [];
+	const usablePools = poolsList.items;
 	const poolChoices = poolsShown
-		? keyPoolChoices(usablePools, values.hostId, values.accountId)
+		? keyPoolChoices(usablePools, hostId, values.accountId)
 		: [];
 
-	// A dropped account takes its host and pools with it, as a re-pick would.
-	function clearUnusablePicks(): boolean {
-		const { accountId, poolIds } = form.state.values;
-		if (
-			accountId !== "" &&
-			!usableAccounts.some((a) => a.metadata.id === accountId)
-		) {
-			form.setFieldValue("accountId", "");
-			form.setFieldValue("hostId", "");
-			form.setFieldValue("poolIds", []);
-			return true;
-		}
-		const keptPools = usablePicks(poolIds, usablePools);
-		if (keptPools.length === poolIds.length) return false;
-		form.setFieldValue("poolIds", keptPools);
-		return true;
-	}
-	const shownPlacement = useClearPicksOnSwitch(
+	const unavailableAccount = unavailablePicks(
+		values.accountId ? [values.accountId] : [],
+		{ ...accountsList, items: usableAccounts },
 		placement,
-		usableBy,
-		!poolsShown || poolsResult.isSuccess,
-		clearUnusablePicks,
 	);
+	const unavailablePools = unavailablePicks(
+		values.poolIds,
+		poolsList,
+		placement,
+	);
+	const submitTried = useStore(form.store, (s) => s.submissionAttempts > 0);
+	// Flagged picks are named from every row the caller can read.
+	function accountLabelOf(id: string): string {
+		const named = accounts.find((a) => a.metadata.id === id);
+		return named ? displayLabel(named.metadata) : id;
+	}
+	function poolLabelOf(id: string): string {
+		const named = (poolsData.items ?? []).find((p) => p.metadata.id === id);
+		return named ? displayLabel(named.metadata) : id;
+	}
+
+	const prefetchPicks = useCallback(
+		(scope: string) => {
+			void queryClient.prefetchQuery(
+				usableAccountsQuery(scope, KEY_ACCOUNTS, "binding"),
+			);
+			if (hostId) {
+				void queryClient.prefetchQuery(
+					usablePoolsQuery(scope, hostPools(hostId)),
+				);
+			}
+		},
+		[queryClient, hostId],
+	);
+	useScopePrefetch(placement?.editable ? prefetchPicks : undefined);
+
 	const poolOptions: CheckOption[] = poolChoices.map((c) => ({
 		value: c.id,
 		label: c.label,
@@ -420,6 +467,7 @@ export function useHostKeyForm({
 	function selectCreatedAccount(created: Account) {
 		const { id } = created.metadata;
 		const { hostId } = created.spec;
+		setCreatedAccount(created);
 		if (id && hostId) pickAccount(id, hostId);
 	}
 
@@ -427,6 +475,11 @@ export function useHostKeyForm({
 		form.setFieldValue("accountId", accountId);
 		form.setFieldValue("hostId", hostId);
 		form.setFieldValue("poolIds", []);
+	}
+
+	// The account fixes the host and the pools on offer, so they go with it.
+	function clearAccount() {
+		pickAccount("", "");
 	}
 
 	function togglePool(poolId: string) {
@@ -445,17 +498,35 @@ export function useHostKeyForm({
 		slugPreview,
 		displayNameError,
 		descriptionError,
-		placement: shownPlacement,
-		accountIdError,
+		placement,
+		accountIdError:
+			accountIdError ?? unavailablePicksError(unavailableAccount, submitTried),
 		envVarError,
 		envVarReservedPrefix,
 		valueError,
 		accountGroups,
+		// The last scope's accounts have another owner, so the groups drop them.
+		accountsLoading: !accountsList.loaded || accountsList.fromPreviousScope,
+		accountsUpdatingFor: updatingScope(placement, accountsList),
+		pickedAccountLabel: values.accountId
+			? accountLabelOf(values.accountId)
+			: undefined,
+		accountUnavailableIn: unavailableAccount?.scope,
+		clearAccount,
 		accountLocked,
 		attachedPolicies,
 		poolsShown,
 		poolOptions,
 		checkedPoolIds,
+		poolsUpdatingFor: updatingScope(placement, poolsList),
+		unavailablePools: unavailablePools && {
+			scope: unavailablePools.scope,
+			pools: unavailablePools.ids.map((id) => ({
+				id,
+				label: poolLabelOf(id),
+			})),
+		},
+		poolsError: unavailablePicksError(unavailablePools, submitTried),
 		setKeyAccount,
 		selectCreatedAccount,
 		togglePool,

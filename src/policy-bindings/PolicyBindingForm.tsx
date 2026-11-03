@@ -14,6 +14,7 @@ import { FormFooter } from "@/shared/FormFooter";
 import { FormSection } from "@/shared/FormSection";
 import { IdentitySection } from "@/shared/IdentitySection";
 import { LabelsEditor } from "@/shared/LabelsEditor";
+import { ScopedPicker, UnavailablePick } from "@/shared/ScopeNotes";
 import { ToggleSwitch } from "@/shared/ToggleSwitch";
 
 interface PolicyBindingFormProps {
@@ -40,8 +41,13 @@ export function PolicyBindingForm({
 		placement,
 		policyIdError,
 		policyOptions,
+		policyUpdatingFor,
+		unavailablePolicy,
+		removePolicy,
 		accountOptions,
 		setAccountIds,
+		accountsUpdatingFor,
+		unavailableAccounts,
 		accountIdsError,
 		duplicateAccountId,
 	} = usePolicyBindingForm({ open: true, binding, projectId, onSaved });
@@ -75,7 +81,7 @@ export function PolicyBindingForm({
 					title="Policy"
 					description="The policy that governs the accounts."
 				>
-					<div>
+					<ScopedPicker updatingFor={policyUpdatingFor}>
 						<Select
 							value={values.policyId}
 							items={policyOptions}
@@ -91,12 +97,18 @@ export function PolicyBindingForm({
 								<PolicySelectItems options={policyOptions} />
 							</SelectContent>
 						</Select>
+						{unavailablePolicy && (
+							<UnavailablePick
+								scope={unavailablePolicy.scope}
+								onRemove={removePolicy}
+							/>
+						)}
 						{policyIdError && (
 							<p className="mt-1.5 text-[11px] text-destructive">
 								{policyIdError}
 							</p>
 						)}
-					</div>
+					</ScopedPicker>
 				</FormSection>
 
 				<FormSection
@@ -104,13 +116,14 @@ export function PolicyBindingForm({
 					title="Accounts"
 					description="The accounts the policy governs. An account sits in at most one binding."
 				>
-					<div>
+					<ScopedPicker updatingFor={accountsUpdatingFor}>
 						<AccountsPicker
 							options={accountOptions}
 							selected={values.accountIds}
 							onChange={setAccountIds}
 							invalidId={duplicateAccountId}
 							describedBy={accountIdsError ? accountIdsErrorId : undefined}
+							unavailable={unavailableAccounts}
 						/>
 						{accountIdsError && (
 							<p
@@ -120,7 +133,7 @@ export function PolicyBindingForm({
 								{accountIdsError}
 							</p>
 						)}
-					</div>
+					</ScopedPicker>
 				</FormSection>
 
 				<FormSection

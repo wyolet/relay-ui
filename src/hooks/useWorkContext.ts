@@ -1,5 +1,4 @@
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/api/auth";
 import { myContextsQueryOptions } from "@/api/hooks/contexts";
 import type { components } from "@/api/types.gen";
@@ -12,7 +11,6 @@ import {
 	ownerUsableBy,
 	resolveWorkContext,
 	SYSTEM_CONTEXT,
-	scopeSwitchNote,
 	type WorkContextRef,
 	workContexts,
 } from "@/lib/workContext";
@@ -72,29 +70,4 @@ export function useFormOwner(fixed?: { owner?: Owner }): {
 			? { scope: contextName(work.current), editable: true }
 			: undefined,
 	};
-}
-
-/**
- * After the work context switches under a create form, runs `clearUnusable`
- * once `ready` says the new scope's lists loaded; it returns whether any pick
- * was dropped, and the placement then carries the note saying so.
- */
-export function useClearPicksOnSwitch(
-	placement: FormPlacement | undefined,
-	usableBy: string | undefined,
-	ready: boolean,
-	clearUnusable: () => boolean,
-): FormPlacement | undefined {
-	const settledFor = useRef(usableBy);
-	const [note, setNote] = useState<string>();
-	const editable = placement?.editable ?? false;
-	const scope = placement?.scope;
-
-	useEffect(() => {
-		if (!editable || !ready || settledFor.current === usableBy) return;
-		settledFor.current = usableBy;
-		setNote(clearUnusable() && scope ? scopeSwitchNote(scope) : undefined);
-	}, [editable, ready, usableBy, scope, clearUnusable]);
-
-	return placement && note ? { ...placement, note } : placement;
 }

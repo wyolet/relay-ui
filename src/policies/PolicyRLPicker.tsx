@@ -12,11 +12,13 @@ import {
 	type LabelLookups,
 	type RefCoverage,
 } from "@/lib/policyRLResolution";
+import type { UnavailablePicks } from "@/lib/workContext";
 import type { RateLimitLinkValue } from "@/policies/policyFormSpec";
 import { SharedLinkSwitch } from "@/policies/SharedLinkSwitch";
 import { usePolicyRLResolution } from "@/policies/usePolicyRLResolution";
 import { AttachRateLimitModal } from "@/rate-limits/AttachRateLimitModal";
 import { AlertBanner } from "@/shared/AlertBanner";
+import { NotAvailableTag } from "@/shared/ScopeNotes";
 
 interface PolicyRLPickerProps {
 	links: RateLimitLinkValue[];
@@ -25,6 +27,8 @@ interface PolicyRLPickerProps {
 	onChange: (next: RateLimitLinkValue[]) => void;
 	/** The policy owner's scope, as the rate-limit list filter takes it. */
 	usableBy: string | undefined;
+	/** Linked rate limits the form's workspace can't use. */
+	unavailable?: UnavailablePicks;
 }
 
 export function PolicyRLPicker({
@@ -32,6 +36,7 @@ export function PolicyRLPicker({
 	allowedModels,
 	onChange,
 	usableBy,
+	unavailable,
 }: PolicyRLPickerProps) {
 	const { scopes, labels, rlMetaById, attachable } = usePolicyRLResolution(
 		links,
@@ -149,6 +154,9 @@ export function PolicyRLPicker({
 												<div className="font-mono text-[10px] text-muted-foreground truncate">
 													{meta.rules}
 												</div>
+											)}
+											{unavailable?.ids.includes(l.rateLimitId) && (
+												<NotAvailableTag scope={unavailable.scope} />
 											)}
 										</div>
 										<div className="flex items-center gap-1 shrink-0">

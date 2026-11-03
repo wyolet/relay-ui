@@ -6,9 +6,11 @@ import {
 	useSuspenseQuery,
 } from "@tanstack/react-query";
 import { apiClient } from "@/api/client";
+import { keepAcrossScopes, usableList } from "@/api/hooks/usableList";
 import type { DetachedLinks } from "@/api/types/errors";
 import type { components, operations } from "@/api/types.gen";
 import { unwrap } from "@/api/unwrap";
+import type { UsableList } from "@/lib/workContext";
 
 export type Account = components["schemas"]["Account"];
 export type AccountSpec = components["schemas"]["AccountSpec"];
@@ -99,22 +101,27 @@ export function usableAccountsQuery(
 	params: AccountsListParams,
 	use: AccountUse,
 ) {
-	return accountListQuery({
+	const list = accountListQuery({
 		...params,
 		usable_by: usableBy,
 		...(usableBy ? { usable_for: use } : {}),
 	});
+	return queryOptions({
+		...list,
+		placeholderData: keepAcrossScopes(list.queryKey),
+	});
 }
 
-/** The accounts a binding owned by `usableBy` may link, suspending until the list loads. */
-export function useUsableAccountsSuspense(
+/** The accounts a `use` row owned by `usableBy` may link; the last scope's rows while a new scope loads. */
+export function useUsableAccounts(
 	usableBy: string | undefined,
-	params: AccountsListParams = {},
-): Account[] {
-	const { data } = useSuspenseQuery(
-		usableAccountsQuery(usableBy, params, "binding"),
+	params: AccountsListParams,
+	use: AccountUse,
+	{ enabled = true }: { enabled?: boolean } = {},
+): UsableList<Account> {
+	return usableList(
+		useQuery({ ...usableAccountsQuery(usableBy, params, use), enabled }),
 	);
-	return data.items ?? [];
 }
 
 export function useAccount(ref: string) {

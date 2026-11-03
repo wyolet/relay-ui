@@ -176,22 +176,69 @@ export interface FormPlacement {
 	scope: string;
 	/** Placed by the work context, so switching the context moves the create. */
 	editable: boolean;
-	/** Why picks were cleared after a switch. */
-	note?: string;
 }
 
-/** The note a create form shows once a switch dropped picks. */
-export function scopeSwitchNote(scope: string): string {
-	return `Switched to ${scope}; picks that ${scope} can't use were cleared.`;
+/** A picker's owner-scoped list as a form reads it. */
+export interface UsableList<T> {
+	items: T[];
+	/** False until any rows arrived, this scope's or the last one's. */
+	loaded: boolean;
+	/** The rows are the last scope's, shown while this scope's load. */
+	fromPreviousScope: boolean;
 }
 
-/** The picked ids still among the `usable` rows, in pick order. */
-export function usablePicks(
+/** Picks a create form keeps after a switch though its new scope can't use them. */
+export interface UnavailablePicks {
+	ids: string[];
+	/** e.g. "Team Platform". */
+	scope: string;
+}
+
+/** The picked ids not among the `usable` rows, in pick order. */
+export function unusablePicks(
 	picked: readonly string[],
 	usable: readonly { metadata: { id?: string } }[],
 ): string[] {
 	const allowed = new Set(usable.map((row) => row.metadata.id));
-	return picked.filter((id) => allowed.has(id));
+	return picked.filter((id) => !allowed.has(id));
+}
+
+/**
+ * The picks a create form flags once `list` holds its current scope's rows;
+ * undefined for edits, while the list loads, or when every pick is usable.
+ */
+export function unavailablePicks(
+	picked: readonly string[],
+	list: UsableList<{ metadata: { id?: string } }>,
+	placement: FormPlacement | undefined,
+): UnavailablePicks | undefined {
+	if (!placement?.editable || !list.loaded || list.fromPreviousScope) {
+		return undefined;
+	}
+	const ids = unusablePicks(picked, list.items);
+	return ids.length > 0 ? { ids, scope: placement.scope } : undefined;
+}
+
+/** The scope a picker says it's updating for while any of its lists shows the last scope's rows. */
+export function updatingScope(
+	placement: FormPlacement | undefined,
+	...lists: readonly { fromPreviousScope: boolean }[]
+): string | undefined {
+	return lists.some((l) => l.fromPreviousScope) ? placement?.scope : undefined;
+}
+
+/** The inline mark on a pick the scope can't use. */
+export function notAvailableLabel(scope: string): string {
+	return `Not available in ${scope}`;
+}
+
+/** The field error once a save was tried with flagged picks. */
+export function unavailablePicksError(
+	flagged: UnavailablePicks | undefined,
+	submitTried: boolean,
+): string | undefined {
+	if (!flagged || !submitTried) return undefined;
+	return `Remove what ${flagged.scope} can't use, or switch the workspace back.`;
 }
 
 export interface ContextRow {

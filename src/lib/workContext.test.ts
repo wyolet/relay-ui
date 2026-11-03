@@ -9,13 +9,16 @@ import {
 	contextTeamId,
 	contextTitle,
 	contextUsableBy,
+	notAvailableLabel,
 	ownerName,
 	ownerUsableBy,
 	resolveWorkContext,
 	SYSTEM_CONTEXT,
 	scopeOptions,
-	scopeSwitchNote,
-	usablePicks,
+	unavailablePicks,
+	unavailablePicksError,
+	unusablePicks,
+	updatingScope,
 	type WorkContext,
 	workContexts,
 } from "@/lib/workContext";
@@ -211,25 +214,84 @@ describe("switcher trigger", () => {
 	});
 });
 
-describe("usablePicks", () => {
-	test("keeps the usable picks in pick order", () => {
+describe("unusablePicks", () => {
+	test("returns the picks the rows lack, in pick order", () => {
 		const rows = [{ metadata: { id: "a" } }, { metadata: { id: "b" } }];
-		expect(usablePicks(["b", "x", "a"], rows)).toEqual(["b", "a"]);
+		expect(unusablePicks(["y", "b", "x", "a"], rows)).toEqual(["y", "x"]);
 	});
 
 	test("an id-less row allows nothing", () => {
-		expect(usablePicks(["a"], [{ metadata: {} }])).toEqual([]);
+		expect(unusablePicks(["a"], [{ metadata: {} }])).toEqual(["a"]);
 	});
 
-	test("drops everything when nothing is usable", () => {
-		expect(usablePicks(["a"], [])).toEqual([]);
+	test("everything is unusable when nothing is listed", () => {
+		expect(unusablePicks(["a"], [])).toEqual(["a"]);
 	});
 });
 
-describe("scopeSwitchNote", () => {
-	test("names the new scope", () => {
-		expect(scopeSwitchNote("Team Platform")).toBe(
-			"Switched to Team Platform; picks that Team Platform can't use were cleared.",
+describe("unavailablePicks", () => {
+	const rows = [{ metadata: { id: "a" } }];
+	const current = { items: rows, loaded: true, fromPreviousScope: false };
+	const create = { scope: "Team Platform", editable: true };
+
+	test("flags a create's picks its scope's list lacks", () => {
+		expect(unavailablePicks(["a", "b"], current, create)).toEqual({
+			ids: ["b"],
+			scope: "Team Platform",
+		});
+	});
+
+	test("flags nothing when every pick is usable", () => {
+		expect(unavailablePicks(["a"], current, create)).toBeUndefined();
+	});
+
+	test("waits for the current scope's rows", () => {
+		expect(
+			unavailablePicks(["b"], { ...current, fromPreviousScope: true }, create),
+		).toBeUndefined();
+		expect(
+			unavailablePicks(
+				["b"],
+				{ items: [], loaded: false, fromPreviousScope: false },
+				create,
+			),
+		).toBeUndefined();
+	});
+
+	test("never flags an edit's picks", () => {
+		expect(
+			unavailablePicks(["b"], current, { scope: "Personal", editable: false }),
+		).toBeUndefined();
+		expect(unavailablePicks(["b"], current, undefined)).toBeUndefined();
+	});
+});
+
+describe("updatingScope", () => {
+	const create = { scope: "Team Platform", editable: true };
+	const fresh = { fromPreviousScope: false };
+	const stale = { fromPreviousScope: true };
+
+	test("names the scope while any list shows the last scope's rows", () => {
+		expect(updatingScope(create, fresh, stale)).toBe("Team Platform");
+		expect(updatingScope(create, fresh, fresh)).toBeUndefined();
+		expect(updatingScope(undefined, stale)).toBeUndefined();
+	});
+});
+
+describe("unavailable pick copy", () => {
+	const flagged = { ids: ["b"], scope: "Team Platform" };
+
+	test("marks a pick with the scope", () => {
+		expect(notAvailableLabel("Team Platform")).toBe(
+			"Not available in Team Platform",
+		);
+	});
+
+	test("errors only once a save was tried", () => {
+		expect(unavailablePicksError(flagged, false)).toBeUndefined();
+		expect(unavailablePicksError(undefined, true)).toBeUndefined();
+		expect(unavailablePicksError(flagged, true)).toBe(
+			"Remove what Team Platform can't use, or switch the workspace back.",
 		);
 	});
 });

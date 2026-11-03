@@ -1,22 +1,33 @@
 import { useForm } from "@tanstack/react-form";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useStore } from "@tanstack/react-store";
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { z } from "zod";
 import {
+	type AccountsListParams,
 	accountListQueryOptions,
 	usableAccountsQuery,
+	useUsableAccounts,
 } from "@/api/hooks/accounts";
-import { usableHostKeysQuery, useHostKeys } from "@/api/hooks/hostkeys";
+import {
+	usableHostKeysQuery,
+	useHostKeys,
+	useUsableHostKeys,
+} from "@/api/hooks/hostkeys";
 import { useHosts } from "@/api/hooks/hosts";
 import { type Pool, useCreatePool, useUpdatePool } from "@/api/hooks/pools";
 import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
-import { useClearPicksOnSwitch, useFormOwner } from "@/hooks/useWorkContext";
+import { useScopePrefetch } from "@/hooks/useScopePrefetch";
+import { useFormOwner } from "@/hooks/useWorkContext";
 import { displayLabel } from "@/lib/displayLabel";
 import { shownError, zodFieldValidator } from "@/lib/formErrors";
 import { randomSuffix, slugify } from "@/lib/slug";
-import { usablePicks } from "@/lib/workContext";
+import {
+	unavailablePicks,
+	unavailablePicksError,
+	updatingScope,
+} from "@/lib/workContext";
 import {
 	moveItem,
 	POOL_SELECTIONS,
@@ -42,6 +53,11 @@ export interface PoolFormValues {
 }
 
 type MemberField = "accountIds" | "credentialIds";
+
+/** The provider accounts at the pool's host. */
+function hostAccountsParams(hostId: string): AccountsListParams {
+	return { kind: ["provider"], host_id: [hostId] };
+}
 
 const schema = z.object({
 	displayName: z
@@ -88,6 +104,7 @@ export function usePoolForm({ pool, onSaved }: UsePoolFormOptions) {
 	const createPool = useCreatePool();
 	const updatePool = useUpdatePool();
 	const toastSaveError = useSaveErrorToast();
+	const queryClient = useQueryClient();
 	const { data: hostsData } = useHosts();
 	const { data: hostKeysData } = useHostKeys();
 	const loaded = useLoadedResourceVersion(
@@ -114,6 +131,8 @@ export function usePoolForm({ pool, onSaved }: UsePoolFormOptions) {
 		defaultValues: initial,
 		validators: { onSubmit: runValidation, onChange: runValidation },
 		onSubmit: async ({ value }) => {
+			// Flagged picks block the save; their field error says what to do.
+			if (unavailableAccounts || unavailableKeys) return;
 			const displayName = value.displayName.trim();
 			const description = value.description.trim();
 			const spec = {
@@ -171,37 +190,39 @@ export function usePoolForm({ pool, onSaved }: UsePoolFormOptions) {
 	}, [loaded.resetKey, initial, form]);
 
 	const values = useStore(form.store, (s) => s.values);
-	const keysResult = useQuery(usableHostKeysQuery(usableBy, values.hostId));
-	const accountsResult = useQuery({
-		...usableAccountsQuery(
-			usableBy,
-			{ kind: ["provider"], host_id: [values.hostId] },
-			"pool",
-		),
-		enabled: values.hostId !== "",
-	});
-	const usableKeys = keysResult.data?.items ?? [];
-	const usableAccounts = accountsResult.data?.items ?? [];
-
-	function clearUnusablePicks(): boolean {
-		const { accountIds, credentialIds } = form.state.values;
-		const keptAccounts = usablePicks(accountIds, usableAccounts);
-		const keptKeys = usablePicks(credentialIds, usableKeys);
-		const dropped =
-			keptAccounts.length < accountIds.length ||
-			keptKeys.length < credentialIds.length;
-		if (dropped) {
-			form.setFieldValue("accountIds", keptAccounts);
-			form.setFieldValue("credentialIds", keptKeys);
-		}
-		return dropped;
-	}
-	const shownPlacement = useClearPicksOnSwitch(
-		placement,
+	const { hostId } = values;
+	const keysList = useUsableHostKeys(usableBy, hostId);
+	const accountsList = useUsableAccounts(
 		usableBy,
-		values.hostId === "" || (keysResult.isSuccess && accountsResult.isSuccess),
-		clearUnusablePicks,
+		hostAccountsParams(hostId),
+		"pool",
+		{ enabled: hostId !== "" },
 	);
+	const usableKeys = keysList.items;
+	const usableAccounts = accountsList.items;
+	const unavailableAccounts = unavailablePicks(
+		values.accountIds,
+		accountsList,
+		placement,
+	);
+	const unavailableKeys = unavailablePicks(
+		values.credentialIds,
+		keysList,
+		placement,
+	);
+	const submitTried = useStore(form.store, (s) => s.submissionAttempts > 0);
+
+	const prefetchMembers = useCallback(
+		(scope: string) => {
+			void queryClient.prefetchQuery(usableHostKeysQuery(scope, hostId));
+			void queryClient.prefetchQuery(
+				usableAccountsQuery(scope, hostAccountsParams(hostId), "pool"),
+			);
+		},
+		[queryClient, hostId],
+	);
+	useScopePrefetch(placement?.editable && hostId ? prefetchMembers : undefined);
+
 	// Names accounts already in the pool that the current scope may no longer use.
 	const { data: visibleAccounts } = useQuery(accountListQueryOptions);
 	const errors = useStore(form.store, (s) => ({
@@ -266,7 +287,14 @@ export function usePoolForm({ pool, onSaved }: UsePoolFormOptions) {
 		errors,
 		isEdit,
 		slugPreview: pool ? pool.metadata.name : computeSlug(values.displayName),
-		placement: shownPlacement,
+		placement,
+		updatingFor: updatingScope(placement, keysList, accountsList),
+		unavailableAccounts,
+		unavailableKeys,
+		membersError: unavailablePicksError(
+			unavailableAccounts ?? unavailableKeys,
+			submitTried,
+		),
 		hostOptions,
 		chosenAccounts: chosenAccounts(values.accountIds, [
 			...usableAccounts,

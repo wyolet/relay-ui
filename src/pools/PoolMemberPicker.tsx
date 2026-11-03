@@ -1,8 +1,10 @@
 import { ArrowDown, ArrowUp, Plus, X } from "lucide-react";
 import { SharedByBadge } from "@/accounts/SharedByBadge";
 import { IconButton } from "@/components/ui/icon-button";
+import type { UnavailablePicks } from "@/lib/workContext";
 import type { PoolMemberOption } from "@/pools/poolMembers";
 import { OptionRow } from "@/shared/OptionRow";
+import { NotAvailableTag } from "@/shared/ScopeNotes";
 import { StatusInline } from "@/shared/StatusBadge";
 
 const headingClass =
@@ -19,6 +21,7 @@ export function PoolMemberPicker({
 	onAdd,
 	onRemove,
 	onMove,
+	unavailable,
 }: {
 	chosenTitle: string;
 	availableTitle: string;
@@ -29,6 +32,8 @@ export function PoolMemberPicker({
 	onAdd: (id: string) => void;
 	onRemove: (id: string) => void;
 	onMove: (index: number, delta: -1 | 1) => void;
+	/** Chosen members the form's workspace can't use. */
+	unavailable?: UnavailablePicks;
 }) {
 	return (
 		<div className="flex flex-col gap-3 max-w-xl">
@@ -46,6 +51,9 @@ export function PoolMemberPicker({
 									{i + 1}
 								</span>
 								<MemberLabel option={m} />
+								{unavailable?.ids.includes(m.id) && (
+									<NotAvailableTag scope={unavailable.scope} />
+								)}
 								<IconButton
 									icon={ArrowUp}
 									label={`Move ${m.label} up`}

@@ -15,12 +15,7 @@ function PlacementText({ placement }: { placement: FormPlacement }) {
 			{" · "}
 			<WorkspaceMenu
 				aria-label="Change workspace"
-				trigger={
-					<Button
-						variant="link"
-						className="h-auto border-0 p-0 text-[11px] font-normal"
-					/>
-				}
+				trigger={<Button variant="link" size="inline" />}
 			>
 				change
 			</WorkspaceMenu>
@@ -94,11 +89,6 @@ export function IdentityFields({
 					</code>
 					{placement && <PlacementText placement={placement} />}
 				</p>
-				{placement?.note && (
-					<p className="mt-1 text-[11px] text-muted-foreground">
-						{placement.note}
-					</p>
-				)}
 				{placementError && (
 					<p className="mt-1.5 text-[11px] text-destructive">
 						{placementError}
