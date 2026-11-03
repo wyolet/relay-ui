@@ -192,6 +192,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/accounts/{ref}/reachable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read what an account's lane may use
+         * @description What a request in the account may use, under every rung above it and the upstream tiers. A team's or project's own account is read as a lane directly under it. Readable by whoever may read the account and by the user who acts in it. {ref} is a slug or id. Worked out by the same fold and route fill a request runs, on the plans loaded now: models the lane reaches with their hosts, the pools and accounts that bring them and each upstream tier's verdict, and the models at its hosts it may not use with the rung that refuses them. Rows the caller may not read are left out.
+         */
+        get: operations["account_reachable"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/accounts/{ref}/shares": {
         parameters: {
             query?: never;
@@ -536,6 +556,26 @@ export interface paths {
          * @description Providers, hosts and models with their enabled bindings in one call, read from what the data plane serves now: disabled rows are absent. Deprecated models are left out unless includeDeprecated is set. The CRUD lists show every row.
          */
         get: operations["catalog_graph"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/catalog/reachable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read what a draft policy would reach
+         * @description What a policy owned by owner and linking the given pools would reach, read in the owner's own account (a team's or project's account, a user's personal account) with the draft as its policy; a system-owned draft sits alone above system-owned keys. Outer rungs narrow it as at request time: a project-owned draft sits under its team's policy. The draft's model list is not read; every model the reach serves is listed. Worked out by the same fold and route fill a request runs, on the plans loaded now: models the lane reaches with their hosts, the pools and accounts that bring them and each upstream tier's verdict, and the models at its hosts it may not use with the rung that refuses them. Rows the caller may not read are left out.
+         */
+        get: operations["catalog_reachable"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1804,6 +1844,26 @@ export interface paths {
          * @description The rate limits the policy links, each with its model scope and rules, and the allowed models no linked limit covers. A policy the caller may not see answers 404. {ref} is a slug or id.
          */
         get: operations["policy_rate_limits"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/policies/{ref}/reachable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read what a saved policy reaches
+         * @description The policy read in its owner's own account as GET /catalog/reachable reads a draft, its model list and budgets included, with the accounts bound to it in boundAccounts; GET /accounts/{ref}/reachable reads one of them under its own ladder. {ref} is a slug or id. Worked out by the same fold and route fill a request runs, on the plans loaded now: models the lane reaches with their hosts, the pools and accounts that bring them and each upstream tier's verdict, and the models at its hosts it may not use with the rung that refuses them. Rows the caller may not read are left out.
+         */
+        get: operations["policy_reachable"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4449,6 +4509,22 @@ export interface components {
             /** @description Id of the shared account the request reached the serving host key through; empty when it used the real account directly. Group by account_id for the whole drain on a provider account, by via_account_id for each share's part. */
             via_account_id?: string;
         };
+        ExcludedModel: {
+            /** @description The refusal code a request would get, such as model_not_allowed or no_credentials. */
+            code: string;
+            /** @description The reached hosts that bind it. */
+            hosts: components["schemas"]["ReachRef"][] | null;
+            /** @description The model. */
+            model: components["schemas"]["ReachModelRef"];
+            /** @description The model's provider. */
+            provider: components["schemas"]["ReachRef"];
+            /** @description The refusal in words, naming the rung and policy that decide it. */
+            reason: string;
+            /** @description The rung that refuses: team, project, lane (caller rungs) or account (an upstream tier); empty when no rung decides, as for a disabled model. */
+            rung?: string;
+            /** @description Each provider account whose keys could serve it, with its tier's verdict. */
+            upstream: components["schemas"]["ReachUpstream"][] | null;
+        };
         FacetValue: {
             /** @description Display name for an id value, such as its slug. */
             label?: string;
@@ -5982,6 +6058,84 @@ export interface components {
             enabled?: boolean;
             /** @description Rules a request must fit, each counted separately. An enabled rate limit needs at least one; no two may share meter, strategy and window. */
             rules: components["schemas"]["RateLimitRule"][] | null;
+        };
+        ReachModelRef: {
+            /** @description Display name. */
+            displayName?: string;
+            /** @description Id (UUIDv7). */
+            id: string;
+            /** @description The model's labels. */
+            labels?: {
+                [key: string]: string;
+            };
+            /** @description Slug. */
+            name: string;
+        };
+        ReachRef: {
+            /** @description Display name. */
+            displayName?: string;
+            /** @description Id (UUIDv7). */
+            id: string;
+            /** @description Slug. */
+            name: string;
+        };
+        ReachRefusal: {
+            /** @description The refusal code a request would get, such as model_not_allowed or no_credentials. */
+            code: string;
+            /** @description The refusal in words, naming the rung and policy that decide it. */
+            reason: string;
+            /** @description The rung that refuses: team, project, lane (caller rungs) or account (an upstream tier); empty when no rung decides, as for a disabled model. */
+            rung?: string;
+        };
+        ReachUpstream: {
+            /** @description The provider account holding the keys. */
+            account: components["schemas"]["ReachRef"];
+            /** @description Whether the account's tier lets the model through. */
+            allowed: boolean;
+            /** @description The tier policy bound to the account; omitted when none is. */
+            policy?: components["schemas"]["ReachRef"];
+            /** @description Why not, when allowed is false. */
+            reason?: string;
+            /** @description The rung that refuses, when allowed is false: account. */
+            rung?: string;
+            /** @description The shared account the keys are reached through. */
+            sharedAs?: components["schemas"]["ReachRef"];
+        };
+        ReachVia: {
+            /** @description The account the keys draw on: a shared account when reached through one; omitted when the keys name none or the caller may not read it. */
+            account?: components["schemas"]["ReachRef"];
+            /** @description The pool; omitted for a key reached by its scope's ownership, or a pool the caller may not read. */
+            pool?: components["schemas"]["ReachRef"];
+        };
+        Reachable: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Reachable.json
+             */
+            readonly $schema?: string;
+            /** @description The account the reach was read for; omitted for a system-owned policy, which no account holds. */
+            account?: components["schemas"]["ReachRef"];
+            /** @description For a saved policy: the accounts bound to it that the caller may read. */
+            boundAccounts?: components["schemas"]["ReachRef"][] | null;
+            /** @description Models bound at a host the lane reaches that it may not use, each with the rung that refuses it. */
+            excluded: components["schemas"]["ExcludedModel"][] | null;
+            /** @description Models the lane reaches, by model slug. */
+            models: components["schemas"]["ReachedModel"][] | null;
+            /** @description Set when the whole ladder refuses (a disabled policy or scope, personal accounts turned off); models and excluded are then empty. */
+            refused?: components["schemas"]["ReachRefusal"];
+        };
+        ReachedModel: {
+            /** @description Hosts serving it for the lane, in failover order. */
+            hosts: components["schemas"]["ReachRef"][] | null;
+            /** @description The model. */
+            model: components["schemas"]["ReachModelRef"];
+            /** @description The model's provider. */
+            provider: components["schemas"]["ReachRef"];
+            /** @description Each provider account whose keys could serve it, with its tier's verdict. */
+            upstream: components["schemas"]["ReachUpstream"][] | null;
+            /** @description What brings it, in failover order. */
+            via: components["schemas"]["ReachVia"][] | null;
         };
         ReasoningTiming: {
             /**
@@ -8600,6 +8754,74 @@ export interface operations {
             };
         };
     };
+    account_reachable: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource slug or UUIDv7 id. */
+                ref: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reachable"];
+                };
+            };
+            /** @description No valid session cookie or admin bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description No such row, or one the caller may not see. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The request does not match the schema; error.details lists each failing field. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The server failed; error.message carries the cause. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description A backend the operation needs is not configured or not reachable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
     list_account_shares: {
         parameters: {
             query?: {
@@ -9981,6 +10203,85 @@ export interface operations {
             };
             /** @description The server failed; error.message carries the cause. */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    catalog_reachable: {
+        parameters: {
+            query: {
+                /** @description The scope the draft policy is owned by: system, team:<id>, project:<id> or user:<id>. The caller must be allowed to create a policy there. */
+                owner: string;
+                /** @description Pool ids the draft links, in failover order (repeatable). Omit to read what a policy linking no pools reaches by its scope's ownership. Pools the caller may not read are left out. */
+                pool?: string[] | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reachable"];
+                };
+            };
+            /** @description No valid session cookie or admin bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description No such row, or one the caller may not see. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The request does not match the schema; error.details lists each failing field. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The server failed; error.message carries the cause. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description A backend the operation needs is not configured or not reachable. */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -15396,6 +15697,74 @@ export interface operations {
             };
             /** @description The server failed; error.message carries the cause. */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    policy_reachable: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource slug or UUIDv7 id. */
+                ref: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reachable"];
+                };
+            };
+            /** @description No valid session cookie or admin bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description No such row, or one the caller may not see. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The request does not match the schema; error.details lists each failing field. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The server failed; error.message carries the cause. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description A backend the operation needs is not configured or not reachable. */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };
