@@ -1,3 +1,4 @@
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useState } from "react";
 import {
 	ACCOUNT_KIND_LABELS,
@@ -11,8 +12,9 @@ import {
 	providersFirst,
 	sharedByName,
 } from "@/accounts/accountView";
+import { filterMyAccountRows, toMyAccountRow } from "@/accounts/myAccountRows";
 import { useHolderResolver } from "@/accounts/useHolderResolver";
-import { type Account, useAccounts } from "@/api/hooks/accounts";
+import { type Account, useAccounts, useMyAccounts } from "@/api/hooks/accounts";
 import { useHostKeys } from "@/api/hooks/hostkeys";
 import { useHosts } from "@/api/hooks/hosts";
 import type { Host } from "@/api/types/host";
@@ -40,6 +42,7 @@ export const ACCOUNT_FILTERS = [
 			})),
 		],
 	},
+	{ key: "mine", type: "toggle", label: "Mine", default: false },
 ] satisfies readonly FilterDef[];
 
 /** Host fields are set on provider accounts only. */
@@ -54,14 +57,45 @@ export interface AccountRow {
 	deletable: boolean;
 }
 
+export interface AccountFilters {
+	q: string;
+	kind: AccountKind | "all";
+	/** List the caller's own accounts (`/me/accounts`) instead of every account. */
+	mine: boolean;
+}
+
+/** The Accounts tab's filters; `mine` lives in the URL so links can open it. */
+export function useAccountFilters() {
+	const navigate = useNavigate({ from: "/keys" });
+	const { mine } = useSearch({ from: "/_authenticated/keys" });
+	const [q, setQ] = useState("");
+	const [kind, setKind] = useState<AccountKind | "all">("all");
+
+	function setFilters(patch: FilterState) {
+		if (typeof patch.q === "string") setQ(patch.q);
+		if (typeof patch.kind === "string")
+			setKind(parseAccountKind(patch.kind) ?? "all");
+		const nextMine = patch.mine;
+		if (typeof nextMine === "boolean")
+			void navigate({
+				search: (prev) => ({ ...prev, mine: nextMine }),
+				replace: true,
+			});
+	}
+
+	const filters: AccountFilters = { q, kind, mine };
+	return { filters, setFilters };
+}
+
 /** Account rows with their holder and, for provider accounts, host and key count. */
-export function useAccountRows() {
+export function useAccountRows({
+	q,
+	kind,
+}: Pick<AccountFilters, "q" | "kind">) {
 	const { data: accountsData } = useAccounts();
 	const { data: hostsData } = useHosts();
 	const { data: hostKeysData } = useHostKeys();
 	const toHolder = useHolderResolver();
-	const [q, setQ] = useState("");
-	const [kind, setKind] = useState<AccountKind | "all">("all");
 
 	const hostById = new Map<string, Host>();
 	for (const h of hostsData.items ?? []) {
@@ -112,16 +146,15 @@ export function useAccountRows() {
 			(!needle || matches(r)),
 	);
 
-	function setFilters(patch: FilterState) {
-		if (typeof patch.q === "string") setQ(patch.q);
-		if (typeof patch.kind === "string")
-			setKind(parseAccountKind(patch.kind) ?? "all");
-	}
+	return { rows, total: allRows.length };
+}
 
-	return {
-		rows,
-		total: allRows.length,
-		filters: { q, kind },
-		setFilters,
-	};
+/** The caller's own accounts, narrowed by the tab's search and kind. */
+export function useMyAccountRows({
+	q,
+	kind,
+}: Pick<AccountFilters, "q" | "kind">) {
+	const { data } = useMyAccounts();
+	const allRows = data.map(toMyAccountRow);
+	return { rows: filterMyAccountRows(allRows, q, kind), total: allRows.length };
 }

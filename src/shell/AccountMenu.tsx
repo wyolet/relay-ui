@@ -99,7 +99,11 @@ export function AccountMenu() {
 
 					<DropdownMenuSeparator />
 
-					<DropdownMenuItem render={<Link to="/me/accounts" />}>
+					<DropdownMenuItem
+						render={
+							<Link to="/keys" search={{ tab: "accounts", mine: true }} />
+						}
+					>
 						<Building2 />
 						Your accounts
 					</DropdownMenuItem>
