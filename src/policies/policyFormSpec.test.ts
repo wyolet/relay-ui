@@ -2,7 +2,6 @@ import { describe, expect, it } from "bun:test";
 import {
 	budgetLinkShared,
 	budgetLinksForIds,
-	moveItem,
 	type PolicySpecValues,
 	rateLimitRowShared,
 	specFromFormValues,
@@ -118,17 +117,5 @@ describe("budgetLinkShared", () => {
 		expect(budgetLinkShared(links, "a")).toBe(false);
 		expect(budgetLinkShared(links, "b")).toBe(true);
 		expect(budgetLinkShared(links, "c")).toBe(true);
-	});
-});
-
-describe("moveItem", () => {
-	it("swaps with the neighbour", () => {
-		expect(moveItem(["a", "b", "c"], 1, -1)).toEqual(["b", "a", "c"]);
-		expect(moveItem(["a", "b", "c"], 1, 1)).toEqual(["a", "c", "b"]);
-	});
-
-	it("leaves the ends in place", () => {
-		expect(moveItem(["a", "b"], 0, -1)).toEqual(["a", "b"]);
-		expect(moveItem(["a", "b"], 1, 1)).toEqual(["a", "b"]);
 	});
 });

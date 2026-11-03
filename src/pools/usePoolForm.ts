@@ -15,15 +15,14 @@ import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { useFormOwner } from "@/hooks/useWorkContext";
 import { displayLabel } from "@/lib/displayLabel";
 import { shownError, zodFieldValidator } from "@/lib/formErrors";
+import { moveItem } from "@/lib/moveItem";
 import { randomSuffix, slugify } from "@/lib/slug";
+import { POOL_SELECTIONS, type PoolSelection } from "@/pools/poolKeys";
 import {
-	moveItem,
-	POOL_SELECTIONS,
-	type PoolSelection,
-} from "@/pools/poolKeys";
-import {
+	accountMeta,
 	availableAccounts,
 	chosenAccounts,
+	keyCountByAccount,
 	type PoolMemberOption,
 	unknownMember,
 } from "@/pools/poolMembers";
@@ -198,15 +197,32 @@ export function usePoolForm({ pool, onSaved }: UsePoolFormOptions) {
 			name: hk.metadata.name,
 			enabled: hk.spec.enabled ?? true,
 			known: true,
+			meta: "Credential",
 		});
 	}
+	const keyCounts = keyCountByAccount(hostKeysData.items ?? []);
+	const keyAccountById = new Map<string, string | undefined>(
+		(hostKeysData.items ?? []).map((hk) => [
+			hk.metadata.id ?? "",
+			hk.spec.accountId,
+		]),
+	);
+	const withKeyCount = (o: PoolMemberOption): PoolMemberOption => ({
+		...o,
+		meta: accountMeta(keyCounts.get(o.id)),
+	});
+	// A key whose account is in the pool is already a member through it.
+	const coveredAccounts = new Set(values.accountIds);
 	const chosenKeys: PoolMemberOption[] = values.credentialIds.map(
 		(id) => keyById.get(id) ?? unknownMember(id),
 	);
 	const chosen = new Set(values.credentialIds);
 	const availableKeys: PoolMemberOption[] = usableKeys.flatMap((hk) => {
 		const option = keyById.get(hk.metadata.id ?? "");
-		return option && hk.spec.hostId === values.hostId && !chosen.has(option.id)
+		return option &&
+			hk.spec.hostId === values.hostId &&
+			!chosen.has(option.id) &&
+			!coveredAccounts.has(hk.spec.accountId ?? "")
 			? [option]
 			: [];
 	});
@@ -234,6 +250,16 @@ export function usePoolForm({ pool, onSaved }: UsePoolFormOptions) {
 		};
 	}
 
+	const accountEdits = memberEdits("accountIds");
+	// An account brings all its keys, so the single entries it covers drop out.
+	function addAccount(accountId: string) {
+		accountEdits.add(accountId);
+		form.setFieldValue(
+			"credentialIds",
+			values.credentialIds.filter((id) => keyAccountById.get(id) !== accountId),
+		);
+	}
+
 	return {
 		form,
 		values,
@@ -245,17 +271,17 @@ export function usePoolForm({ pool, onSaved }: UsePoolFormOptions) {
 		chosenAccounts: chosenAccounts(values.accountIds, [
 			...usableAccounts,
 			...(visibleAccounts?.items ?? []),
-		]),
+		]).map(withKeyCount),
 		availableAccounts: availableAccounts(
 			usableAccounts,
 			values.hostId,
 			values.accountIds,
-		),
+		).map(withKeyCount),
 		chosenKeys,
 		availableKeys,
 		setHost,
 		setSelection,
-		accountEdits: memberEdits("accountIds"),
+		accountEdits: { ...accountEdits, add: addAccount },
 		keyEdits: memberEdits("credentialIds"),
 	};
 }
