@@ -23,6 +23,7 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { versionLabel } from "@/lib/versionLabel";
 import { Segmented } from "@/shared/Segmented";
 import { headerTriggerClass } from "@/shell/headerTrigger";
 import { type Theme, useTheme } from "@/stores/theme";
@@ -99,7 +100,11 @@ export function AccountMenu() {
 
 					<DropdownMenuSeparator />
 
-					<DropdownMenuItem render={<Link to="/me/accounts" />}>
+					<DropdownMenuItem
+						render={
+							<Link to="/keys" search={{ tab: "accounts", mine: true }} />
+						}
+					>
 						<Building2 />
 						Your accounts
 					</DropdownMenuItem>
@@ -134,12 +139,16 @@ export function AccountMenu() {
 						<ThemeSegment />
 					</div>
 
-					{versionData && (
-						<div className="flex items-center justify-between px-2 pb-1 pt-0.5 text-[10px] tabular-nums text-muted-foreground">
-							<span>backend</span>
-							<span className="font-mono">{versionData.version}</span>
-						</div>
-					)}
+					<dl className="grid grid-cols-[auto_1fr] gap-x-3 px-2 pb-1 pt-0.5 text-[10px] text-muted-foreground">
+						<dt title="The Relay server this interface talks to">Relay</dt>
+						<dd className="truncate text-right font-mono">
+							{versionLabel(versionData?.version)}
+						</dd>
+						<dt title="This interface's build">UI</dt>
+						<dd className="truncate text-right font-mono">
+							{versionLabel(import.meta.env.VITE_UI_VERSION)}
+						</dd>
+					</dl>
 				</DropdownMenuContent>
 			</DropdownMenu>
 			{tokensOpen && <TokenDialog onClose={() => setTokensOpen(false)} />}

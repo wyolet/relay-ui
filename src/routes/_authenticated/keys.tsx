@@ -1,8 +1,15 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import {
+	createFileRoute,
+	stripSearchParams,
+	useNavigate,
+} from "@tanstack/react-router";
 import { Suspense } from "react";
 import { z } from "zod";
 import { AccountsTable } from "@/accounts/AccountsTable";
-import { accountListQueryOptions } from "@/api/hooks/accounts";
+import {
+	accountListQueryOptions,
+	myAccountsQueryOptions,
+} from "@/api/hooks/accounts";
 import { bindingsListQueryOptions } from "@/api/hooks/bindings";
 import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
@@ -34,10 +41,14 @@ const searchSchema = z.object({
 		.default("all"),
 	principal_id: z.string().catch("").default(""),
 	expired: z.enum(["all", "true", "false"]).catch("all").default("all"),
+	// The accounts tab's "Mine" filter.
+	mine: z.boolean().catch(false).default(false),
 });
 
 export const Route = createFileRoute("/_authenticated/keys")({
 	validateSearch: searchSchema,
+	// Defaults stay out of the URL.
+	search: { middlewares: [stripSearchParams(searchSchema.parse({}))] },
 	loaderDeps: ({ search }) => ({
 		q: search.q,
 		principal_kind: search.principal_kind,
@@ -56,6 +67,7 @@ export const Route = createFileRoute("/_authenticated/keys")({
 		void context.queryClient.prefetchQuery(providersListQueryOptions);
 		void context.queryClient.prefetchQuery(bindingsListQueryOptions);
 		void context.queryClient.prefetchQuery(accountListQueryOptions);
+		void context.queryClient.prefetchQuery(myAccountsQueryOptions);
 		void context.queryClient.prefetchQuery(usersListQueryOptions);
 		void context.queryClient.prefetchQuery(poolListQueryOptions);
 		return null;
@@ -69,7 +81,8 @@ function KeysPage() {
 
 	function setTab(value: unknown) {
 		const tab = TABS.find((t) => t === value) ?? "relay";
-		void navigate({ search: (prev) => ({ ...prev, tab }) });
+		// "Mine" belongs to the Accounts tab; leaving it resets the filter.
+		void navigate({ search: (prev) => ({ ...prev, tab, mine: false }) });
 	}
 
 	return (
