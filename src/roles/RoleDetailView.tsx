@@ -25,7 +25,7 @@ export function RoleDetailView({ name }: { name: string }) {
 	const navigate = useNavigate();
 	const del = useConfirmedDelete(useDeleteRole(), {
 		noun: "role",
-		onDeleted: () => void navigate({ to: "/roles" }),
+		onDeleted: () => void navigate({ to: "/users", search: { tab: "roles" } }),
 	});
 
 	const builtin = isBuiltinRole(role.metadata.owner?.kind);
@@ -37,7 +37,8 @@ export function RoleDetailView({ name }: { name: string }) {
 	return (
 		<div className="flex flex-col gap-5">
 			<Link
-				to="/roles"
+				to="/users"
+				search={{ tab: "roles" }}
 				className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
 			>
 				<ChevronLeft className="w-3.5 h-3.5" />

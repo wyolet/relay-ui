@@ -80,8 +80,8 @@ export function toRoleBindingsParams(
 }
 
 export function RoleBindingsTable() {
-	const navigate = useNavigate({ from: "/role-bindings" });
-	const live = useSearch({ from: "/_authenticated/role-bindings/" });
+	const navigate = useNavigate({ from: "/users" });
+	const live = useSearch({ from: "/_authenticated/users/" });
 	const { search, isStale } = useDeferredSearch(live);
 	const { data } = useRoleBindingsList(toRoleBindingsParams(search));
 	const { data: rolesData } = useRoles();
