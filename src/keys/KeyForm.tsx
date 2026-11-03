@@ -45,6 +45,7 @@ export function KeyForm({
 		chooseLane,
 		laneOptions,
 		laneValue,
+		hasDefaultLane,
 		laneError,
 	} = useKeyForm({ open: true, apiKey, onSaved, onCreated });
 	const laneErrorId = useId();
@@ -196,9 +197,11 @@ export function KeyForm({
 						>
 							<SelectValue
 								placeholder={
-									values.principalId
-										? "The principal's default account"
-										: "Pick a principal first"
+									!values.principalId
+										? "Pick a principal first"
+										: hasDefaultLane
+											? "The principal's default account"
+											: "Pick the account this key runs in"
 								}
 							/>
 						</SelectTrigger>

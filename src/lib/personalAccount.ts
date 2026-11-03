@@ -84,10 +84,35 @@ export function personalAccountOffNote(
 		case "user":
 			return `${base} (set for you)`;
 		case "group":
-			return groupName ? `${base} (group ${groupName})` : base;
+			return `${base} (${groupName ? `group ${groupName}` : "by a group"})`;
 		default:
 			return `${base} (deployment setting)`;
 	}
+}
+
+/** The kinds of lane that stop serving while a user's personal account is off. */
+const PERSONAL_LANE_KINDS: readonly string[] = ["personal", "provider"];
+
+/** Drops the personal and personally owned provider lanes when they don't serve. */
+export function servingLanes<T extends { spec: { kind: string } }>(
+	lanes: readonly T[],
+	personalOff: boolean,
+): T[] {
+	return personalOff
+		? lanes.filter((a) => !PERSONAL_LANE_KINDS.includes(a.spec.kind))
+		: [...lanes];
+}
+
+/**
+ * The user line to show: the user's own value decides at once; with none, the
+ * server's answer, unless it still names the user's cleared value.
+ */
+export function shownEffective(
+	own: "on" | "off" | undefined,
+	server: PersonalAccountEffective | undefined,
+): PersonalAccountEffective | undefined {
+	if (own) return { state: own, source: "user" };
+	return server?.source === "user" ? undefined : server;
 }
 
 export const PERSONAL_ACCOUNT_OFF = "personal_account_off";

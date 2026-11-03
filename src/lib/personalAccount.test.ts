@@ -8,6 +8,8 @@ import {
 	keyLaneError,
 	personalAccountEffectiveText,
 	personalAccountOffNote,
+	servingLanes,
+	shownEffective,
 	toPersonalAccountChoice,
 	userPersonalAccountInput,
 } from "@/lib/personalAccount";
@@ -83,13 +85,13 @@ describe("personalAccountOffNote", () => {
 			),
 		).toBe("Personal account is off (group Contractors)");
 	});
-	test("an unreadable group is left out", () => {
+	test("an unreadable group stays unnamed", () => {
 		expect(
 			personalAccountOffNote(
 				{ state: "off", source: "group", groupId: "g1" },
 				undefined,
 			),
-		).toBe("Personal account is off");
+		).toBe("Personal account is off (by a group)");
 	});
 });
 
@@ -109,5 +111,40 @@ describe("error mapping", () => {
 			"team or project",
 		);
 		expect(accountOwnerError(new Error("x"))).toBeUndefined();
+	});
+});
+
+describe("servingLanes", () => {
+	const lanes = [
+		{ id: "p", spec: { kind: "personal" } },
+		{ id: "o", spec: { kind: "provider" } },
+		{ id: "m", spec: { kind: "member" } },
+	];
+	test("keeps every lane while personal accounts serve", () => {
+		expect(servingLanes(lanes, false).map((l) => l.id)).toEqual([
+			"p",
+			"o",
+			"m",
+		]);
+	});
+	test("drops personal and owned provider lanes when off", () => {
+		expect(servingLanes(lanes, true).map((l) => l.id)).toEqual(["m"]);
+	});
+});
+
+describe("shownEffective", () => {
+	test("the user's own value decides without the server", () => {
+		expect(
+			shownEffective("on", { state: "off", source: "group", groupId: "g" }),
+		).toEqual({ state: "on", source: "user" });
+	});
+	test("a stale answer naming the cleared value waits for the re-read", () => {
+		expect(shownEffective(undefined, { state: "on", source: "user" })).toBe(
+			undefined,
+		);
+	});
+	test("with no own value the server's group or setting answer shows", () => {
+		const fromGroup = { state: "off", source: "group", groupId: "g" } as const;
+		expect(shownEffective(undefined, fromGroup)).toEqual(fromGroup);
 	});
 });

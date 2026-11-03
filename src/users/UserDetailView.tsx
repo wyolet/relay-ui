@@ -157,7 +157,7 @@ function UserPersonalAccount({ user }: { user: UserRow }) {
 					)}
 				</span>
 			) : (
-				<span className="text-muted-foreground">Not resolved yet.</span>
+				<span className="text-muted-foreground">Resolving…</span>
 			)}
 			{canEdit && (
 				<Segmented

@@ -1,11 +1,17 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/api/auth";
 import { useGroups } from "@/api/hooks/groups";
-import { type UserRow, useUpdateUserPersonalAccount } from "@/api/hooks/users";
+import {
+	invalidatePersonalAccountReads,
+	type UserRow,
+	useUpdateUserPersonalAccount,
+} from "@/api/hooks/users";
 import { ApiError } from "@/api/types/errors";
 import { displayLabel } from "@/lib/displayLabel";
 import {
 	type PersonalAccountChoice,
 	personalAccountEffectiveText,
+	shownEffective,
 	toPersonalAccountChoice,
 	userPersonalAccountInput,
 } from "@/lib/personalAccount";
@@ -17,7 +23,14 @@ export function useUserPersonalAccount(user: UserRow) {
 	const { data: groupsData } = useGroups();
 	const update = useUpdateUserPersonalAccount();
 
-	const effective = user.personalAccountEffective;
+	const queryClient = useQueryClient();
+	// The pick shows while the save and its re-read are in flight.
+	const pending = update.isPending ? update.variables : undefined;
+	const own = pending ? pending.personalAccount : user.personalAccount;
+	const effective = shownEffective(
+		own || undefined,
+		user.personalAccountEffective,
+	);
 	const groupId = effective?.source === "group" ? effective.groupId : undefined;
 	const group = groupId
 		? (groupsData.items ?? []).find((g) => g.metadata.id === groupId)
@@ -30,6 +43,8 @@ export function useUserPersonalAccount(user: UserRow) {
 				personalAccount: userPersonalAccountInput(choice),
 			});
 			toast("success", `Personal account updated for ${user.username}.`);
+			// Relay rebuilds its plans just after the write; read the result once more.
+			setTimeout(() => void invalidatePersonalAccountReads(queryClient), 1_500);
 		} catch (err) {
 			toast(
 				"error",
@@ -39,9 +54,6 @@ export function useUserPersonalAccount(user: UserRow) {
 			);
 		}
 	}
-
-	// The pick shows while the save and its re-read are in flight.
-	const pending = update.isPending ? update.variables : undefined;
 
 	return {
 		effectiveText: effective
@@ -53,9 +65,7 @@ export function useUserPersonalAccount(user: UserRow) {
 					label: group ? displayLabel(group.metadata) : groupId,
 				}
 			: undefined,
-		choice: toPersonalAccountChoice(
-			pending ? pending.personalAccount : user.personalAccount,
-		),
+		choice: toPersonalAccountChoice(own),
 		canEdit: isAdmin,
 		setChoice,
 	};
