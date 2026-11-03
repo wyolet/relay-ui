@@ -573,7 +573,7 @@ export interface paths {
         };
         /**
          * Read what a draft policy would reach
-         * @description What a policy owned by owner and linking the given pools would reach, read in the owner's own account (a team's or project's account, a user's personal account) with the draft as its policy; a system-owned draft sits alone above system-owned keys. Outer rungs narrow it as at request time: a project-owned draft sits under its team's policy. The draft's model list is not read; every model the reach serves is listed. Worked out by the same fold and route fill a request runs, on the plans loaded now: models the lane reaches with their hosts, the pools and accounts that bring them and each upstream tier's verdict, and the models at its hosts it may not use with the rung that refuses them. Rows the caller may not read are left out.
+         * @description What a policy owned by owner and linking the given pools would reach, read as the policy of account when given, else of the owner's own account (a team's or project's account, a user's personal account); a system-owned draft read in no account sits alone above system-owned keys. Outer rungs narrow it as at request time: a project-owned draft sits under its team's policy. A share held for a service account serves only that account's lane, so read such a draft with account set to it. The draft's model list is not read; every model the reach serves is listed. Worked out by the same fold and route fill a request runs, on the plans loaded now: models the lane reaches with their hosts, the pools and accounts that bring them and each upstream tier's verdict, and the models at its hosts it may not use with the rung that refuses them. Rows the caller may not read are left out.
          */
         get: operations["catalog_reachable"];
         put?: never;
@@ -1861,7 +1861,7 @@ export interface paths {
         };
         /**
          * Read what a saved policy reaches
-         * @description The policy read in its owner's own account as GET /catalog/reachable reads a draft, its model list and budgets included, with the accounts bound to it in boundAccounts; GET /accounts/{ref}/reachable reads one of them under its own ladder. {ref} is a slug or id. Worked out by the same fold and route fill a request runs, on the plans loaded now: models the lane reaches with their hosts, the pools and accounts that bring them and each upstream tier's verdict, and the models at its hosts it may not use with the rung that refuses them. Rows the caller may not read are left out.
+         * @description The policy, model list and budgets included, read in each account bound to it (once per distinct ladder) and merged: a model is in models when any bound account reaches it, with those accounts, and in excluded only when none does, with one ladder's reason and the accounts it is refused for. A policy bound nowhere is read in its owner's own account as GET /catalog/reachable reads a draft. boundAccounts lists the accounts bound to it. {ref} is a slug or id. Worked out by the same fold and route fill a request runs, on the plans loaded now: models the lane reaches with their hosts, the pools and accounts that bring them and each upstream tier's verdict, and the models at its hosts it may not use with the rung that refuses them. Rows the caller may not read are left out.
          */
         get: operations["policy_reachable"];
         put?: never;
@@ -4510,6 +4510,8 @@ export interface components {
             via_account_id?: string;
         };
         ExcludedModel: {
+            /** @description For a bound policy: the bound accounts it is refused for; none of the bound accounts reaches it. The reason is one of their ladders'. */
+            accounts?: components["schemas"]["ReachRef"][] | null;
             /** @description The refusal code a request would get, such as model_not_allowed or no_credentials. */
             code: string;
             /** @description The reached hosts that bind it. */
@@ -6059,6 +6061,18 @@ export interface components {
             /** @description Rules a request must fit, each counted separately. An enabled rate limit needs at least one; no two may share meter, strategy and window. */
             rules: components["schemas"]["RateLimitRule"][] | null;
         };
+        ReachDropped: {
+            /** @description The account the pool lists, when the account is what is dropped. */
+            account?: components["schemas"]["ReachRef"];
+            /** @description Why: ref_missing, link_out_of_scope, host_disabled, host_mismatch, pool_member_unusable, held_for_another_lane (a share that serves one service account's lane) or narrowed_by_rung (another rung's pools leave it out); not_found for a pool id the caller may not read. */
+            code: string;
+            /** @description The host key the pool lists, when the key is what is dropped. */
+            credential?: components["schemas"]["ReachRef"];
+            /** @description The pool, or the pool listing the account or key; only its id when the caller may not read it or it is gone. */
+            pool?: components["schemas"]["ReachRef"];
+            /** @description The same in words, with what to change. */
+            reason: string;
+        };
         ReachModelRef: {
             /** @description Display name. */
             displayName?: string;
@@ -6118,6 +6132,8 @@ export interface components {
             account?: components["schemas"]["ReachRef"];
             /** @description For a saved policy: the accounts bound to it that the caller may read. */
             boundAccounts?: components["schemas"]["ReachRef"][] | null;
+            /** @description Pools the policy links, and accounts and keys they list, that bring the lane nothing, each with why. */
+            dropped: components["schemas"]["ReachDropped"][] | null;
             /** @description Models bound at a host the lane reaches that it may not use, each with the rung that refuses it. */
             excluded: components["schemas"]["ExcludedModel"][] | null;
             /** @description Models the lane reaches, by model slug. */
@@ -6126,6 +6142,8 @@ export interface components {
             refused?: components["schemas"]["ReachRefusal"];
         };
         ReachedModel: {
+            /** @description For a bound policy: the bound accounts that reach it. */
+            accounts?: components["schemas"]["ReachRef"][] | null;
             /** @description Hosts serving it for the lane, in failover order. */
             hosts: components["schemas"]["ReachRef"][] | null;
             /** @description The model. */
@@ -10217,8 +10235,10 @@ export interface operations {
             query: {
                 /** @description The scope the draft policy is owned by: system, team:<id>, project:<id> or user:<id>. The caller must be allowed to create a policy there. */
                 owner: string;
-                /** @description Pool ids the draft links, in failover order (repeatable). Omit to read what a policy linking no pools reaches by its scope's ownership. Pools the caller may not read are left out. */
+                /** @description Pool ids the draft links, in failover order (repeatable). Omit to read what a policy linking no pools reaches by its scope's ownership. Pools the caller may not read are left out and listed in dropped. */
                 pool?: string[] | null;
+                /** @description Id of the account the policy is or will be bound to, inside the owner scope: the draft is read as that account's policy, under its ladder. Omit to read it in the owner's own account. */
+                account?: string;
             };
             header?: never;
             path?: never;
@@ -10233,6 +10253,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Reachable"];
+                };
+            };
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
                 };
             };
             /** @description No valid session cookie or admin bearer token. */
