@@ -9,8 +9,10 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import type { ObjectKind } from "@/diagnostics/objectRoutes";
 import type { Diagnostic, Severity } from "@/diagnostics/types";
 import { worstSeverity } from "@/diagnostics/types";
+import { useRowPlanDiagnostics } from "@/diagnostics/usePlanDiagnostics";
 
 const TONE: Record<
 	Severity,
@@ -35,6 +37,17 @@ const TONE: Record<
 		label: "Info",
 	},
 };
+
+/** A table row's plan-issue dot. */
+export function PlanIssueDot({
+	kind,
+	id,
+}: {
+	kind: ObjectKind;
+	id: string | undefined;
+}) {
+	return <DiagnosticDot diagnostics={useRowPlanDiagnostics(kind, id)} />;
+}
 
 interface DiagnosticDotProps {
 	diagnostics: Diagnostic[];

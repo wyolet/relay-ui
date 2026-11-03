@@ -23,6 +23,19 @@ export interface MockGraph {
 	accessReview?: (body: AccessReviewBody) => MockResponse;
 	/** Runtime-config feature flags; absent = no config document. */
 	features?: Record<string, boolean>;
+	/** Relay's plan issues; `/plan-issues` applies its `about` filter. */
+	planIssues?: MockPlanIssue[];
+}
+
+export interface MockPlanIssue {
+	code: string;
+	message: string;
+	kind: string;
+	id: string;
+	name: string;
+	field: string;
+	severity: "error" | "warning";
+	refs: { kind: string; id: string; name: string }[];
 }
 
 export interface AccessReviewBody {
@@ -72,7 +85,10 @@ interface Resource {
 // gaining a new query never falls through to the dev-server proxy.
 const GRAPH_COLLECTIONS: Record<
 	string,
-	keyof Omit<MockGraph, "proxyMode" | "roles" | "accessReview" | "features">
+	keyof Omit<
+		MockGraph,
+		"proxyMode" | "roles" | "accessReview" | "features" | "planIssues"
+	>
 > = {
 	policies: "policies",
 	"host-keys": "hostKeys",
@@ -85,8 +101,10 @@ const GRAPH_COLLECTIONS: Record<
 	"service-accounts": "serviceAccounts",
 };
 const EMPTY_COLLECTIONS = new Set([
+	"budgets",
 	"groups",
 	"policy-bindings",
+	"pools",
 	"pricings",
 	"projects",
 	"role-bindings",
@@ -96,8 +114,8 @@ const EMPTY_COLLECTIONS = new Set([
 	"tokens",
 ]);
 
-// Server-side aggregates on a policy's detail page, answered empty: the specs
-// exercise client-side diagnostics, not these joins.
+// Server-side aggregates on a policy's detail page, answered empty: no spec
+// exercises these joins.
 const POLICY_SUBRESOURCES: Record<string, object> = {
 	hosts: { hosts: [] },
 	models: { models: [], excluded: [] },
@@ -156,6 +174,15 @@ export async function mockApi(page: Page, graph: MockGraph): Promise<void> {
 		}
 		if (path === "usage/summary") {
 			return fulfillJson(route, { from: "", to: "", rows: [] });
+		}
+		if (path === "plan-issues") {
+			const about = new URL(route.request().url()).searchParams.getAll("about");
+			const issues = (graph.planIssues ?? []).filter(
+				(i) =>
+					about.length === 0 ||
+					[i, ...i.refs].some((o) => about.includes(`${o.kind}:${o.id}`)),
+			);
+			return fulfillJson(route, issues);
 		}
 		const [collection = "", ...rest] = path.split("/");
 		const key = GRAPH_COLLECTIONS[collection];

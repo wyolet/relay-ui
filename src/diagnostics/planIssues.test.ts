@@ -1,10 +1,13 @@
 import { describe, expect, it } from "bun:test";
 import type { PlanIssue } from "@/api/hooks/planIssues";
-import { planIssueDiagnostic } from "@/diagnostics/planIssues";
+import {
+	planIssueDiagnostic,
+	planIssueSubject,
+} from "@/diagnostics/planIssues";
 
 const issue = (o: Partial<PlanIssue>): PlanIssue => ({
 	code: "ref_missing",
-	message: "Pool is gone.",
+	message: "pool main does not exist; the link is ignored",
 	kind: "policy",
 	id: "p1",
 	name: "team",
@@ -15,38 +18,68 @@ const issue = (o: Partial<PlanIssue>): PlanIssue => ({
 });
 
 describe("planIssueDiagnostic", () => {
-	it("maps severity and prefixes the code", () => {
+	it("maps severity, prefixes the code and keeps relay's message", () => {
 		const d = planIssueDiagnostic(issue({ severity: "warning" }));
 		expect(d.severity).toBe("warn");
 		expect(d.code).toBe("plan.ref_missing");
+		expect(d.message).toBe("pool main does not exist; the link is ignored");
 		expect(d.link).toBeUndefined();
 	});
 
-	it("links the first ref the UI has a page for, by id", () => {
+	it("links the first ref the UI has a page for, by slug", () => {
 		const d = planIssueDiagnostic(
 			issue({
 				refs: [
-					{ kind: "keyslot", id: "x", name: "x" },
-					{ kind: "pool", id: "pool-1", name: "pool-1" },
+					{ kind: "keyslot", id: "x", name: "slot" },
+					{ kind: "pool", id: "pool-1", name: "main" },
 				],
 			}),
 		);
-		expect(d.link).toEqual({ to: "/pools/$name", params: { name: "pool-1" } });
+		expect(d.link).toEqual({ to: "/pools/$name", params: { name: "main" } });
 	});
 
-	it("words personal_account_off itself and keeps relay's message otherwise", () => {
-		expect(
-			planIssueDiagnostic(issue({ code: "personal_account_off" })).message,
-		).toBe(
-			"Personal accounts are turned off for this user; use a team or project key.",
-		);
-		expect(planIssueDiagnostic(issue({})).message).toBe("Pool is gone.");
-	});
-
-	it("skips a ref whose id the caller may not see", () => {
+	it("leaves a ref the caller may not see unlinked", () => {
 		const d = planIssueDiagnostic(
 			issue({ refs: [{ kind: "pool", id: "", name: "" }] }),
 		);
 		expect(d.link).toBeUndefined();
+	});
+
+	it("on its own object's page, never links back to that object", () => {
+		const d = planIssueDiagnostic(
+			issue({ refs: [{ kind: "policy", id: "p1", name: "team" }] }),
+			"policy:p1",
+		);
+		expect(d.message).toBe("pool main does not exist; the link is ignored");
+		expect(d.link).toBeUndefined();
+	});
+
+	it("names and links the object carrying an issue shown on another page", () => {
+		const d = planIssueDiagnostic(
+			issue({
+				code: "rate_limit_disabled",
+				message: "rate limit rl is disabled; it does not apply to this policy",
+				refs: [{ kind: "ratelimit", id: "r1", name: "rl" }],
+			}),
+			"ratelimit:r1",
+		);
+		expect(d.message).toBe(
+			"Policy team: rate limit rl is disabled; it does not apply to this policy",
+		);
+		expect(d.link).toEqual({
+			to: "/policies/$name",
+			params: { name: "team" },
+		});
+	});
+});
+
+describe("planIssueSubject", () => {
+	it("names the object by label and slug, or label alone", () => {
+		expect(planIssueSubject(issue({ kind: "ratelimit", name: "rl" }))).toBe(
+			"Rate limit rl",
+		);
+		expect(planIssueSubject(issue({ kind: "keyslot", name: "" }))).toBe(
+			"keyslot",
+		);
 	});
 });

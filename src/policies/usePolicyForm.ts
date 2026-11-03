@@ -31,22 +31,6 @@ import {
 } from "@/policies/policyFormSpec";
 import { toast } from "@/shared/Toast";
 
-/**
- * Build a Policy snapshot from the current form values + the base policy
- * being edited (or undefined for a new policy). Used to feed analyzers a
- * draft view so diagnostics update live as the user edits, instead of
- * reflecting the last saved state.
- */
-export function policyFromFormValues(
-	base: Policy | undefined,
-	values: PolicyFormValues,
-): Policy {
-	return {
-		metadata: base?.metadata ?? { name: "" },
-		spec: specFromFormValues(values),
-	};
-}
-
 export interface PolicyFormValues extends PolicySpecValues {
 	displayName: string;
 	description: string;

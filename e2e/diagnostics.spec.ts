@@ -1,142 +1,107 @@
 import { expect, test } from "@playwright/test";
-import { EMPTY_GRAPH, hostBinding, mockApi } from "./fixtures/mockApi";
+import { EMPTY_GRAPH, type MockPlanIssue, mockApi } from "./fixtures/mockApi";
 
-const provider = {
-	metadata: { id: "prov-openai", name: "openai" },
-	spec: { enabled: true },
-};
-const host = {
-	metadata: { id: "host-1", name: "openai" },
-	spec: { baseURL: "https://api.openai.com", enabled: true },
-};
-const model = {
-	metadata: {
-		id: "model-gpt",
-		name: "gpt-4o",
-		owner: { kind: "provider", id: "prov-openai" },
-	},
-	spec: { enabled: true },
-};
-const binding = hostBinding("model-gpt", "host-1", "gpt-4o");
-const hostKey = {
-	metadata: { id: "hk-1", name: "openai-prod", owner: { kind: "user" } },
-	spec: { hostId: "host-1", policyId: "policy-1", enabled: true, valueFrom: { kind: "stored" } },
-};
+const policy = (id: string, name: string, displayName: string) => ({
+	metadata: { id, name, displayName, owner: { kind: "user" } },
+	spec: { enabled: true, poolIds: ["pool-1"], models: ["openai/gpt-4o"] },
+});
+const brokenPolicy = policy("policy-broken", "broken-policy", "Broken policy");
+const cleanPolicy = policy("policy-clean", "clean-policy", "Clean policy");
 
-const cleanPolicy = {
+const disabledRL = {
 	metadata: {
-		id: "policy-clean",
-		name: "clean-policy",
-		displayName: "Clean policy",
+		id: "rl-1",
+		name: "default",
+		displayName: "Default",
 		owner: { kind: "user" },
 	},
 	spec: {
-		enabled: true,
-		hostKeyIds: ["hk-1"],
-		models: ["openai/gpt-4o"],
+		enabled: false,
+		rules: [
+			{
+				amount: 100,
+				meter: "requests",
+				strategy: "token-bucket",
+				window: 60_000_000_000,
+			},
+		],
 	},
 };
 
-const brokenPolicy = {
-	metadata: {
-		id: "policy-broken",
-		name: "broken-policy",
-		displayName: "Broken policy",
-		owner: { kind: "user" },
-	},
-	spec: {
-		enabled: true,
-		hostKeyIds: [], // no host keys → error
-		models: [],
-	},
-};
+const issue = (o: Partial<MockPlanIssue>): MockPlanIssue => ({
+	code: "pools_serve_nothing",
+	message:
+		"none of its pools (main) has a usable key at an enabled host; requests under this policy cannot be served",
+	kind: "policy",
+	id: "policy-broken",
+	name: "broken-policy",
+	field: "",
+	severity: "error",
+	refs: [],
+	...o,
+});
 
-test.describe("Diagnostics — Policies", () => {
-	test("policy with no host keys shows an error dot in the list and an error message on detail", async ({
+const poolIssue = issue({
+	code: "host_disabled",
+	message: "host openai is disabled; the pool serves nothing",
+	kind: "pool",
+	id: "pool-1",
+	name: "main",
+	field: "spec.hostId",
+	refs: [{ kind: "host", id: "host-1", name: "openai" }],
+});
+
+const rlIssue = issue({
+	code: "rate_limit_disabled",
+	message: "rate limit default is disabled; it does not apply to this policy",
+	field: "spec.rateLimits[0]",
+	severity: "warning",
+	refs: [{ kind: "ratelimit", id: "rl-1", name: "default" }],
+});
+
+test.describe("Plan issues", () => {
+	test("a policy's error shows as a dot in the list and on its page with its pools' issues", async ({
+		page,
+	}) => {
+		await mockApi(page, {
+			...EMPTY_GRAPH,
+			policies: [brokenPolicy, cleanPolicy],
+			planIssues: [issue({}), poolIssue],
+		});
+
+		await page.goto("/policies");
+		const broken = page.locator("tr", { hasText: "Broken policy" });
+		await expect(broken.getByLabel("1 error")).toBeVisible();
+		const clean = page.locator("tr", { hasText: "Clean policy" });
+		await expect(clean).toBeVisible();
+		await expect(clean.getByLabel(/error|warning/)).toHaveCount(0);
+
+		await page.goto("/policies/broken-policy");
+		await expect(
+			page.getByText("none of its pools (main)", { exact: false }),
+		).toBeVisible();
+		await expect(
+			page.getByText(
+				"Pool main: host openai is disabled; the pool serves nothing",
+			),
+		).toBeVisible();
+	});
+
+	test("a rate limit's page shows the policies it fails to apply to", async ({
 		page,
 	}) => {
 		await mockApi(page, {
 			...EMPTY_GRAPH,
 			policies: [brokenPolicy],
-			hostKeys: [],
-			hosts: [host],
-			models: [model],
-			hostBindings: [binding],
-			providers: [provider],
-		});
-
-		await page.goto("/policies");
-		const row = page.locator("tr", { hasText: "Broken policy" });
-		await expect(row).toBeVisible();
-		// Diagnostic dot has aria-label "1 error".
-		await expect(row.getByLabel(/error/)).toBeVisible();
-
-		await page.goto("/policies/broken-policy");
-		await expect(
-			page.getByText("No credentials attached", { exact: false }),
-		).toBeVisible();
-	});
-
-	test("clean policy with host keys and a key has no error dot in the list", async ({
-		page,
-	}) => {
-		const key = {
-			metadata: { id: "rk-1", name: "app-prod", owner: { kind: "user" } },
-			spec: {
-				enabled: true,
-				keyHash: "hash",
-				policyId: "policy-clean",
-			},
-		};
-		await mockApi(page, {
-			...EMPTY_GRAPH,
-			policies: [cleanPolicy],
-			hostKeys: [hostKey],
-			hosts: [host],
-			models: [model],
-			hostBindings: [binding],
-			providers: [provider],
-			keys: [key],
-		});
-
-		await page.goto("/policies");
-		const row = page.locator("tr", { hasText: "Clean policy" });
-		await expect(row).toBeVisible();
-		// No error/warning chip in the row.
-		await expect(row.getByLabel(/error/)).toHaveCount(0);
-		await expect(row.getByLabel(/warning/)).toHaveCount(0);
-	});
-
-	test("disabled rate limit referenced by an enabled policy shows a warning on the policy", async ({
-		page,
-	}) => {
-		const disabledRL = {
-			metadata: { id: "rl-1", name: "default", displayName: "Default", owner: { kind: "user" } },
-			spec: {
-				enabled: false,
-				rules: [
-					{ amount: 100, meter: "requests", strategy: "token-bucket", window: 60_000_000_000 },
-				],
-			},
-		};
-		const policy = {
-			...cleanPolicy,
-			spec: { ...cleanPolicy.spec, rateLimitId: "rl-1" },
-		};
-		await mockApi(page, {
-			...EMPTY_GRAPH,
-			policies: [policy],
-			hostKeys: [hostKey],
-			hosts: [host],
-			models: [model],
-			hostBindings: [binding],
-			providers: [provider],
 			rateLimits: [disabledRL],
+			planIssues: [rlIssue],
 		});
 
-		await page.goto("/policies/clean-policy");
+		await page.goto("/policies/rate-limits/default");
 		await expect(
-			page.getByText('Rate limit "Default" is disabled', { exact: false }),
+			page.getByText(
+				"Policy broken-policy: rate limit default is disabled; it does not apply to this policy",
+			),
 		).toBeVisible();
 	});
 });

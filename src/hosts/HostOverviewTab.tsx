@@ -1,7 +1,6 @@
 import { Suspense } from "react";
 import type { Host } from "@/api/types/host";
-import { IssuesPanel } from "@/diagnostics/IssuesPanel";
-import { useHostDiagnostics } from "@/diagnostics/useDiagnostics";
+import { PlanIssuesPanel } from "@/diagnostics/IssuesPanel";
 import { useHostOverview } from "@/hosts/useHostOverview";
 import { useHostUsage } from "@/hosts/useHostUsage";
 import { StatCard, StatGrid } from "@/shared/StatCard";
@@ -19,7 +18,7 @@ export function HostOverviewTab({ host }: { host: Host }) {
 
 	return (
 		<div className="flex flex-col gap-6 pt-2">
-			<HostIssues hostId={host.metadata.id} />
+			<PlanIssuesPanel kind="host" id={host.metadata.id} />
 			<StatGrid title="Overview">
 				<StatCard
 					label="Models"
@@ -54,11 +53,6 @@ export function HostOverviewTab({ host }: { host: Host }) {
 			</StatGrid>
 		</div>
 	);
-}
-
-function HostIssues({ hostId }: { hostId: string | undefined }) {
-	const diagnostics = useHostDiagnostics(hostId);
-	return <IssuesPanel diagnostics={diagnostics} />;
 }
 
 function HostUsageCards({ hostId }: { hostId: string }) {
