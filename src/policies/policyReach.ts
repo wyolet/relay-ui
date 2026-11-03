@@ -268,6 +268,8 @@ export interface DraftReachView {
 }
 
 const CHECKING = "Checking what this reach serves…";
+// Nothing is pickable until a reach says what it serves.
+const SERVES_NOTHING: PickerReach = { models: new Map() };
 const NO_DROPPED: DroppedNotes = { byPool: new Map(), other: [] };
 
 export function draftReachView({
@@ -293,22 +295,29 @@ export function draftReachView({
 	/** `data` is the previous reach's, shown while this one loads. */
 	isStale: boolean;
 }): DraftReachView {
-	const unnarrowed = (note: string): DraftReachView => ({
+	const nothing = (note: string): DraftReachView => ({
 		note,
 		excluded: [],
 		dropped: NO_DROPPED,
+		pickerReach: SERVES_NOTHING,
 	});
 	if (!choice) {
-		return unnarrowed("Choose a reach above to see which models it serves.");
+		return nothing("Choose a reach above to see which models it serves.");
 	}
 	if (choice === "pools" && poolIds.length === 0) {
-		return unnarrowed("Add a pool to see which models it serves.");
+		return nothing("Add a pool to see which models it serves.");
 	}
-	if (accountPending) return unnarrowed(CHECKING);
+	if (accountPending) return nothing(CHECKING);
+	// A relay without the reach read (or a refused owner) keeps the whole catalog
+	// listed, so the form still works there.
 	if (!requested || isError) {
-		return unnarrowed("Couldn't check what this reach serves.");
+		return {
+			note: "Couldn't check what this reach serves.",
+			excluded: [],
+			dropped: NO_DROPPED,
+		};
 	}
-	if (!data) return unnarrowed(CHECKING);
+	if (!data) return nothing(CHECKING);
 	const read = {
 		dropped: droppedNotes(data.dropped, poolIds),
 		accountNote: data.account
@@ -320,10 +329,11 @@ export function draftReachView({
 			...read,
 			note: `Requests under this reach are refused: ${data.refused.reason}`,
 			excluded: [],
+			pickerReach: SERVES_NOTHING,
 		};
 	}
 	const emptyReason = emptyReachReason(data);
-	// An empty reach keeps the whole catalog listed, so the entries stay editable.
+	// Picked entries stay in the summary (removable, flagged) even when nothing is pickable.
 	return {
 		...read,
 		note: emptyReason
@@ -332,7 +342,7 @@ export function draftReachView({
 				? CHECKING
 				: undefined,
 		checked: data,
-		pickerReach: emptyReason ? undefined : pickerReachFrom(data, poolIds),
+		pickerReach: emptyReason ? SERVES_NOTHING : pickerReachFrom(data, poolIds),
 		excluded: excludedRows(data),
 	};
 }

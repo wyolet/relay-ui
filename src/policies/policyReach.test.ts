@@ -341,10 +341,14 @@ describe("draftReachView", () => {
 		expect(v.pickerReach?.models.size).toBe(2);
 	});
 
-	it("keeps the whole catalog, saying why, until the reach is known", () => {
+	it("offers nothing until the reach is known, saying why", () => {
 		expect(
-			draftReachView({ ...base, choice: undefined }).pickerReach,
-		).toBeUndefined();
+			draftReachView({ ...base, choice: undefined }).pickerReach?.models.size,
+		).toBe(0);
+		expect(
+			draftReachView({ ...base, choice: "pools", poolIds: [] }).pickerReach
+				?.models.size,
+		).toBe(0);
 		expect(draftReachView({ ...base, choice: "pools", poolIds: [] }).note).toBe(
 			"Add a pool to see which models it serves.",
 		);
@@ -358,11 +362,20 @@ describe("draftReachView", () => {
 			"Couldn't check what this reach serves.",
 		);
 		expect(
-			draftReachView({ ...base, data: undefined }).pickerReach,
+			draftReachView({ ...base, data: undefined }).pickerReach?.models.size,
+		).toBe(0);
+	});
+
+	it("keeps the whole catalog only when relay can't answer", () => {
+		expect(
+			draftReachView({ ...base, isError: true, data: undefined }).pickerReach,
+		).toBeUndefined();
+		expect(
+			draftReachView({ ...base, requested: false }).pickerReach,
 		).toBeUndefined();
 	});
 
-	it("doesn't narrow a refused reach", () => {
+	it("offers nothing for a refused reach", () => {
 		const v = draftReachView({
 			...base,
 			data: {
@@ -372,7 +385,7 @@ describe("draftReachView", () => {
 				refused: { code: "model_not_allowed", reason: "policy disabled" },
 			},
 		});
-		expect(v.pickerReach).toBeUndefined();
+		expect(v.pickerReach?.models.size).toBe(0);
 		expect(v.note).toBe(
 			"Requests under this reach are refused: policy disabled",
 		);
@@ -392,7 +405,7 @@ describe("draftReachView", () => {
 			poolIds: ["id-main"],
 			data,
 		});
-		expect(v.pickerReach).toBeUndefined();
+		expect(v.pickerReach?.models.size).toBe(0);
 		expect(v.checked).toBe(data);
 		expect(v.note).toBe(`This reach serves no models: ${HELD}`);
 		expect(v.dropped.byPool.get("id-main")).toEqual([HELD]);
