@@ -15,6 +15,11 @@ import type { FilterDef, FilterState } from "@/filters/types";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { OwnerLink } from "@/projects/OwnerLink";
 import { subjectLabel } from "@/role-bindings/SubjectsEditor";
+import {
+	subjectDisplay,
+	subjectFilterOptions,
+} from "@/role-bindings/subjectDirectory";
+import { useSubjectDirectory } from "@/role-bindings/useSubjectDirectory";
 import { Chip } from "@/shared/Chip";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { RowMenu } from "@/shared/RowMenu";
@@ -55,13 +60,6 @@ const STATIC_FILTERS = [
 			{ value: "project", label: "Project" },
 		],
 	},
-	{
-		key: "subject",
-		type: "search",
-		label: "Subject",
-		placeholder: "user:… / group:…",
-		default: "",
-	},
 ] as const satisfies readonly FilterDef[];
 
 /** Map the route's filter state onto GET /role-bindings query params. */
@@ -80,8 +78,8 @@ export function toRoleBindingsParams(
 }
 
 export function RoleBindingsTable() {
-	const navigate = useNavigate({ from: "/role-bindings" });
-	const live = useSearch({ from: "/_authenticated/role-bindings/" });
+	const navigate = useNavigate({ from: "/users" });
+	const live = useSearch({ from: "/_authenticated/users/" });
 	const { search, isStale } = useDeferredSearch(live);
 	const { data } = useRoleBindingsList(toRoleBindingsParams(search));
 	const { data: rolesData } = useRoles();
@@ -90,6 +88,8 @@ export function RoleBindingsTable() {
 	const del = useConfirmedDelete(useDeleteRoleBinding(), {
 		noun: "role binding",
 	});
+
+	const subjects = useSubjectDirectory();
 
 	const roleNames = new Map(
 		(rolesData.items ?? []).map((r) => [
@@ -111,6 +111,16 @@ export function RoleBindingsTable() {
 					value: r.metadata.id ?? "",
 					label: displayLabel(r.metadata),
 				})),
+			],
+		},
+		{
+			key: "subject",
+			type: "select",
+			label: "Subject",
+			default: "",
+			options: [
+				{ value: "", label: "Anyone" },
+				...subjectFilterOptions(subjects),
 			],
 		},
 		{
@@ -244,14 +254,17 @@ export function RoleBindingsTable() {
 											</td>
 											<td className="px-3 py-2">
 												<div className="flex flex-wrap gap-1">
-													{(binding.spec.subjects ?? []).map((s) => (
-														<Chip
-															key={subjectLabel(s)}
-															label={subjectLabel(s)}
-															mono
-															shape="box"
-														/>
-													))}
+													{(binding.spec.subjects ?? []).map((s) => {
+														const shown = subjectDisplay(s, subjects);
+														return (
+															<Chip
+																key={subjectLabel(s)}
+																label={shown.text}
+																mono={!shown.known}
+																shape="box"
+															/>
+														);
+													})}
 												</div>
 											</td>
 											<td className="px-3 py-2 text-right">

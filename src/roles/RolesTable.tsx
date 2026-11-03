@@ -62,8 +62,8 @@ export function toRolesParams(search: {
 }
 
 export function RolesTable() {
-	const navigate = useNavigate({ from: "/roles" });
-	const live = useSearch({ from: "/_authenticated/roles/" });
+	const navigate = useNavigate({ from: "/users" });
+	const live = useSearch({ from: "/_authenticated/users/" });
 	const { search, isStale } = useDeferredSearch(live);
 	const { data } = useRolesList(toRolesParams(search));
 	const canAuthor = useHasLicenseFeature(FEATURE_CUSTOM_ROLES);

@@ -12,7 +12,8 @@ function NewGroupPage() {
 		<div className="flex flex-col gap-4">
 			<div>
 				<Link
-					to="/groups"
+					to="/users"
+					search={{ tab: "groups" }}
 					className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
 				>
 					<ChevronLeft className="w-3.5 h-3.5" />
@@ -30,7 +31,9 @@ function NewGroupPage() {
 				onSaved={(name) =>
 					void navigate({ to: "/groups/$name", params: { name } })
 				}
-				onCancel={() => void navigate({ to: "/groups" })}
+				onCancel={() =>
+					void navigate({ to: "/users", search: { tab: "groups" } })
+				}
 			/>
 		</div>
 	);

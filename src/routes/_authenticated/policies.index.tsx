@@ -1,4 +1,8 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import {
+	createFileRoute,
+	stripSearchParams,
+	useNavigate,
+} from "@tanstack/react-router";
 import { Suspense } from "react";
 import { z } from "zod";
 import { accountListQueryOptions } from "@/api/hooks/accounts";
@@ -38,6 +42,8 @@ const searchSchema = z.object({
 
 export const Route = createFileRoute("/_authenticated/policies/")({
 	validateSearch: searchSchema,
+	// Defaults stay out of the URL.
+	search: { middlewares: [stripSearchParams(searchSchema.parse({}))] },
 	loaderDeps: ({ search }) => ({ ...search }),
 	loader: ({ context, deps }) => {
 		const { queryClient } = context;

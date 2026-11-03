@@ -56,8 +56,8 @@ export function toGroupsParams(search: {
 }
 
 export function GroupsTable() {
-	const navigate = useNavigate({ from: "/groups" });
-	const live = useSearch({ from: "/_authenticated/groups/" });
+	const navigate = useNavigate({ from: "/users" });
+	const live = useSearch({ from: "/_authenticated/users/" });
 	const { search, isStale } = useDeferredSearch(live);
 	const { data } = useGroupsList(toGroupsParams(search));
 	const del = useConfirmedDelete(useDeleteGroup(), { noun: "group" });
