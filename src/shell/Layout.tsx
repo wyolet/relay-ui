@@ -8,6 +8,7 @@ import { ToastContainer } from "@/shared/Toast";
 import { useSidebarStore } from "@/stores/sidebar";
 import { AccountMenu } from "./AccountMenu";
 import { ContextSwitcher } from "./ContextSwitcher";
+import { NoLaneBanner } from "./NoLaneBanner";
 import { Sidebar } from "./Sidebar";
 
 export function Layout() {
@@ -31,6 +32,7 @@ export function Layout() {
 				</header>
 				<main className="min-h-0 flex-1 overflow-auto">
 					<div className="mx-auto max-w-[90rem] px-6 pt-5 pb-40">
+						<NoLaneBanner />
 						<Outlet />
 					</div>
 				</main>

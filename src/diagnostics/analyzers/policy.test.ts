@@ -3,6 +3,7 @@ import { analyzePolicy } from "@/diagnostics/analyzers/policy";
 import {
 	bindingTo,
 	graph,
+	makeAccount,
 	makeHost,
 	makeHostKey,
 	makeModel,
@@ -47,6 +48,73 @@ describe("analyzePolicy", () => {
 		);
 		expect(codes(ds)).not.toContain("policy.no-host-keys");
 		expect(codes(ds)).not.toContain("policy.catalog-resolves-empty");
+	});
+
+	// An Anthropic setup reached only through a pool's account.
+	const anthropic = () => {
+		const host = makeHost({ id: "h1", name: "anthropic" });
+		const provider = makeProvider({ id: "prov-a", name: "anthropic" });
+		const model = makeModel({ name: "claude", providerId: "prov-a" });
+		return {
+			hosts: [host],
+			providers: [provider],
+			models: [model],
+			bindings: [bindingTo(model, "h1")],
+		};
+	};
+	const accountPool = makePool({
+		id: "pool-1",
+		hostId: "h1",
+		accountIds: ["acc-1"],
+	});
+
+	it("counts the keys of a pool's account as the policy's credentials", () => {
+		const p = makePolicy({ poolIds: ["pool-1"], models: ["anthropic"] });
+		const ds = analyzePolicy(
+			p,
+			graph({
+				...anthropic(),
+				policies: [p],
+				pools: [accountPool],
+				accounts: [makeAccount({ id: "acc-1", hostId: "h1" })],
+				hostKeys: [makeHostKey({ id: "k1", hostId: "h1", accountId: "acc-1" })],
+			}),
+		);
+		expect(codes(ds)).not.toContain("policy.no-host-keys");
+		expect(codes(ds)).not.toContain("policy.catalog-resolves-empty");
+	});
+
+	it("counts a shared account in a pool as serving, its keys unlisted", () => {
+		const p = makePolicy({ poolIds: ["pool-1"], models: ["anthropic"] });
+		const ds = analyzePolicy(
+			p,
+			graph({
+				...anthropic(),
+				policies: [p],
+				pools: [accountPool],
+				accounts: [
+					makeAccount({ id: "acc-1", hostId: "h1", sourceAccountId: "real" }),
+				],
+			}),
+		);
+		expect(codes(ds)).not.toContain("policy.no-host-keys");
+		expect(codes(ds)).not.toContain("policy.catalog-resolves-empty");
+	});
+
+	it("still flags an own account in a pool that holds no keys", () => {
+		const p = makePolicy({ poolIds: ["pool-1"], models: ["anthropic"] });
+		const ds = analyzePolicy(
+			p,
+			graph({
+				...anthropic(),
+				policies: [p],
+				pools: [accountPool],
+				accounts: [makeAccount({ id: "acc-1", hostId: "h1" })],
+			}),
+		);
+		expect(ds.find((d) => d.code === "policy.no-host-keys")?.severity).toBe(
+			"error",
+		);
 	});
 
 	it("flags no credentials when a linked pool is missing", () => {

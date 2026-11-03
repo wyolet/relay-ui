@@ -3,7 +3,10 @@ import {
 	hostIdsInPolicyCatalog,
 	modelsForRefViaPolicy,
 } from "@/diagnostics/analyzers/policyCatalog";
-import { policyCredentialIds } from "@/diagnostics/buildGraph";
+import {
+	policyCredentialIds,
+	policyUnlistedAccountHostIds,
+} from "@/diagnostics/buildGraph";
 import type { Diagnostic, DiagnosticGraph } from "@/diagnostics/types";
 import {
 	type CatalogRef,
@@ -28,7 +31,13 @@ export function analyzePolicy(
 		return out;
 	}
 
-	const credentialIds = policyCredentialIds(policy, graph.pools);
+	const credentialIds = policyCredentialIds(policy, graph);
+	// Accounts whose keys can't be listed still serve; only relay can say otherwise.
+	const unlistedHostIds = policyUnlistedAccountHostIds(policy, graph);
+	const hostUsable = (hostId: string) => {
+		const host = graph.hosts.get(hostId);
+		return host !== undefined && host.spec.enabled !== false;
+	};
 	const resolvedKeys = credentialIds.map((id) => graph.hostKeys.get(id));
 	const livingKeys = resolvedKeys.filter((k) => k !== undefined);
 	const enabledKeys = livingKeys.filter((k) => k.spec.enabled !== false);
@@ -45,6 +54,7 @@ export function analyzePolicy(
 		});
 	} else if (
 		credentialIds.length === 0 &&
+		unlistedHostIds.length === 0 &&
 		!grants.some((g) => modelsForRefViaPolicy(g, policy, graph).length > 0)
 	) {
 		out.push({
@@ -53,7 +63,11 @@ export function analyzePolicy(
 			message:
 				"Its pools hold no credentials — requests under this policy are refused with no_keys.",
 		});
-	} else if (credentialIds.length > 0 && enabledKeys.length === 0) {
+	} else if (
+		credentialIds.length > 0 &&
+		enabledKeys.length === 0 &&
+		unlistedHostIds.length === 0
+	) {
 		out.push({
 			severity: "error",
 			code: "policy.host-keys-all-disabled",
@@ -74,10 +88,9 @@ export function analyzePolicy(
 
 	// Transitive: at least one enabled credential has its host disabled / missing.
 	if (enabledKeys.length > 0) {
-		const allHostsUnreachable = enabledKeys.every((k) => {
-			const host = graph.hosts.get(k.spec.hostId);
-			return !host || host.spec.enabled === false;
-		});
+		const allHostsUnreachable =
+			enabledKeys.every((k) => !hostUsable(k.spec.hostId)) &&
+			!unlistedHostIds.some(hostUsable);
 		if (allHostsUnreachable) {
 			out.push({
 				severity: "error",

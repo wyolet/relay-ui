@@ -1,10 +1,12 @@
 import {
+	type QueryClient,
 	queryOptions,
 	useMutation,
 	useQueryClient,
 	useSuspenseQuery,
 } from "@tanstack/react-query";
 import { apiClient } from "@/api/client";
+import { invalidatePersonalAccountReads } from "@/api/hooks/users";
 import type { DetachedLinks } from "@/api/types/errors";
 import type { Group, GroupList } from "@/api/types/group";
 import type { operations } from "@/api/types.gen";
@@ -65,6 +67,12 @@ export function useGroup(ref: string) {
 	return useSuspenseQuery(groupDetailQueryOptions(ref));
 }
 
+// Membership, enablement and personalAccount all feed members' personal accounts.
+function invalidateGroupReads(queryClient: QueryClient): void {
+	void queryClient.invalidateQueries({ queryKey: ["groups"] });
+	void invalidatePersonalAccountReads(queryClient);
+}
+
 export function useCreateGroup() {
 	const queryClient = useQueryClient();
 	return useMutation({
@@ -73,7 +81,7 @@ export function useCreateGroup() {
 			return data;
 		},
 		onSuccess: () => {
-			void queryClient.invalidateQueries({ queryKey: ["groups"] });
+			invalidateGroupReads(queryClient);
 		},
 	});
 }
@@ -97,7 +105,7 @@ export function useUpdateGroup() {
 			return data;
 		},
 		onSuccess: () => {
-			void queryClient.invalidateQueries({ queryKey: ["groups"] });
+			invalidateGroupReads(queryClient);
 		},
 	});
 }
@@ -115,7 +123,7 @@ export function useDeleteGroup() {
 			return data?.detached ?? [];
 		},
 		onSuccess: () => {
-			void queryClient.invalidateQueries({ queryKey: ["groups"] });
+			invalidateGroupReads(queryClient);
 		},
 	});
 }

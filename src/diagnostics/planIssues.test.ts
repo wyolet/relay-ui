@@ -33,6 +33,15 @@ describe("planIssueDiagnostic", () => {
 		expect(d.link).toEqual({ to: "/pools/$name", params: { name: "pool-1" } });
 	});
 
+	it("words personal_account_off itself and keeps relay's message otherwise", () => {
+		expect(
+			planIssueDiagnostic(issue({ code: "personal_account_off" })).message,
+		).toBe(
+			"Personal accounts are turned off for this user; use a team or project key.",
+		);
+		expect(planIssueDiagnostic(issue({})).message).toBe("Pool is gone.");
+	});
+
 	it("skips a ref whose id the caller may not see", () => {
 		const d = planIssueDiagnostic(issue({ refs: [{ kind: "pool", id: "" }] }));
 		expect(d.link).toBeUndefined();
