@@ -25,6 +25,7 @@ import {
 import { FormFooter } from "@/shared/FormFooter";
 import { FormSection } from "@/shared/FormSection";
 import { IdentitySection } from "@/shared/IdentitySection";
+import { OptionWithHint } from "@/shared/OptionWithHint";
 
 interface PricingFormProps {
 	pricing?: Pricing;
@@ -278,14 +279,10 @@ function RateRow({
 						<SelectContent>
 							{PRICING_METERS.map((m) => (
 								<SelectItem key={m} value={m}>
-									<span className="flex flex-col items-start gap-0.5 whitespace-normal">
-										<span className="text-sm text-foreground">
-											{prettyMeter(m)}
-										</span>
-										<span className="text-[11px] leading-snug text-muted-foreground">
-											{METER_HINTS[m]}
-										</span>
-									</span>
+									<OptionWithHint
+										label={prettyMeter(m)}
+										hint={METER_HINTS[m]}
+									/>
 								</SelectItem>
 							))}
 						</SelectContent>

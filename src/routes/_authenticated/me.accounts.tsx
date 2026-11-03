@@ -1,19 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { Suspense } from "react";
-import { MyAccountsView } from "@/accounts/MyAccountsView";
-import { myAccountsQueryOptions } from "@/api/hooks/accounts";
-import { PageLoader } from "@/shared/Spinner";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authenticated/me/accounts")({
-	loader: ({ context }) =>
-		context.queryClient.ensureQueryData(myAccountsQueryOptions),
-	component: MyAccountsPage,
+	beforeLoad: () => {
+		throw redirect({ to: "/keys", search: { tab: "accounts", mine: true } });
+	},
 });
-
-function MyAccountsPage() {
-	return (
-		<Suspense fallback={<PageLoader />}>
-			<MyAccountsView />
-		</Suspense>
-	);
-}

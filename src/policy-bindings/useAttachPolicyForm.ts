@@ -101,7 +101,7 @@ export function useAttachPolicyForm({
 	);
 	const isSubmitting = useStore(form.store, (s) => s.isSubmitting);
 	const options = bindingPolicyOptions(
-		usablePolicies,
+		usablePolicies.items,
 		policies.data?.items ?? [],
 		values.policyId,
 	);

@@ -23,7 +23,8 @@ function NewRoleInner() {
 		<div className="flex flex-col gap-4">
 			<div>
 				<Link
-					to="/roles"
+					to="/users"
+					search={{ tab: "roles" }}
 					className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
 				>
 					<ChevronLeft className="w-3.5 h-3.5" />
@@ -39,7 +40,9 @@ function NewRoleInner() {
 					onSaved={(name) =>
 						void navigate({ to: "/roles/$name", params: { name } })
 					}
-					onCancel={() => void navigate({ to: "/roles" })}
+					onCancel={() =>
+						void navigate({ to: "/users", search: { tab: "roles" } })
+					}
 				/>
 			) : (
 				<CustomRolesNotice />

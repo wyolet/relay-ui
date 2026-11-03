@@ -6,14 +6,10 @@ import {
 	Bot,
 	Boxes,
 	KeyRound,
-	KeySquare,
 	LayoutDashboard,
-	Network,
-	ScrollText,
 	ShieldCheck,
 	UserRound,
 	Users,
-	UsersRound,
 } from "lucide-react";
 import type { ComponentType } from "react";
 import { useAuth } from "@/api/auth";
@@ -30,6 +26,8 @@ import {
 	Sidebar as SidebarRoot,
 } from "@/components/ui/sidebar";
 import { BrandMark } from "@/shared/BrandMark";
+import { WorkspaceSwitcher } from "@/shell/WorkspaceSwitcher";
+import { USERS_PAGE_TABS } from "@/users/useUsersPageTabs";
 
 interface NavItem {
 	to:
@@ -41,20 +39,19 @@ interface NavItem {
 		| "/policies"
 		| "/pricing"
 		| "/service-accounts"
-		| "/groups"
 		| "/teams"
 		| "/projects"
-		| "/roles"
-		| "/role-bindings"
 		| "/audit"
 		| "/users"
 		| "/scim-clients";
 	label: string;
 	icon: ComponentType<{ className?: string }>;
-	prefix: string;
-	/** Entry hides when the actor may not list this kind. Observe views have
-	 * none — they degrade to their own empty states instead. */
-	capability?: Capability;
+	/** Path prefixes that highlight the entry; a tabbed page lists every tab's
+	 * detail routes too. */
+	prefix: string | readonly string[];
+	/** Entry hides when the actor may list none of these kinds. Observe views
+	 * have none — they degrade to their own empty states instead. */
+	capability?: Capability | readonly Capability[];
 	/** Entry hides from non-admins: the kind takes an admin in every authz mode. */
 	adminOnly?: boolean;
 }
@@ -131,51 +128,11 @@ const NAV_GROUPS: NavGroup[] = [
 				capability: "service-accounts",
 			},
 			{
-				to: "/groups",
-				label: "Groups",
-				icon: UsersRound,
-				prefix: "/groups",
-				capability: "groups",
-			},
-			{
-				to: "/scim-clients",
-				label: "SCIM clients",
-				icon: Network,
-				prefix: "/scim-clients",
-				adminOnly: true,
-			},
-		],
-	},
-	{
-		label: "Access",
-		items: [
-			{
-				to: "/roles",
-				label: "Roles",
-				icon: ShieldCheck,
-				prefix: "/roles",
-				capability: "roles",
-			},
-			{
-				to: "/role-bindings",
-				label: "Role bindings",
-				icon: KeySquare,
-				prefix: "/role-bindings",
-				capability: "role-bindings",
-			},
-			{
 				to: "/users",
 				label: "Users",
 				icon: UserRound,
-				prefix: "/users",
-				capability: "users",
-			},
-			{
-				to: "/audit",
-				label: "Audit",
-				icon: ScrollText,
-				prefix: "/audit",
-				capability: "audit",
+				prefix: ["/users", "/groups", "/roles", "/role-bindings"],
+				capability: USERS_PAGE_TABS,
 			},
 		],
 	},
@@ -183,7 +140,7 @@ const NAV_GROUPS: NavGroup[] = [
 
 function isActive(path: string, item: NavItem): boolean {
 	if (item.to === "/") return path === "/";
-	return path.startsWith(item.prefix);
+	return [item.prefix].flat().some((prefix) => path.startsWith(prefix));
 }
 
 function NavMenuItem({ item, active }: { item: NavItem; active: boolean }) {
@@ -210,7 +167,8 @@ export function Sidebar() {
 	const { isAdmin } = useAuth();
 	const visible = (item: NavItem) =>
 		(!item.adminOnly || isAdmin) &&
-		(!item.capability || capabilities[item.capability]);
+		(!item.capability ||
+			[item.capability].flat().some((kind) => capabilities[kind]));
 
 	return (
 		<SidebarRoot collapsible="icon">
@@ -226,6 +184,7 @@ export function Sidebar() {
 						</span>
 					</div>
 				</div>
+				<WorkspaceSwitcher />
 			</SidebarHeader>
 
 			<SidebarContent>

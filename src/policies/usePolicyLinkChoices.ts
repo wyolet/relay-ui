@@ -85,7 +85,7 @@ export function usePoolChoices(
 ): LinkChoices {
 	const { data: pools } = usePools();
 	const { data: hosts } = useHosts();
-	const usable = useUsablePools(usableBy);
+	const usable = useUsablePools(usableBy).items;
 	const hostItems = hosts.items ?? [];
 	return splitChoices(
 		(pools.items ?? []).map((p) => poolChoice(p, hostItems)),
@@ -107,7 +107,7 @@ export function useBudgetChoices(
 	usableBy: string | undefined,
 ): LinkChoices {
 	const { data } = useBudgets();
-	const usable = useUsableBudgets(usableBy);
+	const usable = useUsableBudgets(usableBy).items;
 	return splitChoices(
 		(data.items ?? []).map(budgetChoice),
 		usable.map(budgetChoice),

@@ -23,9 +23,8 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Chip } from "@/shared/Chip";
+import { versionLabel } from "@/lib/versionLabel";
 import { Segmented } from "@/shared/Segmented";
-import { useActorAccess } from "@/shell/actorScopes";
 import { headerTriggerClass } from "@/shell/headerTrigger";
 import { type Theme, useTheme } from "@/stores/theme";
 import { TokenDialog } from "@/tokens/TokenDialog";
@@ -53,48 +52,6 @@ function ThemeSegment() {
 				};
 			})}
 		/>
-	);
-}
-
-/** The actor's roles and scopes, read-only — granting them is an admin's job
- * on the role-bindings page. */
-function ActorAccess() {
-	const { roles, scopes } = useActorAccess();
-	if (roles.length === 0 && scopes.length === 0) return null;
-
-	return (
-		<>
-			<DropdownMenuSeparator />
-			<div className="flex flex-col gap-2 px-2 py-1.5">
-				{roles.length > 0 && (
-					<div>
-						<div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-							Roles
-						</div>
-						<div className="mt-1 flex flex-wrap gap-1">
-							{roles.map((r) => (
-								<Chip key={r} label={r} tone="primary" />
-							))}
-						</div>
-					</div>
-				)}
-				{scopes.length > 0 && (
-					<div>
-						<div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-							Scopes
-						</div>
-						<div className="mt-1 flex flex-col gap-0.5">
-							{scopes.map((s) => (
-								<div key={s.scope} className="truncate text-[11px]">
-									<span className="text-muted-foreground">{s.kind}</span>{" "}
-									<span className="text-foreground">{s.name}</span>
-								</div>
-							))}
-						</div>
-					</div>
-				)}
-			</div>
-		</>
 	);
 }
 
@@ -131,18 +88,23 @@ export function AccountMenu() {
 								{label}
 							</div>
 							{userId && (
-								<div className="truncate font-mono text-[11px] text-muted-foreground">
-									{userId}
+								<div
+									className="truncate font-mono text-[11px] text-muted-foreground"
+									title={userId}
+								>
+									{userId.slice(0, 8)}
 								</div>
 							)}
 						</div>
 					</div>
 
-					<ActorAccess />
-
 					<DropdownMenuSeparator />
 
-					<DropdownMenuItem render={<Link to="/me/accounts" />}>
+					<DropdownMenuItem
+						render={
+							<Link to="/keys" search={{ tab: "accounts", mine: true }} />
+						}
+					>
 						<Building2 />
 						Your accounts
 					</DropdownMenuItem>
@@ -177,12 +139,16 @@ export function AccountMenu() {
 						<ThemeSegment />
 					</div>
 
-					{versionData && (
-						<div className="flex items-center justify-between px-2 pb-1 pt-0.5 text-[10px] tabular-nums text-muted-foreground">
-							<span>backend</span>
-							<span className="font-mono">{versionData.version}</span>
-						</div>
-					)}
+					<dl className="grid grid-cols-[auto_1fr] gap-x-3 px-2 pb-1 pt-0.5 text-[10px] text-muted-foreground">
+						<dt title="The Relay server this interface talks to">Relay</dt>
+						<dd className="truncate text-right font-mono">
+							{versionLabel(versionData?.version)}
+						</dd>
+						<dt title="This interface's build">UI</dt>
+						<dd className="truncate text-right font-mono">
+							{versionLabel(import.meta.env.VITE_UI_VERSION)}
+						</dd>
+					</dl>
 				</DropdownMenuContent>
 			</DropdownMenu>
 			{tokensOpen && <TokenDialog onClose={() => setTokensOpen(false)} />}

@@ -8,8 +8,7 @@ import {
 } from "@/api/hooks/ratelimits";
 import type { RateLimit } from "@/api/types/ratelimit";
 import { buttonVariants } from "@/components/ui/button";
-import { DiagnosticDot } from "@/diagnostics/DiagnosticDot";
-import { useRateLimitDiagnostics } from "@/diagnostics/useDiagnostics";
+import { PlanIssueDot } from "@/diagnostics/DiagnosticDot";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { compactNumber } from "@/lib/rateLimitFormat";
@@ -166,7 +165,6 @@ function RateLimitRow({
 }) {
 	const updateRL = useUpdateRateLimit();
 	const toastSaveError = useSaveErrorToast();
-	const diagnostics = useRateLimitDiagnostics(rl.metadata.id);
 	const enabled = rl.spec.enabled !== false;
 	async function toggleEnabled(next: boolean) {
 		try {
@@ -194,7 +192,7 @@ function RateLimitRow({
 							</span>
 						)}
 					</Link>
-					<DiagnosticDot diagnostics={diagnostics} />
+					<PlanIssueDot kind="ratelimit" id={rl.metadata.id} />
 					<CatalogDetachedBadge detachedAt={rl.metadata.catalogDetachedAt} />
 				</div>
 			</td>

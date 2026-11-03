@@ -1,17 +1,14 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowDown, ArrowUp, ChevronDown, Plus, X } from "lucide-react";
+import { X } from "lucide-react";
 import type { ReactNode } from "react";
 import { IconButton } from "@/components/ui/icon-button";
-import {
-	Popover,
-	PopoverContent,
-	PopoverTrigger,
-} from "@/components/ui/popover";
 import { HostLogo } from "@/hosts/HostLogo";
-import { moveItem } from "@/policies/policyFormSpec";
+import { moveItem } from "@/lib/moveItem";
+import type { UnavailablePicks } from "@/lib/workContext";
 import type { LinkChoice, LinkChoices } from "@/policies/usePolicyLinkChoices";
-import { filterTriggerClassName } from "@/shared/MultiSelect";
-import { OptionRow } from "@/shared/OptionRow";
+import { AddPopover } from "@/shared/AddPopover";
+import { RankControls } from "@/shared/RankControls";
+import { NotAvailableTag } from "@/shared/ScopeNotes";
 
 interface Props {
 	choices: LinkChoices;
@@ -22,6 +19,8 @@ interface Props {
 	renderRowControl?: (choice: LinkChoice) => ReactNode;
 	addLabel: string;
 	emptyText: string;
+	/** Linked rows the form's workspace can't use. */
+	unavailable?: UnavailablePicks;
 }
 
 /** Linked rows of one kind (pools, budgets) plus an add popover. */
@@ -32,6 +31,7 @@ export function PolicyLinkPicker({
 	renderRowControl,
 	addLabel,
 	emptyText,
+	unavailable,
 }: Props) {
 	const ids = choices.selected.map((c) => c.id);
 	return (
@@ -46,56 +46,37 @@ export function PolicyLinkPicker({
 							choice={c}
 							rank={ordered ? i + 1 : undefined}
 						>
-							{ordered && (
-								<>
-									<IconButton
-										icon={ArrowUp}
-										label={`Move ${c.label} up`}
-										disabled={i === 0}
-										onClick={() => onChange(moveItem(ids, i, -1))}
-									/>
-									<IconButton
-										icon={ArrowDown}
-										label={`Move ${c.label} down`}
-										disabled={i === ids.length - 1}
-										onClick={() => onChange(moveItem(ids, i, 1))}
-									/>
-								</>
+							{unavailable?.ids.includes(c.id) && (
+								<NotAvailableTag scope={unavailable.scope} />
 							)}
 							{renderRowControl?.(c)}
-							<IconButton
-								icon={X}
-								label={`Remove ${c.label}`}
-								onClick={() => onChange(ids.filter((id) => id !== c.id))}
-							/>
+							{ordered ? (
+								<RankControls
+									label={c.label}
+									index={i}
+									count={ids.length}
+									onMove={(index, delta) =>
+										onChange(moveItem(ids, index, delta))
+									}
+									onRemove={() => onChange(ids.filter((id) => id !== c.id))}
+								/>
+							) : (
+								<IconButton
+									icon={X}
+									label={`Remove ${c.label}`}
+									onClick={() => onChange(ids.filter((id) => id !== c.id))}
+								/>
+							)}
 						</LinkChoiceRow>
 					))}
 				</ul>
 			)}
-			<Popover>
-				<PopoverTrigger
-					className={`${filterTriggerClassName} self-start`}
-					disabled={choices.available.length === 0}
-				>
-					<Plus className="size-3.5" aria-hidden />
-					{addLabel}
-					<ChevronDown className="size-3.5 text-muted-foreground" aria-hidden />
-				</PopoverTrigger>
-				<PopoverContent align="start" className="w-80 p-1">
-					<ul className="flex max-h-72 flex-col overflow-y-auto">
-						{choices.available.map((c) => (
-							<li key={c.id}>
-								<OptionRow
-									onClick={() => onChange([...ids, c.id])}
-									className="rounded px-2 py-1.5"
-								>
-									<LinkChoiceLabel choice={c} />
-								</OptionRow>
-							</li>
-						))}
-					</ul>
-				</PopoverContent>
-			</Popover>
+			<AddPopover
+				label={addLabel}
+				groups={[{ options: choices.available }]}
+				renderOption={(c) => <LinkChoiceLabel choice={c} />}
+				onAdd={(c) => onChange([...ids, c.id])}
+			/>
 		</div>
 	);
 }

@@ -14,7 +14,7 @@ import { useHolderResolver } from "@/accounts/useHolderResolver";
 import { useDeleteKey, useKey } from "@/api/hooks/keys";
 import { Button } from "@/components/ui/button";
 import { DiagnosticList } from "@/diagnostics/DiagnosticList";
-import { useKeyDiagnostics } from "@/diagnostics/useDiagnostics";
+import { usePlanDiagnostics } from "@/diagnostics/usePlanDiagnostics";
 import { KeyRotateDialog } from "@/keys/KeyRotateDialog";
 import { useToggleKeyEnabled } from "@/keys/useToggleKeyEnabled";
 import { displayLabel } from "@/lib/displayLabel";
@@ -41,7 +41,7 @@ export function KeyDetailView({ name }: { name: string }) {
 	const [rotating, setRotating] = useState(false);
 
 	const rkId = rk.metadata.id ?? "";
-	const diagnostics = useKeyDiagnostics(rk.metadata.id);
+	const diagnostics = usePlanDiagnostics("key", rk.metadata.id);
 	const resolveHolder = useHolderResolver();
 	const limits = useKeyEffectiveLimits(name);
 	const enabled = rk.spec.enabled !== false;

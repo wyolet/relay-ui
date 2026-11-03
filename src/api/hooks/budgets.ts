@@ -6,9 +6,11 @@ import {
 	useSuspenseQuery,
 } from "@tanstack/react-query";
 import { apiClient } from "@/api/client";
+import { keepAcrossScopes, usableList } from "@/api/hooks/usableList";
 import type { DetachedLinks } from "@/api/types/errors";
 import type { components, operations } from "@/api/types.gen";
 import { unwrap } from "@/api/unwrap";
+import type { UsableList } from "@/lib/workContext";
 
 export type Budget = components["schemas"]["Budget"];
 export type BudgetSpec = components["schemas"]["BudgetSpec"];
@@ -78,10 +80,19 @@ export function useBudgetsList(params: BudgetsListParams) {
 	return useSuspenseQuery(budgetListQuery(params));
 }
 
-/** The budgets a policy owned by `usableBy` may link; empty while loading. */
-export function useUsableBudgets(usableBy: string | undefined): Budget[] {
-	const { data } = useQuery(budgetListQuery({ usable_by: usableBy }));
-	return data?.items ?? [];
+export function usableBudgetsQuery(usableBy: string | undefined) {
+	const list = budgetListQuery({ usable_by: usableBy });
+	return queryOptions({
+		...list,
+		placeholderData: keepAcrossScopes(list.queryKey),
+	});
+}
+
+/** The budgets a policy owned by `usableBy` may link; the last scope's rows while a new scope loads. */
+export function useUsableBudgets(
+	usableBy: string | undefined,
+): UsableList<Budget> {
+	return usableList(useQuery(usableBudgetsQuery(usableBy)));
 }
 
 export function useBudget(ref: string) {

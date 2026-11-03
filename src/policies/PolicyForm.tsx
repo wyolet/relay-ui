@@ -1,22 +1,19 @@
 import { Boxes, Gauge, Layers, type LucideIcon, Wallet } from "lucide-react";
-import { useMemo } from "react";
 import type { Policy } from "@/api/types/policy";
-import { analyzePolicy } from "@/diagnostics/analyzers/policy";
-import { DiagnosticList } from "@/diagnostics/DiagnosticList";
-import { useDiagnosticGraph } from "@/diagnostics/useDiagnostics";
 import { ModelPicker } from "@/models/ModelPicker";
 import { PolicyLinkPicker } from "@/policies/PolicyLinkPicker";
 import { PolicyRLPicker } from "@/policies/PolicyRLPicker";
 import { budgetLinkShared } from "@/policies/policyFormSpec";
 import { SharedLinkSwitch } from "@/policies/SharedLinkSwitch";
 import { UnpricedUnderBudget } from "@/policies/UnpricedUnderBudget";
-import { policyFromFormValues, usePolicyForm } from "@/policies/usePolicyForm";
+import { usePolicyForm } from "@/policies/usePolicyForm";
 import {
 	useBudgetChoices,
 	usePoolChoices,
 } from "@/policies/usePolicyLinkChoices";
 import { FormFooter } from "@/shared/FormFooter";
 import { IdentitySection } from "@/shared/IdentitySection";
+import { ScopedPicker } from "@/shared/ScopeNotes";
 
 interface PolicyFormProps {
 	policy?: Policy;
@@ -36,6 +33,9 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 		descriptionError,
 		placement,
 		usableBy,
+		updatingFor,
+		unavailable,
+		unavailableErrors,
 	} = usePolicyForm({
 		open: true,
 		policy,
@@ -48,15 +48,6 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 		usableBy,
 	);
 
-	// Live diagnostics: synthesize a draft policy from form values and run
-	// the analyzer against it, so warnings clear without a Save round-trip.
-	const graph = useDiagnosticGraph();
-	const draftDiagnostics = useMemo(
-		() =>
-			graph ? analyzePolicy(policyFromFormValues(policy, values), graph) : [],
-		[policy, values, graph],
-	);
-
 	return (
 		<form
 			onSubmit={(e) => {
@@ -66,11 +57,6 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 			}}
 			className="flex flex-col"
 		>
-			{draftDiagnostics.length > 0 && (
-				<div className="mb-4">
-					<DiagnosticList diagnostics={draftDiagnostics} />
-				</div>
-			)}
 			<div className="divide-y divide-border">
 				<IdentitySection
 					displayName={values.displayName}
@@ -102,13 +88,19 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 					title="Pools"
 					description="Pools requests draw host keys from, tried in order: a later pool is the failover for an earlier one. Only for policies bound to a team, project, user or service account."
 				>
-					<PolicyLinkPicker
-						choices={pools}
-						onChange={(next) => form.setFieldValue("poolIds", next)}
-						ordered
-						addLabel="Add pool"
-						emptyText="No pools linked."
-					/>
+					<ScopedPicker
+						updatingFor={updatingFor.pools}
+						error={unavailableErrors.pools}
+					>
+						<PolicyLinkPicker
+							choices={pools}
+							onChange={(next) => form.setFieldValue("poolIds", next)}
+							ordered
+							addLabel="Add pool"
+							emptyText="No pools linked."
+							unavailable={unavailable.pools}
+						/>
+					</ScopedPicker>
 				</Section>
 
 				<Section
@@ -116,12 +108,18 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 					title="Rate limits"
 					description="Every linked rate limit applies; a model scope narrows one to those models. Shared is one count for the bound account; off is one count per member under it."
 				>
-					<PolicyRLPicker
-						links={values.rateLimits}
-						allowedModels={values.models}
-						onChange={(next) => form.setFieldValue("rateLimits", next)}
-						usableBy={usableBy}
-					/>
+					<ScopedPicker
+						updatingFor={updatingFor.rateLimits}
+						error={unavailableErrors.rateLimits}
+					>
+						<PolicyRLPicker
+							links={values.rateLimits}
+							allowedModels={values.models}
+							onChange={(next) => form.setFieldValue("rateLimits", next)}
+							usableBy={usableBy}
+							unavailable={unavailable.rateLimits}
+						/>
+					</ScopedPicker>
 				</Section>
 
 				<Section
@@ -129,19 +127,25 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 					title="Budgets"
 					description="Spend caps every request under this policy must fit. Unpriced models are refused under a budget. Shared is one budget for the bound account; off is one budget per member under it."
 				>
-					<PolicyLinkPicker
-						choices={budgets}
-						onChange={setBudgetIds}
-						renderRowControl={(c) => (
-							<SharedLinkSwitch
-								value={budgetLinkShared(values.budgets, c.id)}
-								onChange={(next) => setBudgetShared(c.id, next)}
-								linkLabel={c.label}
-							/>
-						)}
-						addLabel="Add budget"
-						emptyText="No budgets linked."
-					/>
+					<ScopedPicker
+						updatingFor={updatingFor.budgets}
+						error={unavailableErrors.budgets}
+					>
+						<PolicyLinkPicker
+							choices={budgets}
+							onChange={setBudgetIds}
+							renderRowControl={(c) => (
+								<SharedLinkSwitch
+									value={budgetLinkShared(values.budgets, c.id)}
+									onChange={(next) => setBudgetShared(c.id, next)}
+									linkLabel={c.label}
+								/>
+							)}
+							addLabel="Add budget"
+							emptyText="No budgets linked."
+							unavailable={unavailable.budgets}
+						/>
+					</ScopedPicker>
 					<div className="mt-3 empty:hidden">
 						<UnpricedUnderBudget
 							policyRef={policy?.metadata.name}

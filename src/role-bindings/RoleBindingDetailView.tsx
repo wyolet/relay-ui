@@ -19,7 +19,8 @@ export function RoleBindingDetailView({ name }: { name: string }) {
 	const navigate = useNavigate();
 	const del = useConfirmedDelete(useDeleteRoleBinding(), {
 		noun: "role binding",
-		onDeleted: () => void navigate({ to: "/role-bindings" }),
+		onDeleted: () =>
+			void navigate({ to: "/users", search: { tab: "role-bindings" } }),
 	});
 
 	const enabled = binding.spec.enabled !== false;
@@ -32,7 +33,8 @@ export function RoleBindingDetailView({ name }: { name: string }) {
 	return (
 		<div className="flex flex-col gap-5">
 			<Link
-				to="/role-bindings"
+				to="/users"
+				search={{ tab: "role-bindings" }}
 				className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
 			>
 				<ChevronLeft className="w-3.5 h-3.5" />

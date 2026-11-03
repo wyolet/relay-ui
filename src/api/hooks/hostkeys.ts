@@ -7,6 +7,7 @@ import {
 	useSuspenseQuery,
 } from "@tanstack/react-query";
 import { apiClient } from "@/api/client";
+import { keepAcrossScopes, usableList } from "@/api/hooks/usableList";
 import type { DetachedLinks } from "@/api/types/errors";
 import type {
 	HostKey,
@@ -16,6 +17,7 @@ import type {
 } from "@/api/types/hostkey";
 import type { components, operations } from "@/api/types.gen";
 import { unwrap } from "@/api/unwrap";
+import type { UsableList } from "@/lib/workContext";
 
 /** Server-side filter/sort/page params accepted by GET /host-keys. */
 export type HostKeysListParams = NonNullable<
@@ -118,16 +120,25 @@ export function useHostKeysHealth(ids: readonly string[]) {
 	});
 }
 
-/** The host keys at `hostId` a pool owned by `usableBy` may link; empty while loading. */
+/** The host keys at `hostId` a pool owned by `usableBy` may link. */
+export function usableHostKeysQuery(
+	usableBy: string | undefined,
+	hostId: string,
+) {
+	const list = hostKeysListQuery({ usable_by: usableBy, host_id: [hostId] });
+	return queryOptions({
+		...list,
+		enabled: hostId !== "",
+		placeholderData: keepAcrossScopes(list.queryKey),
+	});
+}
+
+/** The host keys at `hostId` a pool owned by `usableBy` may link; the last scope's rows while a new scope loads. */
 export function useUsableHostKeys(
 	usableBy: string | undefined,
 	hostId: string,
-): HostKey[] {
-	const { data } = useQuery({
-		...hostKeysListQuery({ usable_by: usableBy, host_id: [hostId] }),
-		enabled: hostId !== "",
-	});
-	return data?.items ?? [];
+): UsableList<HostKey> {
+	return usableList(useQuery(usableHostKeysQuery(usableBy, hostId)));
 }
 
 export function useHostKey(ref: string) {

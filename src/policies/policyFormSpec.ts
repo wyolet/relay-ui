@@ -101,19 +101,3 @@ export function budgetLinkShared(
 function sortedKey(models: readonly string[]): string {
 	return [...models].sort().join(",");
 }
-
-/** Moves the item at `from` one step up (-1) or down (+1); out-of-range is a no-op. */
-export function moveItem<T>(
-	items: readonly T[],
-	from: number,
-	step: -1 | 1,
-): T[] {
-	const to = from + step;
-	const next = [...items];
-	const moved = next[from];
-	const target = next[to];
-	if (moved === undefined || target === undefined) return next;
-	next[from] = target;
-	next[to] = moved;
-	return next;
-}

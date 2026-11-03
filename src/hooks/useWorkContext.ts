@@ -3,10 +3,11 @@ import { useAuth } from "@/api/auth";
 import { myContextsQueryOptions } from "@/api/hooks/contexts";
 import type { components } from "@/api/types.gen";
 import {
+	contextName,
 	contextOwner,
-	contextPlacement,
 	contextUsableBy,
-	ownerPlacement,
+	type FormPlacement,
+	ownerName,
 	ownerUsableBy,
 	resolveWorkContext,
 	SYSTEM_CONTEXT,
@@ -45,19 +46,28 @@ export function useWorkContext() {
  * Where a form's row sits and what its pickers may offer: the edited row's
  * metadata (or a page's preset owner), else the current context.
  */
-export function useFormOwner(fixed?: { owner?: Owner }) {
+export function useFormOwner(fixed?: { owner?: Owner }): {
+	owner: Owner | undefined;
+	usableBy: string | undefined;
+	placement: FormPlacement | undefined;
+} {
 	const { userId } = useAuth();
 	const work = useWorkContext();
 	if (fixed) {
 		return {
 			owner: fixed.owner,
 			usableBy: ownerUsableBy(fixed.owner, userId),
-			placement: ownerPlacement(fixed.owner, work.contexts, userId),
+			placement: {
+				scope: ownerName(fixed.owner, work.contexts, userId),
+				editable: false,
+			},
 		};
 	}
 	return {
 		owner: work.owner,
 		usableBy: work.usableBy,
-		placement: work.current ? contextPlacement(work.current) : undefined,
+		placement: work.current
+			? { scope: contextName(work.current), editable: true }
+			: undefined,
 	};
 }

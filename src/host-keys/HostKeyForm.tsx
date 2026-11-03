@@ -19,6 +19,8 @@ import { FormFooter } from "@/shared/FormFooter";
 import { FormSection } from "@/shared/FormSection";
 import { IdentitySection } from "@/shared/IdentitySection";
 import { MultiCheckList } from "@/shared/MultiSelect";
+import { OptionWithHint } from "@/shared/OptionWithHint";
+import { ScopedPicker, UnavailableChip } from "@/shared/ScopeNotes";
 import { SecretInput } from "@/shared/SecretInput";
 
 const KIND_OPTIONS: Record<HostKeyKind, { label: string; hint: string }> = {
@@ -58,11 +60,19 @@ export function HostKeyForm({
 		envVarReservedPrefix,
 		valueError,
 		accountGroups,
+		accountsLoading,
+		accountsUpdatingFor,
+		pickedAccountLabel,
+		accountUnavailableIn,
+		clearAccount,
 		accountLocked,
 		attachedPolicies,
 		poolsShown,
 		poolOptions,
 		checkedPoolIds,
+		poolsUpdatingFor,
+		unavailablePools,
+		poolsError,
 		setKeyAccount,
 		selectCreatedAccount,
 		togglePool,
@@ -105,14 +115,20 @@ export function HostKeyForm({
 						title="Account"
 						description="The provider account (organization) whose limits this credential shares. It sets the host the credential authenticates against."
 					>
-						<KeyAccountSelect
-							groups={accountGroups}
-							value={values.accountId}
-							onChange={setKeyAccount}
-							onNewAccount={() => setNewAccountOpen(true)}
-							error={accountIdError}
-							locked={accountLocked}
-						/>
+						<ScopedPicker updatingFor={accountsUpdatingFor}>
+							<KeyAccountSelect
+								groups={accountGroups}
+								value={values.accountId}
+								onChange={setKeyAccount}
+								onNewAccount={() => setNewAccountOpen(true)}
+								error={accountIdError}
+								locked={accountLocked}
+								loading={accountsLoading}
+								pickedLabel={pickedAccountLabel}
+								unavailableIn={accountUnavailableIn}
+								onClear={clearAccount}
+							/>
+						</ScopedPicker>
 					</FormSection>
 
 					{!isEdit && (
@@ -122,14 +138,28 @@ export function HostKeyForm({
 							description="Optional. Pools at the account's host that draw on this credential; it's appended to each after it's created."
 						>
 							{poolsShown ? (
-								<div className="max-w-md rounded-md border border-border p-2">
-									<MultiCheckList
-										options={poolOptions}
-										selected={checkedPoolIds}
-										onToggle={togglePool}
-										emptyLabel="pools"
-									/>
-								</div>
+								<ScopedPicker updatingFor={poolsUpdatingFor} error={poolsError}>
+									{unavailablePools && (
+										<div className="mb-2 flex flex-wrap gap-1">
+											{unavailablePools.pools.map((p) => (
+												<UnavailableChip
+													key={p.id}
+													label={p.label}
+													scope={unavailablePools.scope}
+													onRemove={() => togglePool(p.id)}
+												/>
+											))}
+										</div>
+									)}
+									<div className="max-w-md rounded-md border border-border p-2">
+										<MultiCheckList
+											options={poolOptions}
+											selected={checkedPoolIds}
+											onToggle={togglePool}
+											emptyLabel="pools"
+										/>
+									</div>
+								</ScopedPicker>
 							) : (
 								<p className="text-xs text-muted-foreground">
 									Pick an account first.
@@ -160,14 +190,10 @@ export function HostKeyForm({
 										<SelectContent>
 											{(Object.keys(KIND_OPTIONS) as HostKeyKind[]).map((k) => (
 												<SelectItem key={k} value={k}>
-													<span className="flex flex-col items-start gap-0.5 whitespace-normal">
-														<span className="text-sm text-foreground">
-															{KIND_OPTIONS[k].label}
-														</span>
-														<span className="text-[11px] leading-snug text-muted-foreground">
-															{KIND_OPTIONS[k].hint}
-														</span>
-													</span>
+													<OptionWithHint
+														label={KIND_OPTIONS[k].label}
+														hint={KIND_OPTIONS[k].hint}
+													/>
 												</SelectItem>
 											))}
 										</SelectContent>

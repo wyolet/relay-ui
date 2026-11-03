@@ -13,8 +13,7 @@ import {
 import { Suspense } from "react";
 import type { ModelHostView, ModelPolicyView } from "@/api/hooks/models";
 import type { Model } from "@/api/types/model";
-import { IssuesPanel } from "@/diagnostics/IssuesPanel";
-import { useModelDiagnostics } from "@/diagnostics/useDiagnostics";
+import { PlanIssuesPanel } from "@/diagnostics/IssuesPanel";
 import { modelProductLine } from "@/models/groupModelsByFamily";
 import { ModelCapabilityChips } from "@/models/ModelCapabilityChips";
 import { ModelSnapshotsList } from "@/models/ModelSnapshotsList";
@@ -55,7 +54,7 @@ export function ModelOverviewTab({
 
 	return (
 		<div className="flex flex-col gap-6 pt-2">
-			<ModelIssues modelId={model.metadata.id} />
+			<PlanIssuesPanel kind="model" id={model.metadata.id} />
 
 			<StatGrid title="Overview">
 				<StatCard
@@ -168,11 +167,6 @@ export function ModelOverviewTab({
 function ModelUsageCards({ modelId }: { modelId: string }) {
 	const usage = useModelUsage(modelId);
 	return <ResourceUsageCards usage={usage} />;
-}
-
-function ModelIssues({ modelId }: { modelId: string | undefined }) {
-	const diagnostics = useModelDiagnostics(modelId);
-	return <IssuesPanel diagnostics={diagnostics} />;
 }
 
 function IdentityTile({

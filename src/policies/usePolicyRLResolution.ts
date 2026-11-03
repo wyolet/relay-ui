@@ -36,7 +36,7 @@ export function usePolicyRLResolution(
 	const { data: hostsData } = useHosts();
 	const { data: hostBindingsData } = useBindings();
 	const { data: rateLimitsData } = useRateLimits();
-	const usableRateLimits = useUsableRateLimits(usableBy);
+	const usableRateLimits = useUsableRateLimits(usableBy).items;
 
 	const concreteCatalog = useMemo(
 		() =>

@@ -111,38 +111,134 @@ export function contextLabel(ctx: WorkContext): string {
 	return ctx.kind === "personal" ? "Personal" : ctx.displayName;
 }
 
-/** "In Team Platform": where a create in this context lands. */
-export function contextPlacement(ctx: WorkContext): string {
+/** The switcher trigger's main line; personal shows whose it is. */
+export function contextTitle(ctx: WorkContext): string {
+	return ctx.kind === "personal"
+		? ctx.displayName || "Personal"
+		: ctx.displayName;
+}
+
+/** The switcher trigger's second line: a project's team, else the kind. */
+export function contextSubtitle(
+	ctx: WorkContext,
+	contexts: readonly WorkContext[],
+): string {
 	switch (ctx.kind) {
 		case "personal":
-			return "In Personal";
+			return "Personal";
 		case "system":
-			return "In System";
+			return "Relay-wide";
+		case "team":
+			return KIND_LABEL.team;
+		case "project":
+			return (
+				contexts.find((c) => c.kind === "team" && c.id === ctx.teamId)
+					?.displayName ?? KIND_LABEL.project
+			);
+	}
+}
+
+/** "Team Platform": the context a create lands in. */
+export function contextName(ctx: WorkContext): string {
+	switch (ctx.kind) {
+		case "personal":
+			return "Personal";
+		case "system":
+			return "System";
 		default:
-			return `In ${KIND_LABEL[ctx.kind]} ${ctx.displayName}`;
+			return `${KIND_LABEL[ctx.kind]} ${ctx.displayName}`;
 	}
 }
 
 /** Where an existing row sits, named from the caller's contexts when listed there. */
-export function ownerPlacement(
+export function ownerName(
 	owner: Owner | undefined,
 	contexts: readonly WorkContext[],
 	actorUserId: string | undefined,
 ): string {
 	const kind = owner?.kind ?? "user";
 	const id = owner?.id ?? "";
-	if (kind === "system") return "In System";
+	if (kind === "system") return "System";
 	if (kind === "user") {
-		return !id || id === actorUserId
-			? "In Personal"
-			: `In user ${id.slice(0, 8)}…`;
+		return !id || id === actorUserId ? "Personal" : `user ${id.slice(0, 8)}…`;
 	}
 	if (kind === "team" || kind === "project") {
 		const listed = contexts.find((c) => c.kind === kind && c.id === id);
-		if (listed) return contextPlacement(listed);
-		return `In ${KIND_LABEL[kind]} ${id.slice(0, 8)}…`;
+		if (listed) return contextName(listed);
+		return `${KIND_LABEL[kind]} ${id.slice(0, 8)}…`;
 	}
-	return `In ${kind}`;
+	return kind;
+}
+
+/** Where a form's row sits, as its identity line shows it. */
+export interface FormPlacement {
+	/** e.g. "Team Platform". */
+	scope: string;
+	/** Placed by the work context, so switching the context moves the create. */
+	editable: boolean;
+}
+
+/** A picker's owner-scoped list as a form reads it. */
+export interface UsableList<T> {
+	items: T[];
+	/** False until any rows arrived, this scope's or the last one's. */
+	loaded: boolean;
+	/** The rows are the last scope's, shown while this scope's load. */
+	fromPreviousScope: boolean;
+}
+
+/** Picks a create form keeps after a switch though its new scope can't use them. */
+export interface UnavailablePicks {
+	ids: string[];
+	/** e.g. "Team Platform". */
+	scope: string;
+}
+
+/** The picked ids not among the `usable` rows, in pick order. */
+export function unusablePicks(
+	picked: readonly string[],
+	usable: readonly { metadata: { id?: string } }[],
+): string[] {
+	const allowed = new Set(usable.map((row) => row.metadata.id));
+	return picked.filter((id) => !allowed.has(id));
+}
+
+/**
+ * The picks a create form flags once `list` holds its current scope's rows;
+ * undefined for edits, while the list loads, or when every pick is usable.
+ */
+export function unavailablePicks(
+	picked: readonly string[],
+	list: UsableList<{ metadata: { id?: string } }>,
+	placement: FormPlacement | undefined,
+): UnavailablePicks | undefined {
+	if (!placement?.editable || !list.loaded || list.fromPreviousScope) {
+		return undefined;
+	}
+	const ids = unusablePicks(picked, list.items);
+	return ids.length > 0 ? { ids, scope: placement.scope } : undefined;
+}
+
+/** The scope a picker says it's updating for while any of its lists shows the last scope's rows. */
+export function updatingScope(
+	placement: FormPlacement | undefined,
+	...lists: readonly { fromPreviousScope: boolean }[]
+): string | undefined {
+	return lists.some((l) => l.fromPreviousScope) ? placement?.scope : undefined;
+}
+
+/** The inline mark on a pick the scope can't use. */
+export function notAvailableLabel(scope: string): string {
+	return `Not available in ${scope}`;
+}
+
+/** The field error once a save was tried with flagged picks. */
+export function unavailablePicksError(
+	flagged: UnavailablePicks | undefined,
+	submitTried: boolean,
+): string | undefined {
+	if (!flagged || !submitTried) return undefined;
+	return `Remove what ${flagged.scope} can't use, or switch the workspace back.`;
 }
 
 export interface ContextRow {

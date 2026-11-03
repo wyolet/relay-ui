@@ -1,12 +1,13 @@
-import { Layers } from "lucide-react";
+import { Layers, Shuffle } from "lucide-react";
 import type { Pool } from "@/api/hooks/pools";
 import { HostSelect } from "@/hosts/HostSelect";
-import { PoolMemberPicker } from "@/pools/PoolMemberPicker";
+import { PoolMemberList } from "@/pools/PoolMemberList";
 import { POOL_SELECTIONS, SELECTION_LABELS } from "@/pools/poolKeys";
 import { usePoolForm } from "@/pools/usePoolForm";
 import { FormFooter } from "@/shared/FormFooter";
 import { FormSection } from "@/shared/FormSection";
 import { IdentitySection } from "@/shared/IdentitySection";
+import { ScopedPicker } from "@/shared/ScopeNotes";
 import { Segmented } from "@/shared/Segmented";
 
 const SELECTION_OPTIONS = POOL_SELECTIONS.map((s) => ({
@@ -28,6 +29,10 @@ export function PoolForm({ pool, onSaved, onCancel }: PoolFormProps) {
 		isEdit,
 		slugPreview,
 		placement,
+		updatingFor,
+		unavailableAccounts,
+		unavailableKeys,
+		membersError,
 		hostOptions,
 		chosenAccounts,
 		availableAccounts,
@@ -64,8 +69,8 @@ export function PoolForm({ pool, onSaved, onCancel }: PoolFormProps) {
 
 				<FormSection
 					icon={Layers}
-					title="Keys"
-					description="Accounts and credentials at one host that a policy linking this pool routes through, and how a request picks one."
+					title="Members"
+					description="Accounts and credentials at one host, tried in order: accounts first, each with every key it holds, then single credentials."
 				>
 					<div className="flex flex-col gap-4">
 						<HostSelect
@@ -80,52 +85,36 @@ export function PoolForm({ pool, onSaved, onCancel }: PoolFormProps) {
 									: undefined
 							}
 						/>
-
-						<div>
-							<div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-1">
-								Selection
-							</div>
-							<Segmented
-								options={SELECTION_OPTIONS}
-								value={values.selection}
-								onChange={setSelection}
-							/>
-							<p className="mt-1.5 text-[11px] text-muted-foreground">
-								{SELECTION_LABELS[values.selection].hint}
-							</p>
-						</div>
-
 						{values.hostId && (
-							<>
-								<p className="text-[11px] text-muted-foreground">
-									Accounts are tried first, in this order, each with all of its
-									keys; then the single keys below.
-								</p>
-								<PoolMemberPicker
-									chosenTitle="Accounts in the pool · in order"
-									availableTitle="Provider accounts at this host"
-									emptyChosen="No accounts yet. An account brings every key it holds, now and later."
-									emptyAvailable="No other provider accounts at this host, own or shared."
-									chosen={chosenAccounts}
-									available={availableAccounts}
-									onAdd={accountEdits.add}
-									onRemove={accountEdits.remove}
-									onMove={accountEdits.move}
+							<ScopedPicker updatingFor={updatingFor} error={membersError}>
+								<PoolMemberList
+									accounts={chosenAccounts}
+									keys={chosenKeys}
+									availableAccounts={availableAccounts}
+									availableKeys={availableKeys}
+									accountEdits={accountEdits}
+									keyEdits={keyEdits}
+									unavailableAccounts={unavailableAccounts}
+									unavailableKeys={unavailableKeys}
 								/>
-								<PoolMemberPicker
-									chosenTitle="Keys in the pool · in order"
-									availableTitle="Credentials at this host"
-									emptyChosen="No single keys yet. A pool may stay empty; add credentials below."
-									emptyAvailable="No other credentials at this host."
-									chosen={chosenKeys}
-									available={availableKeys}
-									onAdd={keyEdits.add}
-									onRemove={keyEdits.remove}
-									onMove={keyEdits.move}
-								/>
-							</>
+							</ScopedPicker>
 						)}
 					</div>
+				</FormSection>
+
+				<FormSection
+					icon={Shuffle}
+					title="Selection"
+					description="How a request picks among the members."
+				>
+					<Segmented
+						options={SELECTION_OPTIONS}
+						value={values.selection}
+						onChange={setSelection}
+					/>
+					<p className="mt-1.5 text-[11px] text-muted-foreground">
+						{SELECTION_LABELS[values.selection].hint}
+					</p>
 				</FormSection>
 			</div>
 

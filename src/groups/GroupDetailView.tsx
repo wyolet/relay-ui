@@ -20,7 +20,7 @@ export function GroupDetailView({ name }: { name: string }) {
 	const navigate = useNavigate();
 	const del = useConfirmedDelete(useDeleteGroup(), {
 		noun: "group",
-		onDeleted: () => void navigate({ to: "/groups" }),
+		onDeleted: () => void navigate({ to: "/users", search: { tab: "groups" } }),
 	});
 
 	const enabled = g.spec.enabled !== false;
@@ -29,7 +29,8 @@ export function GroupDetailView({ name }: { name: string }) {
 	return (
 		<div className="flex flex-col gap-5">
 			<Link
-				to="/groups"
+				to="/users"
+				search={{ tab: "groups" }}
 				className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
 			>
 				<ChevronLeft className="w-3.5 h-3.5" />

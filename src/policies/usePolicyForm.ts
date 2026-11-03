@@ -1,15 +1,28 @@
 import { useForm } from "@tanstack/react-form";
+import { useQueryClient } from "@tanstack/react-query";
 import { useStore } from "@tanstack/react-store";
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { z } from "zod";
+import { usableBudgetsQuery, useUsableBudgets } from "@/api/hooks/budgets";
 import { useCreatePolicy, useUpdatePolicy } from "@/api/hooks/policies";
+import { usablePoolsQuery, useUsablePools } from "@/api/hooks/pools";
+import {
+	usableRateLimitsQuery,
+	useUsableRateLimits,
+} from "@/api/hooks/ratelimits";
 import type { Policy, PolicyCreate, PolicyUpdate } from "@/api/types/policy";
 import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
+import { useScopePrefetch } from "@/hooks/useScopePrefetch";
 import { useFormOwner } from "@/hooks/useWorkContext";
 import { displayLabel } from "@/lib/displayLabel";
 import { shownError, zodFieldValidator } from "@/lib/formErrors";
 import { randomSuffix, slugify } from "@/lib/slug";
+import {
+	unavailablePicks,
+	unavailablePicksError,
+	updatingScope,
+} from "@/lib/workContext";
 import {
 	budgetLinksForIds,
 	type PolicySpecValues,
@@ -17,22 +30,6 @@ import {
 	specToFormValues,
 } from "@/policies/policyFormSpec";
 import { toast } from "@/shared/Toast";
-
-/**
- * Build a Policy snapshot from the current form values + the base policy
- * being edited (or undefined for a new policy). Used to feed analyzers a
- * draft view so diagnostics update live as the user edits, instead of
- * reflecting the last saved state.
- */
-export function policyFromFormValues(
-	base: Policy | undefined,
-	values: PolicyFormValues,
-): Policy {
-	return {
-		metadata: base?.metadata ?? { name: "" },
-		spec: specFromFormValues(values),
-	};
-}
 
 export interface PolicyFormValues extends PolicySpecValues {
 	displayName: string;
@@ -86,6 +83,7 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 	const createPolicy = useCreatePolicy();
 	const updatePolicy = useUpdatePolicy();
 	const toastSaveError = useSaveErrorToast();
+	const queryClient = useQueryClient();
 	const loaded = useLoadedResourceVersion(
 		`${open}:${policy?.metadata.id ?? ""}`,
 		policy?.metadata.resourceVersion,
@@ -116,6 +114,10 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 			onChange: runValidation,
 		},
 		onSubmit: async ({ value }) => {
+			// Flagged picks block the save; their field errors say what to do.
+			if (unavailablePools || unavailableBudgets || unavailableRateLimits) {
+				return;
+			}
 			const displayName = value.displayName.trim();
 			const description = value.description.trim();
 			const spec = specFromFormValues(value);
@@ -186,6 +188,37 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 	const descriptionError = useStore(form.store, (s) =>
 		shownError(s.fieldMeta?.description, s.submissionAttempts),
 	);
+
+	const poolsList = useUsablePools(usableBy);
+	const budgetsList = useUsableBudgets(usableBy);
+	const rateLimitsList = useUsableRateLimits(usableBy);
+	const unavailablePools = unavailablePicks(
+		values.poolIds,
+		poolsList,
+		placement,
+	);
+	const unavailableBudgets = unavailablePicks(
+		values.budgets.map((b) => b.budgetId),
+		budgetsList,
+		placement,
+	);
+	const unavailableRateLimits = unavailablePicks(
+		values.rateLimits.flatMap((l) => (l.rateLimitId ? [l.rateLimitId] : [])),
+		rateLimitsList,
+		placement,
+	);
+	const submitTried = useStore(form.store, (s) => s.submissionAttempts > 0);
+
+	const prefetchLinks = useCallback(
+		(scope: string) => {
+			void queryClient.prefetchQuery(usablePoolsQuery(scope));
+			void queryClient.prefetchQuery(usableBudgetsQuery(scope));
+			void queryClient.prefetchQuery(usableRateLimitsQuery(scope));
+		},
+		[queryClient],
+	);
+	useScopePrefetch(placement?.editable ? prefetchLinks : undefined);
+
 	function setBudgetIds(ids: string[]) {
 		form.setFieldValue("budgets", budgetLinksForIds(ids, values.budgets));
 	}
@@ -209,5 +242,20 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 		descriptionError,
 		placement,
 		usableBy,
+		updatingFor: {
+			pools: updatingScope(placement, poolsList),
+			budgets: updatingScope(placement, budgetsList),
+			rateLimits: updatingScope(placement, rateLimitsList),
+		},
+		unavailable: {
+			pools: unavailablePools,
+			budgets: unavailableBudgets,
+			rateLimits: unavailableRateLimits,
+		},
+		unavailableErrors: {
+			pools: unavailablePicksError(unavailablePools, submitTried),
+			budgets: unavailablePicksError(unavailableBudgets, submitTried),
+			rateLimits: unavailablePicksError(unavailableRateLimits, submitTried),
+		},
 	};
 }

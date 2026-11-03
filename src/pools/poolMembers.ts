@@ -1,5 +1,6 @@
 import { PROVIDER_KIND, sharedByName, shortId } from "@/accounts/accountView";
 import type { Account } from "@/api/hooks/accounts";
+import type { HostKey } from "@/api/types/hostkey";
 import { displayLabel } from "@/lib/displayLabel";
 
 /** An account or key a pool lists, as its pickers and detail show it. */
@@ -13,6 +14,8 @@ export interface PoolMemberOption {
 	sharedBy?: string;
 	/** False when the caller can't see the row. */
 	known: boolean;
+	/** The second line: what the member brings to the pool. */
+	meta?: string;
 }
 
 export function accountMember(account: Account): PoolMemberOption {
@@ -64,4 +67,22 @@ export function availableAccounts(
 			? [accountMember(a)]
 			: [],
 	);
+}
+
+/** How many of the visible keys each account holds. */
+export function keyCountByAccount(
+	keys: readonly HostKey[],
+): Map<string, number> {
+	const counts = new Map<string, number>();
+	for (const k of keys) {
+		const id = k.spec.accountId;
+		if (id) counts.set(id, (counts.get(id) ?? 0) + 1);
+	}
+	return counts;
+}
+
+/** An account member's second line; keys the caller can't see leave it uncounted. */
+export function accountMeta(keyCount: number | undefined): string {
+	if (!keyCount) return "Account · all its keys, now and later";
+	return `Account · ${keyCount === 1 ? "1 key" : `${keyCount} keys`}, and any added later`;
 }

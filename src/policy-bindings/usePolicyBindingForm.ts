@@ -1,10 +1,19 @@
 import { useForm } from "@tanstack/react-form";
+import { useQueryClient } from "@tanstack/react-query";
 import { useStore } from "@tanstack/react-store";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 import { accountLabel } from "@/accounts/accountView";
-import { useAccounts, useUsableAccounts } from "@/api/hooks/accounts";
-import { usePolicies, useUsablePolicies } from "@/api/hooks/policies";
+import {
+	usableAccountsQuery,
+	useAccounts,
+	useUsableAccounts,
+} from "@/api/hooks/accounts";
+import {
+	usablePoliciesQuery,
+	usePolicies,
+	useUsablePolicies,
+} from "@/api/hooks/policies";
 import {
 	useCreatePolicyBinding,
 	useUpdatePolicyBinding,
@@ -12,10 +21,16 @@ import {
 import type { PolicyBinding } from "@/api/types/policyBinding";
 import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
+import { useScopePrefetch } from "@/hooks/useScopePrefetch";
 import { useFormOwner } from "@/hooks/useWorkContext";
 import { displayLabel } from "@/lib/displayLabel";
 import { shownError, zodFieldValidator } from "@/lib/formErrors";
 import { randomSuffix, slugify } from "@/lib/slug";
+import {
+	unavailablePicks,
+	unavailablePicksError,
+	updatingScope,
+} from "@/lib/workContext";
 import {
 	bindingPolicyOptions,
 	type DuplicateAccount,
@@ -96,6 +111,7 @@ export function usePolicyBindingForm({
 	const createBinding = useCreatePolicyBinding();
 	const updateBinding = useUpdatePolicyBinding();
 	const toastSaveError = useSaveErrorToast();
+	const queryClient = useQueryClient();
 	const { data: accountsData } = useAccounts();
 	const { data: policiesData } = usePolicies();
 	const loaded = useLoadedResourceVersion(
@@ -109,8 +125,10 @@ export function usePolicyBindingForm({
 			? { owner: { kind: "project", id: projectId } }
 			: binding?.metadata,
 	);
-	const usablePolicies = useUsablePolicies(usableBy);
-	const usableAccounts = useUsableAccounts(usableBy);
+	const policiesList = useUsablePolicies(usableBy);
+	const accountsList = useUsableAccounts(usableBy, {}, "binding");
+	const usablePolicies = policiesList.items;
+	const usableAccounts = accountsList.items;
 
 	const initial = useMemo<PolicyBindingFormValues>(
 		() => (binding ? toValues(binding) : emptyValues()),
@@ -134,6 +152,8 @@ export function usePolicyBindingForm({
 		defaultValues: initial,
 		validators: { onSubmit: runValidation, onChange: runValidation },
 		onSubmit: async ({ value }) => {
+			// Flagged picks block the save; their field errors say what to do.
+			if (unavailablePolicy || unavailableAccounts) return;
 			const displayName = value.displayName.trim();
 			const description = value.description.trim();
 			const labels = fromLabelPairs(value.labels);
@@ -209,6 +229,26 @@ export function usePolicyBindingForm({
 	}
 
 	const values = useStore(form.store, (s) => s.values);
+	const unavailablePolicy = unavailablePicks(
+		values.policyId ? [values.policyId] : [],
+		policiesList,
+		placement,
+	);
+	const unavailableAccounts = unavailablePicks(
+		values.accountIds,
+		accountsList,
+		placement,
+	);
+	const submitTried = useStore(form.store, (s) => s.submissionAttempts > 0);
+
+	const prefetchLinks = useCallback(
+		(scope: string) => {
+			void queryClient.prefetchQuery(usablePoliciesQuery(scope));
+			void queryClient.prefetchQuery(usableAccountsQuery(scope, {}, "binding"));
+		},
+		[queryClient],
+	);
+	useScopePrefetch(placement?.editable ? prefetchLinks : undefined);
 
 	// The owner's usable set, plus what the binding already names so an edit keeps it.
 	const usableAccountIds = new Set(usableAccounts.map((a) => a.metadata.id));
@@ -252,11 +292,20 @@ export function usePolicyBindingForm({
 		displayNameError,
 		descriptionError,
 		placement,
-		policyIdError,
+		policyIdError:
+			policyIdError ?? unavailablePicksError(unavailablePolicy, submitTried),
 		policyOptions,
+		policyUpdatingFor: updatingScope(placement, policiesList),
+		unavailablePolicy,
+		removePolicy: () => form.setFieldValue("policyId", ""),
 		accountOptions,
 		setAccountIds,
-		accountIdsError: accountIdsFieldError ?? duplicate?.message,
+		accountsUpdatingFor: updatingScope(placement, accountsList),
+		unavailableAccounts,
+		accountIdsError:
+			accountIdsFieldError ??
+			duplicate?.message ??
+			unavailablePicksError(unavailableAccounts, submitTried),
 		duplicateAccountId: duplicate?.accountId,
 	};
 }
