@@ -145,7 +145,6 @@ export function ProjectDetailView({ name }: { name: string }) {
 					<AccountPolicy
 						accountRef={{ ownerOf: { kind: "project", id: projectId } }}
 						attach={{
-							slug: project.metadata.name,
 							label: displayLabel(project.metadata),
 							owner: { kind: "project", id: projectId },
 						}}

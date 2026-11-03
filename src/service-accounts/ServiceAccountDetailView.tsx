@@ -109,7 +109,6 @@ export function ServiceAccountDetailView({ name }: { name: string }) {
 					<AccountPolicy
 						accountRef={accountRef}
 						attach={{
-							slug: sa.metadata.name,
 							label: displayLabel(sa.metadata),
 							owner: { kind: "project", id: sa.spec.projectId },
 						}}

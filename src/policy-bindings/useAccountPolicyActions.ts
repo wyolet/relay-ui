@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { Account } from "@/api/hooks/accounts";
+import { useSetAccountPolicy } from "@/api/hooks/policyBindings";
 import type { PolicyBinding } from "@/api/types/policyBinding";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { useScopeCaller } from "@/hooks/useScopeCaller";
@@ -9,9 +10,7 @@ import {
 	type AttachEntity,
 	attachWriteOwners,
 	detachDescription,
-	planDetach,
 } from "@/policy-bindings/attachPolicy";
-import { useApplyBindingWrites } from "@/policy-bindings/useApplyBindingWrites";
 import { confirm } from "@/shared/ConfirmDialog";
 import { toast } from "@/shared/Toast";
 
@@ -31,13 +30,13 @@ export function useAccountPolicyActions({
 	policyLabel: string;
 }) {
 	const caller = useScopeCaller();
-	const apply = useApplyBindingWrites();
+	const setAccountPolicy = useSetAccountPolicy();
 	const toastSaveError = useSaveErrorToast();
 	const [dialogOpen, setDialogOpen] = useState(false);
 	const [detaching, setDetaching] = useState(false);
 	const accountId = account.metadata.id ?? "";
 
-	const canAttach = attachWriteOwners(entity, binding, accountId).every((o) =>
+	const canAttach = attachWriteOwners(entity, binding).every((o) =>
 		administersOwner(o, caller),
 	);
 	const canDetach =
@@ -58,7 +57,10 @@ export function useAccountPolicyActions({
 		if (!ok) return;
 		setDetaching(true);
 		try {
-			await apply(planDetach(binding, accountId));
+			await setAccountPolicy.mutateAsync({
+				accountRef: accountId,
+				policyId: null,
+			});
 			toast("success", `Detached "${policyLabel}" from ${entity.label}.`);
 		} catch (err) {
 			toastSaveError(err, "Failed to detach the policy.");

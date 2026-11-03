@@ -9,7 +9,7 @@ import {
 	policiesListQueryOptions,
 	useUsablePolicies,
 } from "@/api/hooks/policies";
-import { usePolicyBindings } from "@/api/hooks/policyBindings";
+import { useSetAccountPolicy } from "@/api/hooks/policyBindings";
 import type { PolicyBinding } from "@/api/types/policyBinding";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
@@ -23,10 +23,8 @@ import {
 	type AttachEntity,
 	attachErrorMessage,
 	attachOwner,
-	planAttach,
 	sharedBindingNote,
 } from "@/policy-bindings/attachPolicy";
-import { useApplyBindingWrites } from "@/policy-bindings/useApplyBindingWrites";
 import { toast } from "@/shared/Toast";
 
 interface AttachPolicyValues {
@@ -52,13 +50,12 @@ export function useAttachPolicyForm({
 }) {
 	const { userId } = useAuth();
 	const accountId = account.metadata.id ?? "";
-	const bindings = usePolicyBindings();
 	const accounts = useQuery({ ...accountListQueryOptions, retry: false });
 	const policies = useQuery(policiesListQueryOptions);
 	const usablePolicies = useUsablePolicies(
-		ownerUsableBy(attachOwner(entity, binding, accountId), userId),
+		ownerUsableBy(attachOwner(entity), userId),
 	);
-	const apply = useApplyBindingWrites();
+	const setAccountPolicy = useSetAccountPolicy();
 	const toastSaveError = useSaveErrorToast();
 	const [serverError, setServerError] = useState<string>();
 
@@ -68,27 +65,22 @@ export function useAttachPolicyForm({
 		validators: { onSubmit: runValidation, onChange: runValidation },
 		onSubmit: async ({ value }) => {
 			setServerError(undefined);
-			const taken = new Set(
-				(bindings.data?.items ?? []).map((b) => b.metadata.name),
-			);
-			const writes = planAttach(
-				entity,
-				accountId,
-				binding,
-				value.policyId,
-				taken,
-			);
+			if (binding?.spec.policyId === value.policyId) {
+				onSaved();
+				return;
+			}
 			try {
-				await apply(writes);
-				if (writes.length > 0) {
-					const picked = (policies.data?.items ?? []).find(
-						(p) => p.metadata.id === value.policyId,
-					);
-					const name = picked
-						? `policy "${displayLabel(picked.metadata)}"`
-						: "the policy";
-					toast("success", `Attached ${name} to ${entity.label}.`);
-				}
+				await setAccountPolicy.mutateAsync({
+					accountRef: accountId,
+					policyId: value.policyId,
+				});
+				const picked = (policies.data?.items ?? []).find(
+					(p) => p.metadata.id === value.policyId,
+				);
+				const name = picked
+					? `policy "${displayLabel(picked.metadata)}"`
+					: "the policy";
+				toast("success", `Attached ${name} to ${entity.label}.`);
 				onSaved();
 			} catch (err) {
 				const inline = attachErrorMessage(err, (id) =>
