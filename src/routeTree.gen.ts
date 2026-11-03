@@ -75,6 +75,7 @@ import { Route as AuthenticatedServiceAccountsIndexRouteImport } from './routes/
 import { Route as AuthenticatedServiceAccountsNameRouteImport } from './routes/_authenticated/service-accounts.$name'
 import { Route as AuthenticatedServiceAccountsNewRouteImport } from './routes/_authenticated/service-accounts.new'
 import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated/settings.index'
+import { Route as AuthenticatedSettingsAccountsRouteImport } from './routes/_authenticated/settings.accounts'
 import { Route as AuthenticatedSettingsLicenseRouteImport } from './routes/_authenticated/settings.license'
 import { Route as AuthenticatedSettingsPayloadLoggingRouteImport } from './routes/_authenticated/settings.payload-logging'
 import { Route as AuthenticatedSettingsPermissionsRouteImport } from './routes/_authenticated/settings.permissions'
@@ -470,6 +471,12 @@ const AuthenticatedSettingsIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedSettingsRoute,
   } as any)
+const AuthenticatedSettingsAccountsRoute =
+  AuthenticatedSettingsAccountsRouteImport.update({
+    id: '/accounts',
+    path: '/accounts',
+    getParentRoute: () => AuthenticatedSettingsRoute,
+  } as any)
 const AuthenticatedSettingsLicenseRoute =
   AuthenticatedSettingsLicenseRouteImport.update({
     id: '/license',
@@ -716,6 +723,7 @@ export interface FileRoutesByFullPath {
   '/roles/new': typeof AuthenticatedRolesNewRoute
   '/service-accounts/$name': typeof AuthenticatedServiceAccountsNameRoute
   '/service-accounts/new': typeof AuthenticatedServiceAccountsNewRoute
+  '/settings/accounts': typeof AuthenticatedSettingsAccountsRoute
   '/settings/license': typeof AuthenticatedSettingsLicenseRoute
   '/settings/payload-logging': typeof AuthenticatedSettingsPayloadLoggingRoute
   '/settings/permissions': typeof AuthenticatedSettingsPermissionsRoute
@@ -803,6 +811,7 @@ export interface FileRoutesByTo {
   '/roles/new': typeof AuthenticatedRolesNewRoute
   '/service-accounts/$name': typeof AuthenticatedServiceAccountsNameRoute
   '/service-accounts/new': typeof AuthenticatedServiceAccountsNewRoute
+  '/settings/accounts': typeof AuthenticatedSettingsAccountsRoute
   '/settings/license': typeof AuthenticatedSettingsLicenseRoute
   '/settings/payload-logging': typeof AuthenticatedSettingsPayloadLoggingRoute
   '/settings/permissions': typeof AuthenticatedSettingsPermissionsRoute
@@ -905,6 +914,7 @@ export interface FileRoutesById {
   '/_authenticated/roles/new': typeof AuthenticatedRolesNewRoute
   '/_authenticated/service-accounts/$name': typeof AuthenticatedServiceAccountsNameRoute
   '/_authenticated/service-accounts/new': typeof AuthenticatedServiceAccountsNewRoute
+  '/_authenticated/settings/accounts': typeof AuthenticatedSettingsAccountsRoute
   '/_authenticated/settings/license': typeof AuthenticatedSettingsLicenseRoute
   '/_authenticated/settings/payload-logging': typeof AuthenticatedSettingsPayloadLoggingRoute
   '/_authenticated/settings/permissions': typeof AuthenticatedSettingsPermissionsRoute
@@ -1007,6 +1017,7 @@ export interface FileRouteTypes {
     | '/roles/new'
     | '/service-accounts/$name'
     | '/service-accounts/new'
+    | '/settings/accounts'
     | '/settings/license'
     | '/settings/payload-logging'
     | '/settings/permissions'
@@ -1094,6 +1105,7 @@ export interface FileRouteTypes {
     | '/roles/new'
     | '/service-accounts/$name'
     | '/service-accounts/new'
+    | '/settings/accounts'
     | '/settings/license'
     | '/settings/payload-logging'
     | '/settings/permissions'
@@ -1195,6 +1207,7 @@ export interface FileRouteTypes {
     | '/_authenticated/roles/new'
     | '/_authenticated/service-accounts/$name'
     | '/_authenticated/service-accounts/new'
+    | '/_authenticated/settings/accounts'
     | '/_authenticated/settings/license'
     | '/_authenticated/settings/payload-logging'
     | '/_authenticated/settings/permissions'
@@ -1714,6 +1727,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsIndexRouteImport
       parentRoute: typeof AuthenticatedSettingsRoute
     }
+    '/_authenticated/settings/accounts': {
+      id: '/_authenticated/settings/accounts'
+      path: '/accounts'
+      fullPath: '/settings/accounts'
+      preLoaderRoute: typeof AuthenticatedSettingsAccountsRouteImport
+      parentRoute: typeof AuthenticatedSettingsRoute
+    }
     '/_authenticated/settings/license': {
       id: '/_authenticated/settings/license'
       path: '/license'
@@ -2168,6 +2188,7 @@ const AuthenticatedServiceAccountsRouteWithChildren =
   )
 
 interface AuthenticatedSettingsRouteChildren {
+  AuthenticatedSettingsAccountsRoute: typeof AuthenticatedSettingsAccountsRoute
   AuthenticatedSettingsLicenseRoute: typeof AuthenticatedSettingsLicenseRoute
   AuthenticatedSettingsPayloadLoggingRoute: typeof AuthenticatedSettingsPayloadLoggingRoute
   AuthenticatedSettingsPermissionsRoute: typeof AuthenticatedSettingsPermissionsRoute
@@ -2180,6 +2201,7 @@ interface AuthenticatedSettingsRouteChildren {
 }
 
 const AuthenticatedSettingsRouteChildren: AuthenticatedSettingsRouteChildren = {
+  AuthenticatedSettingsAccountsRoute: AuthenticatedSettingsAccountsRoute,
   AuthenticatedSettingsLicenseRoute: AuthenticatedSettingsLicenseRoute,
   AuthenticatedSettingsPayloadLoggingRoute:
     AuthenticatedSettingsPayloadLoggingRoute,

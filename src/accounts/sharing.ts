@@ -6,6 +6,10 @@ import type {
 	AccountShareParty,
 } from "@/api/hooks/accounts";
 import { ApiError } from "@/api/types/errors";
+import {
+	isPersonalAccountOff,
+	SHARE_RECEIVER_OFF_MESSAGE,
+} from "@/lib/personalAccount";
 import { costTotal } from "@/lib/usage-math/cost";
 import { fmtInt, fmtMoney } from "@/usage/format";
 
@@ -78,7 +82,8 @@ export function shareUsageText(usage: AccountShare["usage"]): string {
 }
 
 /** A share the server refused for a reason the receiver field explains. */
-export function shareConflictMessage(err: unknown): string | undefined {
+export function shareReceiverError(err: unknown): string | undefined {
+	if (isPersonalAccountOff(err)) return SHARE_RECEIVER_OFF_MESSAGE;
 	if (!(err instanceof ApiError) || err.status !== 409) return undefined;
 	const code = err.body.code;
 	return code === "share_exists" || code === "reshare_refused"

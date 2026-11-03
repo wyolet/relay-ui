@@ -4,6 +4,7 @@ import { useStore } from "@tanstack/react-store";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 import { accountLabel } from "@/accounts/accountView";
+import { useAuth } from "@/api/auth";
 import { accountListQueryOptions } from "@/api/hooks/accounts";
 import { useCreateKey, useUpdateKey } from "@/api/hooks/keys";
 import type { CreateKeyInput, Key, KeyPrincipal } from "@/api/types/key";
@@ -11,6 +12,7 @@ import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
 import { shownError, zodFieldValidator } from "@/lib/formErrors";
+import { keyLaneError, servingLanes } from "@/lib/personalAccount";
 import { randomSuffix, slugify } from "@/lib/slug";
 import { defaultLane, laneAccounts } from "@/policy-bindings/accountLookup";
 import { toast } from "@/shared/Toast";
@@ -201,6 +203,8 @@ export function useKeyForm({
 					onSaved(created.metadata.name);
 				}
 			} catch (err) {
+				// A refused lane renders by the account field.
+				if (keyLaneError(err)) return;
 				toastSaveError(
 					err,
 					isEdit ? "Failed to update key." : "Failed to create key.",
@@ -233,21 +237,33 @@ export function useKeyForm({
 		retry: false,
 	});
 	const holder = { kind: values.principalKind, id: values.principalId };
+	const { userId, personalAccountEffective } = useAuth();
+	const personalOff =
+		holder.kind === "user" &&
+		holder.id === userId &&
+		personalAccountEffective?.state === "off";
 	const lanes = values.principalId
-		? laneAccounts(accountsData?.items ?? [], holder)
+		? servingLanes(laneAccounts(accountsData?.items ?? [], holder), personalOff)
 		: [];
 	const laneOptions = lanes.flatMap((a) =>
 		a.metadata.id ? [{ value: a.metadata.id, label: accountLabel(a) }] : [],
 	);
-	const laneValue =
-		values.accountId ||
-		(defaultLane(accountsData?.items ?? [], holder)?.metadata.id ?? "");
+	const defaultLaneId = personalOff
+		? undefined
+		: defaultLane(accountsData?.items ?? [], holder)?.metadata.id;
+	const laneValue = values.accountId || (defaultLaneId ?? "");
+
+	function chooseLane(accountId: string) {
+		createKey.reset();
+		updateKey.reset();
+		form.setFieldValue("accountId", accountId);
+	}
 
 	/** A new principal holds other accounts, so its lane starts on the default. */
 	function choosePrincipal(kind: PrincipalKind, id: string) {
 		form.setFieldValue("principalKind", kind);
 		form.setFieldValue("principalId", id);
-		form.setFieldValue("accountId", "");
+		chooseLane("");
 	}
 
 	const slugPreview = isEdit
@@ -272,8 +288,12 @@ export function useKeyForm({
 		descriptionError,
 		principalIdError,
 		choosePrincipal,
+		chooseLane,
 		laneOptions,
 		laneValue,
+		hasDefaultLane: defaultLaneId !== undefined,
+		noLane: personalOff && laneOptions.length === 0,
+		laneError: keyLaneError(createKey.error ?? updateKey.error),
 		freshSecret,
 	};
 }

@@ -1,9 +1,13 @@
 import {
+	type QueryClient,
 	queryOptions,
 	useMutation,
+	useQueryClient,
 	useSuspenseQuery,
 } from "@tanstack/react-query";
+import { whoamiQueryOptions } from "@/api/auth";
 import { apiClient } from "@/api/client";
+import { myContextsQueryOptions } from "@/api/hooks/contexts";
 import type { components } from "@/api/types.gen";
 import { unwrap } from "@/api/unwrap";
 
@@ -43,5 +47,46 @@ export function useRevokeUserTokens() {
 				}),
 			);
 		},
+	});
+}
+
+/**
+ * Refetches what a personal-account switch changes: users' effective state,
+ * the caller's whoami and the contexts it lists (Personal comes and goes).
+ */
+export function invalidatePersonalAccountReads(
+	queryClient: QueryClient,
+): Promise<void> {
+	return Promise.all([
+		queryClient.invalidateQueries({ queryKey: usersListQueryOptions.queryKey }),
+		queryClient.invalidateQueries({ queryKey: whoamiQueryOptions.queryKey }),
+		queryClient.invalidateQueries({
+			queryKey: myContextsQueryOptions.queryKey,
+		}),
+	]).then(() => undefined);
+}
+
+/** Sets the user's own personal-account value; "" hands it back to their groups and the setting. */
+export function useUpdateUserPersonalAccount() {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: async ({
+			id,
+			personalAccount,
+		}: {
+			id: string;
+			personalAccount: NonNullable<
+				components["schemas"]["userUpdateInputBody"]["personalAccount"]
+			>;
+		}): Promise<void> => {
+			unwrap(
+				await apiClient.PUT("/users/by-id/{id}", {
+					params: { path: { id } },
+					body: { personalAccount },
+				}),
+			);
+		},
+		// The answer's effective state lags the write; re-read rather than trust it.
+		onSuccess: () => invalidatePersonalAccountReads(queryClient),
 	});
 }

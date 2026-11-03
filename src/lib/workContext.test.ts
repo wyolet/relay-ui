@@ -105,6 +105,13 @@ describe("resolveWorkContext", () => {
 		expect(resolveWorkContext(contexts, null)?.kind).toBe("personal");
 	});
 
+	test("a stored Personal that /me/contexts dropped falls back to the next context", () => {
+		const withoutPersonal = workContexts(mine.slice(1), false);
+		expect(
+			resolveWorkContext(withoutPersonal, { kind: "personal", id: "u1" })?.id,
+		).toBe("t1");
+	});
+
 	test("is undefined with no contexts", () => {
 		expect(resolveWorkContext([], null)).toBeUndefined();
 	});
