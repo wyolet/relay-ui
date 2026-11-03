@@ -2,6 +2,7 @@ import type { QueryClient } from "@tanstack/react-query";
 import {
 	CatchBoundary,
 	createFileRoute,
+	stripSearchParams,
 	useNavigate,
 } from "@tanstack/react-router";
 import { Suspense } from "react";
@@ -81,6 +82,8 @@ function loadTab(
 
 export const Route = createFileRoute("/_authenticated/users/")({
 	validateSearch: searchSchema,
+	// Defaults stay out of the URL.
+	search: { middlewares: [stripSearchParams(searchSchema.parse({}))] },
 	loaderDeps: ({ search }) => ({ ...search }),
 	// A refused list must not reach the route error boundary: the tab hides
 	// once its capability probe answers, and the page falls back to another.
