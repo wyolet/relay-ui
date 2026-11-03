@@ -4,7 +4,6 @@ import type { ModelRow, PickerIndex } from "@/models/usePickerCatalog";
 export interface PickerReachModel {
 	/** Hosts serving it, in failover order. */
 	hostNames: readonly string[];
-	note?: string;
 }
 
 /** The models a caller's reach serves; the picker lists only these. */
@@ -16,7 +15,7 @@ export function pickerReachKey(provider: string, model: string): string {
 	return `${provider}/${model}`;
 }
 
-/** The index trimmed to the reach's models, each with the reach's hosts and note. */
+/** The index trimmed to the reach's models, each with the reach's hosts. */
 export function narrowPickerIndex(
 	index: PickerIndex,
 	reach: PickerReach,
@@ -29,7 +28,7 @@ export function narrowPickerIndex(
 		if (!reached) continue;
 		const hostNames = reached.hostNames.filter((h) => index.hostsByName.has(h));
 		for (const h of hostNames) usedHosts.add(h);
-		const row: ModelRow = { ...m, hostNames, note: reached.note };
+		const row: ModelRow = { ...m, hostNames };
 		modelRows.push(row);
 		modelsByProvider.set(m.provider, [
 			...(modelsByProvider.get(m.provider) ?? []),

@@ -1,9 +1,7 @@
 import type {
 	DraftReachRequest,
 	Reachable,
-	ReachedModel,
 	ReachRef,
-	ReachVia,
 } from "@/api/hooks/reachable";
 import type { PolicyBinding } from "@/api/types/policyBinding";
 import type { CatalogRef } from "@/lib/catalogRef";
@@ -14,26 +12,24 @@ import {
 	pickerReachKey,
 } from "@/models/narrowPickerIndex";
 
-/** Where a policy's requests get host keys: its scope's own, or only linked pools. */
-export type ReachChoice = "scope" | "pools";
-
-/** A saved policy's reach: linked pools mean pools, none means its scope. */
-export function reachChoiceFor(
+/** A saved policy linking no pools uses every credential in its scope. */
+export function everyCredentialFor(
 	poolIds: readonly string[] | null | undefined,
-): ReachChoice {
-	return poolIds && poolIds.length > 0 ? "pools" : "scope";
+): boolean {
+	return !poolIds || poolIds.length === 0;
 }
 
 /**
- * The pools a reach switch leaves linked, and the ones it sets aside: scope
- * drops the pools but keeps them, so switching back restores them.
+ * The pools the every-credential switch leaves linked, and the ones it sets
+ * aside: turning it on drops the pools but keeps them, so turning it off
+ * restores them.
  */
-export function poolIdsOnReachSwitch(
-	next: ReachChoice,
+export function poolIdsOnEveryCredentialSwitch(
+	everyCredential: boolean,
 	poolIds: readonly string[],
 	setAside: readonly string[],
 ): { poolIds: string[]; setAside: string[] } {
-	if (next === "scope") {
+	if (everyCredential) {
 		return {
 			poolIds: [],
 			setAside: poolIds.length > 0 ? [...poolIds] : [...setAside],
@@ -45,21 +41,31 @@ export function poolIdsOnReachSwitch(
 	};
 }
 
+/** Ticking a pool appends it as the last failover; unticking drops it from the order. */
+export function poolIdsOnToggle(
+	poolIds: readonly string[],
+	poolId: string,
+): string[] {
+	return poolIds.includes(poolId)
+		? poolIds.filter((id) => id !== poolId)
+		: [...poolIds, poolId];
+}
+
 /**
  * The draft-reach read for `owner` (a `kind:id` scope), as the policy of
- * `account` when given; none until the reach names something.
+ * `account` when given; none until there's a pool to read or the switch is on.
  */
 export function draftReachRequest(
 	owner: string | undefined,
-	choice: ReachChoice | undefined,
+	everyCredential: boolean,
 	poolIds: readonly string[],
 	account?: string,
 ): DraftReachRequest | undefined {
-	if (!owner || !choice) return undefined;
-	if (choice === "pools" && poolIds.length === 0) return undefined;
+	if (!owner) return undefined;
+	if (!everyCredential && poolIds.length === 0) return undefined;
 	return {
 		owner,
-		poolIds: choice === "scope" ? [] : poolIds,
+		poolIds: everyCredential ? [] : poolIds,
 		...(account ? { account } : {}),
 	};
 }
@@ -120,7 +126,7 @@ export function emptyReachReason(reachable: Reachable): string | undefined {
 		reachable.refused?.reason ??
 		reachable.dropped?.[0]?.reason ??
 		reachable.excluded?.[0]?.reason ??
-		"no host it reaches serves a model"
+		"none of their hosts serves a model"
 	);
 }
 
@@ -132,45 +138,12 @@ function unique(items: readonly string[]): string[] {
 	return [...new Set(items)];
 }
 
-function viaLabel(via: ReachVia): string {
-	if (via.pool) return refLabel(via.pool);
-	if (via.account) return refLabel(via.account);
-	return "this scope's keys";
-}
-
-/** "via Pool A, Pool B · Build tier": what brings the model, in `poolOrder`, and the upstream tiers that allow it. */
-export function reachViaLine(
-	model: ReachedModel,
-	poolOrder: readonly string[],
-): string | undefined {
-	const rank = (v: ReachVia): number => {
-		const i = v.pool ? poolOrder.indexOf(v.pool.id) : -1;
-		return i === -1 ? poolOrder.length : i;
-	};
-	const sources = unique(
-		[...(model.via ?? [])].sort((a, b) => rank(a) - rank(b)).map(viaLabel),
-	);
-	const tiers = unique(
-		(model.upstream ?? []).flatMap((u) =>
-			u.allowed && u.policy ? [refLabel(u.policy)] : [],
-		),
-	);
-	const parts: string[] = [];
-	if (sources.length > 0) parts.push(`via ${sources.join(", ")}`);
-	if (tiers.length > 0) parts.push(tiers.join(", "));
-	return parts.length > 0 ? parts.join(" · ") : undefined;
-}
-
-/** The picker's view of a reach: each served model, its hosts and via line. */
-export function pickerReachFrom(
-	reachable: Reachable,
-	poolOrder: readonly string[],
-): PickerReach {
+/** The picker's view of a reach: each served model and its hosts. */
+export function pickerReachFrom(reachable: Reachable): PickerReach {
 	const models = new Map<string, PickerReachModel>();
 	for (const m of reachable.models ?? []) {
 		models.set(pickerReachKey(m.provider.name, m.model.name), {
 			hostNames: (m.hosts ?? []).map((h) => h.name),
-			note: reachViaLine(m, poolOrder),
 		});
 	}
 	return { models };
@@ -180,7 +153,6 @@ export function pickerReachFrom(
 export interface ExcludedRow {
 	id: string;
 	label: string;
-	ref: string;
 	reason: string;
 }
 
@@ -193,7 +165,6 @@ export function excludedRows(reachable: Reachable): ExcludedRow[] {
 		rows.set(e.model.id, {
 			id: e.model.id,
 			label: refLabel(e.model),
-			ref: pickerReachKey(e.provider.name, e.model.name),
 			reason: e.reason,
 		});
 	}
@@ -224,7 +195,7 @@ function reachRow(m: {
 	};
 }
 
-export const NOT_SERVED = "Not served through this reach.";
+export const NOT_SERVED = "Not served by these credentials.";
 
 /**
  * Warnings per picked entry the reach can't serve, keyed by the entry as
@@ -267,13 +238,13 @@ export interface DraftReachView {
 	accountNote?: string;
 }
 
-const CHECKING = "Checking what this reach serves…";
+const CHECKING = "Checking which models these credentials serve…";
 // Nothing is pickable until a reach says what it serves.
 const SERVES_NOTHING: PickerReach = { models: new Map() };
 const NO_DROPPED: DroppedNotes = { byPool: new Map(), other: [] };
 
 export function draftReachView({
-	choice,
+	everyCredential,
 	poolIds,
 	accountPending,
 	requested,
@@ -282,7 +253,7 @@ export function draftReachView({
 	isError,
 	isStale,
 }: {
-	choice: ReachChoice | undefined;
+	everyCredential: boolean;
 	poolIds: readonly string[];
 	/** The bound account to read for is still loading. */
 	accountPending: boolean;
@@ -301,18 +272,17 @@ export function draftReachView({
 		dropped: NO_DROPPED,
 		pickerReach: SERVES_NOTHING,
 	});
-	if (!choice) {
-		return nothing("Choose a reach above to see which models it serves.");
-	}
-	if (choice === "pools" && poolIds.length === 0) {
-		return nothing("Add a pool to see which models it serves.");
+	if (!everyCredential && poolIds.length === 0) {
+		return nothing(
+			"Pick pools, or turn on Every credential in scope, to see the models they serve.",
+		);
 	}
 	if (accountPending) return nothing(CHECKING);
 	// A relay without the reach read (or a refused owner) keeps the whole catalog
 	// listed, so the form still works there.
 	if (!requested || isError) {
 		return {
-			note: "Couldn't check what this reach serves.",
+			note: "Couldn't check which models these credentials serve.",
 			excluded: [],
 			dropped: NO_DROPPED,
 		};
@@ -324,10 +294,16 @@ export function draftReachView({
 			? boundAccountNote(refLabel(data.account), otherBoundAccounts)
 			: undefined,
 	};
+	const source = everyCredential
+		? {
+				through: "this scope's credentials",
+				serve: "This scope's credentials serve",
+			}
+		: { through: "these pools", serve: "These pools serve" };
 	if (data.refused) {
 		return {
 			...read,
-			note: `Requests under this reach are refused: ${data.refused.reason}`,
+			note: `Requests through ${source.through} are refused: ${data.refused.reason}`,
 			excluded: [],
 			pickerReach: SERVES_NOTHING,
 		};
@@ -337,12 +313,12 @@ export function draftReachView({
 	return {
 		...read,
 		note: emptyReason
-			? `This reach serves no models: ${emptyReason}`
+			? `${source.serve} no models: ${emptyReason}`
 			: isStale
 				? CHECKING
 				: undefined,
 		checked: data,
-		pickerReach: emptyReason ? SERVES_NOTHING : pickerReachFrom(data, poolIds),
+		pickerReach: emptyReason ? SERVES_NOTHING : pickerReachFrom(data),
 		excluded: excludedRows(data),
 	};
 }

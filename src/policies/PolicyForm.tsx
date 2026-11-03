@@ -1,9 +1,8 @@
-import { Boxes, Gauge, Wallet, Waypoints } from "lucide-react";
+import { Boxes, Gauge, Layers, Wallet } from "lucide-react";
 import type { Policy } from "@/api/types/policy";
 import { ModelPicker } from "@/models/ModelPicker";
 import { DraftReachNotes } from "@/policies/DraftReachNotes";
 import { PolicyLinkPicker } from "@/policies/PolicyLinkPicker";
-import { PolicyReachPicker } from "@/policies/PolicyReachPicker";
 import { PolicyRLPicker } from "@/policies/PolicyRLPicker";
 import { budgetLinkShared } from "@/policies/policyFormSpec";
 import { SharedLinkSwitch } from "@/policies/SharedLinkSwitch";
@@ -12,12 +11,14 @@ import { useDraftReach } from "@/policies/useDraftReach";
 import { usePolicyForm } from "@/policies/usePolicyForm";
 import {
 	useBudgetChoices,
-	usePoolChoices,
+	usePoolCheckOptions,
 } from "@/policies/usePolicyLinkChoices";
 import { FormFooter } from "@/shared/FormFooter";
 import { FormSection } from "@/shared/FormSection";
 import { IdentitySection } from "@/shared/IdentitySection";
+import { BoxedCheckList } from "@/shared/MultiSelect";
 import { ScopedPicker } from "@/shared/ScopeNotes";
+import { ToggleSwitch } from "@/shared/ToggleSwitch";
 import { WarningNotes } from "@/shared/WarningNotes";
 
 interface PolicyFormProps {
@@ -30,14 +31,14 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 	const {
 		form,
 		values,
-		setReach,
+		setEveryCredential,
+		togglePool,
 		setBudgetIds,
 		setBudgetShared,
 		isEdit,
 		slugPreview,
 		displayNameError,
 		descriptionError,
-		reachError,
 		poolsError,
 		placement,
 		usableBy,
@@ -50,7 +51,6 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 		onSaved,
 	});
 
-	const pools = usePoolChoices(values.poolIds, usableBy);
 	const budgets = useBudgetChoices(
 		values.budgets.map((b) => b.budgetId),
 		usableBy,
@@ -58,10 +58,16 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 	const reach = useDraftReach({
 		owner: usableBy,
 		policyId: policy?.metadata.id,
-		choice: values.reach,
+		everyCredential: values.everyCredential,
 		poolIds: values.poolIds,
 		entries: values.models,
 	});
+	const poolOptions = usePoolCheckOptions(
+		values.poolIds,
+		usableBy,
+		reach.dropped.byPool,
+		unavailable.pools,
+	);
 
 	return (
 		<form
@@ -87,39 +93,44 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 				/>
 
 				<FormSection
-					icon={Waypoints}
-					title="Reach"
-					description="Which credentials requests under this policy may use. Pools are tried in order: a later pool is the failover for an earlier one, and apply only to policies bound to a team, project, user or service account."
+					icon={Layers}
+					title="Pools"
+					description="Which credentials requests under this policy may use. Pools are tried in the order they're ticked: a later pool is the failover for an earlier one. Pools apply only to policies bound to a team, project, user or service account."
 				>
-					<PolicyReachPicker
-						value={values.reach}
-						onChange={setReach}
-						error={reachError}
-					>
-						<ScopedPicker updatingFor={updatingFor.pools} error={poolsError}>
-							<PolicyLinkPicker
-								choices={pools}
-								onChange={(next) => form.setFieldValue("poolIds", next)}
-								ordered
-								addLabel="Add pool"
-								emptyText="No pools linked."
-								unavailable={unavailable.pools}
-								rowWarnings={reach.dropped.byPool}
-							/>
-						</ScopedPicker>
-					</PolicyReachPicker>
-					<WarningNotes notes={reach.dropped.other} className="mt-2" />
+					<div className="flex flex-col gap-3">
+						<ToggleSwitch
+							value={values.everyCredential}
+							onChange={setEveryCredential}
+							label="Use every credential in scope"
+							hint="Requests use the keys this scope owns, then the system's."
+						/>
+						{!values.everyCredential && (
+							<ScopedPicker updatingFor={updatingFor.pools} error={poolsError}>
+								<BoxedCheckList
+									options={poolOptions}
+									selected={values.poolIds}
+									onToggle={togglePool}
+									emptyLabel="pools"
+								/>
+							</ScopedPicker>
+						)}
+						<WarningNotes notes={reach.dropped.other} />
+					</div>
 				</FormSection>
 
 				<FormSection
 					icon={Boxes}
 					title="Models"
-					description="Providers or single models this policy allows; a provider includes models added to it later. The list shows what the reach serves."
+					description="Providers or single models this policy allows; a provider includes models added to it later. The list shows the models these credentials serve."
 				>
 					<ModelPicker
 						value={values.models}
 						onChange={(next) => form.setFieldValue("models", next)}
-						emptyText="All available models: whatever this policy's reach serves. Pick providers or models to narrow it."
+						emptyText={
+							values.everyCredential
+								? "All models this scope's credentials serve. Pick providers or models to narrow it."
+								: "All models these pools serve. Pick providers or models to narrow it."
+						}
 						reach={reach.pickerReach}
 						refWarnings={reach.warnings}
 					/>

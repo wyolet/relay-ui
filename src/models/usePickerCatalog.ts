@@ -29,8 +29,6 @@ export interface ModelRow {
 	provider: string;
 	hostNames: string[];
 	deprecated: boolean;
-	/** A muted line under the row, such as what brings the model. */
-	note?: string;
 }
 
 export interface PickerIndex {

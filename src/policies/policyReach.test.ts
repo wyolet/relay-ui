@@ -13,12 +13,12 @@ import {
 	droppedNotes,
 	emptyReachReason,
 	entryWarnings,
+	everyCredentialFor,
 	excludedRows,
 	NOT_SERVED,
 	pickerReachFrom,
-	poolIdsOnReachSwitch,
-	reachChoiceFor,
-	reachViaLine,
+	poolIdsOnEveryCredentialSwitch,
+	poolIdsOnToggle,
 } from "./policyReach";
 
 function ref(name: string, displayName?: string): ReachRef {
@@ -29,7 +29,6 @@ function served(
 	provider: string,
 	model: string,
 	hosts: string[],
-	extra: Partial<ReachedModel> = {},
 ): ReachedModel {
 	return {
 		provider: ref(provider),
@@ -37,7 +36,6 @@ function served(
 		hosts: hosts.map((h) => ref(h)),
 		via: [],
 		upstream: [],
-		...extra,
 	};
 }
 
@@ -77,62 +75,75 @@ const REACH: Reachable = {
 
 const HELD = "the share openai-shared is held for service account ci-bot";
 
-describe("reachChoiceFor", () => {
-	it("reads linked pools as pools and none as the scope", () => {
-		expect(reachChoiceFor(["p1"])).toBe("pools");
-		expect(reachChoiceFor([])).toBe("scope");
-		expect(reachChoiceFor(null)).toBe("scope");
-		expect(reachChoiceFor(undefined)).toBe("scope");
+describe("everyCredentialFor", () => {
+	it("is on for a policy linking no pools", () => {
+		expect(everyCredentialFor(["p1"])).toBe(false);
+		expect(everyCredentialFor([])).toBe(true);
+		expect(everyCredentialFor(null)).toBe(true);
+		expect(everyCredentialFor(undefined)).toBe(true);
 	});
 });
 
-describe("poolIdsOnReachSwitch", () => {
-	it("scope drops the pools and sets them aside", () => {
-		expect(poolIdsOnReachSwitch("scope", ["a", "b"], [])).toEqual({
+describe("poolIdsOnEveryCredentialSwitch", () => {
+	it("turning it on drops the pools and sets them aside", () => {
+		expect(poolIdsOnEveryCredentialSwitch(true, ["a", "b"], [])).toEqual({
 			poolIds: [],
 			setAside: ["a", "b"],
 		});
 	});
 
-	it("switching back to pools restores them in order", () => {
-		const toScope = poolIdsOnReachSwitch("scope", ["b", "a"], []);
+	it("turning it off restores them in order", () => {
+		const on = poolIdsOnEveryCredentialSwitch(true, ["b", "a"], []);
 		expect(
-			poolIdsOnReachSwitch("pools", toScope.poolIds, toScope.setAside),
+			poolIdsOnEveryCredentialSwitch(false, on.poolIds, on.setAside),
 		).toEqual({ poolIds: ["b", "a"], setAside: ["b", "a"] });
 	});
 
 	it("keeps what's linked, and an earlier set-aside list through a no-op switch", () => {
-		expect(poolIdsOnReachSwitch("pools", ["c"], ["a"]).poolIds).toEqual(["c"]);
-		expect(poolIdsOnReachSwitch("scope", [], ["a"]).setAside).toEqual(["a"]);
+		expect(poolIdsOnEveryCredentialSwitch(false, ["c"], ["a"]).poolIds).toEqual(
+			["c"],
+		);
+		expect(poolIdsOnEveryCredentialSwitch(true, [], ["a"]).setAside).toEqual([
+			"a",
+		]);
+	});
+});
+
+describe("poolIdsOnToggle", () => {
+	it("appends a ticked pool as the last failover and drops an unticked one", () => {
+		expect(poolIdsOnToggle(["a", "b"], "c")).toEqual(["a", "b", "c"]);
+		expect(poolIdsOnToggle(["a", "b", "c"], "b")).toEqual(["a", "c"]);
+		expect(poolIdsOnToggle([], "a")).toEqual(["a"]);
 	});
 });
 
 describe("draftReachRequest", () => {
 	it("reads the scope with no pools, and pools in their order", () => {
-		expect(draftReachRequest("team:t1", "scope", ["p1"])).toEqual({
+		expect(draftReachRequest("team:t1", true, ["p1"])).toEqual({
 			owner: "team:t1",
 			poolIds: [],
 		});
-		expect(draftReachRequest("system", "pools", ["p2", "p1"])).toEqual({
+		expect(draftReachRequest("system", false, ["p2", "p1"])).toEqual({
 			owner: "system",
 			poolIds: ["p2", "p1"],
 		});
 	});
 
 	it("reads as the bound account's policy when given one", () => {
-		expect(draftReachRequest("project:p1", "pools", ["p1"], "acct-sa")).toEqual(
-			{ owner: "project:p1", poolIds: ["p1"], account: "acct-sa" },
-		);
-		expect(draftReachRequest("project:p1", "scope", [], undefined)).toEqual({
+		expect(draftReachRequest("project:p1", false, ["p1"], "acct-sa")).toEqual({
+			owner: "project:p1",
+			poolIds: ["p1"],
+			account: "acct-sa",
+		});
+		expect(draftReachRequest("project:p1", true, [], undefined)).toEqual({
 			owner: "project:p1",
 			poolIds: [],
 		});
 	});
 
-	it("sends nothing without an owner, a choice, or a pool to read", () => {
-		expect(draftReachRequest(undefined, "scope", [])).toBeUndefined();
-		expect(draftReachRequest("user:u1", undefined, [])).toBeUndefined();
-		expect(draftReachRequest("user:u1", "pools", [], "a1")).toBeUndefined();
+	it("sends nothing without an owner, or with the switch off and no pool", () => {
+		expect(draftReachRequest(undefined, true, [])).toBeUndefined();
+		expect(draftReachRequest("user:u1", false, [], "a1")).toBeUndefined();
 	});
 });
 
@@ -246,33 +257,9 @@ describe("entryWarnings", () => {
 	});
 });
 
-describe("reachViaLine", () => {
-	it("names pools in the form's order, then the allowing tiers", () => {
-		const m = served("openai", "gpt-4o", ["openai-api"], {
-			via: [
-				{ pool: { id: "p2", name: "backup", displayName: "Backup" } },
-				{ pool: { id: "p1", name: "main" } },
-			],
-			upstream: [
-				{ account: ref("acct"), allowed: true, policy: ref("build", "Build") },
-				{ account: ref("acct2"), allowed: false, policy: ref("free", "Free") },
-			],
-		});
-		expect(reachViaLine(m, ["p1", "p2"])).toBe("via main, Backup · Build");
-	});
-
-	it("names the account, else the scope's keys, when no pool brings it", () => {
-		const m = served("openai", "gpt-4o", [], {
-			via: [{ account: ref("shared", "Shared OpenAI") }, {}],
-		});
-		expect(reachViaLine(m, [])).toBe("via Shared OpenAI, this scope's keys");
-		expect(reachViaLine(served("x", "y", []), [])).toBeUndefined();
-	});
-});
-
 describe("pickerReachFrom / excludedRows", () => {
 	it("keys served models by provider/model with their hosts", () => {
-		const reach = pickerReachFrom(REACH, []);
+		const reach = pickerReachFrom(REACH);
 		expect([...reach.models.keys()]).toEqual([
 			"openai/gpt-4o",
 			"anthropic/claude-sonnet",
@@ -284,10 +271,10 @@ describe("pickerReachFrom / excludedRows", () => {
 	});
 
 	it("lists excluded models once, skipping ones served at another host", () => {
-		expect(excludedRows(REACH).map((r) => r.ref)).toEqual([
-			"anthropic/claude-opus",
-			"mistral/large",
-			"mistral/small",
+		expect(excludedRows(REACH)).toEqual([
+			{ id: "id-claude-opus", label: "claude-opus", reason: TEAM_REASON },
+			{ id: "id-large", label: "large", reason: TEAM_REASON },
+			{ id: "id-small", label: "small", reason: TIER_REASON },
 		]);
 	});
 });
@@ -324,7 +311,7 @@ describe("emptyReachReason", () => {
 
 describe("draftReachView", () => {
 	const base = {
-		choice: "scope" as const,
+		everyCredential: true,
 		poolIds: [],
 		accountPending: false,
 		requested: true,
@@ -342,24 +329,23 @@ describe("draftReachView", () => {
 	});
 
 	it("offers nothing until the reach is known, saying why", () => {
-		expect(
-			draftReachView({ ...base, choice: undefined }).pickerReach?.models.size,
-		).toBe(0);
-		expect(
-			draftReachView({ ...base, choice: "pools", poolIds: [] }).pickerReach
-				?.models.size,
-		).toBe(0);
-		expect(draftReachView({ ...base, choice: "pools", poolIds: [] }).note).toBe(
-			"Add a pool to see which models it serves.",
+		const noPools = draftReachView({
+			...base,
+			everyCredential: false,
+			poolIds: [],
+		});
+		expect(noPools.pickerReach?.models.size).toBe(0);
+		expect(noPools.note).toBe(
+			"Pick pools, or turn on Every credential in scope, to see the models they serve.",
 		);
 		expect(
 			draftReachView({ ...base, accountPending: true, requested: false }).note,
-		).toBe("Checking what this reach serves…");
+		).toBe("Checking which models these credentials serve…");
 		expect(
 			draftReachView({ ...base, isError: true, data: undefined }).note,
-		).toBe("Couldn't check what this reach serves.");
+		).toBe("Couldn't check which models these credentials serve.");
 		expect(draftReachView({ ...base, requested: false }).note).toBe(
-			"Couldn't check what this reach serves.",
+			"Couldn't check which models these credentials serve.",
 		);
 		expect(
 			draftReachView({ ...base, data: undefined }).pickerReach?.models.size,
@@ -387,11 +373,11 @@ describe("draftReachView", () => {
 		});
 		expect(v.pickerReach?.models.size).toBe(0);
 		expect(v.note).toBe(
-			"Requests under this reach are refused: policy disabled",
+			"Requests through this scope's credentials are refused: policy disabled",
 		);
 	});
 
-	it("says why an empty reach serves nothing, still checking entries", () => {
+	it("says why empty pools serve nothing, still checking entries", () => {
 		const data: Reachable = {
 			models: [],
 			excluded: [],
@@ -401,14 +387,24 @@ describe("draftReachView", () => {
 		};
 		const v = draftReachView({
 			...base,
-			choice: "pools",
+			everyCredential: false,
 			poolIds: ["id-main"],
 			data,
 		});
 		expect(v.pickerReach?.models.size).toBe(0);
 		expect(v.checked).toBe(data);
-		expect(v.note).toBe(`This reach serves no models: ${HELD}`);
+		expect(v.note).toBe(`These pools serve no models: ${HELD}`);
 		expect(v.dropped.byPool.get("id-main")).toEqual([HELD]);
+	});
+
+	it("names the scope's credentials when they serve nothing", () => {
+		const v = draftReachView({
+			...base,
+			data: { models: [], excluded: [], dropped: [] },
+		});
+		expect(v.note).toBe(
+			"This scope's credentials serve no models: none of their hosts serves a model",
+		);
 	});
 
 	it("names the account read for when others are bound", () => {

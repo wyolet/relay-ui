@@ -5,8 +5,8 @@ import { cn } from "@/lib/utils";
 import type { ExcludedRow } from "@/policies/policyReach";
 
 /**
- * Under the models picker: why it isn't narrowed to the reach, which bound
- * account it was checked for, and the models the reach can't serve.
+ * Under the models picker: why it isn't narrowed to what the credentials
+ * serve, which bound account it was checked for, and the models they can't serve.
  */
 export function DraftReachNotes({
 	note,
@@ -35,7 +35,7 @@ export function DraftReachNotes({
 						type="button"
 						variant="link"
 						size="inline"
-						className="self-start text-muted-foreground"
+						className="self-start text-[11px] text-muted-foreground"
 						aria-expanded={showExcluded}
 						onClick={() => setShowExcluded((v) => !v)}
 					>
@@ -46,23 +46,24 @@ export function DraftReachNotes({
 							)}
 							aria-hidden="true"
 						/>
-						{`${showExcluded ? "Hide" : "Show"} models this reach can't serve (${excluded.length})`}
+						{excluded.length === 1
+							? "1 model isn't available here"
+							: `${excluded.length} models aren't available here`}
 					</Button>
 					{showExcluded && (
-						<ul className="rounded-md border border-border bg-card divide-y divide-border">
+						<ul className="max-h-40 overflow-y-auto rounded-md border border-border bg-card divide-y divide-border">
 							{excluded.map((e) => (
-								<li key={e.id} className="px-3 py-2">
-									<div className="flex items-baseline gap-2 min-w-0">
-										<span className="truncate text-sm text-foreground">
-											{e.label}
-										</span>
-										<code className="truncate text-[10px] font-mono text-muted-foreground">
-											{e.ref}
-										</code>
-									</div>
-									<p className="text-[11px] text-muted-foreground">
+								<li
+									key={e.id}
+									className="flex items-baseline gap-2 px-3 py-1.5 text-[11px]"
+								>
+									<span className="shrink-0 text-foreground">{e.label}</span>
+									<span
+										className="min-w-0 truncate text-muted-foreground"
+										title={e.reason}
+									>
 										{e.reason}
-									</p>
+									</span>
 								</li>
 							))}
 						</ul>

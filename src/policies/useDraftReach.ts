@@ -7,7 +7,6 @@ import {
 	draftReachRequest,
 	draftReachView,
 	entryWarnings,
-	type ReachChoice,
 } from "@/policies/policyReach";
 
 const NO_WARNINGS: ReadonlyMap<string, readonly string[]> = new Map();
@@ -22,13 +21,13 @@ const NO_WARNINGS: ReadonlyMap<string, readonly string[]> = new Map();
 export function useDraftReach({
 	owner,
 	policyId,
-	choice,
+	everyCredential,
 	poolIds,
 	entries,
 }: {
 	owner: string | undefined;
 	policyId: string | undefined;
-	choice: ReachChoice | undefined;
+	everyCredential: boolean;
 	poolIds: readonly string[];
 	entries: readonly string[];
 }): DraftReachView & { warnings: ReadonlyMap<string, readonly string[]> } {
@@ -39,7 +38,7 @@ export function useDraftReach({
 		: [];
 	const request = accountPending
 		? undefined
-		: draftReachRequest(owner, choice, poolIds, bound[0]);
+		: draftReachRequest(owner, everyCredential, poolIds, bound[0]);
 	const { data, isError, isPlaceholderData } = useDraftReachQuery(request);
 	const requested = request !== undefined;
 	const otherBoundAccounts = Math.max(bound.length - 1, 0);
@@ -48,7 +47,7 @@ export function useDraftReach({
 	const view = useMemo(
 		() =>
 			draftReachView({
-				choice,
+				everyCredential,
 				poolIds,
 				accountPending,
 				requested,
@@ -58,7 +57,7 @@ export function useDraftReach({
 				isStale: isPlaceholderData,
 			}),
 		[
-			choice,
+			everyCredential,
 			poolIds,
 			accountPending,
 			requested,

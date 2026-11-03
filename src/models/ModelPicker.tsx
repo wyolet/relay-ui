@@ -28,7 +28,7 @@ interface ModelPickerProps {
 	emptyText: string;
 	/** Catalog refs (a parent policy's models) the rows are trimmed to. */
 	restrictTo?: readonly string[];
-	/** The models the caller's reach serves; rows outside it aren't listed. */
+	/** The models the caller's reach serves; rows outside it aren't listed, and an empty one hides the lists. */
 	reach?: PickerReach;
 	/** Warnings per picked ref, keyed by the ref as written. */
 	refWarnings?: ReadonlyMap<string, readonly string[]>;
@@ -56,6 +56,33 @@ export function ModelPicker({
 	const listIndex = usePickerListIndex(index, reach);
 	const search = usePickerSearch(listIndex);
 	const { refs } = selection;
+
+	const picked = (
+		<>
+			<PickerSelectionFooter
+				refs={value}
+				onRemove={selection.removeRaw}
+				emptyText={emptyText}
+			/>
+			{refs.length > 0 && (
+				<PickerSelectionSummary
+					refs={refs}
+					index={index}
+					warnings={refWarnings}
+				/>
+			)}
+		</>
+	);
+
+	// The caller says why nothing is pickable; only picks already made stay shown.
+	if (reach?.models.size === 0) {
+		if (value.length === 0) return null;
+		return (
+			<div className="flex flex-col rounded-md border border-border bg-card overflow-hidden [&>*:first-child]:border-t-0">
+				{picked}
+			</div>
+		);
+	}
 
 	return (
 		<div className="flex flex-col rounded-md border border-border bg-card overflow-hidden">
@@ -116,22 +143,7 @@ export function ModelPicker({
 				)}
 			</div>
 
-			{tab !== "raw" && (
-				<>
-					<PickerSelectionFooter
-						refs={value}
-						onRemove={selection.removeRaw}
-						emptyText={emptyText}
-					/>
-					{refs.length > 0 && (
-						<PickerSelectionSummary
-							refs={refs}
-							index={index}
-							warnings={refWarnings}
-						/>
-					)}
-				</>
-			)}
+			{tab !== "raw" && picked}
 		</div>
 	);
 }

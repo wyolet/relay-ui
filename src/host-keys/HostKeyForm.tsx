@@ -18,7 +18,7 @@ import { useHostKeyForm } from "@/host-keys/useHostKeyForm";
 import { FormFooter } from "@/shared/FormFooter";
 import { FormSection } from "@/shared/FormSection";
 import { IdentitySection } from "@/shared/IdentitySection";
-import { MultiCheckList } from "@/shared/MultiSelect";
+import { BoxedCheckList } from "@/shared/MultiSelect";
 import { OptionWithHint } from "@/shared/OptionWithHint";
 import { ScopedPicker, UnavailableChip } from "@/shared/ScopeNotes";
 import { SecretInput } from "@/shared/SecretInput";
@@ -151,14 +151,12 @@ export function HostKeyForm({
 											))}
 										</div>
 									)}
-									<div className="max-w-md rounded-md border border-border p-2">
-										<MultiCheckList
-											options={poolOptions}
-											selected={checkedPoolIds}
-											onToggle={togglePool}
-											emptyLabel="pools"
-										/>
-									</div>
+									<BoxedCheckList
+										options={poolOptions}
+										selected={checkedPoolIds}
+										onToggle={togglePool}
+										emptyLabel="pools"
+									/>
 								</ScopedPicker>
 							) : (
 								<p className="text-xs text-muted-foreground">

@@ -3,7 +3,10 @@ import { useHosts } from "@/api/hooks/hosts";
 import { type Pool, usePools, useUsablePools } from "@/api/hooks/pools";
 import type { Host } from "@/api/types/host";
 import { displayLabel } from "@/lib/displayLabel";
+import type { UnavailablePicks } from "@/lib/workContext";
+import { poolCheckOptions } from "@/policies/poolCheckOptions";
 import { poolMemberSummary } from "@/pools/poolKeys";
+import type { CheckOption } from "@/shared/MultiSelect";
 
 /** One linkable row (pool, budget) as the policy pickers show it. */
 export interface LinkChoice {
@@ -78,20 +81,29 @@ export function useSelectedPools(selectedIds: readonly string[]): LinkChoice[] {
 	);
 }
 
-/** `usableBy` is the policy owner's scope as the list filter takes it. */
-export function usePoolChoices(
+/**
+ * The policy form's pool check list. `usableBy` is the policy owner's scope as
+ * the list filter takes it; `warnings` sit under a linked pool, keyed by id.
+ */
+export function usePoolCheckOptions(
 	selectedIds: readonly string[],
 	usableBy: string | undefined,
-): LinkChoices {
+	warnings: ReadonlyMap<string, readonly string[]>,
+	unavailable: UnavailablePicks | undefined,
+): CheckOption[] {
 	const { data: pools } = usePools();
 	const { data: hosts } = useHosts();
 	const usable = useUsablePools(usableBy).items;
 	const hostItems = hosts.items ?? [];
-	return splitChoices(
-		(pools.items ?? []).map((p) => poolChoice(p, hostItems)),
-		usable.map((p) => poolChoice(p, hostItems)),
-		selectedIds,
-	);
+	return poolCheckOptions({
+		usable: usable.map((p) => poolChoice(p, hostItems)),
+		linked: selectedChoices(
+			(pools.items ?? []).map((p) => poolChoice(p, hostItems)),
+			selectedIds,
+		),
+		warnings,
+		unavailable,
+	});
 }
 
 export function useSelectedBudgets(

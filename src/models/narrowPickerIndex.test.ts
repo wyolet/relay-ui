@@ -47,15 +47,11 @@ const INDEX: PickerIndex = {
 };
 
 describe("narrowPickerIndex", () => {
-	it("keeps only reached models, with the reach's hosts and note", () => {
+	it("keeps only reached models, with the reach's hosts", () => {
 		const narrowed = narrowPickerIndex(INDEX, {
-			models: new Map([
-				["openai/gpt-4o", { hostNames: ["azure", "gone"], note: "via Main" }],
-			]),
+			models: new Map([["openai/gpt-4o", { hostNames: ["azure", "gone"] }]]),
 		});
-		expect(narrowed.modelRows).toEqual([
-			{ ...model("openai", "gpt-4o", ["azure"]), note: "via Main" },
-		]);
+		expect(narrowed.modelRows).toEqual([model("openai", "gpt-4o", ["azure"])]);
 		expect(narrowed.providers.map((p) => p.name)).toEqual(["openai"]);
 		expect(narrowed.hosts.map((h) => h.name)).toEqual(["azure"]);
 		expect(narrowed.modelsByProvider.get("openai")?.length).toBe(1);

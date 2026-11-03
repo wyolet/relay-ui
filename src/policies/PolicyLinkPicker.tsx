@@ -3,39 +3,30 @@ import { X } from "lucide-react";
 import type { ReactNode } from "react";
 import { IconButton } from "@/components/ui/icon-button";
 import { HostLogo } from "@/hosts/HostLogo";
-import { moveItem } from "@/lib/moveItem";
 import type { UnavailablePicks } from "@/lib/workContext";
 import type { LinkChoice, LinkChoices } from "@/policies/usePolicyLinkChoices";
 import { AddPopover } from "@/shared/AddPopover";
-import { RankControls } from "@/shared/RankControls";
 import { NotAvailableTag } from "@/shared/ScopeNotes";
-import { WarningNotes } from "@/shared/WarningNotes";
 
 interface Props {
 	choices: LinkChoices;
 	onChange: (ids: string[]) => void;
-	/** Rank the rows and let the operator reorder them. */
-	ordered?: boolean;
 	/** Extra control shown on each linked row, before its remove button. */
 	renderRowControl?: (choice: LinkChoice) => ReactNode;
 	addLabel: string;
 	emptyText: string;
 	/** Linked rows the form's workspace can't use. */
 	unavailable?: UnavailablePicks;
-	/** Warnings under a linked row, keyed by its id. */
-	rowWarnings?: ReadonlyMap<string, readonly string[]>;
 }
 
-/** Linked rows of one kind (pools, budgets) plus an add popover. */
+/** Linked rows of one kind (budgets) plus an add popover. */
 export function PolicyLinkPicker({
 	choices,
 	onChange,
-	ordered,
 	renderRowControl,
 	addLabel,
 	emptyText,
 	unavailable,
-	rowWarnings,
 }: Props) {
 	const ids = choices.selected.map((c) => c.id);
 	return (
@@ -44,34 +35,17 @@ export function PolicyLinkPicker({
 				<p className="text-[11px] text-muted-foreground">{emptyText}</p>
 			) : (
 				<ul className="rounded-md border border-border bg-card divide-y divide-border">
-					{choices.selected.map((c, i) => (
-						<LinkChoiceRow
-							key={c.id}
-							choice={c}
-							rank={ordered ? i + 1 : undefined}
-							warnings={rowWarnings?.get(c.id)}
-						>
+					{choices.selected.map((c) => (
+						<LinkChoiceRow key={c.id} choice={c}>
 							{unavailable?.ids.includes(c.id) && (
 								<NotAvailableTag scope={unavailable.scope} />
 							)}
 							{renderRowControl?.(c)}
-							{ordered ? (
-								<RankControls
-									label={c.label}
-									index={i}
-									count={ids.length}
-									onMove={(index, delta) =>
-										onChange(moveItem(ids, index, delta))
-									}
-									onRemove={() => onChange(ids.filter((id) => id !== c.id))}
-								/>
-							) : (
-								<IconButton
-									icon={X}
-									label={`Remove ${c.label}`}
-									onClick={() => onChange(ids.filter((id) => id !== c.id))}
-								/>
-							)}
+							<IconButton
+								icon={X}
+								label={`Remove ${c.label}`}
+								onClick={() => onChange(ids.filter((id) => id !== c.id))}
+							/>
 						</LinkChoiceRow>
 					))}
 				</ul>
@@ -89,42 +63,37 @@ export function PolicyLinkPicker({
 /** Detail routes a linked row can open, keyed by slug. */
 export type LinkChoiceRoute = "/pools/$name" | "/policies/budgets/$name";
 
-/** One linked row; `rank` marks an ordered list, `children` are trailing actions, `warnings` sit under it. */
+/** One linked row; `rank` marks an ordered list, `children` are trailing actions. */
 export function LinkChoiceRow({
 	choice,
 	rank,
 	linkTo,
-	warnings,
 	children,
 }: {
 	choice: LinkChoice;
 	rank?: number;
 	linkTo?: LinkChoiceRoute;
-	warnings?: readonly string[];
 	children?: ReactNode;
 }) {
 	return (
-		<li className="px-3 py-2">
-			<div className="flex items-center gap-3">
-				{rank !== undefined && (
-					<span className="w-4 text-[11px] text-muted-foreground tabular-nums">
-						{rank}
-					</span>
-				)}
-				{linkTo ? (
-					<Link
-						to={linkTo}
-						params={{ name: choice.name }}
-						className="flex min-w-0 flex-1 hover:underline"
-					>
-						<LinkChoiceLabel choice={choice} />
-					</Link>
-				) : (
+		<li className="flex items-center gap-3 px-3 py-2">
+			{rank !== undefined && (
+				<span className="w-4 text-[11px] text-muted-foreground tabular-nums">
+					{rank}
+				</span>
+			)}
+			{linkTo ? (
+				<Link
+					to={linkTo}
+					params={{ name: choice.name }}
+					className="flex min-w-0 flex-1 hover:underline"
+				>
 					<LinkChoiceLabel choice={choice} />
-				)}
-				{children}
-			</div>
-			{warnings && <WarningNotes notes={warnings} className="mt-1.5" />}
+				</Link>
+			) : (
+				<LinkChoiceLabel choice={choice} />
+			)}
+			{children}
 		</li>
 	);
 }

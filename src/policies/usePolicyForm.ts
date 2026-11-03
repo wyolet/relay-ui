@@ -30,23 +30,20 @@ import {
 	specToFormValues,
 } from "@/policies/policyFormSpec";
 import {
-	poolIdsOnReachSwitch,
-	type ReachChoice,
-	reachChoiceFor,
+	everyCredentialFor,
+	poolIdsOnEveryCredentialSwitch,
+	poolIdsOnToggle,
 } from "@/policies/policyReach";
 import { toast } from "@/shared/Toast";
 
 export interface PolicyFormValues extends PolicySpecValues {
 	displayName: string;
 	description: string;
-	/** Unset on create until the operator picks one. */
-	reach?: ReachChoice;
+	/** Use every credential in the scope instead of linked pools. */
+	everyCredential: boolean;
 }
 
 const schema = z.object({
-	reach: z.enum(["scope", "pools"], {
-		error: "Choose how this policy reaches credentials.",
-	}),
 	displayName: z
 		.string()
 		.trim()
@@ -66,11 +63,11 @@ const schema = z.object({
 	enabled: z.boolean(),
 });
 
-const POOLS_MISSING = "Add a pool, or choose Every credential in scope.";
+const POOLS_MISSING = "Add a pool, or turn on Every credential in scope.";
 
-// Linking no pools reaches the scope, so "Only these pools" needs one.
+// Linking no pools uses every credential in scope, so the switch off needs one.
 function poolsMissing(values: PolicyFormValues): boolean {
-	return values.reach === "pools" && values.poolIds.length === 0;
+	return !values.everyCredential && values.poolIds.length === 0;
 }
 
 function emptyValues(): PolicyFormValues {
@@ -78,6 +75,7 @@ function emptyValues(): PolicyFormValues {
 		displayName: "",
 		description: "",
 		...specToFormValues({}),
+		everyCredential: false,
 	};
 }
 
@@ -86,7 +84,7 @@ function policyToValues(policy: Policy): PolicyFormValues {
 		displayName: displayLabel(policy.metadata),
 		description: policy.metadata.description ?? "",
 		...specToFormValues(policy.spec),
-		reach: reachChoiceFor(policy.spec.poolIds),
+		everyCredential: everyCredentialFor(policy.spec.poolIds),
 	};
 }
 
@@ -195,7 +193,7 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 	// refetch can't wipe an open draft.
 	const resetKey = loaded.resetKey;
 	const lastResetKey = useRef<string | null>(null);
-	// Pools the scope reach set aside, restored if the operator switches back.
+	// Pools the every-credential switch set aside, restored when it's turned off.
 	const setAsidePoolIds = useRef<string[]>([]);
 	useEffect(() => {
 		if (lastResetKey.current === resetKey) return;
@@ -213,9 +211,6 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 	);
 	const descriptionError = useStore(form.store, (s) =>
 		shownError(s.fieldMeta?.description, s.submissionAttempts),
-	);
-	const reachError = useStore(form.store, (s) =>
-		shownError(s.fieldMeta?.reach, s.submissionAttempts),
 	);
 
 	const poolsList = useUsablePools(usableBy);
@@ -248,15 +243,18 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 	);
 	useScopePrefetch(placement?.editable ? prefetchLinks : undefined);
 
-	function setReach(next: ReachChoice) {
-		const switched = poolIdsOnReachSwitch(
+	function setEveryCredential(next: boolean) {
+		const switched = poolIdsOnEveryCredentialSwitch(
 			next,
 			values.poolIds,
 			setAsidePoolIds.current,
 		);
 		setAsidePoolIds.current = switched.setAside;
 		form.setFieldValue("poolIds", switched.poolIds);
-		form.setFieldValue("reach", next);
+		form.setFieldValue("everyCredential", next);
+	}
+	function togglePool(poolId: string) {
+		form.setFieldValue("poolIds", poolIdsOnToggle(values.poolIds, poolId));
 	}
 	function setBudgetIds(ids: string[]) {
 		form.setFieldValue("budgets", budgetLinksForIds(ids, values.budgets));
@@ -273,14 +271,14 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 	return {
 		form,
 		values,
-		setReach,
+		setEveryCredential,
+		togglePool,
 		setBudgetIds,
 		setBudgetShared,
 		isEdit,
 		slugPreview,
 		displayNameError,
 		descriptionError,
-		reachError,
 		poolsError:
 			unavailablePicksError(unavailablePools, submitTried) ??
 			(submitTried && poolsMissing(values) ? POOLS_MISSING : undefined),

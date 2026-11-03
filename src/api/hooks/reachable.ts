@@ -11,7 +11,6 @@ export type Reachable = components["schemas"]["Reachable"];
 export type ReachedModel = components["schemas"]["ReachedModel"];
 export type ExcludedModel = components["schemas"]["ExcludedModel"];
 export type ReachRef = components["schemas"]["ReachRef"];
-export type ReachVia = components["schemas"]["ReachVia"];
 
 /**
  * What a draft policy owned by `owner` (`kind:id` or `system`) and linking
@@ -29,8 +28,8 @@ export function draftReachQueryOptions({
 	poolIds,
 	account,
 }: DraftReachRequest) {
-	// Keyed by the pool set: reordering pools only reorders failover, which
-	// callers re-sort locally, so it needn't refetch.
+	// Keyed by the pool set: reordering pools only reorders failover, not what's
+	// served, so it needn't refetch.
 	const poolSet = [...poolIds].sort();
 	return queryOptions({
 		queryKey: [
