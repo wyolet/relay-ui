@@ -1,4 +1,5 @@
 import { Building2, CalendarClock, ToggleLeft, UserRound } from "lucide-react";
+import { useId } from "react";
 import { useAuth } from "@/api/auth";
 import { useProjects } from "@/api/hooks/projects";
 import { useServiceAccountsInProject } from "@/api/hooks/serviceAccounts";
@@ -13,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { useKeyForm } from "@/keys/useKeyForm";
 import { displayLabel } from "@/lib/displayLabel";
+import { NO_LANE_MESSAGE } from "@/lib/personalAccount";
 import { FormFooter } from "@/shared/FormFooter";
 import { FormSection } from "@/shared/FormSection";
 import { IdentitySection } from "@/shared/IdentitySection";
@@ -41,9 +43,14 @@ export function KeyForm({
 		descriptionError,
 		principalIdError,
 		choosePrincipal,
+		chooseLane,
 		laneOptions,
 		laneValue,
+		hasDefaultLane,
+		noLane,
+		laneError,
 	} = useKeyForm({ open: true, apiKey, onSaved, onCreated });
+	const laneErrorId = useId();
 
 	const { userId } = useAuth();
 	const { data: projectsData } = useProjects();
@@ -182,14 +189,21 @@ export function KeyForm({
 						value={laneValue}
 						items={laneOptions}
 						disabled={laneOptions.length === 0}
-						onValueChange={(v) => form.setFieldValue("accountId", v ?? "")}
+						onValueChange={(v) => chooseLane(v ?? "")}
 					>
-						<SelectTrigger className="w-full max-w-md" aria-label="Account">
+						<SelectTrigger
+							className="w-full max-w-md"
+							aria-label="Account"
+							aria-invalid={laneError ? true : undefined}
+							aria-describedby={laneError ? laneErrorId : undefined}
+						>
 							<SelectValue
 								placeholder={
-									values.principalId
-										? "The principal's default account"
-										: "Pick a principal first"
+									!values.principalId
+										? "Pick a principal first"
+										: hasDefaultLane
+											? "The principal's default account"
+											: "Pick the account this key runs in"
 								}
 							/>
 						</SelectTrigger>
@@ -201,6 +215,16 @@ export function KeyForm({
 							))}
 						</SelectContent>
 					</Select>
+					{noLane && !laneError && (
+						<p className="mt-1.5 text-[11px] text-muted-foreground">
+							{NO_LANE_MESSAGE}
+						</p>
+					)}
+					{laneError && (
+						<p id={laneErrorId} className="mt-1.5 text-[11px] text-destructive">
+							{laneError}
+						</p>
+					)}
 				</FormSection>
 
 				<FormSection

@@ -9,6 +9,7 @@ import {
 	Network,
 	ScrollText,
 	ShieldCheck,
+	UserRound,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/settings/")({
@@ -17,6 +18,7 @@ export const Route = createFileRoute("/_authenticated/settings/")({
 
 interface SettingItem {
 	to:
+		| "/settings/accounts"
 		| "/settings/rate-limits"
 		| "/settings/proxy-mode"
 		| "/settings/payload-logging"
@@ -31,6 +33,13 @@ interface SettingItem {
 }
 
 const ITEMS: SettingItem[] = [
+	{
+		to: "/settings/accounts",
+		label: "Accounts",
+		description:
+			"Whether users get a personal account. Groups and single users can override it.",
+		icon: UserRound,
+	},
 	{
 		to: "/settings/proxy-mode",
 		label: "Proxy mode",

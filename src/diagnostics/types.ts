@@ -1,3 +1,4 @@
+import type { Account } from "@/api/hooks/accounts";
 import type { Binding } from "@/api/hooks/bindings";
 import type { Pool } from "@/api/hooks/pools";
 import type { Host } from "@/api/types/host";
@@ -58,6 +59,9 @@ export interface Diagnostic {
 }
 
 export interface DiagnosticGraph {
+	accounts: ReadonlyMap<string, Account>;
+	/** Each provider account's keys the caller can list. */
+	hostKeysByAccountId: ReadonlyMap<string, readonly HostKey[]>;
 	policies: ReadonlyMap<string, Policy>;
 	hostKeys: ReadonlyMap<string, HostKey>;
 	hosts: ReadonlyMap<string, Host>;

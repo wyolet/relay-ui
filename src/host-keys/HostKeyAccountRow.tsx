@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { ScanSearch } from "lucide-react";
-import { DefaultAccountBadge } from "@/accounts/DefaultAccountBadge";
+import { GroupedByRelayBadge } from "@/accounts/GroupedByRelayBadge";
 import { Button } from "@/components/ui/button";
 import {
 	type DetectedOrganization,
@@ -37,7 +37,7 @@ export function HostKeyAccountRow({
 				) : (
 					<span className="text-muted-foreground">— (none set)</span>
 				)}
-				{account?.isDefault && <DefaultAccountBadge />}
+				{account?.groupedByRelay && <GroupedByRelayBadge />}
 				{account?.orgId && <ShortId value={account.orgId} />}
 				<Button
 					type="button"

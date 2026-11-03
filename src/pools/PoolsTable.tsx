@@ -4,7 +4,7 @@ import { useDeletePool } from "@/api/hooks/pools";
 import { buttonVariants } from "@/components/ui/button";
 import { HostCell } from "@/hosts/HostCell";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
-import { SELECTION_LABELS } from "@/pools/poolKeys";
+import { poolMemberSummary, SELECTION_LABELS } from "@/pools/poolKeys";
 import { usePoolRows } from "@/pools/usePoolRows";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { RowMenu } from "@/shared/RowMenu";
@@ -52,7 +52,7 @@ export function PoolsTable() {
 								<Th variant="column">Host</Th>
 								<Th variant="column">Selection</Th>
 								<Th variant="column" align="right">
-									Keys
+									Members
 								</Th>
 								<th
 									scope="col"
@@ -99,7 +99,7 @@ export function PoolsTable() {
 											}
 										</td>
 										<td className="px-3 py-2 text-right text-xs tabular-nums text-foreground">
-											{pool.spec.credentialIds?.length ?? 0}
+											{poolMemberSummary(pool)}
 										</td>
 										<td className="px-3 py-2 text-right">
 											<RowMenu

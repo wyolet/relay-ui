@@ -23,7 +23,7 @@ export interface HostKeyAccountView {
 	label: string;
 	name: string;
 	orgId: string | undefined;
-	isDefault: boolean;
+	groupedByRelay: boolean;
 }
 
 export interface HostKeyDetailView {
@@ -109,14 +109,14 @@ export function useHostKeyDetail({ name, onDeleted }: UseHostKeyDetailOptions) {
 					label: displayLabel(matchedAccount.metadata),
 					name: matchedAccount.metadata.name,
 					orgId: matchedAccount.spec.orgId?.trim() || undefined,
-					isDefault: matchedAccount.spec.default === true,
+					groupedByRelay: matchedAccount.spec.groupedByRelay === true,
 				}
 			: accountId
 				? {
 						label: `Unknown (${accountId.slice(0, 8)}…)`,
 						name: accountId,
 						orgId: undefined,
-						isDefault: false,
+						groupedByRelay: false,
 					}
 				: null,
 	};
