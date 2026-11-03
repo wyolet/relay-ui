@@ -9,6 +9,7 @@ import { PolicyLinkPicker } from "@/policies/PolicyLinkPicker";
 import { PolicyRLPicker } from "@/policies/PolicyRLPicker";
 import { budgetLinkShared } from "@/policies/policyFormSpec";
 import { SharedLinkSwitch } from "@/policies/SharedLinkSwitch";
+import { UnpricedUnderBudget } from "@/policies/UnpricedUnderBudget";
 import { policyFromFormValues, usePolicyForm } from "@/policies/usePolicyForm";
 import {
 	useBudgetChoices,
@@ -141,6 +142,12 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 						addLabel="Add budget"
 						emptyText="No budgets linked."
 					/>
+					<div className="mt-3 empty:hidden">
+						<UnpricedUnderBudget
+							policyRef={policy?.metadata.name}
+							budgetIds={values.budgets.map((b) => b.budgetId)}
+						/>
+					</div>
 				</Section>
 			</div>
 

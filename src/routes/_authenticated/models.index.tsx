@@ -32,6 +32,11 @@ import {
 	ModelsTable,
 } from "@/models/ModelsTable";
 import { useModelFilters } from "@/models/useModelFilters";
+import { useModelsPricePage } from "@/models/useModelsPricePage";
+import {
+	pricingGraphQuery,
+	pricingsMatrixListQuery,
+} from "@/pricing/usePricingMatrix";
 import { SearchBox } from "@/shared/SearchBox";
 import { PageLoader } from "@/shared/Spinner";
 import { StaleContent } from "@/shared/StaleContent";
@@ -52,10 +57,8 @@ const searchSchema = z.object({
 	q: z.string().default(""),
 	deprecated: z.enum(["active", "deprecated", "all"]).default("active"),
 	line: z.string().catch("").default(""),
-	// Sorting is server-side now (the page window depends on it); "provider"
-	// was accepted here but no column ever triggered it. catch() absorbs
-	// stale bookmarked URLs instead of failing validation.
-	sort: z.enum(["name"]).catch("name").default("name"),
+	// catch() absorbs stale bookmarked URLs instead of failing validation.
+	sort: z.enum(["name", "price"]).catch("name").default("name"),
 	dir: z.enum(["asc", "desc"]).catch("asc").default("asc"),
 	page: z.number().int().min(1).catch(1).default(1),
 	hsort: z.enum(["name"]).default("name"),
@@ -64,14 +67,15 @@ const searchSchema = z.object({
 
 const MODELS_PAGE_SIZE = 50;
 
-/** Map the UI filter/sort/page state to GET /models query params. Filtering,
- * sorting, and windowing all happen server-side; the response's `total` is
- * the pre-window match count the pager renders from. */
+/** Map the UI filter/sort/page state to GET /models query params. Filtering
+ * happens server-side; so do sorting and windowing by name, while a price sort
+ * takes the full filtered set. `total` is the pre-window match count. */
 function toModelsParams({
 	featured,
 	q,
 	status,
 	line,
+	sort,
 	dir,
 	page,
 }: {
@@ -79,14 +83,18 @@ function toModelsParams({
 	q: string;
 	status: ModelStatus;
 	line: string;
+	sort: ModelsSortKey;
 	dir: ModelsSortDir;
 	page: number;
 }): ModelsListParams {
-	const params: ModelsListParams = {
-		limit: MODELS_PAGE_SIZE,
-		offset: (page - 1) * MODELS_PAGE_SIZE,
-		sort: dir === "desc" ? "-name" : "name",
-	};
+	const params: ModelsListParams =
+		sort === "price"
+			? { limit: 0, sort: "name" }
+			: {
+					limit: MODELS_PAGE_SIZE,
+					offset: (page - 1) * MODELS_PAGE_SIZE,
+					sort: dir === "desc" ? "-name" : "name",
+				};
 	const trimmed = q.trim();
 	if (trimmed) params.q = trimmed;
 	if (line) params.product_line = [line];
@@ -103,6 +111,7 @@ export const Route = createFileRoute("/_authenticated/models/")({
 		q: search.q,
 		deprecated: search.deprecated,
 		line: search.line,
+		sort: search.sort,
 		dir: search.dir,
 		page: search.page,
 	}),
@@ -116,6 +125,8 @@ export const Route = createFileRoute("/_authenticated/models/")({
 		void queryClient.prefetchQuery(rateLimitsListQueryOptions);
 		void queryClient.prefetchQuery(keysListQueryOptions);
 		void queryClient.prefetchQuery(providersListQueryOptions);
+		void queryClient.prefetchQuery(pricingGraphQuery);
+		void queryClient.prefetchQuery(pricingsMatrixListQuery);
 		return awaitOnEnter(
 			cause,
 			Promise.all([
@@ -141,15 +152,21 @@ function ModelsList() {
 			q: search.q,
 			status: search.deprecated,
 			line: search.line,
+			sort: search.sort,
 			dir: search.dir,
 			page: search.page,
 		}),
 	);
+	const { items, prices } = useModelsPricePage(
+		data.items ?? [],
+		search.sort,
+		search.dir,
+		search.page,
+		MODELS_PAGE_SIZE,
+	);
 	const filters = useModelFilters();
 	const { data: hostsData } = useHosts();
 	const navigate = useNavigate({ from: "/models" });
-	// Server-filtered, -sorted, and -windowed: render as-is.
-	const items = data.items ?? [];
 	const hostsById = new Map(
 		(hostsData.items ?? [])
 			.filter((h) => h.metadata.id)
@@ -158,9 +175,10 @@ function ModelsList() {
 
 	const patch = (next: Record<string, string | number | boolean | undefined>) =>
 		void navigate({ search: (prev) => ({ ...prev, ...next }), replace: true });
-	function toggleSort(_field: ModelsSortKey) {
-		const dir: ModelsSortDir = search.dir === "asc" ? "desc" : "asc";
-		patch({ dir, page: 1 });
+	function toggleSort(field: ModelsSortKey) {
+		const dir: ModelsSortDir =
+			search.sort === field && search.dir === "asc" ? "desc" : "asc";
+		patch({ sort: field, dir, page: 1 });
 	}
 
 	// A filter change can strand the page past the last one — snap back.
@@ -202,6 +220,7 @@ function ModelsList() {
 							dir={search.dir}
 							onSort={toggleSort}
 							hostsById={hostsById}
+							prices={prices}
 						/>
 						<TablePager
 							page={search.page}

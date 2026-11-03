@@ -6,6 +6,8 @@ import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { modelProductLine } from "@/models/groupModelsByFamily";
 import { deprecationNote } from "@/models/modelDetail";
 import type { ModelProvider } from "@/models/useModelProvider";
+import { ModelPrice } from "@/pricing/ModelPrice";
+import { useModelPrices } from "@/pricing/useModelPrices";
 import { ProviderLogo } from "@/providers/ProviderLogo";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
 import {
@@ -34,6 +36,7 @@ export function ModelDetailHeader({
 	const { canEdit, canDelete } = useMutability(model.metadata, "model");
 	const dep = deprecationNote(model);
 	const productLine = modelProductLine(model);
+	const prices = useModelPrices();
 
 	return (
 		<div className="flex flex-col gap-3">
@@ -72,9 +75,17 @@ export function ModelDetailHeader({
 								</span>
 							)}
 						</h1>
-						<p className="mt-1 text-xs text-muted-foreground font-mono truncate">
-							{model.metadata.name}
-						</p>
+						<div className="mt-1 flex min-w-0 items-baseline gap-3">
+							<p className="text-xs text-muted-foreground font-mono truncate">
+								{model.metadata.name}
+							</p>
+							{model.metadata.id && (
+								<ModelPrice
+									modelId={model.metadata.id}
+									summary={prices?.get(model.metadata.id)}
+								/>
+							)}
+						</div>
 						<p className="mt-0.5 text-[11px] text-muted-foreground">
 							{provider.providerSlug && (
 								<>

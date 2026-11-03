@@ -16,6 +16,7 @@ export interface RateLike {
 	unit: string;
 	amount: number;
 	aboveTokens?: number;
+	serviceTier?: string;
 }
 
 /** One meter's rates, base first then ascending tiers. */
