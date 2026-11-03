@@ -4,11 +4,11 @@ import type { PolicyBinding } from "@/api/types/policyBinding";
 import {
 	Select,
 	SelectContent,
-	SelectItem,
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
 import { AccountsPicker } from "@/policy-bindings/AccountsPicker";
+import { PolicySelectItems } from "@/policy-bindings/PolicySelectItems";
 import { usePolicyBindingForm } from "@/policy-bindings/usePolicyBindingForm";
 import { FormFooter } from "@/shared/FormFooter";
 import { FormSection } from "@/shared/FormSection";
@@ -88,11 +88,7 @@ export function PolicyBindingForm({
 								<SelectValue placeholder="Pick a policy…" />
 							</SelectTrigger>
 							<SelectContent>
-								{policyOptions.map((o) => (
-									<SelectItem key={o.value} value={o.value}>
-										{o.label}
-									</SelectItem>
-								))}
+								<PolicySelectItems options={policyOptions} />
 							</SelectContent>
 						</Select>
 						{policyIdError && (

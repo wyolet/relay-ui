@@ -8,12 +8,12 @@ import {
 import {
 	canShareAccount,
 	parseReceiverKind,
-	type ShareCaller,
 	shareReceiverError,
 	shareUsageText,
 } from "@/accounts/sharing";
 import type { Account } from "@/api/hooks/accounts";
 import { ApiError } from "@/api/types/errors";
+import type { ScopeCaller } from "@/lib/ownership";
 
 function provider(
 	owner: NonNullable<Account["metadata"]["owner"]>,
@@ -25,7 +25,7 @@ function provider(
 	};
 }
 
-const caller: ShareCaller = {
+const caller: ScopeCaller = {
 	isAdmin: false,
 	userId: "u1",
 	adminScopes: ["team:t1"],

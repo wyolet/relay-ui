@@ -1,6 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { ACCOUNT_KIND_LABELS } from "@/accounts/accountView";
 import { displayLabel } from "@/lib/displayLabel";
+import { AccountPolicyActions } from "@/policy-bindings/AccountPolicyActions";
+import type { AttachEntity } from "@/policy-bindings/attachPolicy";
 import {
 	type AccountRef,
 	useAccountPolicy,
@@ -18,13 +20,16 @@ const MISSING = {
 /**
  * An account and the policy bound to it. Full mode renders "Account" and
  * "Policy" rows for a detail card's <dl>; `compact` fits a table cell.
+ * `attach` adds attach/change/detach actions for the entity owning the account.
  */
 export function AccountPolicy({
 	accountRef,
 	compact = false,
+	attach,
 }: {
 	accountRef: AccountRef;
 	compact?: boolean;
+	attach?: AttachEntity;
 }) {
 	const { status, account, binding, policy } = useAccountPolicy(accountRef);
 
@@ -94,7 +99,25 @@ export function AccountPolicy({
 				</span>
 			</DetailRow>
 			<DetailRow label="Policy">
-				{policyText ?? <span className="text-muted-foreground">{UNBOUND}</span>}
+				<div className="flex flex-wrap items-center justify-between gap-2">
+					<span>
+						{policyText ?? (
+							<span className="text-muted-foreground">{UNBOUND}</span>
+						)}
+					</span>
+					{attach && (
+						<AccountPolicyActions
+							entity={attach}
+							account={account}
+							binding={binding}
+							policyLabel={
+								policy
+									? displayLabel(policy.metadata)
+									: (binding?.spec.policyId ?? "")
+							}
+						/>
+					)}
+				</div>
 			</DetailRow>
 		</>
 	);

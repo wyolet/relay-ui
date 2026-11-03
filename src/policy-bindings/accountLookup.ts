@@ -1,7 +1,10 @@
+import { ACCOUNT_KIND_LABELS } from "@/accounts/accountView";
 import type { Account } from "@/api/hooks/accounts";
 import { ApiError } from "@/api/types/errors";
+import type { Policy } from "@/api/types/policy";
 import type { PolicyBinding } from "@/api/types/policyBinding";
 import type { components } from "@/api/types.gen";
+import { displayLabel } from "@/lib/displayLabel";
 
 export type AccountHolder = components["schemas"]["AccountHolder"];
 
@@ -86,6 +89,47 @@ export function isDuplicateBinding(err: unknown): err is ApiError {
 		err.status === 409 &&
 		err.body.code === "duplicate_binding"
 	);
+}
+
+/** 'Service account "CI"', how a duplicate_binding message names the refused account. */
+export function duplicateAccountName(
+	accounts: readonly Account[],
+	accountId: string,
+): string | undefined {
+	const account = accounts.find((a) => a.metadata.id === accountId);
+	return account
+		? `${ACCOUNT_KIND_LABELS[account.spec.kind]} account "${displayLabel(account.metadata)}"`
+		: undefined;
+}
+
+/** A binding's policy choices: those its owner may use, plus the one it names so an edit keeps it. */
+export interface PolicyOption {
+	value: string;
+	label: string;
+	/** Host tier presets model a provider's limits; they list after the operator's own policies. */
+	tierPreset: boolean;
+}
+
+export function bindingPolicyOptions(
+	usable: readonly Policy[],
+	all: readonly Policy[],
+	selectedId: string,
+): PolicyOption[] {
+	const usableIds = new Set(usable.map((p) => p.metadata.id));
+	const options = [
+		...usable,
+		...all.filter(
+			(p) => !usableIds.has(p.metadata.id) && p.metadata.id === selectedId,
+		),
+	].map((p) => ({
+		value: p.metadata.id ?? "",
+		label: displayLabel(p.metadata),
+		tierPreset: p.metadata.owner?.kind === "host",
+	}));
+	return [
+		...options.filter((o) => !o.tierPreset),
+		...options.filter((o) => o.tierPreset),
+	];
 }
 
 export interface DuplicateAccount {

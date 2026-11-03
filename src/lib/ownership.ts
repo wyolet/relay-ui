@@ -1,5 +1,39 @@
 import type { components } from "@/api/types.gen";
 
+type Owner = components["schemas"]["Owner"];
+
+/** The caller's admin role, id, and the scopes it administers ("team:<id>", "project:<id>"). */
+export interface ScopeCaller {
+	isAdmin: boolean;
+	userId: string | undefined;
+	adminScopes: readonly string[];
+}
+
+/**
+ * Whether the caller administers a row's owner: the user itself, an admin for
+ * the system, an admin of the team or project otherwise. The server has the
+ * last word.
+ */
+export function administersOwner(
+	owner: Owner | undefined,
+	caller: ScopeCaller,
+): boolean {
+	switch (owner?.kind) {
+		case "user":
+			return Boolean(owner.id) && owner.id === caller.userId;
+		case "system":
+			return caller.isAdmin;
+		case "team":
+		case "project":
+			return (
+				caller.isAdmin ||
+				caller.adminScopes.includes(`${owner.kind}:${owner.id ?? ""}`)
+			);
+		default:
+			return false;
+	}
+}
+
 type OwnershipMetadata = Pick<
 	components["schemas"]["Metadata"],
 	"owner" | "catalogDetachedAt"

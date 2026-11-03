@@ -1,10 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
-import type { ShareCaller } from "@/accounts/sharing";
 import { useAuth } from "@/api/auth";
 import { myContextsQueryOptions } from "@/api/hooks/contexts";
+import type { ScopeCaller } from "@/lib/ownership";
 
 /** The caller's admin role, id, and the teams and projects it administers. */
-export function useShareCaller(): ShareCaller {
+export function useScopeCaller(): ScopeCaller {
 	const { isAdmin, userId } = useAuth();
 	const { data } = useQuery(myContextsQueryOptions);
 	const adminScopes = (data ?? []).flatMap((c) =>

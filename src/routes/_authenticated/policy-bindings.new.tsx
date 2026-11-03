@@ -30,7 +30,8 @@ function NewPolicyBindingInner() {
 		<div className="flex flex-col gap-4">
 			<div>
 				<Link
-					to="/policy-bindings"
+					to="/policies"
+					search={{ tab: "bindings" }}
 					className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
 				>
 					<ChevronLeft className="w-3.5 h-3.5" />
@@ -49,7 +50,9 @@ function NewPolicyBindingInner() {
 				onSaved={(name) =>
 					void navigate({ to: "/policy-bindings/$name", params: { name } })
 				}
-				onCancel={() => void navigate({ to: "/policy-bindings" })}
+				onCancel={() =>
+					void navigate({ to: "/policies", search: { tab: "bindings" } })
+				}
 			/>
 		</div>
 	);

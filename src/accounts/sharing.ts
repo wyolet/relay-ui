@@ -6,6 +6,7 @@ import type {
 	AccountShareParty,
 } from "@/api/hooks/accounts";
 import { ApiError } from "@/api/types/errors";
+import { administersOwner, type ScopeCaller } from "@/lib/ownership";
 import {
 	isPersonalAccountOff,
 	SHARE_RECEIVER_OFF_MESSAGE,
@@ -38,13 +39,6 @@ export function parseReceiverKind(value: string): ReceiverKind | undefined {
 	return RECEIVER_KINDS.find((k) => k === value);
 }
 
-/** The caller as sharing sees it: its admin role, id, and the scopes it administers ("team:<id>", "project:<id>"). */
-export interface ShareCaller {
-	isAdmin: boolean;
-	userId: string | undefined;
-	adminScopes: readonly string[];
-}
-
 /**
  * Only the real provider account's owner shares it: the user of a personal
  * one, an admin of the owning team, project or the system otherwise. The
@@ -52,25 +46,11 @@ export interface ShareCaller {
  */
 export function canShareAccount(
 	account: Account,
-	caller: ShareCaller,
+	caller: ScopeCaller,
 ): boolean {
 	if (account.spec.kind !== PROVIDER_KIND || isSharedAccount(account))
 		return false;
-	const owner = account.metadata.owner;
-	switch (owner?.kind) {
-		case "user":
-			return Boolean(owner.id) && owner.id === caller.userId;
-		case "system":
-			return caller.isAdmin;
-		case "team":
-		case "project":
-			return (
-				caller.isAdmin ||
-				caller.adminScopes.includes(`${owner.kind}:${owner.id ?? ""}`)
-			);
-		default:
-			return false;
-	}
+	return administersOwner(account.metadata.owner, caller);
 }
 
 /** "1,204 req · $3.10" over the share's window; "—" when this deployment reads no usage. */

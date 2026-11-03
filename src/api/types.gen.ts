@@ -172,6 +172,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/accounts/{ref}/policy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set the policy an account is bound to
+         * @description In one transaction, takes the account out of the policy binding that holds it, deleting that binding when it held only this account, and for a policyId binds the account alone in a new enabled binding owned by the account's owner. It never joins another binding of the same policy, whose shared limits would then count this account. When the holding binding already uses the policy and is enabled, nothing changes and it is answered. Each write needs what its own policy-bindings call needs: update (or delete) on the old binding, create in the account's scope, and the same reference checks, with the same answers. A holding binding the caller may not see answers 403. A concurrent change to the same rows answers 409 conflict; nothing was written.
+         */
+        put: operations["set_account_policy"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/accounts/{ref}/shares": {
         parameters: {
             query?: never;
@@ -1613,7 +1633,7 @@ export interface paths {
         };
         /**
          * List plan-engine diagnostics
-         * @description Returns every issue the plan engine has recorded for relay objects (keys, policies, bindings, …) that the caller may see, sorted by kind, name and code. Errors mean the object cannot serve; warnings mean it serves but something is likely wrong. Filter by kind, or by kind and id to narrow to one object.
+         * @description Returns every issue the plan engine has recorded for relay objects (keys, policies, bindings, …) that the caller may see, sorted by kind, name and code. Errors mean the object cannot serve; warnings mean it serves but something is likely wrong. Filter by kind, or by kind and id to narrow to one object; target keeps the issues naming an object in their refs, and about (repeatable) the issues on any of the given objects or naming one. Filters combine.
          */
         get: operations["plan_issues_list"];
         put?: never;
@@ -3649,6 +3669,20 @@ export interface components {
              */
             total: number;
         };
+        AccountPolicy: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/AccountPolicy.json
+             */
+            readonly $schema?: string;
+            /** @description The binding that holds the account now; null when the account is unbound. */
+            binding: components["schemas"]["PolicyBinding"];
+            /** @description True when the previous binding held only this account and was deleted. */
+            previousBindingDeleted?: boolean;
+            /** @description The binding the account was taken out of; omitted when nothing changed or the account was unbound before. */
+            previousBindingId?: string;
+        };
         AccountReceiver: {
             /** @description Id of the user, team, project or service account. */
             id: string;
@@ -5486,6 +5520,8 @@ export interface components {
         PlanIssue: {
             /** @description Stable snake_case diagnostic identifier, such as ref_missing or host_mismatch. */
             code: string;
+            /** @description Spec path of the object the issue is about, such as spec.models[2] or spec.poolIds[0]; empty when it is about the object as a whole. */
+            field: string;
             /** @description Id (UUIDv7) of the object carrying the issue. */
             id: string;
             /** @description Kind of the object carrying the issue (e.g. key, policybinding). */
@@ -5507,6 +5543,8 @@ export interface components {
             id: string;
             /** @description Kind of the referenced object (e.g. policy, host). */
             kind: string;
+            /** @description Slug of the referenced object (a user's username); empty when the caller may not see it or it no longer exists. */
+            name: string;
         };
         Policy: {
             /**
@@ -7573,6 +7611,16 @@ export interface components {
             /** @description The new Primary data keys. */
             keys: components["schemas"]["DataKeyStatus"][] | null;
         };
+        setAccountPolicyInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/setAccountPolicyInputBody.json
+             */
+            readonly $schema?: string;
+            /** @description Id of the policy to bind the account to; null unbinds it. */
+            policyId: string | null;
+        };
         settingsCatalogItem: {
             /** @description What the section configures. */
             description?: string;
@@ -8453,6 +8501,96 @@ export interface operations {
             };
             /** @description A backend the operation needs is not configured or not reachable. */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    set_account_policy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Slug or id of the account. */
+                ref: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["setAccountPolicyInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountPolicy"];
+                };
+            };
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description No valid session cookie or admin bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description No such row, or one the caller may not see. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description conflict: another change touched the account's binding at the same time, retry; duplicate_binding: another binding took the account first. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["conflictBody"];
+                };
+            };
+            /** @description The request does not match the schema; error.details lists each failing field. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The server failed; error.message carries the cause. */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -14511,6 +14649,10 @@ export interface operations {
                 kind?: string;
                 /** @description Filter by object id (UUIDv7). Takes effect only together with kind. */
                 id?: string;
+                /** @description Only issues whose refs name this object, as kind:id (e.g. ratelimit:<id>): the issues other objects have because of it. */
+                target?: string;
+                /** @description Only issues on one of these objects or naming one in their refs, each as kind:id (repeatable, any may match): a policy page passes the policy and its pools to get every issue it shows in one call. */
+                about?: string[] | null;
             };
             header?: never;
             path?: never;
