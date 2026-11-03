@@ -20,6 +20,7 @@ import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { DetailCard, DetailEmpty, DetailRow } from "@/shared/DetailCard";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
 import { DetailPageHeader } from "@/shared/DetailPageHeader";
+import { ShortId } from "@/shared/ShortId";
 import { StatusBadge, StatusInline } from "@/shared/StatusBadge";
 
 const hintClass = "mt-0.5 text-[11px] text-muted-foreground leading-snug";
@@ -175,7 +176,7 @@ export function AccountDetailView({
 							</DetailRow>
 							<DetailRow label="Organization id">
 								{spec.orgId ? (
-									<code className="font-mono text-[11px]">{spec.orgId}</code>
+									<ShortId value={spec.orgId} />
 								) : (
 									<span className="text-muted-foreground">Not known yet</span>
 								)}

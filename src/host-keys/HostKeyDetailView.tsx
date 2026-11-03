@@ -10,10 +10,15 @@ import { SecretRotateDialog } from "@/host-keys/SecretRotateDialog";
 import { useHostKeyDetail } from "@/host-keys/useHostKeyDetail";
 import { HostLogo } from "@/hosts/HostLogo";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
-import { DetailEmpty } from "@/shared/DetailCard";
+import {
+	DetailCard,
+	DetailEmpty,
+	DetailInline,
+	DetailRow,
+} from "@/shared/DetailCard";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
 import { DetailTable, Td } from "@/shared/DetailTable";
-import { StatusBadge } from "@/shared/StatusBadge";
+import { QuietBadge, StatusBadge } from "@/shared/StatusBadge";
 
 const backLinkClass =
 	"inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors";
@@ -80,7 +85,7 @@ export function HostKeyDetailView({ name }: { name: string }) {
 						<h1 className="text-xl font-semibold text-foreground truncate flex items-center gap-2">
 							{view.displayName}
 							<StatusBadge enabled={view.enabled} />
-							<KindBadge stored={view.isStored} />
+							<QuietBadge>{view.isStored ? "Stored" : "Env"}</QuietBadge>
 						</h1>
 						<p className="mt-1 text-xs text-muted-foreground font-mono truncate">
 							{view.slug}
@@ -138,53 +143,51 @@ export function HostKeyDetailView({ name }: { name: string }) {
 
 			<DiagnosticList diagnostics={diagnostics} />
 
-			<Card title="Configuration" icon={ShieldCheck}>
+			<DetailCard title="Configuration" icon={ShieldCheck}>
 				<dl className="divide-y divide-border">
-					<Row label="Account">
+					<DetailRow label="Account">
 						<HostKeyAccountRow
 							key={view.id}
 							hostKeyId={view.id}
 							account={view.account}
 						/>
-					</Row>
+					</DetailRow>
 					{view.defaultTier && (
-						<Row label="Default tier">
+						<DetailRow label="Default tier">
 							<span className="font-mono text-foreground">
 								{view.defaultTier}
 							</span>
-						</Row>
+						</DetailRow>
 					)}
-					<Row label="Secret">
+					<DetailRow label="Secret">
 						{view.isStored ? (
-							<div className="flex items-center gap-2 flex-wrap">
+							<DetailInline>
 								<span className="font-mono text-sm text-muted-foreground">
 									••••••••••••
 								</span>
-								<span className="inline-flex items-center rounded-full border border-border bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-									encrypted at rest
-								</span>
+								<QuietBadge>Encrypted at rest</QuietBadge>
 								<Button type="button" variant="outline" onClick={openRotate}>
 									<KeyRound className="size-3" />
 									Rotate
 								</Button>
-							</div>
+							</DetailInline>
 						) : view.envVar ? (
-							<div className="flex items-center gap-2 flex-wrap">
+							<DetailInline>
 								<code className="inline-flex items-center rounded-md border border-border bg-muted px-2 py-1 text-[11px] font-mono text-foreground">
 									${view.envVar}
 								</code>
 								<span className="text-[11px] text-muted-foreground">
 									resolved at request time
 								</span>
-							</div>
+							</DetailInline>
 						) : (
 							<span className="text-[11px] text-destructive">
 								No env var configured.
 							</span>
 						)}
-					</Row>
+					</DetailRow>
 				</dl>
-			</Card>
+			</DetailCard>
 
 			<PoliciesPanel rows={attachedPolicies} />
 
@@ -206,13 +209,13 @@ export function HostKeyDetailView({ name }: { name: string }) {
 function PoliciesPanel({ rows }: { rows: LinkedPolicyRow[] }) {
 	if (rows.length === 0) {
 		return (
-			<Card title="Linked by policies" icon={Link2}>
+			<DetailCard title="Linked by policies" icon={Link2}>
 				<DetailEmpty>
 					No policy links a pool holding this credential. Requests whose
 					policies link no pools still reach it when it belongs to their own
 					scope or to the system.
 				</DetailEmpty>
-			</Card>
+			</DetailCard>
 		);
 	}
 
@@ -259,55 +262,5 @@ function PoliciesPanel({ rows }: { rows: LinkedPolicyRow[] }) {
 				))}
 			</DetailTable>
 		</section>
-	);
-}
-
-function Card({
-	title,
-	icon: Icon,
-	children,
-}: {
-	title: string;
-	icon: typeof KeyRound;
-	children: React.ReactNode;
-}) {
-	return (
-		<section className="rounded-md border border-border bg-card">
-			<header className="flex items-center gap-1.5 border-b border-border px-4 py-2.5">
-				<Icon
-					className="w-3.5 h-3.5 text-muted-foreground"
-					aria-hidden="true"
-				/>
-				<h2 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-					{title}
-				</h2>
-			</header>
-			<div className="px-4 py-3">{children}</div>
-		</section>
-	);
-}
-
-function Row({
-	label,
-	children,
-}: {
-	label: string;
-	children: React.ReactNode;
-}) {
-	return (
-		<div className="py-3 first:pt-0 last:pb-0 grid grid-cols-1 sm:grid-cols-[160px_1fr] gap-1 sm:gap-4">
-			<dt className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-				{label}
-			</dt>
-			<dd className="text-xs text-foreground min-w-0">{children}</dd>
-		</div>
-	);
-}
-
-function KindBadge({ stored }: { stored: boolean }) {
-	return (
-		<span className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide bg-muted text-muted-foreground border border-border">
-			{stored ? "stored" : "env"}
-		</span>
 	);
 }
