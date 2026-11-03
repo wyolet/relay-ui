@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { canShareAccount, shareUsageText } from "@/accounts/sharing";
-import { useShareCaller } from "@/accounts/useShareCaller";
 import {
 	type Account,
 	type AccountShareParty,
 	useAccountShares,
 	useDeleteAccount,
 } from "@/api/hooks/accounts";
+import { useScopeCaller } from "@/hooks/useScopeCaller";
 import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 
 export interface SharedWithRow {
@@ -19,7 +19,7 @@ export interface SharedWithRow {
 
 /** The accounts this provider account is shared with, for its owner, and the share and remove flows. */
 export function useSharedWith(account: Account) {
-	const canShare = canShareAccount(account, useShareCaller());
+	const canShare = canShareAccount(account, useScopeCaller());
 	const shares = useAccountShares(
 		account.metadata.id ?? account.metadata.name,
 		canShare,
