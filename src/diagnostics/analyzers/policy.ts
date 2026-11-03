@@ -45,6 +45,12 @@ export function analyzePolicy(
 	// A policy that links no pools leaves reach to the other rungs, or to the
 	// credentials the caller's own scopes own; only pools decide reach here.
 	const linksReach = (policy.spec.poolIds?.length ?? 0) > 0;
+	// A pool at a keyless host (local Ollama) reaches it with no credential at all.
+	const linksKeylessHost = (policy.spec.poolIds ?? []).some((id) => {
+		const hostId = graph.pools.get(id)?.spec.hostId;
+		const host = hostId ? graph.hosts.get(hostId) : undefined;
+		return host?.spec.noAuth === true && host.spec.enabled !== false;
+	});
 	if (!linksReach) {
 		out.push({
 			severity: "info",
@@ -55,6 +61,7 @@ export function analyzePolicy(
 	} else if (
 		credentialIds.length === 0 &&
 		unlistedHostIds.length === 0 &&
+		!linksKeylessHost &&
 		!grants.some((g) => modelsForRefViaPolicy(g, policy, graph).length > 0)
 	) {
 		out.push({

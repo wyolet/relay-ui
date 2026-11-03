@@ -117,6 +117,16 @@ describe("analyzePolicy", () => {
 		);
 	});
 
+	it("doesn't flag a keyless host's pool that grants no models", () => {
+		const host = makeHost({ id: "h1", name: "ollama-self", noAuth: true });
+		const p = makePolicy({ poolIds: ["pool-1"], models: [] });
+		const ds = analyzePolicy(
+			p,
+			graph({ policies: [p], pools: [poolOf([])], hosts: [host] }),
+		);
+		expect(codes(ds)).not.toContain("policy.no-host-keys");
+	});
+
 	it("flags no credentials when a linked pool is missing", () => {
 		const p = makePolicy({ poolIds: ["pool-gone"] });
 		const ds = analyzePolicy(p, graph({ policies: [p] }));
