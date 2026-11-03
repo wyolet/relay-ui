@@ -1,12 +1,14 @@
-import { ToggleLeft, Users } from "lucide-react";
+import { ToggleLeft, UserRound, Users } from "lucide-react";
 import { useAuth } from "@/api/auth";
 import type { Group } from "@/api/types/group";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useGroupForm } from "@/groups/useGroupForm";
+import { PERSONAL_ACCOUNT_CHOICE_OPTIONS } from "@/lib/personalAccount";
 import { FormFooter } from "@/shared/FormFooter";
 import { FormSection } from "@/shared/FormSection";
 import { IdentitySection } from "@/shared/IdentitySection";
+import { Segmented } from "@/shared/Segmented";
 import { ToggleSwitch } from "@/shared/ToggleSwitch";
 
 interface GroupFormProps {
@@ -25,6 +27,7 @@ export function GroupForm({ group, onSaved, onCancel }: GroupFormProps) {
 		descriptionError,
 		memberCount,
 		addMember,
+		canSetPersonalAccount,
 	} = useGroupForm({ open: true, group, onSaved });
 	const { userId } = useAuth();
 
@@ -91,6 +94,20 @@ export function GroupForm({ group, onSaved, onCancel }: GroupFormProps) {
 						label="Enabled"
 					/>
 				</FormSection>
+
+				{canSetPersonalAccount && (
+					<FormSection
+						icon={UserRound}
+						title="Personal accounts"
+						description="Turns members' personal accounts on or off. A member's own setting wins; between groups, off wins. Inherit leaves it to the deployment setting."
+					>
+						<Segmented
+							options={PERSONAL_ACCOUNT_CHOICE_OPTIONS}
+							value={values.personalAccount}
+							onChange={(v) => form.setFieldValue("personalAccount", v)}
+						/>
+					</FormSection>
+				)}
 			</div>
 
 			<form.Subscribe selector={(s) => s.isSubmitting}>

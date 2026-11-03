@@ -1,8 +1,9 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
+import { PROVIDER_KIND } from "@/accounts/accountView";
 import { useAuth } from "@/api/auth";
-import { accountListQuery } from "@/api/hooks/accounts";
+import { accountListQuery, useCreateAccount } from "@/api/hooks/accounts";
 import { useCatalogGraph } from "@/api/hooks/catalog";
 import { useCreateHostKey } from "@/api/hooks/hostkeys";
 import { useHosts, useUpdateHost } from "@/api/hooks/hosts";
@@ -23,6 +24,7 @@ import type {
 	RateLimitMeter as CanonicalMeter,
 	RateLimitStrategy,
 } from "@/rate-limits/useRateLimitForm";
+import { ownProviderAccountAt } from "@/setup/providerAccount";
 import { toast } from "@/shared/Toast";
 import { useSetupStore } from "@/stores/setup";
 import { personalAccountOf } from "./personalAccount";
@@ -191,6 +193,7 @@ export function useSetupWizard() {
 	const createPool = useCreatePool();
 	const createRateLimit = useCreateRateLimit();
 	const createKey = useCreateKey();
+	const createAccount = useCreateAccount();
 	const { userId } = useAuth();
 	const queryClient = useQueryClient();
 
@@ -205,6 +208,28 @@ export function useSetupWizard() {
 			spec: { hostId, credentialIds },
 		});
 		return pool.metadata.id ?? "";
+	}
+
+	/** The caller's provider account at the host, made on first use: every key names one. */
+	async function providerAccountFor(
+		hostId: string,
+		label: string,
+	): Promise<string> {
+		if (!userId) throw new Error("Sign in again to finish setup.");
+		const accounts = await queryClient.fetchQuery(
+			accountListQuery({ kind: ["provider"], host_id: [hostId] }),
+		);
+		const own = ownProviderAccountAt(accounts.items ?? [], hostId, userId);
+		if (own?.metadata.id) return own.metadata.id;
+		const accountLabel = `${label} account`;
+		const created = await createAccount.mutateAsync({
+			metadata: {
+				name: slugWithSuffix(accountLabel),
+				displayName: accountLabel,
+			},
+			spec: { kind: PROVIDER_KIND, hostId },
+		});
+		return created.metadata.id ?? "";
 	}
 
 	/**
@@ -322,10 +347,12 @@ export function useSetupWizard() {
 			let newHostKeyId = "";
 			if (keyValue) {
 				const keyLabel = `${label} key`;
+				const accountId = await providerAccountFor(hostId, label);
 				const hk = await createHostKey.mutateAsync({
 					metadata: { name: slugWithSuffix(keyLabel), displayName: keyLabel },
 					spec: {
 						hostId,
+						accountId,
 						enabled: true,
 						value: keyValue,
 						valueFrom: { kind: "stored" },

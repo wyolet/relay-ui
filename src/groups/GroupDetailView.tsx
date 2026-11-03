@@ -1,9 +1,14 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { ChevronLeft, Users } from "lucide-react";
+import { ChevronLeft, UserRound, Users } from "lucide-react";
 import { useDeleteGroup, useGroup } from "@/api/hooks/groups";
 import { useToggleGroupEnabled } from "@/groups/useToggleGroupEnabled";
 import { displayLabel } from "@/lib/displayLabel";
+import {
+	groupPersonalAccountLabel,
+	groupTakesPersonalAccount,
+} from "@/lib/personalAccount";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
+import { DetailCard, DetailRow } from "@/shared/DetailCard";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
 import { DetailPageHeader } from "@/shared/DetailPageHeader";
 import { StatusBadge } from "@/shared/StatusBadge";
@@ -58,6 +63,16 @@ export function GroupDetailView({ name }: { name: string }) {
 					)}
 				/>
 			</DetailPageHeader>
+
+			{groupTakesPersonalAccount(g.metadata.owner) && (
+				<DetailCard title="Accounts" icon={UserRound}>
+					<dl className="divide-y divide-border">
+						<DetailRow label="Personal accounts">
+							{groupPersonalAccountLabel(g.spec.personalAccount)}
+						</DetailRow>
+					</dl>
+				</DetailCard>
+			)}
 
 			<section className="rounded-md border border-border bg-card">
 				<header className="flex items-center gap-1.5 border-b border-border px-4 py-2.5">

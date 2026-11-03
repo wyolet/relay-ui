@@ -8,6 +8,7 @@ import {
 import { useNavigate } from "@tanstack/react-router";
 import { ACCOUNT_DISABLED, signInErrorNotice } from "@/lib/signInError";
 import { apiClient } from "./client";
+import type { components } from "./types.gen";
 
 interface Whoami {
 	authenticated: boolean;
@@ -16,6 +17,7 @@ interface Whoami {
 	roles: string[];
 	/** Scopes the caller holds a role binding at, as "team:<id>" / "project:<id>". */
 	scopes: string[];
+	personalAccountEffective?: components["schemas"]["PersonalAccountEffective"];
 }
 
 /**
@@ -30,6 +32,7 @@ async function fetchWhoami(): Promise<Whoami> {
 		username: data?.username,
 		roles: data?.roles ?? [],
 		scopes: data?.scopes ?? [],
+		personalAccountEffective: data?.personalAccountEffective,
 	};
 }
 
@@ -109,6 +112,7 @@ export function useAuth() {
 		roles,
 		scopes,
 		isAdmin,
+		personalAccountEffective: data?.personalAccountEffective,
 		login,
 		logout,
 	};

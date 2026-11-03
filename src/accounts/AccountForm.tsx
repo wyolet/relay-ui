@@ -1,18 +1,16 @@
 import { Building2, FileText, Tags, UserRound } from "lucide-react";
-import { useId } from "react";
 import { AccountHolderLink } from "@/accounts/AccountHolderLink";
 import {
 	PAYLOAD_LOGGING_RULE,
 	PROVIDER_ACCOUNT_SUMMARY,
 } from "@/accounts/accountCopy";
+import { ProviderAccountFields } from "@/accounts/ProviderAccountFields";
 import {
 	PAYLOAD_LOGGING_CHOICES,
 	PAYLOAD_LOGGING_LABELS,
 } from "@/accounts/payloadLogging";
 import { useAccountForm } from "@/accounts/useAccountForm";
 import type { Account } from "@/api/hooks/accounts";
-import { Input } from "@/components/ui/input";
-import { HostSelect } from "@/hosts/HostSelect";
 import { FormFooter } from "@/shared/FormFooter";
 import { FormSection } from "@/shared/FormSection";
 import { IdentitySection } from "@/shared/IdentitySection";
@@ -45,9 +43,12 @@ export function AccountForm({ account, onSaved, onCancel }: AccountFormProps) {
 		holder,
 		slugPreview,
 		placement,
+		placementError,
 		hostOptions,
-	} = useAccountForm({ account, onSaved });
-	const orgErrorId = useId();
+	} = useAccountForm({
+		account,
+		onSaved: (saved) => onSaved(saved.metadata.name),
+	});
 
 	return (
 		<form
@@ -70,6 +71,7 @@ export function AccountForm({ account, onSaved, onCancel }: AccountFormProps) {
 					autoFocus={!isEdit}
 					placeholder="OpenAI build org"
 					placement={placement}
+					placementError={placementError}
 				/>
 
 				{isProvider ? (
@@ -78,48 +80,16 @@ export function AccountForm({ account, onSaved, onCancel }: AccountFormProps) {
 						title="Provider organization"
 						description={PROVIDER_ACCOUNT_SUMMARY}
 					>
-						<div className="flex flex-col gap-4">
-							<HostSelect
-								value={values.hostId}
-								options={hostOptions}
-								onChange={(v) => form.setFieldValue("hostId", v)}
-								error={errors.hostId}
-								disabled={isEdit}
-								hint={
-									isEdit
-										? "Fixed once created: the account's keys are at this host."
-										: undefined
-								}
-							/>
-							<div>
-								<div className={fieldLabelClass}>Organization id</div>
-								<Input
-									type="text"
-									value={values.orgId}
-									onChange={(e) =>
-										form.setFieldValue("orgId", e.currentTarget.value)
-									}
-									placeholder="org-…"
-									className="font-mono w-full max-w-md"
-									aria-label="Organization id"
-									aria-invalid={errors.orgId ? true : undefined}
-									aria-describedby={errors.orgId ? orgErrorId : undefined}
-								/>
-								{errors.orgId ? (
-									<p
-										id={orgErrorId}
-										className="mt-1.5 text-[11px] text-destructive"
-									>
-										{errors.orgId}
-									</p>
-								) : (
-									<p className="mt-1.5 text-[11px] text-muted-foreground">
-										The provider's organization id, never a person or an email.
-										Leave empty until known.
-									</p>
-								)}
-							</div>
-						</div>
+						<ProviderAccountFields
+							hostId={values.hostId}
+							hostOptions={hostOptions}
+							onHostChange={(v) => form.setFieldValue("hostId", v)}
+							hostError={errors.hostId}
+							hostLocked={isEdit}
+							orgId={values.orgId}
+							onOrgIdChange={(v) => form.setFieldValue("orgId", v)}
+							orgIdError={errors.orgId}
+						/>
 					</FormSection>
 				) : (
 					<>

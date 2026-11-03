@@ -2,12 +2,20 @@ import { useForm } from "@tanstack/react-form";
 import { useStore } from "@tanstack/react-store";
 import { useEffect, useMemo, useRef } from "react";
 import { z } from "zod";
+import { useAuth } from "@/api/auth";
 import { useCreateGroup, useUpdateGroup } from "@/api/hooks/groups";
 import type { Group } from "@/api/types/group";
 import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
 import { shownError, zodFieldValidator } from "@/lib/formErrors";
+import {
+	fromPersonalAccountChoice,
+	groupTakesPersonalAccount,
+	PERSONAL_ACCOUNT_CHOICES,
+	type PersonalAccountChoice,
+	toPersonalAccountChoice,
+} from "@/lib/personalAccount";
 import { randomSuffix, slugify } from "@/lib/slug";
 import { toast } from "@/shared/Toast";
 
@@ -17,6 +25,7 @@ export interface GroupFormValues {
 	/** Comma- or newline-separated user ids; there is no users list endpoint. */
 	memberIds: string;
 	enabled: boolean;
+	personalAccount: PersonalAccountChoice;
 }
 
 /** Split the free-text member field into the id list the API stores. */
@@ -30,7 +39,13 @@ export function parseMemberIds(raw: string): string[] {
 }
 
 function emptyValues(): GroupFormValues {
-	return { displayName: "", description: "", memberIds: "", enabled: true };
+	return {
+		displayName: "",
+		description: "",
+		memberIds: "",
+		enabled: true,
+		personalAccount: "inherit",
+	};
 }
 
 function toValues(g: Group): GroupFormValues {
@@ -39,6 +54,7 @@ function toValues(g: Group): GroupFormValues {
 		description: g.metadata.description ?? "",
 		memberIds: (g.spec.memberIds ?? []).join("\n"),
 		enabled: g.spec.enabled ?? true,
+		personalAccount: toPersonalAccountChoice(g.spec.personalAccount),
 	};
 }
 
@@ -51,6 +67,7 @@ const schema = z.object({
 	description: z.string().trim().max(500, "Description is too long"),
 	memberIds: z.string(),
 	enabled: z.boolean(),
+	personalAccount: z.enum(PERSONAL_ACCOUNT_CHOICES),
 });
 
 interface UseGroupFormOptions {
@@ -68,6 +85,11 @@ export function useGroupForm({
 	const createGroup = useCreateGroup();
 	const updateGroup = useUpdateGroup();
 	const toastSaveError = useSaveErrorToast();
+	const { isAdmin } = useAuth();
+	// The form never changes the owner, and a new group's default owner isn't known
+	// up front, so only an existing system-owned group offers the switch.
+	const canSetPersonalAccount =
+		isAdmin && groupTakesPersonalAccount(group?.metadata.owner);
 	const loaded = useLoadedResourceVersion(
 		`${open}:${group?.metadata.id ?? ""}`,
 		group?.metadata.resourceVersion,
@@ -94,9 +116,13 @@ export function useGroupForm({
 		validators: { onSubmit: runValidation, onChange: runValidation },
 		onSubmit: async ({ value }) => {
 			const displayName = value.displayName.trim();
+			// A non-admin's omission keeps the stored value.
 			const spec = {
 				memberIds: parseMemberIds(value.memberIds),
 				enabled: value.enabled,
+				...(canSetPersonalAccount
+					? fromPersonalAccountChoice(value.personalAccount)
+					: {}),
 			};
 			try {
 				if (isEdit && group) {
@@ -170,5 +196,6 @@ export function useGroupForm({
 		descriptionError,
 		memberCount: parseMemberIds(values.memberIds).length,
 		addMember,
+		canSetPersonalAccount,
 	};
 }

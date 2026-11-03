@@ -1,4 +1,5 @@
 import { useForm } from "@tanstack/react-form";
+import { useQueryClient } from "@tanstack/react-query";
 import { useStore } from "@tanstack/react-store";
 import { useEffect, useMemo, useRef } from "react";
 import { z } from "zod";
@@ -17,6 +18,7 @@ import { useHolderResolver } from "@/accounts/useHolderResolver";
 import { useAuth } from "@/api/auth";
 import {
 	type Account,
+	accountListQueryOptions,
 	useCreateAccount,
 	useUpdateAccount,
 } from "@/api/hooks/accounts";
@@ -26,6 +28,7 @@ import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { useFormOwner } from "@/hooks/useWorkContext";
 import { displayLabel } from "@/lib/displayLabel";
 import { shownError, zodFieldValidator } from "@/lib/formErrors";
+import { accountOwnerError } from "@/lib/personalAccount";
 import { randomSuffix, slugify } from "@/lib/slug";
 import {
 	fromLabelPairs,
@@ -62,11 +65,11 @@ const providerSchema = baseSchema.extend({
 	orgId: z.string().trim().max(200, "Organization id is too long"),
 });
 
-function emptyValues(): AccountFormValues {
+function emptyValues(hostId = ""): AccountFormValues {
 	return {
 		displayName: "",
 		description: "",
-		hostId: "",
+		hostId,
 		orgId: "",
 		payloadLogging: "inherit",
 		labels: [],
@@ -86,12 +89,19 @@ function toValues(account: Account): AccountFormValues {
 
 interface UseAccountFormOptions {
 	account?: Account;
-	onSaved: (savedName: string) => void;
+	/** The host a new account starts at; the user may change it. */
+	presetHostId?: string;
+	onSaved: (saved: Account) => void;
 }
 
-export function useAccountForm({ account, onSaved }: UseAccountFormOptions) {
+export function useAccountForm({
+	account,
+	presetHostId,
+	onSaved,
+}: UseAccountFormOptions) {
 	const isEdit = account !== undefined;
 	const isProvider = !account || account.spec.kind === PROVIDER_KIND;
+	const queryClient = useQueryClient();
 	const createAccount = useCreateAccount();
 	const updateAccount = useUpdateAccount();
 	const toastSaveError = useSaveErrorToast();
@@ -105,8 +115,8 @@ export function useAccountForm({ account, onSaved }: UseAccountFormOptions) {
 	const { owner, placement } = useFormOwner(account?.metadata);
 
 	const initial = useMemo<AccountFormValues>(
-		() => (account ? toValues(account) : emptyValues()),
-		[account],
+		() => (account ? toValues(account) : emptyValues(presetHostId)),
+		[account, presetHostId],
 	);
 	const suffixRef = useRef<string>(randomSuffix());
 	const computeSlug = (displayName: string): string => {
@@ -152,7 +162,7 @@ export function useAccountForm({ account, onSaved }: UseAccountFormOptions) {
 					});
 					loaded.markSaved(saved.metadata.resourceVersion);
 					toast("success", `Account "${displayName}" updated.`);
-					onSaved(saved.metadata.name);
+					onSaved(saved);
 				} else {
 					const created = await createAccount.mutateAsync({
 						metadata: {
@@ -168,10 +178,17 @@ export function useAccountForm({ account, onSaved }: UseAccountFormOptions) {
 							...(orgId ? { orgId } : {}),
 						},
 					});
+					// A form that picks the new account must find it in the listed accounts.
+					await queryClient.invalidateQueries(
+						{ queryKey: accountListQueryOptions.queryKey },
+						{ cancelRefetch: false },
+					);
 					toast("success", `Account "${displayName}" created.`);
-					onSaved(created.metadata.name);
+					onSaved(created);
 				}
 			} catch (err) {
+				// A refused owner renders by the placement line.
+				if (accountOwnerError(err)) return;
 				toastSaveError(
 					err,
 					isEdit ? "Failed to update account." : "Failed to create account.",
@@ -190,6 +207,7 @@ export function useAccountForm({ account, onSaved }: UseAccountFormOptions) {
 	}, [loaded.resetKey, initial, form]);
 
 	const values = useStore(form.store, (s) => s.values);
+	const isSubmitting = useStore(form.store, (s) => s.isSubmitting);
 	const errors = useStore(form.store, (s) => ({
 		displayName: shownError(s.fieldMeta?.displayName, s.submissionAttempts),
 		description: shownError(s.fieldMeta?.description, s.submissionAttempts),
@@ -211,6 +229,7 @@ export function useAccountForm({ account, onSaved }: UseAccountFormOptions) {
 		form,
 		values,
 		errors,
+		isSubmitting,
 		isEdit,
 		isProvider,
 		payloadLoggingEditable,
@@ -220,6 +239,7 @@ export function useAccountForm({ account, onSaved }: UseAccountFormOptions) {
 			? account.metadata.name
 			: computeSlug(values.displayName),
 		placement,
+		placementError: accountOwnerError(createAccount.error),
 		hostOptions,
 	};
 }
