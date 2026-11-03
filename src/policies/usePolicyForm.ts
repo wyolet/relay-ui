@@ -29,11 +29,18 @@ import {
 	specFromFormValues,
 	specToFormValues,
 } from "@/policies/policyFormSpec";
+import {
+	everyCredentialFor,
+	poolIdsOnEveryCredentialSwitch,
+	poolIdsOnToggle,
+} from "@/policies/policyReach";
 import { toast } from "@/shared/Toast";
 
 export interface PolicyFormValues extends PolicySpecValues {
 	displayName: string;
 	description: string;
+	/** Use every credential in the scope instead of linked pools. */
+	everyCredential: boolean;
 }
 
 const schema = z.object({
@@ -56,11 +63,19 @@ const schema = z.object({
 	enabled: z.boolean(),
 });
 
+const POOLS_MISSING = "Add a pool, or turn on Every credential in scope.";
+
+// Linking no pools uses every credential in scope, so the switch off needs one.
+function poolsMissing(values: PolicyFormValues): boolean {
+	return !values.everyCredential && values.poolIds.length === 0;
+}
+
 function emptyValues(): PolicyFormValues {
 	return {
 		displayName: "",
 		description: "",
 		...specToFormValues({}),
+		everyCredential: false,
 	};
 }
 
@@ -69,6 +84,7 @@ function policyToValues(policy: Policy): PolicyFormValues {
 		displayName: displayLabel(policy.metadata),
 		description: policy.metadata.description ?? "",
 		...specToFormValues(policy.spec),
+		everyCredential: everyCredentialFor(policy.spec.poolIds),
 	};
 }
 
@@ -115,7 +131,12 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 		},
 		onSubmit: async ({ value }) => {
 			// Flagged picks block the save; their field errors say what to do.
-			if (unavailablePools || unavailableBudgets || unavailableRateLimits) {
+			if (
+				unavailablePools ||
+				unavailableBudgets ||
+				unavailableRateLimits ||
+				poolsMissing(value)
+			) {
 				return;
 			}
 			const displayName = value.displayName.trim();
@@ -172,9 +193,12 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 	// refetch can't wipe an open draft.
 	const resetKey = loaded.resetKey;
 	const lastResetKey = useRef<string | null>(null);
+	// Pools the every-credential switch set aside, restored when it's turned off.
+	const setAsidePoolIds = useRef<string[]>([]);
 	useEffect(() => {
 		if (lastResetKey.current === resetKey) return;
 		lastResetKey.current = resetKey;
+		setAsidePoolIds.current = [];
 		form.reset(open ? initial : emptyValues());
 	}, [resetKey, open, initial, form]);
 
@@ -219,6 +243,19 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 	);
 	useScopePrefetch(placement?.editable ? prefetchLinks : undefined);
 
+	function setEveryCredential(next: boolean) {
+		const switched = poolIdsOnEveryCredentialSwitch(
+			next,
+			values.poolIds,
+			setAsidePoolIds.current,
+		);
+		setAsidePoolIds.current = switched.setAside;
+		form.setFieldValue("poolIds", switched.poolIds);
+		form.setFieldValue("everyCredential", next);
+	}
+	function togglePool(poolId: string) {
+		form.setFieldValue("poolIds", poolIdsOnToggle(values.poolIds, poolId));
+	}
 	function setBudgetIds(ids: string[]) {
 		form.setFieldValue("budgets", budgetLinksForIds(ids, values.budgets));
 	}
@@ -234,12 +271,17 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 	return {
 		form,
 		values,
+		setEveryCredential,
+		togglePool,
 		setBudgetIds,
 		setBudgetShared,
 		isEdit,
 		slugPreview,
 		displayNameError,
 		descriptionError,
+		poolsError:
+			unavailablePicksError(unavailablePools, submitTried) ??
+			(submitTried && poolsMissing(values) ? POOLS_MISSING : undefined),
 		placement,
 		usableBy,
 		updatingFor: {
@@ -253,7 +295,6 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 			rateLimits: unavailableRateLimits,
 		},
 		unavailableErrors: {
-			pools: unavailablePicksError(unavailablePools, submitTried),
 			budgets: unavailablePicksError(unavailableBudgets, submitTried),
 			rateLimits: unavailablePicksError(unavailableRateLimits, submitTried),
 		},

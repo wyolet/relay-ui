@@ -31,11 +31,11 @@ export function PickerProviderList({
 								<span className="text-sm text-foreground truncate">
 									{p.displayName}
 								</span>
-								<code className="text-[10px] font-mono text-muted-foreground">
+								<code className="min-w-0 truncate text-[10px] font-mono text-muted-foreground">
 									{p.name}
 								</code>
 							</span>
-							<span className="text-[11px] text-muted-foreground tabular-nums">
+							<span className="shrink-0 text-[11px] text-muted-foreground tabular-nums">
 								{modelCount} model{modelCount === 1 ? "" : "s"}
 							</span>
 						</OptionRow>

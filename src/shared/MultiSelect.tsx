@@ -10,6 +10,7 @@ import type { FilterOption } from "@/filters/types";
 import { cn } from "@/lib/utils";
 import { OptionRow } from "@/shared/OptionRow";
 import { SearchBox } from "@/shared/SearchBox";
+import { WarningNotes } from "@/shared/WarningNotes";
 
 /** Shared trigger chrome for filter-bar controls — the Button outline recipe,
  * so filter controls and buttons can never drift apart. */
@@ -66,6 +67,26 @@ export function MultiSelect({
 export interface CheckOption extends FilterOption {
 	disabled?: boolean;
 	hint?: string;
+	/** Shown in the checked box in place of the tick, for an ordered pick. */
+	rank?: number;
+	/** Warnings under the row. */
+	notes?: readonly string[];
+}
+
+interface MultiCheckListProps {
+	options: readonly CheckOption[];
+	selected: readonly string[];
+	onToggle: (value: string) => void;
+	emptyLabel: string;
+}
+
+/** The check list in a bordered box, as a form field. */
+export function BoxedCheckList(props: MultiCheckListProps) {
+	return (
+		<div className="max-w-md rounded-md border border-border p-2">
+			<MultiCheckList {...props} />
+		</div>
+	);
 }
 
 export function MultiCheckList({
@@ -73,12 +94,7 @@ export function MultiCheckList({
 	selected,
 	onToggle,
 	emptyLabel,
-}: {
-	options: readonly CheckOption[];
-	selected: readonly string[];
-	onToggle: (value: string) => void;
-	emptyLabel: string;
-}) {
+}: MultiCheckListProps) {
 	const [needle, setNeedle] = useState("");
 
 	if (options.length === 0) {
@@ -110,6 +126,7 @@ export function MultiCheckList({
 			<ul className="max-h-48 overflow-y-auto">
 				{filtered.map((o) => {
 					const checked = selected.includes(o.value);
+					const ranked = checked && o.rank !== undefined;
 					return (
 						<li key={o.value}>
 							<OptionRow
@@ -127,15 +144,27 @@ export function MultiCheckList({
 									)}
 									aria-hidden="true"
 								>
-									{checked && <Check className="size-3" />}
+									{ranked ? (
+										<span className="text-[10px] font-medium tabular-nums">
+											{o.rank}
+										</span>
+									) : (
+										checked && <Check className="size-3" />
+									)}
 								</span>
 								<span className="min-w-0 truncate">{o.label}</span>
+								{ranked && (
+									<span className="sr-only">{`, rank ${o.rank}`}</span>
+								)}
 								{o.hint && (
 									<span className="ml-auto shrink-0 text-[11px] text-muted-foreground">
 										{o.hint}
 									</span>
 								)}
 							</OptionRow>
+							{o.notes && (
+								<WarningNotes notes={o.notes} className="pb-1 pl-7" />
+							)}
 						</li>
 					);
 				})}

@@ -3,18 +3,14 @@ import { X } from "lucide-react";
 import type { ReactNode } from "react";
 import { IconButton } from "@/components/ui/icon-button";
 import { HostLogo } from "@/hosts/HostLogo";
-import { moveItem } from "@/lib/moveItem";
 import type { UnavailablePicks } from "@/lib/workContext";
 import type { LinkChoice, LinkChoices } from "@/policies/usePolicyLinkChoices";
 import { AddPopover } from "@/shared/AddPopover";
-import { RankControls } from "@/shared/RankControls";
 import { NotAvailableTag } from "@/shared/ScopeNotes";
 
 interface Props {
 	choices: LinkChoices;
 	onChange: (ids: string[]) => void;
-	/** Rank the rows and let the operator reorder them. */
-	ordered?: boolean;
 	/** Extra control shown on each linked row, before its remove button. */
 	renderRowControl?: (choice: LinkChoice) => ReactNode;
 	addLabel: string;
@@ -23,11 +19,10 @@ interface Props {
 	unavailable?: UnavailablePicks;
 }
 
-/** Linked rows of one kind (pools, budgets) plus an add popover. */
+/** Linked rows of one kind (budgets) plus an add popover. */
 export function PolicyLinkPicker({
 	choices,
 	onChange,
-	ordered,
 	renderRowControl,
 	addLabel,
 	emptyText,
@@ -40,33 +35,17 @@ export function PolicyLinkPicker({
 				<p className="text-[11px] text-muted-foreground">{emptyText}</p>
 			) : (
 				<ul className="rounded-md border border-border bg-card divide-y divide-border">
-					{choices.selected.map((c, i) => (
-						<LinkChoiceRow
-							key={c.id}
-							choice={c}
-							rank={ordered ? i + 1 : undefined}
-						>
+					{choices.selected.map((c) => (
+						<LinkChoiceRow key={c.id} choice={c}>
 							{unavailable?.ids.includes(c.id) && (
 								<NotAvailableTag scope={unavailable.scope} />
 							)}
 							{renderRowControl?.(c)}
-							{ordered ? (
-								<RankControls
-									label={c.label}
-									index={i}
-									count={ids.length}
-									onMove={(index, delta) =>
-										onChange(moveItem(ids, index, delta))
-									}
-									onRemove={() => onChange(ids.filter((id) => id !== c.id))}
-								/>
-							) : (
-								<IconButton
-									icon={X}
-									label={`Remove ${c.label}`}
-									onClick={() => onChange(ids.filter((id) => id !== c.id))}
-								/>
-							)}
+							<IconButton
+								icon={X}
+								label={`Remove ${c.label}`}
+								onClick={() => onChange(ids.filter((id) => id !== c.id))}
+							/>
 						</LinkChoiceRow>
 					))}
 				</ul>

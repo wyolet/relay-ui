@@ -32,23 +32,23 @@ export function PickerModelList({
 							disabled={state === "covered"}
 							className="justify-between"
 						>
-							<span className="flex items-center gap-2.5 min-w-0">
-								<PickerRowCheckbox state={state} />
-								<span className="min-w-0">
-									<span className="text-sm text-foreground truncate block">
-										{m.displayName}
-									</span>
-									<code className="text-[10px] font-mono text-muted-foreground">
-										{m.provider}/{m.name}
-									</code>
-									{m.deprecated && (
-										<span className="ml-1.5 text-[10px] text-warning">
-											deprecated
-										</span>
-									)}
+							<span className="flex items-baseline gap-2 min-w-0">
+								<span className="self-center">
+									<PickerRowCheckbox state={state} />
 								</span>
+								<span className="text-sm text-foreground truncate">
+									{m.displayName}
+								</span>
+								<code className="min-w-0 truncate text-[10px] font-mono text-muted-foreground">
+									{m.provider}/{m.name}
+								</code>
+								{m.deprecated && (
+									<span className="shrink-0 text-[10px] text-warning">
+										deprecated
+									</span>
+								)}
 							</span>
-							<span className="flex items-center gap-1">
+							<span className="flex shrink-0 items-center gap-1">
 								<span className="mr-1">
 									<ModelPrice
 										modelId={m.id}
