@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { ChevronLeft, Wallet } from "lucide-react";
+import type { ReactNode } from "react";
 import { MODE_LABELS, PERIOD_LABELS } from "@/budgets/budgetFormat";
 import { useBudgetDetail } from "@/budgets/useBudgetDetail";
 import { PlanIssuesPanel } from "@/diagnostics/IssuesPanel";
@@ -9,7 +10,15 @@ import { DetailCard, DetailRow } from "@/shared/DetailCard";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
 import { DetailPageHeader } from "@/shared/DetailPageHeader";
 
-export function BudgetDetailView({ name }: { name: string }) {
+/** `children` renders below the cap: sections owned by the domains that
+ * link a budget. */
+export function BudgetDetailView({
+	name,
+	children,
+}: {
+	name: string;
+	children?: ReactNode;
+}) {
 	const navigate = useNavigate();
 	const { budget, period, mode, del, requestDelete } = useBudgetDetail({
 		name,
@@ -68,6 +77,8 @@ export function BudgetDetailView({ name }: { name: string }) {
 					</DetailRow>
 				</dl>
 			</DetailCard>
+
+			{children}
 
 			{del.target && (
 				<DeleteConfirm

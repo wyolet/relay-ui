@@ -4,6 +4,8 @@ import { PickerListEmpty } from "@/models/PickerListEmpty";
 import { PickerRowCheckbox } from "@/models/PickerRowCheckbox";
 import { isBindingCovered, modelCheckState } from "@/models/pickerCheckState";
 import type { ModelRow, PickerIndex } from "@/models/usePickerCatalog";
+import { ModelPrice } from "@/pricing/ModelPrice";
+import { useModelPrices } from "@/pricing/useModelPrices";
 import { OptionRow } from "@/shared/OptionRow";
 
 export function PickerModelList({
@@ -17,6 +19,7 @@ export function PickerModelList({
 	refs: CatalogRef[];
 	onToggleModel: (m: ModelRow) => void;
 }) {
+	const prices = useModelPrices();
 	if (models.length === 0) return <PickerListEmpty label="No models" />;
 	return (
 		<ul className="divide-y divide-border">
@@ -46,6 +49,13 @@ export function PickerModelList({
 								</span>
 							</span>
 							<span className="flex items-center gap-1">
+								<span className="mr-1">
+									<ModelPrice
+										modelId={m.id}
+										summary={prices?.get(m.id)}
+										link={false}
+									/>
+								</span>
 								{m.hostNames.map((hostName) => {
 									const h = index.hostsByName.get(hostName);
 									if (!h) return null;

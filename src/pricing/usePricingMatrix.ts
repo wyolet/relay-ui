@@ -1,5 +1,8 @@
 import { useQuery, useSuspenseQueries } from "@tanstack/react-query";
-import { catalogGraphQueryOptions } from "@/api/hooks/catalog";
+import {
+	type CatalogGraphResponse,
+	catalogGraphQueryOptions,
+} from "@/api/hooks/catalog";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
 import { modelsListQueryOptions } from "@/api/hooks/models";
 import { pricingsListQuery } from "@/api/hooks/pricings";
@@ -8,10 +11,15 @@ import {
 	usageTotalsCompareQueryOptions,
 	useUsageNow,
 } from "@/api/hooks/usage";
+import type { HostListResponse } from "@/api/types/host";
+import type { ModelListResponse } from "@/api/types/model";
+import type { PricingListResponse } from "@/api/types/pricing";
+import type { components } from "@/api/types.gen";
 import { displayLabel } from "@/lib/displayLabel";
 import {
 	buildPricingMatrix,
 	filterPricingMatrix,
+	type HostPrices,
 	pricingCoverage,
 	rankPriceRows,
 } from "@/lib/pricingMatrix";
@@ -19,6 +27,8 @@ import { sumCostRows } from "@/lib/usage-math/cost";
 import type { FigureData } from "@/shared/FigureRow";
 import { fmtCompact, fmtPct } from "@/usage/format";
 import { useHostModelUsage, usePricingWindow } from "./useHostModelUsage";
+
+type Metadata = components["schemas"]["Metadata"];
 
 /** Generous page size; warn (never silently truncate) past it. */
 const PRICINGS_LIMIT = 500;
@@ -29,6 +39,42 @@ export const pricingGraphQuery = catalogGraphQueryOptions({
 export const pricingsMatrixListQuery = pricingsListQuery({
 	limit: PRICINGS_LIMIT,
 });
+
+/** The pricing matrix from the catalog graph (bindings) and the host, model
+ * and pricing lists; every price shown in the UI resolves through it. */
+export function matrixFromLists(lists: {
+	graph: CatalogGraphResponse;
+	hosts: HostListResponse;
+	models: ModelListResponse;
+	pricings: PricingListResponse;
+}): HostPrices[] {
+	const ref = (meta: Metadata) =>
+		meta.id
+			? [{ id: meta.id, slug: meta.name, label: displayLabel(meta) }]
+			: [];
+	return buildPricingMatrix({
+		hosts: (lists.hosts.items ?? []).flatMap((h) => ref(h.metadata)),
+		models: (lists.models.items ?? []).flatMap((m) => ref(m.metadata)),
+		bindings: (lists.graph.models ?? []).flatMap((m) =>
+			(m.bindings ?? []).map((b) => ({ hostId: b.hostId, modelId: m.id })),
+		),
+		pricings: (lists.pricings.items ?? []).flatMap((p) =>
+			p.metadata.owner?.id
+				? [
+						{
+							name: p.metadata.name,
+							label: displayLabel(p.metadata),
+							hostId: p.metadata.owner.id,
+							enabled: p.spec.enabled !== false,
+							currency: p.spec.currency,
+							targetModels: p.spec.targetModels ?? [],
+							rates: p.spec.rates ?? [],
+						},
+					]
+				: [],
+		),
+	});
+}
 
 /** Share of the trailing week's requests relay couldn't price; null before it
  * loads or without traffic. Not suspending: a config page must not wait on,
@@ -56,47 +102,11 @@ export function usePricingMatrix(query: string, unpricedOnly: boolean) {
 	const unpricedShare = useUnpricedShare();
 
 	const sheets = pricings.data.items ?? [];
-	const matrix = buildPricingMatrix({
-		hosts: (hosts.data.items ?? []).flatMap((h) =>
-			h.metadata.id
-				? [
-						{
-							id: h.metadata.id,
-							slug: h.metadata.name,
-							label: displayLabel(h.metadata),
-						},
-					]
-				: [],
-		),
-		models: (models.data.items ?? []).flatMap((m) =>
-			m.metadata.id
-				? [
-						{
-							id: m.metadata.id,
-							slug: m.metadata.name,
-							label: displayLabel(m.metadata),
-						},
-					]
-				: [],
-		),
-		bindings: (graph.data.models ?? []).flatMap((m) =>
-			(m.bindings ?? []).map((b) => ({ hostId: b.hostId, modelId: m.id })),
-		),
-		pricings: sheets.flatMap((p) =>
-			p.metadata.owner?.id
-				? [
-						{
-							name: p.metadata.name,
-							label: displayLabel(p.metadata),
-							hostId: p.metadata.owner.id,
-							enabled: p.spec.enabled !== false,
-							currency: p.spec.currency,
-							targetModels: p.spec.targetModels ?? [],
-							rates: p.spec.rates ?? [],
-						},
-					]
-				: [],
-		),
+	const matrix = matrixFromLists({
+		graph: graph.data,
+		hosts: hosts.data,
+		models: models.data,
+		pricings: pricings.data,
 	});
 
 	const usage = useHostModelUsage(matrix.map((h) => h.host.id));

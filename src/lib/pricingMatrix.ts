@@ -1,4 +1,10 @@
 import {
+	type BlendedPrice,
+	blendedPrice,
+	compareBlendedPrices,
+	lowestBlendedPrice,
+} from "@/lib/usage-math/blendedPrice";
+import {
 	groupByMeter,
 	prettyMeter,
 	type RateLike,
@@ -56,6 +62,8 @@ export interface PriceRow {
 	cells: Partial<Record<RateColumn, RateCell>>;
 	/** Priced meters outside {@link RATE_COLUMNS}. */
 	extra: number;
+	/** The enabled sheet's one comparable price; null without one. */
+	blended: BlendedPrice | null;
 	/** False when a sheet targets a model the host has no binding for. */
 	served: boolean;
 	/** Served, and no enabled sheet prices it: its usage counts as unpriced. */
@@ -122,6 +130,7 @@ export function buildPricingMatrix(input: {
 			const { cells, extra } = sheet?.enabled
 				? rateCells(sheet.rates)
 				: { cells: {}, extra: 0 };
+			const currency = sheet?.currency || "USD";
 			rows.push({
 				model,
 				sheet: sheet && {
@@ -129,9 +138,10 @@ export function buildPricingMatrix(input: {
 					label: sheet.label,
 					enabled: sheet.enabled,
 				},
-				currency: sheet?.currency || "USD",
+				currency,
 				cells,
 				extra,
+				blended: sheet?.enabled ? blendedPrice(sheet.rates, currency) : null,
 				served: isServed,
 				unpriced: isServed && !sheet?.enabled,
 			});
@@ -182,6 +192,91 @@ export function pricingCoverage(matrix: readonly HostPrices[]) {
 		}
 	}
 	return { served, priced };
+}
+
+/** One host serving a model, and what it charges there. */
+export interface HostPrice {
+	host: MatrixHost;
+	row: PriceRow;
+	/** No enabled sheet prices it, or the sheet sets no rate. */
+	unpriced: boolean;
+}
+
+/** A model's prices across the hosts serving it. */
+export interface ModelPriceSummary {
+	hosts: HostPrice[];
+	/** The cheapest host's blended price; `from` when hosts differ. */
+	lowest: ReturnType<typeof lowestBlendedPrice>;
+	unpricedHosts: MatrixHost[];
+}
+
+/** Each served model's per-host prices, keyed by model id. */
+export function modelPriceSummaries(
+	matrix: readonly HostPrices[],
+): Map<string, ModelPriceSummary> {
+	const hostsByModel = new Map<string, HostPrice[]>();
+	for (const { host, rows } of matrix) {
+		for (const row of rows) {
+			if (!row.served) continue;
+			const rateless = Object.keys(row.cells).length === 0 && row.extra === 0;
+			const list = hostsByModel.get(row.model.id) ?? [];
+			list.push({ host, row, unpriced: row.unpriced || rateless });
+			hostsByModel.set(row.model.id, list);
+		}
+	}
+	const out = new Map<string, ModelPriceSummary>();
+	for (const [modelId, hosts] of hostsByModel) {
+		out.set(modelId, {
+			hosts,
+			lowest: lowestBlendedPrice(hosts.map((h) => h.row.blended)),
+			unpricedHosts: hosts.filter((h) => h.unpriced).map((h) => h.host),
+		});
+	}
+	return out;
+}
+
+/** Items ordered by their model's lowest blended price; models without one
+ * stay last in either direction. */
+export function sortByLowestPrice<T>(
+	items: readonly T[],
+	summaryOf: (item: T) => ModelPriceSummary | undefined,
+	dir: "asc" | "desc",
+): T[] {
+	const priceOf = (item: T) => summaryOf(item)?.lowest?.price ?? null;
+	return [...items].sort((a, b) => {
+		const pa = priceOf(a);
+		const pb = priceOf(b);
+		if (!pa || !pb) return Number(!pa) - Number(!pb);
+		const order = compareBlendedPrices(pa, pb);
+		return dir === "asc" ? order : -order;
+	});
+}
+
+/** A granted model some reached host serves without a price. */
+export interface UnpricedGrant {
+	model: MatrixModel;
+	hosts: MatrixHost[];
+}
+
+/** The granted (model, host) bindings that are unpriced, grouped by model and
+ * sorted by label. A binding the summaries don't know has no sheet either. */
+export function unpricedGrants(
+	summaries: ReadonlyMap<string, ModelPriceSummary>,
+	grants: readonly { model: MatrixModel; host: MatrixHost }[],
+): UnpricedGrant[] {
+	const byModel = new Map<string, UnpricedGrant>();
+	for (const { model, host } of grants) {
+		const price = summaries
+			.get(model.id)
+			?.hosts.find((h) => h.host.id === host.id);
+		if (price && !price.unpriced) continue;
+		const grant = byModel.get(model.id) ?? { model, hosts: [] };
+		if (!grant.hosts.some((h) => h.id === host.id)) grant.hosts.push(host);
+		byModel.set(model.id, grant);
+	}
+	return [...byModel.values()].sort((a, b) =>
+		a.model.label.localeCompare(b.model.label),
+	);
 }
 
 /** A model's traffic on one host over a window. `usd` is null when none of
