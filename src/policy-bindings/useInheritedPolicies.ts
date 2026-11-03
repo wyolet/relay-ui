@@ -15,7 +15,7 @@ import {
 
 /** The policies above the account, from its limits read; undefined while loading or when the read fails. */
 export function useInheritedPolicies(ref: AccountRef): Ladder | undefined {
-	const { account } = useAccountPolicy(ref);
+	const { account, binding } = useAccountPolicy(ref);
 	const accounts = useQuery({ ...accountListQueryOptions, retry: false });
 	const policies = useQuery(policiesListQueryOptions);
 	const { data } = useAccountLimits(
@@ -26,14 +26,18 @@ export function useInheritedPolicies(ref: AccountRef): Ladder | undefined {
 
 	const accountItems = accounts.data?.items ?? [];
 	const policyItems = policies.data?.items ?? [];
-	return toLadder(data, {
-		scope: (a) => {
-			const row = accountItems.find((x) => x.metadata.id === a.id);
-			return `${ACCOUNT_KIND_LABELS[a.kind]} ${row ? displayLabel(row.metadata) : a.name}`;
+	return toLadder(
+		data,
+		{
+			scope: (a) => {
+				const row = accountItems.find((x) => x.metadata.id === a.id);
+				return `${ACCOUNT_KIND_LABELS[a.kind]} ${row ? displayLabel(row.metadata) : a.name}`;
+			},
+			policy: (p) => {
+				const row = policyItems.find((x) => x.metadata.id === p.id);
+				return row ? displayLabel(row.metadata) : p.name;
+			},
 		},
-		policy: (p) => {
-			const row = policyItems.find((x) => x.metadata.id === p.id);
-			return row ? displayLabel(row.metadata) : p.name;
-		},
-	});
+		binding !== undefined,
+	);
 }

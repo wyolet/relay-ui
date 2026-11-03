@@ -33,6 +33,7 @@ describe("toLadder", () => {
 			toLadder(
 				limits([rung(team, "tp"), rung(project, "pp"), rung(lane, "own")]),
 				names,
+				true,
 			),
 		).toEqual({
 			kind: "also",
@@ -59,6 +60,7 @@ describe("toLadder", () => {
 		const ladder = toLadder(
 			limits([rung(team, "tp"), rung(project, "pp"), rung(lane)]),
 			names,
+			false,
 		);
 		expect(ladder.kind).toBe("follows");
 		expect(ladder.kind === "follows" && ladder.text).toBe(
@@ -70,6 +72,7 @@ describe("toLadder", () => {
 		const ladder = toLadder(
 			limits([rung(team, "tp"), rung(project), rung(lane)]),
 			names,
+			false,
 		);
 		expect(ladder.kind === "follows" && ladder.text).toBe(
 			"No policy of its own; follows Team Platform's.",
@@ -79,7 +82,7 @@ describe("toLadder", () => {
 
 	it("says nothing limits an account with no policy on or above it", () => {
 		expect(
-			toLadder(limits([rung(team), rung(project), rung(lane)]), names),
+			toLadder(limits([rung(team), rung(project), rung(lane)]), names, false),
 		).toEqual({
 			kind: "unlimited",
 			text: "Nothing limits it: no policy on it or above it.",
@@ -87,8 +90,16 @@ describe("toLadder", () => {
 	});
 
 	it("adds nothing when only its own policy applies", () => {
-		expect(toLadder(limits([rung(team), rung(lane, "own")]), names)).toEqual({
+		expect(
+			toLadder(limits([rung(team), rung(lane, "own")]), names, true),
+		).toEqual({
 			kind: "own",
 		});
+	});
+
+	it("takes its own policy from the binding while the limits read lags", () => {
+		expect(
+			toLadder(limits([rung(team, "tp"), rung(lane)]), names, true).kind,
+		).toBe("also");
 	});
 });

@@ -103,13 +103,20 @@ export function duplicateAccountName(
 }
 
 /** A binding's policy choices: those its owner may use, plus the one it names so an edit keeps it. */
+export interface PolicyOption {
+	value: string;
+	label: string;
+	/** Host tier presets model a provider's limits; they list after the operator's own policies. */
+	tierPreset: boolean;
+}
+
 export function bindingPolicyOptions(
 	usable: readonly Policy[],
 	all: readonly Policy[],
 	selectedId: string,
-): { value: string; label: string }[] {
+): PolicyOption[] {
 	const usableIds = new Set(usable.map((p) => p.metadata.id));
-	return [
+	const options = [
 		...usable,
 		...all.filter(
 			(p) => !usableIds.has(p.metadata.id) && p.metadata.id === selectedId,
@@ -117,7 +124,12 @@ export function bindingPolicyOptions(
 	].map((p) => ({
 		value: p.metadata.id ?? "",
 		label: displayLabel(p.metadata),
+		tierPreset: p.metadata.owner?.kind === "host",
 	}));
+	return [
+		...options.filter((o) => !o.tierPreset),
+		...options.filter((o) => o.tierPreset),
+	];
 }
 
 export interface DuplicateAccount {

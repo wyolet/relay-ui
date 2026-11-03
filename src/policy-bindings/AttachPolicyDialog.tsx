@@ -12,11 +12,11 @@ import {
 import {
 	Select,
 	SelectContent,
-	SelectItem,
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
 import type { AttachEntity } from "@/policy-bindings/attachPolicy";
+import { PolicySelectItems } from "@/policy-bindings/PolicySelectItems";
 import { useAttachPolicyForm } from "@/policy-bindings/useAttachPolicyForm";
 
 const ERROR_ID = "attach-policy-error";
@@ -79,11 +79,7 @@ export function AttachPolicyDialog({
 							<SelectValue placeholder="Pick a policy" />
 						</SelectTrigger>
 						<SelectContent>
-							{options.map((o) => (
-								<SelectItem key={o.value} value={o.value}>
-									{o.label}
-								</SelectItem>
-							))}
+							<PolicySelectItems options={options} />
 						</SelectContent>
 					</Select>
 					{options.length === 0 && (

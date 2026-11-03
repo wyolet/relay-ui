@@ -36,9 +36,13 @@ function possessives(scopes: readonly string[]): string {
 }
 
 /** What governs the account from above, read from its limits rungs (outermost first, the account last). */
-export function toLadder(limits: AccountLimits, names: LadderNames): Ladder {
+export function toLadder(
+	limits: AccountLimits,
+	names: LadderNames,
+	/** From the account's binding: the limits read lags a just-saved binding. */
+	ownBound: boolean,
+): Ladder {
 	const rungs = limits.rungs ?? [];
-	const ownPolicy = rungs.find((r) => r.account.id === limits.lane.id)?.policy;
 	const steps = rungs.flatMap((r): LadderStep[] =>
 		r.account.id !== limits.lane.id && r.policy
 			? [
@@ -52,7 +56,7 @@ export function toLadder(limits: AccountLimits, names: LadderNames): Ladder {
 				]
 			: [],
 	);
-	if (ownPolicy)
+	if (ownBound)
 		return steps.length > 0 ? { kind: "also", steps } : { kind: "own" };
 	if (steps.length === 0) {
 		return {
