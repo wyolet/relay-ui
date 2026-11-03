@@ -1,4 +1,7 @@
 import { loadRuntimeConfig } from "@/api/runtimeConfig";
+// From the entry, so the build links it in <head>: the page paints styled before
+// the config fetch and the app chunk finish.
+import "./styles.css";
 
 // Surface the built version for debugging which relay-ui a pinned deploy is serving.
 const UI_VERSION = import.meta.env.VITE_UI_VERSION;
