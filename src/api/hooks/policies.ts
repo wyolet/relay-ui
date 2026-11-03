@@ -6,6 +6,7 @@ import {
 	useSuspenseQuery,
 } from "@tanstack/react-query";
 import { apiClient } from "@/api/client";
+import { keepAcrossScopes, usableList } from "@/api/hooks/usableList";
 import type { DetachedLinks } from "@/api/types/errors";
 import type {
 	Policy,
@@ -15,6 +16,7 @@ import type {
 } from "@/api/types/policy";
 import type { components, operations } from "@/api/types.gen";
 import { unwrap } from "@/api/unwrap";
+import type { UsableList } from "@/lib/workContext";
 
 /** Server-side filter/sort/page params accepted by GET /policies. */
 export type PoliciesListParams = NonNullable<
@@ -183,10 +185,19 @@ export function policiesListQuery(params: PoliciesListParams) {
 	});
 }
 
-/** The policies a binding owned by `usableBy` may link; empty while loading. */
-export function useUsablePolicies(usableBy: string | undefined): Policy[] {
-	const { data } = useQuery(policiesListQuery({ usable_by: usableBy }));
-	return data?.items ?? [];
+export function usablePoliciesQuery(usableBy: string | undefined) {
+	const list = policiesListQuery({ usable_by: usableBy });
+	return queryOptions({
+		...list,
+		placeholderData: keepAcrossScopes(list.queryKey),
+	});
+}
+
+/** The policies a binding owned by `usableBy` may link; the last scope's rows while a new scope loads. */
+export function useUsablePolicies(
+	usableBy: string | undefined,
+): UsableList<Policy> {
+	return usableList(useQuery(usablePoliciesQuery(usableBy)));
 }
 
 export function usePolicy(name: string) {

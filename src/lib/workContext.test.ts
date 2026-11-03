@@ -2,16 +2,23 @@ import { describe, expect, test } from "bun:test";
 import type { components } from "@/api/types.gen";
 import {
 	contextLabel,
+	contextName,
 	contextOwner,
-	contextPlacement,
 	contextRows,
+	contextSubtitle,
 	contextTeamId,
+	contextTitle,
 	contextUsableBy,
-	ownerPlacement,
+	notAvailableLabel,
+	ownerName,
 	ownerUsableBy,
 	resolveWorkContext,
 	SYSTEM_CONTEXT,
 	scopeOptions,
+	unavailablePicks,
+	unavailablePicksError,
+	unusablePicks,
+	updatingScope,
 	type WorkContext,
 	workContexts,
 } from "@/lib/workContext";
@@ -161,30 +168,130 @@ describe("placement", () => {
 	const contexts = workContexts(mine, false);
 
 	test("names the context a create lands in", () => {
-		expect(contextPlacement(personal)).toBe("In Personal");
-		expect(contextPlacement(SYSTEM_CONTEXT)).toBe("In System");
-		expect(contextPlacement(team)).toBe("In Team Platform");
-		expect(contextPlacement(project)).toBe("In Project Search");
+		expect(contextName(personal)).toBe("Personal");
+		expect(contextName(SYSTEM_CONTEXT)).toBe("System");
+		expect(contextName(team)).toBe("Team Platform");
+		expect(contextName(project)).toBe("Project Search");
 	});
 
 	test("names a row's owner from the caller's contexts", () => {
-		expect(ownerPlacement({ kind: "team", id: "t1" }, contexts, "u1")).toBe(
-			"In Team Platform",
+		expect(ownerName({ kind: "team", id: "t1" }, contexts, "u1")).toBe(
+			"Team Platform",
 		);
-		expect(ownerPlacement({ kind: "user", id: "u1" }, contexts, "u1")).toBe(
-			"In Personal",
+		expect(ownerName({ kind: "user", id: "u1" }, contexts, "u1")).toBe(
+			"Personal",
 		);
-		expect(ownerPlacement({ kind: "system" }, contexts, "u1")).toBe(
-			"In System",
-		);
+		expect(ownerName({ kind: "system" }, contexts, "u1")).toBe("System");
 	});
 
 	test("falls back to a short id outside the caller's contexts", () => {
 		expect(
-			ownerPlacement({ kind: "project", id: "0123456789" }, contexts, "u1"),
-		).toBe("In Project 01234567…");
-		expect(ownerPlacement({ kind: "user", id: "u2" }, contexts, "u1")).toBe(
-			"In user u2…",
+			ownerName({ kind: "project", id: "0123456789" }, contexts, "u1"),
+		).toBe("Project 01234567…");
+		expect(ownerName({ kind: "user", id: "u2" }, contexts, "u1")).toBe(
+			"user u2…",
+		);
+	});
+});
+
+describe("switcher trigger", () => {
+	const contexts = workContexts(mine, true);
+
+	test("personal shows whose it is; the rest by display name", () => {
+		expect(contextTitle(personal)).toBe("ana");
+		expect(contextTitle({ ...personal, displayName: "" })).toBe("Personal");
+		expect(contextTitle(team)).toBe("Platform");
+	});
+
+	test("a project's subtitle is its team, else the kind", () => {
+		expect(contextSubtitle(project, contexts)).toBe("Platform");
+		expect(contextSubtitle({ ...project, teamId: "t9" }, contexts)).toBe(
+			"Project",
+		);
+		expect(contextSubtitle(team, contexts)).toBe("Team");
+		expect(contextSubtitle(personal, contexts)).toBe("Personal");
+		expect(contextSubtitle(SYSTEM_CONTEXT, contexts)).toBe("Relay-wide");
+	});
+});
+
+describe("unusablePicks", () => {
+	test("returns the picks the rows lack, in pick order", () => {
+		const rows = [{ metadata: { id: "a" } }, { metadata: { id: "b" } }];
+		expect(unusablePicks(["y", "b", "x", "a"], rows)).toEqual(["y", "x"]);
+	});
+
+	test("an id-less row allows nothing", () => {
+		expect(unusablePicks(["a"], [{ metadata: {} }])).toEqual(["a"]);
+	});
+
+	test("everything is unusable when nothing is listed", () => {
+		expect(unusablePicks(["a"], [])).toEqual(["a"]);
+	});
+});
+
+describe("unavailablePicks", () => {
+	const rows = [{ metadata: { id: "a" } }];
+	const current = { items: rows, loaded: true, fromPreviousScope: false };
+	const create = { scope: "Team Platform", editable: true };
+
+	test("flags a create's picks its scope's list lacks", () => {
+		expect(unavailablePicks(["a", "b"], current, create)).toEqual({
+			ids: ["b"],
+			scope: "Team Platform",
+		});
+	});
+
+	test("flags nothing when every pick is usable", () => {
+		expect(unavailablePicks(["a"], current, create)).toBeUndefined();
+	});
+
+	test("waits for the current scope's rows", () => {
+		expect(
+			unavailablePicks(["b"], { ...current, fromPreviousScope: true }, create),
+		).toBeUndefined();
+		expect(
+			unavailablePicks(
+				["b"],
+				{ items: [], loaded: false, fromPreviousScope: false },
+				create,
+			),
+		).toBeUndefined();
+	});
+
+	test("never flags an edit's picks", () => {
+		expect(
+			unavailablePicks(["b"], current, { scope: "Personal", editable: false }),
+		).toBeUndefined();
+		expect(unavailablePicks(["b"], current, undefined)).toBeUndefined();
+	});
+});
+
+describe("updatingScope", () => {
+	const create = { scope: "Team Platform", editable: true };
+	const fresh = { fromPreviousScope: false };
+	const stale = { fromPreviousScope: true };
+
+	test("names the scope while any list shows the last scope's rows", () => {
+		expect(updatingScope(create, fresh, stale)).toBe("Team Platform");
+		expect(updatingScope(create, fresh, fresh)).toBeUndefined();
+		expect(updatingScope(undefined, stale)).toBeUndefined();
+	});
+});
+
+describe("unavailable pick copy", () => {
+	const flagged = { ids: ["b"], scope: "Team Platform" };
+
+	test("marks a pick with the scope", () => {
+		expect(notAvailableLabel("Team Platform")).toBe(
+			"Not available in Team Platform",
+		);
+	});
+
+	test("errors only once a save was tried", () => {
+		expect(unavailablePicksError(flagged, false)).toBeUndefined();
+		expect(unavailablePicksError(undefined, true)).toBeUndefined();
+		expect(unavailablePicksError(flagged, true)).toBe(
+			"Remove what Team Platform can't use, or switch the workspace back.",
 		);
 	});
 });

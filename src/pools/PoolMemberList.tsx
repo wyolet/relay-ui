@@ -1,7 +1,9 @@
 import { SharedByBadge } from "@/accounts/SharedByBadge";
+import type { UnavailablePicks } from "@/lib/workContext";
 import type { PoolMemberOption } from "@/pools/poolMembers";
 import { AddPopover } from "@/shared/AddPopover";
 import { RankControls } from "@/shared/RankControls";
+import { NotAvailableTag } from "@/shared/ScopeNotes";
 import { StatusInline } from "@/shared/StatusBadge";
 
 interface MemberEdits {
@@ -21,6 +23,8 @@ export function PoolMemberList({
 	availableKeys,
 	accountEdits,
 	keyEdits,
+	unavailableAccounts,
+	unavailableKeys,
 }: {
 	accounts: readonly PoolMemberOption[];
 	keys: readonly PoolMemberOption[];
@@ -28,6 +32,9 @@ export function PoolMemberList({
 	availableKeys: readonly PoolMemberOption[];
 	accountEdits: MemberEdits;
 	keyEdits: MemberEdits;
+	/** Chosen members the form's workspace can't use. */
+	unavailableAccounts?: UnavailablePicks;
+	unavailableKeys?: UnavailablePicks;
 }) {
 	const empty = accounts.length === 0 && keys.length === 0;
 	return (
@@ -40,7 +47,12 @@ export function PoolMemberList({
 			) : (
 				<ol className="divide-y divide-border rounded-md border border-border bg-card">
 					{accounts.map((m, i) => (
-						<MemberRow key={m.id} rank={i + 1} option={m}>
+						<MemberRow
+							key={m.id}
+							rank={i + 1}
+							option={m}
+							unavailable={unavailableAccounts}
+						>
 							<RankControls
 								label={m.label}
 								index={i}
@@ -51,7 +63,12 @@ export function PoolMemberList({
 						</MemberRow>
 					))}
 					{keys.map((m, i) => (
-						<MemberRow key={m.id} rank={accounts.length + i + 1} option={m}>
+						<MemberRow
+							key={m.id}
+							rank={accounts.length + i + 1}
+							option={m}
+							unavailable={unavailableKeys}
+						>
 							<RankControls
 								label={m.label}
 								index={i}
@@ -83,10 +100,12 @@ export function PoolMemberList({
 function MemberRow({
 	rank,
 	option,
+	unavailable,
 	children,
 }: {
 	rank: number;
 	option: PoolMemberOption;
+	unavailable: UnavailablePicks | undefined;
 	children: React.ReactNode;
 }) {
 	return (
@@ -95,6 +114,9 @@ function MemberRow({
 				{rank}
 			</span>
 			<MemberLabel option={option} />
+			{unavailable?.ids.includes(option.id) && (
+				<NotAvailableTag scope={unavailable.scope} />
+			)}
 			{children}
 		</li>
 	);

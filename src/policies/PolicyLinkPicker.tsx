@@ -4,9 +4,11 @@ import type { ReactNode } from "react";
 import { IconButton } from "@/components/ui/icon-button";
 import { HostLogo } from "@/hosts/HostLogo";
 import { moveItem } from "@/lib/moveItem";
+import type { UnavailablePicks } from "@/lib/workContext";
 import type { LinkChoice, LinkChoices } from "@/policies/usePolicyLinkChoices";
 import { AddPopover } from "@/shared/AddPopover";
 import { RankControls } from "@/shared/RankControls";
+import { NotAvailableTag } from "@/shared/ScopeNotes";
 
 interface Props {
 	choices: LinkChoices;
@@ -17,6 +19,8 @@ interface Props {
 	renderRowControl?: (choice: LinkChoice) => ReactNode;
 	addLabel: string;
 	emptyText: string;
+	/** Linked rows the form's workspace can't use. */
+	unavailable?: UnavailablePicks;
 }
 
 /** Linked rows of one kind (pools, budgets) plus an add popover. */
@@ -27,6 +31,7 @@ export function PolicyLinkPicker({
 	renderRowControl,
 	addLabel,
 	emptyText,
+	unavailable,
 }: Props) {
 	const ids = choices.selected.map((c) => c.id);
 	return (
@@ -41,6 +46,9 @@ export function PolicyLinkPicker({
 							choice={c}
 							rank={ordered ? i + 1 : undefined}
 						>
+							{unavailable?.ids.includes(c.id) && (
+								<NotAvailableTag scope={unavailable.scope} />
+							)}
 							{renderRowControl?.(c)}
 							{ordered ? (
 								<RankControls

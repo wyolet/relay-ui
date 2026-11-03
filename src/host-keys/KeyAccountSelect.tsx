@@ -18,6 +18,7 @@ import type {
 } from "@/host-keys/hostKeyAccount";
 import { HostLogo, type HostLogoLike } from "@/hosts/HostLogo";
 import { middleTruncate } from "@/lib/middleTruncate";
+import { UnavailablePick } from "@/shared/ScopeNotes";
 
 const NEW_ACCOUNT_LABEL = "New account…";
 
@@ -36,6 +37,10 @@ export function KeyAccountSelect({
 	onNewAccount,
 	error,
 	locked,
+	loading,
+	pickedLabel,
+	unavailableIn,
+	onClear,
 }: {
 	groups: readonly KeyAccountGroup[];
 	value: string;
@@ -44,8 +49,16 @@ export function KeyAccountSelect({
 	error?: string;
 	/** Fixed by the page that opened the form; "New account…" isn't offered. */
 	locked: boolean;
+	/** This workspace's accounts haven't arrived yet. */
+	loading: boolean;
+	/** Names the pick while `groups` doesn't list it. */
+	pickedLabel?: string;
+	/** The workspace that can't use the pick; it's marked with a remove. */
+	unavailableIn?: string;
+	onClear: () => void;
 }) {
 	const errorId = useId();
+	const empty = groups.length === 0 && !locked && !loading && !value;
 	const items = [
 		...groups.flatMap((g) =>
 			g.accounts.map((a) => ({ value: a.value, label: a.label })),
@@ -63,7 +76,7 @@ export function KeyAccountSelect({
 				<Building2 className="w-3 h-3" />
 				Account
 			</div>
-			{groups.length === 0 && !locked ? (
+			{empty ? (
 				<div className="flex max-w-md items-center justify-between gap-3 rounded-md border border-dashed border-border px-3 py-2.5">
 					<span className="text-xs text-muted-foreground">
 						No provider accounts yet.
@@ -88,7 +101,7 @@ export function KeyAccountSelect({
 						if (v === NEW_ACCOUNT_ITEM) onNewAccount();
 						else if (v) onChange(v);
 					}}
-					disabled={locked}
+					disabled={locked || loading}
 				>
 					<SelectTrigger
 						className="w-full max-w-md"
@@ -96,7 +109,9 @@ export function KeyAccountSelect({
 						aria-invalid={error ? true : undefined}
 						aria-describedby={error ? errorId : undefined}
 					>
-						<SelectValue placeholder="Pick an account…">
+						<SelectValue
+							placeholder={loading ? "Loading accounts…" : "Pick an account…"}
+						>
 							{selected && selectedGroup ? (
 								<>
 									<HostLogo host={groupLogo(selectedGroup)} size={16} />
@@ -105,6 +120,8 @@ export function KeyAccountSelect({
 										{selectedGroup.hostLabel}
 									</span>
 								</>
+							) : pickedLabel ? (
+								<span className="truncate">{pickedLabel}</span>
 							) : undefined}
 						</SelectValue>
 					</SelectTrigger>
@@ -133,6 +150,9 @@ export function KeyAccountSelect({
 						)}
 					</SelectContent>
 				</Select>
+			)}
+			{unavailableIn && (
+				<UnavailablePick scope={unavailableIn} onRemove={onClear} />
 			)}
 			{error && (
 				<p id={errorId} className="mt-1.5 text-[11px] text-destructive">

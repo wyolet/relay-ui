@@ -7,7 +7,6 @@ import {
 import { ToastContainer } from "@/shared/Toast";
 import { useSidebarStore } from "@/stores/sidebar";
 import { AccountMenu } from "./AccountMenu";
-import { ContextSwitcher } from "./ContextSwitcher";
 import { NoLaneBanner } from "./NoLaneBanner";
 import { Sidebar } from "./Sidebar";
 
@@ -25,10 +24,7 @@ export function Layout() {
 			<SidebarInset className="min-w-0 overflow-hidden">
 				<header className="flex h-12 shrink-0 items-center justify-between border-b border-border bg-background/60 px-2 backdrop-blur-sm">
 					<SidebarTrigger />
-					<div className="flex items-center gap-1">
-						<ContextSwitcher />
-						<AccountMenu />
-					</div>
+					<AccountMenu />
 				</header>
 				<main className="min-h-0 flex-1 overflow-auto">
 					<div className="mx-auto max-w-[90rem] px-6 pt-5 pb-40">

@@ -36,6 +36,8 @@ const buttonClasses = cva(
         "icon-xs": "size-5 rounded-sm [&_svg:not([class*='size-'])]:size-2.5",
         "icon-sm": "size-6 [&_svg:not([class*='size-'])]:size-3",
         "icon-lg": "size-8 [&_svg:not([class*='size-'])]:size-4",
+        // A link-styled action inside a line of 11px helper text.
+        inline: "h-auto border-0 p-0 text-[11px] font-normal",
       },
     },
     defaultVariants: {

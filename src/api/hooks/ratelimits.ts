@@ -6,6 +6,7 @@ import {
 	useSuspenseQuery,
 } from "@tanstack/react-query";
 import { apiClient } from "@/api/client";
+import { keepAcrossScopes, usableList } from "@/api/hooks/usableList";
 import type { DetachedLinks } from "@/api/types/errors";
 import type {
 	RateLimit,
@@ -16,6 +17,7 @@ import type {
 import type { operations } from "@/api/types.gen";
 import { unwrap } from "@/api/unwrap";
 import { isSystemOwned } from "@/lib/systemRateLimits";
+import type { UsableList } from "@/lib/workContext";
 
 /** Server-side filter/sort/page params accepted by GET /rate-limits. */
 export type RateLimitsListParams = NonNullable<
@@ -99,10 +101,19 @@ export function useAttachableRateLimits(): RateLimit[] {
 	return (data.items ?? []).filter((rl) => !isSystemOwned(rl));
 }
 
-/** The rate limits a policy owned by `usableBy` may link; empty while loading. */
-export function useUsableRateLimits(usableBy: string | undefined): RateLimit[] {
-	const { data } = useQuery(rateLimitsListQuery({ usable_by: usableBy }));
-	return data?.items ?? [];
+export function usableRateLimitsQuery(usableBy: string | undefined) {
+	const list = rateLimitsListQuery({ usable_by: usableBy });
+	return queryOptions({
+		...list,
+		placeholderData: keepAcrossScopes(list.queryKey),
+	});
+}
+
+/** The rate limits a policy owned by `usableBy` may link; the last scope's rows while a new scope loads. */
+export function useUsableRateLimits(
+	usableBy: string | undefined,
+): UsableList<RateLimit> {
+	return usableList(useQuery(usableRateLimitsQuery(usableBy)));
 }
 
 export function useRateLimit(name: string) {

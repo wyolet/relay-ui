@@ -7,6 +7,7 @@ import { usePoolForm } from "@/pools/usePoolForm";
 import { FormFooter } from "@/shared/FormFooter";
 import { FormSection } from "@/shared/FormSection";
 import { IdentitySection } from "@/shared/IdentitySection";
+import { ScopedPicker } from "@/shared/ScopeNotes";
 import { Segmented } from "@/shared/Segmented";
 
 const SELECTION_OPTIONS = POOL_SELECTIONS.map((s) => ({
@@ -28,6 +29,10 @@ export function PoolForm({ pool, onSaved, onCancel }: PoolFormProps) {
 		isEdit,
 		slugPreview,
 		placement,
+		updatingFor,
+		unavailableAccounts,
+		unavailableKeys,
+		membersError,
 		hostOptions,
 		chosenAccounts,
 		availableAccounts,
@@ -81,14 +86,18 @@ export function PoolForm({ pool, onSaved, onCancel }: PoolFormProps) {
 							}
 						/>
 						{values.hostId && (
-							<PoolMemberList
-								accounts={chosenAccounts}
-								keys={chosenKeys}
-								availableAccounts={availableAccounts}
-								availableKeys={availableKeys}
-								accountEdits={accountEdits}
-								keyEdits={keyEdits}
-							/>
+							<ScopedPicker updatingFor={updatingFor} error={membersError}>
+								<PoolMemberList
+									accounts={chosenAccounts}
+									keys={chosenKeys}
+									availableAccounts={availableAccounts}
+									availableKeys={availableKeys}
+									accountEdits={accountEdits}
+									keyEdits={keyEdits}
+									unavailableAccounts={unavailableAccounts}
+									unavailableKeys={unavailableKeys}
+								/>
+							</ScopedPicker>
 						)}
 					</div>
 				</FormSection>
