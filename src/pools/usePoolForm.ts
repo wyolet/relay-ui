@@ -201,6 +201,12 @@ export function usePoolForm({ pool, onSaved }: UsePoolFormOptions) {
 		});
 	}
 	const keyCounts = keyCountByAccount(hostKeysData.items ?? []);
+	const keyAccountById = new Map<string, string | undefined>(
+		(hostKeysData.items ?? []).map((hk) => [
+			hk.metadata.id ?? "",
+			hk.spec.accountId,
+		]),
+	);
 	const withKeyCount = (o: PoolMemberOption): PoolMemberOption => ({
 		...o,
 		meta: accountMeta(keyCounts.get(o.id)),
@@ -244,6 +250,16 @@ export function usePoolForm({ pool, onSaved }: UsePoolFormOptions) {
 		};
 	}
 
+	const accountEdits = memberEdits("accountIds");
+	// An account brings all its keys, so the single entries it covers drop out.
+	function addAccount(accountId: string) {
+		accountEdits.add(accountId);
+		form.setFieldValue(
+			"credentialIds",
+			values.credentialIds.filter((id) => keyAccountById.get(id) !== accountId),
+		);
+	}
+
 	return {
 		form,
 		values,
@@ -265,7 +281,7 @@ export function usePoolForm({ pool, onSaved }: UsePoolFormOptions) {
 		availableKeys,
 		setHost,
 		setSelection,
-		accountEdits: memberEdits("accountIds"),
+		accountEdits: { ...accountEdits, add: addAccount },
 		keyEdits: memberEdits("credentialIds"),
 	};
 }
