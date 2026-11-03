@@ -3,7 +3,7 @@ import { Building2, KeyRound, Plus } from "lucide-react";
 import { AccountHolderLink } from "@/accounts/AccountHolderLink";
 import { ACCOUNT_SUMMARY } from "@/accounts/accountCopy";
 import { ACCOUNT_KIND_LABELS } from "@/accounts/accountView";
-import { DefaultAccountBadge } from "@/accounts/DefaultAccountBadge";
+import { GroupedByRelayBadge } from "@/accounts/GroupedByRelayBadge";
 import { SharedByBadge } from "@/accounts/SharedByBadge";
 import { ACCOUNT_FILTERS, useAccountRows } from "@/accounts/useAccountRows";
 import { useDeleteAccount } from "@/api/hooks/accounts";
@@ -121,7 +121,9 @@ export function AccountsTable() {
 												>
 													<div className="flex items-center gap-2 text-sm font-medium text-foreground">
 														<span>{displayLabel(account.metadata)}</span>
-														{account.spec.default && <DefaultAccountBadge />}
+														{account.spec.groupedByRelay && (
+															<GroupedByRelayBadge />
+														)}
 														{sharedBy !== undefined && (
 															<SharedByBadge name={sharedBy} />
 														)}

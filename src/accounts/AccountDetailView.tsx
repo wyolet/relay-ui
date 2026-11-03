@@ -4,8 +4,8 @@ import type { ReactNode } from "react";
 import { AccountHolderLink } from "@/accounts/AccountHolderLink";
 import { PAYLOAD_LOGGING_RULE } from "@/accounts/accountCopy";
 import { ACCOUNT_KIND_LABELS } from "@/accounts/accountView";
-import { DefaultAccountBadge } from "@/accounts/DefaultAccountBadge";
 import { EffectiveLimits } from "@/accounts/EffectiveLimits";
+import { GroupedByRelayBadge } from "@/accounts/GroupedByRelayBadge";
 import {
 	PAYLOAD_LOGGING_LABELS,
 	toPayloadLoggingChoice,
@@ -53,7 +53,7 @@ export function AccountDetailView({
 			void navigate({ to: "/keys", search: { tab: "accounts" } }),
 	});
 	const { spec, metadata } = account;
-	const isDefault = spec.default === true;
+	const groupedByRelay = spec.groupedByRelay === true;
 	const closed = spec.closed === true;
 
 	return (
@@ -72,7 +72,7 @@ export function AccountDetailView({
 				metadata={metadata}
 				badges={
 					<>
-						{isDefault && <DefaultAccountBadge />}
+						{groupedByRelay && <GroupedByRelayBadge />}
 						{sharedBy !== undefined && <SharedByBadge name={sharedBy} />}
 						{closed && <StatusBadge enabled={false} disabledLabel="Closed" />}
 					</>
@@ -179,12 +179,9 @@ export function AccountDetailView({
 								) : (
 									<span className="text-muted-foreground">Not known yet</span>
 								)}
-							</DetailRow>
-							<DetailRow label="Default">
-								{isDefault ? "Yes" : "No"}
 								<p className={hintClass}>
-									{isDefault
-										? "Keys of this owner at this host join it when they name no account. A provider 429 cools only the key that got it."
+									{groupedByRelay
+										? "Not confirmed: Relay grouped these keys by owner and host, so a provider 429 cools only the key that got it. Set the organization id to confirm the account."
 										: "A provider 429 on one key cools every key in this account for the requested model."}
 								</p>
 							</DetailRow>

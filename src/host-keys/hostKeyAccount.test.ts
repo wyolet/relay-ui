@@ -20,7 +20,7 @@ const account = (
 
 const system = { kind: "system" } as const;
 const accounts = [
-	account("a-default", "h1", system, { default: true }),
+	account("a-grouped", "h1", system, { groupedByRelay: true }),
 	account("a-org", "h1", system, { orgId: "org-1" }),
 	account("a-other-host", "h2", system),
 	account("a-team", "h1", { kind: "team", id: "t1" }),
@@ -49,9 +49,9 @@ describe("keyAccountGroups", () => {
 			groups.map((g) => [g.hostLabel, g.accounts.map((a) => a.value)]),
 		).toEqual([
 			["Anthropic", ["a-other-host"]],
-			["OpenAI", ["a-default", "a-org"]],
+			["OpenAI", ["a-grouped", "a-org"]],
 		]);
-		expect(groups[1].accounts[0].isDefault).toBe(true);
+		expect(groups[1].accounts[0].groupedByRelay).toBe(true);
 		expect(groups[1].accounts[1].orgId).toBe("org-1");
 	});
 });
@@ -72,7 +72,7 @@ describe("detectionVerdict", () => {
 			detectionVerdict(
 				{
 					orgId: "org-1",
-					currentAccountId: "a-default",
+					currentAccountId: "a-grouped",
 					matchingAccountId: "a-org",
 				},
 				accounts,

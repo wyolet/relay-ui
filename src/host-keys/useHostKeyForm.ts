@@ -113,7 +113,6 @@ function buildSchema(isEdit: boolean) {
 					message: "Environment variable name is required.",
 				});
 			}
-			if (isEdit) return;
 			if (v.accountId === "") {
 				ctx.addIssue({
 					code: z.ZodIssueCode.custom,
@@ -121,6 +120,7 @@ function buildSchema(isEdit: boolean) {
 					message: "Pick the account this key belongs to, or make a new one.",
 				});
 			}
+			if (isEdit) return;
 			// Secret rotation is gated behind the dedicated Rotate dialog on the
 			// detail page, so the edit form never collects a value.
 			if (v.kind === "stored" && !v.value.trim()) {
