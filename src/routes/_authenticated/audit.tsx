@@ -17,6 +17,7 @@ import {
 	STATUS_VALUES,
 } from "@/audit/auditFilterConfig";
 import { awaitOnEnter } from "@/lib/awaitOnEnter";
+import { SettingsPageHeader } from "@/shared/SettingsPage";
 import { PageLoader } from "@/shared/Spinner";
 import { StaleContent } from "@/shared/StaleContent";
 import { useDeferredSearch } from "@/shared/useDeferredSearch";
@@ -106,14 +107,11 @@ function AuditPage() {
 
 	return (
 		<div className="flex flex-col gap-4">
-			<div>
-				<h1 className="text-xl font-semibold text-foreground">Audit</h1>
-				<p className="text-xs text-muted-foreground">
-					Who changed what on the control plane, newest first — every mutation,
-					every denial, every login. A change lists the fields it touched;
-					values are never recorded.
-				</p>
-			</div>
+			<SettingsPageHeader title="Audit log">
+				Who changed what on the control plane, newest first — every mutation,
+				every denial, every login. A change lists the fields it touched; values
+				are never recorded.
+			</SettingsPageHeader>
 
 			<AuditFilters
 				values={{

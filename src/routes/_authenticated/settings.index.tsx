@@ -3,6 +3,7 @@ import {
 	BadgeCheck,
 	Forward,
 	Gauge,
+	History,
 	KeyRound,
 	LogIn,
 	type LucideIcon,
@@ -11,6 +12,7 @@ import {
 	ShieldCheck,
 	UserRound,
 } from "lucide-react";
+import { type Capability, useCapabilities } from "@/api/hooks/capabilities";
 
 export const Route = createFileRoute("/_authenticated/settings/")({
 	component: SettingsPage,
@@ -26,10 +28,13 @@ interface SettingItem {
 		| "/settings/sso"
 		| "/settings/scim"
 		| "/settings/tokens"
-		| "/settings/license";
+		| "/settings/license"
+		| "/audit";
 	label: string;
 	description: string;
 	icon: LucideIcon;
+	/** Shown only to callers who may list it. */
+	capability?: Capability;
 }
 
 const ITEMS: SettingItem[] = [
@@ -90,6 +95,14 @@ const ITEMS: SettingItem[] = [
 		icon: BadgeCheck,
 	},
 	{
+		to: "/audit",
+		label: "Audit log",
+		description:
+			"Who changed what and when: every write to Relay's configuration, with its actor and fields.",
+		icon: History,
+		capability: "audit",
+	},
+	{
 		to: "/settings/permissions",
 		label: "Edit permissions",
 		description:
@@ -99,6 +112,10 @@ const ITEMS: SettingItem[] = [
 ];
 
 function SettingsPage() {
+	const capabilities = useCapabilities();
+	const items = ITEMS.filter(
+		(item) => !item.capability || capabilities[item.capability],
+	);
 	return (
 		<div>
 			<h1 className="text-2xl font-bold text-foreground mb-2">Settings</h1>
@@ -106,7 +123,7 @@ function SettingsPage() {
 				Relay-wide behavior — proxy mode, rate limits, and other operator knobs.
 			</p>
 			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-				{ITEMS.map((item) => {
+				{items.map((item) => {
 					const Icon = item.icon;
 					return (
 						<Link
