@@ -9,7 +9,7 @@ import {
 	canShareAccount,
 	parseReceiverKind,
 	type ShareCaller,
-	shareConflictMessage,
+	shareReceiverError,
 	shareUsageText,
 } from "@/accounts/sharing";
 import type { Account } from "@/api/hooks/accounts";
@@ -136,18 +136,28 @@ describe("shareUsageText", () => {
 	});
 });
 
-describe("shareConflictMessage", () => {
+describe("shareReceiverError", () => {
 	test("share_exists and reshare_refused carry the server's message", () => {
 		const err = new ApiError(409, {
 			type: "invalid_request_error",
 			code: "share_exists",
 			message: "already shared with team platform",
 		});
-		expect(shareConflictMessage(err)).toBe("already shared with team platform");
+		expect(shareReceiverError(err)).toBe("already shared with team platform");
+	});
+	test("a receiver whose personal accounts are off points at their team or project", () => {
+		const err = new ApiError(403, {
+			type: "permission_error",
+			code: "personal_account_off",
+			message: "personal accounts are off for user u2",
+		});
+		expect(shareReceiverError(err)).toBe(
+			"Personal accounts are off for this user; share with their team or project instead.",
+		);
 	});
 	test("other errors are left to the caller", () => {
 		expect(
-			shareConflictMessage(
+			shareReceiverError(
 				new ApiError(409, {
 					type: "invalid_request_error",
 					code: "resource_in_use",
@@ -155,7 +165,7 @@ describe("shareConflictMessage", () => {
 				}),
 			),
 		).toBeUndefined();
-		expect(shareConflictMessage(new Error("x"))).toBeUndefined();
+		expect(shareReceiverError(new Error("x"))).toBeUndefined();
 	});
 });
 

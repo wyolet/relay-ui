@@ -30,6 +30,7 @@ export function NewAccountDialog({
 		isSubmitting,
 		slugPreview,
 		placement,
+		placementError,
 		hostOptions,
 	} = useAccountForm({
 		presetHostId,
@@ -66,6 +67,7 @@ export function NewAccountDialog({
 						autoFocus
 						placeholder="OpenAI build org"
 						placement={placement}
+						placementError={placementError}
 					/>
 					<ProviderAccountFields
 						hostId={values.hostId}

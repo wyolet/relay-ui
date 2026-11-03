@@ -1,4 +1,5 @@
 import { Building2, CalendarClock, ToggleLeft, UserRound } from "lucide-react";
+import { useId } from "react";
 import { useAuth } from "@/api/auth";
 import { useProjects } from "@/api/hooks/projects";
 import { useServiceAccountsInProject } from "@/api/hooks/serviceAccounts";
@@ -41,9 +42,12 @@ export function KeyForm({
 		descriptionError,
 		principalIdError,
 		choosePrincipal,
+		chooseLane,
 		laneOptions,
 		laneValue,
+		laneError,
 	} = useKeyForm({ open: true, apiKey, onSaved, onCreated });
+	const laneErrorId = useId();
 
 	const { userId } = useAuth();
 	const { data: projectsData } = useProjects();
@@ -182,9 +186,14 @@ export function KeyForm({
 						value={laneValue}
 						items={laneOptions}
 						disabled={laneOptions.length === 0}
-						onValueChange={(v) => form.setFieldValue("accountId", v ?? "")}
+						onValueChange={(v) => chooseLane(v ?? "")}
 					>
-						<SelectTrigger className="w-full max-w-md" aria-label="Account">
+						<SelectTrigger
+							className="w-full max-w-md"
+							aria-label="Account"
+							aria-invalid={laneError ? true : undefined}
+							aria-describedby={laneError ? laneErrorId : undefined}
+						>
 							<SelectValue
 								placeholder={
 									values.principalId
@@ -201,6 +210,11 @@ export function KeyForm({
 							))}
 						</SelectContent>
 					</Select>
+					{laneError && (
+						<p id={laneErrorId} className="mt-1.5 text-[11px] text-destructive">
+							{laneError}
+						</p>
+					)}
 				</FormSection>
 
 				<FormSection

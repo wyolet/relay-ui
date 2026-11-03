@@ -16,6 +16,8 @@ interface IdentitySectionProps {
 	placeholder?: string;
 	/** Where the row sits, e.g. "In Team Platform"; read-only. */
 	placement?: string;
+	/** Why the server refused the row's owner. */
+	placementError?: string;
 }
 
 export function IdentitySection(props: IdentitySectionProps) {
@@ -42,6 +44,7 @@ export function IdentityFields({
 	autoFocus,
 	placeholder = "My rate limit",
 	placement,
+	placementError,
 }: IdentitySectionProps) {
 	return (
 		<div className="flex flex-col gap-3">
@@ -66,6 +69,11 @@ export function IdentityFields({
 					</code>
 					{placement && <span> · {placement}</span>}
 				</p>
+				{placementError && (
+					<p className="mt-1.5 text-[11px] text-destructive">
+						{placementError}
+					</p>
+				)}
 			</div>
 			<div>
 				<Textarea

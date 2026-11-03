@@ -43,6 +43,7 @@ export function AccountForm({ account, onSaved, onCancel }: AccountFormProps) {
 		holder,
 		slugPreview,
 		placement,
+		placementError,
 		hostOptions,
 	} = useAccountForm({
 		account,
@@ -70,6 +71,7 @@ export function AccountForm({ account, onSaved, onCancel }: AccountFormProps) {
 					autoFocus={!isEdit}
 					placeholder="OpenAI build org"
 					placement={placement}
+					placementError={placementError}
 				/>
 
 				{isProvider ? (

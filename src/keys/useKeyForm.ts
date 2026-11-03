@@ -11,6 +11,7 @@ import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
 import { shownError, zodFieldValidator } from "@/lib/formErrors";
+import { keyLaneError } from "@/lib/personalAccount";
 import { randomSuffix, slugify } from "@/lib/slug";
 import { defaultLane, laneAccounts } from "@/policy-bindings/accountLookup";
 import { toast } from "@/shared/Toast";
@@ -201,6 +202,8 @@ export function useKeyForm({
 					onSaved(created.metadata.name);
 				}
 			} catch (err) {
+				// A refused lane renders by the account field.
+				if (keyLaneError(err)) return;
 				toastSaveError(
 					err,
 					isEdit ? "Failed to update key." : "Failed to create key.",
@@ -243,11 +246,17 @@ export function useKeyForm({
 		values.accountId ||
 		(defaultLane(accountsData?.items ?? [], holder)?.metadata.id ?? "");
 
+	function chooseLane(accountId: string) {
+		createKey.reset();
+		updateKey.reset();
+		form.setFieldValue("accountId", accountId);
+	}
+
 	/** A new principal holds other accounts, so its lane starts on the default. */
 	function choosePrincipal(kind: PrincipalKind, id: string) {
 		form.setFieldValue("principalKind", kind);
 		form.setFieldValue("principalId", id);
-		form.setFieldValue("accountId", "");
+		chooseLane("");
 	}
 
 	const slugPreview = isEdit
@@ -272,8 +281,10 @@ export function useKeyForm({
 		descriptionError,
 		principalIdError,
 		choosePrincipal,
+		chooseLane,
 		laneOptions,
 		laneValue,
+		laneError: keyLaneError(createKey.error ?? updateKey.error),
 		freshSecret,
 	};
 }
