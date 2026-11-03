@@ -1,6 +1,6 @@
 import { Building2, Plus } from "lucide-react";
 import { useId } from "react";
-import { DefaultAccountBadge } from "@/accounts/DefaultAccountBadge";
+import { GroupedByRelayBadge } from "@/accounts/GroupedByRelayBadge";
 import { Button } from "@/components/ui/button";
 import {
 	Select,
@@ -160,7 +160,7 @@ function AccountItemLabel({ option }: { option: KeyAccountOption }) {
 					{middleTruncate(option.orgId)}
 				</span>
 			)}
-			{option.isDefault && <DefaultAccountBadge />}
+			{option.groupedByRelay && <GroupedByRelayBadge />}
 		</>
 	);
 }

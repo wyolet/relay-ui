@@ -187,7 +187,7 @@ export interface paths {
         put?: never;
         /**
          * Share a provider account with a user, team, project or service account
-         * @description Creates an account owned by the receiver (a service account's by its project, held by it so only its lane draws on it) that reaches the real account's keys: current ones, keys added later, and their rotations. The shared account holds no keys and never shows a secret; its requests count on the real account's tier, and a policy bound to it only narrows them. It changes no routing by itself: the receiving scope uses it by listing it in one of its pools. Only the real account's owner shares it: its user alone for a personal account (no admin), an admin of its team, project or the system otherwise (403). A receiver that does not exist, or that the caller may not see, answers 404. One share per receiver: a second answers 409 share_exists. A shared account is not shared on: 409 reshare_refused. A receiver that already reaches the account through ownership (a project of the team that owns it, any scope for a system account) answers 409 already_reachable.
+         * @description Creates an account owned by the receiver (a service account's by its project, held by it so only its lane draws on it) that reaches the real account's keys: current ones, keys added later, and their rotations. The shared account holds no keys and never shows a secret; its requests count on the real account's tier, and a policy bound to it only narrows them. It changes no routing by itself: the receiving scope uses it by listing it in one of its pools. Only the real account's owner shares it: its user alone for a personal account (no admin), an admin of its team, project or the system otherwise (403). A receiver that does not exist, or that the caller may not see, answers 404. One share per receiver: a second answers 409 share_exists. A shared account is not shared on: 409 reshare_refused. A receiver that already reaches the account through ownership (a project of the team that owns it, any scope for a system account) answers 409 already_reachable. A user whose personal accounts are turned off answers 403 personal_account_off: share with their team or project instead.
          */
         post: operations["share_account"];
         delete?: never;
@@ -385,7 +385,7 @@ export interface paths {
         };
         /**
          * Return the authenticated caller, if any
-         * @description Returns the caller behind the session cookie or bearer token, with the subjects and scopes its role bindings apply under. 401 when not signed in.
+         * @description Returns the caller behind the session cookie or bearer token, with the subjects and scopes its role bindings apply under, and whether the caller's personal account serves (personalAccountEffective). 401 when not signed in.
          */
         get: operations["auth_whoami"];
         put?: never;
@@ -1397,7 +1397,7 @@ export interface paths {
         };
         /**
          * List the scopes the caller may create rows in
-         * @description The contexts the caller may act in: their personal scope first, then each team, then each project, each list by slug, where the caller may create at least one policy, pool, account, host key, budget, rate limit, policy binding, key, service account or role binding. Grants through groups and through a team-level role count, so a team admin is listed with the team's projects. The admin token is no user: it gets every team and project with admin true and no personal scope. Read from the in-memory catalog, so a write shows within about a second.
+         * @description The contexts the caller may act in: their personal scope first (left out while their personal account is turned off), then each team, then each project, each list by slug, where the caller may create at least one policy, pool, account, host key, budget, rate limit, policy binding, key, service account or role binding. Grants through groups and through a team-level role count, so a team admin is listed with the team's projects. The admin token is no user: it gets every team and project with admin true and no personal scope. Read from the in-memory catalog, so a write shows within about a second.
          */
         get: operations["list_my_contexts"];
         put?: never;
@@ -2888,6 +2888,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/settings/accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get settings section: accounts
+         * @description Accounts relay keeps for users. personalAccounts (on by default) turns every user's personal account on or off: off closes personal accounts and the provider accounts users own personally, so users act only through their teams, projects and service accounts; nothing is deleted and turning it back on restores them. A user's own personalAccount wins, then their enabled groups' (off wins over on), then this. Admin only.
+         */
+        get: operations["get_settings_accounts"];
+        /**
+         * Update settings section: accounts
+         * @description Accounts relay keeps for users. personalAccounts (on by default) turns every user's personal account on or off: off closes personal accounts and the provider accounts users own personally, so users act only through their teams, projects and service accounts; nothing is deleted and turning it back on restores them. A user's own personalAccount wins, then their enabled groups' (off wins over on), then this. Admin only.
+         */
+        put: operations["update_settings_accounts"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/settings/audit": {
         parameters: {
             query?: never;
@@ -3465,7 +3489,7 @@ export interface paths {
         };
         /**
          * List user accounts
-         * @description Identity rows only: id, username, email, roles, disabled. Never returns password hashes or identity-provider subjects.
+         * @description Identity rows only: id, username, email, roles, disabled, and the personal-account switch (personalAccount, the user's own value, and personalAccountEffective, what applies and why). Never returns password hashes or identity-provider subjects.
          */
         get: operations["list_users"];
         put?: never;
@@ -3486,7 +3510,7 @@ export interface paths {
         get?: never;
         /**
          * Update a user account
-         * @description Edits `disabled` and `roles`. Disabling bumps the user's token version, so tokens already minted stop verifying.
+         * @description Edits `disabled`, `roles` and `personalAccount`. Disabling bumps the user's token version, so tokens already minted stop verifying. Changing roles or personalAccount takes an admin. personalAccountEffective in the answer is read from the plans and may lag the write by about a second.
          */
         put: operations["update_user"];
         post?: never;
@@ -3687,8 +3711,8 @@ export interface components {
         AccountSpec: {
             /** @description The membership this member account stood for has ended: its keys are refused with account_closed. Reopened when a role grants the membership again. Server-managed. */
             readonly closed?: boolean;
-            /** @description The provider account a host key of the same owner at this host joins when it names none. Created on first use; an owner has at most one per host, and a second answers 409. */
-            default?: boolean;
+            /** @description Relay grouped this account's keys by owner and host when it was upgraded; they are not confirmed to be one provider organization, so an upstream 429 cools only the key that met it. Cleared once orgId is set. New accounts never carry it. Server-managed. */
+            readonly groupedByRelay?: boolean;
             /** @description The user or service account acting in the account. Set on personal, member and service accounts; empty on team, project and provider accounts. Server-managed. */
             readonly holder?: components["schemas"]["AccountHolder"];
             /** @description Id of the host a provider account is held at. Set on provider accounts only. */
@@ -3719,6 +3743,34 @@ export interface components {
             id: string;
             /** @description Account slug. */
             name: string;
+        };
+        Accounts: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Accounts.json
+             */
+            readonly $schema?: string;
+            /**
+             * @description Personal accounts for every user: on (the default) or off. Off closes every personal account and the provider accounts users own personally, so users act only through their teams, projects and service accounts; nothing is deleted. A user's own value, then their groups' (off wins), override it.
+             * @enum {string}
+             */
+            personalAccounts: "on" | "off";
+        };
+        AccountsEnvelope: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/AccountsEnvelope.json
+             */
+            readonly $schema?: string;
+            /**
+             * @description One of the relay's registered settings section keys.
+             * @enum {string}
+             */
+            section: "accounts" | "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            /** @description The section's current value. */
+            value: components["schemas"]["Accounts"];
         };
         Audit: {
             /**
@@ -3763,7 +3815,7 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            section: "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            section: "accounts" | "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
             /** @description The section's current value. */
             value: components["schemas"]["Audit"];
         };
@@ -3864,7 +3916,7 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            section: "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            section: "accounts" | "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
             /** @description The section's current value. */
             value: components["schemas"]["AuthOIDC"];
         };
@@ -3896,7 +3948,7 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            section: "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            section: "accounts" | "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
             /** @description The section's current value. */
             value: components["schemas"]["AuthSCIM"];
         };
@@ -3940,7 +3992,7 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            section: "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            section: "accounts" | "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
             /** @description The section's current value. */
             value: components["schemas"]["AuthTokens"];
         };
@@ -4069,7 +4121,7 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            section: "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            section: "accounts" | "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
             /** @description The section's current value. */
             value: components["schemas"]["CatalogSource"];
         };
@@ -4419,7 +4471,7 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            section: "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            section: "accounts" | "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
             /** @description The section's current value. */
             value: components["schemas"]["Governance"];
         };
@@ -4463,6 +4515,11 @@ export interface components {
             enabled?: boolean;
             /** @description Ids of the member users. */
             memberIds?: string[] | null;
+            /**
+             * @description Turns its members' personal accounts on or off. A member's own value wins over it; between groups, off wins. Omitted leaves it to the deployment's accounts setting; a disabled group says nothing. Set by an admin only, whoever owns the group (403 otherwise); a non-admin's write that leaves it out keeps the stored value.
+             * @enum {string}
+             */
+            personalAccount?: "on" | "off";
         };
         Host: {
             /**
@@ -4553,7 +4610,7 @@ export interface components {
             sharedWithPolicyCount: number;
         };
         HostKeySpec: {
-            /** @description Id of the provider account (organization) the key belongs to. Keys of one account share its upstream limits, and the policy bound to the account caps them. The account must be at hostId and have the key's owner. Omitted on create joins the owner's default account at the host; omitted on update keeps the stored account. */
+            /** @description Id of the provider account (organization) the key belongs to. Keys of one account share its upstream limits, and the policy bound to the account caps them. The account must be at hostId and have the key's owner. Required on create and update: a key without one answers 400 account_required; create the provider account at the host first. */
             accountId?: string;
             /**
              * @deprecated
@@ -4746,7 +4803,7 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            section: "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            section: "accounts" | "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
             /** @description The section's current value. */
             value: components["schemas"]["Inference"];
         };
@@ -5292,7 +5349,7 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            section: "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            section: "accounts" | "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
             /** @description The section's current value. */
             value: components["schemas"]["OTLPReceiver"];
         };
@@ -5334,7 +5391,7 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            section: "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            section: "accounts" | "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
             /** @description The section's current value. */
             value: components["schemas"]["Parsing"];
         };
@@ -5390,7 +5447,7 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            section: "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            section: "accounts" | "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
             /** @description The section's current value. */
             value: components["schemas"]["PayloadLogging"];
         };
@@ -5409,6 +5466,20 @@ export interface components {
             secretKey: components["schemas"]["SecretRef"];
             /** @description Use TLS; required unless plain HTTP is allowed by the deployment. */
             useSSL: boolean;
+        };
+        PersonalAccountEffective: {
+            /** @description The group that decided it, for source group. */
+            groupId?: string;
+            /**
+             * @description What decided it: the user's own personalAccount, a group they are in (groupId), or the accounts settings section.
+             * @enum {string}
+             */
+            source: "user" | "group" | "setting";
+            /**
+             * @description Whether the user's personal account serves: on or off. Off refuses keys in it and the provider accounts the user owns personally with personal_account_off.
+             * @enum {string}
+             */
+            state: "on" | "off";
         };
         PlanIssue: {
             /** @description Stable snake_case diagnostic identifier, such as ref_missing or host_mismatch. */
@@ -5792,7 +5863,7 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            section: "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            section: "accounts" | "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
             /** @description The section's current value. */
             value: components["schemas"]["ProxyMode"];
         };
@@ -6468,7 +6539,7 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            section: "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            section: "accounts" | "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
             /** @description The section's current value. */
             value: components["schemas"]["UsageLogging"];
         };
@@ -6548,6 +6619,8 @@ export interface components {
              * @example https://example.com/schemas/authResponseBody.json
              */
             readonly $schema?: string;
+            /** @description Whether the caller's personal account serves, and what decided it. whoami only; omitted for the admin token and until the plans are loaded. */
+            personalAccountEffective?: components["schemas"]["PersonalAccountEffective"];
             /** @description Names of the roles bound to the caller. */
             roles?: string[] | null;
             /** @description Scopes the caller holds a role binding at, as "team:<id>" / "project:<id>". */
@@ -6596,7 +6669,7 @@ export interface components {
             readonly $schema?: string;
             /** @description With resource_in_use: the rows that still reference the target, grouped by kind and field. */
             blockers?: components["schemas"]["blockerGroup"][] | null;
-            /** @description The error. code says which conflict: resource_in_use, stale_resource_version, managed_by_source, duplicate_binding, account_shared, share_exists, reshare_refused, already_reachable, or a duplicate default account. */
+            /** @description The error. code says which conflict: resource_in_use, stale_resource_version, managed_by_source, duplicate_binding, account_shared, share_exists, reshare_refused or already_reachable. */
             error: components["schemas"]["APIErrorBody"];
         };
         createKeyInputBody: {
@@ -6632,7 +6705,7 @@ export interface components {
         createKeySpec: {
             /**
              * Format: uuid
-             * @description Id of the account the key's requests run in by default: the service account's account, the user's personal account, a member account a role binding grants the user, or a provider account the user owns personally. Any other answers 403 account_not_held. Omitted: the service account's account, or the user's personal account.
+             * @description Id of the account the key's requests run in by default: the service account's account, the user's personal account, a member account a role binding grants the user, or a provider account the user owns personally. Any other answers 403 account_not_held. Omitted: the service account's account, or the user's personal account. While the user's personal accounts are turned off, omitting it answers 400 lane_required, and naming the personal account or one of the user's provider accounts 403 personal_account_off.
              */
             accountId?: string;
             /** @description False creates the key disabled. Omitted means true. */
@@ -7505,7 +7578,7 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            name: "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            name: "accounts" | "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
             /** @description OpenAPI component name for this section's typed value. */
             schemaRef?: string;
         };
@@ -7524,7 +7597,7 @@ export interface components {
              * @description One of the relay's registered settings section keys.
              * @enum {string}
              */
-            section: "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
+            section: "accounts" | "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
             /** @description The section's current value; its shape is the section's schema (see GET /settings/sections). */
             value: unknown;
         };
@@ -7575,6 +7648,13 @@ export interface components {
             email?: string;
             /** @description User id. */
             id: string;
+            /**
+             * @description The user's own say on their personal account: on or off. Omitted leaves it to their groups and the accounts settings section.
+             * @enum {string}
+             */
+            personalAccount?: "on" | "off";
+            /** @description Whether the user's personal account serves, and what decided it. Omitted until the plans are loaded. */
+            readonly personalAccountEffective?: components["schemas"]["PersonalAccountEffective"];
             /** @description Names of the roles bound to the user. */
             roles?: string[] | null;
             /** @description Sign-in name. */
@@ -7589,6 +7669,11 @@ export interface components {
             readonly $schema?: string;
             /** @description Disable or re-enable the account. Disabling also invalidates every inference token the user holds. */
             disabled?: boolean;
+            /**
+             * @description Turn the user's personal account on or off for them alone, over their groups and the accounts settings section; an empty string leaves it to those again. Omit to leave it unchanged. Admin only, never the user themselves (403).
+             * @enum {string}
+             */
+            personalAccount?: "on" | "off" | "";
             /** @description Replace the account's roles. Omit to leave them unchanged. */
             roles?: string[];
         };
@@ -7868,7 +7953,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), account_shared (a host key naming a shared account, which holds no keys: add it to the real account), or a second default account for one owner and host. */
+            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), or account_shared (a host key naming a shared account, which holds no keys: add it to the real account). */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -9324,7 +9409,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), account_shared (a host key naming a shared account, which holds no keys: add it to the real account), or a second default account for one owner and host. */
+            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), or account_shared (a host key naming a shared account, which holds no keys: add it to the real account). */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -10110,7 +10195,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), account_shared (a host key naming a shared account, which holds no keys: add it to the real account), or a second default account for one owner and host. */
+            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), or account_shared (a host key naming a shared account, which holds no keys: add it to the real account). */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -10655,7 +10740,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), account_shared (a host key naming a shared account, which holds no keys: add it to the real account), or a second default account for one owner and host. */
+            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), or account_shared (a host key naming a shared account, which holds no keys: add it to the real account). */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -11064,7 +11149,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), account_shared (a host key naming a shared account, which holds no keys: add it to the real account), or a second default account for one owner and host. */
+            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), or account_shared (a host key naming a shared account, which holds no keys: add it to the real account). */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -11798,7 +11883,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), account_shared (a host key naming a shared account, which holds no keys: add it to the real account), or a second default account for one owner and host. */
+            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), or account_shared (a host key naming a shared account, which holds no keys: add it to the real account). */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -13643,7 +13728,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), account_shared (a host key naming a shared account, which holds no keys: add it to the real account), or a second default account for one owner and host. */
+            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), or account_shared (a host key naming a shared account, which holds no keys: add it to the real account). */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -14616,7 +14701,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), account_shared (a host key naming a shared account, which holds no keys: add it to the real account), or a second default account for one owner and host. */
+            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), or account_shared (a host key naming a shared account, which holds no keys: add it to the real account). */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -15304,7 +15389,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), account_shared (a host key naming a shared account, which holds no keys: add it to the real account), or a second default account for one owner and host. */
+            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), or account_shared (a host key naming a shared account, which holds no keys: add it to the real account). */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -15711,7 +15796,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), account_shared (a host key naming a shared account, which holds no keys: add it to the real account), or a second default account for one owner and host. */
+            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), or account_shared (a host key naming a shared account, which holds no keys: add it to the real account). */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -16288,7 +16373,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), account_shared (a host key naming a shared account, which holds no keys: add it to the real account), or a second default account for one owner and host. */
+            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), or account_shared (a host key naming a shared account, which holds no keys: add it to the real account). */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -16790,7 +16875,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), account_shared (a host key naming a shared account, which holds no keys: add it to the real account), or a second default account for one owner and host. */
+            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), or account_shared (a host key naming a shared account, which holds no keys: add it to the real account). */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -17298,7 +17383,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), account_shared (a host key naming a shared account, which holds no keys: add it to the real account), or a second default account for one owner and host. */
+            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), or account_shared (a host key naming a shared account, which holds no keys: add it to the real account). */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -17817,7 +17902,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), account_shared (a host key naming a shared account, which holds no keys: add it to the real account), or a second default account for one owner and host. */
+            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), or account_shared (a host key naming a shared account, which holds no keys: add it to the real account). */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -18372,7 +18457,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), account_shared (a host key naming a shared account, which holds no keys: add it to the real account), or a second default account for one owner and host. */
+            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), or account_shared (a host key naming a shared account, which holds no keys: add it to the real account). */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -18754,7 +18839,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), account_shared (a host key naming a shared account, which holds no keys: add it to the real account), or a second default account for one owner and host. */
+            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), or account_shared (a host key naming a shared account, which holds no keys: add it to the real account). */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -19862,7 +19947,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), account_shared (a host key naming a shared account, which holds no keys: add it to the real account), or a second default account for one owner and host. */
+            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), or account_shared (a host key naming a shared account, which holds no keys: add it to the real account). */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -20262,6 +20347,113 @@ export interface operations {
             };
             /** @description No valid session cookie or admin bearer token. */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The server failed; error.message carries the cause. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    get_settings_accounts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountsEnvelope"];
+                };
+            };
+            /** @description No valid session cookie or admin bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The server failed; error.message carries the cause. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    update_settings_accounts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Accounts"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountsEnvelope"];
+                };
+            };
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description No valid session cookie or admin bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The request does not match the schema; error.details lists each failing field. */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -22043,7 +22235,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), account_shared (a host key naming a shared account, which holds no keys: add it to the real account), or a second default account for one owner and host. */
+            /** @description A conflict with stored rows: duplicate_binding (an account another policy binding already holds), managed_by_source (a provisioning source owns the row), or account_shared (a host key naming a shared account, which holds no keys: add it to the real account). */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -23057,6 +23249,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["userRow"];
+                };
+            };
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
                 };
             };
             /** @description No valid session cookie or admin bearer token. */

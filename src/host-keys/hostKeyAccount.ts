@@ -15,7 +15,7 @@ export interface KeyAccountOption {
 	label: string;
 	hostId: string;
 	orgId?: string;
-	isDefault: boolean;
+	groupedByRelay: boolean;
 }
 
 export interface KeyAccountGroup {
@@ -63,7 +63,7 @@ export function keyAccountGroups(
 			label: displayLabel(a.metadata),
 			hostId,
 			...(a.spec.orgId ? { orgId: a.spec.orgId } : {}),
-			isDefault: a.spec.default === true,
+			groupedByRelay: a.spec.groupedByRelay === true,
 		});
 	}
 	const sorted = [...groups.values()].sort((x, y) =>
