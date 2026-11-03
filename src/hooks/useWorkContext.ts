@@ -1,8 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { useAuth } from "@/api/auth";
 import { myContextsQueryOptions } from "@/api/hooks/contexts";
 import type { components } from "@/api/types.gen";
 import {
+	contextKey,
 	contextName,
 	contextOwner,
 	contextUsableBy,
@@ -53,6 +55,8 @@ export function useFormOwner(fixed?: { owner?: Owner }): {
 } {
 	const { userId } = useAuth();
 	const work = useWorkContext();
+	// The form's own pick; the workspace (the default) only changes from the switcher.
+	const [picked, setPicked] = useState<WorkContextRef | null>(null);
 	if (fixed) {
 		return {
 			owner: fixed.owner,
@@ -63,11 +67,25 @@ export function useFormOwner(fixed?: { owner?: Owner }): {
 			},
 		};
 	}
+	// A pick the caller lost (a revoked role) falls back to the workspace.
+	const current =
+		(picked &&
+			work.contexts.find((c) => contextKey(c) === contextKey(picked))) ||
+		work.current;
+	if (!current) {
+		return { owner: work.owner, usableBy: work.usableBy, placement: undefined };
+	}
 	return {
-		owner: work.owner,
-		usableBy: work.usableBy,
-		placement: work.current
-			? { scope: contextName(work.current), editable: true }
-			: undefined,
+		owner: contextOwner(current),
+		usableBy: contextUsableBy(current),
+		placement: {
+			scope: contextName(current),
+			editable: true,
+			contextKey: contextKey(current),
+			choose: (key) => {
+				const next = work.contexts.find((c) => contextKey(c) === key);
+				if (next) setPicked(next);
+			},
+		},
 	};
 }
