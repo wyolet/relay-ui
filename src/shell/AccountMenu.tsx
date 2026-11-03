@@ -23,6 +23,7 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { versionLabel } from "@/lib/versionLabel";
 import { Segmented } from "@/shared/Segmented";
 import { headerTriggerClass } from "@/shell/headerTrigger";
 import { type Theme, useTheme } from "@/stores/theme";
@@ -138,12 +139,14 @@ export function AccountMenu() {
 						<ThemeSegment />
 					</div>
 
-					{versionData && (
-						<div className="flex items-center justify-between px-2 pb-1 pt-0.5 text-[10px] tabular-nums text-muted-foreground">
-							<span>backend</span>
-							<span className="font-mono">{versionData.version}</span>
-						</div>
-					)}
+					<div className="flex items-center justify-between gap-2 px-2 pb-1 pt-0.5 text-[10px] text-muted-foreground">
+						<span title="The Relay server this interface talks to">
+							Relay {versionLabel(versionData?.version)}
+						</span>
+						<span title="This interface's build">
+							UI {versionLabel(import.meta.env.VITE_UI_VERSION)}
+						</span>
+					</div>
 				</DropdownMenuContent>
 			</DropdownMenu>
 			{tokensOpen && <TokenDialog onClose={() => setTokensOpen(false)} />}
