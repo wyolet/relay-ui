@@ -26,6 +26,7 @@ import {
 import { FormFooter } from "@/shared/FormFooter";
 import { FormSection } from "@/shared/FormSection";
 import { IdentitySection } from "@/shared/IdentitySection";
+import { OptionWithHint } from "@/shared/OptionWithHint";
 
 interface RateLimitFormProps {
 	rateLimit?: RateLimit;
@@ -379,17 +380,6 @@ function RuleRow({
 				</div>
 			)}
 		</div>
-	);
-}
-
-function OptionWithHint({ label, hint }: { label: string; hint: string }) {
-	return (
-		<span className="flex flex-col items-start gap-0.5 whitespace-normal">
-			<span className="text-sm text-foreground">{label}</span>
-			<span className="text-[11px] leading-snug text-muted-foreground">
-				{hint}
-			</span>
-		</span>
 	);
 }
 
