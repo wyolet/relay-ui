@@ -46,6 +46,11 @@ export function PickerModelList({
 											deprecated
 										</span>
 									)}
+									{m.note && (
+										<span className="block truncate text-[10px] text-muted-foreground">
+											{m.note}
+										</span>
+									)}
 								</span>
 							</span>
 							<span className="flex items-center gap-1">

@@ -52,7 +52,8 @@ export function Segmented<T extends string>({
 	className,
 }: {
 	options: readonly SegmentedOption<T>[];
-	value: T;
+	/** Undefined leaves every segment unpressed: a required choice not made yet. */
+	value: T | undefined;
 	onChange: (value: T) => void;
 	variant?: "pill" | "underline";
 	/** Pill only: segments share the row width equally. */

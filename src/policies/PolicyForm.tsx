@@ -1,17 +1,21 @@
-import { Boxes, Gauge, Layers, type LucideIcon, Wallet } from "lucide-react";
+import { Boxes, Gauge, Wallet, Waypoints } from "lucide-react";
 import type { Policy } from "@/api/types/policy";
 import { ModelPicker } from "@/models/ModelPicker";
+import { DraftReachNotes } from "@/policies/DraftReachNotes";
 import { PolicyLinkPicker } from "@/policies/PolicyLinkPicker";
+import { PolicyReachPicker } from "@/policies/PolicyReachPicker";
 import { PolicyRLPicker } from "@/policies/PolicyRLPicker";
 import { budgetLinkShared } from "@/policies/policyFormSpec";
 import { SharedLinkSwitch } from "@/policies/SharedLinkSwitch";
 import { UnpricedUnderBudget } from "@/policies/UnpricedUnderBudget";
+import { useDraftReach } from "@/policies/useDraftReach";
 import { usePolicyForm } from "@/policies/usePolicyForm";
 import {
 	useBudgetChoices,
 	usePoolChoices,
 } from "@/policies/usePolicyLinkChoices";
 import { FormFooter } from "@/shared/FormFooter";
+import { FormSection } from "@/shared/FormSection";
 import { IdentitySection } from "@/shared/IdentitySection";
 import { ScopedPicker } from "@/shared/ScopeNotes";
 
@@ -25,12 +29,15 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 	const {
 		form,
 		values,
+		setReach,
 		setBudgetIds,
 		setBudgetShared,
 		isEdit,
 		slugPreview,
 		displayNameError,
 		descriptionError,
+		reachError,
+		poolsError,
 		placement,
 		usableBy,
 		updatingFor,
@@ -47,6 +54,12 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 		values.budgets.map((b) => b.budgetId),
 		usableBy,
 	);
+	const reach = useDraftReach({
+		owner: usableBy,
+		choice: values.reach,
+		poolIds: values.poolIds,
+		entries: values.models,
+	});
 
 	return (
 		<form
@@ -71,39 +84,45 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 					placement={placement}
 				/>
 
-				<Section
+				<FormSection
+					icon={Waypoints}
+					title="Reach"
+					description="Which credentials requests under this policy may use. Pools are tried in order: a later pool is the failover for an earlier one, and apply only to policies bound to a team, project, user or service account."
+				>
+					<PolicyReachPicker
+						value={values.reach}
+						onChange={setReach}
+						error={reachError}
+					>
+						<ScopedPicker updatingFor={updatingFor.pools} error={poolsError}>
+							<PolicyLinkPicker
+								choices={pools}
+								onChange={(next) => form.setFieldValue("poolIds", next)}
+								ordered
+								addLabel="Add pool"
+								emptyText="No pools linked."
+								unavailable={unavailable.pools}
+							/>
+						</ScopedPicker>
+					</PolicyReachPicker>
+				</FormSection>
+
+				<FormSection
 					icon={Boxes}
 					title="Models"
-					description="Providers or single models this policy allows; a provider includes models added to it later. Hosts come from the pools."
+					description="Providers or single models this policy allows; a provider includes models added to it later. The list shows what the reach serves."
 				>
 					<ModelPicker
 						value={values.models}
 						onChange={(next) => form.setFieldValue("models", next)}
-						emptyText="All available models: whatever this policy's pools serve. Pick providers or models to narrow it."
+						emptyText="All available models: whatever this policy's reach serves. Pick providers or models to narrow it."
+						reach={reach.pickerReach}
+						refWarnings={reach.warnings}
 					/>
-				</Section>
+					<DraftReachNotes note={reach.note} excluded={reach.excluded} />
+				</FormSection>
 
-				<Section
-					icon={Layers}
-					title="Pools"
-					description="Pools requests draw host keys from, tried in order: a later pool is the failover for an earlier one. Only for policies bound to a team, project, user or service account."
-				>
-					<ScopedPicker
-						updatingFor={updatingFor.pools}
-						error={unavailableErrors.pools}
-					>
-						<PolicyLinkPicker
-							choices={pools}
-							onChange={(next) => form.setFieldValue("poolIds", next)}
-							ordered
-							addLabel="Add pool"
-							emptyText="No pools linked."
-							unavailable={unavailable.pools}
-						/>
-					</ScopedPicker>
-				</Section>
-
-				<Section
+				<FormSection
 					icon={Gauge}
 					title="Rate limits"
 					description="Every linked rate limit applies; a model scope narrows one to those models. Shared is one count for the bound account; off is one count per member under it."
@@ -120,9 +139,9 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 							unavailable={unavailable.rateLimits}
 						/>
 					</ScopedPicker>
-				</Section>
+				</FormSection>
 
-				<Section
+				<FormSection
 					icon={Wallet}
 					title="Budgets"
 					description="Spend caps every request under this policy must fit. Unpriced models are refused under a budget. Shared is one budget for the bound account; off is one budget per member under it."
@@ -152,7 +171,7 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 							budgetIds={values.budgets.map((b) => b.budgetId)}
 						/>
 					</div>
-				</Section>
+				</FormSection>
 			</div>
 
 			<form.Subscribe selector={(s) => s.isSubmitting}>
@@ -165,32 +184,5 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 				)}
 			</form.Subscribe>
 		</form>
-	);
-}
-
-interface SectionProps {
-	icon: LucideIcon;
-	title: string;
-	description: string;
-	children: React.ReactNode;
-}
-
-function Section({ icon: Icon, title, description, children }: SectionProps) {
-	return (
-		<div className="grid grid-cols-1 md:grid-cols-[260px_1fr] gap-4 md:gap-8 py-8 first:pt-0 last:pb-0">
-			<div className="md:pt-0.5">
-				<div className="flex items-center gap-2">
-					<Icon
-						className="w-3.5 h-3.5 text-muted-foreground shrink-0"
-						aria-hidden="true"
-					/>
-					<h2 className="text-sm font-semibold text-foreground">{title}</h2>
-				</div>
-				<p className="mt-1 text-[11px] text-muted-foreground leading-relaxed">
-					{description}
-				</p>
-			</div>
-			<div className="min-w-0">{children}</div>
-		</div>
 	);
 }

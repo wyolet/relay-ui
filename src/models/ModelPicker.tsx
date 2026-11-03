@@ -6,12 +6,16 @@ import {
 } from "@/components/ui/field-focus";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
+import type { PickerReach } from "@/models/narrowPickerIndex";
 import { PickerModelList } from "@/models/PickerModelList";
 import { PickerProviderList } from "@/models/PickerProviderList";
 import { PickerRawEditor } from "@/models/PickerRawEditor";
 import { PickerSelectionFooter } from "@/models/PickerSelectionFooter";
 import { PickerSelectionSummary } from "@/models/PickerSelectionSummary";
-import { usePickerCatalog } from "@/models/usePickerCatalog";
+import {
+	usePickerCatalog,
+	usePickerListIndex,
+} from "@/models/usePickerCatalog";
 import { usePickerSearch } from "@/models/usePickerSearch";
 import { usePickerSelection } from "@/models/usePickerSelection";
 
@@ -24,6 +28,10 @@ interface ModelPickerProps {
 	emptyText: string;
 	/** Catalog refs (a parent policy's models) the rows are trimmed to. */
 	restrictTo?: readonly string[];
+	/** The models the caller's reach serves; rows outside it aren't listed. */
+	reach?: PickerReach;
+	/** A warning per picked ref, keyed by the ref as written. */
+	refWarnings?: ReadonlyMap<string, string>;
 }
 
 /**
@@ -37,11 +45,16 @@ export function ModelPicker({
 	onChange,
 	emptyText,
 	restrictTo,
+	reach,
+	refWarnings,
 }: ModelPickerProps) {
 	const [tab, setTab] = useState<Tab>("providers");
 	const selection = usePickerSelection({ value, onChange });
+	// The raw editor and the summary check picks against the whole catalog, so
+	// a pick outside the reach stays named and is never dropped.
 	const index = usePickerCatalog(restrictTo);
-	const search = usePickerSearch(index);
+	const listIndex = usePickerListIndex(index, reach);
+	const search = usePickerSearch(listIndex);
 	const { refs } = selection;
 
 	return (
@@ -85,7 +98,7 @@ export function ModelPicker({
 				{tab === "providers" && (
 					<PickerProviderList
 						providers={search.providers}
-						index={index}
+						index={listIndex}
 						refs={refs}
 						onToggle={selection.toggleProvider}
 					/>
@@ -93,7 +106,7 @@ export function ModelPicker({
 				{tab === "models" && (
 					<PickerModelList
 						models={search.models}
-						index={index}
+						index={listIndex}
 						refs={refs}
 						onToggleModel={selection.toggleModel}
 					/>
@@ -111,7 +124,11 @@ export function ModelPicker({
 						emptyText={emptyText}
 					/>
 					{refs.length > 0 && (
-						<PickerSelectionSummary refs={refs} index={index} />
+						<PickerSelectionSummary
+							refs={refs}
+							index={index}
+							warnings={refWarnings}
+						/>
 					)}
 				</>
 			)}
