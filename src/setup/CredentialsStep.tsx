@@ -3,6 +3,7 @@ import type { Host } from "@/api/types/host";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SecretInput } from "@/shared/SecretInput";
 import { ProviderBadge } from "./ProviderBadge";
 import type { ProviderDef } from "./providerCatalog";
 import { wizardGhost, wizardPrimary } from "./ui";
@@ -80,14 +81,11 @@ export function CredentialsStep({
 
 			<div className="flex flex-col gap-1.5">
 				<Label htmlFor="setup-api-key">{provider.keyLabel}</Label>
-				<Input
+				<SecretInput
 					id="setup-api-key"
-					type="password"
 					value={apiKey}
 					onChange={(e) => setApiKey(e.target.value)}
 					placeholder={provider.keyPlaceholder}
-					autoComplete="off"
-					spellCheck={false}
 					autoFocus
 				/>
 				{provider.keyDocsUrl && (
