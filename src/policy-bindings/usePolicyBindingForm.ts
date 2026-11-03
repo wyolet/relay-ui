@@ -2,7 +2,7 @@ import { useForm } from "@tanstack/react-form";
 import { useStore } from "@tanstack/react-store";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
-import { ACCOUNT_KIND_LABELS, accountLabel } from "@/accounts/accountView";
+import { accountLabel } from "@/accounts/accountView";
 import { useAccounts, useUsableAccounts } from "@/api/hooks/accounts";
 import { usePolicies, useUsablePolicies } from "@/api/hooks/policies";
 import {
@@ -17,8 +17,10 @@ import { displayLabel } from "@/lib/displayLabel";
 import { shownError, zodFieldValidator } from "@/lib/formErrors";
 import { randomSuffix, slugify } from "@/lib/slug";
 import {
+	bindingPolicyOptions,
 	type DuplicateAccount,
 	describeDuplicate,
+	duplicateAccountName,
 	isDuplicateBinding,
 } from "@/policy-bindings/accountLookup";
 import {
@@ -125,12 +127,6 @@ export function usePolicyBindingForm({
 	};
 
 	const accounts = accountsData.items ?? [];
-	function duplicateName(accountId: string): string | undefined {
-		const account = accounts.find((a) => a.metadata.id === accountId);
-		return account
-			? `${ACCOUNT_KIND_LABELS[account.spec.kind]} account "${displayLabel(account.metadata)}"`
-			: undefined;
-	}
 
 	const runValidation = zodFieldValidator<PolicyBindingFormValues>(schema);
 
@@ -181,7 +177,11 @@ export function usePolicyBindingForm({
 				}
 			} catch (err) {
 				if (isDuplicateBinding(err)) {
-					setDuplicate(describeDuplicate(err.body.message, duplicateName));
+					setDuplicate(
+						describeDuplicate(err.body.message, (id) =>
+							duplicateAccountName(accounts, id),
+						),
+					);
 					return;
 				}
 				toastSaveError(
@@ -222,18 +222,11 @@ export function usePolicyBindingForm({
 	].flatMap((a) =>
 		a.metadata.id ? [{ value: a.metadata.id, label: accountLabel(a) }] : [],
 	);
-	const usablePolicyIds = new Set(usablePolicies.map((p) => p.metadata.id));
-	const policyOptions = [
-		...usablePolicies,
-		...(policiesData.items ?? []).filter(
-			(p) =>
-				!usablePolicyIds.has(p.metadata.id) &&
-				p.metadata.id === values.policyId,
-		),
-	].map((p) => ({
-		value: p.metadata.id ?? "",
-		label: displayLabel(p.metadata),
-	}));
+	const policyOptions = bindingPolicyOptions(
+		usablePolicies,
+		policiesData.items ?? [],
+		values.policyId,
+	);
 
 	const slugPreview = isEdit
 		? (binding?.metadata.name ?? "")

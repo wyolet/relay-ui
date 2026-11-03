@@ -107,6 +107,10 @@ export function TeamDetailView({ name }: { name: string }) {
 				<dl className="divide-y divide-border">
 					<AccountPolicy
 						accountRef={{ ownerOf: { kind: "team", id: teamId } }}
+						attach={{
+							label: displayLabel(team.metadata),
+							owner: { kind: "team", id: teamId },
+						}}
 					/>
 				</dl>
 			</DetailCard>

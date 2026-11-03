@@ -60,8 +60,8 @@ export function toPolicyBindingsParams(
 }
 
 export function PolicyBindingsTable() {
-	const navigate = useNavigate({ from: "/policy-bindings" });
-	const live = useSearch({ from: "/_authenticated/policy-bindings/" });
+	const navigate = useNavigate({ from: "/policies" });
+	const live = useSearch({ from: "/_authenticated/policies/" });
 	const { search, isStale } = useDeferredSearch(live);
 	const { data } = usePolicyBindingsList(toPolicyBindingsParams(search));
 	const { data: projectsData } = useProjects();

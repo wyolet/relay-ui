@@ -8,6 +8,7 @@ const issue = (o: Partial<PlanIssue>): PlanIssue => ({
 	kind: "policy",
 	id: "p1",
 	name: "team",
+	field: "",
 	severity: "error",
 	refs: [],
 	...o,
@@ -25,8 +26,8 @@ describe("planIssueDiagnostic", () => {
 		const d = planIssueDiagnostic(
 			issue({
 				refs: [
-					{ kind: "keyslot", id: "x" },
-					{ kind: "pool", id: "pool-1" },
+					{ kind: "keyslot", id: "x", name: "x" },
+					{ kind: "pool", id: "pool-1", name: "pool-1" },
 				],
 			}),
 		);
@@ -43,7 +44,9 @@ describe("planIssueDiagnostic", () => {
 	});
 
 	it("skips a ref whose id the caller may not see", () => {
-		const d = planIssueDiagnostic(issue({ refs: [{ kind: "pool", id: "" }] }));
+		const d = planIssueDiagnostic(
+			issue({ refs: [{ kind: "pool", id: "", name: "" }] }),
+		);
 		expect(d.link).toBeUndefined();
 	});
 });
