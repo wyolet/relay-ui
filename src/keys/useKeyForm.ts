@@ -292,6 +292,7 @@ export function useKeyForm({
 		laneOptions,
 		laneValue,
 		hasDefaultLane: defaultLaneId !== undefined,
+		noLane: personalOff && laneOptions.length === 0,
 		laneError: keyLaneError(createKey.error ?? updateKey.error),
 		freshSecret,
 	};

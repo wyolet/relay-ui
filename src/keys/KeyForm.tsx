@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { useKeyForm } from "@/keys/useKeyForm";
 import { displayLabel } from "@/lib/displayLabel";
+import { NO_LANE_MESSAGE } from "@/lib/personalAccount";
 import { FormFooter } from "@/shared/FormFooter";
 import { FormSection } from "@/shared/FormSection";
 import { IdentitySection } from "@/shared/IdentitySection";
@@ -46,6 +47,7 @@ export function KeyForm({
 		laneOptions,
 		laneValue,
 		hasDefaultLane,
+		noLane,
 		laneError,
 	} = useKeyForm({ open: true, apiKey, onSaved, onCreated });
 	const laneErrorId = useId();
@@ -213,6 +215,11 @@ export function KeyForm({
 							))}
 						</SelectContent>
 					</Select>
+					{noLane && !laneError && (
+						<p className="mt-1.5 text-[11px] text-muted-foreground">
+							{NO_LANE_MESSAGE}
+						</p>
+					)}
 					{laneError && (
 						<p id={laneErrorId} className="mt-1.5 text-[11px] text-destructive">
 							{laneError}

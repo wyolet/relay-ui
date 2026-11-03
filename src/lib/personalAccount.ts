@@ -115,6 +115,10 @@ export function shownEffective(
 	return server?.source === "user" ? undefined : server;
 }
 
+/** Shown wherever a lane is needed and the caller holds none. */
+export const NO_LANE_MESSAGE =
+	"You have no account to work in yet. Ask an admin to add you to a team or project.";
+
 export const PERSONAL_ACCOUNT_OFF = "personal_account_off";
 export const LANE_REQUIRED = "lane_required";
 

@@ -26,10 +26,15 @@ const KIND_ICON: Record<WorkContext["kind"], LucideIcon> = {
 	project: Boxes,
 };
 
-/** Picks the context new rows land in; hidden until the caller's contexts load. */
+/** Picks the context new rows land in; hidden until the caller's contexts load, a plain label when there are none. */
 export function ContextSwitcher() {
-	const { rows, current, currentKey, selectKey, personalOffNote } =
+	const { rows, current, currentKey, selectKey, personalOffNote, noContext } =
 		useContextSwitcher();
+	if (noContext) {
+		return (
+			<span className="px-2 text-xs text-muted-foreground">No account</span>
+		);
+	}
 	if (!current) return null;
 	const CurrentIcon = KIND_ICON[current.kind];
 
