@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
+import { accountListQueryOptions } from "@/api/hooks/accounts";
 import { bindingsListQueryOptions } from "@/api/hooks/bindings";
 import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
@@ -39,6 +40,11 @@ export function useDiagnosticGraph(): DiagnosticGraph | undefined {
 	const { data: keys } = useQuery(keysListQueryOptions);
 	const { data: providers } = useQuery(providersListQueryOptions);
 	const { data: bindings } = useQuery(bindingsListQueryOptions);
+	// Not waited on: without accounts, pool accounts count as serving.
+	const { data: accounts } = useQuery({
+		...accountListQueryOptions,
+		retry: false,
+	});
 
 	return useMemo(() => {
 		if (
@@ -55,6 +61,7 @@ export function useDiagnosticGraph(): DiagnosticGraph | undefined {
 			return undefined;
 		}
 		return buildDiagnosticGraph({
+			accounts: accounts?.items ?? [],
 			policies: policies.items ?? [],
 			hostKeys: hostKeys.items ?? [],
 			hosts: hosts.items ?? [],
@@ -66,6 +73,7 @@ export function useDiagnosticGraph(): DiagnosticGraph | undefined {
 			bindings: bindings.items ?? [],
 		});
 	}, [
+		accounts,
 		policies,
 		hostKeys,
 		hosts,
