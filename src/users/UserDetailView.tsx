@@ -9,17 +9,20 @@ import {
 import { CheckAccessButton } from "@/access-review/CheckAccessButton";
 import { useGroups } from "@/api/hooks/groups";
 import { useRoleBindingsList } from "@/api/hooks/roleBindings";
-import { useRevokeUserTokens, useUser } from "@/api/hooks/users";
+import { type UserRow, useRevokeUserTokens, useUser } from "@/api/hooks/users";
 import { ApiError } from "@/api/types/errors";
 import { Button } from "@/components/ui/button";
 import { displayLabel } from "@/lib/displayLabel";
+import { PERSONAL_ACCOUNT_CHOICE_OPTIONS } from "@/lib/personalAccount";
 import { EraseBodiesButton } from "@/logs/EraseBodiesButton";
 import { OwnerLink } from "@/projects/OwnerLink";
 import { Chip } from "@/shared/Chip";
 import { confirm } from "@/shared/ConfirmDialog";
 import { DetailCard, DetailEmpty, DetailRow } from "@/shared/DetailCard";
+import { Segmented } from "@/shared/Segmented";
 import { StatusBadge } from "@/shared/StatusBadge";
 import { toast } from "@/shared/Toast";
+import { useUserPersonalAccount } from "@/users/useUserPersonalAccount";
 
 export function UserDetailView({ id }: { id: string }) {
 	const user = useUser(id);
@@ -120,11 +123,49 @@ export function UserDetailView({ id }: { id: string }) {
 							</div>
 						)}
 					</DetailRow>
+					<DetailRow label="Personal account">
+						<UserPersonalAccount user={user} />
+					</DetailRow>
 				</dl>
 			</DetailCard>
 
 			<UserRoleBindings id={id} />
 			<UserGroups id={id} />
+		</div>
+	);
+}
+
+function UserPersonalAccount({ user }: { user: UserRow }) {
+	const { effectiveText, sourceGroup, choice, canEdit, setChoice } =
+		useUserPersonalAccount(user);
+	return (
+		<div className="flex flex-col items-start gap-2">
+			{effectiveText ? (
+				<span>
+					{effectiveText}
+					{sourceGroup && (
+						<>
+							{" "}
+							<Link
+								to="/groups/$name"
+								params={{ name: sourceGroup.ref }}
+								className="hover:underline"
+							>
+								{sourceGroup.label}
+							</Link>
+						</>
+					)}
+				</span>
+			) : (
+				<span className="text-muted-foreground">Not resolved yet.</span>
+			)}
+			{canEdit && (
+				<Segmented
+					options={PERSONAL_ACCOUNT_CHOICE_OPTIONS}
+					value={choice}
+					onChange={(v) => void setChoice(v)}
+				/>
+			)}
 		</div>
 	);
 }
