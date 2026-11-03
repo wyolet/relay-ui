@@ -6,12 +6,12 @@ import { useAuth } from "@/api/auth";
 import {
 	type Account,
 	useAccounts,
-	useUsableAccounts,
+	useUsableAccountsSuspense,
 } from "@/api/hooks/accounts";
 import { useCreateHostKey, useUpdateHostKey } from "@/api/hooks/hostkeys";
 import { useHosts } from "@/api/hooks/hosts";
 import { usePolicies } from "@/api/hooks/policies";
-import { usePools } from "@/api/hooks/pools";
+import { usePools, useUpdatePool, useUsablePools } from "@/api/hooks/pools";
 import type {
 	HostKey,
 	HostKeyCreate,
@@ -25,13 +25,16 @@ import { displayLabel } from "@/lib/displayLabel";
 import { shownError, zodFieldValidator } from "@/lib/formErrors";
 import { ownerKey } from "@/lib/ownerScopes";
 import { randomSuffix, slugify } from "@/lib/slug";
+import type { CheckOption } from "@/shared/MultiSelect";
 import { toast } from "@/shared/Toast";
+import { keyAccountGroups } from "./hostKeyAccount";
 import {
-	accountFormValue,
-	accountOptions as buildAccountOptions,
-	DEFAULT_ACCOUNT,
-	defaultAccountFor,
-} from "./hostKeyAccount";
+	keyCreatePlan,
+	keyPoolChoices,
+	poolFailureMessage,
+	poolWithKey,
+	runKeyCreate,
+} from "./keyCreate";
 import { linkedPolicyRows } from "./linkedPolicies";
 import { reservedEnvPrefix } from "./reservedEnv";
 
@@ -44,8 +47,10 @@ export interface HostKeyFormValues {
 	displayName: string;
 	description: string;
 	hostId: string;
-	/** {@link DEFAULT_ACCOUNT} means the owner's default account at the host. */
+	/** The provider account the key joins; "" is no pick yet. */
 	accountId: string;
+	/** Pools the new key is appended to after it's created. */
+	poolIds: string[];
 	kind: HostKeyKind;
 	envVar: string;
 	value: string;
@@ -57,7 +62,8 @@ function emptyValues(account?: Account): HostKeyFormValues {
 		displayName: "",
 		description: "",
 		hostId: account?.spec.hostId ?? "",
-		accountId: account?.metadata.id ?? DEFAULT_ACCOUNT,
+		accountId: account?.metadata.id ?? "",
+		poolIds: [],
 		kind: "stored",
 		envVar: "",
 		value: "",
@@ -65,20 +71,17 @@ function emptyValues(account?: Account): HostKeyFormValues {
 	};
 }
 
-function hostKeyToValues(
-	hk: HostKey,
-	accounts: readonly Account[],
-): HostKeyFormValues {
+function hostKeyToValues(hk: HostKey): HostKeyFormValues {
 	const kind: HostKeyKind =
 		hk.spec.valueFrom.kind === "stored" ? "stored" : "env";
 	return {
+		...emptyValues(),
 		displayName: displayLabel(hk.metadata),
 		description: hk.metadata.description ?? "",
 		hostId: hk.spec.hostId,
-		accountId: accountFormValue(accounts, hk.spec.accountId),
+		accountId: hk.spec.accountId ?? "",
 		kind,
 		envVar: hk.spec.valueFrom.env ?? "",
-		value: "",
 		enabled: hk.spec.enabled ?? true,
 	};
 }
@@ -96,6 +99,7 @@ function buildSchema(isEdit: boolean) {
 				.string()
 				.min(1, "Pick the host this credential authenticates against."),
 			accountId: z.string(),
+			poolIds: z.array(z.string()),
 			kind: z.enum(["stored", "env"]),
 			envVar: z.string().trim().max(200),
 			value: z.string().max(8192),
@@ -109,9 +113,17 @@ function buildSchema(isEdit: boolean) {
 					message: "Environment variable name is required.",
 				});
 			}
+			if (isEdit) return;
+			if (v.accountId === "") {
+				ctx.addIssue({
+					code: z.ZodIssueCode.custom,
+					path: ["accountId"],
+					message: "Pick the account this key belongs to, or make a new one.",
+				});
+			}
 			// Secret rotation is gated behind the dedicated Rotate dialog on the
 			// detail page, so the edit form never collects a value.
-			if (!isEdit && v.kind === "stored" && !v.value.trim()) {
+			if (v.kind === "stored" && !v.value.trim()) {
 				ctx.addIssue({
 					code: z.ZodIssueCode.custom,
 					path: ["value"],
@@ -138,6 +150,7 @@ export function useHostKeyForm({
 	const isEdit = hostKey !== undefined;
 	const createHostKey = useCreateHostKey();
 	const updateHostKey = useUpdateHostKey();
+	const updatePool = useUpdatePool();
 	const toastSaveError = useSaveErrorToast();
 	const { userId } = useAuth();
 	const { data: hostsData } = useHosts();
@@ -145,6 +158,7 @@ export function useHostKeyForm({
 	const { data: poolsData } = usePools();
 	const { data: accountsData } = useAccounts();
 	const accounts = accountsData.items ?? [];
+	const hosts = hostsData.items ?? [];
 	const loaded = useLoadedResourceVersion(
 		`${open}:${hostKey?.metadata.id ?? ""}`,
 		hostKey?.metadata.resourceVersion,
@@ -155,40 +169,42 @@ export function useHostKeyForm({
 		hostKey?.metadata ?? account?.metadata,
 	);
 	const accountLocked = !hostKey && account !== undefined;
+	const usableAccounts = useUsableAccountsSuspense(usableBy, {
+		kind: ["provider"],
+	});
+	// An omitted owner is the caller's own scope.
+	// The key's own account stays listed even if the scope's list no longer has it.
+	const currentAccount = accounts.find(
+		(a) => a.metadata.id === hostKey?.spec.accountId,
+	);
+	const listedAccounts =
+		currentAccount &&
+		!usableAccounts.some((a) => a.metadata.id === currentAccount.metadata.id)
+			? [...usableAccounts, currentAccount]
+			: usableAccounts;
+	const accountGroups = keyAccountGroups(
+		accountLocked && account ? [account] : listedAccounts,
+		hosts,
+		ownerKey(owner ?? { kind: "user" }, userId),
+		userId,
+	);
 
 	const initial = useMemo<HostKeyFormValues>(
-		() =>
-			hostKey
-				? hostKeyToValues(hostKey, accountsData.items ?? [])
-				: emptyValues(account),
-		[hostKey, account, accountsData.items],
+		() => (hostKey ? hostKeyToValues(hostKey) : emptyValues(account)),
+		[hostKey, account],
 	);
 	const suffixRef = useRef<string>(
 		hostKey?.metadata.name.match(/-(\d{4,8})$/)?.[1] ?? randomSuffix(),
 	);
-	const computeSlug = (displayName: string): string => {
+	const computeSlug = (displayName: string) => {
 		const trimmed = displayName.trim();
 		if (!trimmed) return "";
-		const base = slugify(trimmed) || "host-key";
-		return `${base}-${suffixRef.current}`;
+		return `${slugify(trimmed) || "host-key"}-${suffixRef.current}`;
 	};
 
 	const schema = useMemo(() => buildSchema(isEdit), [isEdit]);
 
 	const runValidation = zodFieldValidator<HostKeyFormValues>(schema);
-
-	// An update that omits accountId keeps the stored account, so "default"
-	// is sent as the default account's id when it exists.
-	function resolveAccountId(value: HostKeyFormValues): string | undefined {
-		if (value.accountId !== DEFAULT_ACCOUNT) return value.accountId;
-		if (!hostKey) return undefined;
-		return defaultAccountFor(
-			accounts,
-			value.hostId,
-			ownerKey(hostKey.metadata.owner, userId),
-			userId,
-		)?.metadata.id;
-	}
 
 	const form = useForm({
 		defaultValues: initial,
@@ -201,10 +217,10 @@ export function useHostKeyForm({
 			const description = value.description.trim();
 			const envVar = value.envVar.trim();
 			const newValue = value.value;
-			const accountId = resolveAccountId(value);
 
 			try {
 				if (isEdit && hostKey) {
+					const accountId = value.accountId || undefined;
 					// Secret rotation goes through the Rotate dialog on the detail
 					// page, so the stored valueFrom/value stay untouched here.
 					const {
@@ -241,28 +257,42 @@ export function useHostKeyForm({
 					toast("success", `Credential "${displayName}" updated.`);
 					onSaved(saved.metadata.name);
 				} else {
-					const name = computeSlug(displayName);
-					const baseSpec = {
-						hostId: value.hostId,
-						enabled: value.enabled,
-						...(accountId ? { accountId } : {}),
+					const plan = keyCreatePlan(value, poolChoices);
+					const createKey = (accountId: string | undefined) => {
+						const baseSpec = {
+							hostId: value.hostId,
+							enabled: value.enabled,
+							...(accountId ? { accountId } : {}),
+						};
+						const spec: HostKeyCreate["spec"] =
+							value.kind === "env"
+								? { ...baseSpec, valueFrom: { kind: "env", env: envVar } }
+								: {
+										...baseSpec,
+										valueFrom: { kind: "stored" },
+										value: newValue,
+									};
+						return createHostKey.mutateAsync({
+							metadata: {
+								name: computeSlug(displayName),
+								displayName,
+								...(owner ? { owner } : {}),
+								...(description ? { description } : {}),
+							},
+							spec,
+						});
 					};
-					const spec: HostKeyCreate["spec"] =
-						value.kind === "env"
-							? { ...baseSpec, valueFrom: { kind: "env", env: envVar } }
-							: { ...baseSpec, valueFrom: { kind: "stored" }, value: newValue };
-					const payload: HostKeyCreate = {
-						metadata: {
-							name,
-							displayName,
-							...(owner ? { owner } : {}),
-							...(description ? { description } : {}),
-						},
-						spec,
-					};
-					const saved = await createHostKey.mutateAsync(payload);
+					const { key, poolFailures } = await runKeyCreate(plan, {
+						createKey,
+						addKeyToPool: (poolId, keyId) => addKeyToPool(poolId, keyId),
+					});
 					toast("success", `Credential "${displayName}" created.`);
-					onSaved(saved.metadata.name);
+					for (const f of poolFailures) {
+						const label =
+							poolChoices.find((c) => c.id === f.poolId)?.label ?? f.poolId;
+						toast("error", poolFailureMessage(label, f.error));
+					}
+					onSaved(key.metadata.name);
 				}
 			} catch (err) {
 				toastSaveError(
@@ -275,6 +305,17 @@ export function useHostKeyForm({
 			}
 		},
 	});
+
+	// The pool goes back as this form loaded it, so a pool changed since
+	// answers 409 rather than losing that change.
+	async function addKeyToPool(poolId: string, keyId: string) {
+		const pool = usablePools.find((p) => p.metadata.id === poolId);
+		if (!pool) throw new Error("the pool is no longer listed.");
+		await updatePool.mutateAsync({
+			id: poolId,
+			body: poolWithKey(pool, keyId),
+		});
+	}
 
 	// Reset only when the form opens/closes, the edited resource changes, or the
 	// user reloads it — not on every `initial` identity change, so a background
@@ -297,8 +338,8 @@ export function useHostKeyForm({
 	const descriptionError = useStore(form.store, (s) =>
 		shownError(s.fieldMeta?.description, s.submissionAttempts),
 	);
-	const hostIdError = useStore(form.store, (s) =>
-		shownError(s.fieldMeta?.hostId, s.submissionAttempts),
+	const accountIdError = useStore(form.store, (s) =>
+		shownError(s.fieldMeta?.accountId, s.submissionAttempts),
 	);
 	const envVarError = useStore(form.store, (s) =>
 		shownError(s.fieldMeta?.envVar, s.submissionAttempts),
@@ -322,44 +363,53 @@ export function useHostKeyForm({
 		[hostKey, policiesData.items, poolsData.items],
 	);
 
-	const hostOptions = useMemo<SelectOption[]>(
-		() =>
-			(hostsData.items ?? []).map((h) => ({
-				value: h.metadata.id ?? "",
-				label: displayLabel(h.metadata),
-			})),
-		[hostsData.items],
-	);
-
-	const hostSelected = values.hostId !== "";
-	const usableAccounts = useUsableAccounts(
+	const poolsShown = !isEdit && values.hostId !== "" && values.accountId !== "";
+	const usablePools = useUsablePools(
 		usableBy,
-		{ host_id: [values.hostId], kind: ["provider"] },
-		{ enabled: hostSelected },
+		{ host_id: [values.hostId] },
+		{ enabled: poolsShown },
 	);
-	const accountOptions =
-		accountLocked && account
-			? [
-					{
-						value: account.metadata.id ?? "",
-						label: displayLabel(account.metadata),
-					},
-				]
-			: buildAccountOptions(
-					usableAccounts,
-					values.hostId,
-					accounts.find((a) => a.metadata.id === hostKey?.spec.accountId),
-				);
+	const poolChoices = poolsShown
+		? keyPoolChoices(usablePools, values.hostId, values.accountId)
+		: [];
+	const poolOptions: CheckOption[] = poolChoices.map((c) => ({
+		value: c.id,
+		label: c.label,
+		...(c.implied ? { disabled: true, hint: "includes this account" } : {}),
+	}));
+	const checkedPoolIds = [
+		...values.poolIds,
+		...poolChoices.filter((c) => c.implied).map((c) => c.id),
+	];
 
-	// Accounts are scoped to one host; a change drops the choice back to the
-	// default account.
-	function setHost(hostId: string) {
-		form.setFieldValue("hostId", hostId);
-		form.setFieldValue("accountId", DEFAULT_ACCOUNT);
+	// Picking an account fixes the host; the pools on offer follow it.
+	function setKeyAccount(accountId: string) {
+		const picked = accountGroups
+			.flatMap((g) => g.accounts)
+			.find((a) => a.value === accountId);
+		if (picked) pickAccount(accountId, picked.hostId);
 	}
 
-	function setAccount(accountId: string) {
+	// The created account isn't in this render's groups yet, so it brings its own host.
+	function selectCreatedAccount(created: Account) {
+		const { id } = created.metadata;
+		const { hostId } = created.spec;
+		if (id && hostId) pickAccount(id, hostId);
+	}
+
+	function pickAccount(accountId: string, hostId: string) {
 		form.setFieldValue("accountId", accountId);
+		form.setFieldValue("hostId", hostId);
+		form.setFieldValue("poolIds", []);
+	}
+
+	function togglePool(poolId: string) {
+		form.setFieldValue(
+			"poolIds",
+			values.poolIds.includes(poolId)
+				? values.poolIds.filter((id) => id !== poolId)
+				: [...values.poolIds, poolId],
+		);
 	}
 
 	return {
@@ -370,16 +420,18 @@ export function useHostKeyForm({
 		displayNameError,
 		descriptionError,
 		placement,
-		hostIdError,
+		accountIdError,
 		envVarError,
 		envVarReservedPrefix,
 		valueError,
-		hostOptions,
-		accountOptions,
-		hostSelected,
+		accountGroups,
 		accountLocked,
 		attachedPolicies,
-		setHost,
-		setAccount,
+		poolsShown,
+		poolOptions,
+		checkedPoolIds,
+		setKeyAccount,
+		selectCreatedAccount,
+		togglePool,
 	};
 }

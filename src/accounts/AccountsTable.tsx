@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Building2, Plus } from "lucide-react";
+import { Building2, KeyRound, Plus } from "lucide-react";
 import { AccountHolderLink } from "@/accounts/AccountHolderLink";
 import { ACCOUNT_SUMMARY } from "@/accounts/accountCopy";
 import { ACCOUNT_KIND_LABELS } from "@/accounts/accountView";
@@ -37,13 +37,22 @@ export function AccountsTable() {
 					/>
 				}
 				actions={
-					<Link
-						to="/accounts/new"
-						className={buttonVariants({ variant: "default", size: "lg" })}
-					>
-						<Plus className="w-3.5 h-3.5" />
-						New provider account
-					</Link>
+					<>
+						<Link
+							to="/accounts/new"
+							className={buttonVariants({ variant: "outline", size: "lg" })}
+						>
+							<Plus className="w-3.5 h-3.5" />
+							New provider account
+						</Link>
+						<Link
+							to="/host-keys/new"
+							className={buttonVariants({ variant: "default", size: "lg" })}
+						>
+							<KeyRound className="w-3.5 h-3.5" />
+							Add key
+						</Link>
+					</>
 				}
 			/>
 

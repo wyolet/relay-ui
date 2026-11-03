@@ -18,7 +18,20 @@ interface IdentitySectionProps {
 	placement?: string;
 }
 
-export function IdentitySection({
+export function IdentitySection(props: IdentitySectionProps) {
+	return (
+		<FormSection
+			icon={Tag}
+			title="Identity"
+			description="A human-readable name for the UI. We generate a URL-safe slug from it on create."
+		>
+			<IdentityFields {...props} />
+		</FormSection>
+	);
+}
+
+/** The name, slug preview and description inputs, without the section chrome. */
+export function IdentityFields({
 	displayName,
 	description,
 	onDisplayNameChange,
@@ -31,49 +44,43 @@ export function IdentitySection({
 	placement,
 }: IdentitySectionProps) {
 	return (
-		<FormSection
-			icon={Tag}
-			title="Identity"
-			description="A human-readable name for the UI. We generate a URL-safe slug from it on create."
-		>
-			<div className="flex flex-col gap-3">
-				<div>
-					<Input
-						type="text"
-						value={displayName}
-						onChange={(e) => onDisplayNameChange(e.currentTarget.value)}
-						placeholder={placeholder}
-						aria-invalid={displayNameError ? true : undefined}
-						autoFocus={autoFocus}
-					/>
-					{displayNameError && (
-						<p className="mt-1.5 text-[11px] text-destructive">
-							{displayNameError}
-						</p>
-					)}
-					<p className="mt-1.5 text-[11px] text-muted-foreground">
-						Slug:{" "}
-						<code className="font-mono text-foreground/80">
-							{slugPreview || "—"}
-						</code>
-						{placement && <span> · {placement}</span>}
+		<div className="flex flex-col gap-3">
+			<div>
+				<Input
+					type="text"
+					value={displayName}
+					onChange={(e) => onDisplayNameChange(e.currentTarget.value)}
+					placeholder={placeholder}
+					aria-invalid={displayNameError ? true : undefined}
+					autoFocus={autoFocus}
+				/>
+				{displayNameError && (
+					<p className="mt-1.5 text-[11px] text-destructive">
+						{displayNameError}
 					</p>
-				</div>
-				<div>
-					<Textarea
-						value={description}
-						onChange={(e) => onDescriptionChange(e.currentTarget.value)}
-						placeholder="Description (optional)…"
-						rows={3}
-						aria-invalid={descriptionError ? true : undefined}
-					/>
-					{descriptionError && (
-						<p className="mt-1.5 text-[11px] text-destructive">
-							{descriptionError}
-						</p>
-					)}
-				</div>
+				)}
+				<p className="mt-1.5 text-[11px] text-muted-foreground">
+					Slug:{" "}
+					<code className="font-mono text-foreground/80">
+						{slugPreview || "—"}
+					</code>
+					{placement && <span> · {placement}</span>}
+				</p>
 			</div>
-		</FormSection>
+			<div>
+				<Textarea
+					value={description}
+					onChange={(e) => onDescriptionChange(e.currentTarget.value)}
+					placeholder="Description (optional)…"
+					rows={3}
+					aria-invalid={descriptionError ? true : undefined}
+				/>
+				{descriptionError && (
+					<p className="mt-1.5 text-[11px] text-destructive">
+						{descriptionError}
+					</p>
+				)}
+			</div>
+		</div>
 	);
 }
