@@ -4544,7 +4544,7 @@ export interface components {
             readonly $schema?: string;
             /** @description Identity and provenance: id, name, owner, labels. */
             metadata: components["schemas"]["Metadata"];
-            /** @description Policies that link this key, directly or through a pool. Derived on read; ignored on write. */
+            /** @description Policies whose pools reach this key: listing it, or drawing on its account or a share of it. Derived on read; ignored on write. */
             readonly policies?: components["schemas"]["HostKeyPolicyRef"][] | null;
             /** @description The row's configuration. */
             spec: components["schemas"]["HostKeySpec"];
@@ -4603,6 +4603,8 @@ export interface components {
             id: string;
             /** @description Host key slug. */
             name: string;
+            /** @description The key belongs to the real account of a shared account one of the policy's pools draws on: it counts as reaching the host, but is never edited or revealed through the share. */
+            readOnly?: boolean;
             /**
              * Format: int64
              * @description How many other policies link this key, directly or through a pool.
@@ -15662,6 +15664,8 @@ export interface operations {
                 host_id?: string[];
                 /** @description Match any of the given credential_id values. */
                 credential_id?: string[];
+                /** @description Match any of the given account_id values. */
+                account_id?: string[];
                 /** @description Match selection exactly. */
                 selection?: "prioritized" | "round-robin" | "least-recently-used";
                 /** @description created lower bound (RFC3339). */

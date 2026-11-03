@@ -113,17 +113,32 @@ function HostRow({
 					<ul className="flex flex-wrap gap-x-3 gap-y-1">
 						{keys.map((k) => (
 							<li key={k.id} className="flex items-center gap-1.5">
-								<Link
-									to="/host-keys/$name"
-									params={{ name: k.name }}
-									className="inline-flex items-center gap-1.5 text-foreground hover:underline"
-								>
-									<KeyRound
-										className="w-3.5 h-3.5 text-muted-foreground shrink-0"
-										aria-hidden
-									/>
-									{k.name}
-								</Link>
+								{k.readOnly ? (
+									// A shared account's key: it serves, but the share never opens it.
+									<span
+										className="inline-flex items-center gap-1.5 text-foreground"
+										title="Reached through a shared account; its owner manages it."
+									>
+										<KeyRound
+											className="w-3.5 h-3.5 text-muted-foreground shrink-0"
+											aria-hidden
+										/>
+										{k.name}
+										<StatusPill tone="muted">shared</StatusPill>
+									</span>
+								) : (
+									<Link
+										to="/host-keys/$name"
+										params={{ name: k.name }}
+										className="inline-flex items-center gap-1.5 text-foreground hover:underline"
+									>
+										<KeyRound
+											className="w-3.5 h-3.5 text-muted-foreground shrink-0"
+											aria-hidden
+										/>
+										{k.name}
+									</Link>
+								)}
 								{k.enabled === false && (
 									<StatusPill tone="warn">key off</StatusPill>
 								)}

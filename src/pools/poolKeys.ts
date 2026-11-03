@@ -1,4 +1,5 @@
-import type { PoolSpec } from "@/api/hooks/pools";
+import type { Pool, PoolSpec } from "@/api/hooks/pools";
+import type { HostKey } from "@/api/types/hostkey";
 
 export type PoolSelection = NonNullable<PoolSpec["selection"]>;
 
@@ -35,4 +36,26 @@ export function moveItem<T>(
 	const next = [...list];
 	[next[index], next[target]] = [next[target], next[index]];
 	return next;
+}
+
+/** A pool's members in a few words: "2 accounts · 1 key", or "No members". */
+export function poolMemberSummary(pool: Pool): string {
+	const accounts = pool.spec.accountIds?.length ?? 0;
+	const keys = pool.spec.credentialIds?.length ?? 0;
+	const parts = [
+		accounts > 0 ? `${accounts} account${accounts === 1 ? "" : "s"}` : "",
+		keys > 0 ? `${keys} key${keys === 1 ? "" : "s"}` : "",
+	].filter(Boolean);
+	return parts.length > 0 ? parts.join(" · ") : "No members";
+}
+
+/** Whether a pool draws on a key: listed itself, or through its account. */
+export function poolHoldsKey(pool: Pool, hk: HostKey): boolean {
+	const id = hk.metadata.id ?? "";
+	const accountId = hk.spec.accountId;
+	return (
+		(pool.spec.credentialIds ?? []).includes(id) ||
+		(accountId !== undefined &&
+			(pool.spec.accountIds ?? []).includes(accountId))
+	);
 }
