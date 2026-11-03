@@ -14,8 +14,16 @@ function PlacementText({ placement }: { placement: FormPlacement }) {
 			<span className="font-medium text-foreground">{placement.scope}</span>
 			{" · "}
 			<WorkspaceMenu
-				aria-label="Change workspace"
+				aria-label="Change where this is created"
 				trigger={<Button variant="link" size="inline" />}
+				{...(placement.choose && placement.contextKey !== undefined
+					? {
+							formPick: {
+								value: placement.contextKey,
+								onSelect: placement.choose,
+							},
+						}
+					: {})}
 			>
 				change
 			</WorkspaceMenu>

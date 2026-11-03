@@ -174,8 +174,12 @@ export function ownerName(
 export interface FormPlacement {
 	/** e.g. "Team Platform". */
 	scope: string;
-	/** Placed by the work context, so switching the context moves the create. */
+	/** A create placed by the workspace; its form may pick another one for itself. */
 	editable: boolean;
+	/** The context this form creates in, by {@link contextKey}. */
+	contextKey?: string;
+	/** Picks another context for this form only; the workspace stays as it is. */
+	choose?: (key: string) => void;
 }
 
 /** A picker's owner-scoped list as a form reads it. */
