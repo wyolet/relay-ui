@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useState } from "react";
 import {
@@ -14,11 +15,17 @@ import {
 } from "@/accounts/accountView";
 import { filterMyAccountRows, toMyAccountRow } from "@/accounts/myAccountRows";
 import { useHolderResolver } from "@/accounts/useHolderResolver";
-import { type Account, useAccounts, useMyAccounts } from "@/api/hooks/accounts";
+import {
+	type Account,
+	accountListQueryOptions,
+	useAccounts,
+	useMyAccounts,
+} from "@/api/hooks/accounts";
 import { useHostKeys } from "@/api/hooks/hostkeys";
 import { useHosts } from "@/api/hooks/hosts";
 import type { Host } from "@/api/types/host";
 import type { FilterDef, FilterState } from "@/filters/types";
+import { useOwnerFilter } from "@/hooks/useOwnerFilter";
 import { displayLabel } from "@/lib/displayLabel";
 
 export const ACCOUNT_FILTERS = [
@@ -87,11 +94,20 @@ export function useAccountFilters() {
 	return { filters, setFilters };
 }
 
+/** The All accounts list's owner filter; it renders in the toolbar, outside the list's Suspense. */
+export function useAccountOwnerFilter() {
+	const { data } = useQuery({ ...accountListQueryOptions, retry: false });
+	return useOwnerFilter(data?.items ?? []);
+}
+
 /** Account rows with their holder and, for provider accounts, host and key count. */
 export function useAccountRows({
 	q,
 	kind,
-}: Pick<AccountFilters, "q" | "kind">) {
+	ownerMatches,
+}: Pick<AccountFilters, "q" | "kind"> & {
+	ownerMatches: (account: Account) => boolean;
+}) {
 	const { data: accountsData } = useAccounts();
 	const { data: hostsData } = useHosts();
 	const { data: hostKeysData } = useHostKeys();
@@ -143,6 +159,7 @@ export function useAccountRows({
 	const rows = allRows.filter(
 		(r) =>
 			(kind === "all" || r.account.spec.kind === kind) &&
+			ownerMatches(r.account) &&
 			(!needle || matches(r)),
 	);
 

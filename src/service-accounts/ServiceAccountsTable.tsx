@@ -9,11 +9,13 @@ import { buttonVariants } from "@/components/ui/button";
 import { FilterBar } from "@/filters/FilterBar";
 import { activeFilterCount } from "@/filters/toQueryParams";
 import type { FilterDef, FilterState } from "@/filters/types";
+import { useOwnerFilter } from "@/hooks/useOwnerFilter";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { AccountPolicy } from "@/policy-bindings/AccountPolicy";
 import { OwnerLink } from "@/projects/OwnerLink";
 import { useToggleServiceAccountEnabled } from "@/service-accounts/useToggleServiceAccountEnabled";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
+import { OwnerFilter } from "@/shared/OwnerFilter";
 import { RowMenu } from "@/shared/RowMenu";
 import { StaleContent } from "@/shared/StaleContent";
 import { Switch } from "@/shared/Switch";
@@ -69,9 +71,11 @@ export function ServiceAccountsTable() {
 	});
 	const { setEnabled } = useToggleServiceAccountEnabled();
 
-	const items = data.items ?? [];
+	const owner = useOwnerFilter(data.items ?? []);
+	const items = owner.visible;
 	const filtered =
-		activeFilterCount(SERVICE_ACCOUNT_FILTERS, { ...search }) > 0;
+		activeFilterCount(SERVICE_ACCOUNT_FILTERS, { ...search }) > 0 ||
+		owner.selected.length > 0;
 
 	function patch(next: FilterState) {
 		void navigate({ search: (prev) => ({ ...prev, ...next }), replace: true });
@@ -87,6 +91,7 @@ export function ServiceAccountsTable() {
 						onChange={patch}
 					/>
 				}
+				filters={<OwnerFilter filter={owner} />}
 				actions={
 					<Link
 						to="/service-accounts/new"

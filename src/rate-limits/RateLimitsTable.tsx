@@ -9,16 +9,13 @@ import {
 import type { RateLimit } from "@/api/types/ratelimit";
 import { buttonVariants } from "@/components/ui/button";
 import { PlanIssueDot } from "@/diagnostics/DiagnosticDot";
+import { useOwnerFilter } from "@/hooks/useOwnerFilter";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { compactNumber } from "@/lib/rateLimitFormat";
 import { windowShort } from "@/lib/timeWindow";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
-import {
-	matchesOwnerFilter,
-	type OwnerFilter,
-	OwnerFilterSelect,
-} from "@/shared/OwnerFilter";
+import { OwnerFilter } from "@/shared/OwnerFilter";
 import { RowMenu } from "@/shared/RowMenu";
 import { SearchBox } from "@/shared/SearchBox";
 import { CatalogDetachedBadge } from "@/shared/StatusBadge";
@@ -33,11 +30,8 @@ export function RateLimitsTable() {
 	const del = useConfirmedDelete(useDeleteRateLimit(), { noun: "rate limit" });
 	const navigate = useNavigate({ from: "/policies" });
 	const [q, setQ] = useState("");
-	const [ownerFilter, setOwnerFilter] = useState<OwnerFilter>("user");
-	const rawItems = rateLimitsData.items ?? [];
-	const allItems = rawItems.filter((rl) =>
-		matchesOwnerFilter(rl.metadata.owner, ownerFilter),
-	);
+	const owner = useOwnerFilter(rateLimitsData.items ?? []);
+	const allItems = owner.visible;
 	const needle = q.trim().toLowerCase();
 	const items = needle
 		? allItems.filter((rl) =>
@@ -55,9 +49,7 @@ export function RateLimitsTable() {
 						placeholder="Search rate limits"
 					/>
 				}
-				filters={
-					<OwnerFilterSelect value={ownerFilter} onChange={setOwnerFilter} />
-				}
+				filters={<OwnerFilter filter={owner} />}
 				actions={
 					<Link
 						to="/policies/rate-limits/new"

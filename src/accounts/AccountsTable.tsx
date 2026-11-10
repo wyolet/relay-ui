@@ -12,15 +12,17 @@ import {
 	ACCOUNT_FILTERS,
 	type AccountFilters,
 	useAccountFilters,
+	useAccountOwnerFilter,
 	useAccountRows,
 	useMyAccountRows,
 } from "@/accounts/useAccountRows";
-import { useDeleteAccount } from "@/api/hooks/accounts";
+import { type Account, useDeleteAccount } from "@/api/hooks/accounts";
 import { buttonVariants } from "@/components/ui/button";
 import { FilterBar } from "@/filters/FilterBar";
 import { HostCell } from "@/hosts/HostCell";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
+import { OwnerFilter } from "@/shared/OwnerFilter";
 import { type MenuAction, RowMenu } from "@/shared/RowMenu";
 import { ShortId } from "@/shared/ShortId";
 import { PageLoader } from "@/shared/Spinner";
@@ -58,6 +60,7 @@ const rowClass = "border-t border-border hover:bg-muted/40 transition-colors";
 
 export function AccountsTable() {
 	const { filters, setFilters } = useAccountFilters();
+	const owner = useAccountOwnerFilter();
 
 	return (
 		<div>
@@ -70,6 +73,7 @@ export function AccountsTable() {
 						onChange={setFilters}
 					/>
 				}
+				filters={filters.mine ? undefined : <OwnerFilter filter={owner} />}
 				actions={
 					<>
 						<Link
@@ -94,15 +98,21 @@ export function AccountsTable() {
 				{filters.mine ? (
 					<MyAccountsList filters={filters} />
 				) : (
-					<AllAccountsList filters={filters} />
+					<AllAccountsList filters={filters} ownerMatches={owner.matches} />
 				)}
 			</Suspense>
 		</div>
 	);
 }
 
-function AllAccountsList({ filters }: { filters: AccountFilters }) {
-	const { rows, total } = useAccountRows(filters);
+function AllAccountsList({
+	filters,
+	ownerMatches,
+}: {
+	filters: AccountFilters;
+	ownerMatches: (account: Account) => boolean;
+}) {
+	const { rows, total } = useAccountRows({ ...filters, ownerMatches });
 	const del = useConfirmedDelete(useDeleteAccount(), { noun: "account" });
 
 	return (

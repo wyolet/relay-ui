@@ -12,16 +12,13 @@ import type { RateLimit } from "@/api/types/ratelimit";
 import { buttonVariants } from "@/components/ui/button";
 import { PlanIssueDot } from "@/diagnostics/DiagnosticDot";
 import { useMutability } from "@/hooks/useMutability";
+import { useOwnerFilter } from "@/hooks/useOwnerFilter";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { usePolicyAppliesToCounts } from "@/policies/usePolicyAppliesTo";
 import { OwnerLink } from "@/projects/OwnerLink";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
-import {
-	matchesOwnerFilter,
-	type OwnerFilter,
-	OwnerFilterSelect,
-} from "@/shared/OwnerFilter";
+import { OwnerFilter } from "@/shared/OwnerFilter";
 import { RowMenu } from "@/shared/RowMenu";
 import { SearchBox } from "@/shared/SearchBox";
 import { CatalogDetachedBadge } from "@/shared/StatusBadge";
@@ -52,11 +49,8 @@ export function PoliciesTable() {
 	const del = useConfirmedDelete(useDeletePolicy(), { noun: "policy" });
 	const navigate = useNavigate({ from: "/policies" });
 	const [q, setQ] = useState("");
-	const [ownerFilter, setOwnerFilter] = useState<OwnerFilter>("user");
-	const rawItems = policiesData.items ?? [];
-	const allItems = rawItems.filter((p) =>
-		matchesOwnerFilter(p.metadata.owner, ownerFilter),
-	);
+	const owner = useOwnerFilter(policiesData.items ?? []);
+	const allItems = owner.visible;
 	const needle = q.trim().toLowerCase();
 	const items = needle
 		? allItems.filter((p) =>
@@ -75,9 +69,7 @@ export function PoliciesTable() {
 				search={
 					<SearchBox value={q} onChange={setQ} placeholder="Search policies" />
 				}
-				filters={
-					<OwnerFilterSelect value={ownerFilter} onChange={setOwnerFilter} />
-				}
+				filters={<OwnerFilter filter={owner} />}
 				actions={
 					<Link
 						to="/policies/new"

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useHosts } from "@/api/hooks/hosts";
 import { type Pool, usePools } from "@/api/hooks/pools";
 import type { Host } from "@/api/types/host";
+import { useOwnerFilter } from "@/hooks/useOwnerFilter";
 import { displayLabel } from "@/lib/displayLabel";
 
 export interface PoolRow {
@@ -10,7 +11,7 @@ export interface PoolRow {
 	hostLabel: string;
 }
 
-/** Pool rows with their host, filtered by the search box. */
+/** Pool rows with their host, filtered by owner and the search box. */
 export function usePoolRows() {
 	const { data: poolsData } = usePools();
 	const { data: hostsData } = useHosts();
@@ -21,7 +22,9 @@ export function usePoolRows() {
 		if (h.metadata.id) hostById.set(h.metadata.id, h);
 	}
 
-	const allRows: PoolRow[] = (poolsData.items ?? []).map((pool) => {
+	const pools = poolsData.items ?? [];
+	const owner = useOwnerFilter(pools);
+	const allRows: PoolRow[] = owner.visible.map((pool) => {
 		const host = hostById.get(pool.spec.hostId);
 		return {
 			pool,
@@ -41,5 +44,5 @@ export function usePoolRows() {
 			)
 		: allRows;
 
-	return { rows, total: allRows.length, q, setQ };
+	return { rows, total: pools.length, q, setQ, owner };
 }
