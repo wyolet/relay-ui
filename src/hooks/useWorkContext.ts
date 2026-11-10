@@ -13,6 +13,7 @@ import {
 	ownerUsableBy,
 	resolveWorkContext,
 	SYSTEM_CONTEXT,
+	type WorkContext,
 	type WorkContextRef,
 	workContexts,
 } from "@/lib/workContext";
@@ -52,6 +53,8 @@ export function useFormOwner(fixed?: { owner?: Owner }): {
 	owner: Owner | undefined;
 	usableBy: string | undefined;
 	placement: FormPlacement | undefined;
+	/** The context the form creates in; undefined for a fixed owner. */
+	context: WorkContext | undefined;
 } {
 	const { userId } = useAuth();
 	const work = useWorkContext();
@@ -65,6 +68,7 @@ export function useFormOwner(fixed?: { owner?: Owner }): {
 				scope: ownerName(fixed.owner, work.contexts, userId),
 				editable: false,
 			},
+			context: undefined,
 		};
 	}
 	// A pick the caller lost (a revoked role) falls back to the workspace.
@@ -73,7 +77,12 @@ export function useFormOwner(fixed?: { owner?: Owner }): {
 			work.contexts.find((c) => contextKey(c) === contextKey(picked))) ||
 		work.current;
 	if (!current) {
-		return { owner: work.owner, usableBy: work.usableBy, placement: undefined };
+		return {
+			owner: work.owner,
+			usableBy: work.usableBy,
+			placement: undefined,
+			context: undefined,
+		};
 	}
 	return {
 		owner: contextOwner(current),
@@ -87,5 +96,6 @@ export function useFormOwner(fixed?: { owner?: Owner }): {
 				if (next) setPicked(next);
 			},
 		},
+		context: current,
 	};
 }
