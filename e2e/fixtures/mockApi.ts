@@ -15,6 +15,10 @@ export interface MockGraph {
 	providers: unknown[];
 	hostBindings?: unknown[];
 	serviceAccounts?: unknown[];
+	accounts?: unknown[];
+	policyBindings?: unknown[];
+	/** `/me/contexts`: the workspaces the caller may act in. */
+	contexts?: unknown[];
 	proxyMode?: { value: { enabled: boolean; allowUnauthenticated: boolean } };
 	/** whoami roles; none means a signed-in non-admin. */
 	roles?: string[];
@@ -87,7 +91,12 @@ const GRAPH_COLLECTIONS: Record<
 	string,
 	keyof Omit<
 		MockGraph,
-		"proxyMode" | "roles" | "accessReview" | "features" | "planIssues"
+		| "proxyMode"
+		| "roles"
+		| "accessReview"
+		| "features"
+		| "planIssues"
+		| "contexts"
 	>
 > = {
 	policies: "policies",
@@ -99,11 +108,12 @@ const GRAPH_COLLECTIONS: Record<
 	providers: "providers",
 	"host-bindings": "hostBindings",
 	"service-accounts": "serviceAccounts",
+	accounts: "accounts",
+	"policy-bindings": "policyBindings",
 };
 const EMPTY_COLLECTIONS = new Set([
 	"budgets",
 	"groups",
-	"policy-bindings",
 	"pools",
 	"pricings",
 	"projects",
@@ -169,6 +179,7 @@ export async function mockApi(page: Page, graph: MockGraph): Promise<void> {
 			return fulfillJson(route, res.body, res.status);
 		}
 		if (path === "version") return fulfillJson(route, { version: "test" });
+		if (path === "me/contexts") return fulfillJson(route, graph.contexts ?? []);
 		if (path === "catalog/graph") {
 			return fulfillJson(route, { hosts: [], models: [], providers: [] });
 		}
