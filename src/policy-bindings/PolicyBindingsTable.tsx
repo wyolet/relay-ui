@@ -13,10 +13,12 @@ import { buttonVariants } from "@/components/ui/button";
 import { FilterBar } from "@/filters/FilterBar";
 import { activeFilterCount } from "@/filters/toQueryParams";
 import type { FilterDef, FilterState } from "@/filters/types";
+import { useOwnerFilter } from "@/hooks/useOwnerFilter";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { AccountChips } from "@/policy-bindings/AccountChips";
 import { BindingOwner } from "@/policy-bindings/BindingOwner";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
+import { OwnerFilter } from "@/shared/OwnerFilter";
 import { RowMenu } from "@/shared/RowMenu";
 import { StaleContent } from "@/shared/StaleContent";
 import { TableEmpty } from "@/shared/TableEmpty";
@@ -121,8 +123,10 @@ export function PolicyBindingsTable() {
 		},
 	];
 
-	const items = data.items ?? [];
-	const filtered = activeFilterCount(filters, { ...search }) > 0;
+	const owner = useOwnerFilter(data.items ?? []);
+	const items = owner.visible;
+	const filtered =
+		activeFilterCount(filters, { ...search }) > 0 || owner.selected.length > 0;
 
 	function patch(next: FilterState) {
 		void navigate({ search: (prev) => ({ ...prev, ...next }), replace: true });
@@ -134,6 +138,7 @@ export function PolicyBindingsTable() {
 				search={
 					<FilterBar defs={filters} state={{ ...live }} onChange={patch} />
 				}
+				filters={<OwnerFilter filter={owner} />}
 				actions={
 					<Link
 						to="/policy-bindings/new"

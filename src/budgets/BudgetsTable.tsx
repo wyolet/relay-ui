@@ -12,6 +12,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { fmtUsd } from "@/lib/limitsFormat";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
+import { OwnerFilter } from "@/shared/OwnerFilter";
 import { RowMenu } from "@/shared/RowMenu";
 import { SearchBox } from "@/shared/SearchBox";
 import { TableEmpty } from "@/shared/TableEmpty";
@@ -20,7 +21,7 @@ import { Th } from "@/shared/Th";
 import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 
 export function BudgetsTable() {
-	const { rows, total, q, setQ } = useBudgetRows();
+	const { rows, total, q, setQ, owner } = useBudgetRows();
 	const del = useConfirmedDelete(useDeleteBudget(), { noun: "budget" });
 
 	return (
@@ -29,6 +30,7 @@ export function BudgetsTable() {
 				search={
 					<SearchBox value={q} onChange={setQ} placeholder="Search budgets" />
 				}
+				filters={<OwnerFilter filter={owner} />}
 				actions={
 					<Link
 						to="/policies/budgets/new"

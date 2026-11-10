@@ -7,6 +7,7 @@ import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { poolMemberSummary, SELECTION_LABELS } from "@/pools/poolKeys";
 import { usePoolRows } from "@/pools/usePoolRows";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
+import { OwnerFilter } from "@/shared/OwnerFilter";
 import { RowMenu } from "@/shared/RowMenu";
 import { SearchBox } from "@/shared/SearchBox";
 import { TableEmpty } from "@/shared/TableEmpty";
@@ -15,7 +16,7 @@ import { Th } from "@/shared/Th";
 import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 
 export function PoolsTable() {
-	const { rows, total, q, setQ } = usePoolRows();
+	const { rows, total, q, setQ, owner } = usePoolRows();
 	const del = useConfirmedDelete(useDeletePool(), { noun: "pool" });
 
 	return (
@@ -24,6 +25,7 @@ export function PoolsTable() {
 				search={
 					<SearchBox value={q} onChange={setQ} placeholder="Search pools" />
 				}
+				filters={<OwnerFilter filter={owner} />}
 				actions={
 					<Link
 						to="/pools/new"

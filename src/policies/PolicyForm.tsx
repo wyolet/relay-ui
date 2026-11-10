@@ -1,4 +1,4 @@
-import { Boxes, Gauge, Layers, Wallet } from "lucide-react";
+import { Boxes, Gauge, Layers, Users, Wallet } from "lucide-react";
 import type { Policy } from "@/api/types/policy";
 import { ModelPicker } from "@/models/ModelPicker";
 import { DraftReachNotes } from "@/policies/DraftReachNotes";
@@ -13,6 +13,7 @@ import {
 	useBudgetChoices,
 	usePoolCheckOptions,
 } from "@/policies/usePolicyLinkChoices";
+import { AccountsPicker } from "@/policy-bindings/AccountsPicker";
 import { FormFooter } from "@/shared/FormFooter";
 import { FormSection } from "@/shared/FormSection";
 import { IdentitySection } from "@/shared/IdentitySection";
@@ -23,7 +24,7 @@ import { WarningNotes } from "@/shared/WarningNotes";
 
 interface PolicyFormProps {
 	policy?: Policy;
-	onSaved: () => void;
+	onSaved: (name: string) => void;
 	onCancel: () => void;
 }
 
@@ -45,6 +46,7 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 		updatingFor,
 		unavailable,
 		unavailableErrors,
+		targets,
 	} = usePolicyForm({
 		open: true,
 		policy,
@@ -91,6 +93,25 @@ export function PolicyForm({ policy, onSaved, onCancel }: PolicyFormProps) {
 					placeholder="Default policy"
 					placement={placement}
 				/>
+
+				<FormSection
+					icon={Users}
+					title="Applies to"
+					description="The teams, projects, service accounts and users whose requests run under this policy. A policy that applies to no one is never used. An account under another policy moves to this one."
+				>
+					<ScopedPicker updatingFor={targets.updatingFor} error={targets.error}>
+						{targets.ready ? (
+							<AccountsPicker
+								options={targets.options}
+								selected={targets.selected}
+								onChange={targets.setSelected}
+								unavailable={targets.unavailable}
+							/>
+						) : (
+							<p className="text-xs text-muted-foreground">Loading…</p>
+						)}
+					</ScopedPicker>
+				</FormSection>
 
 				<FormSection
 					icon={Layers}

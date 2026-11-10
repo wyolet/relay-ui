@@ -77,15 +77,23 @@ export function useServiceAccountForm({
 		serviceAccount?.metadata.resourceVersion,
 	);
 
-	// The edited row's project, else the current project context.
-	const { contexts, current } = useWorkContext();
+	// The edited row's project, else the project the form creates in; any
+	// other context leaves the project to pick, among a team's own when it's one.
+	const { contexts } = useWorkContext();
+	const { placement, context } = useFormOwner(
+		serviceAccount
+			? { owner: { kind: "project", id: serviceAccount.spec.projectId } }
+			: undefined,
+	);
 	const fixedProjectId =
 		serviceAccount?.spec.projectId ||
-		(current?.kind === "project" ? current.id : "");
+		(context?.kind === "project" ? context.id : "");
 	const picksProject = fixedProjectId === "";
-	const { placement } = useFormOwner({
-		owner: { kind: "project", id: fixedProjectId },
-	});
+	const projectOptions = scopeOptions(contexts, "project").filter(
+		(o) =>
+			context?.kind !== "team" ||
+			contexts.some((c) => c.id === o.value && c.teamId === context.id),
+	);
 
 	const initial = useMemo<ServiceAccountFormValues>(
 		() => (serviceAccount ? toValues(serviceAccount) : emptyValues()),
@@ -187,8 +195,17 @@ export function useServiceAccountForm({
 		displayNameError,
 		descriptionError,
 		picksProject,
-		placement: picksProject ? undefined : placement,
-		projectOptions: scopeOptions(contexts, "project"),
+		// A picked project is where the row lands, whatever the context.
+		placement:
+			placement && picksProject
+				? {
+						...placement,
+						scope:
+							projectOptions.find((o) => o.value === values.projectId)?.label ??
+							placement.scope,
+					}
+				: placement,
+		projectOptions,
 		projectIdError,
 	};
 }

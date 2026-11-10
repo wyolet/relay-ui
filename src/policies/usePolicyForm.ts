@@ -34,6 +34,7 @@ import {
 	poolIdsOnEveryCredentialSwitch,
 	poolIdsOnToggle,
 } from "@/policies/policyReach";
+import { usePolicyTargets } from "@/policy-bindings/usePolicyTargets";
 import { toast } from "@/shared/Toast";
 
 export interface PolicyFormValues extends PolicySpecValues {
@@ -91,7 +92,8 @@ function policyToValues(policy: Policy): PolicyFormValues {
 interface UsePolicyFormOptions {
 	open: boolean;
 	policy?: Policy;
-	onSaved: () => void;
+	/** Called with the saved policy's name. */
+	onSaved: (name: string) => void;
 }
 
 export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
@@ -106,6 +108,11 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 	);
 
 	const { owner, usableBy, placement } = useFormOwner(policy?.metadata);
+	const targets = usePolicyTargets({
+		policyId: policy?.metadata.id,
+		usableBy,
+		placement,
+	});
 
 	const initial = useMemo<PolicyFormValues>(
 		() => (policy ? policyToValues(policy) : emptyValues()),
@@ -135,6 +142,8 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 				unavailablePools ||
 				unavailableBudgets ||
 				unavailableRateLimits ||
+				targets.unavailable ||
+				!targets.ready ||
 				poolsMissing(value)
 			) {
 				return;
@@ -143,6 +152,7 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 			const description = value.description.trim();
 			const spec = specFromFormValues(value);
 			try {
+				let saved: Policy;
 				if (isEdit && policy) {
 					const payload: PolicyUpdate = {
 						metadata: {
@@ -157,12 +167,11 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 						},
 						spec,
 					};
-					const saved = await updatePolicy.mutateAsync({
+					saved = await updatePolicy.mutateAsync({
 						id: policy.metadata.id ?? "",
 						body: payload,
 					});
 					loaded.markSaved(saved.metadata.resourceVersion);
-					toast("success", `Policy "${displayName}" updated.`);
 				} else {
 					const name = computeSlug(displayName);
 					const payload: PolicyCreate = {
@@ -174,10 +183,17 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 						},
 						spec,
 					};
-					await createPolicy.mutateAsync(payload);
-					toast("success", `Policy "${displayName}" created.`);
+					saved = await createPolicy.mutateAsync(payload);
 				}
-				onSaved();
+				// The policy stands either way; a failed account is retried from the edit form.
+				const targetError = await targets.applyTo(saved.metadata.id ?? "");
+				if (targetError) toast("error", targetError);
+				else
+					toast(
+						"success",
+						`Policy "${displayName}" ${isEdit ? "updated" : "created"}.`,
+					);
+				onSaved(saved.metadata.name);
 			} catch (err) {
 				toastSaveError(
 					err,
@@ -297,6 +313,15 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 		unavailableErrors: {
 			budgets: unavailablePicksError(unavailableBudgets, submitTried),
 			rateLimits: unavailablePicksError(unavailableRateLimits, submitTried),
+		},
+		targets: {
+			options: targets.options,
+			selected: targets.selected,
+			setSelected: targets.setSelected,
+			ready: targets.ready,
+			unavailable: targets.unavailable,
+			updatingFor: targets.updatingFor,
+			error: unavailablePicksError(targets.unavailable, submitTried),
 		},
 	};
 }

@@ -12,15 +12,13 @@ import type { RateLimit } from "@/api/types/ratelimit";
 import { buttonVariants } from "@/components/ui/button";
 import { PlanIssueDot } from "@/diagnostics/DiagnosticDot";
 import { useMutability } from "@/hooks/useMutability";
+import { useOwnerFilter } from "@/hooks/useOwnerFilter";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
+import { usePolicyAppliesToCounts } from "@/policies/usePolicyAppliesTo";
 import { OwnerLink } from "@/projects/OwnerLink";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
-import {
-	matchesOwnerFilter,
-	type OwnerFilter,
-	OwnerFilterSelect,
-} from "@/shared/OwnerFilter";
+import { OwnerFilter } from "@/shared/OwnerFilter";
 import { RowMenu } from "@/shared/RowMenu";
 import { SearchBox } from "@/shared/SearchBox";
 import { CatalogDetachedBadge } from "@/shared/StatusBadge";
@@ -47,14 +45,12 @@ function describeCatalog(p: Policy): {
 export function PoliciesTable() {
 	const { data: policiesData } = usePolicies();
 	const rateLimits = useAttachableRateLimits();
+	const appliesToCounts = usePolicyAppliesToCounts();
 	const del = useConfirmedDelete(useDeletePolicy(), { noun: "policy" });
 	const navigate = useNavigate({ from: "/policies" });
 	const [q, setQ] = useState("");
-	const [ownerFilter, setOwnerFilter] = useState<OwnerFilter>("user");
-	const rawItems = policiesData.items ?? [];
-	const allItems = rawItems.filter((p) =>
-		matchesOwnerFilter(p.metadata.owner, ownerFilter),
-	);
+	const owner = useOwnerFilter(policiesData.items ?? []);
+	const allItems = owner.visible;
 	const needle = q.trim().toLowerCase();
 	const items = needle
 		? allItems.filter((p) =>
@@ -73,9 +69,7 @@ export function PoliciesTable() {
 				search={
 					<SearchBox value={q} onChange={setQ} placeholder="Search policies" />
 				}
-				filters={
-					<OwnerFilterSelect value={ownerFilter} onChange={setOwnerFilter} />
-				}
+				filters={<OwnerFilter filter={owner} />}
 				actions={
 					<Link
 						to="/policies/new"
@@ -118,6 +112,7 @@ export function PoliciesTable() {
 						<thead className="bg-muted/40">
 							<tr>
 								<Th variant="column">Name</Th>
+								<Th variant="column">Applies to</Th>
 								<Th variant="column">Models</Th>
 								<Th variant="column" align="right">
 									Pools
@@ -145,6 +140,11 @@ export function PoliciesTable() {
 									key={p.metadata.name}
 									policy={p}
 									rateLimitById={rateLimitById}
+									appliesTo={
+										appliesToCounts
+											? (appliesToCounts.get(p.metadata.id ?? "") ?? 0)
+											: undefined
+									}
 									onEdit={() =>
 										void navigate({
 											to: "/policies/$name",
@@ -180,11 +180,14 @@ export function PoliciesTable() {
 function PolicyRow({
 	policy,
 	rateLimitById,
+	appliesTo,
 	onEdit,
 	onDelete,
 }: {
 	policy: Policy;
 	rateLimitById: Map<string, RateLimit>;
+	/** Accounts bound to the policy; undefined while loading. */
+	appliesTo: number | undefined;
 	onEdit: () => void;
 	onDelete: () => void;
 }) {
@@ -242,6 +245,22 @@ function PolicyRow({
 				<div className="mt-1 empty:hidden">
 					<OwnerLink owner={policy.metadata.owner} />
 				</div>
+			</td>
+			<td className="px-3 py-2 text-sm">
+				{appliesTo === undefined ? (
+					<span className="text-muted-foreground">…</span>
+				) : appliesTo === 0 ? (
+					<span
+						className="text-warning"
+						title="No account runs under this policy, so no request uses it."
+					>
+						No one
+					</span>
+				) : (
+					<span className="text-foreground tabular-nums">
+						{appliesTo} account{appliesTo === 1 ? "" : "s"}
+					</span>
+				)}
 			</td>
 			<td className="px-3 py-2">
 				<span

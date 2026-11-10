@@ -88,17 +88,16 @@ export function useProjectForm({
 		project?.metadata.resourceVersion,
 	);
 
-	// The edited row's team, else a team page's, else the current context's.
-	const { contexts, current } = useWorkContext();
+	// The edited row's team, else a team page's, else the team of the context
+	// the form creates in.
+	const { contexts } = useWorkContext();
+	const presetTeamId = project?.spec.teamId || teamId;
+	const { placement, context } = useFormOwner(
+		presetTeamId ? { owner: { kind: "team", id: presetTeamId } } : undefined,
+	);
 	const fixedTeamId =
-		project?.spec.teamId ||
-		teamId ||
-		(current ? contextTeamId(current) : undefined) ||
-		"";
+		presetTeamId || (context ? contextTeamId(context) : undefined) || "";
 	const picksTeam = fixedTeamId === "";
-	const { placement } = useFormOwner({
-		owner: { kind: "team", id: fixedTeamId },
-	});
 
 	const initial = useMemo<ProjectFormValues>(
 		() => (project ? toValues(project) : emptyValues()),
@@ -201,7 +200,17 @@ export function useProjectForm({
 		displayNameError,
 		descriptionError,
 		picksTeam,
-		placement: picksTeam ? undefined : placement,
+		// A picked team is where the row lands, whatever the context.
+		placement:
+			placement && picksTeam
+				? {
+						...placement,
+						scope:
+							scopeOptions(contexts, "team").find(
+								(o) => o.value === values.teamId,
+							)?.label ?? placement.scope,
+					}
+				: placement,
 		teamOptions: scopeOptions(contexts, "team"),
 		teamIdError,
 	};

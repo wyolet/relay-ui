@@ -61,7 +61,10 @@ export function PolicyLinkPicker({
 }
 
 /** Detail routes a linked row can open, keyed by slug. */
-export type LinkChoiceRoute = "/pools/$name" | "/policies/budgets/$name";
+export type LinkChoiceRoute =
+	| "/pools/$name"
+	| "/policies/budgets/$name"
+	| "/accounts/$name";
 
 /** One linked row; `rank` marks an ordered list, `children` are trailing actions. */
 export function LinkChoiceRow({
