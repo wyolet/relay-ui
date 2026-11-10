@@ -1,6 +1,5 @@
 import { type ReactNode, Suspense } from "react";
 import { objectRef } from "@/api/hooks/planIssues";
-import { usePolicyReferences } from "@/api/hooks/policies";
 import type { Policy } from "@/api/types/policy";
 import { PlanIssuesPanel } from "@/diagnostics/IssuesPanel";
 import { HostLogo, hostRefLogo } from "@/hosts/HostLogo";
@@ -10,6 +9,7 @@ import {
 } from "@/policies/PolicyLinkPicker";
 import { budgetLinkShared } from "@/policies/policyFormSpec";
 import { UnpricedUnderBudget } from "@/policies/UnpricedUnderBudget";
+import { usePolicyAppliesTo } from "@/policies/usePolicyAppliesTo";
 import { usePolicyHosts } from "@/policies/usePolicyHosts";
 import {
 	type LinkChoice,
@@ -58,8 +58,19 @@ function LinksPanel({ policy }: { policy: Policy }) {
 	const budgetLinks = policy.spec.budgets ?? [];
 	const pools = useSelectedPools(policy.spec.poolIds ?? []);
 	const budgets = useSelectedBudgets(budgetLinks.map((b) => b.budgetId));
+	const appliesTo = usePolicyAppliesTo(policy.metadata.id);
 	return (
 		<section className="grid gap-4 sm:grid-cols-2">
+			<LinkList
+				title="Applies to"
+				empty={
+					appliesTo
+						? "No one. Requests never run under this policy; edit it to pick who it applies to."
+						: "Loading…"
+				}
+				items={appliesTo ?? []}
+				linkTo="/accounts/$name"
+			/>
 			<LinkList
 				title="Pools, in failover order"
 				empty="No pools linked."
@@ -134,15 +145,7 @@ function StatsGrid({ policy }: { policy: Policy }) {
 				value={hosts.length}
 				sub={hosts.length === 0 ? "no host resolved" : "serving requests"}
 			/>
-			{policy.metadata.id ? (
-				<Suspense
-					fallback={<StatCard label="Bindings" value="…" sub="loading" />}
-				>
-					<BindingStatCard policyId={policy.metadata.id} />
-				</Suspense>
-			) : (
-				<StatCard label="Bindings" value="—" sub="unsaved" />
-			)}
+			<AppliesToStatCard policyId={policy.metadata.id} />
 			{policy.metadata.id && (
 				<>
 					<Suspense fallback={<UsageCardsSkeleton />}>
@@ -157,16 +160,16 @@ function StatsGrid({ policy }: { policy: Policy }) {
 	);
 }
 
-function BindingStatCard({ policyId }: { policyId: string }) {
-	const { data } = usePolicyReferences(policyId);
-	const count = (data.items ?? []).filter(
-		(r) => r.kind === "policy-binding" && r.via === "spec.policyId",
-	).length;
+function AppliesToStatCard({ policyId }: { policyId: string | undefined }) {
+	const appliesTo = usePolicyAppliesTo(policyId);
+	if (!appliesTo) {
+		return <StatCard label="Applies to" value="…" sub="loading" />;
+	}
 	return (
 		<StatCard
-			label="Bindings"
-			value={count}
-			sub={count === 0 ? "not bound" : "applying this policy"}
+			label="Applies to"
+			value={appliesTo.length}
+			sub={appliesTo.length === 0 ? "no one: never used" : "accounts"}
 		/>
 	);
 }

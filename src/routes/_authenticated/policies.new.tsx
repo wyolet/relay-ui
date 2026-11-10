@@ -51,13 +51,13 @@ function NewPolicyInner() {
 					New policy
 				</h1>
 				<p className="mt-1 text-xs text-muted-foreground">
-					Bundle pools, allowed models, rate limits and budgets, then bind the
-					policy where it applies.
+					Who it applies to, which pools and models they may use, and the limits
+					on them.
 				</p>
 			</div>
 			<PolicyForm
-				onSaved={() =>
-					void navigate({ to: "/policies", search: { tab: "policies" } })
+				onSaved={(name) =>
+					void navigate({ to: "/policies/$name", params: { name } })
 				}
 				onCancel={() =>
 					void navigate({ to: "/policies", search: { tab: "policies" } })
