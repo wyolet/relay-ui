@@ -65,7 +65,7 @@ function LinksPanel({ policy }: { policy: Policy }) {
 				title="Applies to"
 				empty={
 					appliesTo
-						? "No one. Requests never run under this policy; edit it to pick who it applies to."
+						? "No one. Attach it from a team, project or service account page."
 						: "Loading…"
 				}
 				items={appliesTo ?? []}

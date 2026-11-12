@@ -34,7 +34,6 @@ import {
 	poolIdsOnEveryCredentialSwitch,
 	poolIdsOnToggle,
 } from "@/policies/policyReach";
-import { usePolicyTargets } from "@/policy-bindings/usePolicyTargets";
 import { toast } from "@/shared/Toast";
 
 export interface PolicyFormValues extends PolicySpecValues {
@@ -108,11 +107,6 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 	);
 
 	const { owner, usableBy, placement } = useFormOwner(policy?.metadata);
-	const targets = usePolicyTargets({
-		policyId: policy?.metadata.id,
-		usableBy,
-		placement,
-	});
 
 	const initial = useMemo<PolicyFormValues>(
 		() => (policy ? policyToValues(policy) : emptyValues()),
@@ -142,8 +136,6 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 				unavailablePools ||
 				unavailableBudgets ||
 				unavailableRateLimits ||
-				targets.unavailable ||
-				!targets.ready ||
 				poolsMissing(value)
 			) {
 				return;
@@ -185,14 +177,10 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 					};
 					saved = await createPolicy.mutateAsync(payload);
 				}
-				// The policy stands either way; a failed account is retried from the edit form.
-				const targetError = await targets.applyTo(saved.metadata.id ?? "");
-				if (targetError) toast("error", targetError);
-				else
-					toast(
-						"success",
-						`Policy "${displayName}" ${isEdit ? "updated" : "created"}.`,
-					);
+				toast(
+					"success",
+					`Policy "${displayName}" ${isEdit ? "updated" : "created"}.`,
+				);
 				onSaved(saved.metadata.name);
 			} catch (err) {
 				toastSaveError(
@@ -313,15 +301,6 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 		unavailableErrors: {
 			budgets: unavailablePicksError(unavailableBudgets, submitTried),
 			rateLimits: unavailablePicksError(unavailableRateLimits, submitTried),
-		},
-		targets: {
-			options: targets.options,
-			selected: targets.selected,
-			setSelected: targets.setSelected,
-			ready: targets.ready,
-			unavailable: targets.unavailable,
-			updatingFor: targets.updatingFor,
-			error: unavailablePicksError(targets.unavailable, submitTried),
 		},
 	};
 }
