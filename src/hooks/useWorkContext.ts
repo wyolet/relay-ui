@@ -31,13 +31,16 @@ function resolveWorkspace(
 	selected: WorkContextRef | null,
 ) {
 	const contexts = workContexts(mine ?? [], isAdmin);
-	const current = mine ? resolveWorkContext(contexts, selected) : undefined;
+	// System is relay's global catalog layer: a filter and owner, never a workspace.
+	const workspaces = contexts.filter((c) => c.kind !== "system");
+	const stored = selected?.kind === "system" ? null : selected;
+	const current = mine ? resolveWorkContext(workspaces, stored) : undefined;
 	// Until the list loads, the stored pick or the default stands in, so the
 	// first queries already carry the scope the list will resolve to.
 	const ref: WorkContextRef =
 		current ??
-		selected ??
-		(isAdmin || !userId ? SYSTEM_CONTEXT : { kind: "personal", id: userId });
+		stored ??
+		(userId ? { kind: "personal", id: userId } : SYSTEM_CONTEXT);
 	return { contexts, current, ref };
 }
 

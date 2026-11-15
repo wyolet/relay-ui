@@ -23,7 +23,7 @@ export type WorkContextRef = Pick<WorkContext, "kind" | "id">;
 export const SYSTEM_CONTEXT: WorkContext = {
 	kind: "system",
 	id: "",
-	displayName: "Organization",
+	displayName: "System",
 	admin: true,
 };
 
@@ -212,7 +212,7 @@ export function contextName(ctx: WorkContext): string {
 		case "personal":
 			return "Personal";
 		case "system":
-			return "Organization";
+			return "System";
 		default:
 			return `${KIND_LABEL[ctx.kind]} ${ctx.displayName}`;
 	}

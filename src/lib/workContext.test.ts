@@ -124,12 +124,6 @@ describe("resolveWorkContext", () => {
 		expect(resolveWorkContext(contexts, null)?.kind).toBe("personal");
 	});
 
-	test("an admin with nothing stored starts in the organization", () => {
-		expect(resolveWorkContext(workContexts(mine, true), null)?.kind).toBe(
-			"system",
-		);
-	});
-
 	test("a stored Personal that /me/contexts dropped falls back to the next context", () => {
 		const withoutPersonal = workContexts(mine.slice(1), false);
 		expect(
@@ -187,7 +181,7 @@ describe("placement", () => {
 
 	test("names the context a create lands in", () => {
 		expect(contextName(personal)).toBe("Personal");
-		expect(contextName(SYSTEM_CONTEXT)).toBe("Organization");
+		expect(contextName(SYSTEM_CONTEXT)).toBe("System");
 		expect(contextName(team)).toBe("Team Platform");
 		expect(contextName(project)).toBe("Project Search");
 	});
