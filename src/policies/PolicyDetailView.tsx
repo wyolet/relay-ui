@@ -1,18 +1,10 @@
 import { Link } from "@tanstack/react-router";
-import {
-	Activity,
-	Boxes,
-	Gauge,
-	KeyRound,
-	LayoutGrid,
-	ScrollText,
-} from "lucide-react";
+import { Activity, Boxes, Gauge, KeyRound, LayoutGrid } from "lucide-react";
 import { Suspense } from "react";
 import type { Policy } from "@/api/types/policy";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useMutability } from "@/hooks/useMutability";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
-import { ResourceLogs } from "@/logs/ResourceLogs";
 import { PolicyKeysTab } from "@/policies/PolicyKeysTab";
 import { PolicyModelsTab } from "@/policies/PolicyModelsTab";
 import { PolicyOverviewTab } from "@/policies/PolicyOverviewTab";
@@ -29,8 +21,7 @@ export type PolicyDetailTab =
 	| "models"
 	| "keys"
 	| "rate-limits"
-	| "usage"
-	| "logs";
+	| "usage";
 
 interface Props {
 	policy: Policy;
@@ -52,7 +43,6 @@ const TABS: {
 	{ value: "keys", label: "Credentials", icon: KeyRound },
 	{ value: "rate-limits", label: "Rate limits", icon: Gauge },
 	{ value: "usage", label: "Usage", icon: Activity },
-	{ value: "logs", label: "Logs", icon: ScrollText },
 ];
 
 export function PolicyDetailView({
@@ -125,22 +115,6 @@ export function PolicyDetailView({
 							icon={Activity}
 							title="Usage"
 							body="Save this policy to see its traffic."
-							comingSoon
-						/>
-					)}
-				</TabsContent>
-				<TabsContent value="logs">
-					{policy.metadata.id ? (
-						<ResourceLogs
-							scope="policy_id"
-							id={policy.metadata.id}
-							label="policy"
-						/>
-					) : (
-						<EmptyState
-							icon={ScrollText}
-							title="Logs"
-							body="Save this policy to see the requests routed through it."
 							comingSoon
 						/>
 					)}
