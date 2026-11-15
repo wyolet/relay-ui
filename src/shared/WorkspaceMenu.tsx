@@ -66,20 +66,20 @@ export function WorkspaceMenu({
 					<div className="relative" {...slide.listProps}>
 						<span
 							aria-hidden
-							className="pointer-events-none absolute inset-x-0 rounded-md bg-popover-hover transition-[top,height,opacity] duration-150 ease-out"
-							style={{
-								top: slide.box?.top ?? 0,
-								height: slide.box?.height ?? 0,
-								opacity: slide.box ? 1 : 0,
-							}}
+							className="pointer-events-none absolute inset-x-0 rounded-md bg-popover-hover duration-150 ease-out"
+							style={slide.style}
 						/>
 						{(formPick ? allRows : rows).map(({ context, nested }) => (
 							<DropdownMenuRadioItem
 								key={contextKey(context)}
 								value={contextKey(context)}
 								{...slide.rowProps}
-								// The glide above paints the highlight; the row keeps its own clear.
-								className={cn("gap-2.5 focus:bg-transparent", nested && "pl-6")}
+								// The glide paints the hover; the current pick sits raised above it.
+								className={cn(
+									"gap-2.5 focus:bg-transparent",
+									"data-checked:bg-foreground/5 data-checked:shadow-sm data-checked:ring-1 data-checked:ring-border",
+									nested && "pl-6",
+								)}
 							>
 								<WorkspaceAvatar context={context} size="sm" />
 								<span className="grid min-w-0 leading-tight">
