@@ -2,7 +2,6 @@ import { useSuspenseQueries } from "@tanstack/react-query";
 import { useCostKpi } from "@/api/hooks/cost";
 import { dayTrends } from "@/lib/usage-math/dayTrends";
 import { compareValue, type DeltaResult } from "@/lib/usage-math/delta";
-import { useModelWeekQueries } from "@/models/modelWeekQueries";
 import type { FigureData } from "@/shared/FigureRow";
 import {
 	fmtCompact,
@@ -11,19 +10,23 @@ import {
 	fmtPct,
 	fmtSignedPct,
 } from "@/usage/format";
+import {
+	useWeekUsageQueries,
+	type WeekUsageScope,
+} from "@/usage/weekUsageQueries";
 
 const vsNote = (delta: DeltaResult | null) =>
 	delta && delta.ratio !== null
 		? `${fmtSignedPct(delta.ratio)} vs prior 7 days`
 		: undefined;
 
-/** The model's last 7 days in four figures (spend, requests, p95 latency,
+/** A resource's last 7 days in four figures (spend, requests, p95 latency,
  * error rate), each with a note and, where days add up, a per-day trend. */
-export function useModelFigures(modelId: string): {
+export function useWeekFigures(scope: WeekUsageScope): {
 	hasTraffic: boolean;
 	figures: FigureData[];
 } {
-	const q = useModelWeekQueries(modelId);
+	const q = useWeekUsageQueries(scope);
 	const [totals, series] = useSuspenseQueries({
 		queries: [q.totals, q.series],
 	});

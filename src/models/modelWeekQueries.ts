@@ -1,28 +1,25 @@
 import { recentLogsQueryOptions } from "@/api/hooks/logs";
+import { usageSummaryQueryOptions, useUsageNow } from "@/api/hooks/usage";
 import {
-	stackedTimeseriesQueryOptions,
-	usageComparisonWindows,
-	usageSummaryQueryOptions,
-	usageTotalsCompareQueryOptions,
-	useUsageNow,
-} from "@/api/hooks/usage";
-import { pricingWindowAt } from "@/pricing/useHostModelUsage";
+	type WeekUsageScope,
+	weekUsageQueries,
+} from "@/usage/weekUsageQueries";
 
 /** Rows the recent-requests list shows. */
 const RECENT_REQUESTS = 10;
 
+/** The model's week of usage, its traffic split by host. */
+export function modelWeekScope(modelId: string): WeekUsageScope {
+	return { filter: { model_id: [modelId] }, splitBy: "host_id" };
+}
+
 /** The model page's usage reads over the trailing week ending at `now`: the
  * loader prefetches these and the page's hooks read the same entries. */
 export function modelWeekQueries(modelId: string, now: string) {
-	const win = pricingWindowAt(now);
-	const filter = { model_id: [modelId] };
-	const { previous } = usageComparisonWindows(win, now);
+	const week = weekUsageQueries(modelWeekScope(modelId), now);
 	return {
-		win,
-		filter,
-		totals: usageTotalsCompareQueryOptions(win, previous, filter),
-		byHost: usageSummaryQueryOptions("host_id", win, filter),
-		series: stackedTimeseriesQueryOptions("host_id", win, filter),
+		...week,
+		byHost: usageSummaryQueryOptions("host_id", week.win, week.filter),
 		recent: recentLogsQueryOptions(
 			{ model_id: [modelId], since: "7d" },
 			RECENT_REQUESTS,

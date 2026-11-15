@@ -17,11 +17,12 @@ import { PolicyKeysTab } from "@/policies/PolicyKeysTab";
 import { PolicyModelsTab } from "@/policies/PolicyModelsTab";
 import { PolicyOverviewTab } from "@/policies/PolicyOverviewTab";
 import { PolicyRateLimitsTab } from "@/policies/PolicyRateLimitsTab";
+import { POLICY_NO_TRAFFIC, policyWeekScope } from "@/policies/policyWeekUsage";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
 import { EmptyState } from "@/shared/EmptyState";
 import { PageLoader } from "@/shared/Spinner";
 import { CatalogDetachedBadge, StatusBadge } from "@/shared/StatusBadge";
-import { ResourceUsage } from "@/usage/ResourceUsage";
+import { WeekUsage } from "@/usage/WeekUsage";
 
 export type PolicyDetailTab =
 	| "overview"
@@ -113,7 +114,12 @@ export function PolicyDetailView({
 				</TabsContent>
 				<TabsContent value="usage">
 					{policy.metadata.id ? (
-						<ResourceUsage scope="policy_id" id={policy.metadata.id} />
+						<div className="pt-2">
+							<WeekUsage
+								scope={policyWeekScope(policy.metadata.id)}
+								emptyBody={POLICY_NO_TRAFFIC}
+							/>
+						</div>
 					) : (
 						<EmptyState
 							icon={Activity}

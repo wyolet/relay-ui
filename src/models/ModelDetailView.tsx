@@ -2,18 +2,18 @@ import { Suspense } from "react";
 import type { Model } from "@/api/types/model";
 import { PlanIssuesPanel } from "@/diagnostics/IssuesPanel";
 import { ModelDetailHeader } from "@/models/ModelDetailHeader";
-import { ModelFigures } from "@/models/ModelFigures";
 import { ModelHostList } from "@/models/ModelHostList";
 import { ModelPolicyList } from "@/models/ModelPolicyList";
 import { ModelRecentRequests } from "@/models/ModelRecentRequests";
 import { ModelSpec } from "@/models/ModelSpec";
-import { ModelTraffic } from "@/models/ModelTraffic";
+import { modelWeekScope } from "@/models/modelWeekQueries";
 import { useModelHostLines } from "@/models/useModelHostLines";
 import { useModelPolicies } from "@/models/useModelPolicies";
 import { useModelProvider } from "@/models/useModelProvider";
 import { DelayedFallback } from "@/shared/DelayedFallback";
-import { FigureRowSkeleton } from "@/shared/FigureRow";
 import { SectionSkeleton } from "@/shared/Section";
+import { WeekFigures } from "@/usage/WeekFigures";
+import { WeekTraffic } from "@/usage/WeekTraffic";
 
 interface Props {
 	model: Model;
@@ -50,31 +50,16 @@ export function ModelDetailView({
 				/>
 				<PlanIssuesPanel kind="model" id={id} />
 				{id && (
-					<Suspense
-						fallback={
-							<DelayedFallback>
-								<FigureRowSkeleton trend />
-							</DelayedFallback>
-						}
-					>
-						<ModelFigures modelId={id} />
-					</Suspense>
+					<WeekFigures
+						scope={modelWeekScope(id)}
+						emptyBody="Requests to this model show up here: spend, latency, errors and the hosts that served them."
+					/>
 				)}
 			</div>
 
 			<div className="grid grid-cols-1 gap-12 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
 				<div className="grid min-w-0 grid-cols-1 content-start gap-12">
-					{id && (
-						<Suspense
-							fallback={
-								<DelayedFallback>
-									<SectionSkeleton title="Traffic by host" height="h-[280px]" />
-								</DelayedFallback>
-							}
-						>
-							<ModelTraffic modelId={id} />
-						</Suspense>
-					)}
+					{id && <WeekTraffic scope={modelWeekScope(id)} />}
 					<ModelHostList lines={hostLines} modelId={id} />
 				</div>
 				<ModelSpec model={model} />

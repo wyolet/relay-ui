@@ -19,10 +19,11 @@ import { HostModelsTab } from "@/hosts/HostModelsTab";
 import { HostOverviewTab } from "@/hosts/HostOverviewTab";
 import { HostTierPresets } from "@/hosts/HostTierPresets";
 import { HostUserPoliciesTab } from "@/hosts/HostUserPoliciesTab";
+import { HOST_NO_TRAFFIC, hostWeekScope } from "@/hosts/hostWeekUsage";
 import { ResourceLogs } from "@/logs/ResourceLogs";
 import { EmptyState } from "@/shared/EmptyState";
 import { PageLoader } from "@/shared/Spinner";
-import { ResourceUsage } from "@/usage/ResourceUsage";
+import { WeekUsage } from "@/usage/WeekUsage";
 
 export type HostDetailTab =
 	| "overview"
@@ -132,7 +133,12 @@ export function HostDetailView({
 				</TabsContent>
 				<TabsContent value="usage">
 					{host.metadata.id ? (
-						<ResourceUsage scope="host_id" id={host.metadata.id} />
+						<div className="pt-2">
+							<WeekUsage
+								scope={hostWeekScope(host.metadata.id)}
+								emptyBody={HOST_NO_TRAFFIC}
+							/>
+						</div>
 					) : (
 						<EmptyState
 							icon={Activity}
