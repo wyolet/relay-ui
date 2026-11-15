@@ -72,3 +72,17 @@ export function fmtAgo(iso: string, now: number = Date.now()): string {
 	if (hours < 48) return `${hours}h ago`;
 	return `${Math.floor(hours / 24)}d ago`;
 }
+
+/** 1536 → "1.5 KB": binary steps, one decimal under 10. */
+export function fmtBytes(n: number): string {
+	const units = ["bytes", "KB", "MB", "GB"];
+	let value = n;
+	let i = 0;
+	while (value >= 1024 && i < units.length - 1) {
+		value /= 1024;
+		i++;
+	}
+	const shown =
+		i > 0 && value < 10 ? value.toFixed(1) : String(Math.round(value));
+	return `${shown} ${units[i]}`;
+}
