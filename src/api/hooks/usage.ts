@@ -1048,9 +1048,10 @@ export function usageTotalsQueryOptions(
 
 /** Whole-relay latency distribution over a window; null when no traffic. */
 export interface LatencyProfile {
-	/** p50 → max, each with its share of the largest rung (see usage-math). */
+	/** p50 → p99, each with its share of the largest rung (see usage-math). */
 	ladder: LatencyRung[];
 	avgMs: number;
+	maxMs: number;
 	requests: number;
 }
 
@@ -1064,6 +1065,7 @@ export function useLatencyProfile(
 	return {
 		ladder: latencyLadder(row.duration_ms),
 		avgMs: row.duration_ms.avg,
+		maxMs: row.duration_ms.max,
 		requests: row.requests,
 	};
 }

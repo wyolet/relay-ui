@@ -21,9 +21,9 @@ export function AttentionList() {
 	}
 
 	return (
-		<ul className="grid grid-cols-1">
+		<ul className="grid grid-cols-1 gap-x-14 lg:grid-cols-2">
 			{items.map((item) => (
-				<li key={item.key} className="border-b border-rule last:border-b-0">
+				<li key={item.key} className="border-b border-rule">
 					<AttentionLine item={item} />
 				</li>
 			))}
