@@ -21,7 +21,7 @@ export function usePricingWindow() {
  * Not suspending: a config page must not wait on, or fail with, the usage
  * store. */
 export function useWeekUsageBy(
-	dimension: "model_id" | "host_id",
+	dimension: "model_id" | "host_id" | "relay_key_hash",
 ): Map<string, ModelUsage> | undefined {
 	const { data } = useQuery(
 		usageSummaryQueryOptions(dimension, usePricingWindow()),

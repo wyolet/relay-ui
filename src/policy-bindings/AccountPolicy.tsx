@@ -1,5 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { ACCOUNT_KIND_LABELS } from "@/accounts/accountView";
+import type { Account } from "@/api/hooks/accounts";
+import type { Policy } from "@/api/types/policy";
+import type { PolicyBinding } from "@/api/types/policyBinding";
 import { displayLabel } from "@/lib/displayLabel";
 import { AccountPolicyActions } from "@/policy-bindings/AccountPolicyActions";
 import type { AttachEntity } from "@/policy-bindings/attachPolicy";
@@ -9,13 +12,57 @@ import {
 } from "@/policy-bindings/useAccountPolicy";
 import { DetailRow } from "@/shared/DetailCard";
 
-const UNBOUND = "No policy binding holds this account.";
+export const UNBOUND = "No policy binding holds this account.";
 
 const MISSING = {
 	pending: "…",
 	error: "Accounts or policy bindings are not visible to you.",
 	success: "No account found.",
 } as const;
+
+/** An account's name, linking to its page. */
+export function AccountLink({
+	account,
+	className = "hover:underline",
+}: {
+	account: Account;
+	className?: string;
+}) {
+	return (
+		<Link
+			to="/accounts/$name"
+			params={{ name: account.metadata.name }}
+			className={className}
+		>
+			{displayLabel(account.metadata)}
+		</Link>
+	);
+}
+
+/** The policy a binding holds: its name, or a short id when it isn't visible. */
+export function BoundPolicyLink({
+	binding,
+	policy,
+	className = "hover:underline",
+}: {
+	binding: PolicyBinding;
+	policy: Policy | undefined;
+	className?: string;
+}) {
+	return policy ? (
+		<Link
+			to="/policies/$name"
+			params={{ name: policy.metadata.name }}
+			className={className}
+		>
+			{displayLabel(policy.metadata)}
+		</Link>
+	) : (
+		<code className="font-mono text-[11px]">
+			{binding.spec.policyId.slice(0, 8)}…
+		</code>
+	);
+}
 
 /**
  * An account and the policy bound to it. Full mode renders "Account" and
@@ -44,42 +91,19 @@ export function AccountPolicy({
 		);
 	}
 
-	const accountLink = (
-		<Link
-			to="/accounts/$name"
-			params={{ name: account.metadata.name }}
-			className="hover:underline"
-		>
-			{displayLabel(account.metadata)}
-		</Link>
-	);
-	const policyText = binding ? (
-		<>
-			{policy ? (
-				<Link
-					to="/policies/$name"
-					params={{ name: policy.metadata.name }}
-					className="hover:underline"
-				>
-					{displayLabel(policy.metadata)}
-				</Link>
-			) : (
-				<code className="font-mono text-[11px]">
-					{binding.spec.policyId.slice(0, 8)}…
-				</code>
-			)}
-			{binding.spec.enabled === false && (
-				<span className="text-muted-foreground"> (binding disabled)</span>
-			)}
-		</>
-	) : null;
-
 	if (compact) {
 		return (
 			<span className="text-foreground">
-				{accountLink}
+				<AccountLink account={account} />
 				<span className="text-muted-foreground"> · </span>
-				{policyText ?? (
+				{binding ? (
+					<>
+						<BoundPolicyLink binding={binding} policy={policy} />
+						{binding.spec.enabled === false && (
+							<span className="text-muted-foreground"> (binding disabled)</span>
+						)}
+					</>
+				) : (
 					<span className="text-muted-foreground" title={UNBOUND}>
 						no policy
 					</span>
@@ -91,7 +115,7 @@ export function AccountPolicy({
 	return (
 		<>
 			<DetailRow label="Account">
-				{accountLink}
+				<AccountLink account={account} />
 				<span className="text-muted-foreground">
 					{" "}
 					· {ACCOUNT_KIND_LABELS[account.spec.kind]}
@@ -101,7 +125,17 @@ export function AccountPolicy({
 			<DetailRow label="Policy">
 				<div className="flex flex-wrap items-center justify-between gap-2">
 					<span>
-						{policyText ?? (
+						{binding ? (
+							<>
+								<BoundPolicyLink binding={binding} policy={policy} />
+								{binding.spec.enabled === false && (
+									<span className="text-muted-foreground">
+										{" "}
+										(binding disabled)
+									</span>
+								)}
+							</>
+						) : (
 							<span className="text-muted-foreground">{UNBOUND}</span>
 						)}
 					</span>

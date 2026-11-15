@@ -7,22 +7,27 @@ import {
 	isDeprecatedModel,
 	type ModelLine,
 } from "@/lib/modelsByHost";
-import { cn } from "@/lib/utils";
 import { ModelCapabilityIcons } from "@/models/ModelCapabilities";
 import { activeCapabilities } from "@/models/modelDetail";
 import { useModelLineActions } from "@/models/useModelLineActions";
 import { RateValue } from "@/pricing/MeterGrid";
 import { AddPriceLink } from "@/pricing/ModelPrice";
-import { Switch } from "@/shared/Switch";
+import {
+	LineColumns,
+	LineRow,
+	NumberCell,
+	QuietTag,
+	SwitchCell,
+} from "@/shared/LineGrid";
 import { fmtMoneyCompact } from "@/usage/format";
 
-const GRID =
-	"grid grid-cols-[minmax(10rem,2fr)_minmax(5.5rem,1fr)_minmax(3.5rem,1fr)_minmax(4rem,1fr)_repeat(2,minmax(4.5rem,1fr))_minmax(3.5rem,1fr)_minmax(4.5rem,1fr)_4.5rem] items-center gap-x-3";
+const COLS =
+	"grid-cols-[minmax(10rem,2fr)_minmax(5.5rem,1fr)_minmax(3.5rem,1fr)_minmax(4rem,1fr)_repeat(2,minmax(4.5rem,1fr))_minmax(3.5rem,1fr)_minmax(4.5rem,1fr)_4.5rem]";
 
 /** The pane's column labels, on the rows' grid. */
 export function ModelLineColumns() {
 	return (
-		<div className={`${GRID} border-b border-rule pb-2 text-meta text-ink-3`}>
+		<LineColumns cols={COLS}>
 			<span>Model</span>
 			<span>Capabilities</span>
 			<span className="text-right">Context</span>
@@ -40,7 +45,7 @@ export function ModelLineColumns() {
 				Spend 7d
 			</span>
 			<span className="pr-3 text-right">On</span>
-		</div>
+		</LineColumns>
 	);
 }
 
@@ -50,9 +55,7 @@ export function ModelLineRow({ line }: { line: ModelLine }) {
 	const actions = useModelLineActions(model);
 
 	return (
-		<div
-			className={`${GRID} border-b border-rule py-2 text-label tabular-nums ${actions.enabled ? "" : "opacity-60"}`}
-		>
+		<LineRow cols={COLS} dimmed={!actions.enabled}>
 			<span className="grid min-w-0">
 				<span className="flex min-w-0 items-center gap-2">
 					<Link
@@ -62,8 +65,8 @@ export function ModelLineRow({ line }: { line: ModelLine }) {
 					>
 						{displayLabel(model.metadata)}
 					</Link>
-					{!actions.enabled && <Tag>off</Tag>}
-					{isDeprecatedModel(model) && <Tag>deprecated</Tag>}
+					{!actions.enabled && <QuietTag>off</QuietTag>}
+					{isDeprecatedModel(model) && <QuietTag>deprecated</QuietTag>}
 					<PlanIssueDot kind="model" id={model.metadata.id} />
 				</span>
 				<code className="truncate font-mono text-foot text-ink-3">
@@ -108,28 +111,12 @@ export function ModelLineRow({ line }: { line: ModelLine }) {
 			<NumberCell
 				value={usage?.usd != null ? fmtMoneyCompact(usage.usd, "USD") : null}
 			/>
-			{/* pr-3 holds the switch's enlarged hit area inside the row. */}
-			<span className="flex items-center justify-end pr-3">
-				<Switch
-					checked={actions.enabled}
-					onChange={(next) => void actions.setEnabled(next)}
-					disabled={!actions.canEdit}
-					label={`${actions.enabled ? "Disable" : "Enable"} ${displayLabel(model.metadata)}`}
-				/>
-			</span>
-		</div>
-	);
-}
-
-function Tag({ children }: { children: string }) {
-	return <span className="shrink-0 text-foot text-ink-3">{children}</span>;
-}
-
-/** A right-aligned figure, or a quiet dash without one. */
-function NumberCell({ value }: { value: string | null }) {
-	return (
-		<span className={cn("text-right", value == null && "text-ink-3")}>
-			{value ?? "—"}
-		</span>
+			<SwitchCell
+				checked={actions.enabled}
+				onChange={(next) => void actions.setEnabled(next)}
+				disabled={!actions.canEdit}
+				label={`${actions.enabled ? "Disable" : "Enable"} ${displayLabel(model.metadata)}`}
+			/>
+		</LineRow>
 	);
 }
