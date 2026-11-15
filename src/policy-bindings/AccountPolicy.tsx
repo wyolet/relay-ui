@@ -9,7 +9,7 @@ import {
 } from "@/policy-bindings/useAccountPolicy";
 import { DetailRow } from "@/shared/DetailCard";
 
-const UNBOUND = "No policy binding holds this account.";
+const UNBOUND = "None";
 
 const MISSING = {
 	pending: "…",
@@ -79,11 +79,7 @@ export function AccountPolicy({
 			<span className="text-foreground">
 				{accountLink}
 				<span className="text-muted-foreground"> · </span>
-				{policyText ?? (
-					<span className="text-muted-foreground" title={UNBOUND}>
-						no policy
-					</span>
-				)}
+				{policyText ?? <span className="text-muted-foreground">no policy</span>}
 			</span>
 		);
 	}
