@@ -5,6 +5,7 @@ import { useRoles } from "@/api/hooks/roles";
 import { displayLabel } from "@/lib/displayLabel";
 import { OwnerLink } from "@/projects/OwnerLink";
 import { subjectLabel } from "@/role-bindings/SubjectsEditor";
+import { isGlobalScope } from "@/role-bindings/scope";
 import { Chip } from "@/shared/Chip";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { DetailCard, DetailEmpty, DetailRow } from "@/shared/DetailCard";
@@ -87,7 +88,7 @@ export function RoleBindingDetailView({ name }: { name: string }) {
 						)}
 					</DetailRow>
 					<DetailRow label="Scope">
-						{binding.spec.scope.kind === "system" ? (
+						{isGlobalScope(binding.spec.scope) ? (
 							<span className="text-muted-foreground">
 								Global — grants everywhere
 							</span>

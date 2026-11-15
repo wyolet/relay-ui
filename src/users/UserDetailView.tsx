@@ -16,6 +16,7 @@ import { displayLabel } from "@/lib/displayLabel";
 import { PERSONAL_ACCOUNT_CHOICE_OPTIONS } from "@/lib/personalAccount";
 import { EraseBodiesButton } from "@/logs/EraseBodiesButton";
 import { OwnerLink } from "@/projects/OwnerLink";
+import { isGlobalScope } from "@/role-bindings/scope";
 import { Chip } from "@/shared/Chip";
 import { confirm } from "@/shared/ConfirmDialog";
 import { DetailCard, DetailEmpty, DetailRow } from "@/shared/DetailCard";
@@ -208,7 +209,7 @@ function UserRoleBindings({ id }: { id: string }) {
 							>
 								{displayLabel(b.metadata)}
 							</Link>
-							{b.spec.scope.kind === "system" ? (
+							{isGlobalScope(b.spec.scope) ? (
 								<span className="text-[11px] text-muted-foreground">
 									Global
 								</span>

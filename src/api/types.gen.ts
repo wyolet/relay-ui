@@ -1497,7 +1497,7 @@ export interface paths {
         };
         /**
          * List the scopes the caller may create rows in
-         * @description The contexts the caller may act in: their personal scope first (left out while their personal account is turned off), then each team, then each project, each list by slug, where the caller may create at least one policy, pool, account, host key, budget, rate limit, policy binding, key, service account or role binding. Grants through groups and through a team-level role count, so a team admin is listed with the team's projects. The admin token is no user: it gets every team and project with admin true and no personal scope. Read from the in-memory catalog, so a write shows within about a second.
+         * @description The contexts the caller may act in: the organization first for an admin (the admin role, the admin token, or a global binding of the built-in admin role), then their personal scope (left out while their personal account is turned off), then each team, then each project, each list by slug, where the caller may create at least one policy, pool, account, host key, budget, rate limit, policy binding, key, service account or role binding. Grants through groups and through a team-level role count, so a team admin is listed with the team's projects. The admin token is no user: it gets every team and project with admin true and no personal scope. Read from the in-memory catalog, so a write shows within about a second.
          */
         get: operations["list_my_contexts"];
         put?: never;
@@ -3844,14 +3844,14 @@ export interface components {
             usage?: components["schemas"]["ShareUsage"];
         };
         AccountShareParty: {
-            /** @description Id of the user, team, project or service account; empty for the system. */
+            /** @description Id of the user, team, project or service account; empty for the organization and the system. */
             id?: string;
             /**
-             * @description Kind of the party: the system, a user, a team, a project or a service account.
+             * @description Kind of the party: the organization, the system, a user, a team, a project or a service account.
              * @enum {string}
              */
-            kind: "system" | "user" | "team" | "project" | "serviceaccount";
-            /** @description Username, or slug of the team, project or service account; empty for the system or when the row is gone. */
+            kind: "organization" | "system" | "user" | "team" | "project" | "serviceaccount";
+            /** @description Username, or slug of the team, project or service account; empty for the organization, the system, or when the row is gone. */
             name?: string;
         };
         AccountShares: {
@@ -4230,10 +4230,12 @@ export interface components {
             upstreamName?: string;
         };
         BoundPolicy: {
-            /** @description Policy id. */
-            id: string;
-            /** @description Policy slug. */
-            name: string;
+            /** @description An organization policy the caller may not see: only that one is bound is shown. */
+            hidden?: boolean;
+            /** @description Policy id; omitted when hidden. */
+            id?: string;
+            /** @description Policy slug; omitted when hidden. */
+            name?: string;
         };
         Budget: {
             /**
@@ -4776,7 +4778,7 @@ export interface components {
             /** @description Ids of the member users. */
             memberIds?: string[] | null;
             /**
-             * @description Turns its members' personal accounts on or off. A member's own value wins over it; between groups, off wins. Omitted leaves it to the deployment's accounts setting; a disabled group says nothing. Only on a group the system owns (400 on a user's group), set by an admin only (403 otherwise), also on a group a SCIM client manages; while a group carries it, only an admin edits or deletes the group. A non-admin's write that leaves it out keeps the stored value.
+             * @description Turns its members' personal accounts on or off. A member's own value wins over it; between groups, off wins. Omitted leaves it to the deployment's accounts setting; a disabled group says nothing. Only on a group the organization owns (400 on a user's group), set by an admin only (403 otherwise), also on a group a SCIM client manages; while a group carries it, only an admin edits or deletes the group. A non-admin's write that leaves it out keeps the stored value.
              * @enum {string}
              */
             personalAccount?: "on" | "off";
@@ -5259,15 +5261,17 @@ export interface components {
         LimitsBudget: {
             /** @description Spend cap in USD per period, as a decimal string. */
             amountUsd: string;
-            /** @description Budget id. */
-            budgetId: string;
+            /** @description Budget id; omitted when hidden. */
+            budgetId?: string;
+            /** @description An organization budget the caller may not see: its amount and spend apply to the caller's requests and are shown, its id and name are not. */
+            hidden?: boolean;
             /**
              * @description hard refuses requests once the cap is spent; alert only reports the overrun.
              * @enum {string}
              */
             mode: "hard" | "alert";
-            /** @description Budget slug. */
-            name: string;
+            /** @description Budget slug; omitted when hidden. */
+            name?: string;
             /** @description True when the budget is spent per lane (shared false) and the account read is a team's or project's own: no single spend exists, so spentUsd and remainingUsd are omitted and the budget is never tightest. */
             perLane: boolean;
             /**
@@ -5283,14 +5287,16 @@ export interface components {
             spentUsd?: string;
         };
         LimitsRateLimit: {
+            /** @description An organization rate limit the caller may not see: its rules and counts apply to the caller's requests and are shown, its id and name are not. */
+            hidden?: boolean;
             /** @description The models the link applies to, in the policy's model grammar; empty applies it to every request. */
             models: string[] | null;
-            /** @description Rate limit slug. */
-            name: string;
+            /** @description Rate limit slug; omitted when hidden. */
+            name?: string;
             /** @description True when the link counts per lane (shared false) and the account read is a team's or project's own: no single count exists, so the rules carry no used or remaining and the link is never tightest. */
             perLane: boolean;
-            /** @description Rate limit id. */
-            rateLimitId: string;
+            /** @description Rate limit id; omitted when hidden. */
+            rateLimitId?: string;
             /** @description The rate limit's rules, in order. */
             rules: components["schemas"]["LimitsRule"][] | null;
             /** @description True counts once for the rung's account, so used is what every lane under it spent together; false counts once per lane, so used is this lane's own. */
@@ -5341,8 +5347,8 @@ export interface components {
         LimitsTightest: {
             /** @description The account whose policy links the limit. */
             accountId: string;
-            /** @description The rate limit's or the budget's id. */
-            id: string;
+            /** @description The rate limit's or the budget's id; omitted when the caller may not see it. */
+            id?: string;
             /**
              * @description Whether the limit is a rate-limit rule or a budget.
              * @enum {string}
@@ -5548,6 +5554,8 @@ export interface components {
             output?: string[] | null;
         };
         ModelPolicyRow: {
+            /** @description Ids of rate limits that apply here but the caller may not see; their rules are left out of limits. */
+            hiddenRateLimits?: string[] | null;
             /** @description Policy id. */
             id: string;
             /** @description Rules of every rate limit the policy applies to this model. */
@@ -5677,13 +5685,13 @@ export interface components {
             admin: boolean;
             /** @description The team or project display name; the username for personal. */
             displayName: string;
-            /** @description The caller's user id for personal, else the team or project id. The owner a row created in this context takes: {kind: user, id} for personal, {kind: team|project, id} otherwise. */
+            /** @description Empty for organization, the caller's user id for personal, else the team or project id. The owner a row created in this context takes: {kind: organization} for organization, {kind: user, id} for personal, {kind: team|project, id} otherwise. */
             id: string;
             /**
-             * @description personal is the caller's own scope, where rows with an omitted owner land; team and project name a tenancy row.
+             * @description organization is the deployment-wide scope, listed for admins only; personal is the caller's own scope, where rows with an omitted owner land; team and project name a tenancy row.
              * @enum {string}
              */
-            kind: "personal" | "team" | "project";
+            kind: "organization" | "personal" | "team" | "project";
             /** @description The caller's username for personal, else the team or project slug. */
             name: string;
             /** @description The project's team. Projects only. */
@@ -5717,18 +5725,18 @@ export interface components {
             value: components["schemas"]["OTLPReceiver"];
         };
         Owner: {
-            /** @description Id of the owning provider, host, user, team or project; empty for system. Defaults to the caller for user-owned rows. */
+            /** @description Id of the owning provider, host, user, team or project; empty for system and organization. Defaults to the caller for user-owned rows. */
             id?: string;
             /**
-             * @description Owning scope: system (the deployment), provider or host (catalog rows), user, team or project.
+             * @description Owning scope: system (the catalog and the relay's own rows), organization (the deployment: its teams, groups, credentials and the rows its admins made; organization-owned policies, rate limits, budgets and pools are visible to admins only), provider or host (catalog rows), user, team or project.
              * @enum {string}
              */
-            kind?: "system" | "provider" | "host" | "user" | "team" | "project";
+            kind?: "system" | "organization" | "provider" | "host" | "user" | "team" | "project";
         };
         OwnerRef: {
             /** @description Owner id; for a host's tier preset, the host id. */
             id?: string;
-            /** @description Owner kind: system, host, user, team or project. */
+            /** @description Owner kind: system, organization, host, user, team or project. */
             kind: string;
             /** @description Owner slug, when it has one. */
             name?: string;
@@ -5944,6 +5952,8 @@ export interface components {
         PolicyBindingRow: {
             /** @description The binding of the model at the host. */
             binding: components["schemas"]["BindingView"];
+            /** @description Ids of rate limits that apply here but the caller may not see; their rules are left out of limits. */
+            hiddenRateLimits?: string[] | null;
             /** @description The serving host. */
             host: components["schemas"]["HostRef"];
             /** @description Rules of every rate limit the policy applies to this binding. */
@@ -6037,13 +6047,15 @@ export interface components {
         PolicyRateLimitRow: {
             /** @description The link has no model scope and applies to every model. */
             default: boolean;
+            /** @description The caller may not see the rate limit: its name and rules are left out. */
+            hidden?: boolean;
             /** @description Rate limit id. */
             id: string;
             /** @description The rate limit's rules. */
             limits: components["schemas"]["Limit"][] | null;
             /** @description Model references the link is scoped to. */
             models?: string[] | null;
-            /** @description Rate limit slug. */
+            /** @description Rate limit slug; empty when hidden. */
             name: string;
         };
         PolicyRef: {
@@ -6622,7 +6634,7 @@ export interface components {
             enabled?: boolean;
             /** @description Id of the granted role. */
             roleId: string;
-            /** @description Where the grant applies: system, or a team or project by id. It covers every resource in that scope and below; the binding's owner follows it. */
+            /** @description Where the grant applies: organization (everywhere; system is read as organization), or a team or project by id. It covers every resource in that scope and below; the binding's owner follows it. */
             scope: components["schemas"]["Owner"];
             /** @description Users, groups and service accounts granted the role. */
             subjects: components["schemas"]["RoleBindingSubject"][] | null;
@@ -7190,7 +7202,7 @@ export interface components {
             reason: "admin" | "rule" | "binding" | "credential" | "none";
             /** @description What it was checked against. */
             resource: components["schemas"]["reviewedResource"];
-            /** @description The relay rule that decided: personal-row, catalog-read, shared-policy-read, system-role-read, scoped-list or parent-team-read. */
+            /** @description The relay rule that decided: organization-row (which only refuses), personal-row, catalog-read, shared-policy-read, system-role-read, scoped-list or parent-team-read. */
             rule?: string;
             /** @description Who was checked. */
             subject: components["schemas"]["reviewedSubject"];
@@ -8058,8 +8070,8 @@ export interface components {
              * @description Owner kind.
              * @enum {string}
              */
-            kind: "system" | "user" | "team" | "project" | "host" | "provider";
-            /** @description Owner slug or username. Omit for system. */
+            kind: "system" | "organization" | "user" | "team" | "project" | "host" | "provider";
+            /** @description Owner slug or username. Omit for system and organization. */
             name?: string;
         };
         reviewResourceInput: {
@@ -8528,7 +8540,7 @@ export interface operations {
                 limit?: number;
                 /** @description Items to skip before the page. */
                 offset?: number;
-                /** @description Only the accounts a row owned by this scope may link, by the rule a save of that row applies; usable_for says which row: system, user:<id>, team:<id> or project:<id>. */
+                /** @description Only the accounts a row owned by this scope may link, by the rule a save of that row applies; usable_for says which row: system, organization (admins only), user:<id>, team:<id> or project:<id>. */
                 usable_by?: string;
                 /** @description Which row usable_by asks for (binding: what a policy binding owned by the usable_by scope may list; pool: what a pool owned by the usable_by scope may list). Default binding. Only with usable_by. */
                 usable_for?: "binding" | "pool";
@@ -10146,7 +10158,7 @@ export interface operations {
                 limit?: number;
                 /** @description Items to skip before the page. */
                 offset?: number;
-                /** @description Only the budgets a policy owned by this scope may link, by the rule a save of that row applies: system, user:<id>, team:<id> or project:<id>. */
+                /** @description Only the budgets a policy owned by this scope may link, by the rule a save of that row applies: system, organization (admins only), user:<id>, team:<id> or project:<id>. */
                 usable_by?: string;
             };
             header?: never;
@@ -10783,7 +10795,7 @@ export interface operations {
     catalog_reachable: {
         parameters: {
             query: {
-                /** @description The scope the draft policy is owned by: system, team:<id>, project:<id> or user:<id>. The caller must be allowed to create a policy there. */
+                /** @description The scope the draft policy is owned by: system, organization (admins only), team:<id>, project:<id> or user:<id>. The caller must be allowed to create a policy there. */
                 owner: string;
                 /** @description Pool ids the draft links, in failover order (repeatable). Omit to read what a policy linking no pools reaches by its scope's ownership. Pools the caller may not read are left out and listed in dropped. */
                 pool?: string[] | null;
@@ -12133,7 +12145,7 @@ export interface operations {
                 limit?: number;
                 /** @description Items to skip before the page. */
                 offset?: number;
-                /** @description Only the host-keys a pool owned by this scope may link, by the rule a save of that row applies: system, user:<id>, team:<id> or project:<id>. */
+                /** @description Only the host-keys a pool owned by this scope may link, by the rule a save of that row applies: system, organization (admins only), user:<id>, team:<id> or project:<id>. */
                 usable_by?: string;
             };
             header?: never;
@@ -15695,7 +15707,7 @@ export interface operations {
                 limit?: number;
                 /** @description Items to skip before the page. */
                 offset?: number;
-                /** @description Only the policies a policy binding owned by this scope may link, by the rule a save of that row applies: system, user:<id>, team:<id> or project:<id>. */
+                /** @description Only the policies a policy binding owned by this scope may link, by the rule a save of that row applies: system, organization (admins only), user:<id>, team:<id> or project:<id>. */
                 usable_by?: string;
             };
             header?: never;
@@ -16943,7 +16955,7 @@ export interface operations {
                 limit?: number;
                 /** @description Items to skip before the page. */
                 offset?: number;
-                /** @description Only the pools a policy owned by this scope may link, by the rule a save of that row applies: system, user:<id>, team:<id> or project:<id>. */
+                /** @description Only the pools a policy owned by this scope may link, by the rule a save of that row applies: system, organization (admins only), user:<id>, team:<id> or project:<id>. */
                 usable_by?: string;
             };
             header?: never;
@@ -19053,7 +19065,7 @@ export interface operations {
                 limit?: number;
                 /** @description Items to skip before the page. */
                 offset?: number;
-                /** @description Only the rate-limits a policy owned by this scope may link, by the rule a save of that row applies: system, user:<id>, team:<id> or project:<id>. */
+                /** @description Only the rate-limits a policy owned by this scope may link, by the rule a save of that row applies: system, organization (admins only), user:<id>, team:<id> or project:<id>. */
                 usable_by?: string;
             };
             header?: never;
@@ -19604,7 +19616,7 @@ export interface operations {
                 /** @description Match any of the given role_id values. */
                 role_id?: string[];
                 /** @description Match scope_kind exactly. */
-                scope_kind?: "system" | "team" | "project";
+                scope_kind?: "organization" | "system" | "team" | "project";
                 /** @description Match any of the given scope_id values. */
                 scope_id?: string[];
                 /** @description Match any of the given subject values. */

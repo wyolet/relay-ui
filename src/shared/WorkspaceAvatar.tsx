@@ -18,7 +18,7 @@ export function WorkspaceAvatar({
 	const Icon =
 		context.kind === "personal"
 			? UserRound
-			: context.kind === "system"
+			: context.kind === "organization"
 				? Building2
 				: undefined;
 	return (

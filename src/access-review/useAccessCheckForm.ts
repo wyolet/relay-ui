@@ -14,6 +14,7 @@ import { RULE_KINDS, RULE_VERBS, RULE_WILDCARD } from "@/roles/vocabulary";
 export const RESOURCE_KINDS = RULE_KINDS.filter((k) => k !== RULE_WILDCARD);
 export const ACTION_VERBS = RULE_VERBS.filter((v) => v !== RULE_WILDCARD);
 export const OWNER_KINDS: readonly AccessReviewOwnerKind[] = [
+	"organization",
 	"system",
 	"user",
 	"team",
@@ -23,6 +24,11 @@ export const OWNER_KINDS: readonly AccessReviewOwnerKind[] = [
 ];
 
 export type AccessCheckTarget = "row" | "collection";
+
+/** The organization and the system are one each; every other owner is named. */
+export function ownerTakesName(kind: string): boolean {
+	return kind !== "organization" && kind !== "system";
+}
 
 export interface AccessCheckFormValues {
 	kind: string;
@@ -62,8 +68,7 @@ const schema = z
 		}
 		if (
 			v.target === "collection" &&
-			v.ownerKind &&
-			v.ownerKind !== "system" &&
+			ownerTakesName(v.ownerKind) &&
 			!v.ownerName
 		) {
 			ctx.addIssue({
@@ -82,7 +87,7 @@ function toRequest(
 		v.target === "collection" && v.ownerKind
 			? {
 					kind: v.ownerKind,
-					...(v.ownerKind === "system" ? {} : { name: v.ownerName.trim() }),
+					...(ownerTakesName(v.ownerKind) ? { name: v.ownerName.trim() } : {}),
 				}
 			: undefined;
 	return {

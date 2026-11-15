@@ -6,6 +6,7 @@ import {
 	ACTION_VERBS,
 	type AccessCheckTarget,
 	OWNER_KINDS,
+	ownerTakesName,
 	RESOURCE_KINDS,
 	useAccessCheckForm,
 } from "@/access-review/useAccessCheckForm";
@@ -202,7 +203,7 @@ export function AccessCheckDialog({
 									</SelectContent>
 								</Select>
 							</div>
-							{values.ownerKind && values.ownerKind !== "system" && (
+							{values.ownerKind && ownerTakesName(values.ownerKind) && (
 								<div className="flex flex-col gap-1.5">
 									<FieldLabel htmlFor="access-check-owner">
 										Owner name

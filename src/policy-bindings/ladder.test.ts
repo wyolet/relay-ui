@@ -24,7 +24,7 @@ function limits(rungs: LimitsRung[]): AccountLimits {
 
 const names: LadderNames = {
 	scope: (a) => (a.kind === "team" ? "Team Platform" : "Project Web"),
-	policy: (p) => p.name.toUpperCase(),
+	policy: (p) => (p.name ?? "").toUpperCase(),
 };
 
 describe("toLadder", () => {

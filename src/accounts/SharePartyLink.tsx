@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Bot, Boxes, Server, User, Users } from "lucide-react";
+import { Bot, Boxes, Building2, Server, User, Users } from "lucide-react";
 import { partyName } from "@/accounts/accountView";
 import { partyKindLabel } from "@/accounts/sharing";
 import type { AccountShareParty } from "@/api/hooks/accounts";
@@ -9,6 +9,7 @@ const linkClass =
 
 const ICONS = {
 	system: Server,
+	organization: Building2,
 	user: User,
 	team: Users,
 	project: Boxes,

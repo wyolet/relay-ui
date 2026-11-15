@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Gauge } from "lucide-react";
+import { BoundPolicyLink } from "@/accounts/BoundPolicyLink";
 import type {
 	LimitMeter,
 	LimitsRungView,
@@ -62,17 +63,7 @@ function Rung({ rung }: { rung: LimitsRungView }) {
 						{rung.accountName}
 					</Link>
 				</span>
-				{rung.policy ? (
-					<Link
-						to="/policies/$name"
-						params={{ name: rung.policy.name }}
-						className={linkClass}
-					>
-						{rung.policy.name}
-					</Link>
-				) : (
-					<span className="text-muted-foreground">No policy</span>
-				)}
+				<BoundPolicyLink policy={rung.policy} className={linkClass} />
 			</div>
 			{rung.meters.length > 0 && (
 				<ul className="mt-1.5">
@@ -95,7 +86,13 @@ function MeterRow({ meter }: { meter: LimitMeter }) {
 		<li className="grid grid-cols-[minmax(0,1fr)_minmax(4rem,8rem)_auto_auto] items-center gap-3 border-b border-border py-1.5 last:border-b-0 text-xs">
 			<div className="min-w-0">
 				<div className="flex items-baseline gap-1.5 truncate">
-					{meter.kind === "rateLimit" ? (
+					{!meter.name ? (
+						<span className="text-muted-foreground">
+							{meter.kind === "rateLimit"
+								? "Organization rate limit"
+								: "Organization budget"}
+						</span>
+					) : meter.kind === "rateLimit" ? (
 						<Link
 							to="/policies/rate-limits/$name"
 							params={{ name: meter.name }}

@@ -16,6 +16,7 @@ import type { FilterDef, FilterState } from "@/filters/types";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { OwnerLink } from "@/projects/OwnerLink";
 import { subjectLabel } from "@/role-bindings/SubjectsEditor";
+import { isGlobalScope } from "@/role-bindings/scope";
 import {
 	subjectDisplay,
 	subjectFilterOptions,
@@ -33,7 +34,7 @@ import { useDeferredSearch } from "@/shared/useDeferredSearch";
 export interface RoleBindingsSearch {
 	q: string;
 	role_id: string;
-	scope_kind: "all" | "system" | "team" | "project";
+	scope_kind: "all" | "organization" | "team" | "project";
 	scope_id: string;
 	subject: string;
 }
@@ -55,7 +56,7 @@ const STATIC_FILTERS = [
 		default: "all",
 		options: [
 			{ value: "all", label: "Any scope" },
-			{ value: "system", label: "Global" },
+			{ value: "organization", label: "Organization" },
 			{ value: "team", label: "Team" },
 			{ value: "project", label: "Project" },
 		],
@@ -244,7 +245,7 @@ export function RoleBindingsTable() {
 												)}
 											</td>
 											<td className="px-3 py-2 text-xs">
-												{binding.spec.scope.kind === "system" ? (
+												{isGlobalScope(binding.spec.scope) ? (
 													<span className="text-muted-foreground">Global</span>
 												) : (
 													<OwnerLink owner={binding.spec.scope} />

@@ -86,10 +86,9 @@ export function useGroupForm({
 	const updateGroup = useUpdateGroup();
 	const toastSaveError = useSaveErrorToast();
 	const { isAdmin } = useAuth();
-	// The form never changes the owner, and a new group's default owner isn't known
-	// up front, so only an existing system-owned group offers the switch.
+	// Relay creates every group in the organization; an older row may still be a user's.
 	const canSetPersonalAccount =
-		isAdmin && groupTakesPersonalAccount(group?.metadata.owner);
+		isAdmin && (!group || groupTakesPersonalAccount(group.metadata.owner));
 	const loaded = useLoadedResourceVersion(
 		`${open}:${group?.metadata.id ?? ""}`,
 		group?.metadata.resourceVersion,

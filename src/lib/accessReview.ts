@@ -8,13 +8,13 @@ const KIND_LABEL: Record<string, string> = {
 	serviceaccount: "service account",
 };
 
-/** A ref as "<kind> <name>"; the system scope reads "global". */
+/** A ref as "<kind> <name>"; the organization scope reads "global". */
 export function describeRef(ref: {
 	kind: string;
 	name?: string;
 	id?: string;
 }): string {
-	if (ref.kind === "system") return "global";
+	if (ref.kind === "organization" || ref.kind === "system") return "global";
 	const kind = KIND_LABEL[ref.kind] ?? ref.kind;
 	const label = ref.name || ref.id;
 	return label ? `${kind} ${label}` : kind;

@@ -21,7 +21,12 @@ interface WorkspaceMenuProps {
 	"aria-label"?: string;
 	align?: "start" | "center" | "end";
 	/** A form's own pick: the menu sets it instead of the workspace. */
-	formPick?: { value: string; onSelect: (key: string) => void };
+	formPick?: {
+		value: string;
+		onSelect: (key: string) => void;
+		/** The form's kind may be owned by the organization. */
+		organization: boolean;
+	};
 }
 
 /** Picks the workspace new rows land in; the sidebar switcher and create forms open it. */
@@ -39,7 +44,7 @@ export function WorkspaceMenu({
 		selectKey,
 		onOpenChange,
 		personalOffNote,
-	} = useContextSwitcher();
+	} = useContextSwitcher(formPick?.organization);
 	const value = formPick?.value ?? currentKey;
 	const onSelect = formPick?.onSelect ?? selectKey;
 	const slide = useSlidingHighlight();

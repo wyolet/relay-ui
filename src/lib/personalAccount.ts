@@ -43,11 +43,11 @@ export function userPersonalAccountInput(
 	return choice === "inherit" ? "" : choice;
 }
 
-/** Only a system-owned group may carry personalAccount; relay refuses it on any other. */
+/** Only an organization-owned group may carry personalAccount; relay refuses it on any other. */
 export function groupTakesPersonalAccount(
 	owner: components["schemas"]["Owner"] | undefined,
 ): boolean {
-	return owner?.kind === "system";
+	return owner?.kind === "organization";
 }
 
 /** A group's own value, as its detail page reads it. */

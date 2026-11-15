@@ -5,10 +5,10 @@ import type { OwnerOption } from "@/lib/ownerScopes";
 type MyContext = components["schemas"]["MyContext"];
 type Owner = components["schemas"]["Owner"];
 
-/** A scope new rows land in: one of /me/contexts, or System for admins. */
+/** A scope new rows land in: one of /me/contexts. */
 export interface WorkContext {
-	kind: MyContext["kind"] | "system";
-	/** The user id for personal, the team or project id, "" for System. */
+	kind: MyContext["kind"];
+	/** The user id for personal, the team or project id, "" for the organization. */
 	id: string;
 	displayName: string;
 	/** The project's team. Projects only. */
@@ -20,10 +20,10 @@ export interface WorkContext {
 /** What the store keeps across reloads. */
 export type WorkContextRef = Pick<WorkContext, "kind" | "id">;
 
-export const SYSTEM_CONTEXT: WorkContext = {
-	kind: "system",
+export const ORGANIZATION_CONTEXT: WorkContext = {
+	kind: "organization",
 	id: "",
-	displayName: "System",
+	displayName: "Organization",
 	admin: true,
 };
 
@@ -32,12 +32,9 @@ const KIND_LABEL: Record<"team" | "project", string> = {
 	project: "Project",
 };
 
-/** The caller's contexts: the organization first for admins (their default), then personal, then the rest in server order. */
-export function workContexts(
-	mine: readonly MyContext[],
-	isAdmin: boolean,
-): WorkContext[] {
-	const listed = mine.map(
+/** The caller's contexts in server order: the organization first for an admin (their default), then personal, teams, projects. */
+export function workContexts(mine: readonly MyContext[]): WorkContext[] {
+	return mine.map(
 		(c): WorkContext => ({
 			kind: c.kind,
 			id: c.id,
@@ -46,12 +43,6 @@ export function workContexts(
 			...(c.teamId ? { teamId: c.teamId } : {}),
 		}),
 	);
-	if (!isAdmin) return listed;
-	return [
-		SYSTEM_CONTEXT,
-		...listed.filter((c) => c.kind === "personal"),
-		...listed.filter((c) => c.kind !== "personal"),
-	];
 }
 
 /** One string per context, for radio values and keys. */
@@ -87,7 +78,7 @@ export function contextUsageScope(
 			return { team_id: [ctx.id] };
 		case "project":
 			return { project_id: [ctx.id] };
-		case "system":
+		case "organization":
 			return {};
 	}
 }
@@ -98,7 +89,7 @@ export function workspaceKeys(
 	current: WorkContext,
 	contexts: readonly WorkContext[],
 ): string[] {
-	if (current.kind === "system") return [];
+	if (current.kind === "organization") return [];
 	const projects =
 		current.kind === "team"
 			? contexts.filter((c) => c.kind === "project" && c.teamId === current.id)
@@ -107,15 +98,15 @@ export function workspaceKeys(
 }
 
 /**
- * Where a create from this workspace lands. The organization is a view, not an
- * owner (relay's system rows are global catalog data), so it creates in
- * Personal, or the first team when personal accounts are off.
+ * Where a create from this workspace lands. A kind the organization can't own
+ * goes to Personal from there, or the first team when personal accounts are off.
  */
 export function createContext(
 	current: WorkContext,
 	contexts: readonly WorkContext[],
+	organizationOwns: boolean,
 ): WorkContext | undefined {
-	if (current.kind !== "system") return current;
+	if (current.kind !== "organization" || organizationOwns) return current;
 	return (
 		contexts.find((c) => c.kind === "personal") ??
 		contexts.find((c) => c.kind === "team") ??
@@ -128,8 +119,8 @@ export function contextOwner(ctx: WorkContextRef): Owner | undefined {
 	switch (ctx.kind) {
 		case "personal":
 			return undefined;
-		case "system":
-			return { kind: "system" };
+		case "organization":
+			return { kind: "organization" };
 		default:
 			return { kind: ctx.kind, id: ctx.id };
 	}
@@ -140,8 +131,8 @@ export function contextUsableBy(ctx: WorkContextRef): string {
 	switch (ctx.kind) {
 		case "personal":
 			return `user:${ctx.id}`;
-		case "system":
-			return "system";
+		case "organization":
+			return "organization";
 		default:
 			return `${ctx.kind}:${ctx.id}`;
 	}
@@ -153,7 +144,7 @@ export function ownerUsableBy(
 	actorUserId: string | undefined,
 ): string | undefined {
 	const kind = owner?.kind ?? "user";
-	if (kind === "system") return "system";
+	if (kind === "system" || kind === "organization") return kind;
 	if (kind === "user") {
 		const id = owner?.id || actorUserId;
 		return id ? `user:${id}` : undefined;
@@ -181,7 +172,7 @@ export function contextSubtitle(ctx: WorkContext): string {
 	switch (ctx.kind) {
 		case "personal":
 			return "Personal";
-		case "system":
+		case "organization":
 			return "All teams";
 		default:
 			return `${KIND_LABEL[ctx.kind]} ${ctx.admin ? "admin" : "member"}`;
@@ -211,8 +202,8 @@ export function contextName(ctx: WorkContext): string {
 	switch (ctx.kind) {
 		case "personal":
 			return "Personal";
-		case "system":
-			return "System";
+		case "organization":
+			return "Organization";
 		default:
 			return `${KIND_LABEL[ctx.kind]} ${ctx.displayName}`;
 	}
@@ -227,6 +218,7 @@ export function ownerName(
 	const kind = owner?.kind ?? "user";
 	const id = owner?.id ?? "";
 	if (kind === "system") return "System";
+	if (kind === "organization") return "Organization";
 	if (kind === "user") {
 		return !id || id === actorUserId ? "Personal" : `user ${id.slice(0, 8)}…`;
 	}
@@ -248,6 +240,8 @@ export interface FormPlacement {
 	contextKey?: string;
 	/** Picks another context for this form only; the workspace stays as it is. */
 	choose?: (key: string) => void;
+	/** The form's kind may be owned by the organization, so its pick lists it. */
+	organization?: boolean;
 }
 
 /** A picker's owner-scoped list as a form reads it. */
@@ -319,14 +313,14 @@ export interface ContextRow {
 	nested: boolean;
 }
 
-/** Switcher rows: personal and System, each team followed by its projects, then projects whose team isn't listed. */
+/** Switcher rows: the organization and personal, each team followed by its projects, then projects whose team isn't listed. */
 export function contextRows(contexts: readonly WorkContext[]): ContextRow[] {
 	const teams = contexts.filter((c) => c.kind === "team");
 	const projects = contexts.filter((c) => c.kind === "project");
 	const teamIds = new Set(teams.map((t) => t.id));
 	return [
 		...contexts
-			.filter((c) => c.kind === "personal" || c.kind === "system")
+			.filter((c) => c.kind === "personal" || c.kind === "organization")
 			.map((context) => ({ context, nested: false })),
 		...teams.flatMap((team) => [
 			{ context: team, nested: false },
