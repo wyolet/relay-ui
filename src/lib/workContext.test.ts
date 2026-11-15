@@ -12,6 +12,7 @@ import {
 	contextTitle,
 	contextUsableBy,
 	contextUsageScope,
+	createContext,
 	notAvailableLabel,
 	ownerName,
 	ownerUsableBy,
@@ -393,5 +394,19 @@ describe("workspaceKeys", () => {
 		expect(workspaceKeys(team, contexts)).toEqual(["team:t1", "project:p1"]);
 		expect(workspaceKeys(personal, contexts)).toEqual(["personal:u1"]);
 		expect(workspaceKeys(SYSTEM_CONTEXT, contexts)).toEqual([]);
+	});
+});
+
+describe("createContext", () => {
+	const admin = workContexts(mine, true);
+	test("the organization creates in Personal", () => {
+		expect(createContext(SYSTEM_CONTEXT, admin)?.kind).toBe("personal");
+	});
+	test("without a personal account, in the first team", () => {
+		const noPersonal = admin.filter((c) => c.kind !== "personal");
+		expect(createContext(SYSTEM_CONTEXT, noPersonal)?.id).toBe("t1");
+	});
+	test("any other workspace creates in itself", () => {
+		expect(createContext(team, admin)).toBe(team);
 	});
 });

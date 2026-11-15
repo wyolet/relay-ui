@@ -15,6 +15,8 @@ export function useContextSwitcher() {
 	const allRows = contextRows(contexts);
 	// The workspace is a person, team or the organization; projects stay a form's pick.
 	const rows = allRows.filter((r) => !r.nested);
+	// A form creates somewhere real: the organization is a view only.
+	const formRows = allRows.filter((r) => r.context.kind !== "system");
 
 	function selectKey(key: string) {
 		const row = allRows.find((r) => contextKey(r.context) === key);
@@ -29,6 +31,7 @@ export function useContextSwitcher() {
 	return {
 		rows,
 		allRows,
+		formRows,
 		current,
 		currentKey: current ? contextKey(current) : "",
 		currentTitle: current ? contextTitle(current) : "",

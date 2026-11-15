@@ -9,6 +9,7 @@ import {
 	contextOwner,
 	contextUsableBy,
 	contextUsageScope,
+	createContext,
 	type FormPlacement,
 	ownerName,
 	ownerUsableBy,
@@ -53,13 +54,23 @@ export function useWorkContext() {
 		selected,
 	);
 
+	const personal: WorkContextRef | undefined = userId
+		? { kind: "personal", id: userId }
+		: undefined;
+	const createRef: WorkContextRef | undefined = current
+		? createContext(current, contexts)
+		: ref.kind === "system"
+			? personal
+			: ref;
+
 	return {
 		contexts,
 		contextsLoaded: data !== undefined,
 		current,
 		select,
-		owner: contextOwner(ref),
-		usableBy: contextUsableBy(ref),
+		// Creates never take the organization: see createContext.
+		owner: createRef ? contextOwner(createRef) : undefined,
+		usableBy: createRef ? contextUsableBy(createRef) : undefined,
 		usageScope: contextUsageScope(ref),
 	};
 }
@@ -102,11 +113,11 @@ export function useFormOwner(fixed?: { owner?: Owner }): {
 			context: undefined,
 		};
 	}
-	// A pick the caller lost (a revoked role) falls back to the workspace.
+	// A pick the caller lost (a revoked role) falls back to where the workspace creates.
 	const current =
 		(picked &&
 			work.contexts.find((c) => contextKey(c) === contextKey(picked))) ||
-		work.current;
+		(work.current && createContext(work.current, work.contexts));
 	if (!current) {
 		return {
 			owner: work.owner,

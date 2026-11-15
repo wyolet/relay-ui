@@ -106,6 +106,23 @@ export function workspaceKeys(
 	return [current, ...projects].map(contextKey);
 }
 
+/**
+ * Where a create from this workspace lands. The organization is a view, not an
+ * owner (relay's system rows are global catalog data), so it creates in
+ * Personal, or the first team when personal accounts are off.
+ */
+export function createContext(
+	current: WorkContext,
+	contexts: readonly WorkContext[],
+): WorkContext | undefined {
+	if (current.kind !== "system") return current;
+	return (
+		contexts.find((c) => c.kind === "personal") ??
+		contexts.find((c) => c.kind === "team") ??
+		contexts.find((c) => c.kind === "project")
+	);
+}
+
 /** The owner a create sends; personal sends none, so the row lands in the caller's own scope. */
 export function contextOwner(ctx: WorkContextRef): Owner | undefined {
 	switch (ctx.kind) {

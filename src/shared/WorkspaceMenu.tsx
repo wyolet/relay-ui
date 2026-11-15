@@ -34,7 +34,7 @@ export function WorkspaceMenu({
 }: WorkspaceMenuProps) {
 	const {
 		rows,
-		allRows,
+		formRows,
 		currentKey,
 		selectKey,
 		onOpenChange,
@@ -69,7 +69,7 @@ export function WorkspaceMenu({
 							className="pointer-events-none absolute inset-x-0 rounded-md bg-popover-hover duration-150 ease-out"
 							style={slide.style}
 						/>
-						{(formPick ? allRows : rows).map(({ context, nested }) => (
+						{(formPick ? formRows : rows).map(({ context, nested }) => (
 							<DropdownMenuRadioItem
 								key={contextKey(context)}
 								value={contextKey(context)}
