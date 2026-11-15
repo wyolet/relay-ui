@@ -4,6 +4,7 @@ import { Segmented, type SegmentedOption } from "@/shared/Segmented";
 import { dimensionLabel } from "@/usage/format";
 import { ExplorerFilters } from "./ExplorerFilters";
 import { ExplorerRange } from "./ExplorerRange";
+import { RequestsLink } from "./RequestsLink";
 import type { Lens } from "./search";
 import { useExplorer } from "./useExplorer";
 
@@ -20,14 +21,17 @@ const GROUP_BY_OPTIONS = USAGE_GROUP_BY.map((g) => ({
 	label: dimensionLabel(g),
 }));
 
-/** Title and range, then the lens tabs with the group-by, then filters. */
+/** Title, range and the way into Logs, then the lens tabs with the group-by, then filters. */
 export function ExplorerBar() {
 	const { live, set } = useExplorer();
 	return (
 		<div className="grid gap-5">
 			<div className="flex flex-wrap items-center justify-between gap-4">
 				<h1 className="text-2xl font-bold text-foreground">Usage</h1>
-				<ExplorerRange />
+				<div className="flex flex-wrap items-center gap-2">
+					<ExplorerRange />
+					<RequestsLink />
+				</div>
 			</div>
 			<div className="flex flex-wrap items-end justify-between gap-4">
 				<Segmented

@@ -6,14 +6,7 @@ import {
 	type FilterDimension,
 	isFilterDimension,
 } from "@/usage/filters/dimensions";
-
-/** The logs window that covers a usage range. */
-const SINCE: Record<UsageRange, "24h" | "7d" | "30d"> = {
-	today: "24h",
-	week: "7d",
-	month: "30d",
-	custom: "30d",
-};
+import { LOGS_SINCE } from "./search";
 
 /** Opens the requests behind one table row; nothing for dimensions Logs
  * can't filter on (source, error kind, …). */
@@ -34,7 +27,7 @@ export function LogsLink({
 	return (
 		<Link
 			to="/logs"
-			search={{ ...scope, since: SINCE[range], status_class: statusClass }}
+			search={{ ...scope, since: LOGS_SINCE[range], status_class: statusClass }}
 			aria-label="Open in Logs"
 			title="Open in Logs"
 			className="inline-flex text-ink-3 hover:text-foreground"
