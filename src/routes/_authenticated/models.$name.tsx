@@ -49,7 +49,6 @@ export const Route = createFileRoute("/_authenticated/models/$name")({
 			void queryClient.prefetchQuery(week.totals);
 			void queryClient.prefetchQuery(week.series);
 			void queryClient.prefetchQuery(week.byHost);
-			void queryClient.prefetchQuery(week.recent);
 		}
 	},
 	component: ModelDetailPage,

@@ -1,12 +1,8 @@
-import { recentLogsQueryOptions } from "@/api/hooks/logs";
 import { usageSummaryQueryOptions, useUsageNow } from "@/api/hooks/usage";
 import {
 	type WeekUsageScope,
 	weekUsageQueries,
 } from "@/usage/weekUsageQueries";
-
-/** Rows the recent-requests list shows. */
-const RECENT_REQUESTS = 10;
 
 /** The model's week of usage, its traffic split by host. */
 export function modelWeekScope(modelId: string): WeekUsageScope {
@@ -20,10 +16,6 @@ export function modelWeekQueries(modelId: string, now: string) {
 	return {
 		...week,
 		byHost: usageSummaryQueryOptions("host_id", week.win, week.filter),
-		recent: recentLogsQueryOptions(
-			{ model_id: [modelId], since: "7d" },
-			RECENT_REQUESTS,
-		),
 	};
 }
 

@@ -1,17 +1,13 @@
-import { Suspense } from "react";
 import type { Model } from "@/api/types/model";
 import { PlanIssuesPanel } from "@/diagnostics/IssuesPanel";
 import { ModelDetailHeader } from "@/models/ModelDetailHeader";
 import { ModelHostList } from "@/models/ModelHostList";
 import { ModelPolicyList } from "@/models/ModelPolicyList";
-import { ModelRecentRequests } from "@/models/ModelRecentRequests";
 import { ModelSpec } from "@/models/ModelSpec";
 import { modelWeekScope } from "@/models/modelWeekQueries";
 import { useModelHostLines } from "@/models/useModelHostLines";
 import { useModelPolicies } from "@/models/useModelPolicies";
 import { useModelProvider } from "@/models/useModelProvider";
-import { DelayedFallback } from "@/shared/DelayedFallback";
-import { SectionSkeleton } from "@/shared/Section";
 import { WeekFigures } from "@/usage/WeekFigures";
 import { WeekTraffic } from "@/usage/WeekTraffic";
 
@@ -66,18 +62,6 @@ export function ModelDetailView({
 			</div>
 
 			<ModelPolicyList policies={policies} />
-
-			{id && (
-				<Suspense
-					fallback={
-						<DelayedFallback>
-							<SectionSkeleton title="Recent requests" height="h-40" />
-						</DelayedFallback>
-					}
-				>
-					<ModelRecentRequests modelName={name} modelId={id} />
-				</Suspense>
-			)}
 		</div>
 	);
 }

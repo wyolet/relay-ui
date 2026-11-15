@@ -197,10 +197,7 @@ test.describe("Model detail", () => {
 		await expect(page.getByText("200k tokens")).toBeVisible();
 		await expect(page.getByText("Tool use")).toBeVisible();
 
-		const logs = page.getByRole("link", { name: "Open in Logs →" });
-		await expect(logs).toHaveAttribute("href", /model_id=.*claude-opus-5/);
-		await expect(logs).toHaveAttribute("href", /since=7d/);
-		await logs.click();
-		await expect(page).toHaveURL(/\/logs\?.*since=7d/);
+		// Request rows live only on the Logs page.
+		await expect(page.getByRole("heading", { name: "Recent requests" })).toHaveCount(0);
 	});
 });
