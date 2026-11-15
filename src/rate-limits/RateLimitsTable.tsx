@@ -1,29 +1,18 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { Gauge, Plus } from "lucide-react";
 import { useState } from "react";
-import {
-	useDeleteRateLimit,
-	useRateLimits,
-	useUpdateRateLimit,
-} from "@/api/hooks/ratelimits";
-import type { RateLimit } from "@/api/types/ratelimit";
+import { useDeleteRateLimit, useRateLimits } from "@/api/hooks/ratelimits";
 import { buttonVariants } from "@/components/ui/button";
-import { PlanIssueDot } from "@/diagnostics/DiagnosticDot";
 import { FilterBar } from "@/filters/FilterBar";
 import { toolbarMainActionClassName } from "@/filters/ToolbarActions";
 import type { FilterDef } from "@/filters/types";
 import { useOwnerFilter } from "@/hooks/useOwnerFilter";
-import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
-import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
-import { compactNumber } from "@/lib/rateLimitFormat";
-import { windowShort } from "@/lib/timeWindow";
+import { displayLabel } from "@/lib/displayLabel";
+import { RateLimitColumns, RateLimitRow } from "@/rate-limits/RateLimitRow";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
+import { LineTable } from "@/shared/LineGrid";
 import { OwnerFilter } from "@/shared/OwnerFilter";
-import { RowMenu } from "@/shared/RowMenu";
-import { CatalogDetachedBadge } from "@/shared/StatusBadge";
-import { Switch } from "@/shared/Switch";
 import { TableEmpty } from "@/shared/TableEmpty";
-import { Th } from "@/shared/Th";
 import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 
 const RATE_LIMIT_FILTERS = [
@@ -39,7 +28,6 @@ const RATE_LIMIT_FILTERS = [
 export function RateLimitsTable() {
 	const { data: rateLimitsData } = useRateLimits();
 	const del = useConfirmedDelete(useDeleteRateLimit(), { noun: "rate limit" });
-	const navigate = useNavigate({ from: "/policies" });
 	const [q, setQ] = useState("");
 	const owner = useOwnerFilter(rateLimitsData.items ?? []);
 	const allItems = owner.visible;
@@ -97,52 +85,22 @@ export function RateLimitsTable() {
 					)}
 				</TableEmpty>
 			) : (
-				<div className="overflow-x-auto rounded-lg border border-border bg-card">
-					<table className="w-full border-collapse">
-						<thead className="bg-muted/40">
-							<tr>
-								<Th variant="column">Name</Th>
-								<Th variant="column">Strategy</Th>
-								<Th variant="column" align="right">
-									Window
-								</Th>
-								<Th variant="column">Rules</Th>
-								<th
-									scope="col"
-									className="w-12 px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground"
-								>
-									On
-								</th>
-								<th
-									scope="col"
-									className="w-10 px-3 py-2"
-									aria-label="Actions"
-								/>
-							</tr>
-						</thead>
-						<tbody>
-							{items.map((rl) => (
-								<RateLimitRow
-									key={rl.metadata.name}
-									rl={rl}
-									onEdit={() =>
-										void navigate({
-											to: "/policies/rate-limits/$name",
-											params: { name: rl.metadata.name },
-										})
-									}
-									onDelete={() =>
-										del.request({
-											id: rl.metadata.id ?? "",
-											name: rl.metadata.name,
-											label: displayLabel(rl.metadata),
-										})
-									}
-								/>
-							))}
-						</tbody>
-					</table>
-				</div>
+				<LineTable minWidth="min-w-[41.25rem]">
+					<RateLimitColumns />
+					{items.map((rl) => (
+						<RateLimitRow
+							key={rl.metadata.name}
+							rl={rl}
+							onDelete={() =>
+								del.request({
+									id: rl.metadata.id ?? "",
+									name: rl.metadata.name,
+									label: displayLabel(rl.metadata),
+								})
+							}
+						/>
+					))}
+				</LineTable>
 			)}
 			{del.target && (
 				<DeleteConfirm
@@ -155,91 +113,4 @@ export function RateLimitsTable() {
 			)}
 		</div>
 	);
-}
-
-function RateLimitRow({
-	rl,
-	onEdit,
-	onDelete,
-}: {
-	rl: RateLimit;
-	onEdit: () => void;
-	onDelete: () => void;
-}) {
-	const updateRL = useUpdateRateLimit();
-	const toastSaveError = useSaveErrorToast();
-	const enabled = rl.spec.enabled !== false;
-	async function toggleEnabled(next: boolean) {
-		try {
-			await updateRL.mutateAsync({
-				id: rl.metadata.id ?? "",
-				body: { metadata: rl.metadata, spec: { ...rl.spec, enabled: next } },
-			});
-		} catch (err) {
-			toastSaveError(err, "Failed to update rate limit.");
-		}
-	}
-	return (
-		<tr className="border-t border-border hover:bg-muted/40 transition-colors">
-			<td className="px-3 py-2">
-				<div className="flex items-center gap-2">
-					<Link
-						to="/policies/rate-limits/$name"
-						params={{ name: rl.metadata.name }}
-						className="text-sm font-medium text-foreground hover:underline"
-					>
-						{displayLabel(rl.metadata)}
-						{!hasDisplayName(rl.metadata) && (
-							<span className="ml-1.5 text-[11px] text-muted-foreground">
-								(no display name)
-							</span>
-						)}
-					</Link>
-					<PlanIssueDot kind="ratelimit" id={rl.metadata.id} />
-					<CatalogDetachedBadge detachedAt={rl.metadata.catalogDetachedAt} />
-				</div>
-			</td>
-			<td className="px-3 py-2 text-sm">
-				<span className="text-[11px] text-muted-foreground">
-					{rl.spec.rules?.[0]?.strategy ?? "—"}
-				</span>
-			</td>
-			<td className="px-3 py-2 text-right text-sm text-foreground tabular-nums">
-				{rl.spec.rules?.[0] ? windowShort(rl.spec.rules[0].window) : "—"}
-			</td>
-			<td className="px-3 py-2 text-sm text-muted-foreground">
-				{summarizeRules(rl)}
-			</td>
-			<td className="px-3 py-2">
-				<Switch
-					checked={enabled}
-					onChange={(next) => void toggleEnabled(next)}
-					disabled={updateRL.isPending}
-					label={`Toggle ${rl.metadata.name}`}
-				/>
-			</td>
-			<td className="px-3 py-2 text-right">
-				<RowMenu
-					actions={[
-						{ label: "Edit", onClick: onEdit },
-						{ label: "Delete", danger: true, onClick: onDelete },
-					]}
-				/>
-			</td>
-		</tr>
-	);
-}
-
-function summarizeRules(rl: RateLimit): string {
-	const rules = rl.spec.rules ?? null;
-	if (!rules || rules.length === 0) {
-		return "—";
-	}
-	if (rules.length === 1) {
-		return `${compactNumber(rules[0].amount)} ${rules[0].meter}`;
-	}
-	return `${rules.length} rules on ${rules
-		.slice(0, 2)
-		.map((r) => r.meter)
-		.join(", ")}${rules.length > 2 ? " and more" : ""}`;
 }
