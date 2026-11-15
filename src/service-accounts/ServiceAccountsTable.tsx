@@ -20,7 +20,6 @@ import { RowMenu } from "@/shared/RowMenu";
 import { StaleContent } from "@/shared/StaleContent";
 import { Switch } from "@/shared/Switch";
 import { TableEmpty } from "@/shared/TableEmpty";
-import { TableToolbar } from "@/shared/TableToolbar";
 import { Th } from "@/shared/Th";
 import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 import { useDeferredSearch } from "@/shared/useDeferredSearch";
@@ -83,15 +82,13 @@ export function ServiceAccountsTable() {
 
 	return (
 		<div>
-			<TableToolbar
-				search={
-					<FilterBar
-						defs={SERVICE_ACCOUNT_FILTERS}
-						state={{ q: live.q, enabled: live.enabled }}
-						onChange={patch}
-					/>
-				}
-				filters={<OwnerFilter filter={owner} />}
+			<FilterBar
+				defs={SERVICE_ACCOUNT_FILTERS}
+				state={{ q: live.q, enabled: live.enabled }}
+				onChange={patch}
+				extra={<OwnerFilter filter={owner} />}
+				extraActive={owner.isDefault ? 0 : 1}
+				className="mb-3"
 				actions={
 					<Link
 						to="/service-accounts/new"

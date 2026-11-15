@@ -9,16 +9,26 @@ import {
 } from "@/budgets/budgetFormat";
 import { useBudgetRows } from "@/budgets/useBudgetRows";
 import { buttonVariants } from "@/components/ui/button";
+import { FilterBar } from "@/filters/FilterBar";
+import type { FilterDef } from "@/filters/types";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { fmtUsd } from "@/lib/limitsFormat";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { OwnerFilter } from "@/shared/OwnerFilter";
 import { RowMenu } from "@/shared/RowMenu";
-import { SearchBox } from "@/shared/SearchBox";
 import { TableEmpty } from "@/shared/TableEmpty";
-import { TableToolbar } from "@/shared/TableToolbar";
 import { Th } from "@/shared/Th";
 import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
+
+const BUDGET_FILTERS = [
+	{
+		key: "q",
+		type: "search",
+		label: "Search budgets",
+		placeholder: "Search budgets",
+		default: "",
+	},
+] as const satisfies readonly FilterDef[];
 
 export function BudgetsTable() {
 	const { rows, total, q, setQ, owner } = useBudgetRows();
@@ -26,11 +36,15 @@ export function BudgetsTable() {
 
 	return (
 		<div>
-			<TableToolbar
-				search={
-					<SearchBox value={q} onChange={setQ} placeholder="Search budgets" />
-				}
-				filters={<OwnerFilter filter={owner} />}
+			<FilterBar
+				defs={BUDGET_FILTERS}
+				state={{ q }}
+				onChange={(patch) => {
+					if (typeof patch.q === "string") setQ(patch.q);
+				}}
+				extra={<OwnerFilter filter={owner} />}
+				extraActive={owner.isDefault ? 0 : 1}
+				className="mb-3"
 				actions={
 					<Link
 						to="/policies/budgets/new"

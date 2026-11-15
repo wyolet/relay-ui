@@ -23,7 +23,6 @@ import { RowMenu } from "@/shared/RowMenu";
 import { StaleContent } from "@/shared/StaleContent";
 import { Switch } from "@/shared/Switch";
 import { TableEmpty } from "@/shared/TableEmpty";
-import { TableToolbar } from "@/shared/TableToolbar";
 import { Th } from "@/shared/Th";
 import { toast } from "@/shared/Toast";
 import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
@@ -182,18 +181,15 @@ export function KeysTable() {
 
 	return (
 		<div>
-			<TableToolbar
-				search={
-					<FilterBar
-						defs={KEY_FILTERS}
-						state={{
-							q: live.q,
-							principal_kind: live.principal_kind,
-							expired: live.expired,
-						}}
-						onChange={patch}
-					/>
-				}
+			<FilterBar
+				defs={KEY_FILTERS}
+				state={{
+					q: live.q,
+					principal_kind: live.principal_kind,
+					expired: live.expired,
+				}}
+				onChange={patch}
+				className="mb-3"
 				actions={
 					<Link
 						to="/keys/new"

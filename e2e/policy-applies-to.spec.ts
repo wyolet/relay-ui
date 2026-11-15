@@ -240,10 +240,12 @@ test.describe("Owner filter", () => {
 		await expect(rows).toHaveCount(1);
 		await expect(rows.first()).toContainText("Team policy");
 
+		await page.getByRole("button", { name: "Filters", exact: true }).click();
 		await page.getByRole("button", { name: /Owner: Team Platform/ }).click();
 		await page.getByText("Project Search").click();
 		await expect(rows).toHaveCount(2);
 		await expect(page.getByRole("button", { name: /Owner: 2 owners/ })).toBeVisible();
+		await expect(page.getByRole("button", { name: /^Filters\s*1$/ })).toBeVisible();
 
 		await page.getByRole("button", { name: "Show all owners" }).click();
 		await expect(rows).toHaveCount(4);

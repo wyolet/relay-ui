@@ -22,7 +22,6 @@ import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { RowMenu } from "@/shared/RowMenu";
 import { StaleContent } from "@/shared/StaleContent";
 import { TableEmpty } from "@/shared/TableEmpty";
-import { TableToolbar } from "@/shared/TableToolbar";
 import { Th } from "@/shared/Th";
 import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 import { useDeferredSearch } from "@/shared/useDeferredSearch";
@@ -78,14 +77,11 @@ export function RolesTable() {
 
 	return (
 		<div>
-			<TableToolbar
-				search={
-					<FilterBar
-						defs={ROLE_FILTERS}
-						state={{ q: live.q, enabled: live.enabled }}
-						onChange={patch}
-					/>
-				}
+			<FilterBar
+				defs={ROLE_FILTERS}
+				state={{ q: live.q, enabled: live.enabled }}
+				onChange={patch}
+				className="mb-3"
 				actions={
 					canAuthor ? (
 						<Link

@@ -28,7 +28,6 @@ import { ShortId } from "@/shared/ShortId";
 import { PageLoader } from "@/shared/Spinner";
 import { StatusBadge } from "@/shared/StatusBadge";
 import { TableEmpty } from "@/shared/TableEmpty";
-import { TableToolbar } from "@/shared/TableToolbar";
 import { Th } from "@/shared/Th";
 import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 
@@ -65,15 +64,13 @@ export function AccountsTable() {
 	return (
 		<div>
 			<p className="mb-3 text-xs text-muted-foreground">{ACCOUNT_SUMMARY}</p>
-			<TableToolbar
-				search={
-					<FilterBar
-						defs={ACCOUNT_FILTERS}
-						state={{ ...filters }}
-						onChange={setFilters}
-					/>
-				}
-				filters={filters.mine ? undefined : <OwnerFilter filter={owner} />}
+			<FilterBar
+				defs={ACCOUNT_FILTERS}
+				state={{ ...filters }}
+				onChange={setFilters}
+				extra={filters.mine ? undefined : <OwnerFilter filter={owner} />}
+				extraActive={filters.mine || owner.isDefault ? 0 : 1}
+				className="mb-3"
 				actions={
 					<>
 						<Link

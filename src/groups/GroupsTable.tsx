@@ -16,7 +16,6 @@ import { RowMenu } from "@/shared/RowMenu";
 import { StaleContent } from "@/shared/StaleContent";
 import { Switch } from "@/shared/Switch";
 import { TableEmpty } from "@/shared/TableEmpty";
-import { TableToolbar } from "@/shared/TableToolbar";
 import { Th } from "@/shared/Th";
 import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 import { useDeferredSearch } from "@/shared/useDeferredSearch";
@@ -72,14 +71,11 @@ export function GroupsTable() {
 
 	return (
 		<div>
-			<TableToolbar
-				search={
-					<FilterBar
-						defs={GROUP_FILTERS}
-						state={{ q: live.q, enabled: live.enabled }}
-						onChange={patch}
-					/>
-				}
+			<FilterBar
+				defs={GROUP_FILTERS}
+				state={{ q: live.q, enabled: live.enabled }}
+				onChange={patch}
+				className="mb-3"
 				actions={
 					<Link
 						to="/groups/new"

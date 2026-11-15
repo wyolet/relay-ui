@@ -11,6 +11,8 @@ import type { Policy } from "@/api/types/policy";
 import type { RateLimit } from "@/api/types/ratelimit";
 import { buttonVariants } from "@/components/ui/button";
 import { PlanIssueDot } from "@/diagnostics/DiagnosticDot";
+import { FilterBar } from "@/filters/FilterBar";
+import type { FilterDef } from "@/filters/types";
 import { useMutability } from "@/hooks/useMutability";
 import { useOwnerFilter } from "@/hooks/useOwnerFilter";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
@@ -20,13 +22,21 @@ import { OwnerLink } from "@/projects/OwnerLink";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { OwnerFilter } from "@/shared/OwnerFilter";
 import { RowMenu } from "@/shared/RowMenu";
-import { SearchBox } from "@/shared/SearchBox";
 import { CatalogDetachedBadge } from "@/shared/StatusBadge";
 import { Switch } from "@/shared/Switch";
 import { TableEmpty } from "@/shared/TableEmpty";
-import { TableToolbar } from "@/shared/TableToolbar";
 import { Th } from "@/shared/Th";
 import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
+
+const POLICY_FILTERS = [
+	{
+		key: "q",
+		type: "search",
+		label: "Search policies",
+		placeholder: "Search policies",
+		default: "",
+	},
+] as const satisfies readonly FilterDef[];
 
 function describeCatalog(p: Policy): {
 	label: string;
@@ -65,11 +75,15 @@ export function PoliciesTable() {
 
 	return (
 		<div>
-			<TableToolbar
-				search={
-					<SearchBox value={q} onChange={setQ} placeholder="Search policies" />
-				}
-				filters={<OwnerFilter filter={owner} />}
+			<FilterBar
+				defs={POLICY_FILTERS}
+				state={{ q }}
+				onChange={(patch) => {
+					if (typeof patch.q === "string") setQ(patch.q);
+				}}
+				extra={<OwnerFilter filter={owner} />}
+				extraActive={owner.isDefault ? 0 : 1}
+				className="mb-3"
 				actions={
 					<Link
 						to="/policies/new"

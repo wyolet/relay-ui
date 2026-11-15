@@ -22,7 +22,6 @@ import { OwnerFilter } from "@/shared/OwnerFilter";
 import { RowMenu } from "@/shared/RowMenu";
 import { StaleContent } from "@/shared/StaleContent";
 import { TableEmpty } from "@/shared/TableEmpty";
-import { TableToolbar } from "@/shared/TableToolbar";
 import { Th } from "@/shared/Th";
 import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 import { useDeferredSearch } from "@/shared/useDeferredSearch";
@@ -134,11 +133,13 @@ export function PolicyBindingsTable() {
 
 	return (
 		<div>
-			<TableToolbar
-				search={
-					<FilterBar defs={filters} state={{ ...live }} onChange={patch} />
-				}
-				filters={<OwnerFilter filter={owner} />}
+			<FilterBar
+				defs={filters}
+				state={{ ...live }}
+				onChange={patch}
+				extra={<OwnerFilter filter={owner} />}
+				extraActive={owner.isDefault ? 0 : 1}
+				className="mb-3"
 				actions={
 					<Link
 						to="/policy-bindings/new"

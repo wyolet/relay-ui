@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { AlertBanner } from "@/shared/AlertBanner";
 import { CopyableValue } from "@/shared/CopyableValue";
 import { StatusBadge } from "@/shared/StatusBadge";
-import { TableToolbar } from "@/shared/TableToolbar";
 import { ScimClientCreateDialog } from "./ScimClientCreateDialog";
 import { ScimClientsTable } from "./ScimClientsTable";
 import { ScimTokenDialog } from "./ScimTokenDialog";
@@ -56,14 +55,12 @@ export function ScimClientsView() {
 			</div>
 
 			<div>
-				<TableToolbar
-					actions={
-						<Button size="lg" onClick={() => setCreating(true)}>
-							<Plus className="w-3.5 h-3.5" />
-							New client
-						</Button>
-					}
-				/>
+				<div className="mb-3 flex justify-end">
+					<Button size="lg" onClick={() => setCreating(true)}>
+						<Plus className="w-3.5 h-3.5" />
+						New client
+					</Button>
+				</div>
 				<ScimClientsTable
 					clients={clients}
 					busy={actions.busy}
