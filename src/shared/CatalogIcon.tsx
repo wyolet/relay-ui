@@ -19,11 +19,13 @@ export function CatalogIcon({
 	/** When true, the label is set as a `title` for native tooltips. */
 	titleTooltip?: boolean;
 }) {
-	const [errored, setErrored] = useState(false);
+	// Remember which path failed, so a new path (or the same file served
+	// later) gets its own try instead of staying an initial.
+	const [failed, setFailed] = useState<string>();
 	const style = { width: size, height: size } as const;
 	const title = titleTooltip ? label : undefined;
 
-	if (!path || errored) {
+	if (!path || failed === path) {
 		return (
 			<span
 				aria-hidden="true"
@@ -52,7 +54,7 @@ export function CatalogIcon({
 				alt=""
 				aria-hidden="true"
 				loading="lazy"
-				onError={() => setErrored(true)}
+				onError={() => setFailed(path)}
 				className="h-full w-full object-contain"
 			/>
 		</span>
