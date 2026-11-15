@@ -113,7 +113,7 @@ export function ModelLineRow({ line }: { line: ModelLine }) {
 				<Switch
 					checked={actions.enabled}
 					onChange={(next) => void actions.setEnabled(next)}
-					disabled={!actions.canEdit || actions.pending}
+					disabled={!actions.canEdit}
 					label={`${actions.enabled ? "Disable" : "Enable"} ${displayLabel(model.metadata)}`}
 				/>
 			</span>
