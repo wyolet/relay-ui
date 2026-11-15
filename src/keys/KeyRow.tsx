@@ -1,15 +1,14 @@
 import { Link } from "@tanstack/react-router";
-import { Check, Copy } from "lucide-react";
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Check } from "lucide-react";
 import { PlanIssueDot } from "@/diagnostics/DiagnosticDot";
 import type { KeyTableLine } from "@/keys/useKeysTable";
 import { useToggleKeyEnabled } from "@/keys/useToggleKeyEnabled";
 import { displayLabel } from "@/lib/displayLabel";
-import { fmtCompact, fmtTs } from "@/lib/format";
+import { fmtAgo, fmtCompact, fmtTs } from "@/lib/format";
 import {
 	type ExpiryTone,
 	keyExpiry,
+	LAST_USED_DAYS,
 	PRINCIPAL_KIND_LABELS,
 } from "@/lib/keyLines";
 import { cn } from "@/lib/utils";
@@ -28,7 +27,6 @@ import {
 	SwitchCell,
 } from "@/shared/LineGrid";
 import { RowMenu } from "@/shared/RowMenu";
-import { toast } from "@/shared/Toast";
 import { fmtMoneyCompact } from "@/usage/format";
 
 // The tracks' minimums plus gaps come to 67.5rem, the table's min-w.
@@ -51,7 +49,9 @@ export function KeyColumns() {
 			</span>
 			<span>Expires</span>
 			<span>Passthrough</span>
-			<span>Prefix</span>
+			<span title={`Latest request in the last ${LAST_USED_DAYS} days`}>
+				Last used
+			</span>
 			<span className="pr-3 text-right">On</span>
 			<span />
 		</LineColumns>
@@ -68,9 +68,12 @@ const EXPIRY_TONE: Record<ExpiryTone, string> = {
 /** One API key: who it acts as, where it runs, its traffic and lifetime. */
 export function KeyRow({
 	line,
+	lastUsedLoaded,
 	onDelete,
 }: {
 	line: KeyTableLine;
+	/** False until the last-used lookup returns. */
+	lastUsedLoaded: boolean;
 	onDelete: () => void;
 }) {
 	const { key: rk, usage, principal } = line;
@@ -154,9 +157,7 @@ export function KeyRow({
 					/>
 				)}
 			</span>
-			<span className="min-w-0">
-				{rk.spec.prefix ? <PrefixCopy prefix={rk.spec.prefix} /> : <Dash />}
-			</span>
+			<LastUsed at={line.lastUsed} loaded={lastUsedLoaded} />
 			<SwitchCell
 				checked={enabled}
 				onChange={(next) => setEnabled(rk, next)}
@@ -182,41 +183,26 @@ export function KeyRow({
 	);
 }
 
+/** "3h ago" with the exact time on hover; quiet when the key had no request
+ * in the lookback, or while it loads. */
+function LastUsed({ at, loaded }: { at?: string; loaded: boolean }) {
+	if (!at)
+		return (
+			<span className="truncate text-ink-3">
+				{loaded ? `Not in ${LAST_USED_DAYS} days` : "…"}
+			</span>
+		);
+	return (
+		<span className="truncate text-ink-2" title={fmtTs(at)}>
+			{fmtAgo(at)}
+		</span>
+	);
+}
+
 function Dash({ title }: { title?: string }) {
 	return (
 		<span className="text-ink-3" title={title}>
 			—
 		</span>
-	);
-}
-
-/** The key's leading characters; a click copies them. */
-function PrefixCopy({ prefix }: { prefix: string }) {
-	const [copied, setCopied] = useState(false);
-	async function handleCopy() {
-		try {
-			await navigator.clipboard.writeText(prefix);
-			setCopied(true);
-			setTimeout(() => setCopied(false), 1_200);
-		} catch {
-			toast("error", "Couldn't copy to clipboard.");
-		}
-	}
-	return (
-		<Button
-			type="button"
-			variant="ghost"
-			size="sm"
-			onClick={() => void handleCopy()}
-			title="Copy prefix"
-			className="group/prefix h-6 max-w-full gap-1 px-1 font-mono text-foot font-normal text-ink-3 hover:text-foreground"
-		>
-			<span className="truncate">{prefix}…</span>
-			{copied ? (
-				<Check className="size-3 text-primary" />
-			) : (
-				<Copy className="size-3 opacity-0 group-hover/prefix:opacity-100" />
-			)}
-		</Button>
 	);
 }

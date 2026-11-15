@@ -69,6 +69,7 @@ export function KeysTable() {
 								<KeyRow
 									key={line.key.metadata.id ?? line.key.metadata.name}
 									line={line}
+									lastUsedLoaded={table.lastUsedLoaded}
 									onDelete={() =>
 										del.request({
 											id: line.key.metadata.id ?? "",

@@ -52,6 +52,24 @@ describe("sortKeyLines", () => {
 		]);
 	});
 
+	it("last used: most recent first; unused keys stay last either way", () => {
+		const lines = [
+			{ ...line("never"), lastUsed: undefined },
+			{ ...line("old"), lastUsed: "2026-11-01T00:00:00Z" },
+			{ ...line("fresh"), lastUsed: "2026-11-15T10:00:00Z" },
+		];
+		expect(names(sortKeyLines(lines, { key: "used", dir: "desc" }))).toEqual([
+			"fresh",
+			"old",
+			"never",
+		]);
+		expect(names(sortKeyLines(lines, { key: "used", dir: "asc" }))).toEqual([
+			"old",
+			"fresh",
+			"never",
+		]);
+	});
+
 	it("newest and name follow the direction", () => {
 		const lines = [
 			line("b", { createdAt: "2026-01-02T00:00:00Z" }),
