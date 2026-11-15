@@ -178,8 +178,7 @@ test.describe("Models", () => {
 		const row = page
 			.getByRole("link", { name: "Claude Opus 5" })
 			.locator("xpath=ancestor::div[contains(@class,'grid-cols')][1]");
-		await row.getByRole("button", { name: "Row actions" }).click();
-		await page.getByRole("menuitem", { name: "Disable" }).click();
+		await row.getByRole("switch", { name: /^Disable / }).click();
 		await expect.poll(() => puts.at(-1)?.spec.enabled).toBe(false);
 
 		await page.getByRole("link", { name: "Claude Opus 5" }).click();
