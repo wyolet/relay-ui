@@ -12,7 +12,7 @@ import {
 } from "@/policy-bindings/useAccountPolicy";
 import { DetailRow } from "@/shared/DetailCard";
 
-export const UNBOUND = "No policy binding holds this account.";
+export const UNBOUND = "None";
 
 const MISSING = {
 	pending: "…",
@@ -104,9 +104,7 @@ export function AccountPolicy({
 						)}
 					</>
 				) : (
-					<span className="text-muted-foreground" title={UNBOUND}>
-						no policy
-					</span>
+					<span className="text-muted-foreground">no policy</span>
 				)}
 			</span>
 		);
