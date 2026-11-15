@@ -57,18 +57,28 @@ export interface SortControl<T extends string = string> {
 const SEGMENT =
 	"flex h-full shrink-0 items-center gap-1.5 border-l border-field-border px-2.5 text-xs text-muted-foreground outline-none transition-colors hover:bg-muted/40 hover:text-foreground focus-visible:bg-muted/40 focus-visible:text-foreground";
 
+/** A filter worth one press: its options sit in the field beside Filters.
+ * Any mix can be on; none on means no narrowing. */
+export interface QuickFilter<T extends string = string> {
+	label: string;
+	options: readonly { value: T; label: string; title?: string }[];
+	selected: readonly T[];
+	onChange: (next: T[]) => void;
+}
+
 /**
  * A list page's toolbar from its FilterDef[]: one grouped field holding the
- * search, a Filters toggle and the sort, page actions on the right, and the
+ * search, a Filters toggle, any quick filter and the sort, page actions on the right, and the
  * filter controls in a row underneath while open. Purely presentational:
  * state and persistence (URL search params) are owned by the route; this
  * emits patches.
  */
-export function FilterBar({
+export function FilterBar<Q extends string = string>({
 	defs,
 	state,
 	onChange,
 	sort,
+	quick,
 	actions,
 	extra,
 	extraActive = 0,
@@ -80,6 +90,7 @@ export function FilterBar({
 	/** Patch one or more keys; merge into the route's search params. */
 	onChange: (patch: FilterState) => void;
 	sort?: SortControl;
+	quick?: QuickFilter<Q>;
 	/** The page's actions at the right end (see `ToolbarActions`): the main
 	 * action first, then secondary ones. */
 	actions?: ReactNode;
@@ -154,6 +165,7 @@ export function FilterBar({
 								<X className="size-3.5" aria-hidden />
 							</button>
 						)}
+						{quick && <QuickSegments quick={quick} />}
 						{sort && <SortSegment sort={sort} />}
 					</div>
 					{hasFilters && open && (
@@ -192,6 +204,35 @@ export function FilterBar({
 				)}
 			</div>
 			{summary && <p className="text-meta text-ink-3">{summary}</p>}
+		</div>
+	);
+}
+
+function QuickSegments<Q extends string>({ quick }: { quick: QuickFilter<Q> }) {
+	return (
+		// biome-ignore lint/a11y/useSemanticElements: a fieldset can't sit inside the field's flex row
+		<div role="group" aria-label={quick.label} className="flex">
+			{quick.options.map((o) => {
+				const on = quick.selected.includes(o.value);
+				return (
+					<button
+						key={o.value}
+						type="button"
+						title={o.title}
+						aria-pressed={on}
+						className={cn(SEGMENT, on && "bg-muted text-foreground")}
+						onClick={() =>
+							quick.onChange(
+								on
+									? quick.selected.filter((v) => v !== o.value)
+									: [...quick.selected, o.value],
+							)
+						}
+					>
+						{o.label}
+					</button>
+				);
+			})}
 		</div>
 	);
 }

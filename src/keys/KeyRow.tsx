@@ -21,6 +21,7 @@ import { OwnerLink } from "@/projects/OwnerLink";
 import { LastUsed } from "@/shared/LastUsed";
 import {
 	LineColumns,
+	LineName,
 	LineRow,
 	NumberCell,
 	QuietTag,
@@ -82,8 +83,9 @@ export function KeyRow({
 
 	return (
 		<LineRow cols={COLS} dimmed={!enabled}>
-			<span className="grid min-w-0">
-				<span className="flex h-5 min-w-0 items-center gap-2">
+			<LineName
+				slug={rk.metadata.name}
+				name={
 					<Link
 						to="/keys/$name"
 						params={{ name: rk.metadata.name }}
@@ -91,23 +93,21 @@ export function KeyRow({
 					>
 						{label}
 					</Link>
-					{rk.spec.revokedAt && (
-						<QuietTag
-							className="text-destructive"
-							title={fmtTs(rk.spec.revokedAt)}
-						>
-							revoked
-						</QuietTag>
-					)}
-					<span className="shrink-0 empty:hidden">
-						<OwnerLink owner={rk.metadata.owner} />
-					</span>
-					<PlanIssueDot kind="key" id={rk.metadata.id} />
+				}
+			>
+				{rk.spec.revokedAt && (
+					<QuietTag
+						className="text-destructive"
+						title={fmtTs(rk.spec.revokedAt)}
+					>
+						revoked
+					</QuietTag>
+				)}
+				<span className="shrink-0 empty:hidden">
+					<OwnerLink owner={rk.metadata.owner} />
 				</span>
-				<code className="truncate font-mono text-foot text-ink-3">
-					{rk.metadata.name}
-				</code>
-			</span>
+				<PlanIssueDot kind="key" id={rk.metadata.id} />
+			</LineName>
 			<span className="grid min-w-0">
 				<span className="truncate">{principal}</span>
 				<span className="truncate text-foot text-ink-3">

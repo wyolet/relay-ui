@@ -27,15 +27,21 @@ import type { Host } from "@/api/types/host";
 import type { FilterDef, FilterState } from "@/filters/types";
 import { useOwnerFilter } from "@/hooks/useOwnerFilter";
 import { displayLabel } from "@/lib/displayLabel";
+import type { ModelUsage } from "@/lib/pricingMatrix";
+import { useWeekUsageBy } from "@/pricing/useHostModelUsage";
+
+export type AccountSide = "provider" | "relay";
+
+const SEARCH_ACCOUNTS = {
+	key: "q",
+	type: "search",
+	label: "Search",
+	placeholder: "Search accounts",
+	default: "",
+} as const satisfies FilterDef;
 
 export const ACCOUNT_FILTERS = [
-	{
-		key: "q",
-		type: "search",
-		label: "Search",
-		placeholder: "Search accounts",
-		default: "",
-	},
+	SEARCH_ACCOUNTS,
 	{
 		key: "kind",
 		type: "select",
@@ -52,6 +58,17 @@ export const ACCOUNT_FILTERS = [
 	{ key: "mine", type: "toggle", label: "Mine", default: false },
 ] satisfies readonly FilterDef[];
 
+/** Whether an account falls on a picked side; no pick takes both. */
+export function onSides(
+	account: Account,
+	sides: readonly AccountSide[],
+): boolean {
+	if (sides.length === 0) return true;
+	return sides.includes(
+		account.spec.kind === PROVIDER_KIND ? "provider" : "relay",
+	);
+}
+
 /** Host fields are set on provider accounts only. */
 export interface AccountRow {
 	account: Account;
@@ -62,9 +79,13 @@ export interface AccountRow {
 	/** Who shared it; unset on accounts that aren't shared. */
 	sharedBy: string | undefined;
 	deletable: boolean;
+	/** Last week's traffic: drawn from a provider account, run in a relay one. */
+	usage: ModelUsage | undefined;
 }
 
 export interface AccountFilters {
+	/** The quick filter's picks; none lists both. */
+	sides: AccountSide[];
 	q: string;
 	kind: AccountKind | "all";
 	/** List the caller's own accounts (`/me/accounts`) instead of every account. */
@@ -74,7 +95,9 @@ export interface AccountFilters {
 /** The Accounts tab's filters; `mine` lives in the URL so links can open it. */
 export function useAccountFilters() {
 	const navigate = useNavigate({ from: "/keys" });
-	const { mine } = useSearch({ from: "/_authenticated/keys" });
+	const { mine, accounts: sides } = useSearch({
+		from: "/_authenticated/keys",
+	});
 	const [q, setQ] = useState("");
 	const [kind, setKind] = useState<AccountKind | "all">("all");
 
@@ -90,8 +113,15 @@ export function useAccountFilters() {
 			});
 	}
 
-	const filters: AccountFilters = { q, kind, mine };
-	return { filters, setFilters };
+	function setSides(next: AccountSide[]) {
+		void navigate({
+			search: (prev) => ({ ...prev, accounts: next }),
+			replace: true,
+		});
+	}
+
+	const filters: AccountFilters = { sides, q, kind, mine };
+	return { filters, setFilters, setSides };
 }
 
 /** The All accounts list's owner filter; it renders in the toolbar, outside the list's Suspense. */
@@ -100,18 +130,25 @@ export function useAccountOwnerFilter() {
 	return useOwnerFilter(data?.items ?? []);
 }
 
-/** Account rows with their holder and, for provider accounts, host and key count. */
+/** Account rows with their holder, last week's traffic and, for
+ * provider accounts, host and key count. */
 export function useAccountRows({
+	sides,
 	q,
 	kind,
 	ownerMatches,
-}: Pick<AccountFilters, "q" | "kind"> & {
+}: Pick<AccountFilters, "sides" | "q" | "kind"> & {
 	ownerMatches: (account: Account) => boolean;
 }) {
 	const { data: accountsData } = useAccounts();
 	const { data: hostsData } = useHosts();
 	const { data: hostKeysData } = useHostKeys();
 	const toHolder = useHolderResolver();
+	const providers = sides.length === 0 || sides.includes("provider");
+	const relays = sides.length === 0 || sides.includes("relay");
+	const drawn = useWeekUsageBy("account_id", providers);
+	const drawnViaShare = useWeekUsageBy("via_account_id", providers);
+	const charged = useWeekUsageBy("lane_account_id", relays);
 
 	const hostById = new Map<string, Host>();
 	for (const h of hostsData.items ?? []) {
@@ -123,29 +160,37 @@ export function useAccountRows({
 		if (id) keyCounts.set(id, (keyCounts.get(id) ?? 0) + 1);
 	}
 
-	const allRows: AccountRow[] = providersFirst(accountsData.items ?? []).map(
-		(account) => {
-			const { spec } = account;
-			const hostId = spec.hostId ?? "";
-			const host = hostById.get(hostId);
-			// A shared account holds no keys; it counts its real account's.
-			const keyOwnerId = spec.sourceAccountId ?? account.metadata.id ?? "";
-			return {
-				account,
-				holder: spec.holder ? toHolder(spec.holder) : undefined,
-				provider:
-					spec.kind === PROVIDER_KIND
-						? {
-								host,
-								hostLabel: hostLabel(host, hostId),
-								keyCount: keyCounts.get(keyOwnerId) ?? 0,
-							}
-						: undefined,
-				sharedBy: sharedByName(account),
-				deletable: canDeleteAccount(spec),
-			};
-		},
+	const sideAccounts = (accountsData.items ?? []).filter((a) =>
+		onSides(a, sides),
 	);
+	const allRows: AccountRow[] = providersFirst(sideAccounts).map((account) => {
+		const { spec } = account;
+		const id = account.metadata.id ?? "";
+		const hostId = spec.hostId ?? "";
+		const host = hostById.get(hostId);
+		// A shared account holds no keys; it counts its real account's.
+		const keyOwnerId = spec.sourceAccountId ?? id;
+		// A share's traffic is counted on the real account; its own part is via_account_id.
+		const usage =
+			spec.kind !== PROVIDER_KIND
+				? charged?.get(id)
+				: (spec.sourceAccountId ? drawnViaShare : drawn)?.get(id);
+		return {
+			account,
+			holder: spec.holder ? toHolder(spec.holder) : undefined,
+			provider:
+				spec.kind === PROVIDER_KIND
+					? {
+							host,
+							hostLabel: hostLabel(host, hostId),
+							keyCount: keyCounts.get(keyOwnerId) ?? 0,
+						}
+					: undefined,
+			sharedBy: sharedByName(account),
+			deletable: canDeleteAccount(spec),
+			usage,
+		};
+	});
 
 	const needle = q.trim().toLowerCase();
 	const matches = (r: AccountRow) =>
@@ -166,12 +211,14 @@ export function useAccountRows({
 	return { rows, total: allRows.length };
 }
 
-/** The caller's own accounts, narrowed by the tab's search and kind. */
+/** The caller's own relay accounts, narrowed by the tab's search and kind. */
 export function useMyAccountRows({
 	q,
 	kind,
 }: Pick<AccountFilters, "q" | "kind">) {
 	const { data } = useMyAccounts();
-	const allRows = data.map(toMyAccountRow);
+	const allRows = data
+		.map(toMyAccountRow)
+		.filter((r) => r.kind !== PROVIDER_KIND);
 	return { rows: filterMyAccountRows(allRows, q, kind), total: allRows.length };
 }

@@ -1,11 +1,20 @@
 import { useState } from "react";
-import { useBudgets } from "@/api/hooks/budgets";
+import { type Budget, useBudgets } from "@/api/hooks/budgets";
+import { usePolicies } from "@/api/hooks/policies";
+import type { Policy } from "@/api/types/policy";
 import { useOwnerFilter } from "@/hooks/useOwnerFilter";
 import { displayLabel } from "@/lib/displayLabel";
 
-/** Budgets filtered by owner and the search box. */
+export interface BudgetLine {
+	budget: Budget;
+	/** The policies that link the budget; none means it caps nothing. */
+	usedBy: Policy[];
+}
+
+/** Budgets with the policies that use them, filtered by owner and the search box. */
 export function useBudgetRows() {
 	const { data } = useBudgets();
+	const { data: policies } = usePolicies();
 	const [q, setQ] = useState("");
 	const all = data.items ?? [];
 	const owner = useOwnerFilter(all);
@@ -17,5 +26,15 @@ export function useBudgetRows() {
 					b.metadata.name.includes(needle),
 			)
 		: owner.visible;
-	return { rows, total: all.length, q, setQ, owner };
+	const usedBy = new Map<string, Policy[]>();
+	for (const p of policies.items ?? []) {
+		for (const link of p.spec.budgets ?? []) {
+			usedBy.set(link.budgetId, [...(usedBy.get(link.budgetId) ?? []), p]);
+		}
+	}
+	const lines: BudgetLine[] = rows.map((budget) => ({
+		budget,
+		usedBy: usedBy.get(budget.metadata.id ?? "") ?? [],
+	}));
+	return { rows: lines, total: all.length, q, setQ, owner };
 }

@@ -1,6 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
-	Activity,
 	Banknote,
 	BarChart3,
 	Bot,
@@ -33,7 +32,6 @@ interface NavItem {
 	to:
 		| "/"
 		| "/usage"
-		| "/logs"
 		| "/models"
 		| "/keys"
 		| "/policies"
@@ -57,22 +55,21 @@ interface NavItem {
 }
 
 interface NavGroup {
-	label: string;
+	/** Section heading; the main group runs unlabeled at the top. */
+	label?: string;
 	items: NavItem[];
 }
 
 const NAV_GROUPS: NavGroup[] = [
 	{
-		label: "Observe",
 		items: [
-			{ to: "/", label: "Overview", icon: LayoutDashboard, prefix: "/" },
-			{ to: "/usage", label: "Usage", icon: BarChart3, prefix: "/usage" },
-			{ to: "/logs", label: "Logs", icon: Activity, prefix: "/logs" },
-		],
-	},
-	{
-		label: "Configure",
-		items: [
+			{ to: "/", label: "Dashboard", icon: LayoutDashboard, prefix: "/" },
+			{
+				to: "/usage",
+				label: "Usage",
+				icon: BarChart3,
+				prefix: ["/usage", "/logs"],
+			},
 			{
 				to: "/models",
 				label: "Models",
@@ -171,7 +168,7 @@ export function Sidebar() {
 			[item.capability].flat().some((kind) => capabilities[kind]));
 
 	return (
-		<SidebarRoot collapsible="icon">
+		<SidebarRoot collapsible="icon" variant="inset">
 			<SidebarHeader>
 				<div className="flex h-9 items-center gap-2.5 px-1.5 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
 					<BrandMark className="h-5 w-auto shrink-0" />
@@ -189,8 +186,10 @@ export function Sidebar() {
 
 			<SidebarContent>
 				{NAV_GROUPS.map((group) => (
-					<SidebarGroup key={group.label}>
-						<SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+					<SidebarGroup key={group.label ?? "main"}>
+						{group.label && (
+							<SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+						)}
 						<SidebarMenu>
 							{group.items.filter(visible).map((item) => (
 								<NavMenuItem

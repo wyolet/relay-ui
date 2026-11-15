@@ -1,32 +1,23 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { Plus, ShieldCheck } from "lucide-react";
 import { useState } from "react";
-import {
-	useDeletePolicy,
-	usePolicies,
-	useUpdatePolicy,
-} from "@/api/hooks/policies";
+import { useDeletePolicy, usePolicies } from "@/api/hooks/policies";
 import { useAttachableRateLimits } from "@/api/hooks/ratelimits";
-import type { Policy } from "@/api/types/policy";
 import type { RateLimit } from "@/api/types/ratelimit";
 import { buttonVariants } from "@/components/ui/button";
-import { PlanIssueDot } from "@/diagnostics/DiagnosticDot";
 import { FilterBar } from "@/filters/FilterBar";
 import { toolbarMainActionClassName } from "@/filters/ToolbarActions";
 import type { FilterDef } from "@/filters/types";
-import { useMutability } from "@/hooks/useMutability";
+import { useOriginFilter } from "@/hooks/useOriginFilter";
 import { useOwnerFilter } from "@/hooks/useOwnerFilter";
-import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
-import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
+import { displayLabel } from "@/lib/displayLabel";
+import { onOrigins } from "@/lib/ownerFilter";
+import { POLICY_MIN_W, PolicyColumns, PolicyRow } from "@/policies/PolicyRow";
 import { usePolicyAppliesToCounts } from "@/policies/usePolicyAppliesTo";
-import { OwnerLink } from "@/projects/OwnerLink";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
+import { LineTable } from "@/shared/LineGrid";
 import { OwnerFilter } from "@/shared/OwnerFilter";
-import { RowMenu } from "@/shared/RowMenu";
-import { CatalogDetachedBadge } from "@/shared/StatusBadge";
-import { Switch } from "@/shared/Switch";
 import { TableEmpty } from "@/shared/TableEmpty";
-import { Th } from "@/shared/Th";
 import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 
 const POLICY_FILTERS = [
@@ -39,35 +30,24 @@ const POLICY_FILTERS = [
 	},
 ] as const satisfies readonly FilterDef[];
 
-function describeCatalog(p: Policy): {
-	label: string;
-	tone: "all" | "restricted" | "none";
-} {
-	const refs = p.spec.models ?? [];
-	if (refs.length === 0) {
-		return { label: "All available", tone: "all" };
-	}
-	return {
-		label: `${refs.length} grant${refs.length === 1 ? "" : "s"}`,
-		tone: "restricted",
-	};
-}
-
 export function PoliciesTable() {
 	const { data: policiesData } = usePolicies();
 	const rateLimits = useAttachableRateLimits();
 	const appliesToCounts = usePolicyAppliesToCounts();
 	const del = useConfirmedDelete(useDeletePolicy(), { noun: "policy" });
-	const navigate = useNavigate({ from: "/policies" });
 	const [q, setQ] = useState("");
 	const owner = useOwnerFilter(policiesData.items ?? []);
+	const origin = useOriginFilter();
 	const allItems = owner.visible;
+	const shown = allItems.filter((row) =>
+		onOrigins(row.metadata.owner, origin.selected),
+	);
 	const needle = q.trim().toLowerCase();
 	const items = needle
-		? allItems.filter((p) =>
+		? shown.filter((p) =>
 				displayLabel(p.metadata).toLowerCase().includes(needle),
 			)
-		: allItems;
+		: shown;
 
 	const rateLimitById = new Map<string, RateLimit>();
 	for (const rl of rateLimits) {
@@ -82,6 +62,7 @@ export function PoliciesTable() {
 				onChange={(patch) => {
 					if (typeof patch.q === "string") setQ(patch.q);
 				}}
+				quick={origin}
 				extra={<OwnerFilter filter={owner} />}
 				extraActive={owner.isDefault ? 0 : 1}
 				className="mb-3"
@@ -114,67 +95,37 @@ export function PoliciesTable() {
 						</>
 					) : (
 						<p className="text-sm text-muted-foreground">
-							No policies match the current filter.
+							{shown.length === 0 &&
+							origin.selected.length === 1 &&
+							origin.selected[0] === "custom"
+								? "None made in this relay yet. Press Provider for the presets that come with each provider."
+								: "No policies match the current filter."}
 						</p>
 					)}
 				</TableEmpty>
 			) : (
-				<div className="overflow-x-auto rounded-lg border border-border bg-card">
-					<table className="w-full border-collapse">
-						<thead className="bg-muted/40">
-							<tr>
-								<Th variant="column">Name</Th>
-								<Th variant="column">Applies to</Th>
-								<Th variant="column">Models</Th>
-								<Th variant="column" align="right">
-									Pools
-								</Th>
-								<Th variant="column">Rate limits</Th>
-								<Th variant="column" align="right">
-									Budgets
-								</Th>
-								<th
-									scope="col"
-									className="w-12 px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground"
-								>
-									On
-								</th>
-								<th
-									scope="col"
-									className="w-10 px-3 py-2"
-									aria-label="Actions"
-								/>
-							</tr>
-						</thead>
-						<tbody>
-							{items.map((p) => (
-								<PolicyRow
-									key={p.metadata.name}
-									policy={p}
-									rateLimitById={rateLimitById}
-									appliesTo={
-										appliesToCounts
-											? (appliesToCounts.get(p.metadata.id ?? "") ?? 0)
-											: undefined
-									}
-									onEdit={() =>
-										void navigate({
-											to: "/policies/$name",
-											params: { name: p.metadata.name },
-										})
-									}
-									onDelete={() =>
-										del.request({
-											id: p.metadata.id ?? "",
-											name: p.metadata.name,
-											label: displayLabel(p.metadata),
-										})
-									}
-								/>
-							))}
-						</tbody>
-					</table>
-				</div>
+				<LineTable minWidth={POLICY_MIN_W}>
+					<PolicyColumns />
+					{items.map((p) => (
+						<PolicyRow
+							key={p.metadata.id ?? p.metadata.name}
+							policy={p}
+							rateLimitById={rateLimitById}
+							appliesTo={
+								appliesToCounts
+									? (appliesToCounts.get(p.metadata.id ?? "") ?? 0)
+									: undefined
+							}
+							onDelete={() =>
+								del.request({
+									id: p.metadata.id ?? "",
+									name: p.metadata.name,
+									label: displayLabel(p.metadata),
+								})
+							}
+						/>
+					))}
+				</LineTable>
 			)}
 			{del.target && (
 				<DeleteConfirm
@@ -186,171 +137,5 @@ export function PoliciesTable() {
 				/>
 			)}
 		</div>
-	);
-}
-
-function PolicyRow({
-	policy,
-	rateLimitById,
-	appliesTo,
-	onEdit,
-	onDelete,
-}: {
-	policy: Policy;
-	rateLimitById: Map<string, RateLimit>;
-	/** Accounts bound to the policy; undefined while loading. */
-	appliesTo: number | undefined;
-	onEdit: () => void;
-	onDelete: () => void;
-}) {
-	const rateLimitLinks = policy.spec.rateLimits ?? [];
-	const onlyRateLimit =
-		rateLimitLinks.length === 1 && rateLimitLinks[0]
-			? rateLimitById.get(rateLimitLinks[0].rateLimitId)
-			: undefined;
-	const updatePolicy = useUpdatePolicy();
-	const toastSaveError = useSaveErrorToast();
-	const catalog = describeCatalog(policy);
-	const enabled = policy.spec.enabled !== false;
-	const { canEdit, canDelete } = useMutability(policy.metadata, "policy");
-
-	async function toggleEnabled(next: boolean) {
-		try {
-			await updatePolicy.mutateAsync({
-				id: policy.metadata.id ?? "",
-				body: {
-					metadata: policy.metadata,
-					spec: { ...policy.spec, enabled: next },
-				},
-			});
-		} catch (err) {
-			toastSaveError(err, "Failed to update policy.");
-		}
-	}
-
-	return (
-		<tr className="border-t border-border hover:bg-muted/40 transition-colors">
-			<td className="px-3 py-2">
-				<Link
-					to="/policies/$name"
-					params={{ name: policy.metadata.name }}
-					className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
-				>
-					<div className="flex items-center gap-2 text-sm font-medium text-foreground">
-						<span>{displayLabel(policy.metadata)}</span>
-						{!hasDisplayName(policy.metadata) && (
-							<span className="text-[11px] text-muted-foreground">
-								(no display name)
-							</span>
-						)}
-						<PlanIssueDot kind="policy" id={policy.metadata.id} />
-						<CatalogDetachedBadge
-							detachedAt={policy.metadata.catalogDetachedAt}
-						/>
-					</div>
-					{hasDisplayName(policy.metadata) && (
-						<code className="font-mono text-[11px] text-muted-foreground">
-							{policy.metadata.name}
-						</code>
-					)}
-				</Link>
-				<div className="mt-1 empty:hidden">
-					<OwnerLink owner={policy.metadata.owner} />
-				</div>
-			</td>
-			<td className="px-3 py-2 text-sm">
-				{appliesTo === undefined ? (
-					<span className="text-muted-foreground">…</span>
-				) : appliesTo === 0 ? (
-					<span
-						className="text-warning"
-						title="No account runs under this policy, so no request uses it."
-					>
-						No one
-					</span>
-				) : (
-					<span className="text-foreground tabular-nums">
-						{appliesTo} account{appliesTo === 1 ? "" : "s"}
-					</span>
-				)}
-			</td>
-			<td className="px-3 py-2">
-				<span
-					className={[
-						"inline-flex items-center h-5 px-1.5 rounded text-[11px] font-medium",
-						catalog.tone === "all"
-							? "bg-muted text-muted-foreground"
-							: "bg-primary/10 text-primary",
-					].join(" ")}
-				>
-					{catalog.label}
-				</span>
-			</td>
-			<td className="px-3 py-2 text-sm text-foreground text-right tabular-nums">
-				{(policy.spec.poolIds ?? []).length}
-			</td>
-			<td className="px-3 py-2 text-sm">
-				{onlyRateLimit ? (
-					<Link
-						to="/policies/rate-limits/$name"
-						params={{ name: onlyRateLimit.metadata.name }}
-						className="text-foreground hover:underline"
-					>
-						{displayLabel(onlyRateLimit.metadata)}
-					</Link>
-				) : rateLimitLinks.length > 0 ? (
-					<span className="text-muted-foreground">
-						{rateLimitLinks.length} rate limit
-						{rateLimitLinks.length === 1 ? "" : "s"}
-					</span>
-				) : (
-					<span className="text-muted-foreground/70">—</span>
-				)}
-			</td>
-			<td className="px-3 py-2 text-sm text-foreground text-right tabular-nums">
-				{(policy.spec.budgets ?? []).length}
-			</td>
-			<td className="px-3 py-2">
-				{canEdit ? (
-					<Switch
-						checked={enabled}
-						onChange={(next) => void toggleEnabled(next)}
-						disabled={updatePolicy.isPending}
-						label={`Toggle ${policy.metadata.name}`}
-					/>
-				) : (
-					<span
-						className={[
-							"inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border",
-							enabled
-								? "bg-success-soft text-success border-success/30"
-								: "bg-muted text-muted-foreground border-border",
-						].join(" ")}
-						title="Host-owned — toggle the host or model instead"
-					>
-						{enabled ? "On" : "Off"}
-					</span>
-				)}
-			</td>
-			<td className="px-3 py-2 text-right">
-				{canEdit || canDelete ? (
-					<RowMenu
-						actions={[
-							...(canEdit ? [{ label: "Edit", onClick: onEdit }] : []),
-							...(canDelete
-								? [{ label: "Delete", danger: true, onClick: onDelete }]
-								: []),
-						]}
-					/>
-				) : (
-					<span
-						className="text-[10px] uppercase tracking-wide text-muted-foreground"
-						title="Host-owned — managed by Relay"
-					>
-						managed
-					</span>
-				)}
-			</td>
-		</tr>
 	);
 }

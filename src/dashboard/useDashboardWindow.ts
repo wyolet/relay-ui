@@ -4,9 +4,11 @@ import {
 	type ResolvedWindow,
 	resolveWindow,
 	type StackedTimeline,
+	type UsageSummaryFilter,
 	useStackedSeries,
 	useUsageNow,
 } from "@/api/hooks/usage";
+import { useWorkContext } from "@/hooks/useWorkContext";
 import {
 	daySliceStarts,
 	rollingWindow,
@@ -49,6 +51,8 @@ export interface DashboardWindow {
 	/** Trailing 7×24h, not calendar-aligned. */
 	rolling: boolean;
 	nowMs: number;
+	/** The workspace's slice; every usage block reads it. */
+	filter: UsageSummaryFilter;
 }
 
 /** The dashboard's selected period. The trailing 7 days end now, so its
@@ -59,6 +63,7 @@ export function useDashboardWindow(): DashboardWindow {
 	// new one loads, instead of every block falling back to a skeleton.
 	const range = useDeferredValue(useDashboardStore((s) => s.range));
 	const now = useUsageNow();
+	const { usageScope } = useWorkContext();
 	const rolling = range === "7d";
 	const win: ResolvedWindow = rolling
 		? { ...rollingWindow(now, 7 * 24), interval: "1h" }
@@ -72,6 +77,7 @@ export function useDashboardWindow(): DashboardWindow {
 		hourly: { ...win, interval: "1h" },
 		rolling,
 		nowMs: Date.parse(now),
+		filter: usageScope,
 	};
 }
 
@@ -79,9 +85,10 @@ export function useDashboardWindow(): DashboardWindow {
 export function useMetricSeries(
 	metric: DashboardMetric,
 	win: ResolvedWindow,
+	filter: UsageSummaryFilter,
 ): StackedTimeline {
-	const tokens = useStackedSeries("model_id", win, "tokens");
-	const cost = useCostSeries("model_id", win);
+	const tokens = useStackedSeries("model_id", win, "tokens", filter);
+	const cost = useCostSeries("model_id", win, filter);
 	return metric === "cost" ? cost : tokens;
 }
 

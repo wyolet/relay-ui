@@ -6,7 +6,6 @@ import {
 import { Suspense } from "react";
 import { z } from "zod";
 import { AccountsTable } from "@/accounts/AccountsTable";
-import { ACCOUNT_SUMMARY } from "@/accounts/accountCopy";
 import {
 	accountListQueryOptions,
 	myAccountsQueryOptions,
@@ -50,7 +49,11 @@ const searchSchema = z.object({
 	// /pricing and /models, `dir` the same one.
 	keys_by: z.enum(KEYS_SORT_KEYS).catch("usage").default("usage"),
 	dir: z.enum(["asc", "desc"]).catch("desc").default("desc"),
-	// The accounts tab's "Mine" filter.
+	// The accounts tab's quick filter (none = both kinds) and its "Mine" filter.
+	accounts: z
+		.array(z.enum(["provider", "relay"]))
+		.catch([])
+		.default([]),
 	mine: z.boolean().catch(false).default(false),
 });
 
@@ -104,9 +107,8 @@ function KeysPage() {
 			<div className="mb-4">
 				<h1 className="text-lg font-semibold text-foreground">Keys</h1>
 				<p className="text-xs text-muted-foreground mt-0.5">
-					{search.tab === "accounts"
-						? ACCOUNT_SUMMARY
-						: "Relay API keys, and the provider accounts and pools whose keys they draw on."}
+					Relay API keys, and the provider accounts and pools whose keys they
+					draw on.
 				</p>
 			</div>
 

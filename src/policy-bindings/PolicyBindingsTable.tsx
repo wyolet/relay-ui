@@ -15,15 +15,17 @@ import { toolbarMainActionClassName } from "@/filters/ToolbarActions";
 import { activeFilterCount } from "@/filters/toQueryParams";
 import type { FilterDef, FilterState } from "@/filters/types";
 import { useOwnerFilter } from "@/hooks/useOwnerFilter";
-import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
-import { AccountChips } from "@/policy-bindings/AccountChips";
-import { BindingOwner } from "@/policy-bindings/BindingOwner";
+import { displayLabel } from "@/lib/displayLabel";
+import {
+	type BoundPolicyName,
+	PolicyBindingColumns,
+	PolicyBindingRow,
+} from "@/policy-bindings/PolicyBindingRow";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
+import { LineTable } from "@/shared/LineGrid";
 import { OwnerFilter } from "@/shared/OwnerFilter";
-import { RowMenu } from "@/shared/RowMenu";
 import { StaleContent } from "@/shared/StaleContent";
 import { TableEmpty } from "@/shared/TableEmpty";
-import { Th } from "@/shared/Th";
 import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 import { useDeferredSearch } from "@/shared/useDeferredSearch";
 
@@ -73,7 +75,7 @@ export function PolicyBindingsTable() {
 		noun: "policy binding",
 	});
 
-	const policyNames = new Map(
+	const policyNames = new Map<string, BoundPolicyName>(
 		(policiesData.items ?? []).map((p) => [
 			p.metadata.id ?? "",
 			{ name: p.metadata.name, label: displayLabel(p.metadata) },
@@ -123,10 +125,18 @@ export function PolicyBindingsTable() {
 		},
 	];
 
+	// Only this tab's filters; the page's search also carries other tabs' state.
+	const bindingFilters = (s: typeof search): FilterState => ({
+		q: s.q,
+		project_id: s.project_id,
+		policy: s.policy,
+		account: s.account,
+	});
 	const owner = useOwnerFilter(data.items ?? []);
 	const items = owner.visible;
 	const filtered =
-		activeFilterCount(filters, { ...search }) > 0 || owner.selected.length > 0;
+		activeFilterCount(filters, bindingFilters(search)) > 0 ||
+		owner.selected.length > 0;
 
 	function patch(next: FilterState) {
 		void navigate({ search: (prev) => ({ ...prev, ...next }), replace: true });
@@ -136,7 +146,7 @@ export function PolicyBindingsTable() {
 		<div>
 			<FilterBar
 				defs={filters}
-				state={{ ...live }}
+				state={bindingFilters(live)}
 				onChange={patch}
 				extra={<OwnerFilter filter={owner} />}
 				extraActive={owner.isDefault ? 0 : 1}
@@ -180,97 +190,23 @@ export function PolicyBindingsTable() {
 						)}
 					</TableEmpty>
 				) : (
-					<div className="overflow-x-auto rounded-lg border border-border bg-card">
-						<table className="w-full border-collapse">
-							<thead className="bg-muted/40">
-								<tr>
-									<Th variant="column">Name</Th>
-									<Th variant="column">Owner</Th>
-									<Th variant="column">Policy</Th>
-									<Th variant="column">Accounts</Th>
-									<th
-										scope="col"
-										className="w-10 px-3 py-2"
-										aria-label="Actions"
-									/>
-								</tr>
-							</thead>
-							<tbody>
-								{items.map((binding) => {
-									const policy = policyNames.get(binding.spec.policyId);
-									return (
-										<tr
-											key={binding.metadata.name}
-											className="border-t border-border transition-colors hover:bg-muted/40"
-										>
-											<td className="px-3 py-2">
-												<Link
-													to="/policy-bindings/$name"
-													params={{ name: binding.metadata.name }}
-													className="text-sm font-medium text-foreground hover:underline"
-												>
-													{displayLabel(binding.metadata)}
-												</Link>
-												{hasDisplayName(binding.metadata) && (
-													<div className="font-mono text-[11px] text-muted-foreground">
-														{binding.metadata.name}
-													</div>
-												)}
-											</td>
-											<td className="px-3 py-2 text-xs">
-												<BindingOwner binding={binding} />
-											</td>
-											<td className="px-3 py-2 text-xs">
-												{policy ? (
-													<Link
-														to="/policies/$name"
-														params={{ name: policy.name }}
-														className="text-foreground hover:underline"
-													>
-														{policy.label}
-													</Link>
-												) : (
-													<code className="font-mono text-[11px]">
-														{binding.spec.policyId.slice(0, 8)}…
-													</code>
-												)}
-											</td>
-											<td className="px-3 py-2">
-												<AccountChips
-													accountIds={binding.spec.accountIds ?? []}
-												/>
-											</td>
-											<td className="px-3 py-2 text-right">
-												<RowMenu
-													actions={[
-														{
-															label: "Edit",
-															render: (
-																<Link
-																	to="/policy-bindings/$name/edit"
-																	params={{ name: binding.metadata.name }}
-																/>
-															),
-														},
-														{
-															label: "Delete",
-															danger: true,
-															onClick: () =>
-																del.request({
-																	id: binding.metadata.id ?? "",
-																	name: binding.metadata.name,
-																	label: displayLabel(binding.metadata),
-																}),
-														},
-													]}
-												/>
-											</td>
-										</tr>
-									);
-								})}
-							</tbody>
-						</table>
-					</div>
+					<LineTable minWidth="min-w-[45rem]">
+						<PolicyBindingColumns />
+						{items.map((binding) => (
+							<PolicyBindingRow
+								key={binding.metadata.name}
+								binding={binding}
+								policy={policyNames.get(binding.spec.policyId)}
+								onDelete={() =>
+									del.request({
+										id: binding.metadata.id ?? "",
+										name: binding.metadata.name,
+										label: displayLabel(binding.metadata),
+									})
+								}
+							/>
+						))}
+					</LineTable>
 				)}
 			</StaleContent>
 			{del.target && (

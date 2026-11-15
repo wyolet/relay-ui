@@ -37,8 +37,14 @@ export function WorkspaceMenu({
 	align = "start",
 	formPick,
 }: WorkspaceMenuProps) {
-	const { rows, currentKey, selectKey, onOpenChange, personalOffNote } =
-		useContextSwitcher();
+	const {
+		rows,
+		allRows,
+		currentKey,
+		selectKey,
+		onOpenChange,
+		personalOffNote,
+	} = useContextSwitcher();
 	const value = formPick?.value ?? currentKey;
 	const onSelect = formPick?.onSelect ?? selectKey;
 
@@ -55,9 +61,9 @@ export function WorkspaceMenu({
 					<p className="px-2 pb-1.5 text-[11px] text-muted-foreground">
 						{formPick
 							? "Only this form; your workspace stays as it is."
-							: "New items you create land here."}
+							: "Dashboard, Usage, Logs and lists show its data; new items land here."}
 					</p>
-					{rows.map(({ context, nested }) => {
+					{(formPick ? allRows : rows).map(({ context, nested }) => {
 						const Icon = WORKSPACE_ICON[context.kind];
 						return (
 							<DropdownMenuRadioItem

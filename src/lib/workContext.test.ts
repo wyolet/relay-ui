@@ -9,6 +9,7 @@ import {
 	contextTeamId,
 	contextTitle,
 	contextUsableBy,
+	contextUsageScope,
 	notAvailableLabel,
 	ownerName,
 	ownerUsableBy,
@@ -21,6 +22,7 @@ import {
 	updatingScope,
 	type WorkContext,
 	workContexts,
+	workspaceKeys,
 } from "@/lib/workContext";
 
 type MyContext = components["schemas"]["MyContext"];
@@ -169,7 +171,7 @@ describe("placement", () => {
 
 	test("names the context a create lands in", () => {
 		expect(contextName(personal)).toBe("Personal");
-		expect(contextName(SYSTEM_CONTEXT)).toBe("System");
+		expect(contextName(SYSTEM_CONTEXT)).toBe("Organization");
 		expect(contextName(team)).toBe("Team Platform");
 		expect(contextName(project)).toBe("Project Search");
 	});
@@ -210,7 +212,7 @@ describe("switcher trigger", () => {
 		);
 		expect(contextSubtitle(team, contexts)).toBe("Team");
 		expect(contextSubtitle(personal, contexts)).toBe("Personal");
-		expect(contextSubtitle(SYSTEM_CONTEXT, contexts)).toBe("Relay-wide");
+		expect(contextSubtitle(SYSTEM_CONTEXT, contexts)).toBe("All teams");
 	});
 });
 
@@ -335,5 +337,38 @@ describe("contextTeamId", () => {
 		expect(contextTeamId(project)).toBe("t1");
 		expect(contextTeamId(personal)).toBeUndefined();
 		expect(contextTeamId(SYSTEM_CONTEXT)).toBeUndefined();
+	});
+});
+
+describe("resolveWorkContext with a stored project", () => {
+	test("resolves to its team when the team is listed", () => {
+		const contexts = workContexts(mine, false);
+		expect(
+			resolveWorkContext(contexts, { kind: "project", id: "p1" })?.id,
+		).toBe("t1");
+	});
+	test("stays the project when its team isn't listed", () => {
+		const contexts = workContexts(mine, false);
+		expect(
+			resolveWorkContext(contexts, { kind: "project", id: "p2" })?.id,
+		).toBe("p2");
+	});
+});
+
+describe("contextUsageScope", () => {
+	test("narrows usage to the workspace", () => {
+		expect(contextUsageScope(personal)).toEqual({ principal_id: ["u1"] });
+		expect(contextUsageScope(team)).toEqual({ team_id: ["t1"] });
+		expect(contextUsageScope(project)).toEqual({ project_id: ["p1"] });
+		expect(contextUsageScope(SYSTEM_CONTEXT)).toEqual({});
+	});
+});
+
+describe("workspaceKeys", () => {
+	test("a team brings its listed projects", () => {
+		const contexts = workContexts(mine, false);
+		expect(workspaceKeys(team, contexts)).toEqual(["team:t1", "project:p1"]);
+		expect(workspaceKeys(personal, contexts)).toEqual(["personal:u1"]);
+		expect(workspaceKeys(SYSTEM_CONTEXT, contexts)).toEqual([]);
 	});
 });

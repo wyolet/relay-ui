@@ -21,6 +21,7 @@ import { providersListQueryOptions } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
 import { BudgetsTable } from "@/budgets/BudgetsTable";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ORIGINS } from "@/lib/ownerFilter";
 import { PoliciesTable } from "@/policies/PoliciesTable";
 import {
 	PolicyBindingsTable,
@@ -33,6 +34,9 @@ const TABS = ["policies", "ratelimits", "budgets", "bindings"] as const;
 
 const searchSchema = z.object({
 	tab: z.enum(TABS).default("policies"),
+	// Custom / Provider on the policies and rate-limits tabs; provider presets
+	// start hidden, none picked shows both.
+	origin: z.array(z.enum(ORIGINS)).catch(["custom"]).default(["custom"]),
 	// The bindings tab's filters.
 	q: z.string().default(""),
 	project_id: z.string().catch("").default(""),

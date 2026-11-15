@@ -9,13 +9,47 @@ export const HOST_OWNED = "host";
 /** Rows owned by a scope the caller has no context for (another user's). */
 export const OTHER_OWNERS = "other";
 
+/** Owned by a host or provider: a preset that came with a provider's catalog,
+ * not one made in this relay. */
+function isPresetKind(
+	kind: Owner["kind"],
+): kind is Extract<Owner["kind"], "host" | "provider"> {
+	return kind === "host" || kind === "provider";
+}
+
+export function isCatalogPreset(owner: Owner | undefined): boolean {
+	return owner !== undefined && isPresetKind(owner.kind);
+}
+
+export const ORIGINS = ["custom", "provider"] as const;
+export type Origin = (typeof ORIGINS)[number];
+
+/** The quick filter's buttons; the explainer is each one's tooltip. */
+export const ORIGIN_OPTIONS = [
+	{ value: "custom", label: "Custom", title: "Made in this relay." },
+	{
+		value: "provider",
+		label: "Provider",
+		title: "Presets that come with each provider's catalog.",
+	},
+] as const satisfies readonly { value: Origin; label: string; title: string }[];
+
+/** Whether a row's origin is picked; none picked takes both. */
+export function onOrigins(
+	owner: Owner | undefined,
+	picked: readonly Origin[],
+): boolean {
+	if (picked.length === 0) return true;
+	return picked.includes(isCatalogPreset(owner) ? "provider" : "custom");
+}
+
 /** A row owner as the filter keys it: the context it sits in, or a bucket. */
 export function ownerFilterKey(
 	owner: Owner | undefined,
 	actorUserId: string | undefined,
 ): string {
 	const kind = owner?.kind ?? "user";
-	if (kind === "host" || kind === "provider") return HOST_OWNED;
+	if (isPresetKind(kind)) return HOST_OWNED;
 	if (kind === "system") return contextKey({ kind: "system", id: "" });
 	if (kind === "user") {
 		return contextKey({ kind: "personal", id: owner?.id || actorUserId || "" });

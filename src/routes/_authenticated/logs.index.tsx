@@ -1,11 +1,14 @@
 import {
 	createFileRoute,
+	Link,
 	stripSearchParams,
 	useNavigate,
 } from "@tanstack/react-router";
+import { ChevronLeft } from "lucide-react";
 import { Suspense } from "react";
 import { z } from "zod";
 import { type LogsFilter, logsInfiniteQueryOptions } from "@/api/hooks/logs";
+import { cachedUsageScope, useWorkContext } from "@/hooks/useWorkContext";
 import { EraseBodiesButton } from "@/logs/EraseBodiesButton";
 import { LogsFilters } from "@/logs/LogsFilters";
 import { LogsHistogram } from "@/logs/LogsHistogram";
@@ -65,7 +68,10 @@ export const Route = createFileRoute("/_authenticated/logs/")({
 	loaderDeps: ({ search }) => search,
 	loader: ({ context, deps }) =>
 		void context.queryClient.ensureInfiniteQueryData(
-			logsInfiniteQueryOptions(toLogsFilter(deps)),
+			logsInfiniteQueryOptions({
+				...toLogsFilter(deps),
+				...cachedUsageScope(context.queryClient),
+			}),
 		),
 	component: LogsPage,
 });
@@ -76,7 +82,8 @@ function LogsPage() {
 	const { expand } = live;
 	const navigate = useNavigate({ from: "/logs/" });
 	const labelFor = useLogLabeler();
-	const filter = toLogsFilter(search);
+	const { usageScope } = useWorkContext();
+	const filter = { ...toLogsFilter(search), ...usageScope };
 
 	const patch = (next: Partial<LogsSearch>) =>
 		void navigate({ search: (prev) => ({ ...prev, ...next }) });
@@ -96,6 +103,13 @@ function LogsPage() {
 		<div className="flex flex-col gap-6">
 			<div className="flex items-start justify-between gap-4">
 				<div>
+					<Link
+						to="/usage"
+						className="mb-2 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+					>
+						<ChevronLeft className="w-3.5 h-3.5" />
+						Usage
+					</Link>
 					<h1 className="text-2xl font-bold text-foreground">Logs</h1>
 					<p className="mt-1 text-label text-ink-2">
 						Requests through the relay, newest first. Expand a row for its
@@ -105,9 +119,14 @@ function LogsPage() {
 				<EraseBodiesButton />
 			</div>
 
-			<LogsHistogram filter={toLogsFilter(live)} />
+			<LogsHistogram filter={{ ...toLogsFilter(live), ...usageScope }} />
 
-			<LogsFilters values={live} slowLabel={SLOW_LABEL} onChange={patch} />
+			<LogsFilters
+				values={live}
+				scope={usageScope}
+				slowLabel={SLOW_LABEL}
+				onChange={patch}
+			/>
 
 			<StaleContent stale={isStale}>
 				<Suspense fallback={<Loading />}>
