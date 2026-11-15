@@ -1,8 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { type KeysListParams, useKeysList } from "@/api/hooks/keys";
 import { useServiceAccounts } from "@/api/hooks/serviceAccounts";
-import { usageSummaryQueryOptions, useUsageNow } from "@/api/hooks/usage";
 import type { SortControl } from "@/filters/FilterBar";
 import { activeFilterCount } from "@/filters/toQueryParams";
 import type { FilterDef, FilterState } from "@/filters/types";
@@ -10,11 +8,9 @@ import { displayLabel } from "@/lib/displayLabel";
 import {
 	KEYS_SORT_DIR,
 	type KeysSortKey,
-	LAST_USED_DAYS,
 	principalName,
 	sortKeyLines,
 } from "@/lib/keyLines";
-import { rollingWindow } from "@/lib/usage-math/window";
 import { useWeekUsageBy } from "@/pricing/useHostModelUsage";
 import { useDeferredSearch } from "@/shared/useDeferredSearch";
 
@@ -53,28 +49,10 @@ export const KEY_FILTERS = [
 
 const KEY_SORTS = [
 	{ value: "usage", label: "Your usage" },
-	{ value: "used", label: "Last used" },
 	{ value: "newest", label: "Newest" },
 	{ value: "name", label: "Name" },
 	{ value: "expires", label: "Expiring soonest" },
 ] as const;
-
-/** Each key's latest request over the last {@link LAST_USED_DAYS}, by key
- * hash; undefined until it loads. Not suspending, like the week's usage. */
-function useKeysLastUsed(): Map<string, string> | undefined {
-	const win = {
-		...rollingWindow(useUsageNow(), LAST_USED_DAYS * 24),
-		interval: "1d" as const,
-	};
-	const { data } = useQuery(usageSummaryQueryOptions("relay_key_hash", win));
-	if (!data) return undefined;
-	const out = new Map<string, string>();
-	for (const r of data.rows ?? []) {
-		const hash = r.group.relay_key_hash;
-		if (hash && r.requests > 0) out.set(hash, r.last_seen);
-	}
-	return out;
-}
 
 /** Map the route's filter state onto GET /keys query params. */
 export function toKeysParams(search: {
@@ -102,7 +80,6 @@ export function useKeysTable() {
 	const { data: keysData } = useKeysList(toKeysParams(search));
 	const { data: accountsData } = useServiceAccounts();
 	const usage = useWeekUsageBy("relay_key_hash");
-	const lastUsed = useKeysLastUsed();
 
 	const accountLabels = new Map<string, string>();
 	for (const sa of accountsData.items ?? []) {
@@ -114,7 +91,6 @@ export function useKeysTable() {
 		(keysData.items ?? []).map((key) => ({
 			key,
 			usage: usage?.get(key.spec.keyHash),
-			lastUsed: lastUsed?.get(key.spec.keyHash),
 		})),
 		{ key: live.keys_by, dir: live.dir },
 	).map((line) => ({
@@ -143,7 +119,6 @@ export function useKeysTable() {
 	};
 
 	return {
-		lastUsedLoaded: lastUsed !== undefined,
 		filterState: {
 			q: live.q,
 			principal_kind: live.principal_kind,

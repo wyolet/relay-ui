@@ -63,13 +63,12 @@ export function KeysTable() {
 					</TableEmpty>
 				) : (
 					<div className="overflow-x-auto">
-						<div className="grid min-w-[67.5rem] grid-cols-1">
+						<div className="grid min-w-[61.25rem] grid-cols-1">
 							<KeyColumns />
 							{table.lines.map((line) => (
 								<KeyRow
 									key={line.key.metadata.id ?? line.key.metadata.name}
 									line={line}
-									lastUsedLoaded={table.lastUsedLoaded}
 									onDelete={() =>
 										del.request({
 											id: line.key.metadata.id ?? "",
