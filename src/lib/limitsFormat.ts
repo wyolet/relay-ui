@@ -1,4 +1,5 @@
 import { compactNumber } from "@/lib/rateLimitFormat";
+import { prettyMeter } from "@/lib/usage-math/pricing";
 
 const usd = (fractionDigits: number) =>
 	new Intl.NumberFormat("en-US", {
@@ -31,4 +32,18 @@ export function fmtRuleUsage(used: number, amount: number): string {
 /** A budget's spend against its cap: "$12.40 / $50". */
 export function fmtBudgetUsage(spentUsd: string, amountUsd: string): string {
 	return `${fmtUsd(spentUsd)} / ${fmtUsd(amountUsd)}`;
+}
+
+/** A rule as a model's policy applies it: "5M input tokens / 1m". The window
+ * arrives as a Go duration ("1h0m0s"); its trailing zero units drop. */
+export function fmtLimit(limit: {
+	amount: number;
+	meter: string;
+	window: string;
+}): string {
+	const window = limit.window.replace(/([hm])0s$/, "$1").replace(/h0m$/, "h");
+	const meter = limit.meter.startsWith("tokens.")
+		? `${prettyMeter(limit.meter).toLowerCase()} tokens`
+		: limit.meter;
+	return `${compactNumber(limit.amount)} ${meter} / ${window}`;
 }

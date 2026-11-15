@@ -59,6 +59,21 @@ export function logsInfiniteQueryOptions(filter: LogsFilter = {}) {
 	});
 }
 
+/** The newest `limit` requests matching `filter`, one page, uncounted. */
+export function recentLogsQueryOptions(filter: LogsFilter, limit: number) {
+	return queryOptions({
+		queryKey: ["logs", "recent", filter, limit] as const,
+		queryFn: async (): Promise<LogEvent[]> =>
+			unwrap(
+				await apiClient.GET("/logs", {
+					params: { query: { ...filter, limit } },
+				}),
+			).logs ?? [],
+		staleTime: 15_000,
+		gcTime: 5 * 60_000,
+	});
+}
+
 // --- Histogram (filter-scoped volume over the window, via /usage/timeseries) ---
 
 /** One time bucket of request volume for the logs histogram. */

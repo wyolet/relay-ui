@@ -8,7 +8,7 @@ import {
 	type ModelLine,
 } from "@/lib/modelsByHost";
 import { cn } from "@/lib/utils";
-import { ModelCapabilityIcons } from "@/models/ModelCapabilityChips";
+import { ModelCapabilityIcons } from "@/models/ModelCapabilities";
 import { activeCapabilities } from "@/models/modelDetail";
 import { useModelLineActions } from "@/models/useModelLineActions";
 import { RateValue } from "@/pricing/MeterGrid";
