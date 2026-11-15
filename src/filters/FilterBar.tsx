@@ -16,8 +16,8 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-	fieldFocusWithinClassName,
 	fieldFrameClassName,
+	fieldInputFocusWithinClassName,
 } from "@/components/ui/field-focus";
 import { Toggle } from "@/components/ui/toggle";
 import { cn } from "@/lib/utils";
@@ -98,7 +98,7 @@ export function FilterBar({
 					className={cn(
 						"flex h-8 w-full max-w-xl min-w-0 items-stretch overflow-hidden",
 						fieldFrameClassName,
-						fieldFocusWithinClassName,
+						fieldInputFocusWithinClassName,
 					)}
 				>
 					{search && (
