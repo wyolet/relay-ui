@@ -107,7 +107,7 @@ export function KeyDetailView({ name }: { name: string }) {
 						size="lg"
 						onClick={() => setRotating(true)}
 					>
-						<RotateCw className="size-3.5" />
+						<RotateCw data-icon="inline-start" className="size-3.5" />
 						Rotate
 					</Button>
 				</DetailHeaderActions>

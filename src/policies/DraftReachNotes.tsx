@@ -40,6 +40,7 @@ export function DraftReachNotes({
 						onClick={() => setShowExcluded((v) => !v)}
 					>
 						<ChevronRight
+							data-icon="inline-start"
 							className={cn(
 								"w-3 h-3 transition-transform",
 								showExcluded && "rotate-90",

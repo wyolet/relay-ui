@@ -17,7 +17,8 @@ import { policiesListQueryOptions } from "@/api/hooks/policies";
 import { providersListQueryOptions } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FilterBar } from "@/filters/FilterBar";
+import { FilterBar, type SortControl } from "@/filters/FilterBar";
+import type { FilterDef } from "@/filters/types";
 import {
 	applyHostFilter,
 	applyHostSort,
@@ -37,12 +38,10 @@ import {
 	pricingGraphQuery,
 	pricingsMatrixListQuery,
 } from "@/pricing/usePricingMatrix";
-import { SearchBox } from "@/shared/SearchBox";
 import { PageLoader } from "@/shared/Spinner";
 import { StaleContent } from "@/shared/StaleContent";
 import { TableEmpty } from "@/shared/TableEmpty";
 import { TablePager } from "@/shared/TablePager";
-import { TableToolbar } from "@/shared/TableToolbar";
 import { useDeferredSearch } from "@/shared/useDeferredSearch";
 
 type Tab = "featured" | "models" | "hosts";
@@ -66,6 +65,21 @@ const searchSchema = z.object({
 });
 
 const MODELS_PAGE_SIZE = 50;
+
+const MODEL_SORTS = [
+	{ value: "name", label: "Name" },
+	{ value: "price", label: "Price" },
+] as const;
+
+const HOST_FILTERS = [
+	{
+		key: "q",
+		type: "search",
+		label: "Search hosts",
+		placeholder: "Search hosts",
+		default: "",
+	},
+] as const satisfies readonly FilterDef[];
 
 /** Map the UI filter/sort/page state to GET /models query params. Filtering
  * happens server-side; so do sorting and windowing by name, while a price sort
@@ -175,6 +189,12 @@ function ModelsList() {
 
 	const patch = (next: Record<string, string | number | boolean | undefined>) =>
 		void navigate({ search: (prev) => ({ ...prev, ...next }), replace: true });
+	const sort: SortControl<ModelsSortKey> = {
+		options: MODEL_SORTS,
+		value: live.sort,
+		dir: live.dir,
+		onChange: (key, dir) => patch({ sort: key, dir, page: 1 }),
+	};
 	function toggleSort(field: ModelsSortKey) {
 		const dir: ModelsSortDir =
 			search.sort === field && search.dir === "asc" ? "desc" : "asc";
@@ -193,15 +213,11 @@ function ModelsList() {
 				defs={filters}
 				state={{ q: live.q, deprecated: live.deprecated, line: live.line }}
 				onChange={(next) => patch({ ...next, page: 1 })}
+				sort={sort}
 				className="mb-3"
 			/>
 
 			<StaleContent stale={isStale}>
-				<div className="mb-2 text-[11px] text-muted-foreground">
-					{data.total} {featured ? "featured " : ""}model
-					{data.total === 1 ? "" : "s"}
-				</div>
-
 				{items.length === 0 ? (
 					<TableEmpty icon={Boxes}>
 						<p className="text-sm text-muted-foreground">
@@ -258,14 +274,13 @@ function HostsList() {
 
 	return (
 		<div>
-			<TableToolbar
-				search={
-					<SearchBox
-						value={search.q}
-						onChange={setQ}
-						placeholder="Search hosts"
-					/>
-				}
+			<FilterBar
+				defs={HOST_FILTERS}
+				state={{ q: search.q }}
+				onChange={(patch) => {
+					if (typeof patch.q === "string") setQ(patch.q);
+				}}
+				className="mb-3"
 			/>
 
 			{visible.length === 0 ? (

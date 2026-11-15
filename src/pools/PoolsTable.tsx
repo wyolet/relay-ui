@@ -1,7 +1,9 @@
 import { Link } from "@tanstack/react-router";
 import { Layers, Plus } from "lucide-react";
 import { useDeletePool } from "@/api/hooks/pools";
-import { buttonVariants } from "@/components/ui/button";
+import { FilterBar } from "@/filters/FilterBar";
+import { toolbarMainActionClassName } from "@/filters/ToolbarActions";
+import type { FilterDef } from "@/filters/types";
 import { HostCell } from "@/hosts/HostCell";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { poolMemberSummary, SELECTION_LABELS } from "@/pools/poolKeys";
@@ -9,11 +11,19 @@ import { usePoolRows } from "@/pools/usePoolRows";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { OwnerFilter } from "@/shared/OwnerFilter";
 import { RowMenu } from "@/shared/RowMenu";
-import { SearchBox } from "@/shared/SearchBox";
 import { TableEmpty } from "@/shared/TableEmpty";
-import { TableToolbar } from "@/shared/TableToolbar";
 import { Th } from "@/shared/Th";
 import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
+
+const POOL_FILTERS = [
+	{
+		key: "q",
+		type: "search",
+		label: "Search pools",
+		placeholder: "Search pools",
+		default: "",
+	},
+] as const satisfies readonly FilterDef[];
 
 export function PoolsTable() {
 	const { rows, total, q, setQ, owner } = usePoolRows();
@@ -21,17 +31,18 @@ export function PoolsTable() {
 
 	return (
 		<div>
-			<TableToolbar
-				search={
-					<SearchBox value={q} onChange={setQ} placeholder="Search pools" />
-				}
-				filters={<OwnerFilter filter={owner} />}
+			<FilterBar
+				defs={POOL_FILTERS}
+				state={{ q }}
+				onChange={(patch) => {
+					if (typeof patch.q === "string") setQ(patch.q);
+				}}
+				extra={<OwnerFilter filter={owner} />}
+				extraActive={owner.isDefault ? 0 : 1}
+				className="mb-3"
 				actions={
-					<Link
-						to="/pools/new"
-						className={buttonVariants({ variant: "default", size: "lg" })}
-					>
-						<Plus className="w-3.5 h-3.5" />
+					<Link to="/pools/new" className={toolbarMainActionClassName}>
+						<Plus data-icon="inline-start" className="w-3.5 h-3.5" />
 						New pool
 					</Link>
 				}

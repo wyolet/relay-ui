@@ -74,7 +74,7 @@ export function LabelsEditor({
 					size="sm"
 					onClick={() => onChange([...pairs, newLabelPair()])}
 				>
-					<Plus className="w-3.5 h-3.5" />
+					<Plus data-icon="inline-start" className="w-3.5 h-3.5" />
 					Add label
 				</Button>
 			</div>

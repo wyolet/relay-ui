@@ -39,7 +39,7 @@ export const PRICE_TIERS: readonly PriceTier[] = [
 /** The tier of a token price in USD; null for per-request or other
  * currencies, which don't compare on this scale. */
 export function priceTier(price: BlendedPrice | null): PriceTierKey | null {
-	if (!price || price.per !== "1M" || price.currency.toUpperCase() !== "USD")
+	if (price?.per !== "1M" || price.currency.toUpperCase() !== "USD")
 		return null;
 	return PRICE_TIERS.find((t) => price.amount > t.above)?.key ?? null;
 }
@@ -94,19 +94,35 @@ function byInterest(a: TierRow, b: TierRow): number {
 	);
 }
 
-/** The rows a tab lists, in reading order. `unpriced` holds every model some
- * host serves without a price, whatever its tier on the others. */
+export type TierSort = "spend" | "newest" | "price" | "name";
+
+/** Each sort's ascending order; ties fall back to {@link byInterest}. */
+const TIER_ORDER: Record<TierSort, (a: TierRow, b: TierRow) => number> = {
+	spend: (a, b) => -byInterest(a, b),
+	newest: (a, b) =>
+		(a.model.releaseDate ?? "").localeCompare(b.model.releaseDate ?? ""),
+	price: (a, b) =>
+		(a.cheapest?.row.blended?.amount ?? Number.POSITIVE_INFINITY) -
+		(b.cheapest?.row.blended?.amount ?? Number.POSITIVE_INFINITY),
+	name: (a, b) => a.model.label.localeCompare(b.model.label),
+};
+
+/** The rows a tab lists. `unpriced` holds every model some host serves
+ * without a price, whatever its tier on the others. Default order: your
+ * spend, then the newest release. */
 export function rowsForTab(
 	rows: readonly TierRow[],
 	tab: TierTab,
 	showDeprecated: boolean,
+	sort: { key: TierSort; dir: "asc" | "desc" } = { key: "spend", dir: "desc" },
 ): TierRow[] {
+	const sign = sort.dir === "asc" ? 1 : -1;
 	return rows
 		.filter((r) => showDeprecated || !r.model.deprecated)
 		.filter((r) =>
 			tab === "unpriced" ? r.unpricedHosts.length > 0 : r.tier === tab,
 		)
-		.sort(byInterest);
+		.sort((a, b) => sign * TIER_ORDER[sort.key](a, b) || byInterest(a, b));
 }
 
 /** The model that stands for a tab: the one you spend most on, else the

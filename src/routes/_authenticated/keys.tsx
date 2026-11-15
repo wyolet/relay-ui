@@ -6,6 +6,7 @@ import {
 import { Suspense } from "react";
 import { z } from "zod";
 import { AccountsTable } from "@/accounts/AccountsTable";
+import { ACCOUNT_SUMMARY } from "@/accounts/accountCopy";
 import {
 	accountListQueryOptions,
 	myAccountsQueryOptions,
@@ -90,8 +91,9 @@ function KeysPage() {
 			<div className="mb-4">
 				<h1 className="text-lg font-semibold text-foreground">Keys</h1>
 				<p className="text-xs text-muted-foreground mt-0.5">
-					Relay API keys, and the provider accounts and pools whose keys they
-					draw on.
+					{search.tab === "accounts"
+						? ACCOUNT_SUMMARY
+						: "Relay API keys, and the provider accounts and pools whose keys they draw on."}
 				</p>
 			</div>
 

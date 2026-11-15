@@ -646,7 +646,7 @@ function InferenceSection({
 					onClick={onAddRule}
 					className="self-start"
 				>
-					<Plus className="size-3.5" />
+					<Plus data-icon="inline-start" className="size-3.5" />
 					Add limit
 				</Button>
 			</div>

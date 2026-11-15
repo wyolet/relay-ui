@@ -100,7 +100,7 @@ export function AttachRateLimitModal({
 					) : (
 						<>
 							<Button type="button" variant="ghost" onClick={() => setStep(1)}>
-								<ChevronLeft className="w-3.5 h-3.5" />
+								<ChevronLeft data-icon="inline-start" className="w-3.5 h-3.5" />
 								Back
 							</Button>
 							<Button

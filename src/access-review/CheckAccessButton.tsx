@@ -28,7 +28,7 @@ export function CheckAccessButton({
 				size={size}
 				onClick={() => setOpen(true)}
 			>
-				<ShieldQuestion className="size-3.5" />
+				<ShieldQuestion data-icon="inline-start" className="size-3.5" />
 				Check access
 			</Button>
 			{open && (

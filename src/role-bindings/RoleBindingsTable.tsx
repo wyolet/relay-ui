@@ -10,6 +10,7 @@ import { useRoles } from "@/api/hooks/roles";
 import { useTeams } from "@/api/hooks/teams";
 import { buttonVariants } from "@/components/ui/button";
 import { FilterBar } from "@/filters/FilterBar";
+import { toolbarMainActionClassName } from "@/filters/ToolbarActions";
 import { activeFilterCount } from "@/filters/toQueryParams";
 import type { FilterDef, FilterState } from "@/filters/types";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
@@ -25,7 +26,6 @@ import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { RowMenu } from "@/shared/RowMenu";
 import { StaleContent } from "@/shared/StaleContent";
 import { TableEmpty } from "@/shared/TableEmpty";
-import { TableToolbar } from "@/shared/TableToolbar";
 import { Th } from "@/shared/Th";
 import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 import { useDeferredSearch } from "@/shared/useDeferredSearch";
@@ -151,16 +151,14 @@ export function RoleBindingsTable() {
 
 	return (
 		<div>
-			<TableToolbar
-				search={
-					<FilterBar defs={filters} state={{ ...live }} onChange={patch} />
-				}
+			<FilterBar
+				defs={filters}
+				state={{ ...live }}
+				onChange={patch}
+				className="mb-3"
 				actions={
-					<Link
-						to="/role-bindings/new"
-						className={buttonVariants({ variant: "default", size: "lg" })}
-					>
-						<Plus className="w-3.5 h-3.5" />
+					<Link to="/role-bindings/new" className={toolbarMainActionClassName}>
+						<Plus data-icon="inline-start" className="w-3.5 h-3.5" />
 						New role binding
 					</Link>
 				}
@@ -182,7 +180,7 @@ export function RoleBindingsTable() {
 									to="/role-bindings/new"
 									className={buttonVariants({ variant: "default", size: "lg" })}
 								>
-									<Plus className="w-4 h-4" />
+									<Plus data-icon="inline-start" className="w-4 h-4" />
 									Create role binding
 								</Link>
 							</>

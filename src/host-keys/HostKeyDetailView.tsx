@@ -167,7 +167,7 @@ export function HostKeyDetailView({ name }: { name: string }) {
 								</span>
 								<QuietBadge>Encrypted at rest</QuietBadge>
 								<Button type="button" variant="outline" onClick={openRotate}>
-									<KeyRound className="size-3" />
+									<KeyRound data-icon="inline-start" className="size-3" />
 									Rotate
 								</Button>
 							</DetailInline>

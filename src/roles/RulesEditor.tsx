@@ -114,7 +114,7 @@ export function RulesEditor({
 					size="sm"
 					onClick={() => onChange([...rows, newRuleRow()])}
 				>
-					<Plus className="w-3.5 h-3.5" />
+					<Plus data-icon="inline-start" className="w-3.5 h-3.5" />
 					Add rule
 				</Button>
 			</div>

@@ -11,6 +11,7 @@ import {
 import { useProjects } from "@/api/hooks/projects";
 import { buttonVariants } from "@/components/ui/button";
 import { FilterBar } from "@/filters/FilterBar";
+import { toolbarMainActionClassName } from "@/filters/ToolbarActions";
 import { activeFilterCount } from "@/filters/toQueryParams";
 import type { FilterDef, FilterState } from "@/filters/types";
 import { useOwnerFilter } from "@/hooks/useOwnerFilter";
@@ -22,7 +23,6 @@ import { OwnerFilter } from "@/shared/OwnerFilter";
 import { RowMenu } from "@/shared/RowMenu";
 import { StaleContent } from "@/shared/StaleContent";
 import { TableEmpty } from "@/shared/TableEmpty";
-import { TableToolbar } from "@/shared/TableToolbar";
 import { Th } from "@/shared/Th";
 import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 import { useDeferredSearch } from "@/shared/useDeferredSearch";
@@ -134,17 +134,19 @@ export function PolicyBindingsTable() {
 
 	return (
 		<div>
-			<TableToolbar
-				search={
-					<FilterBar defs={filters} state={{ ...live }} onChange={patch} />
-				}
-				filters={<OwnerFilter filter={owner} />}
+			<FilterBar
+				defs={filters}
+				state={{ ...live }}
+				onChange={patch}
+				extra={<OwnerFilter filter={owner} />}
+				extraActive={owner.isDefault ? 0 : 1}
+				className="mb-3"
 				actions={
 					<Link
 						to="/policy-bindings/new"
-						className={buttonVariants({ variant: "default", size: "lg" })}
+						className={toolbarMainActionClassName}
 					>
-						<Plus className="w-3.5 h-3.5" />
+						<Plus data-icon="inline-start" className="w-3.5 h-3.5" />
 						New policy binding
 					</Link>
 				}
@@ -167,7 +169,7 @@ export function PolicyBindingsTable() {
 									to="/policy-bindings/new"
 									className={buttonVariants({ variant: "default", size: "lg" })}
 								>
-									<Plus className="w-4 h-4" />
+									<Plus data-icon="inline-start" className="w-4 h-4" />
 									Create policy binding
 								</Link>
 							</>

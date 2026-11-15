@@ -2,12 +2,22 @@ import { Link } from "@tanstack/react-router";
 import { UserRound } from "lucide-react";
 import { useState } from "react";
 import { useUsers } from "@/api/hooks/users";
+import { FilterBar } from "@/filters/FilterBar";
+import type { FilterDef } from "@/filters/types";
 import { Chip } from "@/shared/Chip";
-import { SearchBox } from "@/shared/SearchBox";
 import { StatusBadge } from "@/shared/StatusBadge";
 import { TableEmpty } from "@/shared/TableEmpty";
-import { TableToolbar } from "@/shared/TableToolbar";
 import { Th } from "@/shared/Th";
+
+const USER_FILTERS = [
+	{
+		key: "q",
+		type: "search",
+		label: "Search users",
+		placeholder: "Search users",
+		default: "",
+	},
+] as const satisfies readonly FilterDef[];
 
 /**
  * The account list. Users come from the bootstrap YAML or the identity
@@ -29,15 +39,13 @@ export function UsersTable() {
 
 	return (
 		<div>
-			<TableToolbar
-				search={
-					<SearchBox
-						value={needle}
-						onChange={setNeedle}
-						placeholder="Search users"
-						aria-label="Search users"
-					/>
-				}
+			<FilterBar
+				defs={USER_FILTERS}
+				state={{ q: needle }}
+				onChange={(patch) => {
+					if (typeof patch.q === "string") setNeedle(patch.q);
+				}}
+				className="mb-3"
 			/>
 
 			{users.length === 0 ? (

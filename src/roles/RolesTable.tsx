@@ -9,8 +9,8 @@ import {
 	useDeleteRole,
 	useRolesList,
 } from "@/api/hooks/roles";
-import { Button, buttonVariants } from "@/components/ui/button";
 import { FilterBar } from "@/filters/FilterBar";
+import { toolbarMainActionClassName } from "@/filters/ToolbarActions";
 import { activeFilterCount } from "@/filters/toQueryParams";
 import type { FilterDef, FilterState } from "@/filters/types";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
@@ -22,7 +22,6 @@ import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { RowMenu } from "@/shared/RowMenu";
 import { StaleContent } from "@/shared/StaleContent";
 import { TableEmpty } from "@/shared/TableEmpty";
-import { TableToolbar } from "@/shared/TableToolbar";
 import { Th } from "@/shared/Th";
 import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 import { useDeferredSearch } from "@/shared/useDeferredSearch";
@@ -78,28 +77,26 @@ export function RolesTable() {
 
 	return (
 		<div>
-			<TableToolbar
-				search={
-					<FilterBar
-						defs={ROLE_FILTERS}
-						state={{ q: live.q, enabled: live.enabled }}
-						onChange={patch}
-					/>
-				}
+			<FilterBar
+				defs={ROLE_FILTERS}
+				state={{ q: live.q, enabled: live.enabled }}
+				onChange={patch}
+				className="mb-3"
 				actions={
 					canAuthor ? (
-						<Link
-							to="/roles/new"
-							className={buttonVariants({ variant: "default", size: "lg" })}
-						>
-							<Plus className="w-3.5 h-3.5" />
+						<Link to="/roles/new" className={toolbarMainActionClassName}>
+							<Plus data-icon="inline-start" className="w-3.5 h-3.5" />
 							New role
 						</Link>
 					) : (
-						<Button size="lg" disabled>
-							<Plus className="w-3.5 h-3.5" />
+						<button
+							type="button"
+							disabled
+							className={toolbarMainActionClassName}
+						>
+							<Plus data-icon="inline-start" className="w-3.5 h-3.5" />
 							New role
-						</Button>
+						</button>
 					)
 				}
 			/>

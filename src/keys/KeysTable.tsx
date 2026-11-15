@@ -12,6 +12,7 @@ import type { Key } from "@/api/types/key";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { PlanIssueDot } from "@/diagnostics/DiagnosticDot";
 import { FilterBar } from "@/filters/FilterBar";
+import { toolbarMainActionClassName } from "@/filters/ToolbarActions";
 import { activeFilterCount } from "@/filters/toQueryParams";
 import type { FilterDef, FilterState } from "@/filters/types";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
@@ -23,7 +24,6 @@ import { RowMenu } from "@/shared/RowMenu";
 import { StaleContent } from "@/shared/StaleContent";
 import { Switch } from "@/shared/Switch";
 import { TableEmpty } from "@/shared/TableEmpty";
-import { TableToolbar } from "@/shared/TableToolbar";
 import { Th } from "@/shared/Th";
 import { toast } from "@/shared/Toast";
 import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
@@ -182,24 +182,18 @@ export function KeysTable() {
 
 	return (
 		<div>
-			<TableToolbar
-				search={
-					<FilterBar
-						defs={KEY_FILTERS}
-						state={{
-							q: live.q,
-							principal_kind: live.principal_kind,
-							expired: live.expired,
-						}}
-						onChange={patch}
-					/>
-				}
+			<FilterBar
+				defs={KEY_FILTERS}
+				state={{
+					q: live.q,
+					principal_kind: live.principal_kind,
+					expired: live.expired,
+				}}
+				onChange={patch}
+				className="mb-3"
 				actions={
-					<Link
-						to="/keys/new"
-						className={buttonVariants({ variant: "default", size: "lg" })}
-					>
-						<Plus className="w-3.5 h-3.5" />
+					<Link to="/keys/new" className={toolbarMainActionClassName}>
+						<Plus data-icon="inline-start" className="w-3.5 h-3.5" />
 						New key
 					</Link>
 				}
@@ -224,7 +218,7 @@ export function KeysTable() {
 									to="/keys/new"
 									className={buttonVariants({ variant: "default", size: "lg" })}
 								>
-									<Plus className="w-4 h-4" />
+									<Plus data-icon="inline-start" className="w-4 h-4" />
 									Create API key
 								</Link>
 							</>

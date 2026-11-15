@@ -42,7 +42,7 @@ export function DetailHeaderActions({
 					onClick={onToggle}
 					disabled={toggling}
 				>
-					<Power className="size-3.5" />
+					<Power data-icon="inline-start" className="size-3.5" />
 					{enabled ? "Disable" : "Enable"}
 				</Button>
 			)}
@@ -64,7 +64,7 @@ export function DetailHeaderActions({
 					onClick={onDelete}
 					disabled={deleting}
 				>
-					<Trash2 className="size-3.5" />
+					<Trash2 data-icon="inline-start" className="size-3.5" />
 					Delete
 				</Button>
 			)}

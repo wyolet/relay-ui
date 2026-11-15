@@ -26,12 +26,9 @@ export function useOwnerFilter<T extends { metadata: { owner?: Owner } }>(
 		under: string | undefined;
 		keys: string[];
 	} | null>(null);
+	const defaultKeys = currentKey ? [currentKey] : [];
 	const selected =
-		picked && picked.under === currentKey
-			? picked.keys
-			: currentKey
-				? [currentKey]
-				: [];
+		picked && picked.under === currentKey ? picked.keys : defaultKeys;
 
 	const keyOf = (row: T) => ownerFilterKey(row.metadata.owner, userId);
 	const options = ownerFilterOptions(contexts, new Set(rows.map(keyOf)));
@@ -43,6 +40,9 @@ export function useOwnerFilter<T extends { metadata: { owner?: Owner } }>(
 		options,
 		selected,
 		summary: ownerFilterSummary(selected, options),
+		isDefault:
+			selected.length === defaultKeys.length &&
+			selected.every((k) => defaultKeys.includes(k)),
 		setSelected: (keys: string[]) => setPicked({ under: currentKey, keys }),
 		matches,
 		visible: rows.filter(matches),

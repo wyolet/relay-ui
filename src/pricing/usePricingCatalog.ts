@@ -12,6 +12,7 @@ import {
 	PRICE_TIERS,
 	rowsForTab,
 	type TierRow,
+	type TierSort,
 	type TierTab,
 	tabExample,
 	tierRows,
@@ -39,6 +40,8 @@ export interface PricingSearch {
 	tier: TierTab;
 	host?: string;
 	show_deprecated: boolean;
+	by: TierSort;
+	dir: "asc" | "desc";
 }
 
 export interface TierTabView {
@@ -121,7 +124,8 @@ export function usePricingCatalog(search: PricingSearch) {
 	const rows = tierRows(modelPriceSummaries(matrix), byModel).filter(
 		(r) => q === "" || matches(r, q),
 	);
-	const tabRows = (tab: TierTab) => rowsForTab(rows, tab, search.show_deprecated);
+	const tabRows = (tab: TierTab) =>
+		rowsForTab(rows, tab, search.show_deprecated);
 	const tabs: TierTabView[] = [
 		...PRICE_TIERS.map((t) => ({
 			value: t.key,
@@ -167,7 +171,10 @@ export function usePricingCatalog(search: PricingSearch) {
 		),
 		openHost,
 		tabs,
-		rows: tabRows(search.tier),
+		rows: rowsForTab(rows, search.tier, search.show_deprecated, {
+			key: search.by,
+			dir: search.dir,
+		}),
 		anyRows: matrix.length > 0,
 		truncated:
 			pricings.data.total > (pricings.data.items ?? []).length
