@@ -256,11 +256,9 @@ describe("in use", () => {
 		["fable-1", usage(0, null)],
 	]);
 
-	test("counts used models the filter keeps, once across hosts", () => {
-		expect(inUseCount(byModel, modelsById, ALL)).toBe(2);
-		expect(
-			inUseCount(byModel, modelsById, { ...ALL, showDeprecated: true }),
-		).toBe(3);
+	test("counts used models once across hosts, deprecated included", () => {
+		expect(inUseCount(byModel, modelsById, ALL)).toBe(3);
+		expect(inUseCount(byModel, modelsById, { ...ALL, q: "gpt" })).toBe(1);
 	});
 
 	test("groups each loaded host's used lines under it", () => {
@@ -301,7 +299,7 @@ describe("in use", () => {
 		);
 		expect(groups.map((g) => [g.key, ids(g.lines)])).toEqual([
 			["h-ant", ["opus-5"]],
-			[TELEMETRY_GROUP, ["gpt-6"]],
+			[TELEMETRY_GROUP, ["old", "gpt-6"]],
 		]);
 		expect(groups.flatMap((g) => g.lines).length).toBe(
 			inUseCount(byModel, modelsById, ALL),

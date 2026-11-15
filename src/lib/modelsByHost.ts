@@ -220,12 +220,18 @@ export function railHosts(
 	});
 }
 
+/** In use always lists what carried traffic, deprecated or not. */
+function inUseFilter(filter: ModelsFilter): ModelsFilter {
+	return { ...filter, showDeprecated: true };
+}
+
 /** Models with any traffic that the filter keeps, counted once across hosts. */
 export function inUseCount(
 	byModel: ReadonlyMap<string, ModelUsage>,
 	modelsById: ReadonlyMap<string, Model>,
-	filter: ModelsFilter,
+	shown: ModelsFilter,
 ): number {
+	const filter = inUseFilter(shown);
 	let n = 0;
 	for (const [id, usage] of byModel) {
 		const model = modelsById.get(id);
@@ -246,9 +252,10 @@ export function inUseGroups(
 	modelsById: ReadonlyMap<string, Model>,
 	usageByHost: ReadonlyMap<string, ReadonlyMap<string, ModelUsage>>,
 	byModel: ReadonlyMap<string, ModelUsage>,
-	filter: ModelsFilter,
+	shown: ModelsFilter,
 	sort: ModelsSort,
 ): LineGroup[] {
+	const filter = inUseFilter(shown);
 	const groups = hostUseGroups(hosts, modelsById, usageByHost, filter, sort);
 	const seen = new Set(
 		groups.flatMap((g) => g.lines.map((l) => l.model.metadata.id)),
