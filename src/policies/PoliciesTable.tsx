@@ -8,8 +8,10 @@ import { buttonVariants } from "@/components/ui/button";
 import { FilterBar } from "@/filters/FilterBar";
 import { toolbarMainActionClassName } from "@/filters/ToolbarActions";
 import type { FilterDef } from "@/filters/types";
+import { useOriginFilter } from "@/hooks/useOriginFilter";
 import { useOwnerFilter } from "@/hooks/useOwnerFilter";
 import { displayLabel } from "@/lib/displayLabel";
+import { onOrigins } from "@/lib/ownerFilter";
 import { POLICY_MIN_W, PolicyColumns, PolicyRow } from "@/policies/PolicyRow";
 import { usePolicyAppliesToCounts } from "@/policies/usePolicyAppliesTo";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
@@ -35,13 +37,17 @@ export function PoliciesTable() {
 	const del = useConfirmedDelete(useDeletePolicy(), { noun: "policy" });
 	const [q, setQ] = useState("");
 	const owner = useOwnerFilter(policiesData.items ?? []);
+	const origin = useOriginFilter();
 	const allItems = owner.visible;
+	const shown = allItems.filter((row) =>
+		onOrigins(row.metadata.owner, origin.selected),
+	);
 	const needle = q.trim().toLowerCase();
 	const items = needle
-		? allItems.filter((p) =>
+		? shown.filter((p) =>
 				displayLabel(p.metadata).toLowerCase().includes(needle),
 			)
-		: allItems;
+		: shown;
 
 	const rateLimitById = new Map<string, RateLimit>();
 	for (const rl of rateLimits) {
@@ -56,6 +62,7 @@ export function PoliciesTable() {
 				onChange={(patch) => {
 					if (typeof patch.q === "string") setQ(patch.q);
 				}}
+				quick={origin}
 				extra={<OwnerFilter filter={owner} />}
 				extraActive={owner.isDefault ? 0 : 1}
 				className="mb-3"
@@ -88,7 +95,11 @@ export function PoliciesTable() {
 						</>
 					) : (
 						<p className="text-sm text-muted-foreground">
-							No policies match the current filter.
+							{shown.length === 0 &&
+							origin.selected.length === 1 &&
+							origin.selected[0] === "custom"
+								? "None made in this relay yet. Press Provider for the presets that come with each provider."
+								: "No policies match the current filter."}
 						</p>
 					)}
 				</TableEmpty>

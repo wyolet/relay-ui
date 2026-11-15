@@ -3,6 +3,7 @@ import {
 	HOST_OWNED,
 	matchesOwnerFilter,
 	OTHER_OWNERS,
+	onOrigins,
 	ownerFilterKey,
 	ownerFilterOptions,
 	ownerFilterSummary,
@@ -76,5 +77,20 @@ describe("ownerFilterSummary", () => {
 		expect(ownerFilterSummary(["team:t1", "project:p1"], options)).toBe(
 			"2 owners",
 		);
+	});
+});
+
+describe("onOrigins", () => {
+	const preset = { kind: "host" as const, id: "h1" };
+	const team = { kind: "team" as const, id: "t1" };
+	it("custom keeps relay-made rows, provider keeps catalog presets", () => {
+		expect(onOrigins(team, ["custom"])).toBe(true);
+		expect(onOrigins(preset, ["custom"])).toBe(false);
+		expect(onOrigins(preset, ["provider"])).toBe(true);
+		expect(onOrigins(undefined, ["custom"])).toBe(true);
+	});
+	it("none picked takes both", () => {
+		expect(onOrigins(preset, [])).toBe(true);
+		expect(onOrigins(team, [])).toBe(true);
 	});
 });

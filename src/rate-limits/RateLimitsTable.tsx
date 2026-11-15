@@ -6,8 +6,10 @@ import { buttonVariants } from "@/components/ui/button";
 import { FilterBar } from "@/filters/FilterBar";
 import { toolbarMainActionClassName } from "@/filters/ToolbarActions";
 import type { FilterDef } from "@/filters/types";
+import { useOriginFilter } from "@/hooks/useOriginFilter";
 import { useOwnerFilter } from "@/hooks/useOwnerFilter";
 import { displayLabel } from "@/lib/displayLabel";
+import { onOrigins } from "@/lib/ownerFilter";
 import { RateLimitColumns, RateLimitRow } from "@/rate-limits/RateLimitRow";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { LineTable } from "@/shared/LineGrid";
@@ -30,13 +32,17 @@ export function RateLimitsTable() {
 	const del = useConfirmedDelete(useDeleteRateLimit(), { noun: "rate limit" });
 	const [q, setQ] = useState("");
 	const owner = useOwnerFilter(rateLimitsData.items ?? []);
+	const origin = useOriginFilter();
 	const allItems = owner.visible;
+	const shown = allItems.filter((row) =>
+		onOrigins(row.metadata.owner, origin.selected),
+	);
 	const needle = q.trim().toLowerCase();
 	const items = needle
-		? allItems.filter((rl) =>
+		? shown.filter((rl) =>
 				displayLabel(rl.metadata).toLowerCase().includes(needle),
 			)
-		: allItems;
+		: shown;
 
 	return (
 		<div>
@@ -46,6 +52,7 @@ export function RateLimitsTable() {
 				onChange={(patch) => {
 					if (typeof patch.q === "string") setQ(patch.q);
 				}}
+				quick={origin}
 				extra={<OwnerFilter filter={owner} />}
 				extraActive={owner.isDefault ? 0 : 1}
 				className="mb-3"
@@ -80,7 +87,11 @@ export function RateLimitsTable() {
 						</>
 					) : (
 						<p className="text-sm text-muted-foreground">
-							No rate limits match the current filter.
+							{shown.length === 0 &&
+							origin.selected.length === 1 &&
+							origin.selected[0] === "custom"
+								? "None made in this relay yet. Press Provider for the presets that come with each provider."
+								: "No rate limits match the current filter."}
 						</p>
 					)}
 				</TableEmpty>

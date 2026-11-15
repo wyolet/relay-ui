@@ -125,10 +125,18 @@ export function PolicyBindingsTable() {
 		},
 	];
 
+	// Only this tab's filters; the page's search also carries other tabs' state.
+	const bindingFilters = (s: typeof search): FilterState => ({
+		q: s.q,
+		project_id: s.project_id,
+		policy: s.policy,
+		account: s.account,
+	});
 	const owner = useOwnerFilter(data.items ?? []);
 	const items = owner.visible;
 	const filtered =
-		activeFilterCount(filters, { ...search }) > 0 || owner.selected.length > 0;
+		activeFilterCount(filters, bindingFilters(search)) > 0 ||
+		owner.selected.length > 0;
 
 	function patch(next: FilterState) {
 		void navigate({ search: (prev) => ({ ...prev, ...next }), replace: true });
@@ -138,7 +146,7 @@ export function PolicyBindingsTable() {
 		<div>
 			<FilterBar
 				defs={filters}
-				state={{ ...live }}
+				state={bindingFilters(live)}
 				onChange={patch}
 				extra={<OwnerFilter filter={owner} />}
 				extraActive={owner.isDefault ? 0 : 1}
