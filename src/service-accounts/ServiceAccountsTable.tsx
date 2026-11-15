@@ -7,6 +7,7 @@ import {
 } from "@/api/hooks/serviceAccounts";
 import { buttonVariants } from "@/components/ui/button";
 import { FilterBar } from "@/filters/FilterBar";
+import { toolbarMainActionClassName } from "@/filters/ToolbarActions";
 import { activeFilterCount } from "@/filters/toQueryParams";
 import type { FilterDef, FilterState } from "@/filters/types";
 import { useOwnerFilter } from "@/hooks/useOwnerFilter";
@@ -92,7 +93,7 @@ export function ServiceAccountsTable() {
 				actions={
 					<Link
 						to="/service-accounts/new"
-						className={buttonVariants({ variant: "default", size: "lg" })}
+						className={toolbarMainActionClassName}
 					>
 						<Plus className="w-3.5 h-3.5" />
 						New service account

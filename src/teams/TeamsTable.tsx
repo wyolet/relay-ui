@@ -7,6 +7,7 @@ import {
 } from "@/api/hooks/teams";
 import { buttonVariants } from "@/components/ui/button";
 import { FilterBar } from "@/filters/FilterBar";
+import { toolbarMainActionClassName } from "@/filters/ToolbarActions";
 import { activeFilterCount } from "@/filters/toQueryParams";
 import type { FilterDef, FilterState } from "@/filters/types";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
@@ -77,10 +78,7 @@ export function TeamsTable() {
 				onChange={patch}
 				className="mb-3"
 				actions={
-					<Link
-						to="/teams/new"
-						className={buttonVariants({ variant: "default", size: "lg" })}
-					>
+					<Link to="/teams/new" className={toolbarMainActionClassName}>
 						<Plus className="w-3.5 h-3.5" />
 						New team
 					</Link>

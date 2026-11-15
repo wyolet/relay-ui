@@ -11,6 +11,7 @@ import {
 import { useProjects } from "@/api/hooks/projects";
 import { buttonVariants } from "@/components/ui/button";
 import { FilterBar } from "@/filters/FilterBar";
+import { toolbarMainActionClassName } from "@/filters/ToolbarActions";
 import { activeFilterCount } from "@/filters/toQueryParams";
 import type { FilterDef, FilterState } from "@/filters/types";
 import { useOwnerFilter } from "@/hooks/useOwnerFilter";
@@ -143,7 +144,7 @@ export function PolicyBindingsTable() {
 				actions={
 					<Link
 						to="/policy-bindings/new"
-						className={buttonVariants({ variant: "default", size: "lg" })}
+						className={toolbarMainActionClassName}
 					>
 						<Plus className="w-3.5 h-3.5" />
 						New policy binding

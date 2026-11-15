@@ -7,6 +7,7 @@ import {
 } from "@/api/hooks/groups";
 import { buttonVariants } from "@/components/ui/button";
 import { FilterBar } from "@/filters/FilterBar";
+import { toolbarMainActionClassName } from "@/filters/ToolbarActions";
 import { activeFilterCount } from "@/filters/toQueryParams";
 import type { FilterDef, FilterState } from "@/filters/types";
 import { useToggleGroupEnabled } from "@/groups/useToggleGroupEnabled";
@@ -77,10 +78,7 @@ export function GroupsTable() {
 				onChange={patch}
 				className="mb-3"
 				actions={
-					<Link
-						to="/groups/new"
-						className={buttonVariants({ variant: "default", size: "lg" })}
-					>
+					<Link to="/groups/new" className={toolbarMainActionClassName}>
 						<Plus className="w-3.5 h-3.5" />
 						New group
 					</Link>

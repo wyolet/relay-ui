@@ -1,8 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { Layers, Plus } from "lucide-react";
 import { useDeletePool } from "@/api/hooks/pools";
-import { buttonVariants } from "@/components/ui/button";
 import { FilterBar } from "@/filters/FilterBar";
+import { toolbarMainActionClassName } from "@/filters/ToolbarActions";
 import type { FilterDef } from "@/filters/types";
 import { HostCell } from "@/hosts/HostCell";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
@@ -41,10 +41,7 @@ export function PoolsTable() {
 				extraActive={owner.isDefault ? 0 : 1}
 				className="mb-3"
 				actions={
-					<Link
-						to="/pools/new"
-						className={buttonVariants({ variant: "default", size: "lg" })}
-					>
+					<Link to="/pools/new" className={toolbarMainActionClassName}>
 						<Plus className="w-3.5 h-3.5" />
 						New pool
 					</Link>

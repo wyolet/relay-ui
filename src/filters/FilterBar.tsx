@@ -37,9 +37,9 @@ import { activeFilterCount } from "./toQueryParams";
 import {
 	type FilterDef,
 	type FilterState,
-	type SelectFilter,
 	readBool,
 	readText,
+	type SelectFilter,
 } from "./types";
 
 export type SortDir = "asc" | "desc";
@@ -72,6 +72,7 @@ export function FilterBar({
 	actions,
 	extra,
 	extraActive = 0,
+	summary,
 	className = "",
 }: {
 	defs: readonly FilterDef[];
@@ -79,12 +80,15 @@ export function FilterBar({
 	/** Patch one or more keys; merge into the route's search params. */
 	onChange: (patch: FilterState) => void;
 	sort?: SortControl;
-	/** Page buttons at the right end, e.g. the one "New …" action. */
+	/** The page's actions at the right end as one split button (see
+	 * `ToolbarActions`): the main action first, then secondary ones. */
 	actions?: ReactNode;
 	/** Filter controls that aren't FilterDefs (e.g. the owner filter). */
 	extra?: ReactNode;
 	/** How many of `extra`'s filters are narrowing, for the count. */
 	extraActive?: number;
+	/** One quiet line under the field about the results ("563 models"). */
+	summary?: ReactNode;
 	className?: string;
 }) {
 	const search = defs.find((d) => d.type === "search");
@@ -104,92 +108,90 @@ export function FilterBar({
 	};
 
 	return (
-		<div
-			className={cn(
-				"flex flex-wrap items-start justify-between gap-3",
-				className,
-			)}
-		>
-			<div
-				className={cn(
-					"w-full min-w-0 overflow-hidden transition-[max-width]",
-					open ? "max-w-3xl" : "max-w-xl",
-					fieldFrameClassName,
-					fieldInputFocusWithinClassName,
-				)}
-			>
-				<div className="flex h-8 items-stretch">
-					{search && (
-						<SearchBox
-							bare
-							className="min-w-0 flex-1"
-							value={readText(state, search.key)}
-							onChange={(v) => onChange({ [search.key]: v })}
-							placeholder={
-								search.type === "search" ? search.placeholder : undefined
-							}
-							aria-label={search.label}
-						/>
+		<div className={cn("grid gap-2", className)}>
+			<div className="flex flex-wrap items-start justify-between gap-3">
+				<div
+					className={cn(
+						"w-full min-w-0 overflow-hidden transition-[max-width]",
+						open ? "max-w-3xl" : "max-w-xl",
+						fieldFrameClassName,
+						fieldInputFocusWithinClassName,
 					)}
-					{hasFilters && (
-						<button
-							type="button"
-							className={cn(SEGMENT, open && "text-foreground")}
-							aria-expanded={open}
-							onClick={() => setOpen((v) => !v)}
-						>
-							<SlidersHorizontal className="size-3.5" aria-hidden />
-							Filters
-							{narrowing > 0 && <Count n={narrowing} />}
-						</button>
-					)}
-					{active > 0 && (
-						<button
-							type="button"
-							className={cn(SEGMENT, "px-2")}
-							onClick={clear}
-							aria-label="Clear filters"
-							title="Clear filters"
-						>
-							<X className="size-3.5" aria-hidden />
-						</button>
-					)}
-					{sort && <SortSegment sort={sort} />}
-				</div>
-				{hasFilters && open && (
-					<div className="grid gap-2 border-t border-field-border px-3 py-2.5">
-						{selects.map((def) => (
-							<FacetRow
-								key={def.key}
-								def={def}
-								value={readText(state, def.key)}
-								onPick={(v) => onChange({ [def.key]: v })}
+				>
+					<div className="flex h-8 items-stretch">
+						{search && (
+							<SearchBox
+								bare
+								className="min-w-0 flex-1"
+								value={readText(state, search.key)}
+								onChange={(v) => onChange({ [search.key]: v })}
+								placeholder={
+									search.type === "search" ? search.placeholder : undefined
+								}
+								aria-label={search.label}
 							/>
-						))}
-						{(toggles.length > 0 || extra != null) && (
-							<div className="flex flex-wrap items-center gap-1.5">
-								{toggles.map((def) => (
-									<Pill
-										key={def.key}
-										selected={readBool(state, def.key)}
-										onClick={() =>
-											onChange({ [def.key]: !readBool(state, def.key) })
-										}
-									>
-										{def.label}
-									</Pill>
-								))}
-								{extra}
-							</div>
 						)}
+						{hasFilters && (
+							<button
+								type="button"
+								className={cn(SEGMENT, open && "text-foreground")}
+								aria-expanded={open}
+								onClick={() => setOpen((v) => !v)}
+							>
+								<SlidersHorizontal className="size-3.5" aria-hidden />
+								Filters
+								{narrowing > 0 && <Count n={narrowing} />}
+							</button>
+						)}
+						{active > 0 && (
+							<button
+								type="button"
+								className={cn(SEGMENT, "px-2")}
+								onClick={clear}
+								aria-label="Clear filters"
+								title="Clear filters"
+							>
+								<X className="size-3.5" aria-hidden />
+							</button>
+						)}
+						{sort && <SortSegment sort={sort} />}
+					</div>
+					{hasFilters && open && (
+						<div className="grid gap-2 border-t border-field-border px-3 py-2.5">
+							{selects.map((def) => (
+								<FacetRow
+									key={def.key}
+									def={def}
+									value={readText(state, def.key)}
+									onPick={(v) => onChange({ [def.key]: v })}
+								/>
+							))}
+							{(toggles.length > 0 || extra != null) && (
+								<div className="flex flex-wrap items-center gap-1.5">
+									{toggles.map((def) => (
+										<Pill
+											key={def.key}
+											selected={readBool(state, def.key)}
+											onClick={() =>
+												onChange({ [def.key]: !readBool(state, def.key) })
+											}
+										>
+											{def.label}
+										</Pill>
+									))}
+									{extra}
+								</div>
+							)}
+						</div>
+					)}
+				</div>
+				{actions && (
+					<div className="flex h-8 shrink-0 items-stretch gap-px overflow-hidden rounded-md [&>*]:rounded-none!">
+						{actions}
 					</div>
 				)}
 			</div>
-			{actions && (
-				<div className="flex shrink-0 flex-wrap items-center gap-2">
-					{actions}
-				</div>
-			)}
+			{summary && <p className="text-meta text-ink-3">{summary}</p>}
 		</div>
 	);
 }

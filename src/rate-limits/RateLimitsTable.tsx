@@ -10,6 +10,7 @@ import type { RateLimit } from "@/api/types/ratelimit";
 import { buttonVariants } from "@/components/ui/button";
 import { PlanIssueDot } from "@/diagnostics/DiagnosticDot";
 import { FilterBar } from "@/filters/FilterBar";
+import { toolbarMainActionClassName } from "@/filters/ToolbarActions";
 import type { FilterDef } from "@/filters/types";
 import { useOwnerFilter } from "@/hooks/useOwnerFilter";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
@@ -63,7 +64,7 @@ export function RateLimitsTable() {
 				actions={
 					<Link
 						to="/policies/rate-limits/new"
-						className={buttonVariants({ variant: "default", size: "lg" })}
+						className={toolbarMainActionClassName}
 					>
 						<Plus className="w-3.5 h-3.5" />
 						New rate limit

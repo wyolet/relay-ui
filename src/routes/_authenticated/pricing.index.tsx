@@ -4,8 +4,8 @@ import { Suspense } from "react";
 import { z } from "zod";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
 import { modelsListQueryOptions } from "@/api/hooks/models";
-import { buttonVariants } from "@/components/ui/button";
 import { FilterBar, type SortControl } from "@/filters/FilterBar";
+import { toolbarMainActionClassName } from "@/filters/ToolbarActions";
 import type { FilterDef } from "@/filters/types";
 import { awaitOnEnter } from "@/lib/awaitOnEnter";
 import { HostPricesSection } from "@/pricing/HostPricesSection";
@@ -99,22 +99,17 @@ function PricingCatalog() {
 					state={{ q: live.q, show_deprecated: live.show_deprecated }}
 					onChange={patch}
 					sort={sort}
+					summary={
+						truncated &&
+						`Showing rates from the first ${truncated.shown} of ${truncated.total} sheets.`
+					}
 					actions={
-						<Link
-							to="/pricing/new"
-							className={buttonVariants({ variant: "cta", size: "lg" })}
-						>
+						<Link to="/pricing/new" className={toolbarMainActionClassName}>
 							<Plus className="size-3.5" />
 							New pricing
 						</Link>
 					}
 				/>
-				{truncated && (
-					<p className="text-meta text-ink-3">
-						Showing rates from the first {truncated.shown} of {truncated.total}{" "}
-						sheets.
-					</p>
-				)}
 				<StaleContent stale={isStale}>
 					{!anyRows ? (
 						<p className="text-label text-ink-2">

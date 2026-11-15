@@ -9,8 +9,8 @@ import {
 	useDeleteRole,
 	useRolesList,
 } from "@/api/hooks/roles";
-import { Button, buttonVariants } from "@/components/ui/button";
 import { FilterBar } from "@/filters/FilterBar";
+import { toolbarMainActionClassName } from "@/filters/ToolbarActions";
 import { activeFilterCount } from "@/filters/toQueryParams";
 import type { FilterDef, FilterState } from "@/filters/types";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
@@ -84,18 +84,19 @@ export function RolesTable() {
 				className="mb-3"
 				actions={
 					canAuthor ? (
-						<Link
-							to="/roles/new"
-							className={buttonVariants({ variant: "default", size: "lg" })}
-						>
+						<Link to="/roles/new" className={toolbarMainActionClassName}>
 							<Plus className="w-3.5 h-3.5" />
 							New role
 						</Link>
 					) : (
-						<Button size="lg" disabled>
+						<button
+							type="button"
+							disabled
+							className={toolbarMainActionClassName}
+						>
 							<Plus className="w-3.5 h-3.5" />
 							New role
-						</Button>
+						</button>
 					)
 				}
 			/>

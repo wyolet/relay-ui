@@ -8,8 +8,8 @@ import {
 	PERIOD_LABELS,
 } from "@/budgets/budgetFormat";
 import { useBudgetRows } from "@/budgets/useBudgetRows";
-import { buttonVariants } from "@/components/ui/button";
 import { FilterBar } from "@/filters/FilterBar";
+import { toolbarMainActionClassName } from "@/filters/ToolbarActions";
 import type { FilterDef } from "@/filters/types";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { fmtUsd } from "@/lib/limitsFormat";
@@ -48,7 +48,7 @@ export function BudgetsTable() {
 				actions={
 					<Link
 						to="/policies/budgets/new"
-						className={buttonVariants({ variant: "default", size: "lg" })}
+						className={toolbarMainActionClassName}
 					>
 						<Plus className="w-3.5 h-3.5" />
 						New budget

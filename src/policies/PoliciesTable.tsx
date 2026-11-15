@@ -12,6 +12,7 @@ import type { RateLimit } from "@/api/types/ratelimit";
 import { buttonVariants } from "@/components/ui/button";
 import { PlanIssueDot } from "@/diagnostics/DiagnosticDot";
 import { FilterBar } from "@/filters/FilterBar";
+import { toolbarMainActionClassName } from "@/filters/ToolbarActions";
 import type { FilterDef } from "@/filters/types";
 import { useMutability } from "@/hooks/useMutability";
 import { useOwnerFilter } from "@/hooks/useOwnerFilter";
@@ -85,10 +86,7 @@ export function PoliciesTable() {
 				extraActive={owner.isDefault ? 0 : 1}
 				className="mb-3"
 				actions={
-					<Link
-						to="/policies/new"
-						className={buttonVariants({ variant: "default", size: "lg" })}
-					>
+					<Link to="/policies/new" className={toolbarMainActionClassName}>
 						<Plus className="w-3.5 h-3.5" />
 						New policy
 					</Link>

@@ -214,15 +214,11 @@ function ModelsList() {
 				state={{ q: live.q, deprecated: live.deprecated, line: live.line }}
 				onChange={(next) => patch({ ...next, page: 1 })}
 				sort={sort}
+				summary={`${data.total} ${featured ? "featured " : ""}model${data.total === 1 ? "" : "s"}`}
 				className="mb-3"
 			/>
 
 			<StaleContent stale={isStale}>
-				<div className="mb-2 text-[11px] text-muted-foreground">
-					{data.total} {featured ? "featured " : ""}model
-					{data.total === 1 ? "" : "s"}
-				</div>
-
 				{items.length === 0 ? (
 					<TableEmpty icon={Boxes}>
 						<p className="text-sm text-muted-foreground">

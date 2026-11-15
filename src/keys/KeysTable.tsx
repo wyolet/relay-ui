@@ -12,6 +12,7 @@ import type { Key } from "@/api/types/key";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { PlanIssueDot } from "@/diagnostics/DiagnosticDot";
 import { FilterBar } from "@/filters/FilterBar";
+import { toolbarMainActionClassName } from "@/filters/ToolbarActions";
 import { activeFilterCount } from "@/filters/toQueryParams";
 import type { FilterDef, FilterState } from "@/filters/types";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
@@ -191,10 +192,7 @@ export function KeysTable() {
 				onChange={patch}
 				className="mb-3"
 				actions={
-					<Link
-						to="/keys/new"
-						className={buttonVariants({ variant: "default", size: "lg" })}
-					>
+					<Link to="/keys/new" className={toolbarMainActionClassName}>
 						<Plus className="w-3.5 h-3.5" />
 						New key
 					</Link>
