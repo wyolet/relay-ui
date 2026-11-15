@@ -18,6 +18,7 @@ import {
 } from "@/shared/DetailCard";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
 import { DetailTable, Td } from "@/shared/DetailTable";
+import { LastUsed } from "@/shared/LastUsed";
 import { QuietBadge, StatusBadge } from "@/shared/StatusBadge";
 
 const backLinkClass =
@@ -152,6 +153,9 @@ export function HostKeyDetailView({ name }: { name: string }) {
 							account={view.account}
 						/>
 					</DetailRow>
+					<DetailRow label="Last used">
+						<LastUsed at={view.lastUsedAt} />
+					</DetailRow>
 					{view.defaultTier && (
 						<DetailRow label="Default tier">
 							<span className="font-mono text-foreground">
@@ -167,7 +171,7 @@ export function HostKeyDetailView({ name }: { name: string }) {
 								</span>
 								<QuietBadge>Encrypted at rest</QuietBadge>
 								<Button type="button" variant="outline" onClick={openRotate}>
-									<KeyRound className="size-3" />
+									<KeyRound data-icon="inline-start" className="size-3" />
 									Rotate
 								</Button>
 							</DetailInline>

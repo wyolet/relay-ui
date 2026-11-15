@@ -1,32 +1,14 @@
-import { useQuery, useSuspenseQueries } from "@tanstack/react-query";
 import {
 	type CatalogGraphResponse,
 	catalogGraphQueryOptions,
 } from "@/api/hooks/catalog";
-import { hostsListQueryOptions } from "@/api/hooks/hosts";
-import { modelsListQueryOptions } from "@/api/hooks/models";
 import { pricingsListQuery } from "@/api/hooks/pricings";
-import {
-	usageComparisonWindows,
-	usageTotalsCompareQueryOptions,
-	useUsageNow,
-} from "@/api/hooks/usage";
 import type { HostListResponse } from "@/api/types/host";
 import type { ModelListResponse } from "@/api/types/model";
 import type { PricingListResponse } from "@/api/types/pricing";
 import type { components } from "@/api/types.gen";
 import { displayLabel } from "@/lib/displayLabel";
-import {
-	buildPricingMatrix,
-	filterPricingMatrix,
-	type HostPrices,
-	pricingCoverage,
-	rankPriceRows,
-} from "@/lib/pricingMatrix";
-import { sumCostRows } from "@/lib/usage-math/cost";
-import type { FigureData } from "@/shared/FigureRow";
-import { fmtCompact, fmtPct } from "@/usage/format";
-import { useHostModelUsage, usePricingWindow } from "./useHostModelUsage";
+import { buildPricingMatrix, type HostPrices } from "@/lib/pricingMatrix";
 
 type Metadata = components["schemas"]["Metadata"];
 
@@ -44,6 +26,9 @@ export const pricingsMatrixListQuery = pricingsListQuery({
  * and pricing lists; every price shown in the UI resolves through it. */
 export function matrixFromLists(lists: {
 	graph: CatalogGraphResponse;
+	/** Which host serves which model. Default: the graph's bindings, which
+	 * leave out disabled models; pass the full binding list to keep them. */
+	bindings?: readonly { hostId: string; modelId: string }[];
 	hosts: HostListResponse;
 	models: ModelListResponse;
 	pricings: PricingListResponse;
@@ -53,11 +38,23 @@ export function matrixFromLists(lists: {
 			? [{ id: meta.id, slug: meta.name, label: displayLabel(meta) }]
 			: [];
 	return buildPricingMatrix({
-		hosts: (lists.hosts.items ?? []).flatMap((h) => ref(h.metadata)),
-		models: (lists.models.items ?? []).flatMap((m) => ref(m.metadata)),
-		bindings: (lists.graph.models ?? []).flatMap((m) =>
-			(m.bindings ?? []).map((b) => ({ hostId: b.hostId, modelId: m.id })),
+		hosts: (lists.hosts.items ?? []).flatMap((h) =>
+			ref(h.metadata).map((r) => ({ ...r, icon: h.spec.icon })),
 		),
+		models: (lists.models.items ?? []).flatMap((m) =>
+			ref(m.metadata).map((r) => ({
+				...r,
+				releaseDate: m.spec.releaseDate,
+				deprecated:
+					(m.spec.deprecation?.status ?? "active") !== "active" ||
+					Boolean(m.spec.deprecationDate),
+			})),
+		),
+		bindings:
+			lists.bindings ??
+			(lists.graph.models ?? []).flatMap((m) =>
+				(m.bindings ?? []).map((b) => ({ hostId: b.hostId, modelId: m.id })),
+			),
 		pricings: (lists.pricings.items ?? []).flatMap((p) =>
 			p.metadata.owner?.id
 				? [
@@ -74,78 +71,4 @@ export function matrixFromLists(lists: {
 				: [],
 		),
 	});
-}
-
-/** Share of the trailing week's requests relay couldn't price; null before it
- * loads or without traffic. Not suspending: a config page must not wait on,
- * or fail with, the usage store. */
-function useUnpricedShare(): number | null {
-	const win = usePricingWindow();
-	const { previous } = usageComparisonWindows(win, useUsageNow());
-	const { data } = useQuery(usageTotalsCompareQueryOptions(win, previous));
-	const rows = data?.rows ?? [];
-	const requests = rows.reduce((n, r) => n + r.requests, 0);
-	return requests > 0 ? sumCostRows(rows).unpricedShare : null;
-}
-
-/** Every host's models with their rates, narrowed by the page's filters, and
- * the figures that say how much of the catalog is priced. */
-export function usePricingMatrix(query: string, unpricedOnly: boolean) {
-	const [graph, hosts, models, pricings] = useSuspenseQueries({
-		queries: [
-			pricingGraphQuery,
-			hostsListQueryOptions,
-			modelsListQueryOptions,
-			pricingsMatrixListQuery,
-		],
-	});
-	const unpricedShare = useUnpricedShare();
-
-	const sheets = pricings.data.items ?? [];
-	const matrix = matrixFromLists({
-		graph: graph.data,
-		hosts: hosts.data,
-		models: models.data,
-		pricings: pricings.data,
-	});
-
-	const usage = useHostModelUsage(matrix.map((h) => h.host.id));
-	const ranked = matrix.map((h) => ({
-		...h,
-		rows: rankPriceRows(h.rows, usage.get(h.host.id)),
-	}));
-
-	const { served, priced } = pricingCoverage(matrix);
-	const disabled = sheets.filter((p) => p.spec.enabled === false).length;
-	const figures: FigureData[] = [
-		{
-			key: "priced",
-			label: "Bindings priced",
-			value: fmtCompact(priced),
-			note: `of ${fmtCompact(served)} served`,
-		},
-		{
-			key: "unpriced",
-			label: "Requests unpriced",
-			value: unpricedShare != null ? fmtPct(unpricedShare) : "—",
-			note: unpricedShare != null ? "last 7 days" : "no traffic last 7 days",
-		},
-		{
-			key: "sheets",
-			label: "Rate sheets",
-			value: fmtCompact(sheets.length - disabled),
-			note: disabled > 0 ? `${fmtCompact(disabled)} disabled` : undefined,
-		},
-	];
-
-	return {
-		hosts: filterPricingMatrix(ranked, query, unpricedOnly),
-		filtered: query.trim() !== "" || unpricedOnly,
-		anyRows: matrix.length > 0,
-		figures,
-		truncated:
-			pricings.data.total > sheets.length
-				? { shown: sheets.length, total: pricings.data.total }
-				: undefined,
-	};
 }

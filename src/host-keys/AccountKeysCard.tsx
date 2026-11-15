@@ -11,6 +11,7 @@ import {
 } from "@/host-keys/useAccountKeyList";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { DetailCard } from "@/shared/DetailCard";
+import { LastUsed } from "@/shared/LastUsed";
 import { type MenuAction, RowMenu } from "@/shared/RowMenu";
 
 const HEALTH_TONE_CLASS: Record<KeyHealthTone, string> = {
@@ -99,6 +100,10 @@ function OwnAccountKeysCard({ accountName }: { accountName: string }) {
 				empty="No keys in this account yet."
 				trailing={(row) => (
 					<>
+						<LastUsed
+							at={row.hostKey.status?.lastUsedAt}
+							className="w-16 text-right text-[11px]"
+						/>
 						<span
 							className={`w-20 text-right text-[11px] ${HEALTH_TONE_CLASS[row.health.tone]}`}
 							title={row.health.detail}

@@ -1,152 +1,67 @@
-import {
-	Activity,
-	DollarSign,
-	LayoutGrid,
-	type LucideIcon,
-	ScrollText,
-	Server,
-	Settings2,
-	ShieldCheck,
-} from "lucide-react";
 import type { Model } from "@/api/types/model";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ResourceLogs } from "@/logs/ResourceLogs";
+import { PlanIssuesPanel } from "@/diagnostics/IssuesPanel";
 import { ModelDetailHeader } from "@/models/ModelDetailHeader";
-import { ModelHostsTab } from "@/models/ModelHostsTab";
-import { ModelLimitsTab } from "@/models/ModelLimitsTab";
-import { ModelOverviewTab } from "@/models/ModelOverviewTab";
-import { ModelPoliciesTab } from "@/models/ModelPoliciesTab";
-import { ModelPricingTab } from "@/models/ModelPricingTab";
-import { useHostsById } from "@/models/useHostsById";
-import { useModelHosts } from "@/models/useModelHosts";
+import { ModelHostList } from "@/models/ModelHostList";
+import { ModelPolicyList } from "@/models/ModelPolicyList";
+import { ModelSpec } from "@/models/ModelSpec";
+import { modelWeekScope } from "@/models/modelWeekQueries";
+import { useModelHostLines } from "@/models/useModelHostLines";
 import { useModelPolicies } from "@/models/useModelPolicies";
 import { useModelProvider } from "@/models/useModelProvider";
-import { EmptyState } from "@/shared/EmptyState";
-import { ResourceUsage } from "@/usage/ResourceUsage";
-
-export type ModelDetailTab =
-	| "overview"
-	| "hosts"
-	| "policies"
-	| "limits"
-	| "pricing"
-	| "usage"
-	| "logs";
+import { WeekFigures } from "@/usage/WeekFigures";
+import { WeekTraffic } from "@/usage/WeekTraffic";
 
 interface Props {
 	model: Model;
-	tab: ModelDetailTab;
-	onTabChange: (next: ModelDetailTab) => void;
 	onToggleEnabled: () => void;
 	onDelete?: () => void;
 	toggling?: boolean;
 	deleting?: boolean;
 }
 
-const TABS: {
-	value: ModelDetailTab;
-	label: string;
-	icon: LucideIcon;
-}[] = [
-	{ value: "overview", label: "Overview", icon: LayoutGrid },
-	{ value: "hosts", label: "Hosts", icon: Server },
-	{ value: "policies", label: "Policies", icon: ShieldCheck },
-	{ value: "limits", label: "Limits", icon: Settings2 },
-	{ value: "pricing", label: "Pricing", icon: DollarSign },
-	{ value: "usage", label: "Usage", icon: Activity },
-	{ value: "logs", label: "Logs", icon: ScrollText },
-];
-
+/** One model on one page: its last 7 days, where it runs and at what price,
+ * what it is, who may call it, and its latest requests. */
 export function ModelDetailView({
 	model,
-	tab,
-	onTabChange,
 	onToggleEnabled,
 	onDelete,
 	toggling,
 	deleting,
 }: Props) {
+	const { name, id } = model.metadata;
 	const provider = useModelProvider(model);
-	const hostRows = useModelHosts(model.metadata.name);
-	const policyRows = useModelPolicies(model.metadata.name);
-	const hostById = useHostsById();
+	const hostLines = useModelHostLines(name, id);
+	const policies = useModelPolicies(name);
 
 	return (
-		<div className="flex flex-col gap-5">
-			<ModelDetailHeader
-				model={model}
-				provider={provider}
-				onToggleEnabled={onToggleEnabled}
-				onDelete={onDelete}
-				toggling={toggling}
-				deleting={deleting}
-			/>
-
-			<Tabs
-				value={tab}
-				onValueChange={(v) => onTabChange((v ?? "overview") as ModelDetailTab)}
-			>
-				<TabsList variant="underline">
-					{TABS.map(({ value, label, icon: Icon }) => (
-						<TabsTrigger key={value} value={value} className="px-3 h-9">
-							<Icon className="w-3.5 h-3.5" aria-hidden />
-							{label}
-						</TabsTrigger>
-					))}
-				</TabsList>
-
-				<TabsContent value="overview">
-					<ModelOverviewTab
-						model={model}
-						hostRows={hostRows}
-						policyRows={policyRows}
+		<div className="grid grid-cols-1 gap-12">
+			<div className="grid grid-cols-1 gap-8">
+				<ModelDetailHeader
+					model={model}
+					provider={provider}
+					onToggleEnabled={onToggleEnabled}
+					onDelete={onDelete}
+					toggling={toggling}
+					deleting={deleting}
+				/>
+				<PlanIssuesPanel kind="model" id={id} />
+				{id && (
+					<WeekFigures
+						scope={modelWeekScope(id)}
+						emptyBody="Requests to this model show up here: spend, latency, errors and the hosts that served them."
 					/>
-				</TabsContent>
-				<TabsContent value="hosts">
-					<ModelHostsTab rows={hostRows} hostById={hostById} />
-				</TabsContent>
-				<TabsContent value="policies">
-					<ModelPoliciesTab rows={policyRows} />
-				</TabsContent>
-				<TabsContent value="limits">
-					<ModelLimitsTab model={model} />
-				</TabsContent>
-				<TabsContent value="pricing">
-					<ModelPricingTab
-						model={model}
-						hostRows={hostRows}
-						hostById={hostById}
-					/>
-				</TabsContent>
-				<TabsContent value="usage">
-					{model.metadata.id ? (
-						<ResourceUsage scope="model_id" id={model.metadata.id} />
-					) : (
-						<EmptyState
-							icon={Activity}
-							title="Usage"
-							body="Save this model to see its traffic."
-							comingSoon
-						/>
-					)}
-				</TabsContent>
-				<TabsContent value="logs">
-					{model.metadata.id ? (
-						<ResourceLogs
-							scope="model_id"
-							id={model.metadata.id}
-							label="model"
-						/>
-					) : (
-						<EmptyState
-							icon={ScrollText}
-							title="Logs"
-							body="Save this model to see the inference requests targeting it."
-							comingSoon
-						/>
-					)}
-				</TabsContent>
-			</Tabs>
+				)}
+			</div>
+
+			<div className="grid grid-cols-1 gap-12 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+				<div className="grid min-w-0 grid-cols-1 content-start gap-12">
+					{id && <WeekTraffic scope={modelWeekScope(id)} />}
+					<ModelHostList lines={hostLines} modelId={id} />
+				</div>
+				<ModelSpec model={model} provider={provider} />
+			</div>
+
+			<ModelPolicyList policies={policies} />
 		</div>
 	);
 }

@@ -7,6 +7,7 @@ import {
 } from "@/api/hooks/groups";
 import { buttonVariants } from "@/components/ui/button";
 import { FilterBar } from "@/filters/FilterBar";
+import { toolbarMainActionClassName } from "@/filters/ToolbarActions";
 import { activeFilterCount } from "@/filters/toQueryParams";
 import type { FilterDef, FilterState } from "@/filters/types";
 import { useToggleGroupEnabled } from "@/groups/useToggleGroupEnabled";
@@ -16,7 +17,6 @@ import { RowMenu } from "@/shared/RowMenu";
 import { StaleContent } from "@/shared/StaleContent";
 import { Switch } from "@/shared/Switch";
 import { TableEmpty } from "@/shared/TableEmpty";
-import { TableToolbar } from "@/shared/TableToolbar";
 import { Th } from "@/shared/Th";
 import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 import { useDeferredSearch } from "@/shared/useDeferredSearch";
@@ -72,20 +72,14 @@ export function GroupsTable() {
 
 	return (
 		<div>
-			<TableToolbar
-				search={
-					<FilterBar
-						defs={GROUP_FILTERS}
-						state={{ q: live.q, enabled: live.enabled }}
-						onChange={patch}
-					/>
-				}
+			<FilterBar
+				defs={GROUP_FILTERS}
+				state={{ q: live.q, enabled: live.enabled }}
+				onChange={patch}
+				className="mb-3"
 				actions={
-					<Link
-						to="/groups/new"
-						className={buttonVariants({ variant: "default", size: "lg" })}
-					>
-						<Plus className="w-3.5 h-3.5" />
+					<Link to="/groups/new" className={toolbarMainActionClassName}>
+						<Plus data-icon="inline-start" className="w-3.5 h-3.5" />
 						New group
 					</Link>
 				}
@@ -108,7 +102,7 @@ export function GroupsTable() {
 									to="/groups/new"
 									className={buttonVariants({ variant: "default", size: "lg" })}
 								>
-									<Plus className="w-4 h-4" />
+									<Plus data-icon="inline-start" className="w-4 h-4" />
 									Create group
 								</Link>
 							</>

@@ -33,8 +33,8 @@ import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 
 const searchSchema = z.object({
 	tab: z
-		.enum(["overview", "models", "keys", "rate-limits", "usage", "logs"])
-		.optional()
+		.enum(["overview", "models", "keys", "rate-limits", "usage"])
+		.catch("overview")
 		.default("overview"),
 });
 

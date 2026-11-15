@@ -35,6 +35,20 @@ describe("planIssueAttention", () => {
 		expect(line?.text).toBe("keyslot: a linked pool is gone");
 	});
 
+	it("shortens a raw error chain and keeps it on hover", () => {
+		const [line] = planIssueAttention([
+			issue({
+				kind: "credential",
+				name: "main",
+				code: "credential_unresolved",
+				message:
+					'credential value could not be resolved: secret/stored: decrypt "01a1"',
+			}),
+		]);
+		expect(line?.text).toBe("Credential main: its value can't be resolved");
+		expect(line?.detail).toContain('decrypt "01a1"');
+	});
+
 	it("folds everything past five into one count line", () => {
 		const lines = planIssueAttention(
 			Array.from({ length: 7 }, (_, i) => issue({ id: `p${i}` })),

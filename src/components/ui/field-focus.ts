@@ -29,6 +29,11 @@ export const fieldOpenClassName =
 export const fieldFocusWithinClassName =
 	"focus-within:border-field-accent focus-within:bg-input-wash dark:focus-within:bg-input-wash focus-within:animate-input-settle motion-reduce:animate-none";
 
+// Composite fields that also hold buttons: only the text input's focus lights
+// the frame, so clicking a button segment doesn't read as typing.
+export const fieldInputFocusWithinClassName =
+	"has-[input:focus-visible]:border-field-accent has-[input:focus-visible]:bg-input-wash dark:has-[input:focus-visible]:bg-input-wash has-[input:focus-visible]:animate-input-settle motion-reduce:animate-none";
+
 // Invalid fields keep the quiet language with destructive semantics — the
 // border carries the state; focus washes in destructive tint instead.
 export const fieldInvalidClassName =

@@ -9,6 +9,9 @@ import {
 import type { RateLimit } from "@/api/types/ratelimit";
 import { buttonVariants } from "@/components/ui/button";
 import { PlanIssueDot } from "@/diagnostics/DiagnosticDot";
+import { FilterBar } from "@/filters/FilterBar";
+import { toolbarMainActionClassName } from "@/filters/ToolbarActions";
+import type { FilterDef } from "@/filters/types";
 import { useOwnerFilter } from "@/hooks/useOwnerFilter";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
@@ -17,13 +20,21 @@ import { windowShort } from "@/lib/timeWindow";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { OwnerFilter } from "@/shared/OwnerFilter";
 import { RowMenu } from "@/shared/RowMenu";
-import { SearchBox } from "@/shared/SearchBox";
 import { CatalogDetachedBadge } from "@/shared/StatusBadge";
 import { Switch } from "@/shared/Switch";
 import { TableEmpty } from "@/shared/TableEmpty";
-import { TableToolbar } from "@/shared/TableToolbar";
 import { Th } from "@/shared/Th";
 import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
+
+const RATE_LIMIT_FILTERS = [
+	{
+		key: "q",
+		type: "search",
+		label: "Search rate limits",
+		placeholder: "Search rate limits",
+		default: "",
+	},
+] as const satisfies readonly FilterDef[];
 
 export function RateLimitsTable() {
 	const { data: rateLimitsData } = useRateLimits();
@@ -41,21 +52,21 @@ export function RateLimitsTable() {
 
 	return (
 		<div>
-			<TableToolbar
-				search={
-					<SearchBox
-						value={q}
-						onChange={setQ}
-						placeholder="Search rate limits"
-					/>
-				}
-				filters={<OwnerFilter filter={owner} />}
+			<FilterBar
+				defs={RATE_LIMIT_FILTERS}
+				state={{ q }}
+				onChange={(patch) => {
+					if (typeof patch.q === "string") setQ(patch.q);
+				}}
+				extra={<OwnerFilter filter={owner} />}
+				extraActive={owner.isDefault ? 0 : 1}
+				className="mb-3"
 				actions={
 					<Link
 						to="/policies/rate-limits/new"
-						className={buttonVariants({ variant: "default", size: "lg" })}
+						className={toolbarMainActionClassName}
 					>
-						<Plus className="w-3.5 h-3.5" />
+						<Plus data-icon="inline-start" className="w-3.5 h-3.5" />
 						New rate limit
 					</Link>
 				}
@@ -75,7 +86,7 @@ export function RateLimitsTable() {
 								to="/policies/rate-limits/new"
 								className={buttonVariants({ variant: "default", size: "lg" })}
 							>
-								<Plus className="w-4 h-4" />
+								<Plus data-icon="inline-start" className="w-4 h-4" />
 								Create your first rate limit
 							</Link>
 						</>
@@ -227,8 +238,8 @@ function summarizeRules(rl: RateLimit): string {
 	if (rules.length === 1) {
 		return `${compactNumber(rules[0].amount)} ${rules[0].meter}`;
 	}
-	return `${rules.length} rules · ${rules
+	return `${rules.length} rules on ${rules
 		.slice(0, 2)
 		.map((r) => r.meter)
-		.join(", ")}${rules.length > 2 ? "…" : ""}`;
+		.join(", ")}${rules.length > 2 ? " and more" : ""}`;
 }

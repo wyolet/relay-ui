@@ -5,10 +5,10 @@ import {
 	type HostPrices,
 	type PriceRow,
 	RATE_COLUMNS,
-	type RateCell,
 } from "@/lib/pricingMatrix";
-import { fmtRate } from "@/pricing/MeterGrid";
+import { RateValue } from "@/pricing/MeterGrid";
 import { AddPriceLink } from "@/pricing/ModelPrice";
+import { Facts } from "@/shared/Facts";
 import { Section } from "@/shared/Section";
 
 /** Rows a folded host shows: its unpriced and busiest models. */
@@ -33,7 +33,14 @@ export function HostPricesSection({
 	return (
 		<Section
 			title={host.label}
-			meta={`${rows.length} model${rows.length === 1 ? "" : "s"}${unpriced > 0 ? ` · ${unpriced} unpriced` : ""}`}
+			meta={
+				<Facts
+					items={[
+						{ label: "Models", value: rows.length },
+						...(unpriced > 0 ? [{ label: "Unpriced", value: unpriced }] : []),
+					]}
+				/>
+			}
 			aside={
 				<Link
 					to="/hosts/$name"
@@ -66,7 +73,7 @@ export function HostPricesSection({
 				<div className="flex items-center gap-3 text-meta text-ink-3">
 					{!expanded && (
 						<span>
-							Unpriced and busiest first · {FOLDED_ROWS} of {rows.length}
+							Showing {FOLDED_ROWS} of {rows.length}, unpriced and busiest first
 						</span>
 					)}
 					<Button
@@ -108,7 +115,7 @@ function PriceLine({ row, hostId }: { row: PriceRow; hostId: string }) {
 				<span className="col-span-4 text-ink-3">Unpriced</span>
 			) : (
 				RATE_COLUMNS.map((c) => (
-					<Rate
+					<RateValue
 						key={c.meter}
 						cell={row.cells[c.meter]}
 						currency={row.currency}
@@ -117,32 +124,6 @@ function PriceLine({ row, hostId }: { row: PriceRow; hostId: string }) {
 			)}
 			<SheetCell row={row} hostId={hostId} />
 		</div>
-	);
-}
-
-function Rate({
-	cell,
-	currency,
-}: {
-	cell: RateCell | undefined;
-	currency: string;
-}) {
-	if (!cell) return <span className="text-right text-ink-3">—</span>;
-	return (
-		<span className="text-right text-foreground">
-			{fmtRate(cell.amount, currency)}
-			{cell.unit !== "per_million" && (
-				<span className="text-meta text-ink-3">/unit</span>
-			)}
-			{cell.tiered && (
-				<span
-					className="text-ink-3"
-					title="Higher rates above a token threshold"
-				>
-					+
-				</span>
-			)}
-		</span>
 	);
 }
 

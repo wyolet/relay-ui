@@ -1,4 +1,4 @@
-import { type ReactNode, Suspense } from "react";
+import type { ReactNode } from "react";
 import { objectRef } from "@/api/hooks/planIssues";
 import type { Policy } from "@/api/types/policy";
 import { PlanIssuesPanel } from "@/diagnostics/IssuesPanel";
@@ -8,6 +8,7 @@ import {
 	LinkChoiceRow,
 } from "@/policies/PolicyLinkPicker";
 import { budgetLinkShared } from "@/policies/policyFormSpec";
+import { POLICY_NO_TRAFFIC, policyWeekScope } from "@/policies/policyWeekUsage";
 import { UnpricedUnderBudget } from "@/policies/UnpricedUnderBudget";
 import { usePolicyAppliesTo } from "@/policies/usePolicyAppliesTo";
 import { usePolicyHosts } from "@/policies/usePolicyHosts";
@@ -17,19 +18,11 @@ import {
 	useSelectedPools,
 } from "@/policies/usePolicyLinkChoices";
 import { usePolicyModels } from "@/policies/usePolicyModels";
-import { usePolicyUsage } from "@/policies/usePolicyUsage";
 import { SharedLinkLabel } from "@/rate-limits/SharedLinkLabel";
 import { DetailEmpty } from "@/shared/DetailCard";
 import { SectionTitle } from "@/shared/SectionTitle";
 import { StatCard, StatGrid } from "@/shared/StatCard";
-import {
-	ResourceSpendCard,
-	ResourceSpendCardSkeleton,
-} from "@/usage/ResourceSpendCard";
-import {
-	ResourceUsageCards,
-	UsageCardsSkeleton,
-} from "@/usage/ResourceUsageCards";
+import { WeekFigures } from "@/usage/WeekFigures";
 
 interface Props {
 	policy: Policy;
@@ -46,6 +39,13 @@ export function PolicyOverviewTab({ policy }: Props) {
 			/>
 
 			<StatsGrid policy={policy} />
+
+			{policy.metadata.id && (
+				<WeekFigures
+					scope={policyWeekScope(policy.metadata.id)}
+					emptyBody={POLICY_NO_TRAFFIC}
+				/>
+			)}
 
 			<LinksPanel policy={policy} />
 
@@ -65,7 +65,7 @@ function LinksPanel({ policy }: { policy: Policy }) {
 				title="Applies to"
 				empty={
 					appliesTo
-						? "No one. Requests never run under this policy; edit it to pick who it applies to."
+						? "No one. Attach it from a team, project or service account page."
 						: "Loading…"
 				}
 				items={appliesTo ?? []}
@@ -146,16 +146,6 @@ function StatsGrid({ policy }: { policy: Policy }) {
 				sub={hosts.length === 0 ? "no host resolved" : "serving requests"}
 			/>
 			<AppliesToStatCard policyId={policy.metadata.id} />
-			{policy.metadata.id && (
-				<>
-					<Suspense fallback={<UsageCardsSkeleton />}>
-						<PolicyUsageCards policyId={policy.metadata.id} />
-					</Suspense>
-					<Suspense fallback={<ResourceSpendCardSkeleton />}>
-						<ResourceSpendCard dimension="policy_id" id={policy.metadata.id} />
-					</Suspense>
-				</>
-			)}
 		</StatGrid>
 	);
 }
@@ -211,11 +201,6 @@ function HostsPanel({ policy }: { policy: Policy }) {
 			</ul>
 		</section>
 	);
-}
-
-function PolicyUsageCards({ policyId }: { policyId: string }) {
-	const usage = usePolicyUsage(policyId);
-	return <ResourceUsageCards usage={usage} />;
 }
 
 /** The policy's issues and its pools': pool issues don't name the policy. */

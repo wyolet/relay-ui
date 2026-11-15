@@ -194,7 +194,7 @@ export function PricingForm({
 						onClick={addRate}
 						className="mt-2"
 					>
-						<Plus className="size-3.5" />
+						<Plus data-icon="inline-start" className="size-3.5" />
 						Add rate
 					</Button>
 					{ratesError && (

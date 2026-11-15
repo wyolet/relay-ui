@@ -33,6 +33,8 @@ export interface AttentionItem {
 	key: string;
 	tone: "alert" | "warn";
 	text: string;
+	/** The full text on hover, when the line shortens it. */
+	detail?: string;
 	target: AttentionTarget;
 }
 

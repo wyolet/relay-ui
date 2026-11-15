@@ -20,6 +20,8 @@ interface SearchBoxProps {
 	"aria-label"?: string;
 	/** Focus this box when "/" is pressed outside another editable element. */
 	hotkey?: boolean;
+	/** No frame of its own: it sits inside a grouped field that owns one. */
+	bare?: boolean;
 	className?: string;
 }
 
@@ -30,6 +32,7 @@ export function SearchBox({
 	placeholder = "Search",
 	"aria-label": ariaLabel,
 	hotkey = true,
+	bare = false,
 	className = "",
 }: SearchBoxProps) {
 	// The input is driven by a local draft so typing stays instant; the parent
@@ -99,7 +102,7 @@ export function SearchBox({
 	};
 
 	return (
-		<div className={`relative w-56 ${className}`}>
+		<div className={cn("relative", !bare && "w-56", className)}>
 			<Search
 				className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none"
 				aria-hidden="true"
@@ -126,8 +129,7 @@ export function SearchBox({
 				aria-label={ariaLabel ?? placeholder}
 				className={cn(
 					"w-full h-8 pl-8 pr-8 text-xs text-foreground placeholder:text-muted-foreground outline-none transition-[color,box-shadow,background-color] [&::-webkit-search-cancel-button]:hidden",
-					fieldFrameClassName,
-					fieldFocusClassName,
+					bare ? "bg-transparent" : [fieldFrameClassName, fieldFocusClassName],
 				)}
 			/>
 			{draft ? (

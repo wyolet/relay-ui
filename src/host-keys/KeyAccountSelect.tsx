@@ -89,7 +89,7 @@ export function KeyAccountSelect({
 						aria-invalid={error ? true : undefined}
 						aria-describedby={error ? errorId : undefined}
 					>
-						<Plus aria-hidden="true" />
+						<Plus data-icon="inline-start" aria-hidden="true" />
 						{NEW_ACCOUNT_LABEL}
 					</Button>
 				</div>

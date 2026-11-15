@@ -51,8 +51,8 @@ function NewPolicyInner() {
 					New policy
 				</h1>
 				<p className="mt-1 text-xs text-muted-foreground">
-					Who it applies to, which pools and models they may use, and the limits
-					on them.
+					Which pools and models requests may use, and the limits on them. Teams,
+					projects and service accounts attach it from their own page.
 				</p>
 			</div>
 			<PolicyForm

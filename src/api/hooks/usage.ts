@@ -128,91 +128,6 @@ export function usageSummaryQueryOptions(
 	});
 }
 
-// --- Per-resource usage (scoped /usage/summary) ---
-
-/** A resource whose usage we can scope by id via the matching filter param.
- * relay_key_hash scopes by the key's hash (KeySpec.keyHash). */
-export type ResourceUsageDimension =
-	| "host_id"
-	| "model_id"
-	| "policy_id"
-	| "relay_key_hash";
-
-/** One resource's totals over the summary window (null when it has no traffic). */
-export interface ResourceUsageStats {
-	requests: number;
-	errorCount: number;
-	errorRate: number; // 0..1
-	duration: UsageDurationStats;
-	tokens: number;
-	from: string;
-	to: string;
-}
-
-export function resourceUsageQueryOptions(
-	dimension: ResourceUsageDimension,
-	id: string,
-) {
-	return queryOptions({
-		queryKey: ["usage", "resource", dimension, id] as const,
-		queryFn: async (): Promise<UsageSummaryResult> => {
-			const query: UsageSummaryQuery = { group_by: dimension };
-			query[dimension] = [id];
-			const data = unwrap(
-				await apiClient.GET("/usage/summary", {
-					params: { query },
-				}),
-			);
-			return data;
-		},
-		staleTime: 15_000,
-		gcTime: 5 * 60_000,
-	});
-}
-
-/**
- * One model's usage split by host (`group_by=host_id`, filtered to the model).
- * Feeds the per-host pricing tab's estimated-spend figures.
- */
-export function modelHostUsageQueryOptions(modelId: string) {
-	return queryOptions({
-		queryKey: ["usage", "summary", "model-host", modelId] as const,
-		queryFn: async (): Promise<UsageSummaryResult> => {
-			const query: UsageSummaryQuery = {
-				group_by: "host_id",
-				model_id: [modelId],
-			};
-			const data = unwrap(
-				await apiClient.GET("/usage/summary", {
-					params: { query },
-				}),
-			);
-			return data;
-		},
-		staleTime: 30_000,
-		gcTime: 5 * 60_000,
-	});
-}
-
-/** Real per-resource stats for host/model/policy Overview cards. */
-export function useResourceUsage(
-	dimension: ResourceUsageDimension,
-	id: string,
-): ResourceUsageStats | null {
-	const { data } = useSuspenseQuery(resourceUsageQueryOptions(dimension, id));
-	const row = (data.rows ?? [])[0];
-	if (!row) return null;
-	return {
-		requests: row.requests,
-		errorCount: row.error_count,
-		errorRate: row.requests > 0 ? row.error_count / row.requests : 0,
-		duration: row.duration_ms,
-		tokens: sumTokens(row.tokens),
-		from: data.from,
-		to: data.to,
-	};
-}
-
 export function usageTimeseriesQueryOptions(
 	interval: UsageInterval,
 	groupBy: UsageGroupBy,
@@ -1048,9 +963,10 @@ export function usageTotalsQueryOptions(
 
 /** Whole-relay latency distribution over a window; null when no traffic. */
 export interface LatencyProfile {
-	/** p50 → max, each with its share of the largest rung (see usage-math). */
+	/** p50 → p99, each with its share of the largest rung (see usage-math). */
 	ladder: LatencyRung[];
 	avgMs: number;
+	maxMs: number;
 	requests: number;
 }
 
@@ -1064,6 +980,7 @@ export function useLatencyProfile(
 	return {
 		ladder: latencyLadder(row.duration_ms),
 		avgMs: row.duration_ms.avg,
+		maxMs: row.duration_ms.max,
 		requests: row.requests,
 	};
 }
@@ -1147,49 +1064,6 @@ export function useUsageTimeline(
 		to,
 		interval,
 		points: deriveTimeline(data.rows, from, to, interval),
-	};
-}
-
-type UsageTimeseriesQuery = NonNullable<
-	operations["usage_timeseries"]["parameters"]["query"]
->;
-
-export function resourceTimelineQueryOptions(
-	dimension: ResourceUsageDimension,
-	id: string,
-	interval: UsageInterval,
-) {
-	return queryOptions({
-		queryKey: ["usage", "resource-timeline", dimension, id, interval] as const,
-		queryFn: async (): Promise<UsageTimeSeriesResult> => {
-			const query: UsageTimeseriesQuery = { interval, group_by: dimension };
-			query[dimension] = [id];
-			const data = unwrap(
-				await apiClient.GET("/usage/timeseries", {
-					params: { query },
-				}),
-			);
-			return data;
-		},
-		staleTime: 15_000,
-		gcTime: 5 * 60_000,
-	});
-}
-
-/** Requests/errors over time scoped to one resource. */
-export function useResourceTimeline(
-	dimension: ResourceUsageDimension,
-	id: string,
-	interval: UsageInterval,
-) {
-	const { data } = useSuspenseQuery(
-		resourceTimelineQueryOptions(dimension, id, interval),
-	);
-	return {
-		from: data.from,
-		to: data.to,
-		interval,
-		points: deriveTimeline(data.rows, data.from, data.to, interval),
 	};
 }
 

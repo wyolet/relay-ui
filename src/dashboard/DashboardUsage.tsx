@@ -6,6 +6,7 @@ import { NO_TRAFFIC_ACTION, NoTraffic } from "@/shared/NoTraffic";
 import { Section, SectionSkeleton } from "@/shared/Section";
 import { AttentionList } from "./AttentionList";
 import { Breakdown } from "./Breakdown";
+import { HealthBlock } from "./HealthBlock";
 import { Headline } from "./Headline";
 import { TrafficChart } from "./TrafficChart";
 import { useDashboardTraffic } from "./useDashboardTraffic";
@@ -62,10 +63,11 @@ export function DashboardUsage() {
 	return (
 		<div className="grid gap-14">
 			<Headline />
+			<AttentionSection />
 			<WeekFacts />
 			<div className={SPLIT}>
 				<TrafficChart />
-				<AttentionSection />
+				<HealthBlock />
 			</div>
 			<WeekHeatmap />
 			<Breakdown />
@@ -78,12 +80,13 @@ export function DashboardUsageSkeleton() {
 	return (
 		<div className="grid gap-14">
 			<FigureRowSkeleton trend />
+			<AttentionSection />
 			<Section title="In numbers">
 				<FigureRowSkeleton size="mini" />
 			</Section>
 			<div className={SPLIT}>
 				<SectionSkeleton title="Traffic by model" height="h-[260px]" />
-				<AttentionSection />
+				<SectionSkeleton title="Health" height="h-[260px]" />
 			</div>
 			<SectionSkeleton title="Activity" height="h-[200px]" />
 		</div>

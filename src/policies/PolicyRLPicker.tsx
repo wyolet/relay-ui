@@ -211,7 +211,7 @@ export function PolicyRLPicker({
 				className="self-start"
 				onClick={() => setEditing({ kind: "new" })}
 			>
-				<Plus className="w-3.5 h-3.5" />
+				<Plus data-icon="inline-start" className="w-3.5 h-3.5" />
 				Add rate limit
 			</Button>
 

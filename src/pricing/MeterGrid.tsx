@@ -1,3 +1,4 @@
+import type { RateCell } from "@/lib/pricingMatrix";
 import { fmtTokens } from "@/lib/format";
 import {
 	groupByMeter,
@@ -82,5 +83,33 @@ function MeterFigure({
 				</span>
 			))}
 		</div>
+	);
+}
+
+/** A meter's base rate in a table cell; `+` marks higher tiers above a token
+ * threshold, `/unit` a non-token unit. */
+export function RateValue({
+	cell,
+	currency,
+}: {
+	cell: RateCell | undefined;
+	currency: string;
+}) {
+	if (!cell) return <span className="text-right text-ink-3">—</span>;
+	return (
+		<span className="text-right text-foreground">
+			{fmtRate(cell.amount, currency)}
+			{cell.unit !== "per_million" && (
+				<span className="text-meta text-ink-3">/unit</span>
+			)}
+			{cell.tiered && (
+				<span
+					className="text-ink-3"
+					title="Higher rates above a token threshold"
+				>
+					+
+				</span>
+			)}
+		</span>
 	);
 }

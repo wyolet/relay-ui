@@ -7,7 +7,7 @@ import {
 } from "@/api/hooks/policyBindings";
 import { displayLabel } from "@/lib/displayLabel";
 import type { LinkChoice } from "@/policies/usePolicyLinkChoices";
-import { boundAccountIds } from "@/policy-bindings/policyTargets";
+import { boundAccountIds } from "@/policies/policyReach";
 
 /** The accounts the policy's bindings hold, as link rows; undefined while loading. */
 export function usePolicyAppliesTo(

@@ -6,6 +6,7 @@ import {
 import { Suspense } from "react";
 import { z } from "zod";
 import { AccountsTable } from "@/accounts/AccountsTable";
+import { ACCOUNT_SUMMARY } from "@/accounts/accountCopy";
 import {
 	accountListQueryOptions,
 	myAccountsQueryOptions,
@@ -20,10 +21,14 @@ import { poolListQueryOptions } from "@/api/hooks/pools";
 import { providersListQueryOptions } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
 import { serviceAccountsListQueryOptions } from "@/api/hooks/serviceAccounts";
+import { usageNow, usageSummaryQueryOptions } from "@/api/hooks/usage";
 import { usersListQueryOptions } from "@/api/hooks/users";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { KeysTable, toKeysParams } from "@/keys/KeysTable";
+import { KeysTable } from "@/keys/KeysTable";
+import { toKeysParams } from "@/keys/useKeysTable";
+import { KEYS_SORT_KEYS } from "@/lib/keyLines";
 import { PoolsTable } from "@/pools/PoolsTable";
+import { pricingWindowAt } from "@/pricing/useHostModelUsage";
 import { PageLoader } from "@/shared/Spinner";
 
 const TABS = ["relay", "accounts", "pools"] as const;
@@ -41,6 +46,10 @@ const searchSchema = z.object({
 		.default("all"),
 	principal_id: z.string().catch("").default(""),
 	expired: z.enum(["all", "true", "false"]).catch("all").default("all"),
+	// Search types are unioned across routes: `by` means another enum on
+	// /pricing and /models, `dir` the same one.
+	keys_by: z.enum(KEYS_SORT_KEYS).catch("usage").default("usage"),
+	dir: z.enum(["asc", "desc"]).catch("desc").default("desc"),
 	// The accounts tab's "Mine" filter.
 	mine: z.boolean().catch(false).default(false),
 });
@@ -50,12 +59,17 @@ export const Route = createFileRoute("/_authenticated/keys")({
 	// Defaults stay out of the URL.
 	search: { middlewares: [stripSearchParams(searchSchema.parse({}))] },
 	loaderDeps: ({ search }) => ({
+		tab: search.tab,
 		q: search.q,
 		principal_kind: search.principal_kind,
 		principal_id: search.principal_id,
 		expired: search.expired,
 	}),
 	loader: ({ context, deps }) => {
+		if (deps.tab === "relay")
+			void context.queryClient.prefetchQuery(
+				usageSummaryQueryOptions("relay_key_hash", pricingWindowAt(usageNow())),
+			);
 		void context.queryClient.prefetchQuery(policiesListQueryOptions);
 		void context.queryClient.prefetchQuery(hostKeysListQueryOptions);
 		void context.queryClient.prefetchQuery(hostsListQueryOptions);
@@ -90,8 +104,9 @@ function KeysPage() {
 			<div className="mb-4">
 				<h1 className="text-lg font-semibold text-foreground">Keys</h1>
 				<p className="text-xs text-muted-foreground mt-0.5">
-					Relay API keys, and the provider accounts and pools whose keys they
-					draw on.
+					{search.tab === "accounts"
+						? ACCOUNT_SUMMARY
+						: "Relay API keys, and the provider accounts and pools whose keys they draw on."}
 				</p>
 			</div>
 

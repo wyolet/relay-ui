@@ -1,7 +1,6 @@
 import {
 	type BlendedPrice,
 	blendedPrice,
-	compareBlendedPrices,
 	lowestBlendedPrice,
 } from "@/lib/usage-math/blendedPrice";
 import {
@@ -36,12 +35,17 @@ export interface MatrixHost {
 	id: string;
 	slug: string;
 	label: string;
+	icon?: { path?: string };
 }
 
 export interface MatrixModel {
 	id: string;
 	slug: string;
 	label: string;
+	/** YYYY-MM-DD, when the catalog knows it. */
+	releaseDate?: string;
+	/** Flagged deprecated or sunset by the catalog. */
+	deprecated?: boolean;
 }
 
 export interface MatrixPricing {
@@ -235,23 +239,6 @@ export function modelPriceSummaries(
 	return out;
 }
 
-/** Items ordered by their model's lowest blended price; models without one
- * stay last in either direction. */
-export function sortByLowestPrice<T>(
-	items: readonly T[],
-	summaryOf: (item: T) => ModelPriceSummary | undefined,
-	dir: "asc" | "desc",
-): T[] {
-	const priceOf = (item: T) => summaryOf(item)?.lowest?.price ?? null;
-	return [...items].sort((a, b) => {
-		const pa = priceOf(a);
-		const pb = priceOf(b);
-		if (!pa || !pb) return Number(!pa) - Number(!pb);
-		const order = compareBlendedPrices(pa, pb);
-		return dir === "asc" ? order : -order;
-	});
-}
-
 /** A granted model some reached host serves without a price. */
 export interface UnpricedGrant {
 	model: MatrixModel;
@@ -288,16 +275,26 @@ export interface ModelUsage {
 
 /** Per-model usage from summary rows grouped by `model_id`. */
 export function usageByModel(
-	rows: readonly {
-		group: Record<string, string>;
-		requests: number;
-		cost_nanos: number;
-		unpriced: number;
-	}[],
+	rows: readonly UsageSummaryLike[],
+): Map<string, ModelUsage> {
+	return usageByGroup(rows, "model_id");
+}
+
+interface UsageSummaryLike {
+	group: Record<string, string>;
+	requests: number;
+	cost_nanos: number;
+	unpriced: number;
+}
+
+/** Usage per value of one summary dimension (`model_id`, `host_id`, …). */
+export function usageByGroup(
+	rows: readonly UsageSummaryLike[],
+	dimension: string,
 ): Map<string, ModelUsage> {
 	const out = new Map<string, ModelUsage>();
 	for (const r of rows) {
-		const id = r.group.model_id;
+		const id = r.group[dimension];
 		if (!id) continue;
 		const priced = r.requests - r.unpriced;
 		out.set(id, {

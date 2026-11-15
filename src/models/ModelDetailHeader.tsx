@@ -1,20 +1,12 @@
-import { Link } from "@tanstack/react-router";
 import { AlertTriangle, Boxes } from "lucide-react";
 import type { Model } from "@/api/types/model";
 import { useMutability } from "@/hooks/useMutability";
-import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
-import { modelProductLine } from "@/models/groupModelsByFamily";
+import { displayLabel } from "@/lib/displayLabel";
 import { deprecationNote } from "@/models/modelDetail";
 import type { ModelProvider } from "@/models/useModelProvider";
-import { ModelPrice } from "@/pricing/ModelPrice";
-import { useModelPrices } from "@/pricing/useModelPrices";
 import { ProviderLogo } from "@/providers/ProviderLogo";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
-import {
-	CatalogDetachedBadge,
-	OwnerBadge,
-	StatusBadge,
-} from "@/shared/StatusBadge";
+import { CatalogDetachedBadge, QuietBadge } from "@/shared/StatusBadge";
 
 export function ModelDetailHeader({
 	model,
@@ -32,16 +24,13 @@ export function ModelDetailHeader({
 	deleting?: boolean;
 }) {
 	const enabled = model.spec.enabled !== false;
-	const isProviderOwned = model.metadata.owner?.kind === "provider";
 	const { canEdit, canDelete } = useMutability(model.metadata, "model");
 	const dep = deprecationNote(model);
-	const productLine = modelProductLine(model);
-	const prices = useModelPrices();
 
 	return (
-		<div className="flex flex-col gap-3">
-			<div className="flex items-start justify-between gap-4">
-				<div className="min-w-0 flex items-start gap-3">
+		<header className="grid grid-cols-1 gap-3">
+			<div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+				<div className="flex min-w-0 items-start gap-3">
 					{provider.provider ? (
 						<ProviderLogo
 							provider={provider.provider}
@@ -49,84 +38,24 @@ export function ModelDetailHeader({
 							className="mt-0.5 shrink-0"
 						/>
 					) : (
-						<div className="mt-0.5 w-9 h-9 rounded-md bg-muted border border-border shrink-0 flex items-center justify-center">
-							<Boxes className="w-4 h-4 text-muted-foreground" aria-hidden />
-						</div>
+						<span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-md bg-muted">
+							<Boxes className="size-4 text-ink-3" aria-hidden />
+						</span>
 					)}
-					<div className="min-w-0">
-						<h1 className="text-xl font-semibold text-foreground truncate flex items-center gap-2 flex-wrap">
-							{displayLabel(model.metadata)}
-							{!hasDisplayName(model.metadata) && (
-								<span className="text-[11px] text-muted-foreground font-normal">
-									(no display name)
-								</span>
-							)}
-							<StatusBadge enabled={enabled} />
-							{isProviderOwned && (
-								<OwnerBadge label="Provider" title="Provider-owned." />
-							)}
+					<div className="grid min-w-0 gap-1">
+						<h1 className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1 text-2xl font-bold text-foreground">
+							<span className="truncate">{displayLabel(model.metadata)}</span>
+							<QuietBadge>{enabled ? "Enabled" : "Disabled"}</QuietBadge>
+							{dep && <QuietBadge>Deprecated</QuietBadge>}
 							<CatalogDetachedBadge
 								detachedAt={model.metadata.catalogDetachedAt}
 							/>
-							{dep && (
-								<span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium uppercase tracking-wide bg-warning/10 text-warning border border-warning/30">
-									<AlertTriangle className="w-3 h-3" />
-									Deprecated
-								</span>
-							)}
 						</h1>
-						<div className="mt-1 flex min-w-0 items-baseline gap-3">
-							<p className="text-xs text-muted-foreground font-mono truncate">
-								{model.metadata.name}
-							</p>
-							{model.metadata.id && (
-								<ModelPrice
-									modelId={model.metadata.id}
-									summary={prices?.get(model.metadata.id)}
-								/>
-							)}
-						</div>
-						<p className="mt-0.5 text-[11px] text-muted-foreground">
-							{provider.providerSlug && (
-								<>
-									by{" "}
-									<Link
-										to="/providers/$name"
-										params={{ name: provider.providerSlug }}
-										className="text-foreground hover:underline"
-									>
-										{provider.provider
-											? displayLabel(provider.provider.metadata)
-											: provider.providerSlug}
-									</Link>
-								</>
-							)}
-							{model.spec.family && (
-								<>
-									{provider.providerSlug && (
-										<span className="text-muted-foreground/50"> · </span>
-									)}
-									family{" "}
-									<span className="text-foreground">{model.spec.family}</span>
-									{model.spec.version && (
-										<span className="text-foreground">
-											{" "}
-											{model.spec.version}
-										</span>
-									)}
-								</>
-							)}
-							{productLine && (
-								<>
-									{(provider.providerSlug || model.spec.family) && (
-										<span className="text-muted-foreground/50"> · </span>
-									)}
-									line <span className="text-foreground">{productLine}</span>
-								</>
-							)}
-						</p>
+						<code className="truncate font-mono text-meta text-ink-2">
+							{model.metadata.name}
+						</code>
 						{model.metadata.description && (
-							<p className="mt-1.5 max-w-2xl text-sm text-muted-foreground">
+							<p className="max-w-2xl text-label text-ink-2">
 								{model.metadata.description}
 							</p>
 						)}
@@ -143,11 +72,11 @@ export function ModelDetailHeader({
 				/>
 			</div>
 			{dep && (
-				<div className="flex items-start gap-2 px-3 py-2 rounded-md border border-warning/30 bg-warning/10 text-xs text-warning">
-					<AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-					<span>{dep}</span>
-				</div>
+				<p className="flex items-start gap-2 rounded-md border border-warning/30 bg-warning-soft px-3 py-2 text-meta text-warning">
+					<AlertTriangle className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+					{dep}
+				</p>
 			)}
-		</div>
+		</header>
 	);
 }

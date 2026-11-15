@@ -5,17 +5,13 @@ import {
 	useSuspenseQuery,
 } from "@tanstack/react-query";
 import { apiClient } from "@/api/client";
+import { restoreCaches, swapIntoCaches } from "@/api/optimistic";
 import type { DetachedLinks } from "@/api/types/errors";
-import type { Model, ModelListResponse, ModelUpdate } from "@/api/types/model";
-import type { components, operations } from "@/api/types.gen";
+import type { Model, ModelListResponse } from "@/api/types/model";
+import type { components } from "@/api/types.gen";
 import { unwrap } from "@/api/unwrap";
 
 // --- Query options ---
-
-/** Server-side filter/sort/page params accepted by GET /models. */
-export type ModelsListParams = NonNullable<
-	operations["list_models"]["parameters"]["query"]
->;
 
 /** Unfiltered full list — used by pickers, loaders, and the resource graph
  * that need every model regardless of any page's active filters. */
@@ -34,27 +30,6 @@ export const modelsListQueryOptions = queryOptions({
 	staleTime: 30_000,
 	gcTime: 5 * 60_000,
 });
-
-/** Filtered list driven by a table page's filter state (server-side). */
-export function modelsListQuery(params: ModelsListParams) {
-	return queryOptions({
-		queryKey: ["models", "list", params] as const,
-		queryFn: async (): Promise<ModelListResponse> => {
-			const data = unwrap(
-				await apiClient.GET("/models", {
-					params: { query: params },
-				}),
-			);
-			return data;
-		},
-		staleTime: 30_000,
-		gcTime: 5 * 60_000,
-	});
-}
-
-export function useModelsList(params: ModelsListParams) {
-	return useSuspenseQuery(modelsListQuery(params));
-}
 
 export function modelDetailQueryOptions(name: string) {
 	return queryOptions({
@@ -141,24 +116,40 @@ export function useModel(name: string) {
 	return useSuspenseQuery(modelDetailQueryOptions(name));
 }
 
-export function useUpdateModel() {
+/** Switches a model on or off: the cached model flips before the request
+ * (see swapIntoCaches), the saved one replaces it (fresh resourceVersion for
+ * the next toggle), and a failed save puts the old one back. */
+export function useSetModelEnabled() {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: async ({
-			id,
-			body,
+			model,
+			enabled,
 		}: {
-			id: string;
-			body: ModelUpdate;
-		}): Promise<Model> => {
-			return unwrap(
+			model: Model;
+			enabled: boolean;
+		}): Promise<Model> =>
+			unwrap(
 				await apiClient.PUT("/models/by-id/{id}", {
-					params: { path: { id } },
-					body,
+					params: { path: { id: model.metadata.id ?? "" } },
+					body: {
+						metadata: model.metadata,
+						spec: { ...model.spec, enabled },
+					},
 				}),
-			);
+			),
+		onMutate: async ({ model, enabled }) => {
+			await queryClient.cancelQueries({ queryKey: ["models"] });
+			const next = { ...model, spec: { ...model.spec, enabled } };
+			return { snapshot: swapIntoCaches(queryClient, ["models"], next) };
 		},
-		onSuccess: () => {
+		onSuccess: (saved) => {
+			swapIntoCaches(queryClient, ["models"], saved);
+		},
+		onError: (_err, _vars, context) => {
+			if (context) restoreCaches(queryClient, context.snapshot);
+		},
+		onSettled: () => {
 			invalidateModelDependents(queryClient);
 		},
 	});

@@ -167,7 +167,7 @@ export function SubjectsEditor({
 					size="sm"
 					onClick={() => onChange([...rows, newSubjectRow()])}
 				>
-					<Plus className="w-3.5 h-3.5" />
+					<Plus data-icon="inline-start" className="w-3.5 h-3.5" />
 					Add subject
 				</Button>
 			</div>

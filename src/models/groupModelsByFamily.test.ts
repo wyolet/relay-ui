@@ -1,9 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import type { Model } from "@/api/types/model";
-import {
-	distinctProductLines,
-	groupModelsByFamily,
-} from "./groupModelsByFamily";
+import { groupModelsByFamily } from "./groupModelsByFamily";
 
 function model(name: string, family?: string, productLine?: string): Model {
 	return {
@@ -55,19 +52,5 @@ describe("groupModelsByFamily", () => {
 		expect(other?.family).toBe("Other");
 		expect(other?.lines).toEqual([]);
 		expect(names(other?.unlined ?? [])).toEqual(["mystery"]);
-	});
-});
-
-describe("distinctProductLines", () => {
-	it("returns each non-blank line once, alphabetically", () => {
-		expect(
-			distinctProductLines([
-				model("a", "gemini", "pro"),
-				model("b", "gemini", "flash-lite"),
-				model("c", "gemini", "pro"),
-				model("d", "gpt"),
-				model("e", "claude", " "),
-			]),
-		).toEqual(["flash-lite", "pro"]);
 	});
 });

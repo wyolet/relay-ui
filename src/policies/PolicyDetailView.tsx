@@ -1,35 +1,27 @@
 import { Link } from "@tanstack/react-router";
-import {
-	Activity,
-	Boxes,
-	Gauge,
-	KeyRound,
-	LayoutGrid,
-	ScrollText,
-} from "lucide-react";
+import { Activity, Boxes, Gauge, KeyRound, LayoutGrid } from "lucide-react";
 import { Suspense } from "react";
 import type { Policy } from "@/api/types/policy";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useMutability } from "@/hooks/useMutability";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
-import { ResourceLogs } from "@/logs/ResourceLogs";
 import { PolicyKeysTab } from "@/policies/PolicyKeysTab";
 import { PolicyModelsTab } from "@/policies/PolicyModelsTab";
 import { PolicyOverviewTab } from "@/policies/PolicyOverviewTab";
 import { PolicyRateLimitsTab } from "@/policies/PolicyRateLimitsTab";
+import { POLICY_NO_TRAFFIC, policyWeekScope } from "@/policies/policyWeekUsage";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
 import { EmptyState } from "@/shared/EmptyState";
 import { PageLoader } from "@/shared/Spinner";
 import { CatalogDetachedBadge, StatusBadge } from "@/shared/StatusBadge";
-import { ResourceUsage } from "@/usage/ResourceUsage";
+import { WeekUsage } from "@/usage/WeekUsage";
 
 export type PolicyDetailTab =
 	| "overview"
 	| "models"
 	| "keys"
 	| "rate-limits"
-	| "usage"
-	| "logs";
+	| "usage";
 
 interface Props {
 	policy: Policy;
@@ -51,7 +43,6 @@ const TABS: {
 	{ value: "keys", label: "Credentials", icon: KeyRound },
 	{ value: "rate-limits", label: "Rate limits", icon: Gauge },
 	{ value: "usage", label: "Usage", icon: Activity },
-	{ value: "logs", label: "Logs", icon: ScrollText },
 ];
 
 export function PolicyDetailView({
@@ -113,28 +104,17 @@ export function PolicyDetailView({
 				</TabsContent>
 				<TabsContent value="usage">
 					{policy.metadata.id ? (
-						<ResourceUsage scope="policy_id" id={policy.metadata.id} />
+						<div className="pt-2">
+							<WeekUsage
+								scope={policyWeekScope(policy.metadata.id)}
+								emptyBody={POLICY_NO_TRAFFIC}
+							/>
+						</div>
 					) : (
 						<EmptyState
 							icon={Activity}
 							title="Usage"
 							body="Save this policy to see its traffic."
-							comingSoon
-						/>
-					)}
-				</TabsContent>
-				<TabsContent value="logs">
-					{policy.metadata.id ? (
-						<ResourceLogs
-							scope="policy_id"
-							id={policy.metadata.id}
-							label="policy"
-						/>
-					) : (
-						<EmptyState
-							icon={ScrollText}
-							title="Logs"
-							body="Save this policy to see the requests routed through it."
 							comingSoon
 						/>
 					)}

@@ -87,22 +87,47 @@ export function stackSamples(
 /** A column this many times taller than the 95th percentile is an outlier. */
 export const OUTLIER_RATIO = 3;
 
+/** More columns than this past the cap aren't bursts but the traffic's shape:
+ * the chart draws to full scale instead. */
+export const MAX_CLIPPED = 3;
+
+/** Labelled outliers sit at least this share of the axis apart, so their
+ * value labels don't overlap. */
+const LABEL_SPACING = 0.2;
+
+export interface ColumnTotal {
+	bucket: string;
+	total: number;
+}
+
+/** A labelled column, with the label anchored inward near the plot edges. */
+export interface PeakLabel extends ColumnTotal {
+	anchor: "start" | "middle" | "end";
+}
+
+/** Within this share of either edge, a label grows inward instead of centred. */
+const EDGE_SHARE = 0.12;
+
 export interface AxisCap {
-	/** Axis top: just above the ordinary columns. */
+	/** Axis top: just above the tallest ordinary column. */
 	max: number;
-	/** The outlier column, labelled at the top instead of drawn to scale. */
-	peak: { bucket: string; total: number };
+	/** Every column above the axis top, tallest first. */
+	clipped: ColumnTotal[];
+	/** The clipped columns far enough apart to carry a value label. */
+	labelled: PeakLabel[];
 }
 
 /**
- * When one column dwarfs the rest, an axis cap that keeps the others readable;
- * null when the data already fits. Columns above the cap run off the top.
+ * When a few columns dwarf the rest, an axis cap that keeps the others
+ * readable; null when the data already fits. Columns above the cap run off
+ * the top.
  */
 export function outlierCap(
 	points: StackedPoint[],
 	series: string[],
 ): AxisCap | null {
-	const totals = points.map((p) => ({
+	const totals = points.map((p, index) => ({
+		index,
 		bucket: p.bucket,
 		total: series.reduce((sum, k) => sum + Number(p[k] ?? 0), 0),
 	}));
@@ -112,9 +137,35 @@ export function outlierCap(
 		.sort((a, b) => a - b);
 	if (sorted.length < 4) return null;
 	const p95 = sorted[Math.floor(0.95 * (sorted.length - 1))] ?? 0;
-	const peak = totals.reduce((a, b) => (b.total > a.total ? b : a));
-	if (p95 === 0 || peak.total < OUTLIER_RATIO * p95) return null;
-	return { max: niceCeil(p95 * 1.5), peak };
+	if (p95 === 0) return null;
+	const limit = OUTLIER_RATIO * p95;
+	const ordinaryMax = sorted.filter((v) => v < limit).at(-1) ?? p95;
+	const max = niceCeil(ordinaryMax * 1.1);
+	const over = totals
+		.filter((t) => t.total >= limit && t.total > max)
+		.sort((a, b) => b.total - a.total);
+	if (over.length === 0 || over.length > MAX_CLIPPED) return null;
+
+	const gap = Math.max(1, Math.round(points.length * LABEL_SPACING));
+	const labelled = over.filter(
+		(t, i) => !over.slice(0, i).some((o) => Math.abs(o.index - t.index) < gap),
+	);
+	const last = Math.max(1, points.length - 1);
+	const anchor = (index: number): PeakLabel["anchor"] =>
+		index / last < EDGE_SHARE
+			? "start"
+			: index / last > 1 - EDGE_SHARE
+				? "end"
+				: "middle";
+	return {
+		max,
+		clipped: over.map(({ bucket, total }) => ({ bucket, total })),
+		labelled: labelled.map(({ bucket, total, index }) => ({
+			bucket,
+			total,
+			anchor: anchor(index),
+		})),
+	};
 }
 
 /** The next round number up (1, 2, 2.5 or 5 times a power of ten), so the

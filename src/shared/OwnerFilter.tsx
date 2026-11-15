@@ -43,7 +43,7 @@ export function OwnerFilter({
 					aria-hidden="true"
 				/>
 			</PopoverTrigger>
-			<PopoverContent align="end" className="w-64 p-2">
+			<PopoverContent align="start" className="w-64 p-2">
 				<MultiCheckList
 					options={options}
 					selected={selected}

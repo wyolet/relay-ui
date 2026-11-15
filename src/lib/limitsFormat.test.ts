@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
 	fmtBudgetUsage,
+	fmtLimit,
 	fmtRuleUsage,
 	fmtUsd,
 	meterShare,
@@ -46,5 +47,26 @@ describe("usage text", () => {
 	});
 	test("budgets use USD", () => {
 		expect(fmtBudgetUsage("12.4", "50")).toBe("$12.40 / $50");
+	});
+});
+
+describe("fmtLimit", () => {
+	test("drops the window's trailing zero units", () => {
+		const rule = { amount: 1000, meter: "requests" };
+		expect(fmtLimit({ ...rule, window: "1m0s" })).toBe("1k requests / 1m");
+		expect(fmtLimit({ ...rule, window: "1h0m0s" })).toBe("1k requests / 1h");
+		expect(fmtLimit({ ...rule, window: "1h30m0s" })).toBe(
+			"1k requests / 1h30m",
+		);
+		expect(fmtLimit({ ...rule, window: "10s" })).toBe("1k requests / 10s");
+	});
+	test("names token meters in words", () => {
+		const window = "1m0s";
+		expect(fmtLimit({ amount: 5_000_000, meter: "tokens.input", window })).toBe(
+			"5M input tokens / 1m",
+		);
+		expect(
+			fmtLimit({ amount: 200, meter: "tokens.cache_creation", window }),
+		).toBe("200 cache write tokens / 1m");
 	});
 });

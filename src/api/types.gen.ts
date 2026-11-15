@@ -247,7 +247,7 @@ export interface paths {
         put?: never;
         /**
          * Apply a manifest bundle
-         * @description Diffs the submitted documents against the stored rows and writes the difference. Every row is authorized before anything is written; a denied row fails the whole apply.
+         * @description Diffs the submitted documents against the stored rows and writes the difference. Every row is authorized before anything is written; a denied row fails the whole apply. An update of a policy, rate limit or budget is refused as its control API update would be: 403 policy_in_use, naming the document and the accounts, when it reaches an account whose policy the caller may not set.
          */
         post: operations["apply"];
         delete?: never;
@@ -470,7 +470,7 @@ export interface paths {
         get?: never;
         /**
          * Update budget by id
-         * @description Replaces the budget. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field.
+         * @description Replaces the budget. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field. The update is refused with 403 policy_in_use while a policy linking the budget is applied to an account whose policy the caller may not set, as an update of that policy would be; blockedBy lists those accounts.
          */
         put: operations["update_budget"];
         post?: never;
@@ -564,6 +564,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/catalog/prune": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Delete detached catalog rows nothing holds
+         * @description Judges every catalog row a catalog release stopped shipping (metadata.catalogDetachedAt set). A row is pruned when it is not edited, has no overlay, is referenced by nothing but detached rows pruned with it, and, for a model or host binding, served no request inside the idle window. Every other row stays detached. A dry run (the default) only answers the decisions; dryRun=false deletes, and answers 503 while another relay is seeding the catalog.
+         */
+        post: operations["catalog_prune"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/catalog/reachable": {
         parameters: {
             query?: never;
@@ -598,6 +618,26 @@ export interface paths {
         get: operations["catalog_resolve"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/catalog/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check for a newer catalog release now
+         * @description Reads the catalog index and, when it names a release newer than the seeded one, fetches, verifies and seeds it before answering, as the periodic check does. Only a relay with RELAY_CATALOG_VERSION=latest checks; any other answers 409.
+         */
+        post: operations["catalog_sync"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1718,7 +1758,7 @@ export interface paths {
         get?: never;
         /**
          * Update policy by id
-         * @description Replaces the policy. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field.
+         * @description Replaces the policy. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field. The update is refused with 403 policy_in_use while the policy is applied, through an enabled policy binding, to an account whose policy the caller may not set (the check PUT /accounts/{ref}/policy runs on the binding holding it); blockedBy lists those accounts. An admin is never refused. A policy bound nowhere is not checked. POST /policies/{ref}/duplicate makes a copy to edit instead.
          */
         put: operations["update_policy"];
         post?: never;
@@ -1786,6 +1826,26 @@ export interface paths {
         get: operations["get_policy"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/policies/{ref}/duplicate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Copy a policy
+         * @description Creates a policy with the source's spec, linking the same pools, rate limits and budgets (not copies of them), under a new id and a slug derived from displayName. The copy is bound to no account and carries no labels. It needs read access to the source and is authorized and checked as POST /policies of the copy with that owner: a link the owner's scope may not use answers 400. Use it when an update answers 403 policy_in_use: bind the copy to the accounts you manage, then edit it.
+         */
+        post: operations["duplicate_policy"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2426,7 +2486,7 @@ export interface paths {
         get?: never;
         /**
          * Update rate-limit by id
-         * @description Replaces the rate-limit. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field.
+         * @description Replaces the rate-limit. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field. The update is refused with 403 policy_in_use while a policy linking the rate limit is applied to an account whose policy the caller may not set, as an update of that policy would be; blockedBy lists those accounts.
          */
         put: operations["update_rate-limit"];
         post?: never;
@@ -3097,12 +3157,12 @@ export interface paths {
         };
         /**
          * Get settings section: catalog-source
-         * @description Provenance of the seeded public catalog: the version last seeded and when. Compared against RELAY_CATALOG_VERSION at boot; a mismatch triggers a re-seed (operator-edited rows are skipped, overlays re-apply). Blank the version to force a re-seed on the next boot.
+         * @description Provenance of the seeded public catalog: the version last seeded and when, and the last check a relay following latest made while running. Compared against RELAY_CATALOG_VERSION at boot; a mismatch triggers a re-seed (operator-edited rows are skipped, overlays re-apply), unless the stored version is newer. Blank the version to force a re-seed on the next boot.
          */
         get: operations["get_settings_catalog-source"];
         /**
          * Update settings section: catalog-source
-         * @description Provenance of the seeded public catalog: the version last seeded and when. Compared against RELAY_CATALOG_VERSION at boot; a mismatch triggers a re-seed (operator-edited rows are skipped, overlays re-apply). Blank the version to force a re-seed on the next boot.
+         * @description Provenance of the seeded public catalog: the version last seeded and when, and the last check a relay following latest made while running. Compared against RELAY_CATALOG_VERSION at boot; a mismatch triggers a re-seed (operator-edited rows are skipped, overlays re-apply), unless the stored version is newer. Blank the version to force a re-seed on the next boot.
          */
         put: operations["update_settings_catalog-source"];
         post?: never;
@@ -3681,6 +3741,18 @@ export interface components {
             /** @description The row's configuration. */
             spec: components["schemas"]["AccountSpec"];
         };
+        AccountCreate: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Account.json
+             */
+            readonly $schema?: string;
+            /** @description Identity and provenance: id, name, owner, labels. */
+            metadata: components["schemas"]["MetadataCreate"];
+            /** @description The row's configuration. */
+            spec: components["schemas"]["AccountSpec"];
+        };
         AccountHolder: {
             /** @description Id of the user or service account. */
             id: string;
@@ -4102,6 +4174,18 @@ export interface components {
             /** @description The row's configuration. */
             spec: components["schemas"]["BindingSpec"];
         };
+        BindingCreate: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Binding.json
+             */
+            readonly $schema?: string;
+            /** @description Identity and provenance: id, name, owner, labels. */
+            metadata: components["schemas"]["MetadataCreate"];
+            /** @description The row's configuration. */
+            spec: components["schemas"]["BindingSpec"];
+        };
         BindingList: {
             /**
              * Format: uri
@@ -4163,6 +4247,18 @@ export interface components {
             /** @description The row's configuration. */
             spec: components["schemas"]["BudgetSpec"];
         };
+        BudgetCreate: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Budget.json
+             */
+            readonly $schema?: string;
+            /** @description Identity and provenance: id, name, owner, labels. */
+            metadata: components["schemas"]["MetadataCreate"];
+            /** @description The row's configuration. */
+            spec: components["schemas"]["BudgetSpec"];
+        };
         BudgetList: {
             /**
              * Format: uri
@@ -4192,6 +4288,18 @@ export interface components {
              */
             period?: "day" | "week" | "month";
         };
+        CatalogPrune: {
+            /**
+             * Format: int64
+             * @description Detached rows it left in place: edited, with an overlay, still referenced, or with recent or unknown traffic.
+             */
+            keptDetached: number;
+            /**
+             * Format: int64
+             * @description Detached rows the prune deleted.
+             */
+            pruned: number;
+        };
         CatalogSource: {
             /**
              * Format: uri
@@ -4199,6 +4307,12 @@ export interface components {
              * @example https://example.com/schemas/CatalogSource.json
              */
             readonly $schema?: string;
+            /** @description When a relay with RELAY_CATALOG_VERSION=latest last checked the catalog index while running, RFC 3339. */
+            checkedAt?: string;
+            /** @description Why that check failed to read the index or to fetch, verify or seed the release; empty when it succeeded. */
+            lastError?: string;
+            /** @description What the prune after the last versioned seed did; absent when it is off (RELAY_CATALOG_PRUNE=off), failed, or the seed was not versioned. */
+            prune?: components["schemas"]["CatalogPrune"];
             /** @description When that seed completed, RFC 3339. */
             seededAt?: string;
             /** @description Catalog release tag the last versioned seed ran from; empty when seeded from a directory or never. Blank it to force a re-seed on the next boot. */
@@ -4310,6 +4424,26 @@ export interface components {
              * @enum {string}
              */
             state: "primary" | "decrypt" | "destroyed";
+        };
+        Decision: {
+            /**
+             * @description prune: the row is deleted (or would be, in a dry run). keep: it stays detached and is judged again on the next prune.
+             * @enum {string}
+             */
+            decision: "prune" | "keep";
+            /**
+             * Format: date-time
+             * @description When a catalog release stopped shipping the row.
+             */
+            detachedAt: string;
+            /** @description Id of the row. */
+            id: string;
+            /** @description Kind of the row, as an API singular (model, host-binding, pricing, policy, rate-limit, host, provider). */
+            kind: string;
+            /** @description Slug of the row. */
+            name: string;
+            /** @description Why the row stays: edited, overlay, named by policy <name>, referenced by <kind> <name> (kept when that row stays detached too), traffic since <time>, or usage unknown: <why>. */
+            reason?: string;
         };
         DeprecationView: {
             /** @description Id of the replacement model. */
@@ -4601,6 +4735,20 @@ export interface components {
             /** @description The row's configuration. */
             spec: components["schemas"]["GroupSpec"];
         };
+        GroupCreate: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Group.json
+             */
+            readonly $schema?: string;
+            /** @description The provisioning source (a SCIM client) that manages the group, and its id there. Only that source, or an apply with force, changes the group. */
+            readonly external?: components["schemas"]["GroupExternal"];
+            /** @description Identity and provenance: id, name, owner, labels. */
+            metadata: components["schemas"]["MetadataCreate"];
+            /** @description The row's configuration. */
+            spec: components["schemas"]["GroupSpec"];
+        };
         GroupExternal: {
             /** @description The group's id at that source. */
             id?: string;
@@ -4647,6 +4795,20 @@ export interface components {
             /** @description Reachability observed from live traffic. Absent until the host has been dialled. Ignored on write. */
             readonly status?: components["schemas"]["HostStatus"];
         };
+        HostCreate: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Host.json
+             */
+            readonly $schema?: string;
+            /** @description Identity and provenance: id, name, owner, labels. */
+            metadata: components["schemas"]["MetadataCreate"];
+            /** @description The row's configuration. */
+            spec: components["schemas"]["HostSpec"];
+            /** @description Reachability observed from live traffic. Absent until the host has been dialled. Ignored on write. */
+            readonly status?: components["schemas"]["HostStatus"];
+        };
         HostKey: {
             /**
              * Format: uri
@@ -4656,6 +4818,22 @@ export interface components {
             readonly $schema?: string;
             /** @description Identity and provenance: id, name, owner, labels. */
             metadata: components["schemas"]["Metadata"];
+            /** @description Policies whose pools reach this key: listing it, or drawing on its account or a share of it. Derived on read; ignored on write. */
+            readonly policies?: components["schemas"]["HostKeyPolicyRef"][] | null;
+            /** @description The row's configuration. */
+            spec: components["schemas"]["HostKeySpec"];
+            /** @description Observed state of the credential. Ignored on write. */
+            readonly status?: components["schemas"]["HostKeyStatus"];
+        };
+        HostKeyCreate: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/HostKey.json
+             */
+            readonly $schema?: string;
+            /** @description Identity and provenance: id, name, owner, labels. */
+            metadata: components["schemas"]["MetadataCreate"];
             /** @description Policies whose pools reach this key: listing it, or drawing on its account or a share of it. Derived on read; ignored on write. */
             readonly policies?: components["schemas"]["HostKeyPolicyRef"][] | null;
             /** @description The row's configuration. */
@@ -4748,6 +4926,11 @@ export interface components {
         HostKeyStatus: {
             /** @description Refresh health of an oauth credential. Absent for other kinds and before the first renewal. */
             credential?: components["schemas"]["HostKeyCredentialStatus"];
+            /**
+             * Format: date-time
+             * @description When relay last sent a request with this key, to the minute; updated about once a minute. Absent when it has not sent one.
+             */
+            lastUsedAt?: string;
             /** @description Set when the secret could not be read at load; the key is not routed until repaired. */
             unresolved?: components["schemas"]["HostKeyUnresolvedStatus"];
         };
@@ -4858,6 +5041,12 @@ export interface components {
             path?: string;
             /** @description Billing modes the host offers: api (per-token metered) and sub (flat-rate subscription). A host key picks one. Omitted means [api]. */
             pricingStrategies?: ("api" | "sub")[] | null;
+            /** @description Top-level request-body keys the host expects under another name, per wire shape (adapter name, such as openai): {openai: {max_tokens: max_completion_tokens}}. Relay renames them before sending; when the caller already sent the new name, the old key is dropped and the drop reported. */
+            requestParamRenames?: {
+                [key: string]: {
+                    [key: string]: string;
+                };
+            };
             /** @description Host status page. */
             statusPageURL?: string;
         };
@@ -4953,6 +5142,8 @@ export interface components {
             metadata: components["schemas"]["Metadata"];
             /** @description The row's configuration. */
             spec: components["schemas"]["KeySpec"];
+            /** @description Observed state of the key. Server-managed; ignored on write. */
+            readonly status?: components["schemas"]["KeyObservedStatus"];
         };
         KeyList: {
             /**
@@ -4968,6 +5159,13 @@ export interface components {
              * @description Matching rows before limit and offset apply.
              */
             total: number;
+        };
+        KeyObservedStatus: {
+            /**
+             * Format: date-time
+             * @description When the key last served a request, to the minute; updated about once a minute. Absent when it has not served one.
+             */
+            lastUsedAt?: string;
         };
         KeyPrincipal: {
             /** @description Id of the service account or user. */
@@ -5197,6 +5395,45 @@ export interface components {
              */
             readonly updatedAt?: string;
         };
+        MetadataCreate: {
+            /** @description Free-form key/value notes; never filtered on. */
+            annotations?: {
+                [key: string]: string;
+            };
+            /**
+             * Format: date-time
+             * @description Set when the catalog version this relay seeds no longer ships the row. The row keeps working and is governed as the operator's own. Server-managed; ignored on write.
+             */
+            readonly catalogDetachedAt?: string;
+            /**
+             * Format: date-time
+             * @description When the row was created. Server-managed; ignored on write.
+             */
+            readonly createdAt?: string;
+            /** @description Free-text description of the row. */
+            description?: string;
+            /** @description True once the row was edited through the API; a catalog re-seed leaves it alone. Server-managed; ignored on write. */
+            readonly dirty?: boolean;
+            /** @description Free-text name shown in the UI. Nothing references it. */
+            displayName?: string;
+            /** @description Immutable UUIDv7 id, stamped by the server on create; ignored in create bodies. Cross-references in spec fields hold this id. */
+            readonly id?: string;
+            /** @description Key/value selectors; list endpoints filter on them with ?label=key=value. */
+            labels?: {
+                [key: string]: string;
+            };
+            /** @description DNS-1123 slug, unique per kind. Derived from displayName on create when omitted; may change on update. Used in URLs and manifests. */
+            name?: string;
+            /** @description Scope that owns the row. Each kind defaults it on create when omitted; an omitted owner on update keeps the stored one. */
+            owner?: components["schemas"]["Owner"];
+            /** @description Opaque version of the stored row; changes on every write. Send the value you read on update: a mismatch fails with 409 stale_resource_version. Omit to update unconditionally. */
+            resourceVersion?: string;
+            /**
+             * Format: date-time
+             * @description When the row last changed. Server-managed; ignored on write.
+             */
+            readonly updatedAt?: string;
+        };
         Model: {
             /**
              * Format: uri
@@ -5257,6 +5494,18 @@ export interface components {
             vision?: boolean;
             /** @description Supports the provider's web search tool. */
             webSearch?: boolean;
+        };
+        ModelCreate: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Model.json
+             */
+            readonly $schema?: string;
+            /** @description Identity and provenance: id, name, owner, labels. */
+            metadata: components["schemas"]["MetadataCreate"];
+            /** @description The row's configuration. */
+            spec: components["schemas"]["ModelSpec"];
         };
         ModelDeprecation: {
             /** @description Id of the model that replaces this one. */
@@ -5631,10 +5880,27 @@ export interface components {
              * @example https://example.com/schemas/Policy.json
              */
             readonly $schema?: string;
+            /** @description The accounts this policy is applied to whose policy the caller may not set; an update by the caller answers 403 policy_in_use while any remain. Absent when there are none, or when the caller may not update the policy at all. Ignored on write. */
+            readonly editBlockedBy?: components["schemas"]["PolicyEditBlockers"];
+            /** @description Whether the caller may update this policy: they hold the update permission, and may set the policy of every account it is applied to. Returned on reads of one policy; absent on lists. Ignored on write. */
+            readonly editable?: boolean;
             /** @description Identity and provenance: id, name, owner, labels. */
             metadata: components["schemas"]["Metadata"];
             /** @description The row's configuration. */
             spec: components["schemas"]["PolicySpec"];
+        };
+        PolicyAccountRef: {
+            /** @description Account display name. */
+            displayName?: string;
+            /** @description Account id. */
+            id: string;
+            /**
+             * @description What the account is: a team's or a project's own account, a user's personal account, a member account, a service account's account, or a provider account.
+             * @enum {string}
+             */
+            kind: "team" | "project" | "personal" | "member" | "service" | "provider";
+            /** @description Account slug. */
+            name: string;
         };
         PolicyBinding: {
             /**
@@ -5645,6 +5911,18 @@ export interface components {
             readonly $schema?: string;
             /** @description Identity and provenance: id, name, owner, labels. */
             metadata: components["schemas"]["Metadata"];
+            /** @description The row's configuration. */
+            spec: components["schemas"]["PolicyBindingSpec"];
+        };
+        PolicyBindingCreate: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/PolicyBinding.json
+             */
+            readonly $schema?: string;
+            /** @description Identity and provenance: id, name, owner, labels. */
+            metadata: components["schemas"]["MetadataCreate"];
             /** @description The row's configuration. */
             spec: components["schemas"]["PolicyBindingSpec"];
         };
@@ -5690,6 +5968,31 @@ export interface components {
             budgetId: string;
             /** @description True spends one budget for the bound account; false gives each account under it a budget of its own. Omitted on write means true; always returned. */
             shared?: boolean;
+        };
+        PolicyCreate: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Policy.json
+             */
+            readonly $schema?: string;
+            /** @description The accounts this policy is applied to whose policy the caller may not set; an update by the caller answers 403 policy_in_use while any remain. Absent when there are none, or when the caller may not update the policy at all. Ignored on write. */
+            readonly editBlockedBy?: components["schemas"]["PolicyEditBlockers"];
+            /** @description Whether the caller may update this policy: they hold the update permission, and may set the policy of every account it is applied to. Returned on reads of one policy; absent on lists. Ignored on write. */
+            readonly editable?: boolean;
+            /** @description Identity and provenance: id, name, owner, labels. */
+            metadata: components["schemas"]["MetadataCreate"];
+            /** @description The row's configuration. */
+            spec: components["schemas"]["PolicySpec"];
+        };
+        PolicyEditBlockers: {
+            /** @description The blocking accounts the caller may see. */
+            accounts: components["schemas"]["PolicyAccountRef"][] | null;
+            /**
+             * Format: int64
+             * @description Blocking accounts the caller may not see: counted, not named.
+             */
+            hidden: number;
         };
         PolicyHostRow: {
             /** @description The host. */
@@ -5779,6 +6082,18 @@ export interface components {
             /** @description The row's configuration. */
             spec: components["schemas"]["PoolSpec"];
         };
+        PoolCreate: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Pool.json
+             */
+            readonly $schema?: string;
+            /** @description Identity and provenance: id, name, owner, labels. */
+            metadata: components["schemas"]["MetadataCreate"];
+            /** @description The row's configuration. */
+            spec: components["schemas"]["PoolSpec"];
+        };
         PoolList: {
             /**
              * Format: uri
@@ -5816,6 +6131,18 @@ export interface components {
             readonly $schema?: string;
             /** @description Identity and provenance: id, name, owner, labels. */
             metadata: components["schemas"]["Metadata"];
+            /** @description The row's configuration. */
+            spec: components["schemas"]["PricingSpec"];
+        };
+        PricingCreate: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Pricing.json
+             */
+            readonly $schema?: string;
+            /** @description Identity and provenance: id, name, owner, labels. */
+            metadata: components["schemas"]["MetadataCreate"];
             /** @description The row's configuration. */
             spec: components["schemas"]["PricingSpec"];
         };
@@ -5890,6 +6217,18 @@ export interface components {
             /** @description The row's configuration. */
             spec: components["schemas"]["ProjectSpec"];
         };
+        ProjectCreate: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Project.json
+             */
+            readonly $schema?: string;
+            /** @description Identity and provenance: id, name, owner, labels. */
+            metadata: components["schemas"]["MetadataCreate"];
+            /** @description The row's configuration. */
+            spec: components["schemas"]["ProjectSpec"];
+        };
         ProjectList: {
             /**
              * Format: uri
@@ -5920,6 +6259,18 @@ export interface components {
             readonly $schema?: string;
             /** @description Identity and provenance: id, name, owner, labels. */
             metadata: components["schemas"]["Metadata"];
+            /** @description The row's configuration. */
+            spec: components["schemas"]["ProviderSpec"];
+        };
+        ProviderCreate: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Provider.json
+             */
+            readonly $schema?: string;
+            /** @description Identity and provenance: id, name, owner, labels. */
+            metadata: components["schemas"]["MetadataCreate"];
             /** @description The row's configuration. */
             spec: components["schemas"]["ProviderSpec"];
         };
@@ -6015,6 +6366,18 @@ export interface components {
             readonly $schema?: string;
             /** @description Identity and provenance: id, name, owner, labels. */
             metadata: components["schemas"]["Metadata"];
+            /** @description The row's configuration. */
+            spec: components["schemas"]["RateLimitSpec"];
+        };
+        RateLimitCreate: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/RateLimit.json
+             */
+            readonly $schema?: string;
+            /** @description Identity and provenance: id, name, owner, labels. */
+            metadata: components["schemas"]["MetadataCreate"];
             /** @description The row's configuration. */
             spec: components["schemas"]["RateLimitSpec"];
         };
@@ -6227,6 +6590,18 @@ export interface components {
             /** @description The row's configuration. */
             spec: components["schemas"]["RoleBindingSpec"];
         };
+        RoleBindingCreate: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/RoleBinding.json
+             */
+            readonly $schema?: string;
+            /** @description Identity and provenance: id, name, owner, labels. */
+            metadata: components["schemas"]["MetadataCreate"];
+            /** @description The row's configuration. */
+            spec: components["schemas"]["RoleBindingSpec"];
+        };
         RoleBindingList: {
             /**
              * Format: uri
@@ -6262,6 +6637,18 @@ export interface components {
             kind: "user" | "group" | "serviceaccount";
             /** @description Group name, local or from the identity provider (such as system:authenticated). Only for kind group. */
             name?: string;
+        };
+        RoleCreate: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Role.json
+             */
+            readonly $schema?: string;
+            /** @description Identity and provenance: id, name, owner, labels. */
+            metadata: components["schemas"]["MetadataCreate"];
+            /** @description The row's configuration. */
+            spec: components["schemas"]["RoleSpec"];
         };
         RoleList: {
             /**
@@ -6358,6 +6745,18 @@ export interface components {
             readonly $schema?: string;
             /** @description Identity and provenance: id, name, owner, labels. */
             metadata: components["schemas"]["Metadata"];
+            /** @description The row's configuration. */
+            spec: components["schemas"]["ServiceAccountSpec"];
+        };
+        ServiceAccountCreate: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/ServiceAccount.json
+             */
+            readonly $schema?: string;
+            /** @description Identity and provenance: id, name, owner, labels. */
+            metadata: components["schemas"]["MetadataCreate"];
             /** @description The row's configuration. */
             spec: components["schemas"]["ServiceAccountSpec"];
         };
@@ -6564,6 +6963,18 @@ export interface components {
             readonly $schema?: string;
             /** @description Identity and provenance: id, name, owner, labels. */
             metadata: components["schemas"]["Metadata"];
+            /** @description The row's configuration. */
+            spec: components["schemas"]["TeamSpec"];
+        };
+        TeamCreate: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Team.json
+             */
+            readonly $schema?: string;
+            /** @description Identity and provenance: id, name, owner, labels. */
+            metadata: components["schemas"]["MetadataCreate"];
             /** @description The row's configuration. */
             spec: components["schemas"]["TeamSpec"];
         };
@@ -6872,6 +7283,46 @@ export interface components {
             /** @description Slug of the referencing row. */
             name: string;
         };
+        catalogPruneOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/catalogPruneOutputBody.json
+             */
+            readonly $schema?: string;
+            /** @description Whether this was a dry run, which deletes nothing. */
+            dryRun: boolean;
+            /** @description The traffic window the rows were judged by, as a Go duration. */
+            idle: string;
+            /**
+             * Format: int64
+             * @description Rows that stay detached; the next prune judges them again.
+             */
+            keptDetached: number;
+            /**
+             * Format: int64
+             * @description Rows deleted, or that a dry run would delete.
+             */
+            pruned: number;
+            /** @description Every detached catalog row with its decision. */
+            rows: components["schemas"]["Decision"][] | null;
+        };
+        catalogSyncOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/catalogSyncOutputBody.json
+             */
+            readonly $schema?: string;
+            /** @description Whether the check seeded a newer release. */
+            changed: boolean;
+            /** @description Catalog release the database is seeded from after it. */
+            current: string;
+            /** @description Catalog release the database was seeded from before the check. */
+            previous: string;
+            /** @description What the prune the check ran did: after a seed, or with no seed, on rows earlier releases detached. Absent when none ran: the prune is off, no row is detached, usage could not answer yet, or it failed. */
+            prune?: components["schemas"]["CatalogPrune"];
+        };
         conflictBody: {
             /**
              * Format: uri
@@ -7077,6 +7528,18 @@ export interface components {
             orgId: string;
             /** @description The organization's display name, when the host sends one. */
             orgName?: string;
+        };
+        duplicatePolicyBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/duplicatePolicyBody.json
+             */
+            readonly $schema?: string;
+            /** @description Display name of the copy; its slug derives from it. Omitted: the source's display name (or slug) followed by " copy". */
+            displayName?: string;
+            /** @description Owner of the copy, as on POST /policies. Omitted: the caller's own user, or the system for the admin token. */
+            owner?: components["schemas"]["Owner"];
         };
         graphBinding: {
             /** @description Wire shape relay speaks to that host for the model. */
@@ -7467,6 +7930,12 @@ export interface components {
             hosts: components["schemas"]["PolicyHostRow"][] | null;
             /** @description The policy. */
             policy: components["schemas"]["PolicyRef"];
+        };
+        policyInUseBody: {
+            /** @description With policy_in_use: the accounts whose policy the caller may not set. */
+            blockedBy?: components["schemas"]["PolicyEditBlockers"];
+            /** @description The error. code policy_in_use: the edit reaches accounts whose policy the caller may not set. Without it, a role, governance setting or scope rule refused the update. */
+            error: components["schemas"]["APIErrorBody"];
         };
         policyModelsOutBody: {
             /**
@@ -8126,7 +8595,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["Account"];
+                "application/json": components["schemas"]["AccountCreate"];
             };
         };
         responses: {
@@ -9653,6 +10122,8 @@ export interface operations {
                 name?: string;
                 /** @description Match owner exactly. */
                 owner?: string;
+                /** @description Match any of the given owner_id values. */
+                owner_id?: string[];
                 /** @description Match period exactly. */
                 period?: "day" | "week" | "month";
                 /** @description Match mode exactly. */
@@ -9740,7 +10211,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["Budget"];
+                "application/json": components["schemas"]["BudgetCreate"];
             };
         };
         responses: {
@@ -9861,13 +10332,13 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it; with the code policy_in_use, the edit reaches accounts whose policy the caller may not set. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["APIError"];
+                    "application/json": components["schemas"]["policyInUseBody"];
                 };
             };
             /** @description No such row, or one the caller may not see. */
@@ -10230,6 +10701,85 @@ export interface operations {
             };
         };
     };
+    catalog_prune: {
+        parameters: {
+            query?: {
+                /** @description true (the default) only decides; false deletes the rows decided prune. */
+                dryRun?: boolean;
+                /** @description How long a model or host binding must have served no request, as a Go duration or a day count ("30d"). Empty uses RELAY_CATALOG_PRUNE_IDLE. */
+                idle?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["catalogPruneOutputBody"];
+                };
+            };
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description No valid session cookie or admin bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The request does not match the schema; error.details lists each failing field. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The server failed; error.message carries the cause. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description A backend the operation needs is not configured or not reachable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
     catalog_reachable: {
         parameters: {
             query: {
@@ -10372,6 +10922,80 @@ export interface operations {
             };
             /** @description The server failed; error.message carries the cause. */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    catalog_sync: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["catalogSyncOutputBody"];
+                };
+            };
+            /** @description No valid session cookie or admin bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The request conflicts with the stored state; error.code says how. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The server failed; error.message carries the cause. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description A backend the operation needs is not configured or not reachable. */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -10616,7 +11240,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["Group"];
+                "application/json": components["schemas"]["GroupCreate"];
             };
         };
         responses: {
@@ -11161,7 +11785,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["Binding"];
+                "application/json": components["schemas"]["BindingCreate"];
             };
         };
         responses: {
@@ -11477,6 +12101,10 @@ export interface operations {
             query?: {
                 /** @description Match name exactly. */
                 name?: string;
+                /** @description Match owner exactly. */
+                owner?: string;
+                /** @description Match any of the given owner_id values. */
+                owner_id?: string[];
                 /** @description Match enabled (true/false). */
                 enabled?: boolean;
                 /** @description Match any of the given host_id values. */
@@ -11570,7 +12198,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["HostKey"];
+                "application/json": components["schemas"]["HostKeyCreate"];
             };
         };
         responses: {
@@ -12304,7 +12932,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["Host"];
+                "application/json": components["schemas"]["HostCreate"];
             };
         };
         responses: {
@@ -12915,6 +13543,10 @@ export interface operations {
             query?: {
                 /** @description Match name exactly. */
                 name?: string;
+                /** @description Match owner exactly. */
+                owner?: string;
+                /** @description Match any of the given owner_id values. */
+                owner_id?: string[];
                 /** @description Match enabled (true/false). */
                 enabled?: boolean;
                 /** @description Match revoked (true/false). */
@@ -14149,7 +14781,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["Model"];
+                "application/json": components["schemas"]["ModelCreate"];
             };
         };
         responses: {
@@ -15037,6 +15669,8 @@ export interface operations {
                 enabled?: boolean;
                 /** @description Match owner exactly. */
                 owner?: string;
+                /** @description Match any of the given owner_id values. */
+                owner_id?: string[];
                 /** @description Match any of the given pool_id values. */
                 pool_id?: string[];
                 /** @description Match any of the given rate_limit_id values. */
@@ -15126,7 +15760,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["Policy"];
+                "application/json": components["schemas"]["PolicyCreate"];
             };
         };
         responses: {
@@ -15247,13 +15881,13 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it; with the code policy_in_use, the edit reaches accounts whose policy the caller may not set. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["APIError"];
+                    "application/json": components["schemas"]["policyInUseBody"];
                 };
             };
             /** @description No such row, or one the caller may not see. */
@@ -15519,6 +16153,87 @@ export interface operations {
             };
             /** @description No valid session cookie or admin bearer token. */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description No such row, or one the caller may not see. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The request does not match the schema; error.details lists each failing field. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The server failed; error.message carries the cause. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    duplicate_policy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Slug or id of the policy to copy. */
+                ref: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["duplicatePolicyBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Policy"];
+                };
+            };
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description No valid session cookie or admin bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -15882,7 +16597,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PolicyBinding"];
+                "application/json": components["schemas"]["PolicyBindingCreate"];
             };
         };
         responses: {
@@ -16200,6 +16915,8 @@ export interface operations {
                 name?: string;
                 /** @description Match owner exactly. */
                 owner?: string;
+                /** @description Match any of the given owner_id values. */
+                owner_id?: string[];
                 /** @description Match any of the given host_id values. */
                 host_id?: string[];
                 /** @description Match any of the given credential_id values. */
@@ -16291,7 +17008,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["Pool"];
+                "application/json": components["schemas"]["PoolCreate"];
             };
         };
         responses: {
@@ -16868,7 +17585,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["Pricing"];
+                "application/json": components["schemas"]["PricingCreate"];
             };
         };
         responses: {
@@ -17370,7 +18087,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["Project"];
+                "application/json": components["schemas"]["ProjectCreate"];
             };
         };
         responses: {
@@ -17878,7 +18595,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["Provider"];
+                "application/json": components["schemas"]["ProviderCreate"];
             };
         };
         responses: {
@@ -18312,6 +19029,10 @@ export interface operations {
             query?: {
                 /** @description Match name exactly. */
                 name?: string;
+                /** @description Match owner exactly. */
+                owner?: string;
+                /** @description Match any of the given owner_id values. */
+                owner_id?: string[];
                 /** @description Match enabled (true/false). */
                 enabled?: boolean;
                 /** @description created lower bound (RFC3339). */
@@ -18397,7 +19118,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["RateLimit"];
+                "application/json": components["schemas"]["RateLimitCreate"];
             };
         };
         responses: {
@@ -18518,13 +19239,13 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it; with the code policy_in_use, the edit reaches accounts whose policy the caller may not set. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["APIError"];
+                    "application/json": components["schemas"]["policyInUseBody"];
                 };
             };
             /** @description No such row, or one the caller may not see. */
@@ -18952,7 +19673,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["RoleBinding"];
+                "application/json": components["schemas"]["RoleBindingCreate"];
             };
         };
         responses: {
@@ -19334,7 +20055,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["Role"];
+                "application/json": components["schemas"]["RoleCreate"];
             };
         };
         responses: {
@@ -20374,6 +21095,10 @@ export interface operations {
             query?: {
                 /** @description Match name exactly. */
                 name?: string;
+                /** @description Match owner exactly. */
+                owner?: string;
+                /** @description Match any of the given owner_id values. */
+                owner_id?: string[];
                 /** @description Match enabled (true/false). */
                 enabled?: boolean;
                 /** @description Match any of the given project_id values. */
@@ -20442,7 +21167,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ServiceAccount"];
+                "application/json": components["schemas"]["ServiceAccountCreate"];
             };
         };
         responses: {
@@ -22730,7 +23455,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["Team"];
+                "application/json": components["schemas"]["TeamCreate"];
             };
         };
         responses: {

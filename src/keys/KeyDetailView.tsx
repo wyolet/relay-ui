@@ -1,11 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import {
-	Activity,
-	Building2,
-	ChevronLeft,
-	KeyRound,
-	RotateCw,
-} from "lucide-react";
+import { Building2, ChevronLeft, KeyRound, RotateCw } from "lucide-react";
 import { useState } from "react";
 import { AccountHolderLink } from "@/accounts/AccountHolderLink";
 import { EffectiveLimits } from "@/accounts/EffectiveLimits";
@@ -24,9 +18,10 @@ import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { DetailCard, DetailRow } from "@/shared/DetailCard";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
 import { DetailPageHeader } from "@/shared/DetailPageHeader";
+import { LastUsed } from "@/shared/LastUsed";
 import { StatusBadge } from "@/shared/StatusBadge";
 import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
-import { ResourceUsage } from "@/usage/ResourceUsage";
+import { WeekUsage } from "@/usage/WeekUsage";
 
 export function KeyDetailView({ name }: { name: string }) {
 	const { data: rk } = useKey(name);
@@ -86,7 +81,7 @@ export function KeyDetailView({ name }: { name: string }) {
 			>
 				<DetailHeaderActions
 					enabled={enabled}
-					onToggle={() => void setEnabled(rk, !enabled)}
+					onToggle={() => setEnabled(rk, !enabled)}
 					toggling={isToggling}
 					onDelete={() =>
 						del.request({
@@ -107,7 +102,7 @@ export function KeyDetailView({ name }: { name: string }) {
 						size="lg"
 						onClick={() => setRotating(true)}
 					>
-						<RotateCw className="size-3.5" />
+						<RotateCw data-icon="inline-start" className="size-3.5" />
 						Rotate
 					</Button>
 				</DetailHeaderActions>
@@ -146,6 +141,9 @@ export function KeyDetailView({ name }: { name: string }) {
 						) : (
 							<span className="text-muted-foreground">Never</span>
 						)}
+					</DetailRow>
+					<DetailRow label="Last used">
+						<LastUsed at={rk.status?.lastUsedAt} />
 					</DetailRow>
 					<DetailRow label="Rotation grace">
 						{rk.spec.graceUntil ? (
@@ -187,9 +185,13 @@ export function KeyDetailView({ name }: { name: string }) {
 			</DetailCard>
 
 			{rk.spec.keyHash && (
-				<DetailCard title="Usage" icon={Activity}>
-					<ResourceUsage scope="relay_key_hash" id={rk.spec.keyHash} />
-				</DetailCard>
+				<WeekUsage
+					scope={{
+						filter: { relay_key_hash: [rk.spec.keyHash] },
+						splitBy: "model_id",
+					}}
+					emptyBody="Requests made with this key show up here: spend, latency, errors and the models they called."
+				/>
 			)}
 
 			{rotating && (

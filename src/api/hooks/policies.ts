@@ -244,6 +244,23 @@ export function useUpdatePolicy() {
 	});
 }
 
+/** Copies a policy (same spec and links, bound to nothing) under a new slug. */
+export function useDuplicatePolicy() {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: async (ref: string): Promise<Policy> =>
+			unwrap(
+				await apiClient.POST("/policies/{ref}/duplicate", {
+					params: { path: { ref } },
+					body: {},
+				}),
+			),
+		onSuccess: () => {
+			void queryClient.invalidateQueries({ queryKey: ["policies"] });
+		},
+	});
+}
+
 /** Resolves to the links the delete took from rows that stay (empty on 204). */
 export function useDeletePolicy() {
 	const queryClient = useQueryClient();

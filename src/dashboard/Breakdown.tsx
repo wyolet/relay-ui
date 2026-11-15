@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Suspense, useState } from "react";
+import { Facts } from "@/shared/Facts";
 import { Section } from "@/shared/Section";
 import { Segmented } from "@/shared/Segmented";
 import { ShareBar } from "@/shared/ShareBar";
@@ -39,7 +40,7 @@ export function Breakdown() {
 }
 
 function BreakdownTable({ groupBy }: { groupBy: BreakdownDimension }) {
-	const { rows, more, total } = useBreakdown(groupBy);
+	const { rows, more, totals } = useBreakdown(groupBy);
 	const { period, vs } = useDashboardWindow();
 	if (rows.length === 0) {
 		return <p className="text-label text-ink-2">No traffic {period}.</p>;
@@ -74,7 +75,7 @@ function BreakdownTable({ groupBy }: { groupBy: BreakdownDimension }) {
 				</div>
 			))}
 			<div className="flex items-center justify-between pt-2.5 text-meta text-ink-3">
-				<span>{total}</span>
+				<Facts items={totals} />
 				<Link
 					to="/usage"
 					search={{ group_by: groupBy }}

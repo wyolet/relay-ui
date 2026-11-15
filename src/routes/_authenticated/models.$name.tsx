@@ -1,12 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ChevronLeft } from "lucide-react";
 import { Suspense } from "react";
-import { z } from "zod";
-import { bindingsListQueryOptions } from "@/api/hooks/bindings";
 import { governanceQueryOptions } from "@/api/hooks/governance";
-import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
-import { keysListQueryOptions } from "@/api/hooks/keys";
 import {
 	modelDetailQueryOptions,
 	modelHostsQueryOptions,
@@ -14,101 +10,86 @@ import {
 	modelsListQueryOptions,
 	useDeleteModel,
 	useModel,
-	useUpdateModel,
+	useSetModelEnabled,
 } from "@/api/hooks/models";
-import { policiesListQueryOptions } from "@/api/hooks/policies";
 import { providersListQueryOptions } from "@/api/hooks/providers";
-import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
+import { usageNow } from "@/api/hooks/usage";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
-import { type ModelDetailTab, ModelDetailView } from "@/models/ModelDetailView";
+import { ModelDetailView } from "@/models/ModelDetailView";
+import { modelWeekQueries } from "@/models/modelWeekQueries";
+import { toastModelEnabled } from "@/models/useModelLineActions";
+import {
+	pricingGraphQuery,
+	pricingsMatrixListQuery,
+} from "@/pricing/usePricingMatrix";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { PageLoader } from "@/shared/Spinner";
-import { toast } from "@/shared/Toast";
 import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 
-const searchSchema = z.object({
-	tab: z
-		.enum([
-			"overview",
-			"hosts",
-			"policies",
-			"limits",
-			"pricing",
-			"usage",
-			"logs",
-		])
-		.optional()
-		.default("overview"),
-});
-
 export const Route = createFileRoute("/_authenticated/models/$name")({
-	validateSearch: searchSchema,
-	loader: ({ context, params }) => {
+	loader: async ({ context, params }) => {
 		const { queryClient } = context;
+		// The pricing matrix prices each host's line; it never gates the page.
+		void queryClient.prefetchQuery(pricingGraphQuery);
+		void queryClient.prefetchQuery(pricingsMatrixListQuery);
 		void queryClient.prefetchQuery(modelsListQueryOptions);
-		void queryClient.prefetchQuery(hostKeysListQueryOptions);
-		void queryClient.prefetchQuery(policiesListQueryOptions);
-		void queryClient.prefetchQuery(rateLimitsListQueryOptions);
-		void queryClient.prefetchQuery(keysListQueryOptions);
-		void queryClient.prefetchQuery(bindingsListQueryOptions);
-		return Promise.all([
+		void queryClient.prefetchQuery(hostsListQueryOptions);
+		const [model] = await Promise.all([
 			queryClient.ensureQueryData(modelDetailQueryOptions(params.name)),
 			queryClient.ensureQueryData(modelHostsQueryOptions(params.name)),
 			queryClient.ensureQueryData(modelPoliciesQueryOptions(params.name)),
 			queryClient.ensureQueryData(providersListQueryOptions),
-			queryClient.ensureQueryData(hostsListQueryOptions),
 			queryClient.ensureQueryData(governanceQueryOptions("model")),
 		]);
+		// Usage filters by id, known only once the model has loaded.
+		const id = model.metadata.id;
+		if (id) {
+			const week = modelWeekQueries(id, usageNow());
+			void queryClient.prefetchQuery(week.totals);
+			void queryClient.prefetchQuery(week.series);
+			void queryClient.prefetchQuery(week.byHost);
+		}
 	},
 	component: ModelDetailPage,
 });
 
 function ModelDetailInner() {
 	const { name } = Route.useParams();
-	const { tab } = Route.useSearch();
 	const navigate = useNavigate({ from: "/models/$name" });
 	const { data: model } = useModel(name);
-	const updateModel = useUpdateModel();
+	const setEnabled = useSetModelEnabled();
 	const toastSaveError = useSaveErrorToast();
 	const del = useConfirmedDelete(useDeleteModel(), {
 		noun: "model",
 		onDeleted: () => void navigate({ to: "/models" }),
 	});
 
-	async function handleToggleEnabled() {
+	function handleToggleEnabled() {
+		if (setEnabled.isPending) return;
 		const next = !(model.spec.enabled !== false);
-		try {
-			await updateModel.mutateAsync({
-				id: model.metadata.id ?? "",
-				body: {
-					metadata: model.metadata,
-					spec: { ...model.spec, enabled: next },
-				},
-			});
-			toast("success", next ? "Model enabled." : "Model disabled.");
-		} catch (err) {
-			toastSaveError(err, "Failed to toggle model.");
-		}
+		setEnabled.mutate(
+			{ model, enabled: next },
+			{
+				onSuccess: () => toastModelEnabled(model, next),
+				onError: (err) => toastSaveError(err, "Failed to toggle model."),
+			},
+		);
 	}
 
 	return (
 		<div className="flex flex-col gap-4">
 			<Link
 				to="/models"
-				className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+				className="inline-flex w-fit items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
 			>
 				<ChevronLeft className="w-3.5 h-3.5" />
 				Models
 			</Link>
 			<ModelDetailView
 				model={model}
-				tab={tab}
-				onTabChange={(next: ModelDetailTab) =>
-					void navigate({ search: (prev) => ({ ...prev, tab: next }) })
-				}
-				onToggleEnabled={() => void handleToggleEnabled()}
-				toggling={updateModel.isPending}
+				onToggleEnabled={handleToggleEnabled}
+				toggling={setEnabled.isPending}
 				onDelete={() =>
 					del.request({
 						id: model.metadata.id ?? "",

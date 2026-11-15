@@ -4,7 +4,9 @@ import {
 	activeCapabilities,
 	deprecationNote,
 	familyLabel,
+	listedSnapshots,
 	sortSnapshots,
+	specFields,
 } from "./modelDetail";
 
 function model(spec: Partial<Model["spec"]> = {}): Model {
@@ -30,9 +32,9 @@ describe("deprecationNote", () => {
 					},
 				}),
 			),
-		).toBe("deprecated · sunsets 2026-06-01 · successor → m-2");
+		).toBe("Deprecated, sunsets on 2026-06-01. Replaced by m-2.");
 		expect(deprecationNote(model({ deprecationDate: "2026-01-01" }))).toBe(
-			"deprecated 2026-01-01",
+			"Deprecated since 2026-01-01.",
 		);
 	});
 });
@@ -65,5 +67,55 @@ describe("sortSnapshots", () => {
 			{ name: "new", releasedAt: "2026-01-01" },
 		]);
 		expect(sorted.map((s) => s.name)).toEqual(["new", "old", "a", "b"]);
+	});
+});
+
+describe("specFields", () => {
+	it("keeps the filled-in facts in reading order", () => {
+		const fields = specFields(
+			model({
+				contextWindowTotal: 200_000,
+				maxOutputTokens: 64_000,
+				modalities: { input: ["text", "image"], output: [] },
+				license: " ",
+				releaseDate: "2026-09-10",
+				pointer: "m-20260910",
+			}),
+		);
+		expect(fields).toEqual([
+			{ label: "Context", value: "200k tokens" },
+			{ label: "Max output", value: "64k tokens" },
+			{ label: "Accepts", value: "text, image" },
+			{ label: "Released", value: "2026-09-10" },
+			{ label: "Points to", value: "m-20260910" },
+		]);
+	});
+	it("names the product line, else the family", () => {
+		const spec = { family: "claude", version: "4.5", pointer: "m" };
+		expect(specFields(model(spec))).toEqual([
+			{ label: "Family", value: "claude 4.5" },
+		]);
+		expect(specFields(model({ ...spec, productLine: "opus" }))).toEqual([
+			{ label: "Line", value: "opus" },
+		]);
+	});
+	it("leaves out a pointer to the model itself", () => {
+		expect(specFields(model({ pointer: "m" }))).toEqual([]);
+	});
+});
+
+describe("listedSnapshots", () => {
+	it("skips a lone snapshot the model already points to", () => {
+		const one = [{ name: "m-1" }];
+		expect(listedSnapshots(model({ pointer: "m-1", snapshots: one }))).toEqual(
+			[],
+		);
+		expect(listedSnapshots(model({ pointer: "m", snapshots: one }))).toEqual(
+			one,
+		);
+		const two = [{ name: "m-1" }, { name: "m-2" }];
+		expect(listedSnapshots(model({ pointer: "m-1", snapshots: two }))).toEqual(
+			two,
+		);
 	});
 });

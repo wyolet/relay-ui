@@ -52,16 +52,6 @@ export function groupModelsByFamily(models: readonly Model[]): FamilyGroup[] {
 	);
 }
 
-/** Distinct product lines across `models`, alphabetical. */
-export function distinctProductLines(models: readonly Model[]): string[] {
-	const lines = new Set<string>();
-	for (const m of models) {
-		const line = modelProductLine(m);
-		if (line) lines.add(line);
-	}
-	return [...lines].sort((a, b) => a.localeCompare(b));
-}
-
 function groupBy(
 	models: readonly Model[],
 	keyOf: (m: Model) => string,
