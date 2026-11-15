@@ -159,7 +159,7 @@ export function KeyRow({
 			</span>
 			<SwitchCell
 				checked={enabled}
-				onChange={(next) => void setEnabled(rk, next)}
+				onChange={(next) => setEnabled(rk, next)}
 				label={`${enabled ? "Disable" : "Enable"} ${label}`}
 			/>
 			<span className="flex justify-end">

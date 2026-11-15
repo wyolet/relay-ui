@@ -80,7 +80,7 @@ export function KeyDetailView({ name }: { name: string }) {
 			>
 				<DetailHeaderActions
 					enabled={enabled}
-					onToggle={() => void setEnabled(rk, !enabled)}
+					onToggle={() => setEnabled(rk, !enabled)}
 					toggling={isToggling}
 					onDelete={() =>
 						del.request({
