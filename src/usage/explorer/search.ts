@@ -4,10 +4,15 @@ import {
 	resolveWindow,
 	USAGE_GROUP_BY,
 	USAGE_RANGES,
+	type UsageRange,
 	type UsageSummaryFilter,
 } from "@/api/hooks/usage";
 import { STATUS_CLASS_VALUES } from "@/logs/logFilterConfig";
-import { dimensionFilter, FILTER_DIMENSIONS } from "@/usage/filters/dimensions";
+import {
+	dimensionFilter,
+	FILTER_DIMENSIONS,
+	type FilterDimension,
+} from "@/usage/filters/dimensions";
 
 export const LENSES = [
 	"traffic",
@@ -63,4 +68,19 @@ export function clearFilters(s: ExplorerSearch): ExplorerSearch {
 	const cleared: ExplorerSearch = { ...s, status_class: "" };
 	for (const d of FILTER_DIMENSIONS) cleared[d] = [];
 	return cleared;
+}
+
+/** The logs window that covers a usage range. */
+export const LOGS_SINCE: Record<UsageRange, "24h" | "7d" | "30d"> = {
+	today: "24h",
+	week: "7d",
+	month: "30d",
+	custom: "30d",
+};
+
+/** The Logs search showing the requests behind this view. */
+export function logsSearch(s: ExplorerSearch) {
+	const scope: Partial<Record<FilterDimension, string[]>> = {};
+	for (const d of FILTER_DIMENSIONS) if (s[d].length) scope[d] = s[d];
+	return { ...scope, since: LOGS_SINCE[s.range], status_class: s.status_class };
 }

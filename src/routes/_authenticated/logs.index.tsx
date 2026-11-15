@@ -1,8 +1,10 @@
 import {
 	createFileRoute,
+	Link,
 	stripSearchParams,
 	useNavigate,
 } from "@tanstack/react-router";
+import { ChevronLeft } from "lucide-react";
 import { Suspense } from "react";
 import { z } from "zod";
 import { type LogsFilter, logsInfiniteQueryOptions } from "@/api/hooks/logs";
@@ -96,6 +98,13 @@ function LogsPage() {
 		<div className="flex flex-col gap-6">
 			<div className="flex items-start justify-between gap-4">
 				<div>
+					<Link
+						to="/usage"
+						className="mb-2 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+					>
+						<ChevronLeft className="w-3.5 h-3.5" />
+						Usage
+					</Link>
 					<h1 className="text-2xl font-bold text-foreground">Logs</h1>
 					<p className="mt-1 text-label text-ink-2">
 						Requests through the relay, newest first. Expand a row for its

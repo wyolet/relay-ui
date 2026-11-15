@@ -10,7 +10,7 @@ export function DashboardHeader({
 }) {
 	return (
 		<header className="flex flex-wrap items-center justify-between gap-x-5 gap-y-3">
-			<h1 className="font-display text-section text-foreground">Overview</h1>
+			<h1 className="font-display text-section text-foreground">Dashboard</h1>
 			{withRange && <RangePicker />}
 		</header>
 	);
