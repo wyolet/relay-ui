@@ -1,8 +1,16 @@
 import { Link } from "@tanstack/react-router";
+import {
+	Bot,
+	Boxes,
+	type LucideIcon,
+	UserCheck,
+	UserRound,
+	Users,
+} from "lucide-react";
 import type { ReactNode } from "react";
 import { AccountHolderLink } from "@/accounts/AccountHolderLink";
 import { AccountScopeLink } from "@/accounts/AccountScopeLink";
-import { ACCOUNT_KIND_LABELS } from "@/accounts/accountView";
+import { ACCOUNT_KIND_LABELS, type AccountKind } from "@/accounts/accountView";
 import { GroupedByRelayBadge } from "@/accounts/GroupedByRelayBadge";
 import type { MyAccountRow } from "@/accounts/myAccountRows";
 import { SharedByBadge } from "@/accounts/SharedByBadge";
@@ -23,28 +31,21 @@ import { ShortId } from "@/shared/ShortId";
 import { fmtMoneyCompact } from "@/usage/format";
 
 // Each template's track minimums plus gaps come to its table's min-w.
-const PROVIDER_COLS =
-	"grid-cols-[minmax(14rem,2.4fr)_minmax(8rem,1fr)_minmax(4rem,0.5fr)_minmax(4rem,0.6fr)_minmax(4.5rem,0.6fr)_2rem]";
-export const PROVIDER_MIN_W = "min-w-[41rem]";
-const RELAY_COLS =
-	"grid-cols-[minmax(14rem,2fr)_minmax(6rem,0.8fr)_minmax(10rem,1.5fr)_minmax(4rem,0.6fr)_minmax(4.5rem,0.6fr)_2rem]";
-export const RELAY_MIN_W = "min-w-[45rem]";
+const ACCOUNT_COLS =
+	"grid-cols-[minmax(14rem,2.2fr)_minmax(5.5rem,0.7fr)_minmax(9rem,1.3fr)_minmax(3.5rem,0.4fr)_minmax(4rem,0.6fr)_minmax(4.5rem,0.6fr)_2rem]";
+export const ACCOUNT_MIN_W = "min-w-[47rem]";
 const MINE_COLS =
 	"grid-cols-[minmax(12rem,1.6fr)_minmax(6rem,0.8fr)_minmax(8rem,1.2fr)_minmax(8rem,1.2fr)_minmax(12rem,1.6fr)]";
 export const MINE_MIN_W = "min-w-[49rem]";
 
-function UsageHeads({ verb }: { verb: string }) {
-	return (
-		<>
-			<span className="text-right" title={`Requests ${verb}, last 7 days`}>
-				Req 7d
-			</span>
-			<span className="text-right" title={`Spend ${verb}, last 7 days`}>
-				Spend 7d
-			</span>
-		</>
-	);
-}
+/** The mark before a relay account's name, where a provider's logo sits. */
+const KIND_ICONS: Record<Exclude<AccountKind, "provider">, LucideIcon> = {
+	team: Users,
+	project: Boxes,
+	personal: UserRound,
+	member: UserCheck,
+	service: Bot,
+};
 
 function UsageCells({ usage }: { usage: AccountRow["usage"] }) {
 	return (
@@ -110,40 +111,74 @@ function AccountMenu({
 	);
 }
 
-export function ProviderAccountColumns() {
+export function AccountColumns() {
 	return (
-		<LineColumns cols={PROVIDER_COLS}>
+		<LineColumns cols={ACCOUNT_COLS}>
 			<span>Account</span>
-			<span>Organization</span>
+			<span>Kind</span>
+			<span>Belongs to</span>
 			<span className="text-right">Keys</span>
-			<UsageHeads verb="drawn from it" />
+			<span
+				className="text-right"
+				title="Last 7 days: drawn from a provider account, charged to a relay one"
+			>
+				Req 7d
+			</span>
+			<span
+				className="text-right"
+				title="Last 7 days: drawn from a provider account, charged to a relay one"
+			>
+				Spend 7d
+			</span>
 			<span />
 		</LineColumns>
 	);
 }
 
-/** A provider account, led by its provider's logo; traffic is what it served. */
-export function ProviderAccountLine({
+/** One account: a provider's leads with its logo and counts the keys it holds;
+ * a relay one names its holder. */
+export function AccountLine({
 	row,
 	onDelete,
 }: {
 	row: AccountRow;
 	onDelete: () => void;
 }) {
-	const { account, provider } = row;
+	const { account, provider, holder } = row;
+	const { kind, orgId } = account.spec;
 	return (
-		<LineRow cols={PROVIDER_COLS} dimmed={account.spec.closed}>
+		<LineRow cols={ACCOUNT_COLS} dimmed={account.spec.closed}>
 			<span className="flex min-w-0 items-center gap-2.5">
-				<CatalogIcon
-					path={provider?.host?.spec.icon?.path}
-					label={provider?.hostLabel ?? ""}
-					size={24}
-					titleTooltip
-				/>
+				{kind === "provider" ? (
+					<CatalogIcon
+						path={provider?.host?.spec.icon?.path}
+						label={provider?.hostLabel ?? ""}
+						size={24}
+						titleTooltip
+					/>
+				) : (
+					<KindMark kind={kind} />
+				)}
 				<AccountName row={row} />
 			</span>
-			<span className="truncate font-mono text-foot">
-				{account.spec.orgId ? <ShortId value={account.spec.orgId} /> : <Dash />}
+			<span className="truncate">{ACCOUNT_KIND_LABELS[kind]}</span>
+			<span className="min-w-0 truncate">
+				{kind === "provider" ? (
+					orgId ? (
+						<span
+							className="font-mono text-foot"
+							title="Organization at the provider"
+						>
+							<ShortId value={orgId} />
+						</span>
+					) : (
+						<Dash />
+					)
+				) : holder ? (
+					<AccountHolderLink holder={holder} />
+				) : (
+					<Dash />
+				)}
 			</span>
 			<NumberCell
 				value={provider?.keyCount ? String(provider.keyCount) : null}
@@ -154,37 +189,12 @@ export function ProviderAccountLine({
 	);
 }
 
-export function RelayAccountColumns() {
+function KindMark({ kind }: { kind: Exclude<AccountKind, "provider"> }) {
+	const Icon = KIND_ICONS[kind];
 	return (
-		<LineColumns cols={RELAY_COLS}>
-			<span>Account</span>
-			<span>Kind</span>
-			<span>Holder</span>
-			<UsageHeads verb="charged to it" />
-			<span />
-		</LineColumns>
-	);
-}
-
-/** An account relay made for a holder; traffic is what ran in it. */
-export function RelayAccountLine({
-	row,
-	onDelete,
-}: {
-	row: AccountRow;
-	onDelete: () => void;
-}) {
-	const { account, holder } = row;
-	return (
-		<LineRow cols={RELAY_COLS} dimmed={account.spec.closed}>
-			<AccountName row={row} />
-			<span className="truncate">{ACCOUNT_KIND_LABELS[account.spec.kind]}</span>
-			<span className="min-w-0 truncate">
-				{holder ? <AccountHolderLink holder={holder} /> : <Dash />}
-			</span>
-			<UsageCells usage={row.usage} />
-			<AccountMenu row={row} onDelete={onDelete} />
-		</LineRow>
+		<span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-muted text-ink-3">
+			<Icon className="size-3.5" aria-hidden />
+		</span>
 	);
 }
 

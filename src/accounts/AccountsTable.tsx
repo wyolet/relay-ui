@@ -2,15 +2,12 @@ import { Link } from "@tanstack/react-router";
 import { Building2, KeyRound, Plus } from "lucide-react";
 import { type ReactNode, Suspense } from "react";
 import {
+	ACCOUNT_MIN_W,
+	AccountColumns,
+	AccountLine,
 	MINE_MIN_W,
 	MyAccountColumns,
 	MyAccountLine,
-	PROVIDER_MIN_W,
-	ProviderAccountColumns,
-	ProviderAccountLine,
-	RELAY_MIN_W,
-	RelayAccountColumns,
-	RelayAccountLine,
 } from "@/accounts/AccountLines";
 import { ACCOUNT_SIDE_HINTS } from "@/accounts/accountCopy";
 import {
@@ -23,7 +20,7 @@ import {
 	useMyAccountRows,
 } from "@/accounts/useAccountRows";
 import { type Account, useDeleteAccount } from "@/api/hooks/accounts";
-import { FilterBar } from "@/filters/FilterBar";
+import { FilterBar, type QuickFilter } from "@/filters/FilterBar";
 import {
 	toolbarActionClassName,
 	toolbarMainActionClassName,
@@ -32,49 +29,46 @@ import { displayLabel } from "@/lib/displayLabel";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { LineTable } from "@/shared/LineGrid";
 import { OwnerFilter } from "@/shared/OwnerFilter";
-import { Segmented, type SegmentedOption } from "@/shared/Segmented";
 import { PageLoader } from "@/shared/Spinner";
 import { TableEmpty } from "@/shared/TableEmpty";
 import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 
-const SIDES: SegmentedOption<AccountSide>[] = [
-	{ value: "provider", label: "Provider" },
-	{ value: "relay", label: "Relay" },
-];
+const SIDE_OPTIONS = [
+	{ value: "provider", label: "Provider", title: ACCOUNT_SIDE_HINTS.provider },
+	{ value: "relay", label: "Relay", title: ACCOUNT_SIDE_HINTS.relay },
+] as const;
 
 export function AccountsTable() {
-	const { filters, setFilters, setSide } = useAccountFilters();
+	const { filters, setFilters, setSides } = useAccountFilters();
 	const owner = useAccountOwnerFilter();
-	const provider = filters.side === "provider";
+	const sides: QuickFilter<AccountSide> = {
+		label: "Account side",
+		options: SIDE_OPTIONS,
+		selected: filters.sides,
+		onChange: setSides,
+	};
 
 	return (
 		<div>
-			<div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1">
-				<Segmented options={SIDES} value={filters.side} onChange={setSide} />
-				<p className="text-label text-ink-3">
-					{ACCOUNT_SIDE_HINTS[filters.side]}
-				</p>
-			</div>
 			<FilterBar
-				defs={ACCOUNT_FILTERS[filters.side]}
-				state={{ ...filters }}
+				defs={ACCOUNT_FILTERS}
+				quick={sides}
+				state={{ q: filters.q, kind: filters.kind, mine: filters.mine }}
 				onChange={setFilters}
 				extra={filters.mine ? undefined : <OwnerFilter filter={owner} />}
 				extraActive={filters.mine || owner.isDefault ? 0 : 1}
 				className="mb-3"
 				actions={
-					provider && (
-						<>
-							<Link to="/host-keys/new" className={toolbarMainActionClassName}>
-								<KeyRound data-icon="inline-start" className="w-3.5 h-3.5" />
-								Add key
-							</Link>
-							<Link to="/accounts/new" className={toolbarActionClassName}>
-								<Plus data-icon="inline-start" className="w-3.5 h-3.5" />
-								New provider account
-							</Link>
-						</>
-					)
+					<>
+						<Link to="/host-keys/new" className={toolbarMainActionClassName}>
+							<KeyRound data-icon="inline-start" className="w-3.5 h-3.5" />
+							Add key
+						</Link>
+						<Link to="/accounts/new" className={toolbarActionClassName}>
+							<Plus data-icon="inline-start" className="w-3.5 h-3.5" />
+							New provider account
+						</Link>
+					</>
 				}
 			/>
 
@@ -89,12 +83,6 @@ export function AccountsTable() {
 	);
 }
 
-const EMPTY: Record<AccountSide, string> = {
-	provider:
-		"No provider accounts yet. Add a key and relay groups it into one, or create the account first.",
-	relay: "No relay accounts yet.",
-};
-
 function AllAccountsList({
 	filters,
 	ownerMatches,
@@ -104,22 +92,20 @@ function AllAccountsList({
 }) {
 	const { rows, total } = useAccountRows({ ...filters, ownerMatches });
 	const del = useConfirmedDelete(useDeleteAccount(), { noun: "account" });
-	const provider = filters.side === "provider";
-	const Line = provider ? ProviderAccountLine : RelayAccountLine;
 
 	return (
 		<>
 			{rows.length === 0 ? (
 				<AccountsEmpty>
 					{total === 0
-						? EMPTY[filters.side]
+						? "No accounts yet. Add a key and relay groups it into a provider account."
 						: "No accounts match the current filter."}
 				</AccountsEmpty>
 			) : (
-				<LineTable minWidth={provider ? PROVIDER_MIN_W : RELAY_MIN_W}>
-					{provider ? <ProviderAccountColumns /> : <RelayAccountColumns />}
+				<LineTable minWidth={ACCOUNT_MIN_W}>
+					<AccountColumns />
 					{rows.map((row) => (
-						<Line
+						<AccountLine
 							key={row.account.metadata.id ?? row.account.metadata.name}
 							row={row}
 							onDelete={() =>

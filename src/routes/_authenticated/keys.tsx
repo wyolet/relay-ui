@@ -49,8 +49,11 @@ const searchSchema = z.object({
 	// /pricing and /models, `dir` the same one.
 	keys_by: z.enum(KEYS_SORT_KEYS).catch("usage").default("usage"),
 	dir: z.enum(["asc", "desc"]).catch("desc").default("desc"),
-	// The accounts tab's side, and its "Mine" filter (relay side only).
-	accounts: z.enum(["provider", "relay"]).catch("provider").default("provider"),
+	// The accounts tab's quick filter (none = both kinds) and its "Mine" filter.
+	accounts: z
+		.array(z.enum(["provider", "relay"]))
+		.catch([])
+		.default([]),
 	mine: z.boolean().catch(false).default(false),
 });
 
