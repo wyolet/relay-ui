@@ -1,5 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
-import { EMPTY_GRAPH, mockApi } from "./fixtures/mockApi";
+import { EMPTY_GRAPH, hostBinding, mockApi } from "./fixtures/mockApi";
 
 const host = (id: string, name: string, displayName: string) => ({
 	metadata: { id, name, displayName },
@@ -35,6 +35,11 @@ const MODELS = [
 		deprecation: { status: "deprecated" },
 	}),
 	model("gpt-6", "GPT 6", { family: "gpt", capabilities: { reasoning: true } }),
+	model("claude-sonnet-off", "Claude Sonnet Off", {
+		family: "claude",
+		productLine: "sonnet",
+		enabled: false,
+	}),
 ];
 
 const BINDINGS: Record<string, string[]> = {
@@ -42,7 +47,11 @@ const BINDINGS: Record<string, string[]> = {
 	"claude-fable-1": ["h-ant"],
 	"claude-old": ["h-ant"],
 	"gpt-6": ["h-oai"],
+	"claude-sonnet-off": ["h-ant"],
 };
+
+/** Disabled models: bound, but absent from the graph like the relay's. */
+const DISABLED = new Set(["claude-sonnet-off"]);
 
 /** Anthropic serves the Claude models (Opus priced), OpenAI serves GPT 6;
  * with `traffic`, Opus took requests on Anthropic last week. */
@@ -52,13 +61,18 @@ async function catalog(page: Page, traffic: boolean) {
 		roles: ["admin"],
 		hosts: [host("h-ant", "anthropic", "Anthropic"), host("h-oai", "openai", "OpenAI")],
 		models: MODELS,
+		hostBindings: Object.entries(BINDINGS).flatMap(([modelId, hosts]) =>
+			hosts.map((hostId) => hostBinding(modelId, hostId, modelId)),
+		),
 	});
 	await page.route(/\/api\/catalog\/graph/, (route) =>
 		route.fulfill({
 			json: {
 				hosts: [],
 				providers: [],
-				models: Object.entries(BINDINGS).map(([id, hosts]) => ({
+				models: Object.entries(BINDINGS)
+					.filter(([id]) => !DISABLED.has(id))
+					.map(([id, hosts]) => ({
 					id,
 					name: id,
 					providerId: "p",
@@ -134,8 +148,15 @@ test.describe("Models", () => {
 		await expect(page.getByRole("heading", { name: "claude opus" })).toBeVisible();
 		await expect(page.getByRole("heading", { name: "claude fable" })).toBeVisible();
 		await expect(page.getByText("$20.00")).toBeVisible();
-		await expect(page.getByRole("link", { name: "Unpriced" })).toBeVisible();
+		await expect(page.getByRole("link", { name: "Unpriced" })).toHaveCount(2);
 		await expect(page.getByRole("link", { name: "Claude Old" })).toHaveCount(0);
+		// A disabled model stays in its host's list, switched off.
+		await expect(
+			page.getByRole("link", { name: "Claude Sonnet Off" }),
+		).toBeVisible();
+		await expect(
+			page.getByRole("switch", { name: "Enable Claude Sonnet Off" }),
+		).not.toBeChecked();
 
 		await rail(page).getByRole("link", { name: /OpenAI/ }).click();
 		await expect(page).toHaveURL(/host=openai/);

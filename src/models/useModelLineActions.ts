@@ -1,16 +1,15 @@
-import { useDeleteModel, useUpdateModel } from "@/api/hooks/models";
+import { useUpdateModel } from "@/api/hooks/models";
 import type { Model } from "@/api/types/model";
 import { useMutability } from "@/hooks/useMutability";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { toast } from "@/shared/Toast";
-import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 
-/** What a model row may do to its model: switch it on or off, and whether
- * governance lets the caller edit or delete it. */
+/** A model row's switch: its model's on/off state, and whether governance
+ * lets the caller change it. */
 export function useModelLineActions(model: Model) {
 	const update = useUpdateModel();
 	const toastSaveError = useSaveErrorToast();
-	const { canEdit, canDelete } = useMutability(model.metadata, "model");
+	const { canEdit } = useMutability(model.metadata, "model");
 	const enabled = model.spec.enabled !== false;
 
 	async function setEnabled(next: boolean) {
@@ -28,10 +27,5 @@ export function useModelLineActions(model: Model) {
 		}
 	}
 
-	return { enabled, canEdit, canDelete, pending: update.isPending, setEnabled };
-}
-
-/** The typed-confirm delete a model list shares across its rows. */
-export function useModelDelete() {
-	return useConfirmedDelete(useDeleteModel(), { noun: "model" });
+	return { enabled, canEdit, pending: update.isPending, setEnabled };
 }
