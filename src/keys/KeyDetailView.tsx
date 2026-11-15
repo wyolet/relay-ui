@@ -18,6 +18,7 @@ import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { DetailCard, DetailRow } from "@/shared/DetailCard";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
 import { DetailPageHeader } from "@/shared/DetailPageHeader";
+import { LastUsed } from "@/shared/LastUsed";
 import { StatusBadge } from "@/shared/StatusBadge";
 import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 import { WeekUsage } from "@/usage/WeekUsage";
@@ -140,6 +141,9 @@ export function KeyDetailView({ name }: { name: string }) {
 						) : (
 							<span className="text-muted-foreground">Never</span>
 						)}
+					</DetailRow>
+					<DetailRow label="Last used">
+						<LastUsed at={rk.lastUsedAt} />
 					</DetailRow>
 					<DetailRow label="Rotation grace">
 						{rk.spec.graceUntil ? (

@@ -17,6 +17,7 @@ function line(
 		expiresAt?: string;
 		usd?: number | null;
 		requests?: number;
+		lastUsedAt?: string;
 	} = {},
 ): KeyLine {
 	const key: Key = {
@@ -26,6 +27,7 @@ function line(
 			principal: { id: "p", kind: "user" },
 			expiresAt: opts.expiresAt,
 		},
+		lastUsedAt: opts.lastUsedAt,
 	};
 	return opts.requests == null
 		? { key }
@@ -49,6 +51,24 @@ describe("sortKeyLines", () => {
 			"unpriced",
 			"idle-a",
 			"idle-b",
+		]);
+	});
+
+	it("last used: most recent first; keys with no recorded use stay last", () => {
+		const lines = [
+			line("never"),
+			line("old", { lastUsedAt: "2026-11-01T00:00:00Z" }),
+			line("fresh", { lastUsedAt: "2026-11-15T10:00:00Z" }),
+		];
+		expect(names(sortKeyLines(lines, { key: "used", dir: "desc" }))).toEqual([
+			"fresh",
+			"old",
+			"never",
+		]);
+		expect(names(sortKeyLines(lines, { key: "used", dir: "asc" }))).toEqual([
+			"old",
+			"fresh",
+			"never",
 		]);
 	});
 

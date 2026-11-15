@@ -18,6 +18,7 @@ import {
 } from "@/shared/DetailCard";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
 import { DetailTable, Td } from "@/shared/DetailTable";
+import { LastUsed } from "@/shared/LastUsed";
 import { QuietBadge, StatusBadge } from "@/shared/StatusBadge";
 
 const backLinkClass =
@@ -151,6 +152,9 @@ export function HostKeyDetailView({ name }: { name: string }) {
 							hostKeyId={view.id}
 							account={view.account}
 						/>
+					</DetailRow>
+					<DetailRow label="Last used">
+						<LastUsed at={view.lastUsedAt} />
 					</DetailRow>
 					{view.defaultTier && (
 						<DetailRow label="Default tier">

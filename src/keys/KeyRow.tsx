@@ -18,6 +18,7 @@ import {
 } from "@/policy-bindings/AccountPolicy";
 import { useAccountPolicy } from "@/policy-bindings/useAccountPolicy";
 import { OwnerLink } from "@/projects/OwnerLink";
+import { LastUsed } from "@/shared/LastUsed";
 import {
 	LineColumns,
 	LineRow,
@@ -28,9 +29,9 @@ import {
 import { RowMenu } from "@/shared/RowMenu";
 import { fmtMoneyCompact } from "@/usage/format";
 
-// The tracks' minimums plus gaps come to 61.25rem, the table's min-w.
+// The tracks' minimums plus gaps come to 67rem, the table's min-w.
 const COLS =
-	"grid-cols-[minmax(10rem,2fr)_minmax(7rem,1.2fr)_repeat(2,minmax(6rem,1fr))_minmax(4rem,0.6fr)_minmax(4.5rem,0.6fr)_minmax(6rem,0.8fr)_5.5rem_3.5rem_2rem]";
+	"grid-cols-[minmax(10rem,2fr)_minmax(7rem,1.2fr)_repeat(2,minmax(6rem,1fr))_minmax(4rem,0.6fr)_minmax(4.5rem,0.6fr)_minmax(6rem,0.8fr)_5.5rem_minmax(5rem,0.7fr)_3.5rem_2rem]";
 
 /** The table's column labels, on the rows' grid. */
 export function KeyColumns() {
@@ -48,6 +49,7 @@ export function KeyColumns() {
 			</span>
 			<span>Expires</span>
 			<span>Passthrough</span>
+			<span>Last used</span>
 			<span className="pr-3 text-right">On</span>
 			<span />
 		</LineColumns>
@@ -150,6 +152,7 @@ export function KeyRow({
 					/>
 				)}
 			</span>
+			<LastUsed at={rk.lastUsedAt} className="truncate" />
 			<SwitchCell
 				checked={enabled}
 				onChange={(next) => setEnabled(rk, next)}

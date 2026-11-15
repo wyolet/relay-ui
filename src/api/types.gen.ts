@@ -4816,6 +4816,11 @@ export interface components {
              * @example https://example.com/schemas/HostKey.json
              */
             readonly $schema?: string;
+            /**
+             * Format: date-time
+             * @description When relay last sent a request with this key, to the minute; updated about once a minute. Absent when it has not sent one. Ignored on write.
+             */
+            readonly lastUsedAt?: string;
             /** @description Identity and provenance: id, name, owner, labels. */
             metadata: components["schemas"]["Metadata"];
             /** @description Policies whose pools reach this key: listing it, or drawing on its account or a share of it. Derived on read; ignored on write. */
@@ -4832,6 +4837,11 @@ export interface components {
              * @example https://example.com/schemas/HostKey.json
              */
             readonly $schema?: string;
+            /**
+             * Format: date-time
+             * @description When relay last sent a request with this key, to the minute; updated about once a minute. Absent when it has not sent one. Ignored on write.
+             */
+            readonly lastUsedAt?: string;
             /** @description Identity and provenance: id, name, owner, labels. */
             metadata: components["schemas"]["MetadataCreate"];
             /** @description Policies whose pools reach this key: listing it, or drawing on its account or a share of it. Derived on read; ignored on write. */
@@ -5133,6 +5143,11 @@ export interface components {
              * @example https://example.com/schemas/Key.json
              */
             readonly $schema?: string;
+            /**
+             * Format: date-time
+             * @description When the key last served a request, to the minute; updated about once a minute. Absent when it has not served one. Ignored on write.
+             */
+            readonly lastUsedAt?: string;
             /** @description Identity and provenance: id, name, owner, labels. */
             metadata: components["schemas"]["Metadata"];
             /** @description The row's configuration. */
