@@ -6,6 +6,7 @@ import {
 	useSuspenseQuery,
 } from "@tanstack/react-query";
 import { apiClient } from "@/api/client";
+import { restoreCaches, swapIntoCaches } from "@/api/optimistic";
 import { ApiError, type DetachedLinks } from "@/api/types/errors";
 import type {
 	CreateKeyInput,
@@ -145,6 +146,42 @@ export function useUpdateKey() {
 			return data;
 		},
 		onSuccess: () => {
+			invalidateKeyDependents(queryClient);
+		},
+	});
+}
+
+/** Switches a key on or off: the cached key flips before the request (see
+ * swapIntoCaches), the saved one replaces it, and a failed save puts the old
+ * one back. */
+export function useSetKeyEnabled() {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: async ({
+			key,
+			enabled,
+		}: {
+			key: Key;
+			enabled: boolean;
+		}): Promise<Key> =>
+			unwrap(
+				await apiClient.PUT("/keys/by-id/{id}", {
+					params: { path: { id: key.metadata.id ?? "" } },
+					body: { metadata: key.metadata, spec: { ...key.spec, enabled } },
+				}),
+			),
+		onMutate: async ({ key, enabled }) => {
+			await queryClient.cancelQueries({ queryKey: ["keys"] });
+			const next = { ...key, spec: { ...key.spec, enabled } };
+			return { snapshot: swapIntoCaches(queryClient, ["keys"], next) };
+		},
+		onSuccess: (saved) => {
+			swapIntoCaches(queryClient, ["keys"], saved);
+		},
+		onError: (_err, _vars, context) => {
+			if (context) restoreCaches(queryClient, context.snapshot);
+		},
+		onSettled: () => {
 			invalidateKeyDependents(queryClient);
 		},
 	});

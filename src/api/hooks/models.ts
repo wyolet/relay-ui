@@ -5,6 +5,7 @@ import {
 	useSuspenseQuery,
 } from "@tanstack/react-query";
 import { apiClient } from "@/api/client";
+import { restoreCaches, swapIntoCaches } from "@/api/optimistic";
 import type { DetachedLinks } from "@/api/types/errors";
 import type { Model, ModelListResponse } from "@/api/types/model";
 import type { components } from "@/api/types.gen";
@@ -115,28 +116,11 @@ export function useModel(name: string) {
 	return useSuspenseQuery(modelDetailQueryOptions(name));
 }
 
-/** The models list with one model swapped for `next`. */
-function withModel(
-	list: ModelListResponse | undefined,
-	next: Model,
-): ModelListResponse | undefined {
-	return (
-		list && {
-			...list,
-			items: (list.items ?? []).map((m) =>
-				m.metadata.id === next.metadata.id ? next : m,
-			),
-		}
-	);
-}
-
-/** Switches a model on or off. The list and the model's own cache entry flip
- * before the request so a switch never shows the old state while the save
- * runs; the saved model then replaces them (fresh resourceVersion for the next
- * toggle), and a failed save puts the old ones back. */
+/** Switches a model on or off: the cached model flips before the request
+ * (see swapIntoCaches), the saved one replaces it (fresh resourceVersion for
+ * the next toggle), and a failed save puts the old one back. */
 export function useSetModelEnabled() {
 	const queryClient = useQueryClient();
-	const key = modelsListQueryOptions.queryKey;
 	return useMutation({
 		mutationFn: async ({
 			model,
@@ -155,26 +139,15 @@ export function useSetModelEnabled() {
 				}),
 			),
 		onMutate: async ({ model, enabled }) => {
-			const detail = modelDetailQueryOptions(model.metadata.name).queryKey;
-			await queryClient.cancelQueries({ queryKey: key, exact: true });
-			await queryClient.cancelQueries({ queryKey: detail, exact: true });
-			const previous = queryClient.getQueryData(key);
-			const previousDetail = queryClient.getQueryData(detail);
+			await queryClient.cancelQueries({ queryKey: ["models"] });
 			const next = { ...model, spec: { ...model.spec, enabled } };
-			queryClient.setQueryData(key, (list) => withModel(list, next));
-			if (previousDetail) queryClient.setQueryData(detail, next);
-			return { previous, previousDetail, detail };
+			return { snapshot: swapIntoCaches(queryClient, ["models"], next) };
 		},
-		onSuccess: (saved, _vars, context) => {
-			queryClient.setQueryData(key, (list) => withModel(list, saved));
-			if (context.previousDetail)
-				queryClient.setQueryData(context.detail, saved);
+		onSuccess: (saved) => {
+			swapIntoCaches(queryClient, ["models"], saved);
 		},
 		onError: (_err, _vars, context) => {
-			if (!context) return;
-			if (context.previous) queryClient.setQueryData(key, context.previous);
-			if (context.previousDetail)
-				queryClient.setQueryData(context.detail, context.previousDetail);
+			if (context) restoreCaches(queryClient, context.snapshot);
 		},
 		onSettled: () => {
 			invalidateModelDependents(queryClient);
