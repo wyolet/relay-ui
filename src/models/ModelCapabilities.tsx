@@ -71,19 +71,17 @@ export function ModelCapabilityIcons({ caps }: { caps: readonly string[] }) {
 	);
 }
 
-export function ModelCapabilityChips({ caps }: { caps: string[] }) {
+/** Every capability the model declares, each with its icon and name. */
+export function ModelCapabilityList({ caps }: { caps: readonly string[] }) {
 	return (
-		<ul className="flex flex-wrap gap-1.5">
+		<ul className="grid grid-cols-1 gap-x-6 gap-y-2 text-label sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
 			{caps.map((c) => {
 				const meta = CAPABILITY_META[c] ?? { icon: ImageIcon, label: c };
 				const Icon = meta.icon;
 				return (
-					<li
-						key={c}
-						className="inline-flex items-center gap-1 h-6 px-2 rounded-md text-[11px] font-medium bg-muted text-foreground border border-border"
-					>
-						<Icon className="w-3 h-3" aria-hidden />
-						{meta.label}
+					<li key={c} className="flex min-w-0 items-center gap-2">
+						<Icon className="size-3.5 shrink-0 text-ink-3" aria-hidden />
+						<span className="truncate text-foreground">{meta.label}</span>
 					</li>
 				);
 			})}

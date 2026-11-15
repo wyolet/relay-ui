@@ -142,7 +142,6 @@ function TierLine({
 				<Link
 					to="/models/$name"
 					params={{ name: row.model.slug }}
-					search={{ tab: "pricing" }}
 					className="truncate text-foreground hover:underline"
 					title={row.model.label}
 				>
