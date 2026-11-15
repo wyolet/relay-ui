@@ -21,9 +21,9 @@ export function AttentionList() {
 	}
 
 	return (
-		<ul className="grid">
+		<ul className="grid grid-cols-1 gap-x-14 lg:grid-cols-2">
 			{items.map((item) => (
-				<li key={item.key} className="border-b border-rule last:border-b-0">
+				<li key={item.key} className="border-b border-rule">
 					<AttentionLine item={item} />
 				</li>
 			))}
@@ -41,7 +41,10 @@ function AttentionLine({ item }: { item: AttentionItem }) {
 				)}
 				aria-hidden
 			/>
-			<span className="min-w-0 flex-1 truncate" title={item.text}>
+			<span
+				className="min-w-0 flex-1 truncate"
+				title={item.detail ?? item.text}
+			>
 				{item.text}
 			</span>
 		</>
@@ -125,7 +128,7 @@ function TargetLink({
 			);
 		case "pricing":
 			return (
-				<Link to="/pricing" className={className}>
+				<Link to="/pricing" search={{ tier: "unpriced" }} className={className}>
 					{children}
 				</Link>
 			);

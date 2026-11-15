@@ -22,7 +22,7 @@ import {
 	ChartTooltip,
 	ChartTooltipContent,
 } from "@/components/ui/chart";
-import { outlierCap } from "@/lib/usage-math/stack";
+import { outlierCap, type PeakLabel } from "@/lib/usage-math/stack";
 import {
 	AXIS_PROPS,
 	BAR_MAX,
@@ -45,6 +45,40 @@ import {
 import { OTHER_COLOR, USAGE_PALETTE } from "./palette";
 import { UsageEmpty } from "./UsageEmpty";
 import { useGroupLabeler } from "./useGroupLabeler";
+
+/** Two slashes cut through a bar's top: the column runs past the axis. */
+function BreakMark({ cx = 0, cy = 0 }: { cx?: number; cy?: number }) {
+	return (
+		<g stroke="var(--background)" strokeWidth={1.5} aria-hidden>
+			<line x1={cx - 6} y1={cy + 7} x2={cx + 6} y2={cy + 3} />
+			<line x1={cx - 6} y1={cy + 11} x2={cx + 6} y2={cy + 7} />
+		</g>
+	);
+}
+
+/** A clipped column's value over the axis top; recharts passes `viewBox`. */
+function PeakValue({
+	text,
+	anchor,
+	viewBox,
+}: {
+	text: string;
+	anchor: PeakLabel["anchor"];
+	viewBox?: { x?: number; y?: number };
+}) {
+	return (
+		<text
+			x={viewBox?.x ?? 0}
+			y={(viewBox?.y ?? 0) - 8}
+			textAnchor={anchor}
+			fill="var(--ink)"
+			fontSize={12.5}
+			fontWeight={600}
+		>
+			{text}
+		</text>
+	);
+}
 
 /** Topmost series in the stack — gets the rounded cap. */
 function isLast(key: string, series: string[]): boolean {
@@ -154,21 +188,31 @@ export function StackedUsageChart({
 					domain={cap ? [0, cap.max] : undefined}
 					allowDataOverflow={cap !== null}
 				/>
-				{cap && (
+				{cap?.clipped.map((col) => (
 					<ReferenceDot
-						x={cap.peak.bucket}
+						key={`break-${col.bucket}`}
+						x={col.bucket}
 						y={cap.max}
 						r={0}
 						ifOverflow="visible"
-						label={{
-							value: `${tickFormatter(cap.peak.total)} at ${fmtBucket(cap.peak.bucket, data.interval)}`,
-							position: "top",
-							fill: "var(--ink)",
-							fontSize: 12.5,
-							fontWeight: 600,
-						}}
+						shape={BreakMark}
 					/>
-				)}
+				))}
+				{cap?.labelled.map((col) => (
+					<ReferenceDot
+						key={`label-${col.bucket}`}
+						x={col.bucket}
+						y={cap.max}
+						r={0}
+						ifOverflow="visible"
+						label={
+							<PeakValue
+								text={`${tickFormatter(col.total)} at ${fmtBucket(col.bucket, data.interval)}`}
+								anchor={col.anchor}
+							/>
+						}
+					/>
+				))}
 				<ChartTooltip
 					content={
 						<ChartTooltipContent

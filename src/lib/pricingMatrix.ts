@@ -36,12 +36,17 @@ export interface MatrixHost {
 	id: string;
 	slug: string;
 	label: string;
+	icon?: { path?: string };
 }
 
 export interface MatrixModel {
 	id: string;
 	slug: string;
 	label: string;
+	/** YYYY-MM-DD, when the catalog knows it. */
+	releaseDate?: string;
+	/** Flagged deprecated or sunset by the catalog. */
+	deprecated?: boolean;
 }
 
 export interface MatrixPricing {
@@ -288,16 +293,26 @@ export interface ModelUsage {
 
 /** Per-model usage from summary rows grouped by `model_id`. */
 export function usageByModel(
-	rows: readonly {
-		group: Record<string, string>;
-		requests: number;
-		cost_nanos: number;
-		unpriced: number;
-	}[],
+	rows: readonly UsageSummaryLike[],
+): Map<string, ModelUsage> {
+	return usageByGroup(rows, "model_id");
+}
+
+interface UsageSummaryLike {
+	group: Record<string, string>;
+	requests: number;
+	cost_nanos: number;
+	unpriced: number;
+}
+
+/** Usage per value of one summary dimension (`model_id`, `host_id`, …). */
+export function usageByGroup(
+	rows: readonly UsageSummaryLike[],
+	dimension: string,
 ): Map<string, ModelUsage> {
 	const out = new Map<string, ModelUsage>();
 	for (const r of rows) {
-		const id = r.group.model_id;
+		const id = r.group[dimension];
 		if (!id) continue;
 		const priced = r.requests - r.unpriced;
 		out.set(id, {

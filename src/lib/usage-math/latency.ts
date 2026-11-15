@@ -13,7 +13,7 @@ export interface LatencyStats {
 	p99: number;
 }
 
-export type LatencyRungLabel = "p50" | "p95" | "p99" | "max";
+export type LatencyRungLabel = "p50" | "p95" | "p99";
 
 export interface LatencyRung {
 	label: LatencyRungLabel;
@@ -22,13 +22,13 @@ export interface LatencyRung {
 	share: number;
 }
 
-/** Percentiles ordered p50 → max, each with its share of the largest value. */
+/** Percentiles ordered p50 → p99, each with its share of the largest. The
+ * single slowest request stays out: one stuck stream would flatten the rest. */
 export function latencyLadder(stats: LatencyStats): LatencyRung[] {
 	const rungs: Array<[LatencyRungLabel, number]> = [
 		["p50", stats.p50],
 		["p95", stats.p95],
 		["p99", stats.p99],
-		["max", stats.max],
 	];
 	const peak = Math.max(...rungs.map(([, ms]) => ms), 0);
 	return rungs.map(([label, ms]) => ({
@@ -36,4 +36,19 @@ export function latencyLadder(stats: LatencyStats): LatencyRung[] {
 		ms,
 		share: peak > 0 ? ms / peak : 0,
 	}));
+}
+
+/** Below this share of the period's requests a group is too thin for its p95
+ * to say anything. */
+export const SLOWEST_MIN_SHARE = 0.01;
+
+/** The group with the highest p95 among those carrying real traffic; null
+ * when none does. */
+export function slowestGroup<T extends { requests: number; p95: number }>(
+	groups: readonly T[],
+): T | null {
+	const total = groups.reduce((n, g) => n + g.requests, 0);
+	const floor = Math.max(1, total * SLOWEST_MIN_SHARE);
+	const busy = groups.filter((g) => g.requests >= floor && g.p95 > 0);
+	return busy.reduce<T | null>((a, b) => (a && a.p95 >= b.p95 ? a : b), null);
 }

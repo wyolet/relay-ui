@@ -62,35 +62,43 @@ async function catalog(page: Page, more = 0) {
 }
 
 test.describe("Pricing", () => {
-	test("rates sit under their host, unpriced models offer a sheet", async ({
+	test("a host card opens its rate table; unpriced models offer a sheet", async ({
 		page,
 	}) => {
 		await catalog(page);
 		await page.goto("/pricing");
+		const card = page.getByRole("link", { name: /Anthropic/ });
+		await expect(card).toContainText("1 unpriced");
+		await card.click();
 		await expect(page.getByRole("heading", { name: "Anthropic" })).toBeVisible();
-		await expect(page.getByText("1 unpriced")).toBeVisible();
-		await expect(page.getByText("$75.00")).toBeVisible();
+		await expect(page.getByText("$75.00").first()).toBeVisible();
 
 		await page.getByRole("link", { name: "Add pricing →" }).click();
 		await expect(page).toHaveURL(/\/pricing\/new\?host=h-ant&model=m-haiku$/);
 		await expect(page.getByRole("button", { name: /Claude Haiku/ })).toBeVisible();
 	});
 
-	test("unpriced only narrows to the rows missing a sheet", async ({ page }) => {
+	test("models sit in price tiers; the unpriced tab lists the gaps", async ({
+		page,
+	}) => {
 		await catalog(page);
-		await page.goto("/pricing?unpriced=true");
+		await page.goto("/pricing");
+		await expect(page.getByRole("link", { name: "Claude Opus" })).toBeVisible();
+		await expect(page.getByRole("link", { name: "Claude Haiku" })).toHaveCount(0);
+
+		await page.getByRole("button", { name: /Unpriced/ }).click();
 		await expect(page.getByRole("link", { name: "Claude Haiku" })).toBeVisible();
 		await expect(page.getByRole("link", { name: "Claude Opus" })).toHaveCount(0);
 	});
 
-	test("a host past five models folds the rest behind show all", async ({
+	test("a tab past fifteen models folds the rest behind show all", async ({
 		page,
 	}) => {
-		await catalog(page, 6);
-		await page.goto("/pricing");
+		await catalog(page, 16);
+		await page.goto("/pricing?tier=unpriced");
 		const rows = page.getByRole("link", { name: /^(Claude|m-extra)/ });
-		await expect(rows).toHaveCount(5);
-		await page.getByRole("button", { name: "Show all 8 models" }).click();
-		await expect(rows).toHaveCount(8);
+		await expect(rows).toHaveCount(15);
+		await page.getByRole("button", { name: "Show all 17 models" }).click();
+		await expect(rows).toHaveCount(17);
 	});
 });
