@@ -8,6 +8,7 @@ import {
 } from "@/lib/pricingMatrix";
 import { RateValue } from "@/pricing/MeterGrid";
 import { AddPriceLink } from "@/pricing/ModelPrice";
+import { Facts } from "@/shared/Facts";
 import { Section } from "@/shared/Section";
 
 /** Rows a folded host shows: its unpriced and busiest models. */
@@ -32,7 +33,14 @@ export function HostPricesSection({
 	return (
 		<Section
 			title={host.label}
-			meta={`${rows.length} model${rows.length === 1 ? "" : "s"}${unpriced > 0 ? ` · ${unpriced} unpriced` : ""}`}
+			meta={
+				<Facts
+					items={[
+						{ label: "Models", value: rows.length },
+						...(unpriced > 0 ? [{ label: "Unpriced", value: unpriced }] : []),
+					]}
+				/>
+			}
 			aside={
 				<Link
 					to="/hosts/$name"
@@ -65,7 +73,7 @@ export function HostPricesSection({
 				<div className="flex items-center gap-3 text-meta text-ink-3">
 					{!expanded && (
 						<span>
-							Unpriced and busiest first · {FOLDED_ROWS} of {rows.length}
+							Showing {FOLDED_ROWS} of {rows.length}, unpriced and busiest first
 						</span>
 					)}
 					<Button

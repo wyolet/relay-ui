@@ -58,7 +58,7 @@ export function ModelDetailView({
 					{id && <WeekTraffic scope={modelWeekScope(id)} />}
 					<ModelHostList lines={hostLines} modelId={id} />
 				</div>
-				<ModelSpec model={model} />
+				<ModelSpec model={model} provider={provider} />
 			</div>
 
 			<ModelPolicyList policies={policies} />

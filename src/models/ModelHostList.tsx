@@ -4,6 +4,7 @@ import type { ModelHostLine } from "@/lib/modelHostLines";
 import { RATE_COLUMNS } from "@/lib/pricingMatrix";
 import { RateValue } from "@/pricing/MeterGrid";
 import { AddPriceLink } from "@/pricing/ModelPrice";
+import { type Fact, Facts } from "@/shared/Facts";
 import { Section } from "@/shared/Section";
 import { TextPlaceholder } from "@/shared/TextPlaceholder";
 import { fmtCompact, fmtMoneyCompact } from "@/usage/format";
@@ -20,7 +21,11 @@ export function ModelHostList({
 	return (
 		<Section
 			title="Where it runs"
-			meta={lines.length > 0 ? "per 1M tokens · last 7 days" : undefined}
+			meta={
+				lines.length > 0
+					? "Rates per 1M tokens, traffic over the last 7 days"
+					: undefined
+			}
 		>
 			{lines.length === 0 ? (
 				<p className="text-label text-ink-2">
@@ -92,12 +97,12 @@ function HostTraffic({ usage }: { usage: ModelHostLine["usage"] }) {
 	if (usage.requests === 0) {
 		return <span className="text-meta text-ink-3">no traffic</span>;
 	}
-	return (
-		<span className="shrink-0 text-meta text-ink-2 tabular-nums">
-			{fmtCompact(usage.requests)} requests
-			{usage.usd != null && ` · ${fmtMoneyCompact(usage.usd, "USD")}`}
-		</span>
-	);
+	const facts: Fact[] = [
+		{ label: "Requests", value: fmtCompact(usage.requests) },
+	];
+	if (usage.usd != null)
+		facts.push({ label: "Spend", value: fmtMoneyCompact(usage.usd, "USD") });
+	return <Facts items={facts} />;
 }
 
 function Rates({
@@ -118,7 +123,7 @@ function Rates({
 				className="text-warn hover:underline"
 				title={`Add a price on ${line.label}`}
 			>
-				Unpriced · add a price →
+				Unpriced. Add a price →
 			</AddPriceLink>
 		);
 	}

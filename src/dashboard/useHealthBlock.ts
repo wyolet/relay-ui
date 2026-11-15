@@ -1,5 +1,6 @@
 import { useLatencyProfile, useUsageOverview } from "@/api/hooks/usage";
 import { slowestGroup } from "@/lib/usage-math/latency";
+import type { Fact } from "@/shared/Facts";
 import type { RankRow } from "@/shared/RankList";
 import { fmtCompact, fmtMs, fmtPct } from "@/usage/format";
 import { useGroupLabeler } from "@/usage/useGroupLabeler";
@@ -17,8 +18,8 @@ export interface HealthBlock {
 	latencyNote: string;
 	errorRate: string;
 	requests: string;
-	/** "5xx 0 · 4xx 26 · throttled 4". */
-	errorParts: string;
+	/** Error counts by kind: 5xx, 4xx, throttled. */
+	errorKinds: Fact[];
 	slowest: { modelId: string; label: string; p95: string } | null;
 }
 
@@ -49,7 +50,11 @@ export function useHealthBlock(): HealthBlock {
 		latencyNote: profile ? `slowest request ${fmtMs(profile.maxMs)}` : "",
 		errorRate: fmtPct(kpis.errorRate),
 		requests: fmtCompact(kpis.requests),
-		errorParts: `5xx ${fmtCompact(kpis.serverErrors)} · 4xx ${fmtCompact(clientOnly)} · throttled ${fmtCompact(kpis.throttled)}`,
+		errorKinds: [
+			{ label: "5xx", value: fmtCompact(kpis.serverErrors) },
+			{ label: "4xx", value: fmtCompact(clientOnly) },
+			{ label: "Throttled", value: fmtCompact(kpis.throttled) },
+		],
 		slowest: slow
 			? {
 					modelId: slow.key,

@@ -27,7 +27,7 @@ export function PricingHostGrid({
 	return (
 		<Section
 			title="Hosts"
-			meta={`${cards.length} serving models · busiest first`}
+			meta={`${cards.length} ${cards.length === 1 ? "host serves" : "hosts serve"} models, busiest first`}
 		>
 			<div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
 				{visible.map((card) => (
@@ -75,10 +75,8 @@ function HostTile({ card, open }: { card: HostCard; open: boolean }) {
 			<span className="grid gap-1 text-meta tabular-nums">
 				<span className="text-ink-2">
 					{models} model{models === 1 ? "" : "s"}
-					{unpriced > 0 && (
-						<span className="text-warn"> · {unpriced} unpriced</span>
-					)}
 				</span>
+				{unpriced > 0 && <span className="text-warn">{unpriced} unpriced</span>}
 				<span className="text-ink-2">
 					{range
 						? range.min === range.max

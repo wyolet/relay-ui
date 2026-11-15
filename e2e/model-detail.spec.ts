@@ -177,19 +177,21 @@ test.describe("Model detail", () => {
 		await expect(page.getByRole("heading", { level: 1, name: /Claude Opus 5/ })).toBeVisible();
 		await expect(page.getByRole("tab")).toHaveCount(0);
 
-		await expect(page.getByText("$613", { exact: true })).toBeVisible();
+		// The week's figure; the Anthropic host row repeats it as its spend.
+		await expect(page.getByText("$613", { exact: true }).first()).toBeVisible();
 		await expect(page.getByText("8.7K", { exact: true })).toBeVisible();
 		await expect(page.getByText("18.2 s", { exact: true })).toBeVisible();
 		await expect(page.getByRole("heading", { name: "Traffic by host" })).toBeVisible();
 
 		const hosts = page.getByRole("list").filter({ has: page.getByRole("link", { name: "Anthropic" }) });
 		await expect(hosts.getByText("$4.00")).toBeVisible();
+		await expect(hosts.getByRole("term").filter({ hasText: "Spend" })).toBeVisible();
 		await expect(hosts.getByRole("link", { name: "Rate sheet →" })).toHaveAttribute(
 			"href",
 			/\/pricing\/opus-list$/,
 		);
 		await expect(
-			hosts.getByRole("link", { name: "Unpriced · add a price →" }),
+			hosts.getByRole("link", { name: "Unpriced. Add a price →" }),
 		).toHaveAttribute("href", /\/pricing\/new\?.*host=h-oai/);
 
 		await expect(page.getByRole("link", { name: "team-default" })).toBeVisible();

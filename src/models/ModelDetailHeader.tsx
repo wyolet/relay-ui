@@ -1,11 +1,8 @@
-import { Link } from "@tanstack/react-router";
 import { AlertTriangle, Boxes } from "lucide-react";
 import type { Model } from "@/api/types/model";
 import { useMutability } from "@/hooks/useMutability";
 import { displayLabel } from "@/lib/displayLabel";
-import { fmtReleaseMonth } from "@/lib/modelsByHost";
-import { modelProductLine } from "@/models/groupModelsByFamily";
-import { deprecationNote, familyLabel } from "@/models/modelDetail";
+import { deprecationNote } from "@/models/modelDetail";
 import type { ModelProvider } from "@/models/useModelProvider";
 import { ProviderLogo } from "@/providers/ProviderLogo";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
@@ -29,9 +26,6 @@ export function ModelDetailHeader({
 	const enabled = model.spec.enabled !== false;
 	const { canEdit, canDelete } = useMutability(model.metadata, "model");
 	const dep = deprecationNote(model);
-	const productLine = modelProductLine(model);
-	const lineage = productLine ? `${productLine} line` : familyLabel(model);
-	const released = fmtReleaseMonth(model.spec.releaseDate);
 
 	return (
 		<header className="grid grid-cols-1 gap-3">
@@ -57,37 +51,9 @@ export function ModelDetailHeader({
 								detachedAt={model.metadata.catalogDetachedAt}
 							/>
 						</h1>
-						<p className="flex min-w-0 flex-wrap items-baseline gap-x-2 text-meta text-ink-3">
-							<code className="truncate font-mono text-ink-2">
-								{model.metadata.name}
-							</code>
-							{provider.providerSlug && (
-								<>
-									<span aria-hidden>·</span>
-									<Link
-										to="/providers/$name"
-										params={{ name: provider.providerSlug }}
-										className="text-ink-2 hover:text-foreground hover:underline"
-									>
-										{provider.provider
-											? displayLabel(provider.provider.metadata)
-											: provider.providerSlug}
-									</Link>
-								</>
-							)}
-							{lineage && (
-								<>
-									<span aria-hidden>·</span>
-									<span>{lineage}</span>
-								</>
-							)}
-							{released && (
-								<>
-									<span aria-hidden>·</span>
-									<span>released {released}</span>
-								</>
-							)}
-						</p>
+						<code className="truncate font-mono text-meta text-ink-2">
+							{model.metadata.name}
+						</code>
 						{model.metadata.description && (
 							<p className="max-w-2xl text-label text-ink-2">
 								{model.metadata.description}

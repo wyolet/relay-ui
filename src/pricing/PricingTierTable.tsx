@@ -7,6 +7,7 @@ import { RateValue } from "@/pricing/MeterGrid";
 import { AddPriceLink } from "@/pricing/ModelPrice";
 import { MatrixHostLogo } from "@/pricing/PricingHostGrid";
 import type { TierTabView } from "@/pricing/usePricingCatalog";
+import { Facts } from "@/shared/Facts";
 import { Section } from "@/shared/Section";
 import { Segmented } from "@/shared/Segmented";
 import { fmtMoneyCompact } from "@/usage/format";
@@ -29,6 +30,7 @@ export function PricingTierTable({
 	rows: TierRow[];
 	onTier: (tier: TierTab) => void;
 }) {
+	const example = tabs.find((t) => t.value === tier)?.example;
 	return (
 		<Section
 			title="Models by price"
@@ -43,15 +45,13 @@ export function PricingTierTable({
 					label: <TabLabel tab={t} />,
 				}))}
 			/>
+			{example && <Facts items={[{ label: "Typical", value: example }]} />}
 			<TierRows key={tier} rows={rows} unpricedTab={tier === "unpriced"} />
 		</Section>
 	);
 }
 
 function TabLabel({ tab }: { tab: TierTabView }) {
-	const sub = [tab.range, tab.example && `e.g. ${tab.example}`]
-		.filter(Boolean)
-		.join(" · ");
 	return (
 		<span className="grid gap-0.5 text-left">
 			<span className="text-label font-medium">
@@ -60,8 +60,8 @@ function TabLabel({ tab }: { tab: TierTabView }) {
 					{tab.count}
 				</span>
 			</span>
-			{sub && (
-				<span className="max-w-48 truncate text-foot text-ink-3">{sub}</span>
+			{tab.range && (
+				<span className="text-foot text-ink-3 tabular-nums">{tab.range}</span>
 			)}
 		</span>
 	);
@@ -108,7 +108,8 @@ function TierRows({
 				<div className="flex items-center gap-3 text-meta text-ink-3">
 					{!expanded && (
 						<span>
-							Your spend, then newest first · {FOLDED} of {rows.length}
+							Showing {FOLDED} of {rows.length}, your spend first, then the
+							newest
 						</span>
 					)}
 					<Button
