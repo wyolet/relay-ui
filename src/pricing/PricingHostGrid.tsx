@@ -5,7 +5,6 @@ import { HostLogo, hostRefLogo } from "@/hosts/HostLogo";
 import type { HostCard } from "@/lib/priceCatalog";
 import type { MatrixHost } from "@/lib/pricingMatrix";
 import { cn } from "@/lib/utils";
-import { fmtRate } from "@/pricing/MeterGrid";
 import { Section } from "@/shared/Section";
 import { fmtMoneyCompact } from "@/usage/format";
 
@@ -83,8 +82,8 @@ function HostTile({ card, open }: { card: HostCard; open: boolean }) {
 				<span className="text-ink-2">
 					{range
 						? range.min === range.max
-							? `${fmtRate(range.min, "USD")} / 1M`
-							: `${fmtRate(range.min, "USD")} – ${fmtRate(range.max, "USD")} / 1M`
+							? `${fmtRangeEnd(range.min)} / 1M`
+							: `${fmtRangeEnd(range.min)} – ${fmtRangeEnd(range.max)} / 1M`
 						: "No token prices"}
 				</span>
 				<span className={usage?.usd ? "text-foreground" : "text-ink-3"}>
@@ -97,6 +96,12 @@ function HostTile({ card, open }: { card: HostCard; open: boolean }) {
 			</span>
 		</Link>
 	);
+}
+
+/** A blended price at a range end: cents, or three decimals under $0.10 so
+ * the cheapest models don't all read $0.04. */
+function fmtRangeEnd(amount: number): string {
+	return `$${amount.toFixed(amount < 0.1 ? 3 : 2)}`;
 }
 
 /** A pricing-matrix host's logo. */
