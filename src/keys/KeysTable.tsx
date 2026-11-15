@@ -8,6 +8,7 @@ import { KeyColumns, KeyRow } from "@/keys/KeyRow";
 import { KEY_FILTERS, useKeysTable } from "@/keys/useKeysTable";
 import { displayLabel } from "@/lib/displayLabel";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
+import { LineTable } from "@/shared/LineGrid";
 import { StaleContent } from "@/shared/StaleContent";
 import { TableEmpty } from "@/shared/TableEmpty";
 import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
@@ -62,24 +63,22 @@ export function KeysTable() {
 						)}
 					</TableEmpty>
 				) : (
-					<div className="overflow-x-auto">
-						<div className="grid min-w-[67rem] grid-cols-1">
-							<KeyColumns />
-							{table.lines.map((line) => (
-								<KeyRow
-									key={line.key.metadata.id ?? line.key.metadata.name}
-									line={line}
-									onDelete={() =>
-										del.request({
-											id: line.key.metadata.id ?? "",
-											name: line.key.metadata.name,
-											label: displayLabel(line.key.metadata),
-										})
-									}
-								/>
-							))}
-						</div>
-					</div>
+					<LineTable minWidth="min-w-[67rem]">
+						<KeyColumns />
+						{table.lines.map((line) => (
+							<KeyRow
+								key={line.key.metadata.id ?? line.key.metadata.name}
+								line={line}
+								onDelete={() =>
+									del.request({
+										id: line.key.metadata.id ?? "",
+										name: line.key.metadata.name,
+										label: displayLabel(line.key.metadata),
+									})
+								}
+							/>
+						))}
+					</LineTable>
 				)}
 			</StaleContent>
 			{del.target && (

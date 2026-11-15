@@ -9,6 +9,8 @@ const DIMENSION_LABELS: Record<UsageGroupBy, string> = {
 	model_id: "Model",
 	host_id: "Host",
 	policy_id: "Policy",
+	pool_id: "Pool",
+	account_id: "Provider account",
 	relay_key_hash: "Key",
 	host_key_id: "Credential",
 	team_id: "Team",

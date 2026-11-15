@@ -51,6 +51,8 @@ export const USAGE_GROUP_BY = [
 	"model_id",
 	"host_id",
 	"policy_id",
+	"pool_id",
+	"account_id",
 	"relay_key_hash",
 	"host_key_id",
 	"team_id",
