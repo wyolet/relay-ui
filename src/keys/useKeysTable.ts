@@ -126,7 +126,12 @@ export function useKeysTable() {
 			expired: live.expired,
 		},
 		lines,
-		filtered: activeFilterCount(KEY_FILTERS, { ...search }) > 0,
+		filtered:
+			activeFilterCount(KEY_FILTERS, {
+				q: search.q,
+				principal_kind: search.principal_kind,
+				expired: search.expired,
+			}) > 0,
 		isStale,
 		patch,
 		sort,

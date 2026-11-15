@@ -17,15 +17,23 @@ export function usePricingWindow() {
 	return pricingWindowAt(useUsageNow());
 }
 
-/** Last week's usage per value of one dimension; undefined until it loads.
- * Not suspending: a config page must not wait on, or fail with, the usage
- * store. */
+/** Last week's usage per value of one dimension; undefined until it loads
+ * (or while not `enabled`). Not suspending: a config page must not wait on,
+ * or fail with, the usage store. */
 export function useWeekUsageBy(
-	dimension: "model_id" | "host_id" | "relay_key_hash",
+	dimension:
+		| "model_id"
+		| "host_id"
+		| "relay_key_hash"
+		| "account_id"
+		| "via_account_id"
+		| "lane_account_id",
+	enabled = true,
 ): Map<string, ModelUsage> | undefined {
-	const { data } = useQuery(
-		usageSummaryQueryOptions(dimension, usePricingWindow()),
-	);
+	const { data } = useQuery({
+		...usageSummaryQueryOptions(dimension, usePricingWindow()),
+		enabled,
+	});
 	return data ? usageByGroup(data.rows ?? [], dimension) : undefined;
 }
 
