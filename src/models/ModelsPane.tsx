@@ -5,9 +5,10 @@ import type { ModelUsage } from "@/lib/pricingMatrix";
 import { ModelLineColumns, ModelLineRow } from "@/models/ModelLineRow";
 import type { ModelsPaneView } from "@/models/useModelsByHost";
 import { MatrixHostLogo } from "@/pricing/PricingHostGrid";
+import { type Fact, Facts } from "@/shared/Facts";
 import { fmtMoneyCompact } from "@/usage/format";
 
-/** The open rail entry's models: a host's by family, or In use's by host. */
+/** The open rail entry's models: a host's by family, or In use as one list. */
 export function ModelsPane({
 	pane,
 	narrowing,
@@ -62,10 +63,7 @@ function PaneHeader({ pane }: { pane: ModelsPaneView }) {
 				<h2 className="truncate font-display text-section text-foreground">
 					{pane.title}
 				</h2>
-				<span className="shrink-0 text-meta text-ink-3 tabular-nums">
-					{pane.models} model{pane.models === 1 ? "" : "s"}
-					{spendText(pane.usage)}
-				</span>
+				<Facts items={paneFacts(pane.models, pane.usage)} />
 			</div>
 			{pane.host && (
 				<Link
@@ -80,11 +78,16 @@ function PaneHeader({ pane }: { pane: ModelsPaneView }) {
 	);
 }
 
-function spendText(usage: ModelUsage | undefined): string {
+function paneFacts(models: number, usage: ModelUsage | undefined): Fact[] {
+	const facts: Fact[] = [{ label: "Models", value: models }];
 	if (usage?.usd != null)
-		return ` · ${fmtMoneyCompact(usage.usd, "USD")} last 7 days`;
-	if (usage?.requests) return " · unpriced traffic last 7 days";
-	return "";
+		facts.push({
+			label: "Spend, 7 days",
+			value: fmtMoneyCompact(usage.usd, "USD"),
+		});
+	else if (usage?.requests)
+		facts.push({ label: "Spend, 7 days", value: "Unpriced" });
+	return facts;
 }
 
 /** A family heading, or a host's (logo, and a link to its own pane). */

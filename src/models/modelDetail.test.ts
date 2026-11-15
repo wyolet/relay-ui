@@ -32,9 +32,9 @@ describe("deprecationNote", () => {
 					},
 				}),
 			),
-		).toBe("deprecated · sunsets 2026-06-01 · successor → m-2");
+		).toBe("Deprecated, sunsets on 2026-06-01. Replaced by m-2.");
 		expect(deprecationNote(model({ deprecationDate: "2026-01-01" }))).toBe(
-			"deprecated 2026-01-01",
+			"Deprecated since 2026-01-01.",
 		);
 	});
 });
@@ -88,6 +88,15 @@ describe("specFields", () => {
 			{ label: "Accepts", value: "text, image" },
 			{ label: "Released", value: "2026-09-10" },
 			{ label: "Points to", value: "m-20260910" },
+		]);
+	});
+	it("names the product line, else the family", () => {
+		const spec = { family: "claude", version: "4.5", pointer: "m" };
+		expect(specFields(model(spec))).toEqual([
+			{ label: "Family", value: "claude 4.5" },
+		]);
+		expect(specFields(model({ ...spec, productLine: "opus" }))).toEqual([
+			{ label: "Line", value: "opus" },
 		]);
 	});
 	it("leaves out a pointer to the model itself", () => {

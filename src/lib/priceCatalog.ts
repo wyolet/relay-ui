@@ -125,12 +125,6 @@ export function rowsForTab(
 		.sort((a, b) => sign * TIER_ORDER[sort.key](a, b) || byInterest(a, b));
 }
 
-/** The model that stands for a tab: the one you spend most on, else the
- * newest. Null for an empty tab. */
-export function tabExample(rows: readonly TierRow[]): TierRow | null {
-	return [...rows].sort(byInterest)[0] ?? null;
-}
-
 /** One host's place in the catalog. */
 export interface HostCard {
 	host: MatrixHost;

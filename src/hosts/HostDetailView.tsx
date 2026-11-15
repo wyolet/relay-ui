@@ -4,7 +4,6 @@ import {
 	KeyRound,
 	LayoutGrid,
 	type LucideIcon,
-	ScrollText,
 	ShieldCheck,
 	Sliders,
 	Users,
@@ -19,10 +18,10 @@ import { HostModelsTab } from "@/hosts/HostModelsTab";
 import { HostOverviewTab } from "@/hosts/HostOverviewTab";
 import { HostTierPresets } from "@/hosts/HostTierPresets";
 import { HostUserPoliciesTab } from "@/hosts/HostUserPoliciesTab";
-import { ResourceLogs } from "@/logs/ResourceLogs";
+import { HOST_NO_TRAFFIC, hostWeekScope } from "@/hosts/hostWeekUsage";
 import { EmptyState } from "@/shared/EmptyState";
 import { PageLoader } from "@/shared/Spinner";
-import { ResourceUsage } from "@/usage/ResourceUsage";
+import { WeekUsage } from "@/usage/WeekUsage";
 
 export type HostDetailTab =
 	| "overview"
@@ -31,8 +30,7 @@ export type HostDetailTab =
 	| "user-policies"
 	| "host-keys"
 	| "models"
-	| "usage"
-	| "logs";
+	| "usage";
 
 interface Props {
 	host: Host;
@@ -56,7 +54,6 @@ const TABS: {
 	{ value: "host-keys", label: "Credentials", icon: KeyRound },
 	{ value: "models", label: "Models", icon: Boxes },
 	{ value: "usage", label: "Usage", icon: Activity },
-	{ value: "logs", label: "Logs", icon: ScrollText },
 ];
 
 export function HostDetailView({
@@ -132,24 +129,17 @@ export function HostDetailView({
 				</TabsContent>
 				<TabsContent value="usage">
 					{host.metadata.id ? (
-						<ResourceUsage scope="host_id" id={host.metadata.id} />
+						<div className="pt-2">
+							<WeekUsage
+								scope={hostWeekScope(host.metadata.id)}
+								emptyBody={HOST_NO_TRAFFIC}
+							/>
+						</div>
 					) : (
 						<EmptyState
 							icon={Activity}
 							title="Usage"
 							body="Save this host to see its traffic."
-							comingSoon
-						/>
-					)}
-				</TabsContent>
-				<TabsContent value="logs">
-					{host.metadata.id ? (
-						<ResourceLogs scope="host_id" id={host.metadata.id} label="host" />
-					) : (
-						<EmptyState
-							icon={ScrollText}
-							title="Logs"
-							body="Save this host to see the requests routed through it."
 							comingSoon
 						/>
 					)}

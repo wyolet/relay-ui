@@ -1,11 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import {
-	Activity,
-	Building2,
-	ChevronLeft,
-	KeyRound,
-	RotateCw,
-} from "lucide-react";
+import { Building2, ChevronLeft, KeyRound, RotateCw } from "lucide-react";
 import { useState } from "react";
 import { AccountHolderLink } from "@/accounts/AccountHolderLink";
 import { EffectiveLimits } from "@/accounts/EffectiveLimits";
@@ -26,7 +20,7 @@ import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
 import { DetailPageHeader } from "@/shared/DetailPageHeader";
 import { StatusBadge } from "@/shared/StatusBadge";
 import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
-import { ResourceUsage } from "@/usage/ResourceUsage";
+import { WeekUsage } from "@/usage/WeekUsage";
 
 export function KeyDetailView({ name }: { name: string }) {
 	const { data: rk } = useKey(name);
@@ -187,9 +181,13 @@ export function KeyDetailView({ name }: { name: string }) {
 			</DetailCard>
 
 			{rk.spec.keyHash && (
-				<DetailCard title="Usage" icon={Activity}>
-					<ResourceUsage scope="relay_key_hash" id={rk.spec.keyHash} />
-				</DetailCard>
+				<WeekUsage
+					scope={{
+						filter: { relay_key_hash: [rk.spec.keyHash] },
+						splitBy: "model_id",
+					}}
+					emptyBody="Requests made with this key show up here: spend, latency, errors and the models they called."
+				/>
 			)}
 
 			{rotating && (

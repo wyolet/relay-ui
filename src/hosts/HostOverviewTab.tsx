@@ -1,17 +1,9 @@
-import { Suspense } from "react";
 import type { Host } from "@/api/types/host";
 import { PlanIssuesPanel } from "@/diagnostics/IssuesPanel";
+import { HOST_NO_TRAFFIC, hostWeekScope } from "@/hosts/hostWeekUsage";
 import { useHostOverview } from "@/hosts/useHostOverview";
-import { useHostUsage } from "@/hosts/useHostUsage";
 import { StatCard, StatGrid } from "@/shared/StatCard";
-import {
-	ResourceSpendCard,
-	ResourceSpendCardSkeleton,
-} from "@/usage/ResourceSpendCard";
-import {
-	ResourceUsageCards,
-	UsageCardsSkeleton,
-} from "@/usage/ResourceUsageCards";
+import { WeekFigures } from "@/usage/WeekFigures";
 
 export function HostOverviewTab({ host }: { host: Host }) {
 	const counts = useHostOverview(host);
@@ -40,22 +32,13 @@ export function HostOverviewTab({ host }: { host: Host }) {
 					value={counts.userPolicies}
 					sub={counts.userPolicies === 0 ? "unused" : "link its credentials"}
 				/>
-				{host.metadata.id && (
-					<>
-						<Suspense fallback={<UsageCardsSkeleton />}>
-							<HostUsageCards hostId={host.metadata.id} />
-						</Suspense>
-						<Suspense fallback={<ResourceSpendCardSkeleton />}>
-							<ResourceSpendCard dimension="host_id" id={host.metadata.id} />
-						</Suspense>
-					</>
-				)}
 			</StatGrid>
+			{host.metadata.id && (
+				<WeekFigures
+					scope={hostWeekScope(host.metadata.id)}
+					emptyBody={HOST_NO_TRAFFIC}
+				/>
+			)}
 		</div>
 	);
-}
-
-function HostUsageCards({ hostId }: { hostId: string }) {
-	const usage = useHostUsage(hostId);
-	return <ResourceUsageCards usage={usage} />;
 }

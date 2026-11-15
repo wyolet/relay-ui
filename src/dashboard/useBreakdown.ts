@@ -4,6 +4,7 @@ import {
 	useUsageOverviewWithDeltas,
 } from "@/api/hooks/usage";
 import { compareValue } from "@/lib/usage-math/delta";
+import type { Fact } from "@/shared/Facts";
 import type { SegmentedOption } from "@/shared/Segmented";
 import {
 	fmtCompact,
@@ -55,7 +56,7 @@ function weight(g: UsageGroupStat, priced: boolean): number {
 export function useBreakdown(groupBy: BreakdownDimension): {
 	rows: BreakdownRow[];
 	more: number;
-	total: string;
+	totals: Fact[];
 } {
 	const { win } = useDashboardWindow();
 	const {
@@ -95,10 +96,8 @@ export function useBreakdown(groupBy: BreakdownDimension): {
 	});
 
 	const spend = groups.reduce((sum, g) => sum + (g.cost.usd ?? 0), 0);
-	const count = `${groups.length} ${groups.length === 1 ? "row" : "rows"}`;
-	return {
-		rows,
-		more: Math.max(groups.length - LIMIT, 0),
-		total: priced ? `${count} · ${fmtMoneyCompact(spend, "USD")} total` : count,
-	};
+	const totals: Fact[] = [{ label: "Rows", value: fmtCompact(groups.length) }];
+	if (priced)
+		totals.push({ label: "Total spend", value: fmtMoneyCompact(spend, "USD") });
+	return { rows, more: Math.max(groups.length - LIMIT, 0), totals };
 }

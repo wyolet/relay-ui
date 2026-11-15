@@ -1,11 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import {
-	hostCards,
-	priceTier,
-	rowsForTab,
-	tabExample,
-	tierRows,
-} from "./priceCatalog";
+import { hostCards, priceTier, rowsForTab, tierRows } from "./priceCatalog";
 import { buildPricingMatrix, modelPriceSummaries } from "./pricingMatrix";
 
 const usd = (amount: number) => ({
@@ -115,18 +109,6 @@ describe("tierRows", () => {
 		expect(rowsForTab(rows, "unpriced", false).map((r) => r.model.id)).toEqual([
 			"new",
 		]);
-	});
-
-	test("the example is the model you spend most on, else the newest", () => {
-		const summaries = modelPriceSummaries(catalog());
-		const spent = tierRows(
-			summaries,
-			new Map([["old", { requests: 9, usd: 3 }]]),
-		);
-		expect(tabExample(rowsForTab(spent, "top", false))?.model.id).toBe("old");
-		const idle = tierRows(summaries, new Map());
-		expect(tabExample(rowsForTab(idle, "top", false))?.model.id).toBe("fable");
-		expect(tabExample([])).toBe(null);
 	});
 });
 

@@ -36,6 +36,7 @@ export function PricingTierTable({
 		>
 			<Segmented
 				variant="underline"
+				stretch
 				value={tier}
 				onChange={onTier}
 				options={tabs.map((t) => ({
@@ -49,9 +50,6 @@ export function PricingTierTable({
 }
 
 function TabLabel({ tab }: { tab: TierTabView }) {
-	const sub = [tab.range, tab.example && `e.g. ${tab.example}`]
-		.filter(Boolean)
-		.join(" · ");
 	return (
 		<span className="grid gap-0.5 text-left">
 			<span className="text-label font-medium">
@@ -60,8 +58,8 @@ function TabLabel({ tab }: { tab: TierTabView }) {
 					{tab.count}
 				</span>
 			</span>
-			{sub && (
-				<span className="max-w-48 truncate text-foot text-ink-3">{sub}</span>
+			{tab.range && (
+				<span className="text-foot text-ink-3 tabular-nums">{tab.range}</span>
 			)}
 		</span>
 	);
@@ -108,7 +106,8 @@ function TierRows({
 				<div className="flex items-center gap-3 text-meta text-ink-3">
 					{!expanded && (
 						<span>
-							Your spend, then newest first · {FOLDED} of {rows.length}
+							Showing {FOLDED} of {rows.length}, your spend first, then the
+							newest
 						</span>
 					)}
 					<Button

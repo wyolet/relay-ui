@@ -29,6 +29,7 @@ function itemClass(
 	if (variant === "underline") {
 		return cn(
 			"border-b-2 px-2.5 py-2 text-xs transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring",
+			stretch && "min-w-0 flex-1",
 			active
 				? "border-primary text-foreground"
 				: "border-transparent text-muted-foreground hover:text-foreground",
@@ -55,7 +56,7 @@ export function Segmented<T extends string>({
 	value: T;
 	onChange: (value: T) => void;
 	variant?: "pill" | "underline";
-	/** Pill only: segments share the row width equally. */
+	/** Segments share the row width equally. */
 	stretch?: boolean;
 	className?: string;
 }) {

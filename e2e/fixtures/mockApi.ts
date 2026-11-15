@@ -186,6 +186,11 @@ export async function mockApi(page: Page, graph: MockGraph): Promise<void> {
 		if (path === "usage/summary") {
 			return fulfillJson(route, { from: "", to: "", rows: [] });
 		}
+		if (path === "usage/timeseries") {
+			// The relay's answer for a window without events: a zero range.
+			const zero = "0001-01-01T00:00:00Z";
+			return fulfillJson(route, { from: zero, to: zero, interval: "1h", rows: [] });
+		}
 		if (path === "plan-issues") {
 			const about = new URL(route.request().url()).searchParams.getAll("about");
 			const issues = (graph.planIssues ?? []).filter(

@@ -272,7 +272,7 @@ export function StackedUsageChart({
 					{metricLabel} by {dimensionLabel(groupBy).toLowerCase()}
 				</h2>
 				<span className="text-[11px] text-muted-foreground">
-					{fmtRange(data.from, data.to)} · {data.interval} buckets
+					{fmtRange(data.from, data.to)}, in {data.interval} buckets
 				</span>
 			</div>
 			<div className="p-4">{plot}</div>

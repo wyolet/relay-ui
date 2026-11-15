@@ -12,7 +12,8 @@ export function Section({
 	children,
 }: {
 	title: string;
-	meta?: string;
+	/** A quiet note beside the title, or labeled facts. */
+	meta?: ReactNode;
 	aside?: ReactNode;
 	fill?: boolean;
 	children: ReactNode;
@@ -26,9 +27,7 @@ export function Section({
 					<h2 className="truncate font-display text-section text-foreground">
 						{title}
 					</h2>
-					{meta && (
-						<span className="shrink-0 text-meta text-ink-3">{meta}</span>
-					)}
+					{meta && <div className="shrink-0 text-meta text-ink-3">{meta}</div>}
 				</div>
 				{aside}
 			</div>

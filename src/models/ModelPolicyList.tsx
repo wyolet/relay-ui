@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import type { ModelPolicyView } from "@/api/hooks/models";
 import { fmtLimit } from "@/lib/limitsFormat";
+import { Facts } from "@/shared/Facts";
 import { Section } from "@/shared/Section";
 
 /** The policies that grant the model, each with the rate-limit rules it
@@ -32,10 +33,12 @@ export function ModelPolicyList({ policies }: { policies: ModelPolicyView[] }) {
 }
 
 function PolicyLine({ policy }: { policy: ModelPolicyView }) {
-	const limits = policy.limits ?? [];
+	// Identical rules from different rate limits read once.
+	const limits = [...new Set((policy.limits ?? []).map(fmtLimit))];
+	const { kind, name } = policy.owner;
 	return (
 		<li className="grid grid-cols-1 gap-x-6 gap-y-1 border-b border-rule py-2.5 text-label first:pt-0 lg:grid-cols-[minmax(14rem,1fr)_minmax(0,2fr)]">
-			<span className="flex min-w-0 items-baseline gap-2">
+			<span className="flex min-w-0 flex-wrap items-baseline gap-x-4 gap-y-1">
 				<Link
 					to="/policies/$name"
 					params={{ name: policy.name }}
@@ -43,16 +46,22 @@ function PolicyLine({ policy }: { policy: ModelPolicyView }) {
 				>
 					{policy.name}
 				</Link>
-				<span className="shrink-0 text-meta text-ink-3">
-					{policy.owner.kind}
-					{policy.owner.name && ` · ${policy.owner.name}`}
-				</span>
+				<Facts
+					items={[
+						name
+							? {
+									label: kind.charAt(0).toUpperCase() + kind.slice(1),
+									value: name,
+								}
+							: { label: "Owner", value: kind },
+					]}
+				/>
 			</span>
-			<span className="min-w-0 text-ink-2 tabular-nums">
+			<span className="grid min-w-0 gap-0.5 text-ink-2 tabular-nums">
 				{limits.length === 0 ? (
 					<span className="text-ink-3">no rate limit</span>
 				) : (
-					limits.map(fmtLimit).join(" · ")
+					limits.map((limit) => <span key={limit}>{limit}</span>)
 				)}
 			</span>
 		</li>

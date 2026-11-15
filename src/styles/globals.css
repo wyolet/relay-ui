@@ -61,6 +61,52 @@
     }
   }
 
+  /* Toasts: a soft rise on arrival, a sideways fade on leaving, a draining
+     time-left line (its end dismisses the toast), a check that draws in, and
+     a small lift when a repeat merges into a toast already on screen. */
+  --animate-toast-in: toast-in 0.42s cubic-bezier(0.2, 0.9, 0.25, 1.15);
+  --animate-toast-out: toast-out 0.22s ease-in forwards;
+  --animate-toast-countdown: toast-countdown linear forwards;
+  --animate-toast-check: toast-check 0.45s 0.12s ease-out both;
+  --animate-toast-bump: toast-bump 0.32s ease-out;
+  @keyframes toast-in {
+    from {
+      opacity: 0;
+      transform: translateY(14px) scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes toast-out {
+    to {
+      opacity: 0;
+      transform: translateX(24px) scale(0.98);
+    }
+  }
+  @keyframes toast-countdown {
+    from {
+      transform: scaleX(1);
+    }
+    to {
+      transform: scaleX(0);
+    }
+  }
+  @keyframes toast-check {
+    from {
+      stroke-dashoffset: 24;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+  @keyframes toast-bump {
+    40% {
+      transform: translateY(-3px) scale(1.015);
+    }
+  }
+
   --color-ink: var(--ink);
   --color-ink-2: var(--ink-2);
   --color-ink-3: var(--ink-3);

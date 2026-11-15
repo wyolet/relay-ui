@@ -238,8 +238,8 @@ function summarizeRules(rl: RateLimit): string {
 	if (rules.length === 1) {
 		return `${compactNumber(rules[0].amount)} ${rules[0].meter}`;
 	}
-	return `${rules.length} rules · ${rules
+	return `${rules.length} rules on ${rules
 		.slice(0, 2)
 		.map((r) => r.meter)
-		.join(", ")}${rules.length > 2 ? "…" : ""}`;
+		.join(", ")}${rules.length > 2 ? " and more" : ""}`;
 }

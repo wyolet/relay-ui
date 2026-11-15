@@ -10,7 +10,7 @@ import {
 	modelsListQueryOptions,
 	useDeleteModel,
 	useModel,
-	useUpdateModel,
+	useSetModelEnabled,
 } from "@/api/hooks/models";
 import { providersListQueryOptions } from "@/api/hooks/providers";
 import { usageNow } from "@/api/hooks/usage";
@@ -18,13 +18,13 @@ import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
 import { ModelDetailView } from "@/models/ModelDetailView";
 import { modelWeekQueries } from "@/models/modelWeekQueries";
+import { toastModelEnabled } from "@/models/useModelLineActions";
 import {
 	pricingGraphQuery,
 	pricingsMatrixListQuery,
 } from "@/pricing/usePricingMatrix";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { PageLoader } from "@/shared/Spinner";
-import { toast } from "@/shared/Toast";
 import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 
 export const Route = createFileRoute("/_authenticated/models/$name")({
@@ -58,27 +58,23 @@ function ModelDetailInner() {
 	const { name } = Route.useParams();
 	const navigate = useNavigate({ from: "/models/$name" });
 	const { data: model } = useModel(name);
-	const updateModel = useUpdateModel();
+	const setEnabled = useSetModelEnabled();
 	const toastSaveError = useSaveErrorToast();
 	const del = useConfirmedDelete(useDeleteModel(), {
 		noun: "model",
 		onDeleted: () => void navigate({ to: "/models" }),
 	});
 
-	async function handleToggleEnabled() {
+	function handleToggleEnabled() {
+		if (setEnabled.isPending) return;
 		const next = !(model.spec.enabled !== false);
-		try {
-			await updateModel.mutateAsync({
-				id: model.metadata.id ?? "",
-				body: {
-					metadata: model.metadata,
-					spec: { ...model.spec, enabled: next },
-				},
-			});
-			toast("success", next ? "Model enabled." : "Model disabled.");
-		} catch (err) {
-			toastSaveError(err, "Failed to toggle model.");
-		}
+		setEnabled.mutate(
+			{ model, enabled: next },
+			{
+				onSuccess: () => toastModelEnabled(model, next),
+				onError: (err) => toastSaveError(err, "Failed to toggle model."),
+			},
+		);
 	}
 
 	return (
@@ -92,8 +88,8 @@ function ModelDetailInner() {
 			</Link>
 			<ModelDetailView
 				model={model}
-				onToggleEnabled={() => void handleToggleEnabled()}
-				toggling={updateModel.isPending}
+				onToggleEnabled={handleToggleEnabled}
+				toggling={setEnabled.isPending}
 				onDelete={() =>
 					del.request({
 						id: model.metadata.id ?? "",

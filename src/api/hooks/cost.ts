@@ -9,14 +9,11 @@ import {
 	type UsageSummaryFilter,
 	type UsageWindow,
 	usageComparisonWindows,
-	usageSummaryQueryOptions,
 	usageTotalsCompareQueryOptions,
-	useRollingUsageWindow,
 	useUsageNow,
 } from "@/api/hooks/usage";
 import {
 	type CostTotal,
-	costTotal,
 	NANOS_PER_USD,
 	sumCostRows,
 } from "@/lib/usage-math/cost";
@@ -134,71 +131,5 @@ export function useCostSeries(
 		interval: win.interval,
 		unpriced: { events: unpricedEvents, groups: [...unpricedGroups] },
 		labels: data.labels,
-	};
-}
-
-// --- Per-resource spend ---
-
-/** Resources whose detail pages show an Est. spend card. */
-// Catalog resources only: "source" and the dynamic map dimensions have no
-// resource card.
-export type CostResourceDimension = Exclude<
-	UsageGroupBy,
-	| "source"
-	| "team_id"
-	| "project_id"
-	| "principal_id"
-	| "error_kind"
-	| "finish_reason"
-	| "refusal"
-	| `extras.${string}`
->;
-
-export interface ResourceSpend {
-	sum: CostTotal;
-	window: UsageWindow;
-}
-
-function sliceFor(
-	dimension: CostResourceDimension,
-	id: string,
-): UsageSummaryFilter {
-	switch (dimension) {
-		case "model_id":
-			return { model_id: [id] };
-		case "host_id":
-			return { host_id: [id] };
-		case "policy_id":
-			return { policy_id: [id] };
-		case "relay_key_hash":
-			return { relay_key_hash: [id] };
-		case "host_key_id":
-			return { host_key_id: [id] };
-		case "lane_account_id":
-			return { lane_account_id: [id] };
-		case "via_account_id":
-			return { via_account_id: [id] };
-	}
-}
-
-/**
- * One resource's estimated spend over the trailing hour — the same window the
- * neighbouring resource cards show (their unwindowed /usage/summary falls back
- * to the server's 1h default).
- */
-export function useResourceSpend(
-	dimension: CostResourceDimension,
-	id: string,
-): ResourceSpend {
-	const win = useRollingUsageWindow(1);
-	const { data } = useSuspenseQuery(
-		usageSummaryQueryOptions(dimension, win, sliceFor(dimension, id)),
-	);
-	const row = (data.rows ?? [])[0];
-	return {
-		sum: row
-			? costTotal(row.cost_nanos, row.unpriced, row.requests)
-			: costTotal(0, 0, 0),
-		window: win,
 	};
 }

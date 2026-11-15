@@ -13,7 +13,6 @@ import {
 	type TierRow,
 	type TierSort,
 	type TierTab,
-	tabExample,
 	tierRows,
 } from "@/lib/priceCatalog";
 import {
@@ -49,11 +48,9 @@ export interface PricingSearch {
 export interface TierTabView {
 	value: TierTab;
 	label: string;
-	/** "$10+"; empty for the unpriced tab. */
+	/** "over $10"; "no rate sheet" for the unpriced tab. */
 	range: string;
 	count: number;
-	/** The model standing for the tab, by label. */
-	example?: string;
 }
 
 const NO_USAGE = new Map<string, ModelUsage>();
@@ -126,10 +123,10 @@ export function usePricingCatalog(search: PricingSearch) {
 			label: t.label,
 			range: t.range,
 		})),
-		{ value: "unpriced" as const, label: "Unpriced", range: "" },
+		{ value: "unpriced" as const, label: "Unpriced", range: "no rate sheet" },
 	].map((t) => {
 		const list = tabRows(t.value);
-		return { ...t, count: list.length, example: tabExample(list)?.model.label };
+		return { ...t, count: list.length };
 	});
 
 	const matchedHosts = new Set(

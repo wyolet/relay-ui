@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
 import type { ReactNode } from "react";
+import { Facts } from "@/shared/Facts";
 import { RankList } from "@/shared/RankList";
 import { Section } from "@/shared/Section";
 import { useHealthBlock } from "./useHealthBlock";
@@ -29,7 +30,7 @@ export function HealthBlock() {
 						<span className="text-ink-2">of {h.requests} requests</span>
 						<Arrow />
 					</Link>
-					<p className="text-meta text-ink-2 tabular-nums">{h.errorParts}</p>
+					<Facts items={h.errorKinds} />
 				</Part>
 				{h.slowest && (
 					<Part title="Slowest model">

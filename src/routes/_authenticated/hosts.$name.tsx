@@ -37,9 +37,8 @@ const searchSchema = z.object({
 			"host-keys",
 			"models",
 			"usage",
-			"logs",
 		])
-		.optional()
+		.catch("overview")
 		.default("overview"),
 });
 
