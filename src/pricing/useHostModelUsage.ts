@@ -1,11 +1,32 @@
-import { useQueries } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import { usageSummaryQueryOptions, useUsageNow } from "@/api/hooks/usage";
-import { type ModelUsage, usageByModel } from "@/lib/pricingMatrix";
+import {
+	type ModelUsage,
+	usageByGroup,
+	usageByModel,
+} from "@/lib/pricingMatrix";
 import { rollingWindow } from "@/lib/usage-math/window";
+
+/** The trailing week ending at `now`; loaders pass `usageNow()`. */
+export function pricingWindowAt(now: string) {
+	return { ...rollingWindow(now, 7 * 24), interval: "1h" as const };
+}
 
 /** The trailing week pricing pages measure traffic over. */
 export function usePricingWindow() {
-	return { ...rollingWindow(useUsageNow(), 7 * 24), interval: "1h" as const };
+	return pricingWindowAt(useUsageNow());
+}
+
+/** Last week's usage per value of one dimension; undefined until it loads.
+ * Not suspending: a config page must not wait on, or fail with, the usage
+ * store. */
+export function useWeekUsageBy(
+	dimension: "model_id" | "host_id",
+): Map<string, ModelUsage> | undefined {
+	const { data } = useQuery(
+		usageSummaryQueryOptions(dimension, usePricingWindow()),
+	);
+	return data ? usageByGroup(data.rows ?? [], dimension) : undefined;
 }
 
 /** Last week's requests and spend per model on each host, keyed by host id.

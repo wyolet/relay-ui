@@ -7,15 +7,10 @@ import {
 import { apiClient } from "@/api/client";
 import type { DetachedLinks } from "@/api/types/errors";
 import type { Model, ModelListResponse, ModelUpdate } from "@/api/types/model";
-import type { components, operations } from "@/api/types.gen";
+import type { components } from "@/api/types.gen";
 import { unwrap } from "@/api/unwrap";
 
 // --- Query options ---
-
-/** Server-side filter/sort/page params accepted by GET /models. */
-export type ModelsListParams = NonNullable<
-	operations["list_models"]["parameters"]["query"]
->;
 
 /** Unfiltered full list — used by pickers, loaders, and the resource graph
  * that need every model regardless of any page's active filters. */
@@ -34,27 +29,6 @@ export const modelsListQueryOptions = queryOptions({
 	staleTime: 30_000,
 	gcTime: 5 * 60_000,
 });
-
-/** Filtered list driven by a table page's filter state (server-side). */
-export function modelsListQuery(params: ModelsListParams) {
-	return queryOptions({
-		queryKey: ["models", "list", params] as const,
-		queryFn: async (): Promise<ModelListResponse> => {
-			const data = unwrap(
-				await apiClient.GET("/models", {
-					params: { query: params },
-				}),
-			);
-			return data;
-		},
-		staleTime: 30_000,
-		gcTime: 5 * 60_000,
-	});
-}
-
-export function useModelsList(params: ModelsListParams) {
-	return useSuspenseQuery(modelsListQuery(params));
-}
 
 export function modelDetailQueryOptions(name: string) {
 	return queryOptions({
@@ -159,6 +133,65 @@ export function useUpdateModel() {
 			);
 		},
 		onSuccess: () => {
+			invalidateModelDependents(queryClient);
+		},
+	});
+}
+
+/** The models list with one model swapped for `next`. */
+function withModel(
+	list: ModelListResponse | undefined,
+	next: Model,
+): ModelListResponse | undefined {
+	return (
+		list && {
+			...list,
+			items: (list.items ?? []).map((m) =>
+				m.metadata.id === next.metadata.id ? next : m,
+			),
+		}
+	);
+}
+
+/** Switches a model on or off. The list cache flips before the request so a
+ * switch never shows the old state while the save runs; the saved model then
+ * replaces it (fresh resourceVersion for the next toggle), and a failed save
+ * puts the old one back. */
+export function useSetModelEnabled() {
+	const queryClient = useQueryClient();
+	const key = modelsListQueryOptions.queryKey;
+	return useMutation({
+		mutationFn: async ({
+			model,
+			enabled,
+		}: {
+			model: Model;
+			enabled: boolean;
+		}): Promise<Model> =>
+			unwrap(
+				await apiClient.PUT("/models/by-id/{id}", {
+					params: { path: { id: model.metadata.id ?? "" } },
+					body: {
+						metadata: model.metadata,
+						spec: { ...model.spec, enabled },
+					},
+				}),
+			),
+		onMutate: async ({ model, enabled }) => {
+			await queryClient.cancelQueries({ queryKey: key, exact: true });
+			const previous = queryClient.getQueryData(key);
+			queryClient.setQueryData(key, (list) =>
+				withModel(list, { ...model, spec: { ...model.spec, enabled } }),
+			);
+			return { previous };
+		},
+		onSuccess: (saved) => {
+			queryClient.setQueryData(key, (list) => withModel(list, saved));
+		},
+		onError: (_err, _vars, context) => {
+			if (context?.previous) queryClient.setQueryData(key, context.previous);
+		},
+		onSettled: () => {
 			invalidateModelDependents(queryClient);
 		},
 	});

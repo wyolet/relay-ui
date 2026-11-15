@@ -77,7 +77,7 @@ function HostDetailInner() {
 	const toastSaveError = useSaveErrorToast();
 	const del = useConfirmedDelete(useDeleteHost(), {
 		noun: "host",
-		onDeleted: () => void navigate({ to: "/models", search: { tab: "hosts" } }),
+		onDeleted: () => void navigate({ to: "/models" }),
 	});
 
 	async function handleToggleEnabled() {
@@ -100,11 +100,11 @@ function HostDetailInner() {
 		<div className="flex flex-col gap-4">
 			<Link
 				to="/models"
-				search={(prev) => ({ ...prev, tab: "hosts" as const })}
+				search={{ host: name }}
 				className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
 			>
 				<ChevronLeft className="w-3.5 h-3.5" />
-				Hosts
+				Models
 			</Link>
 			<HostDetailView
 				host={host}

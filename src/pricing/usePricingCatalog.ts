@@ -3,7 +3,6 @@ import { hostsListQueryOptions } from "@/api/hooks/hosts";
 import { modelsListQueryOptions } from "@/api/hooks/models";
 import {
 	usageComparisonWindows,
-	usageSummaryQueryOptions,
 	usageTotalsCompareQueryOptions,
 	useUsageNow,
 } from "@/api/hooks/usage";
@@ -23,12 +22,15 @@ import {
 	modelPriceSummaries,
 	pricingCoverage,
 	rankPriceRows,
-	usageByGroup,
 } from "@/lib/pricingMatrix";
 import { sumCostRows } from "@/lib/usage-math/cost";
 import type { FigureData } from "@/shared/FigureRow";
 import { fmtCompact, fmtMoneyCompact, fmtPct } from "@/usage/format";
-import { useHostModelUsage, usePricingWindow } from "./useHostModelUsage";
+import {
+	useHostModelUsage,
+	usePricingWindow,
+	useWeekUsageBy,
+} from "./useHostModelUsage";
 import {
 	matrixFromLists,
 	pricingGraphQuery,
@@ -68,14 +70,6 @@ function useWeekCost() {
 	return sumCostRows(rows);
 }
 
-/** Last week's usage per value of one dimension; empty until it loads. */
-function useWeekUsageBy(dimension: "model_id" | "host_id") {
-	const { data } = useQuery(
-		usageSummaryQueryOptions(dimension, usePricingWindow()),
-	);
-	return data ? usageByGroup(data.rows ?? [], dimension) : NO_USAGE;
-}
-
 function matches(row: TierRow, q: string): boolean {
 	const host = row.cheapest?.host;
 	return [row.model.label, row.model.slug, host?.label, host?.slug].some((s) =>
@@ -95,8 +89,8 @@ export function usePricingCatalog(search: PricingSearch) {
 		],
 	});
 	const cost = useWeekCost();
-	const byModel = useWeekUsageBy("model_id");
-	const byHost = useWeekUsageBy("host_id");
+	const byModel = useWeekUsageBy("model_id") ?? NO_USAGE;
+	const byHost = useWeekUsageBy("host_id") ?? NO_USAGE;
 
 	const matrix = matrixFromLists({
 		graph: graph.data,
