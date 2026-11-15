@@ -8,7 +8,6 @@ import {
 	X,
 } from "lucide-react";
 import { type ReactNode, useState } from "react";
-import { Button } from "@/components/ui/button";
 import {
 	Command,
 	CommandEmpty,
@@ -144,6 +143,17 @@ export function FilterBar({
 							{narrowing > 0 && <Count n={narrowing} />}
 						</button>
 					)}
+					{active > 0 && (
+						<button
+							type="button"
+							className={cn(SEGMENT, "px-2")}
+							onClick={clear}
+							aria-label="Clear filters"
+							title="Clear filters"
+						>
+							<X className="size-3.5" aria-hidden />
+						</button>
+					)}
 					{sort && <SortSegment sort={sort} />}
 				</div>
 				{hasFilters && open && (
@@ -156,7 +166,7 @@ export function FilterBar({
 								onPick={(v) => onChange({ [def.key]: v })}
 							/>
 						))}
-						{(toggles.length > 0 || extra != null || active > 0) && (
+						{(toggles.length > 0 || extra != null) && (
 							<div className="flex flex-wrap items-center gap-1.5">
 								{toggles.map((def) => (
 									<Pill
@@ -170,18 +180,6 @@ export function FilterBar({
 									</Pill>
 								))}
 								{extra}
-								{active > 0 && (
-									<Button
-										type="button"
-										variant="ghost"
-										size="sm"
-										onClick={clear}
-										className="ml-auto text-muted-foreground"
-									>
-										<X className="size-3.5" aria-hidden />
-										Clear
-									</Button>
-								)}
 							</div>
 						)}
 					</div>
