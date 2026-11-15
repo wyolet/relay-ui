@@ -18,9 +18,9 @@ export function ModelsHostRail({
 	return (
 		<nav
 			aria-label="Hosts"
-			className="max-h-72 overflow-y-auto lg:sticky lg:top-0 lg:max-h-[calc(100vh-8rem)]"
+			className="max-h-72 overflow-x-hidden overflow-y-auto lg:sticky lg:top-0 lg:max-h-[calc(100vh-8rem)]"
 		>
-			<ul className="grid gap-0.5">
+			<ul className="grid grid-cols-1 gap-0.5">
 				<RailItem
 					value={IN_USE}
 					open={open === IN_USE}
