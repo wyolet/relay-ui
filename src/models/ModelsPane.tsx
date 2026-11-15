@@ -28,10 +28,10 @@ export function ModelsPane({
 				<p className="text-label text-ink-2">{emptyText(pane, narrowing)}</p>
 			) : (
 				<div className="overflow-x-auto">
-					<div className="grid min-w-[52rem] gap-6">
+					<div className="grid min-w-[52rem] grid-cols-1 gap-6">
 						<ModelLineColumns />
 						{pane.groups.map((group) => (
-							<div key={group.key} className="grid">
+							<div key={group.key} className="grid grid-cols-1">
 								<GroupHeading group={group} />
 								{group.lines.map((line) => (
 									<ModelLineRow
@@ -112,23 +112,10 @@ function paneFacts(models: number, usage: ModelUsage | undefined): Fact[] {
 
 /** A family heading, or a host's (logo, and a link to its own pane). */
 function GroupHeading({ group }: { group: LineGroup }) {
-	if (!group.host) {
-		return (
-			<h3 className="border-b border-rule py-2 text-foot font-medium tracking-wide text-ink-2 uppercase">
-				{group.label}
-			</h3>
-		);
-	}
+	if (!group.label) return null;
 	return (
-		<h3 className="flex items-center gap-2 border-b border-rule py-2 text-label font-medium text-foreground">
-			<MatrixHostLogo host={group.host} size={18} />
-			<Link
-				to="/models"
-				search={(prev) => ({ ...prev, host: group.host?.slug })}
-				className="hover:underline"
-			>
-				{group.label}
-			</Link>
+		<h3 className="border-b border-rule py-2 text-foot font-medium tracking-wide text-ink-2 uppercase">
+			{group.label}
 		</h3>
 	);
 }
