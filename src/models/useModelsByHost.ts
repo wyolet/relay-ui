@@ -109,6 +109,7 @@ export function useModelsByHost(search: ModelsSearch) {
 			usedHosts.flatMap((r) => pricesById.get(r.host.id) ?? []),
 			modelsById,
 			usageByHost,
+			byModel ?? new Map(),
 			filter,
 			sort,
 		);

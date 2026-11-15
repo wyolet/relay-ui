@@ -108,7 +108,9 @@ export function ModelLineRow({
 				}
 			/>
 			<NumberCell value={fmtReleaseMonth(model.spec.releaseDate)} />
-			{price.unpriced ? (
+			{!price || !host ? (
+				<span className="col-span-2 text-right text-ink-3">—</span>
+			) : price.unpriced ? (
 				<AddPriceLink
 					hostId={host.id}
 					modelId={price.model.id}

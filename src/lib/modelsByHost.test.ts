@@ -5,6 +5,7 @@ import {
 	groupByFamily,
 	hostLines,
 	IN_USE,
+	TELEMETRY_GROUP,
 	inUseCount,
 	inUseGroups,
 	type ModelsFilter,
@@ -276,6 +277,7 @@ describe("in use", () => {
 					]),
 				],
 			]),
+			new Map([["opus-5", usage(4, 2)]]),
 			ALL,
 			SPEND,
 		);
@@ -283,7 +285,27 @@ describe("in use", () => {
 			["OpenAI", ["opus-5"]],
 			["Anthropic", ["opus-5"]],
 		]);
-		expect(inUseGroups([oai], modelsById, new Map(), ALL, SPEND)).toEqual([]);
+		expect(
+			inUseGroups([oai], modelsById, new Map(), new Map(), ALL, SPEND),
+		).toEqual([]);
+	});
+
+	test("models whose traffic named no host land under telemetry", () => {
+		const groups = inUseGroups(
+			[ant],
+			modelsById,
+			new Map([["h-ant", new Map([["opus-5", usage(3, 1.5)]])]]),
+			byModel,
+			ALL,
+			SPEND,
+		);
+		expect(groups.map((g) => [g.key, ids(g.lines)])).toEqual([
+			["h-ant", ["opus-5"]],
+			[TELEMETRY_GROUP, ["gpt-6"]],
+		]);
+		expect(groups.flatMap((g) => g.lines).length).toBe(
+			inUseCount(byModel, modelsById, ALL),
+		);
 	});
 });
 

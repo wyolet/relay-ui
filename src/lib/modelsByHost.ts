@@ -76,9 +76,10 @@ export function modelMatches(m: Model, f: ModelsFilter): boolean {
 /** One model as one host serves it. */
 export interface ModelLine {
 	model: Model;
-	host: MatrixHost;
+	/** Absent for usage reported by telemetry, which names no host. */
+	host?: MatrixHost;
 	/** This host's price for it. */
-	price: PriceRow;
+	price?: PriceRow;
 	/** Its traffic on this host over the last week. */
 	usage?: ModelUsage;
 }
@@ -119,7 +120,8 @@ const LINE_ORDER: Record<
 > = {
 	spend: (a, b) => -byInterest(a, b),
 	newest: (a, b) => release(a).localeCompare(release(b)),
-	price: (a, b) => compareBlendedPrices(a.price.blended, b.price.blended),
+	price: (a, b) =>
+		compareBlendedPrices(a.price?.blended ?? null, b.price?.blended ?? null),
 	name: (a, b) => label(a).localeCompare(label(b)),
 };
 
@@ -131,8 +133,8 @@ export function sortLines(
 ): ModelLine[] {
 	const sign = sort.dir === "asc" ? 1 : -1;
 	return [...lines].sort((a, b) => {
-		if (sort.key === "price" && (!a.price.blended || !b.price.blended)) {
-			const missing = Number(!a.price.blended) - Number(!b.price.blended);
+		if (sort.key === "price" && (!a.price?.blended || !b.price?.blended)) {
+			const missing = Number(!a.price?.blended) - Number(!b.price?.blended);
 			if (missing !== 0) return missing;
 		}
 		return sign * LINE_ORDER[sort.key](a, b) || byInterest(a, b);
@@ -232,9 +234,46 @@ export function inUseCount(
 	return n;
 }
 
-/** Each host's lines with traffic on it, under host headings in rail order.
- * Hosts whose per-model usage hasn't loaded are left out. */
+/** Usage with no host is telemetry (e.g. OTLP reports): it names a model but
+ * went through no relay host. */
+export const TELEMETRY_GROUP = "telemetry";
+
+/** Each host's lines with traffic on it, under host headings in rail order,
+ * then models whose traffic named no host. Hosts whose per-model usage hasn't
+ * loaded are left out. */
 export function inUseGroups(
+	hosts: readonly HostPrices[],
+	modelsById: ReadonlyMap<string, Model>,
+	usageByHost: ReadonlyMap<string, ReadonlyMap<string, ModelUsage>>,
+	byModel: ReadonlyMap<string, ModelUsage>,
+	filter: ModelsFilter,
+	sort: ModelsSort,
+): LineGroup[] {
+	const groups = hostUseGroups(hosts, modelsById, usageByHost, filter, sort);
+	const seen = new Set(
+		groups.flatMap((g) => g.lines.map((l) => l.model.metadata.id)),
+	);
+	const telemetry: ModelLine[] = [];
+	for (const [id, usage] of byModel) {
+		const model = modelsById.get(id);
+		if (
+			usage.requests > 0 &&
+			model &&
+			!seen.has(id) &&
+			modelMatches(model, filter)
+		)
+			telemetry.push({ model, usage });
+	}
+	if (telemetry.length > 0)
+		groups.push({
+			key: TELEMETRY_GROUP,
+			label: "Reported by telemetry",
+			lines: sortLines(telemetry, sort),
+		});
+	return groups;
+}
+
+function hostUseGroups(
 	hosts: readonly HostPrices[],
 	modelsById: ReadonlyMap<string, Model>,
 	usageByHost: ReadonlyMap<string, ReadonlyMap<string, ModelUsage>>,
