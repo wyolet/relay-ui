@@ -13,7 +13,6 @@ import { activeCapabilities } from "@/models/modelDetail";
 import { useModelLineActions } from "@/models/useModelLineActions";
 import { RateValue } from "@/pricing/MeterGrid";
 import { AddPriceLink } from "@/pricing/ModelPrice";
-import { type MenuAction, RowMenu } from "@/shared/RowMenu";
 import { Switch } from "@/shared/Switch";
 import { fmtMoneyCompact } from "@/usage/format";
 
@@ -40,24 +39,15 @@ export function ModelLineColumns() {
 			<span className="text-right" title="Spend, last 7 days">
 				Spend 7d
 			</span>
-			<span className="text-right">On</span>
+			<span className="pr-3 text-right">On</span>
 		</div>
 	);
 }
 
 /** One model as one host serves it: specs, this host's price, its traffic. */
-export function ModelLineRow({
-	line,
-	onDelete,
-}: {
-	line: ModelLine;
-	onDelete: () => void;
-}) {
+export function ModelLineRow({ line }: { line: ModelLine }) {
 	const { model, host, price, usage } = line;
 	const actions = useModelLineActions(model);
-	const menu: MenuAction[] = actions.canDelete
-		? [{ label: "Delete", danger: true, onClick: onDelete }]
-		: [];
 
 	return (
 		<div
@@ -118,14 +108,14 @@ export function ModelLineRow({
 			<NumberCell
 				value={usage?.usd != null ? fmtMoneyCompact(usage.usd, "USD") : null}
 			/>
-			<span className="flex items-center justify-end gap-1">
+			{/* pr-3 holds the switch's enlarged hit area inside the row. */}
+			<span className="flex items-center justify-end pr-3">
 				<Switch
 					checked={actions.enabled}
 					onChange={(next) => void actions.setEnabled(next)}
 					disabled={!actions.canEdit || actions.pending}
 					label={`${actions.enabled ? "Disable" : "Enable"} ${displayLabel(model.metadata)}`}
 				/>
-				{menu.length > 0 && <RowMenu actions={menu} />}
 			</span>
 		</div>
 	);

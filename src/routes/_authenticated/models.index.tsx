@@ -1,3 +1,4 @@
+import { bindingsListQueryOptions } from "@/api/hooks/bindings";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { z } from "zod";
@@ -84,6 +85,7 @@ export const Route = createFileRoute("/_authenticated/models/")({
 				queryClient.ensureQueryData(pricingsMatrixListQuery),
 				queryClient.ensureQueryData(modelsListQueryOptions),
 				queryClient.ensureQueryData(hostsListQueryOptions),
+				queryClient.ensureQueryData(bindingsListQueryOptions),
 				queryClient.ensureQueryData(governanceQueryOptions("model")),
 			]),
 		);

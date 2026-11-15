@@ -1,4 +1,5 @@
 import { useSuspenseQueries } from "@tanstack/react-query";
+import { bindingsListQueryOptions } from "@/api/hooks/bindings";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
 import { modelsListQueryOptions } from "@/api/hooks/models";
 import type { Model } from "@/api/types/model";
@@ -60,19 +61,27 @@ export interface ModelsRailView {
 /** The models catalog by host: the rail, and the open pane's models, grouped
  * by family for a host and one plain list for In use. Usage never suspends. */
 export function useModelsByHost(search: ModelsSearch) {
-	const [graph, hosts, models, pricings] = useSuspenseQueries({
+	const [graph, hosts, models, pricings, bindings] = useSuspenseQueries({
 		queries: [
 			pricingGraphQuery,
 			hostsListQueryOptions,
 			modelsListQueryOptions,
 			pricingsMatrixListQuery,
+			bindingsListQueryOptions,
 		],
 	});
 	const byModel = useWeekUsageBy("model_id");
 	const byHost = useWeekUsageBy("host_id");
 
+	// The full binding list keeps disabled models in their host's pane; the
+	// graph only carries what the data plane serves now.
 	const matrix = matrixFromLists({
 		graph: graph.data,
+		bindings: (bindings.data.items ?? []).flatMap((b) =>
+			b.spec.enabled === false
+				? []
+				: [{ hostId: b.spec.hostId, modelId: b.spec.modelId }],
+		),
 		hosts: hosts.data,
 		models: models.data,
 		pricings: pricings.data,

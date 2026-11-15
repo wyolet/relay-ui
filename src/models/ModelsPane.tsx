@@ -1,17 +1,14 @@
 import { Link } from "@tanstack/react-router";
 import { Activity } from "lucide-react";
-import { displayLabel } from "@/lib/displayLabel";
 import type { LineGroup } from "@/lib/modelsByHost";
 import type { ModelUsage } from "@/lib/pricingMatrix";
 import { ModelLineColumns, ModelLineRow } from "@/models/ModelLineRow";
-import { useModelDelete } from "@/models/useModelLineActions";
 import type { ModelsPaneView } from "@/models/useModelsByHost";
 import { MatrixHostLogo } from "@/pricing/PricingHostGrid";
-import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { type Fact, Facts } from "@/shared/Facts";
 import { fmtMoneyCompact } from "@/usage/format";
 
-/** The open rail entry's models: a host's by family, or In use's by host. */
+/** The open rail entry's models: a host's by family, or In use as one list. */
 export function ModelsPane({
 	pane,
 	narrowing,
@@ -20,7 +17,6 @@ export function ModelsPane({
 	/** A search or filter is on, so an empty pane means no match. */
 	narrowing: boolean;
 }) {
-	const del = useModelDelete();
 	return (
 		<section className="grid min-w-0 content-start gap-5">
 			<PaneHeader pane={pane} />
@@ -37,28 +33,12 @@ export function ModelsPane({
 									<ModelLineRow
 										key={line.model.metadata.id ?? line.model.metadata.name}
 										line={line}
-										onDelete={() =>
-											del.request({
-												id: line.model.metadata.id ?? "",
-												name: line.model.metadata.name,
-												label: displayLabel(line.model.metadata),
-											})
-										}
 									/>
 								))}
 							</div>
 						))}
 					</div>
 				</div>
-			)}
-			{del.target && (
-				<DeleteConfirm
-					resourceName={del.target.name}
-					onConfirm={() => void del.confirm()}
-					onCancel={del.cancel}
-					isPending={del.isPending}
-					error={del.error}
-				/>
 			)}
 		</section>
 	);
