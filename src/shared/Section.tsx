@@ -15,7 +15,7 @@ export function Section({
 	children: ReactNode;
 }) {
 	return (
-		<section className="grid min-w-0 content-start gap-4">
+		<section className="grid min-w-0 grid-cols-1 content-start gap-4">
 			<div className="flex flex-wrap items-baseline justify-between gap-x-5 gap-y-2">
 				<div className="flex min-w-0 items-baseline gap-2.5">
 					<h2 className="truncate font-display text-section text-foreground">
@@ -45,7 +45,10 @@ export function SectionSkeleton({
 	const area = <div className={`${height} rounded-bar bg-grid`} aria-hidden />;
 	if (title) return <Section title={title}>{area}</Section>;
 	return (
-		<section className="grid min-w-0 content-start gap-4" aria-hidden>
+		<section
+			className="grid min-w-0 grid-cols-1 content-start gap-4"
+			aria-hidden
+		>
 			<span className="font-display text-section">
 				<TextPlaceholder width="w-48" />
 			</span>

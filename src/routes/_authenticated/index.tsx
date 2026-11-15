@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { useAuth, whoamiQueryOptions } from "@/api/auth";
 import { keysListQueryOptions } from "@/api/hooks/keys";
 import { buttonVariants } from "@/components/ui/button";
-import { DashboardRange } from "@/dashboard/DashboardRange";
+import { DashboardHeader } from "@/dashboard/DashboardHeader";
 import {
 	DashboardUsage,
 	DashboardUsageSkeleton,
@@ -60,6 +60,7 @@ function AdminHome() {
 	if (catalogEmpty) {
 		return (
 			<div className="flex flex-col gap-6">
+				<DashboardHeader />
 				<ReleaseReadiness />
 				<WelcomePanel />
 			</div>
@@ -67,20 +68,18 @@ function AdminHome() {
 	}
 
 	return (
-		<div className="grid gap-14">
+		<div className="grid gap-6">
+			<DashboardHeader withRange />
 			<ReleaseReadiness />
-			<div className="grid gap-6">
-				<DashboardRange />
-				<Suspense
-					fallback={
-						<DelayedFallback>
-							<DashboardUsageSkeleton />
-						</DelayedFallback>
-					}
-				>
-					<DashboardUsage />
-				</Suspense>
-			</div>
+			<Suspense
+				fallback={
+					<DelayedFallback>
+						<DashboardUsageSkeleton />
+					</DelayedFallback>
+				}
+			>
+				<DashboardUsage />
+			</Suspense>
 		</div>
 	);
 }
@@ -89,16 +88,19 @@ function DashboardInner() {
 	// A scoped actor sees their own tenancy, not the fleet: every block below
 	// reads catalog-wide endpoints their role bindings do not reach.
 	const { isAdmin } = useAuth();
-	return isAdmin ? <AdminHome /> : <ScopedHome />;
+	if (isAdmin) return <AdminHome />;
+	return (
+		<div className="grid gap-6">
+			<DashboardHeader />
+			<ScopedHome />
+		</div>
+	);
 }
 
 function DashboardPage() {
 	return (
-		<div>
-			<h1 className="sr-only">Dashboard</h1>
-			<Suspense fallback={<PageLoader />}>
-				<DashboardInner />
-			</Suspense>
-		</div>
+		<Suspense fallback={<PageLoader />}>
+			<DashboardInner />
+		</Suspense>
 	);
 }

@@ -82,10 +82,47 @@ describe("outlierCap", () => {
 			...Array.from({ length: 20 }, (_, i) => point(`b${i}`, 10)),
 			point("spike", 5000),
 		];
+		const spike = { bucket: "spike", total: 5000 };
 		expect(outlierCap(points, ["a"])).toEqual({
 			max: 20,
-			peak: { bucket: "spike", total: 5000 },
+			clipped: [spike],
+			labelled: [{ ...spike, anchor: "end" }],
 		});
+	});
+
+	test("tops the axis just above the tallest ordinary column", () => {
+		const points = [
+			...Array.from({ length: 40 }, (_, i) => point(`b${i}`, 1 + i * 1.5)),
+			point("tall", 82),
+			point("x", 198),
+			point("y", 183),
+		];
+		expect(outlierCap(points, ["a"])?.max).toBe(100);
+	});
+
+	test("clips every outlier and labels the ones far apart", () => {
+		const points = [
+			...Array.from({ length: 20 }, (_, i) => point(`a${i}`, 10)),
+			point("p1", 900),
+			point("p2", 700),
+			...Array.from({ length: 20 }, (_, i) => point(`c${i}`, 10)),
+			point("p3", 800),
+		];
+		const cap = outlierCap(points, ["a"]);
+		expect(cap?.clipped.map((c) => c.bucket)).toEqual(["p1", "p3", "p2"]);
+		expect(cap?.labelled.map((c) => [c.bucket, c.anchor])).toEqual([
+			["p1", "middle"],
+			["p3", "end"],
+		]);
+	});
+
+	test("draws to full scale when more than three columns would clip", () => {
+		const points = [
+			...Array.from({ length: 80 }, (_, i) => point(`b${i}`, 10)),
+			...["p1", "p2", "p3", "p4"].map((b) => point(b, 900)),
+		];
+		expect(outlierCap(points, ["a"])).toBeNull();
+		expect(outlierCap(points.slice(0, 83), ["a"])?.clipped).toHaveLength(3);
 	});
 
 	test("leaves an even series alone", () => {

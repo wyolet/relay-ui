@@ -21,7 +21,7 @@ export function AttentionList() {
 	}
 
 	return (
-		<ul className="grid">
+		<ul className="grid grid-cols-1">
 			{items.map((item) => (
 				<li key={item.key} className="border-b border-rule last:border-b-0">
 					<AttentionLine item={item} />
@@ -41,7 +41,10 @@ function AttentionLine({ item }: { item: AttentionItem }) {
 				)}
 				aria-hidden
 			/>
-			<span className="min-w-0 flex-1 truncate" title={item.text}>
+			<span
+				className="min-w-0 flex-1 truncate"
+				title={item.detail ?? item.text}
+			>
 				{item.text}
 			</span>
 		</>
