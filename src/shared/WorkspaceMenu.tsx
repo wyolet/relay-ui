@@ -1,4 +1,3 @@
-import { Boxes, type LucideIcon, Server, UserRound, Users } from "lucide-react";
 import type { ReactElement, ReactNode } from "react";
 import {
 	DropdownMenu,
@@ -10,14 +9,12 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useContextSwitcher } from "@/hooks/useContextSwitcher";
-import { contextKey, contextLabel, type WorkContext } from "@/lib/workContext";
-
-export const WORKSPACE_ICON: Record<WorkContext["kind"], LucideIcon> = {
-	personal: UserRound,
-	system: Server,
-	team: Users,
-	project: Boxes,
-};
+import {
+	contextKey,
+	contextLabel,
+	contextSubtitle,
+} from "@/lib/workContext";
+import { WorkspaceAvatar } from "@/shared/WorkspaceAvatar";
 
 interface WorkspaceMenuProps {
 	/** The element the menu opens from, rendered with `children` inside. */
@@ -53,7 +50,7 @@ export function WorkspaceMenu({
 			<DropdownMenuTrigger render={trigger} aria-label={ariaLabel}>
 				{children}
 			</DropdownMenuTrigger>
-			<DropdownMenuContent align={align} sideOffset={6} className="min-w-60">
+			<DropdownMenuContent align={align} sideOffset={6} className="w-72">
 				<DropdownMenuRadioGroup value={value} onValueChange={onSelect}>
 					<DropdownMenuLabel className="pb-0 font-medium text-foreground">
 						{formPick ? "Create in" : "Workspace"}
@@ -63,19 +60,21 @@ export function WorkspaceMenu({
 							? "Only this form; your workspace stays as it is."
 							: "Dashboard, Usage, Logs and lists show its data; new items land here."}
 					</p>
-					{(formPick ? allRows : rows).map(({ context, nested }) => {
-						const Icon = WORKSPACE_ICON[context.kind];
-						return (
-							<DropdownMenuRadioItem
-								key={contextKey(context)}
-								value={contextKey(context)}
-								className={nested ? "pl-6" : undefined}
-							>
-								<Icon className="text-muted-foreground" aria-hidden />
+					{(formPick ? allRows : rows).map(({ context, nested }) => (
+						<DropdownMenuRadioItem
+							key={contextKey(context)}
+							value={contextKey(context)}
+							className={nested ? "gap-2.5 pl-6" : "gap-2.5"}
+						>
+							<WorkspaceAvatar context={context} size="sm" />
+							<span className="grid min-w-0 leading-tight">
 								<span className="truncate">{contextLabel(context)}</span>
-							</DropdownMenuRadioItem>
-						);
-					})}
+								<span className="truncate text-[11px] text-muted-foreground">
+									{contextSubtitle(context)}
+								</span>
+							</span>
+						</DropdownMenuRadioItem>
+					))}
 				</DropdownMenuRadioGroup>
 				{personalOffNote && (
 					<>

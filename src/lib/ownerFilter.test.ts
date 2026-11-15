@@ -11,9 +11,15 @@ import {
 import type { WorkContext } from "@/lib/workContext";
 
 const contexts: WorkContext[] = [
-	{ kind: "personal", id: "me", displayName: "me" },
-	{ kind: "team", id: "t1", displayName: "Platform" },
-	{ kind: "project", id: "p1", displayName: "Search", teamId: "t1" },
+	{ kind: "personal", id: "me", displayName: "me", admin: true },
+	{ kind: "team", id: "t1", displayName: "Platform", admin: true },
+	{
+		kind: "project",
+		id: "p1",
+		displayName: "Search",
+		teamId: "t1",
+		admin: false,
+	},
 ];
 const listed = new Set(["personal:me", "team:t1", "project:p1"]);
 

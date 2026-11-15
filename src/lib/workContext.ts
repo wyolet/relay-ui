@@ -13,6 +13,8 @@ export interface WorkContext {
 	displayName: string;
 	/** The project's team. Projects only. */
 	teamId?: string;
+	/** The caller is an admin there (always for personal and the organization). */
+	admin: boolean;
 }
 
 /** What the store keeps across reloads. */
@@ -22,6 +24,7 @@ export const SYSTEM_CONTEXT: WorkContext = {
 	kind: "system",
 	id: "",
 	displayName: "Organization",
+	admin: true,
 };
 
 const KIND_LABEL: Record<"team" | "project", string> = {
@@ -39,6 +42,7 @@ export function workContexts(
 			kind: c.kind,
 			id: c.id,
 			displayName: c.displayName,
+			admin: c.admin,
 			...(c.teamId ? { teamId: c.teamId } : {}),
 		}),
 	);
@@ -155,24 +159,29 @@ export function contextTitle(ctx: WorkContext): string {
 		: ctx.displayName;
 }
 
-/** The switcher trigger's second line: a project's team, else the kind. */
-export function contextSubtitle(
-	ctx: WorkContext,
-	contexts: readonly WorkContext[],
-): string {
+/** A workspace's second line: your role in a team or project, else what it spans. */
+export function contextSubtitle(ctx: WorkContext): string {
 	switch (ctx.kind) {
 		case "personal":
 			return "Personal";
 		case "system":
 			return "All teams";
-		case "team":
-			return KIND_LABEL.team;
-		case "project":
-			return (
-				contexts.find((c) => c.kind === "team" && c.id === ctx.teamId)
-					?.displayName ?? KIND_LABEL.project
-			);
+		default:
+			return `${KIND_LABEL[ctx.kind]} ${ctx.admin ? "admin" : "member"}`;
 	}
+}
+
+/** Up to two letters for a team or project's avatar: "Wyolet Relay" → "WR". */
+export function contextInitials(ctx: WorkContext): string {
+	const words = ctx.displayName
+		.trim()
+		.split(/[\s_-]+/)
+		.filter(Boolean);
+	const letters =
+		words.length > 1
+			? `${words[0]?.[0] ?? ""}${words[1]?.[0] ?? ""}`
+			: (words[0] ?? "").slice(0, 2);
+	return letters.toUpperCase();
 }
 
 /** "Team Platform": the context a create lands in. */

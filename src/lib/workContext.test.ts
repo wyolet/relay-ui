@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import type { components } from "@/api/types.gen";
 import {
+	contextInitials,
 	contextLabel,
 	contextName,
 	contextOwner,
@@ -64,13 +65,20 @@ const personal: WorkContext = {
 	kind: "personal",
 	id: "u1",
 	displayName: "ana",
+	admin: true,
 };
-const team: WorkContext = { kind: "team", id: "t1", displayName: "Platform" };
+const team: WorkContext = {
+	kind: "team",
+	id: "t1",
+	displayName: "Platform",
+	admin: true,
+};
 const project: WorkContext = {
 	kind: "project",
 	id: "p1",
 	displayName: "Search",
 	teamId: "t1",
+	admin: false,
 };
 
 describe("workContexts", () => {
@@ -197,22 +205,25 @@ describe("placement", () => {
 });
 
 describe("switcher trigger", () => {
-	const contexts = workContexts(mine, true);
-
 	test("personal shows whose it is; the rest by display name", () => {
 		expect(contextTitle(personal)).toBe("ana");
 		expect(contextTitle({ ...personal, displayName: "" })).toBe("Personal");
 		expect(contextTitle(team)).toBe("Platform");
 	});
 
-	test("a project's subtitle is its team, else the kind", () => {
-		expect(contextSubtitle(project, contexts)).toBe("Platform");
-		expect(contextSubtitle({ ...project, teamId: "t9" }, contexts)).toBe(
-			"Project",
+	test("the subtitle is your role in a team or project, else its span", () => {
+		expect(contextSubtitle(team)).toBe("Team admin");
+		expect(contextSubtitle(project)).toBe("Project member");
+		expect(contextSubtitle(personal)).toBe("Personal");
+		expect(contextSubtitle(SYSTEM_CONTEXT)).toBe("All teams");
+	});
+
+	test("initials take two words' first letters, else the name's first two", () => {
+		expect(contextInitials({ ...team, displayName: "Wyolet Relay" })).toBe(
+			"WR",
 		);
-		expect(contextSubtitle(team, contexts)).toBe("Team");
-		expect(contextSubtitle(personal, contexts)).toBe("Personal");
-		expect(contextSubtitle(SYSTEM_CONTEXT, contexts)).toBe("All teams");
+		expect(contextInitials(team)).toBe("PL");
+		expect(contextInitials({ ...team, displayName: "ml-ops" })).toBe("MO");
 	});
 });
 

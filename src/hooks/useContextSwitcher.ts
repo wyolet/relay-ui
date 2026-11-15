@@ -32,7 +32,7 @@ export function useContextSwitcher() {
 		current,
 		currentKey: current ? contextKey(current) : "",
 		currentTitle: current ? contextTitle(current) : "",
-		currentSubtitle: current ? contextSubtitle(current, contexts) : "",
+		currentSubtitle: current ? contextSubtitle(current) : "",
 		selectKey,
 		onOpenChange,
 		personalOffNote: usePersonalOffNote(),
