@@ -19,6 +19,7 @@ import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
 import { useMutability } from "@/hooks/useMutability";
 import { displayLabel } from "@/lib/displayLabel";
 import { PolicyForm } from "@/policies/PolicyForm";
+import { PolicyInUseNotice } from "@/policies/PolicyInUseNotice";
 import { PageLoader } from "@/shared/Spinner";
 
 export const Route = createFileRoute("/_authenticated/policies/$name_/edit")({
@@ -79,6 +80,10 @@ function EditPolicyInner() {
 		);
 	}
 
+	// The single read says up front whether an update would be refused for
+	// reaching accounts the caller can't set; lists don't carry it.
+	const blocked = policy.editable === false && policy.editBlockedBy;
+
 	return (
 		<div className="flex flex-col gap-4">
 			<div>
@@ -91,18 +96,22 @@ function EditPolicyInner() {
 					{displayLabel(policy.metadata)}
 				</Link>
 				<h1 className="mt-2 text-xl font-semibold text-foreground">
-					Edit policy
+					{blocked ? "Used by accounts you can't change" : "Edit policy"}
 				</h1>
 			</div>
-			<PolicyForm
-				policy={policy}
-				onSaved={() =>
-					void navigate({ to: "/policies/$name", params: { name } })
-				}
-				onCancel={() =>
-					void navigate({ to: "/policies/$name", params: { name } })
-				}
-			/>
+			{blocked ? (
+				<PolicyInUseNotice policy={policy} blockers={blocked} />
+			) : (
+				<PolicyForm
+					policy={policy}
+					onSaved={() =>
+						void navigate({ to: "/policies/$name", params: { name } })
+					}
+					onCancel={() =>
+						void navigate({ to: "/policies/$name", params: { name } })
+					}
+				/>
+			)}
 		</div>
 	);
 }
