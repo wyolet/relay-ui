@@ -39,7 +39,7 @@ export const PRICE_TIERS: readonly PriceTier[] = [
 /** The tier of a token price in USD; null for per-request or other
  * currencies, which don't compare on this scale. */
 export function priceTier(price: BlendedPrice | null): PriceTierKey | null {
-	if (!price || price.per !== "1M" || price.currency.toUpperCase() !== "USD")
+	if (price?.per !== "1M" || price.currency.toUpperCase() !== "USD")
 		return null;
 	return PRICE_TIERS.find((t) => price.amount > t.above)?.key ?? null;
 }
