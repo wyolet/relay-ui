@@ -88,11 +88,13 @@ export function contextUsageScope(
 	}
 }
 
-/** The owner-filter keys a workspace starts with: a team brings its projects. */
+/** The owner-filter keys a workspace starts with: a team brings its projects,
+ * the organization starts unfiltered, as its usage does. */
 export function workspaceKeys(
 	current: WorkContext,
 	contexts: readonly WorkContext[],
 ): string[] {
+	if (current.kind === "system") return [];
 	const projects =
 		current.kind === "team"
 			? contexts.filter((c) => c.kind === "project" && c.teamId === current.id)

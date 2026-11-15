@@ -369,5 +369,6 @@ describe("workspaceKeys", () => {
 		const contexts = workContexts(mine, false);
 		expect(workspaceKeys(team, contexts)).toEqual(["team:t1", "project:p1"]);
 		expect(workspaceKeys(personal, contexts)).toEqual(["personal:u1"]);
+		expect(workspaceKeys(SYSTEM_CONTEXT, contexts)).toEqual([]);
 	});
 });
