@@ -5,9 +5,8 @@ import {
 	type HostPrices,
 	type PriceRow,
 	RATE_COLUMNS,
-	type RateCell,
 } from "@/lib/pricingMatrix";
-import { fmtRate } from "@/pricing/MeterGrid";
+import { RateValue } from "@/pricing/MeterGrid";
 import { AddPriceLink } from "@/pricing/ModelPrice";
 import { Section } from "@/shared/Section";
 
@@ -108,7 +107,7 @@ function PriceLine({ row, hostId }: { row: PriceRow; hostId: string }) {
 				<span className="col-span-4 text-ink-3">Unpriced</span>
 			) : (
 				RATE_COLUMNS.map((c) => (
-					<Rate
+					<RateValue
 						key={c.meter}
 						cell={row.cells[c.meter]}
 						currency={row.currency}
@@ -117,32 +116,6 @@ function PriceLine({ row, hostId }: { row: PriceRow; hostId: string }) {
 			)}
 			<SheetCell row={row} hostId={hostId} />
 		</div>
-	);
-}
-
-function Rate({
-	cell,
-	currency,
-}: {
-	cell: RateCell | undefined;
-	currency: string;
-}) {
-	if (!cell) return <span className="text-right text-ink-3">—</span>;
-	return (
-		<span className="text-right text-foreground">
-			{fmtRate(cell.amount, currency)}
-			{cell.unit !== "per_million" && (
-				<span className="text-meta text-ink-3">/unit</span>
-			)}
-			{cell.tiered && (
-				<span
-					className="text-ink-3"
-					title="Higher rates above a token threshold"
-				>
-					+
-				</span>
-			)}
-		</span>
 	);
 }
 

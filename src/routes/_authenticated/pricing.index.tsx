@@ -9,10 +9,12 @@ import { FilterBar } from "@/filters/FilterBar";
 import type { FilterDef } from "@/filters/types";
 import { awaitOnEnter } from "@/lib/awaitOnEnter";
 import { HostPricesSection } from "@/pricing/HostPricesSection";
+import { PricingHostGrid } from "@/pricing/PricingHostGrid";
+import { PricingTierTable } from "@/pricing/PricingTierTable";
+import { usePricingCatalog } from "@/pricing/usePricingCatalog";
 import {
 	pricingGraphQuery,
 	pricingsMatrixListQuery,
-	usePricingMatrix,
 } from "@/pricing/usePricingMatrix";
 import { FigureRow, FigureRowSkeleton } from "@/shared/FigureRow";
 import { SectionSkeleton } from "@/shared/Section";
@@ -21,7 +23,9 @@ import { useDeferredSearch } from "@/shared/useDeferredSearch";
 
 const searchSchema = z.object({
 	q: z.string().default(""),
-	unpriced: z.boolean().default(false),
+	tier: z.enum(["top", "high", "mid", "low", "unpriced"]).default("top"),
+	host: z.string().optional(),
+	show_deprecated: z.boolean().default(false),
 });
 
 const PRICING_FILTERS = [
@@ -32,7 +36,12 @@ const PRICING_FILTERS = [
 		placeholder: "Search models, hosts, sheets",
 		default: "",
 	},
-	{ key: "unpriced", type: "toggle", label: "Unpriced only", default: false },
+	{
+		key: "show_deprecated",
+		type: "toggle",
+		label: "Show deprecated",
+		default: false,
+	},
 ] as const satisfies readonly FilterDef[];
 
 export const Route = createFileRoute("/_authenticated/pricing/")({
@@ -50,16 +59,14 @@ export const Route = createFileRoute("/_authenticated/pricing/")({
 	component: PricingPage,
 });
 
-function PricingMatrix() {
+function PricingCatalog() {
 	const live = Route.useSearch();
 	const { search, isStale } = useDeferredSearch(live);
 	const navigate = useNavigate({ from: "/pricing" });
-	const { hosts, anyRows, filtered, figures, truncated } = usePricingMatrix(
-		search.q,
-		search.unpriced,
-	);
+	const { figures, hosts, openHost, tabs, rows, anyRows, truncated } =
+		usePricingCatalog(search);
 
-	const patch = (next: Record<string, string | boolean | undefined>) =>
+	const patch = (next: Partial<z.infer<typeof searchSchema>>) =>
 		void navigate({ search: (prev) => ({ ...prev, ...next }), replace: true });
 
 	return (
@@ -68,7 +75,7 @@ function PricingMatrix() {
 			<div className="grid gap-10">
 				<FilterBar
 					defs={PRICING_FILTERS}
-					state={{ q: live.q, unpriced: live.unpriced }}
+					state={{ q: live.q, show_deprecated: live.show_deprecated }}
 					onChange={patch}
 				/>
 				{truncated && (
@@ -78,21 +85,21 @@ function PricingMatrix() {
 					</p>
 				)}
 				<StaleContent stale={isStale}>
-					{hosts.length === 0 ? (
+					{!anyRows ? (
 						<p className="text-label text-ink-2">
-							{anyRows
-								? "Nothing matches the filters."
-								: "No host serves a model yet. Bind a model to a host, then price it here."}
+							No host serves a model yet. Bind a model to a host, then price it
+							here.
 						</p>
 					) : (
 						<div className="grid gap-14">
-							{hosts.map((h) => (
-								<HostPricesSection
-									key={h.host.id}
-									prices={h}
-									unfolded={filtered}
-								/>
-							))}
+							<PricingHostGrid cards={hosts} open={search.host} />
+							{openHost && <HostPricesSection prices={openHost} unfolded />}
+							<PricingTierTable
+								tabs={tabs}
+								tier={search.tier}
+								rows={rows}
+								onTier={(tier) => patch({ tier })}
+							/>
 							<p className="text-meta text-ink-3">
 								Base rates per 1M tokens. A + marks a meter that charges more
 								above a token threshold; its rate sheet lists the tiers.
@@ -112,9 +119,9 @@ function PricingPage() {
 				<div>
 					<h1 className="text-2xl font-bold text-foreground">Pricing</h1>
 					<p className="mt-1 text-label text-ink-2">
-						What relay charges per 1M tokens for each model on each host. Spend
-						in Usage is estimated from these rates; unpriced requests count as
-						—, never $0.
+						What each host charges per 1M tokens for each model. Spend in Usage
+						is estimated from these rates; unpriced requests count as —, never
+						$0.
 					</p>
 				</div>
 				<Link
@@ -133,7 +140,7 @@ function PricingPage() {
 					</div>
 				}
 			>
-				<PricingMatrix />
+				<PricingCatalog />
 			</Suspense>
 		</div>
 	);

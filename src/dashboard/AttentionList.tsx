@@ -128,7 +128,7 @@ function TargetLink({
 			);
 		case "pricing":
 			return (
-				<Link to="/pricing" className={className}>
+				<Link to="/pricing" search={{ tier: "unpriced" }} className={className}>
 					{children}
 				</Link>
 			);
