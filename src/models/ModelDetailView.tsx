@@ -5,7 +5,6 @@ import { ModelDetailHeader } from "@/models/ModelDetailHeader";
 import { ModelFigures } from "@/models/ModelFigures";
 import { ModelHostList } from "@/models/ModelHostList";
 import { ModelPolicyList } from "@/models/ModelPolicyList";
-import { ModelRecentRequests } from "@/models/ModelRecentRequests";
 import { ModelSpec } from "@/models/ModelSpec";
 import { ModelTraffic } from "@/models/ModelTraffic";
 import { useModelHostLines } from "@/models/useModelHostLines";
@@ -81,18 +80,6 @@ export function ModelDetailView({
 			</div>
 
 			<ModelPolicyList policies={policies} />
-
-			{id && (
-				<Suspense
-					fallback={
-						<DelayedFallback>
-							<SectionSkeleton title="Recent requests" height="h-40" />
-						</DelayedFallback>
-					}
-				>
-					<ModelRecentRequests modelName={name} modelId={id} />
-				</Suspense>
-			)}
 		</div>
 	);
 }
