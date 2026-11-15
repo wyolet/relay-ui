@@ -49,6 +49,7 @@ export const KEY_FILTERS = [
 
 const KEY_SORTS = [
 	{ value: "usage", label: "Your usage" },
+	{ value: "used", label: "Last used" },
 	{ value: "newest", label: "Newest" },
 	{ value: "name", label: "Name" },
 	{ value: "expires", label: "Expiring soonest" },

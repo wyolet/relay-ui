@@ -41,6 +41,8 @@ export interface HostKeyDetailView {
 	envVar: string | undefined;
 
 	defaultTier: string | undefined;
+	/** When relay last sent a request with it; absent when none is recorded. */
+	lastUsedAt: string | undefined;
 
 	host: Host | undefined;
 	hostLabel: string;
@@ -95,6 +97,7 @@ export function useHostKeyDetail({ name, onDeleted }: UseHostKeyDetailOptions) {
 		isStored,
 		sourceLabel: isStored ? "Stored value" : "Environment variable",
 		envVar: hk.spec.valueFrom.env?.trim() || undefined,
+		lastUsedAt: hk.lastUsedAt,
 
 		defaultTier: hk.spec.defaultTier?.trim() || undefined,
 
