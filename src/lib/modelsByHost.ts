@@ -145,8 +145,6 @@ export function sortLines(
 export interface LineGroup {
 	key: string;
 	label: string;
-	/** Set when the group is a host. */
-	host?: MatrixHost;
 	lines: ModelLine[];
 }
 
@@ -240,69 +238,38 @@ export function inUseCount(
 	return n;
 }
 
-/** Usage with no host is telemetry (e.g. OTLP reports): it names a model but
- * went through no relay host. */
-export const TELEMETRY_GROUP = "telemetry";
-
-/** Each host's lines with traffic on it, under host headings in rail order,
- * then models whose traffic named no host. Hosts whose per-model usage hasn't
- * loaded are left out. */
-export function inUseGroups(
+/** Every model that carried traffic, once, with its usage across hosts and
+ * telemetry. Its price is the cheapest host's, as on the pricing page. */
+export function inUseLines(
 	hosts: readonly HostPrices[],
 	modelsById: ReadonlyMap<string, Model>,
-	usageByHost: ReadonlyMap<string, ReadonlyMap<string, ModelUsage>>,
 	byModel: ReadonlyMap<string, ModelUsage>,
 	shown: ModelsFilter,
 	sort: ModelsSort,
-): LineGroup[] {
+): ModelLine[] {
 	const filter = inUseFilter(shown);
-	const groups = hostUseGroups(hosts, modelsById, usageByHost, filter, sort);
-	const seen = new Set(
-		groups.flatMap((g) => g.lines.map((l) => l.model.metadata.id)),
-	);
-	const telemetry: ModelLine[] = [];
+	const cheapest = new Map<string, ModelLine>();
+	for (const prices of hosts) {
+		for (const line of hostLines(prices, modelsById)) {
+			const id = line.model.metadata.id ?? "";
+			const best = cheapest.get(id);
+			const blended = line.price?.blended ?? null;
+			if (
+				!best ||
+				compareBlendedPrices(blended, best.price?.blended ?? null) < 0
+			)
+				cheapest.set(id, line);
+		}
+	}
+	const lines: ModelLine[] = [];
 	for (const [id, usage] of byModel) {
 		const model = modelsById.get(id);
-		if (
-			usage.requests > 0 &&
-			model &&
-			!seen.has(id) &&
-			modelMatches(model, filter)
-		)
-			telemetry.push({ model, usage });
+		if (usage.requests === 0 || !model || !modelMatches(model, filter))
+			continue;
+		const line = cheapest.get(id);
+		lines.push({ model, host: line?.host, price: line?.price, usage });
 	}
-	if (telemetry.length > 0)
-		groups.push({
-			key: TELEMETRY_GROUP,
-			label: "Reported by telemetry",
-			lines: sortLines(telemetry, sort),
-		});
-	return groups;
-}
-
-function hostUseGroups(
-	hosts: readonly HostPrices[],
-	modelsById: ReadonlyMap<string, Model>,
-	usageByHost: ReadonlyMap<string, ReadonlyMap<string, ModelUsage>>,
-	filter: ModelsFilter,
-	sort: ModelsSort,
-): LineGroup[] {
-	return hosts.flatMap((prices) => {
-		const usage = usageByHost.get(prices.host.id);
-		if (!usage) return [];
-		const lines = hostLines(prices, modelsById, usage).filter(
-			(l) => (l.usage?.requests ?? 0) > 0 && modelMatches(l.model, filter),
-		);
-		if (lines.length === 0) return [];
-		return [
-			{
-				key: prices.host.id,
-				label: prices.host.label,
-				host: prices.host,
-				lines: sortLines(lines, sort),
-			},
-		];
-	});
+	return sortLines(lines, sort);
 }
 
 /** The pane the rail opens: the asked host when it's listed, else "In use"

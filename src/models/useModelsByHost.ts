@@ -8,7 +8,7 @@ import {
 	hostLines,
 	IN_USE,
 	inUseCount,
-	inUseGroups,
+	inUseLines,
 	isNarrowing,
 	type LineGroup,
 	type ModelsSortKey,
@@ -57,8 +57,8 @@ export interface ModelsRailView {
 	narrowing: boolean;
 }
 
-/** The models catalog by host: the rail, and the open pane's models grouped
- * by family (a host) or by host (In use). Usage never suspends. */
+/** The models catalog by host: the rail, and the open pane's models, grouped
+ * by family for a host and one plain list for In use. Usage never suspends. */
 export function useModelsByHost(search: ModelsSearch) {
 	const [graph, hosts, models, pricings] = useSuspenseQueries({
 		queries: [
@@ -93,22 +93,16 @@ export function useModelsByHost(search: ModelsSearch) {
 	const anyTraffic = byHost && [...byHost.values()].some((u) => u.requests > 0);
 	const key = pickPane(search.host, rail, anyTraffic);
 
-	const usedHosts = rail.filter((r) => (r.usage?.requests ?? 0) > 0);
 	const open = rail.find((r) => r.host.slug === key);
-	const paneHostIds =
-		key === IN_USE
-			? usedHosts.map((r) => r.host.id)
-			: open
-				? [open.host.id]
-				: [];
-	const usageByHost = useHostModelUsage(paneHostIds);
+	const usageByHost = useHostModelUsage(
+		key !== IN_USE && open ? [open.host.id] : [],
+	);
 
 	let pane: ModelsPaneView;
 	if (key === IN_USE) {
-		const groups = inUseGroups(
-			usedHosts.flatMap((r) => pricesById.get(r.host.id) ?? []),
+		const lines = inUseLines(
+			matrix,
 			modelsById,
-			usageByHost,
 			byModel ?? new Map(),
 			filter,
 			sort,
@@ -116,12 +110,10 @@ export function useModelsByHost(search: ModelsSearch) {
 		pane = {
 			key,
 			title: "In use",
-			models: new Set(
-				groups.flatMap((g) => g.lines.map((l) => l.model.metadata.id)),
-			).size,
-			usage: sumUsage(usedHosts.map((r) => r.usage)),
-			groups,
-			loading: !byHost || usedHosts.some((r) => !usageByHost.has(r.host.id)),
+			models: lines.length,
+			usage: sumUsage(lines.map((l) => l.usage)),
+			groups: lines.length > 0 ? [{ key: IN_USE, label: "", lines }] : [],
+			loading: !byModel,
 		};
 	} else {
 		const prices = open && pricesById.get(open.host.id);

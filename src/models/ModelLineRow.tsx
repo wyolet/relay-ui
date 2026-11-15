@@ -18,7 +18,7 @@ import { Switch } from "@/shared/Switch";
 import { fmtMoneyCompact } from "@/usage/format";
 
 const GRID =
-	"grid grid-cols-[minmax(12rem,1fr)_6rem_3.5rem_4.5rem_repeat(2,4.5rem)_3.5rem_4.5rem_4.5rem] items-center gap-x-4";
+	"grid grid-cols-[minmax(10rem,2fr)_minmax(5.5rem,1fr)_minmax(3.5rem,1fr)_minmax(4rem,1fr)_repeat(2,minmax(4.5rem,1fr))_minmax(3.5rem,1fr)_minmax(4.5rem,1fr)_4.5rem] items-center gap-x-3";
 
 /** The pane's column labels, on the rows' grid. */
 export function ModelLineColumns() {
