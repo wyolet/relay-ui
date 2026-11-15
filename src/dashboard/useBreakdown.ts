@@ -58,12 +58,12 @@ export function useBreakdown(groupBy: BreakdownDimension): {
 	more: number;
 	totals: Fact[];
 } {
-	const { win } = useDashboardWindow();
+	const { win, filter } = useDashboardWindow();
 	const {
 		groups,
 		previousGroups: before,
 		labels,
-	} = useUsageOverviewWithDeltas(groupBy, win);
+	} = useUsageOverviewWithDeltas(groupBy, win, filter);
 	const labelFor = useGroupLabeler(groupBy, labels);
 
 	const priced = groups.some((g) => (g.cost.usd ?? 0) > 0);

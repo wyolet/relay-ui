@@ -3,6 +3,6 @@ import { useDashboardWindow } from "./useDashboardWindow";
 
 /** Whether the selected period saw any request, and how to name the period. */
 export function useDashboardTraffic() {
-	const { win, period } = useDashboardWindow();
-	return { hasTraffic: useHasTraffic(win), period };
+	const { win, period, filter } = useDashboardWindow();
+	return { hasTraffic: useHasTraffic(win, filter), period };
 }

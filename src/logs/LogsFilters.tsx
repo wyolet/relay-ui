@@ -54,10 +54,13 @@ interface ActiveChip {
  */
 export function LogsFilters({
 	values,
+	scope,
 	slowLabel,
 	onChange,
 }: {
 	values: LogsFilterValues;
+	/** The workspace's slice, so pickers offer only values seen in it. */
+	scope: UsageSummaryFilter;
 	slowLabel: string;
 	onChange: (patch: Partial<LogsFilterValues>) => void;
 }) {
@@ -148,7 +151,7 @@ export function LogsFilters({
 						toggle: toggleDim,
 						clear: (d) => setDim(d, []),
 						win,
-						filter: usageSlice(values),
+						filter: { ...usageSlice(values), ...scope },
 					}}
 				/>
 

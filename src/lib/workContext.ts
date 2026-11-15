@@ -1,3 +1,4 @@
+import type { UsageSummaryFilter } from "@/api/hooks/usage";
 import type { components } from "@/api/types.gen";
 import type { OwnerOption } from "@/lib/ownerScopes";
 
@@ -20,7 +21,7 @@ export type WorkContextRef = Pick<WorkContext, "kind" | "id">;
 export const SYSTEM_CONTEXT: WorkContext = {
 	kind: "system",
 	id: "",
-	displayName: "System",
+	displayName: "Organization",
 };
 
 const KIND_LABEL: Record<"team" | "project", string> = {
@@ -54,7 +55,8 @@ export function contextKey(ctx: WorkContextRef): string {
 	return `${ctx.kind}:${ctx.id}`;
 }
 
-/** The stored context while the caller still has it, else the first one. */
+/** The stored context while the caller still has it, else the first one. A
+ * project whose team is listed resolves to the team: the switcher lists teams only. */
 export function resolveWorkContext(
 	contexts: readonly WorkContext[],
 	stored: WorkContextRef | null,
@@ -62,7 +64,40 @@ export function resolveWorkContext(
 	const kept = stored
 		? contexts.find((c) => contextKey(c) === contextKey(stored))
 		: undefined;
-	return kept ?? contexts[0];
+	const team =
+		kept?.kind === "project"
+			? contexts.find((c) => c.kind === "team" && c.id === kept.teamId)
+			: undefined;
+	return team ?? kept ?? contexts[0];
+}
+
+/** The usage a workspace shows: your own requests, a team's or project's
+ * traffic (a team's includes its projects'), or all of it. */
+export function contextUsageScope(
+	ctx: WorkContextRef,
+): Pick<UsageSummaryFilter, "principal_id" | "team_id" | "project_id"> {
+	switch (ctx.kind) {
+		case "personal":
+			return { principal_id: [ctx.id] };
+		case "team":
+			return { team_id: [ctx.id] };
+		case "project":
+			return { project_id: [ctx.id] };
+		case "system":
+			return {};
+	}
+}
+
+/** The owner-filter keys a workspace starts with: a team brings its projects. */
+export function workspaceKeys(
+	current: WorkContext,
+	contexts: readonly WorkContext[],
+): string[] {
+	const projects =
+		current.kind === "team"
+			? contexts.filter((c) => c.kind === "project" && c.teamId === current.id)
+			: [];
+	return [current, ...projects].map(contextKey);
 }
 
 /** The owner a create sends; personal sends none, so the row lands in the caller's own scope. */
@@ -127,7 +162,7 @@ export function contextSubtitle(
 		case "personal":
 			return "Personal";
 		case "system":
-			return "Relay-wide";
+			return "All teams";
 		case "team":
 			return KIND_LABEL.team;
 		case "project":
@@ -144,7 +179,7 @@ export function contextName(ctx: WorkContext): string {
 		case "personal":
 			return "Personal";
 		case "system":
-			return "System";
+			return "Organization";
 		default:
 			return `${KIND_LABEL[ctx.kind]} ${ctx.displayName}`;
 	}

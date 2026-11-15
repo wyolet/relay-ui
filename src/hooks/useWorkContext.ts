@@ -1,6 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
+import { type QueryClient, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { useAuth } from "@/api/auth";
+import { useAuth, whoamiQueryOptions } from "@/api/auth";
 import { myContextsQueryOptions } from "@/api/hooks/contexts";
 import type { components } from "@/api/types.gen";
 import {
@@ -8,6 +8,7 @@ import {
 	contextName,
 	contextOwner,
 	contextUsableBy,
+	contextUsageScope,
 	type FormPlacement,
 	ownerName,
 	ownerUsableBy,
@@ -20,20 +21,36 @@ import {
 import { useWorkContextStore } from "@/stores/workContext";
 
 type Owner = components["schemas"]["Owner"];
+type MyContext = components["schemas"]["MyContext"];
 
-/** The caller's contexts, the current one, and what a create in it sends. */
-export function useWorkContext() {
-	const { isAdmin, userId } = useAuth();
-	const selected = useWorkContextStore((s) => s.selected);
-	const select = useWorkContextStore((s) => s.select);
-	const { data } = useQuery(myContextsQueryOptions);
-	const contexts = workContexts(data ?? [], isAdmin);
-	const current = data ? resolveWorkContext(contexts, selected) : undefined;
+function resolveWorkspace(
+	mine: readonly MyContext[] | undefined,
+	isAdmin: boolean,
+	userId: string | undefined,
+	selected: WorkContextRef | null,
+) {
+	const contexts = workContexts(mine ?? [], isAdmin);
+	const current = mine ? resolveWorkContext(contexts, selected) : undefined;
 	// Until the list loads, the stored pick (or personal) stands in.
 	const ref: WorkContextRef =
 		current ??
 		selected ??
 		(userId ? { kind: "personal", id: userId } : SYSTEM_CONTEXT);
+	return { contexts, current, ref };
+}
+
+/** The caller's contexts, the current one, what a create in it sends, and the usage it shows. */
+export function useWorkContext() {
+	const { isAdmin, userId } = useAuth();
+	const selected = useWorkContextStore((s) => s.selected);
+	const select = useWorkContextStore((s) => s.select);
+	const { data } = useQuery(myContextsQueryOptions);
+	const { contexts, current, ref } = resolveWorkspace(
+		data,
+		isAdmin,
+		userId,
+		selected,
+	);
 
 	return {
 		contexts,
@@ -42,7 +59,20 @@ export function useWorkContext() {
 		select,
 		owner: contextOwner(ref),
 		usableBy: contextUsableBy(ref),
+		usageScope: contextUsageScope(ref),
 	};
+}
+
+/** The workspace's usage scope from cached data, for loaders. */
+export function cachedUsageScope(queryClient: QueryClient) {
+	const who = queryClient.getQueryData(whoamiQueryOptions.queryKey);
+	const { ref } = resolveWorkspace(
+		queryClient.getQueryData(myContextsQueryOptions.queryKey),
+		who?.roles.includes("admin") ?? false,
+		who?.userId,
+		useWorkContextStore.getState().selected,
+	);
+	return contextUsageScope(ref);
 }
 
 /**

@@ -52,7 +52,7 @@ export function useWeekActivity(metric: DashboardMetric): {
 	hours: string[];
 } {
 	const dw = useDashboardWindow();
-	const values = pointTotals(useMetricSeries(metric, dw.hourly));
+	const values = pointTotals(useMetricSeries(metric, dw.hourly, dw.filter));
 	const byWeekday = dw.range === "month";
 	const fromMs = Date.parse(dw.hourly.from);
 
