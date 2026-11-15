@@ -9,11 +9,7 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useContextSwitcher } from "@/hooks/useContextSwitcher";
-import {
-	contextKey,
-	contextLabel,
-	contextSubtitle,
-} from "@/lib/workContext";
+import { contextKey, contextLabel, contextRowDetail } from "@/lib/workContext";
 import { WorkspaceAvatar } from "@/shared/WorkspaceAvatar";
 
 interface WorkspaceMenuProps {
@@ -70,7 +66,7 @@ export function WorkspaceMenu({
 							<span className="grid min-w-0 leading-tight">
 								<span className="truncate">{contextLabel(context)}</span>
 								<span className="truncate text-[11px] text-muted-foreground">
-									{contextSubtitle(context)}
+									{contextRowDetail(context)}
 								</span>
 							</span>
 						</DropdownMenuRadioItem>

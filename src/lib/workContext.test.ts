@@ -5,6 +5,7 @@ import {
 	contextLabel,
 	contextName,
 	contextOwner,
+	contextRowDetail,
 	contextRows,
 	contextSubtitle,
 	contextTeamId,
@@ -216,6 +217,11 @@ describe("switcher trigger", () => {
 		expect(contextSubtitle(project)).toBe("Project member");
 		expect(contextSubtitle(personal)).toBe("Personal");
 		expect(contextSubtitle(SYSTEM_CONTEXT)).toBe("All teams");
+	});
+
+	test("a row names whose your personal space is", () => {
+		expect(contextRowDetail(personal)).toBe("ana");
+		expect(contextRowDetail(team)).toBe("Team admin");
 	});
 
 	test("initials take two words' first letters, else the name's first two", () => {

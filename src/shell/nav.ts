@@ -3,6 +3,7 @@ import {
 	BarChart3,
 	Bot,
 	Boxes,
+	Cog,
 	KeyRound,
 	LayoutDashboard,
 	ShieldCheck,
@@ -26,7 +27,8 @@ export interface NavItem {
 		| "/projects"
 		| "/audit"
 		| "/users"
-		| "/scim-clients";
+		| "/scim-clients"
+		| "/settings";
 	label: string;
 	icon: ComponentType<{ className?: string }>;
 	/** Path prefixes that highlight the entry; a tabbed page lists every tab's
@@ -125,9 +127,17 @@ export function isActive(path: string, item: NavItem): boolean {
 	return [item.prefix].flat().some((prefix) => path.startsWith(prefix));
 }
 
+/** Pinned to the sidebar's foot, above the account. */
+export const SETTINGS_ITEM: NavItem = {
+	to: "/settings",
+	label: "Settings",
+	icon: Cog,
+	prefix: "/settings",
+};
+
 /** The nav entry a path sits under; none for pages outside the nav. */
 export function navItemFor(path: string): NavItem | undefined {
-	return NAV_GROUPS.flatMap((g) => g.items).find((item) =>
+	return [...NAV_GROUPS.flatMap((g) => g.items), SETTINGS_ITEM].find((item) =>
 		isActive(path, item),
 	);
 }

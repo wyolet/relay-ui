@@ -171,6 +171,11 @@ export function contextSubtitle(ctx: WorkContext): string {
 	}
 }
 
+/** A switcher row's second line: whose your personal space is, else the subtitle. */
+export function contextRowDetail(ctx: WorkContext): string {
+	return ctx.kind === "personal" ? contextTitle(ctx) : contextSubtitle(ctx);
+}
+
 /** Up to two letters for a team or project's avatar: "Wyolet Relay" → "WR". */
 export function contextInitials(ctx: WorkContext): string {
 	const words = ctx.displayName

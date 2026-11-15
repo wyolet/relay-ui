@@ -7,7 +7,6 @@ import {
 import { ToastContainer } from "@/shared/Toast";
 import { useSidebarStore } from "@/stores/sidebar";
 import { useWorkContextStore } from "@/stores/workContext";
-import { AccountMenu } from "./AccountMenu";
 import { NoLaneBanner } from "./NoLaneBanner";
 import { Sidebar } from "./Sidebar";
 import { WorkspaceCrumb } from "./WorkspaceCrumb";
@@ -30,7 +29,6 @@ export function Layout() {
 						<SidebarTrigger />
 						<WorkspaceCrumb />
 					</div>
-					<AccountMenu />
 				</header>
 				<main className="min-h-0 flex-1 overflow-auto">
 					<div

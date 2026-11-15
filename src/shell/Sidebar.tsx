@@ -3,6 +3,7 @@ import { useAuth } from "@/api/auth";
 import { useCapabilities } from "@/api/hooks/capabilities";
 import {
 	SidebarContent,
+	SidebarFooter,
 	SidebarGroup,
 	SidebarGroupLabel,
 	SidebarHeader,
@@ -13,7 +14,8 @@ import {
 	Sidebar as SidebarRoot,
 } from "@/components/ui/sidebar";
 import { BrandMark } from "@/shared/BrandMark";
-import { isActive, NAV_GROUPS, type NavItem } from "@/shell/nav";
+import { AccountMenu } from "@/shell/AccountMenu";
+import { isActive, NAV_GROUPS, type NavItem, SETTINGS_ITEM } from "@/shell/nav";
 import { WorkspaceSwitcher } from "@/shell/WorkspaceSwitcher";
 
 function NavMenuItem({ item, active }: { item: NavItem; active: boolean }) {
@@ -78,6 +80,16 @@ export function Sidebar() {
 					</SidebarGroup>
 				))}
 			</SidebarContent>
+
+			<SidebarFooter>
+				<SidebarMenu>
+					<NavMenuItem
+						item={SETTINGS_ITEM}
+						active={isActive(path, SETTINGS_ITEM)}
+					/>
+				</SidebarMenu>
+				<AccountMenu />
+			</SidebarFooter>
 
 			<SidebarRail />
 		</SidebarRoot>
