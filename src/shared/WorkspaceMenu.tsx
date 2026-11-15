@@ -74,12 +74,8 @@ export function WorkspaceMenu({
 								key={contextKey(context)}
 								value={contextKey(context)}
 								{...slide.rowProps}
-								// The glide paints the hover; the current pick sits raised above it.
-								className={cn(
-									"gap-2.5 focus:bg-transparent",
-									"data-checked:bg-foreground/5 data-checked:shadow-sm data-checked:ring-1 data-checked:ring-border",
-									nested && "pl-6",
-								)}
+								// The glide above paints the highlight; the row keeps its own clear.
+								className={cn("gap-2.5 focus:bg-transparent", nested && "pl-6")}
 							>
 								<WorkspaceAvatar context={context} size="sm" />
 								<span className="grid min-w-0 leading-tight">
