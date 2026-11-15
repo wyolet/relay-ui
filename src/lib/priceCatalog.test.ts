@@ -142,3 +142,15 @@ describe("hostCards", () => {
 		expect(cards[1]?.range).toEqual({ min: 8, max: 37.5 });
 	});
 });
+
+describe("rowsForTab sort", () => {
+	test("orders by price, name or newest in either direction", () => {
+		const rows = tierRows(modelPriceSummaries(catalog()), new Map());
+		const ids = (key: "price" | "name" | "newest", dir: "asc" | "desc") =>
+			rowsForTab(rows, "top", true, { key, dir }).map((r) => r.model.id);
+		expect(ids("price", "asc")).toEqual(["fable", "gone", "old"]);
+		expect(ids("price", "desc")).toEqual(["old", "gone", "fable"]);
+		expect(ids("name", "asc")).toEqual(["fable", "gone", "old"]);
+		expect(ids("newest", "desc")[0]).toBe("fable");
+	});
+});

@@ -5,13 +5,16 @@ import { z } from "zod";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
 import { modelsListQueryOptions } from "@/api/hooks/models";
 import { buttonVariants } from "@/components/ui/button";
-import { FilterBar } from "@/filters/FilterBar";
+import { FilterBar, type SortControl } from "@/filters/FilterBar";
 import type { FilterDef } from "@/filters/types";
 import { awaitOnEnter } from "@/lib/awaitOnEnter";
 import { HostPricesSection } from "@/pricing/HostPricesSection";
 import { PricingHostGrid } from "@/pricing/PricingHostGrid";
 import { PricingTierTable } from "@/pricing/PricingTierTable";
-import { usePricingCatalog } from "@/pricing/usePricingCatalog";
+import {
+	type PricingSearch,
+	usePricingCatalog,
+} from "@/pricing/usePricingCatalog";
 import {
 	pricingGraphQuery,
 	pricingsMatrixListQuery,
@@ -26,7 +29,19 @@ const searchSchema = z.object({
 	tier: z.enum(["top", "high", "mid", "low", "unpriced"]).default("top"),
 	host: z.string().optional(),
 	show_deprecated: z.boolean().default(false),
+	by: z
+		.enum(["spend", "newest", "price", "name"])
+		.catch("spend")
+		.default("spend"),
+	dir: z.enum(["asc", "desc"]).catch("desc").default("desc"),
 });
+
+const PRICING_SORTS = [
+	{ value: "spend", label: "Your spend" },
+	{ value: "newest", label: "Newest" },
+	{ value: "price", label: "Price" },
+	{ value: "name", label: "Name" },
+] as const;
 
 const PRICING_FILTERS = [
 	{
@@ -68,6 +83,12 @@ function PricingCatalog() {
 
 	const patch = (next: Partial<z.infer<typeof searchSchema>>) =>
 		void navigate({ search: (prev) => ({ ...prev, ...next }), replace: true });
+	const sort: SortControl<PricingSearch["by"]> = {
+		options: PRICING_SORTS,
+		value: live.by,
+		dir: live.dir,
+		onChange: (by, dir) => patch({ by, dir }),
+	};
 
 	return (
 		<div className="grid gap-14">
@@ -77,6 +98,16 @@ function PricingCatalog() {
 					defs={PRICING_FILTERS}
 					state={{ q: live.q, show_deprecated: live.show_deprecated }}
 					onChange={patch}
+					sort={sort}
+					actions={
+						<Link
+							to="/pricing/new"
+							className={buttonVariants({ variant: "cta", size: "lg" })}
+						>
+							<Plus className="size-3.5" />
+							New pricing
+						</Link>
+					}
 				/>
 				{truncated && (
 					<p className="text-meta text-ink-3">
@@ -124,13 +155,6 @@ function PricingPage() {
 						$0.
 					</p>
 				</div>
-				<Link
-					to="/pricing/new"
-					className={buttonVariants({ variant: "cta", size: "lg" })}
-				>
-					<Plus className="size-3.5" />
-					New pricing
-				</Link>
 			</div>
 			<Suspense
 				fallback={
