@@ -143,7 +143,7 @@ export function KeyDetailView({ name }: { name: string }) {
 						)}
 					</DetailRow>
 					<DetailRow label="Last used">
-						<LastUsed at={rk.lastUsedAt} />
+						<LastUsed at={rk.status?.lastUsedAt} />
 					</DetailRow>
 					<DetailRow label="Rotation grace">
 						{rk.spec.graceUntil ? (

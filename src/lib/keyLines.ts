@@ -33,7 +33,8 @@ export interface KeyLine {
 const label = (l: KeyLine) => displayLabel(l.key.metadata);
 const created = (l: KeyLine) => Date.parse(l.key.metadata.createdAt ?? "") || 0;
 const expiry = (l: KeyLine) => Date.parse(l.key.spec.expiresAt ?? "");
-const lastUsed = (l: KeyLine) => Date.parse(l.key.lastUsedAt ?? "") || 0;
+const lastUsed = (l: KeyLine) =>
+	Date.parse(l.key.status?.lastUsedAt ?? "") || 0;
 
 /** Each sort's ascending order. */
 const ASCENDING: Record<KeysSortKey, (a: KeyLine, b: KeyLine) => number> = {
@@ -64,7 +65,8 @@ export function sortKeyLines(
 			if (never !== 0) return never;
 		}
 		if (sort.key === "used") {
-			const unused = Number(!a.key.lastUsedAt) - Number(!b.key.lastUsedAt);
+			const unused =
+				Number(!a.key.status?.lastUsedAt) - Number(!b.key.status?.lastUsedAt);
 			if (unused !== 0) return unused;
 		}
 		return sign * ASCENDING[sort.key](a, b) || label(a).localeCompare(label(b));

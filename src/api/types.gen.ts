@@ -4816,11 +4816,6 @@ export interface components {
              * @example https://example.com/schemas/HostKey.json
              */
             readonly $schema?: string;
-            /**
-             * Format: date-time
-             * @description When relay last sent a request with this key, to the minute; updated about once a minute. Absent when it has not sent one. Ignored on write.
-             */
-            readonly lastUsedAt?: string;
             /** @description Identity and provenance: id, name, owner, labels. */
             metadata: components["schemas"]["Metadata"];
             /** @description Policies whose pools reach this key: listing it, or drawing on its account or a share of it. Derived on read; ignored on write. */
@@ -4837,11 +4832,6 @@ export interface components {
              * @example https://example.com/schemas/HostKey.json
              */
             readonly $schema?: string;
-            /**
-             * Format: date-time
-             * @description When relay last sent a request with this key, to the minute; updated about once a minute. Absent when it has not sent one. Ignored on write.
-             */
-            readonly lastUsedAt?: string;
             /** @description Identity and provenance: id, name, owner, labels. */
             metadata: components["schemas"]["MetadataCreate"];
             /** @description Policies whose pools reach this key: listing it, or drawing on its account or a share of it. Derived on read; ignored on write. */
@@ -4936,6 +4926,11 @@ export interface components {
         HostKeyStatus: {
             /** @description Refresh health of an oauth credential. Absent for other kinds and before the first renewal. */
             credential?: components["schemas"]["HostKeyCredentialStatus"];
+            /**
+             * Format: date-time
+             * @description When relay last sent a request with this key, to the minute; updated about once a minute. Absent when it has not sent one.
+             */
+            lastUsedAt?: string;
             /** @description Set when the secret could not be read at load; the key is not routed until repaired. */
             unresolved?: components["schemas"]["HostKeyUnresolvedStatus"];
         };
@@ -5143,15 +5138,12 @@ export interface components {
              * @example https://example.com/schemas/Key.json
              */
             readonly $schema?: string;
-            /**
-             * Format: date-time
-             * @description When the key last served a request, to the minute; updated about once a minute. Absent when it has not served one. Ignored on write.
-             */
-            readonly lastUsedAt?: string;
             /** @description Identity and provenance: id, name, owner, labels. */
             metadata: components["schemas"]["Metadata"];
             /** @description The row's configuration. */
             spec: components["schemas"]["KeySpec"];
+            /** @description Observed state of the key. Server-managed; ignored on write. */
+            readonly status?: components["schemas"]["KeyObservedStatus"];
         };
         KeyList: {
             /**
@@ -5167,6 +5159,13 @@ export interface components {
              * @description Matching rows before limit and offset apply.
              */
             total: number;
+        };
+        KeyObservedStatus: {
+            /**
+             * Format: date-time
+             * @description When the key last served a request, to the minute; updated about once a minute. Absent when it has not served one.
+             */
+            lastUsedAt?: string;
         };
         KeyPrincipal: {
             /** @description Id of the service account or user. */
