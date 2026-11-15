@@ -10,7 +10,7 @@ import {
 	modelsListQueryOptions,
 	useDeleteModel,
 	useModel,
-	useUpdateModel,
+	useSetModelEnabled,
 } from "@/api/hooks/models";
 import { providersListQueryOptions } from "@/api/hooks/providers";
 import { usageNow } from "@/api/hooks/usage";
@@ -58,27 +58,24 @@ function ModelDetailInner() {
 	const { name } = Route.useParams();
 	const navigate = useNavigate({ from: "/models/$name" });
 	const { data: model } = useModel(name);
-	const updateModel = useUpdateModel();
+	const setEnabled = useSetModelEnabled();
 	const toastSaveError = useSaveErrorToast();
 	const del = useConfirmedDelete(useDeleteModel(), {
 		noun: "model",
 		onDeleted: () => void navigate({ to: "/models" }),
 	});
 
-	async function handleToggleEnabled() {
+	function handleToggleEnabled() {
+		if (setEnabled.isPending) return;
 		const next = !(model.spec.enabled !== false);
-		try {
-			await updateModel.mutateAsync({
-				id: model.metadata.id ?? "",
-				body: {
-					metadata: model.metadata,
-					spec: { ...model.spec, enabled: next },
-				},
-			});
-			toast("success", next ? "Model enabled." : "Model disabled.");
-		} catch (err) {
-			toastSaveError(err, "Failed to toggle model.");
-		}
+		setEnabled.mutate(
+			{ model, enabled: next },
+			{
+				onSuccess: () =>
+					toast("success", next ? "Model enabled." : "Model disabled."),
+				onError: (err) => toastSaveError(err, "Failed to toggle model."),
+			},
+		);
 	}
 
 	return (
@@ -92,8 +89,8 @@ function ModelDetailInner() {
 			</Link>
 			<ModelDetailView
 				model={model}
-				onToggleEnabled={() => void handleToggleEnabled()}
-				toggling={updateModel.isPending}
+				onToggleEnabled={handleToggleEnabled}
+				toggling={setEnabled.isPending}
 				onDelete={() =>
 					del.request({
 						id: model.metadata.id ?? "",

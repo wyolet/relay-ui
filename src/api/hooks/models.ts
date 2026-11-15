@@ -6,7 +6,7 @@ import {
 } from "@tanstack/react-query";
 import { apiClient } from "@/api/client";
 import type { DetachedLinks } from "@/api/types/errors";
-import type { Model, ModelListResponse, ModelUpdate } from "@/api/types/model";
+import type { Model, ModelListResponse } from "@/api/types/model";
 import type { components } from "@/api/types.gen";
 import { unwrap } from "@/api/unwrap";
 
@@ -115,29 +115,6 @@ export function useModel(name: string) {
 	return useSuspenseQuery(modelDetailQueryOptions(name));
 }
 
-export function useUpdateModel() {
-	const queryClient = useQueryClient();
-	return useMutation({
-		mutationFn: async ({
-			id,
-			body,
-		}: {
-			id: string;
-			body: ModelUpdate;
-		}): Promise<Model> => {
-			return unwrap(
-				await apiClient.PUT("/models/by-id/{id}", {
-					params: { path: { id } },
-					body,
-				}),
-			);
-		},
-		onSuccess: () => {
-			invalidateModelDependents(queryClient);
-		},
-	});
-}
-
 /** The models list with one model swapped for `next`. */
 function withModel(
 	list: ModelListResponse | undefined,
@@ -153,10 +130,10 @@ function withModel(
 	);
 }
 
-/** Switches a model on or off. The list cache flips before the request so a
- * switch never shows the old state while the save runs; the saved model then
- * replaces it (fresh resourceVersion for the next toggle), and a failed save
- * puts the old one back. */
+/** Switches a model on or off. The list and the model's own cache entry flip
+ * before the request so a switch never shows the old state while the save
+ * runs; the saved model then replaces them (fresh resourceVersion for the next
+ * toggle), and a failed save puts the old ones back. */
 export function useSetModelEnabled() {
 	const queryClient = useQueryClient();
 	const key = modelsListQueryOptions.queryKey;
@@ -178,18 +155,26 @@ export function useSetModelEnabled() {
 				}),
 			),
 		onMutate: async ({ model, enabled }) => {
+			const detail = modelDetailQueryOptions(model.metadata.name).queryKey;
 			await queryClient.cancelQueries({ queryKey: key, exact: true });
+			await queryClient.cancelQueries({ queryKey: detail, exact: true });
 			const previous = queryClient.getQueryData(key);
-			queryClient.setQueryData(key, (list) =>
-				withModel(list, { ...model, spec: { ...model.spec, enabled } }),
-			);
-			return { previous };
+			const previousDetail = queryClient.getQueryData(detail);
+			const next = { ...model, spec: { ...model.spec, enabled } };
+			queryClient.setQueryData(key, (list) => withModel(list, next));
+			if (previousDetail) queryClient.setQueryData(detail, next);
+			return { previous, previousDetail, detail };
 		},
-		onSuccess: (saved) => {
+		onSuccess: (saved, _vars, context) => {
 			queryClient.setQueryData(key, (list) => withModel(list, saved));
+			if (context.previousDetail)
+				queryClient.setQueryData(context.detail, saved);
 		},
 		onError: (_err, _vars, context) => {
-			if (context?.previous) queryClient.setQueryData(key, context.previous);
+			if (!context) return;
+			if (context.previous) queryClient.setQueryData(key, context.previous);
+			if (context.previousDetail)
+				queryClient.setQueryData(context.detail, context.previousDetail);
 		},
 		onSettled: () => {
 			invalidateModelDependents(queryClient);
