@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Plus, Wallet } from "lucide-react";
 import { useDeleteBudget } from "@/api/hooks/budgets";
-import { BudgetColumns, BudgetRow } from "@/budgets/BudgetRow";
+import { BUDGET_MIN_W, BudgetColumns, BudgetRow } from "@/budgets/BudgetRow";
 import { useBudgetRows } from "@/budgets/useBudgetRows";
 import { FilterBar } from "@/filters/FilterBar";
 import { toolbarMainActionClassName } from "@/filters/ToolbarActions";
@@ -58,17 +58,17 @@ export function BudgetsTable() {
 					</p>
 				</TableEmpty>
 			) : (
-				<LineTable minWidth="min-w-[33rem]">
+				<LineTable minWidth={BUDGET_MIN_W}>
 					<BudgetColumns />
-					{rows.map((b) => (
+					{rows.map((line) => (
 						<BudgetRow
-							key={b.metadata.id ?? b.metadata.name}
-							budget={b}
+							key={line.budget.metadata.id ?? line.budget.metadata.name}
+							line={line}
 							onDelete={() =>
 								del.request({
-									id: b.metadata.id ?? "",
-									name: b.metadata.name,
-									label: displayLabel(b.metadata),
+									id: line.budget.metadata.id ?? "",
+									name: line.budget.metadata.name,
+									label: displayLabel(line.budget.metadata),
 								})
 							}
 						/>
