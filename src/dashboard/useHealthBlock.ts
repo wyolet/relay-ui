@@ -26,9 +26,9 @@ export interface HealthBlock {
 /** How the period's traffic behaved: latency percentiles, errors by kind and
  * the model that answered slowest. */
 export function useHealthBlock(): HealthBlock {
-	const { win, period, range } = useDashboardWindow();
-	const profile = useLatencyProfile(win);
-	const { kpis, groups, labels } = useUsageOverview("model_id", win);
+	const { win, period, range, filter } = useDashboardWindow();
+	const profile = useLatencyProfile(win, filter);
+	const { kpis, groups, labels } = useUsageOverview("model_id", win, filter);
 	const labelFor = useGroupLabeler("model_id", labels);
 
 	const slow = slowestGroup(

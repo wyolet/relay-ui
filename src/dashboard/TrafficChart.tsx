@@ -12,8 +12,8 @@ import {
 export function TrafficChart() {
 	const metric = useDashboardStore((s) => s.chartMetric);
 	const setMetric = useDashboardStore((s) => s.setChartMetric);
-	const { period, win } = useDashboardWindow();
-	const data = useMetricSeries(metric, win);
+	const { period, win, filter } = useDashboardWindow();
+	const data = useMetricSeries(metric, win, filter);
 	return (
 		<Section
 			title="Traffic by model"

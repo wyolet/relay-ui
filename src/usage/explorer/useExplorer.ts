@@ -1,5 +1,6 @@
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useDeferredValue } from "react";
+import { useWorkContext } from "@/hooks/useWorkContext";
 import type { FilterDimension } from "@/usage/filters/dimensions";
 import { type ExplorerSearch, explorerFilter, explorerWindow } from "./search";
 
@@ -12,6 +13,7 @@ export function useExplorer() {
 	const live = useSearch({ from: "/_authenticated/usage" });
 	const search = useDeferredValue(live);
 	const navigate = useNavigate({ from: "/usage" });
+	const { usageScope } = useWorkContext();
 
 	const set = (patch: Partial<ExplorerSearch>) =>
 		void navigate({ search: (prev) => ({ ...prev, ...patch }) });
@@ -27,7 +29,8 @@ export function useExplorer() {
 		search,
 		stale: search !== live,
 		win: explorerWindow(search),
-		filter: explorerFilter(search),
+		// The workspace narrows every lens; its own dimension can't be widened here.
+		filter: { ...explorerFilter(search), ...usageScope },
 		set,
 		toggle: (d: FilterDimension, value: string) =>
 			setValues(

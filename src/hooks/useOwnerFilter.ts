@@ -8,7 +8,7 @@ import {
 	ownerFilterOptions,
 	ownerFilterSummary,
 } from "@/lib/ownerFilter";
-import { contextKey } from "@/lib/workContext";
+import { contextKey, workspaceKeys } from "@/lib/workContext";
 
 type Owner = components["schemas"]["Owner"];
 
@@ -26,7 +26,7 @@ export function useOwnerFilter<T extends { metadata: { owner?: Owner } }>(
 		under: string | undefined;
 		keys: string[];
 	} | null>(null);
-	const defaultKeys = currentKey ? [currentKey] : [];
+	const defaultKeys = current ? workspaceKeys(current, contexts) : [];
 	const selected =
 		picked && picked.under === currentKey ? picked.keys : defaultKeys;
 

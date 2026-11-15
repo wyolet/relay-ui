@@ -8,6 +8,7 @@ import { ChevronLeft } from "lucide-react";
 import { Suspense } from "react";
 import { z } from "zod";
 import { type LogsFilter, logsInfiniteQueryOptions } from "@/api/hooks/logs";
+import { cachedUsageScope, useWorkContext } from "@/hooks/useWorkContext";
 import { EraseBodiesButton } from "@/logs/EraseBodiesButton";
 import { LogsFilters } from "@/logs/LogsFilters";
 import { LogsHistogram } from "@/logs/LogsHistogram";
@@ -67,7 +68,10 @@ export const Route = createFileRoute("/_authenticated/logs/")({
 	loaderDeps: ({ search }) => search,
 	loader: ({ context, deps }) =>
 		void context.queryClient.ensureInfiniteQueryData(
-			logsInfiniteQueryOptions(toLogsFilter(deps)),
+			logsInfiniteQueryOptions({
+				...toLogsFilter(deps),
+				...cachedUsageScope(context.queryClient),
+			}),
 		),
 	component: LogsPage,
 });
@@ -78,7 +82,8 @@ function LogsPage() {
 	const { expand } = live;
 	const navigate = useNavigate({ from: "/logs/" });
 	const labelFor = useLogLabeler();
-	const filter = toLogsFilter(search);
+	const { usageScope } = useWorkContext();
+	const filter = { ...toLogsFilter(search), ...usageScope };
 
 	const patch = (next: Partial<LogsSearch>) =>
 		void navigate({ search: (prev) => ({ ...prev, ...next }) });
@@ -114,9 +119,14 @@ function LogsPage() {
 				<EraseBodiesButton />
 			</div>
 
-			<LogsHistogram filter={toLogsFilter(live)} />
+			<LogsHistogram filter={{ ...toLogsFilter(live), ...usageScope }} />
 
-			<LogsFilters values={live} slowLabel={SLOW_LABEL} onChange={patch} />
+			<LogsFilters
+				values={live}
+				scope={usageScope}
+				slowLabel={SLOW_LABEL}
+				onChange={patch}
+			/>
 
 			<StaleContent stale={isStale}>
 				<Suspense fallback={<Loading />}>

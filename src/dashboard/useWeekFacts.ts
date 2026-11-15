@@ -19,14 +19,20 @@ function fmtWeekday(d: Date): string {
  * carries, and how concentrated the traffic is. */
 export function useWeekFacts(): FigureData[] {
 	const dw = useDashboardWindow();
-	const { kpis } = useUsageOverviewWithDeltas("source", dw.win);
-	const cost = useCostKpi(dw.win);
-	const requestsByHour = useStackedSeries("model_id", dw.hourly, "requests");
+	const { kpis } = useUsageOverviewWithDeltas("source", dw.win, dw.filter);
+	const cost = useCostKpi(dw.win, dw.filter);
+	const requestsByHour = useStackedSeries(
+		"model_id",
+		dw.hourly,
+		"requests",
+		dw.filter,
+	);
 	const { groups: models, labels: modelNames } = useUsageOverview(
 		"model_id",
 		dw.win,
+		dw.filter,
 	);
-	const { groups: hosts } = useUsageOverview("host_id", dw.win);
+	const { groups: hosts } = useUsageOverview("host_id", dw.win, dw.filter);
 	const modelLabel = useGroupLabeler("model_id", modelNames);
 
 	const hourly = pointTotals(requestsByHour);

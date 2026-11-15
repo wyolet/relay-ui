@@ -26,15 +26,20 @@ const HOUR_MS = 3_600_000;
  * each with one note that says what the number alone can't. */
 export function useHeadline(): FigureData[] {
 	const dw = useDashboardWindow();
-	const { win, hourly } = dw;
-	const { kpis, deltas } = useUsageOverviewWithDeltas("source", win);
-	const cost = useCostKpi(win);
-	const keysByDay = useDailyDistinct("relay_key_hash", win);
+	const { win, hourly, filter } = dw;
+	const { kpis, deltas } = useUsageOverviewWithDeltas("source", win, filter);
+	const cost = useCostKpi(win, filter);
+	const keysByDay = useDailyDistinct("relay_key_hash", win, filter);
 	const { data: keyList } = useQuery(keysListQueryOptions);
 	const d = deltas.hasBaseline ? deltas : undefined;
-	const requestsByHour = useStackedSeries("model_id", hourly, "requests");
-	const tokensByHour = useStackedSeries("model_id", hourly, "tokens");
-	const spendByHour = useCostSeries("model_id", hourly);
+	const requestsByHour = useStackedSeries(
+		"model_id",
+		hourly,
+		"requests",
+		filter,
+	);
+	const tokensByHour = useStackedSeries("model_id", hourly, "tokens", filter);
+	const spendByHour = useCostSeries("model_id", hourly, filter);
 
 	const vsNote = (delta: DeltaResult | null | undefined) =>
 		delta && delta.ratio !== null
