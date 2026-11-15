@@ -138,6 +138,65 @@ export function useUpdateModel() {
 	});
 }
 
+/** The models list with one model swapped for `next`. */
+function withModel(
+	list: ModelListResponse | undefined,
+	next: Model,
+): ModelListResponse | undefined {
+	return (
+		list && {
+			...list,
+			items: (list.items ?? []).map((m) =>
+				m.metadata.id === next.metadata.id ? next : m,
+			),
+		}
+	);
+}
+
+/** Switches a model on or off. The list cache flips before the request so a
+ * switch never shows the old state while the save runs; the saved model then
+ * replaces it (fresh resourceVersion for the next toggle), and a failed save
+ * puts the old one back. */
+export function useSetModelEnabled() {
+	const queryClient = useQueryClient();
+	const key = modelsListQueryOptions.queryKey;
+	return useMutation({
+		mutationFn: async ({
+			model,
+			enabled,
+		}: {
+			model: Model;
+			enabled: boolean;
+		}): Promise<Model> =>
+			unwrap(
+				await apiClient.PUT("/models/by-id/{id}", {
+					params: { path: { id: model.metadata.id ?? "" } },
+					body: {
+						metadata: model.metadata,
+						spec: { ...model.spec, enabled },
+					},
+				}),
+			),
+		onMutate: async ({ model, enabled }) => {
+			await queryClient.cancelQueries({ queryKey: key, exact: true });
+			const previous = queryClient.getQueryData(key);
+			queryClient.setQueryData(key, (list) =>
+				withModel(list, { ...model, spec: { ...model.spec, enabled } }),
+			);
+			return { previous };
+		},
+		onSuccess: (saved) => {
+			queryClient.setQueryData(key, (list) => withModel(list, saved));
+		},
+		onError: (_err, _vars, context) => {
+			if (context?.previous) queryClient.setQueryData(key, context.previous);
+		},
+		onSettled: () => {
+			invalidateModelDependents(queryClient);
+		},
+	});
+}
+
 /** Resolves to the links the delete took from rows that stay (empty on 204). */
 export function useDeleteModel() {
 	const queryClient = useQueryClient();
