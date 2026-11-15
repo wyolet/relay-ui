@@ -18,6 +18,7 @@ export function TrafficChart() {
 		<Section
 			title="Traffic by model"
 			meta={period}
+			fill
 			aside={
 				<Segmented
 					variant="underline"
@@ -32,7 +33,7 @@ export function TrafficChart() {
 				groupBy="model_id"
 				metric={metric}
 				bare
-				height="h-[260px]"
+				height="aspect-auto h-full min-h-[260px]"
 			/>
 		</Section>
 	);

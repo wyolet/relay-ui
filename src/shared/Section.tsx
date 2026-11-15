@@ -2,20 +2,25 @@ import type { ReactNode } from "react";
 import { TextPlaceholder } from "./TextPlaceholder";
 
 /** A titled block on a read page: space and the heading separate it, no box.
- * `aside` sits at the right of the heading (a legend or a toggle). */
+ * `aside` sits at the right of the heading (a legend or a toggle). With `fill`
+ * the content stretches to the height of the row the block sits in. */
 export function Section({
 	title,
 	meta,
 	aside,
+	fill = false,
 	children,
 }: {
 	title: string;
 	meta?: string;
 	aside?: ReactNode;
+	fill?: boolean;
 	children: ReactNode;
 }) {
 	return (
-		<section className="grid min-w-0 grid-cols-1 content-start gap-4">
+		<section
+			className={`grid min-w-0 grid-cols-1 gap-4 ${fill ? "h-full grid-rows-[auto_minmax(0,1fr)]" : "content-start"}`}
+		>
 			<div className="flex flex-wrap items-baseline justify-between gap-x-5 gap-y-2">
 				<div className="flex min-w-0 items-baseline gap-2.5">
 					<h2 className="truncate font-display text-section text-foreground">
