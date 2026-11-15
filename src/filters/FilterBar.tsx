@@ -3,11 +3,19 @@ import {
 	ArrowUpNarrowWide,
 	Check,
 	ChevronDown,
+	Search,
 	SlidersHorizontal,
 	X,
 } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { Button } from "@/components/ui/button";
+import {
+	Command,
+	CommandEmpty,
+	CommandInput,
+	CommandItem,
+	CommandList,
+} from "@/components/ui/command";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -19,6 +27,11 @@ import {
 	fieldFrameClassName,
 	fieldInputFocusWithinClassName,
 } from "@/components/ui/field-focus";
+import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { SearchBox } from "@/shared/SearchBox";
 import { activeFilterCount } from "./toQueryParams";
@@ -100,7 +113,8 @@ export function FilterBar({
 		>
 			<div
 				className={cn(
-					"w-full max-w-xl min-w-0 overflow-hidden",
+					"w-full min-w-0 overflow-hidden transition-[max-width]",
+					open ? "max-w-3xl" : "max-w-xl",
 					fieldFrameClassName,
 					fieldInputFocusWithinClassName,
 				)}
@@ -182,10 +196,12 @@ export function FilterBar({
 	);
 }
 
-/** Options a facet shows as pills before the rest fold under "More". */
-const SHOWN_OPTIONS = 6;
+/** Past this many options a facet stops listing pills and offers a search. */
+const MAX_PILLS = 7;
 
-/** A select filter as a labelled row of pills, one click per choice. */
+/** A select filter as a labelled row of pills, one click per choice. A long
+ * list keeps only its default and current pick as pills, the rest behind a
+ * searchable picker. */
 function FacetRow({
 	def,
 	value,
@@ -195,15 +211,17 @@ function FacetRow({
 	value: string;
 	onPick: (value: string) => void;
 }) {
-	const fold = def.options.length > SHOWN_OPTIONS + 1;
-	const shown = fold ? def.options.slice(0, SHOWN_OPTIONS) : def.options;
-	const rest = fold ? def.options.slice(SHOWN_OPTIONS) : [];
-	const picked = rest.find((o) => o.value === value);
+	const long = def.options.length > MAX_PILLS;
+	const shown = long
+		? def.options.filter(
+				(o) => o.value === (def.default ?? "") || o.value === value,
+			)
+		: def.options;
 	return (
 		<div className="grid grid-cols-[5.5rem_minmax(0,1fr)] items-baseline gap-2">
 			<span className="text-meta text-ink-3">{def.label}</span>
 			<div className="flex flex-wrap items-center gap-1.5">
-				{[...shown, ...(picked ? [picked] : [])].map((o) => (
+				{shown.map((o) => (
 					<Pill
 						key={o.value}
 						selected={o.value === value}
@@ -212,29 +230,50 @@ function FacetRow({
 						{o.label}
 					</Pill>
 				))}
-				{rest.length > 0 && (
-					<DropdownMenu>
-						<DropdownMenuTrigger className={cn(PILL, PILL_IDLE)}>
-							More
-							<ChevronDown className="size-3 opacity-60" aria-hidden />
-						</DropdownMenuTrigger>
-						<DropdownMenuContent align="start" className="max-h-72 min-w-40">
-							{rest.map((o) => (
-								<DropdownMenuItem key={o.value} onClick={() => onPick(o.value)}>
-									<Check
-										className={cn(
-											"size-3.5",
-											o.value === value ? "opacity-100" : "opacity-0",
-										)}
-									/>
-									{o.label}
-								</DropdownMenuItem>
-							))}
-						</DropdownMenuContent>
-					</DropdownMenu>
-				)}
+				{long && <FacetSearch def={def} value={value} onPick={onPick} />}
 			</div>
 		</div>
+	);
+}
+
+function FacetSearch({
+	def,
+	value,
+	onPick,
+}: {
+	def: SelectFilter;
+	value: string;
+	onPick: (value: string) => void;
+}) {
+	const [open, setOpen] = useState(false);
+	return (
+		<Popover open={open} onOpenChange={setOpen}>
+			<PopoverTrigger className={cn(PILL, PILL_IDLE)}>
+				<Search className="size-3" aria-hidden />
+				Choose {def.label.toLowerCase()}
+			</PopoverTrigger>
+			<PopoverContent align="start" className="w-64 p-0">
+				<Command>
+					<CommandInput placeholder={`Search ${def.label.toLowerCase()}`} />
+					<CommandList className="max-h-64">
+						<CommandEmpty>No match.</CommandEmpty>
+						{def.options.map((o) => (
+							<CommandItem
+								key={o.value}
+								value={o.label}
+								data-checked={o.value === value}
+								onSelect={() => {
+									onPick(o.value);
+									setOpen(false);
+								}}
+							>
+								{o.label}
+							</CommandItem>
+						))}
+					</CommandList>
+				</Command>
+			</PopoverContent>
+		</Popover>
 	);
 }
 
