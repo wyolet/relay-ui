@@ -48,14 +48,18 @@ export function WorkspaceMenu({
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align={align} sideOffset={6} className="w-72">
 				<DropdownMenuRadioGroup value={value} onValueChange={onSelect}>
-					<DropdownMenuLabel className="pb-0 font-medium text-foreground">
-						{formPick ? "Create in" : "Workspace"}
-					</DropdownMenuLabel>
-					<p className="px-2 pb-1.5 text-[11px] text-muted-foreground">
-						{formPick
-							? "Only this form; your workspace stays as it is."
-							: "Dashboard, Usage, Logs and lists show its data; new items land here."}
-					</p>
+					{formPick ? (
+						<>
+							<DropdownMenuLabel className="pb-0 font-medium text-foreground">
+								Create in
+							</DropdownMenuLabel>
+							<p className="px-2 pb-1.5 text-[11px] text-muted-foreground">
+								Only this form; your workspace stays as it is.
+							</p>
+						</>
+					) : (
+						<DropdownMenuLabel>Accounts</DropdownMenuLabel>
+					)}
 					{(formPick ? allRows : rows).map(({ context, nested }) => (
 						<DropdownMenuRadioItem
 							key={contextKey(context)}
