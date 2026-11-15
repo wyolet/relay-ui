@@ -61,11 +61,6 @@ function TabLabel({ tab }: { tab: TierTabView }) {
 			{tab.range && (
 				<span className="text-foot text-ink-3 tabular-nums">{tab.range}</span>
 			)}
-			{tab.example && (
-				<span className="truncate text-foot text-ink-3">
-					e.g. {tab.example}
-				</span>
-			)}
 		</span>
 	);
 }
