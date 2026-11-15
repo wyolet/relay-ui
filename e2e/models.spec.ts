@@ -113,14 +113,14 @@ async function catalog(page: Page, traffic: boolean) {
 const rail = (page: Page) => page.getByRole("navigation", { name: "Hosts" });
 
 test.describe("Models", () => {
-	test("opens In use by host when there was traffic", async ({ page }) => {
+	test("opens In use as one plain list when there was traffic", async ({
+		page,
+	}) => {
 		await catalog(page, true);
 		await page.goto("/models");
 		await expect(page.getByRole("heading", { name: "In use" })).toBeVisible();
 		await expect(rail(page).getByRole("link", { name: /In use\s*1/ })).toBeVisible();
-		await expect(
-			page.getByRole("heading", { level: 3, name: "Anthropic" }),
-		).toBeVisible();
+		await expect(page.getByRole("heading", { level: 3 })).toHaveCount(0);
 		await expect(page.getByRole("link", { name: "Claude Opus 5" })).toBeVisible();
 		await expect(page.getByText("$626")).toHaveCount(2);
 		await expect(page.getByRole("link", { name: "GPT 6" })).toHaveCount(0);

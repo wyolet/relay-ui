@@ -5,9 +5,8 @@ import {
 	groupByFamily,
 	hostLines,
 	IN_USE,
-	TELEMETRY_GROUP,
 	inUseCount,
-	inUseGroups,
+	inUseLines,
 	type ModelsFilter,
 	modelFamilyName,
 	modelMatches,
@@ -261,49 +260,14 @@ describe("in use", () => {
 		expect(inUseCount(byModel, modelsById, { ...ALL, q: "gpt" })).toBe(1);
 	});
 
-	test("groups each loaded host's used lines under it", () => {
-		const groups = inUseGroups(
-			[oai, ant],
-			modelsById,
-			new Map([
-				["h-oai", new Map([["opus-5", usage(1, 0.5)]])],
-				[
-					"h-ant",
-					new Map([
-						["opus-5", usage(3, 1.5)],
-						["fable-1", usage(0, null)],
-					]),
-				],
-			]),
-			new Map([["opus-5", usage(4, 2)]]),
-			ALL,
-			SPEND,
-		);
-		expect(groups.map((g) => [g.label, ids(g.lines)])).toEqual([
-			["OpenAI", ["opus-5"]],
-			["Anthropic", ["opus-5"]],
-		]);
-		expect(
-			inUseGroups([oai], modelsById, new Map(), new Map(), ALL, SPEND),
-		).toEqual([]);
-	});
-
-	test("models whose traffic named no host land under telemetry", () => {
-		const groups = inUseGroups(
-			[ant],
-			modelsById,
-			new Map([["h-ant", new Map([["opus-5", usage(3, 1.5)]])]]),
-			byModel,
-			ALL,
-			SPEND,
-		);
-		expect(groups.map((g) => [g.key, ids(g.lines)])).toEqual([
-			["h-ant", ["opus-5"]],
-			[TELEMETRY_GROUP, ["old", "gpt-6"]],
-		]);
-		expect(groups.flatMap((g) => g.lines).length).toBe(
-			inUseCount(byModel, modelsById, ALL),
-		);
+	test("lists each used model once, priced at its cheapest host", () => {
+		const lines = inUseLines(matrix, modelsById, byModel, ALL, SPEND);
+		expect(ids(lines)).toEqual(["opus-5", "old", "gpt-6"]);
+		expect(lines.length).toBe(inUseCount(byModel, modelsById, ALL));
+		const opus = lines.find((l) => l.model.metadata.id === "opus-5");
+		expect(opus?.host?.id).toBe("h-ant");
+		expect(opus?.usage?.requests).toBe(4);
+		expect(inUseLines(matrix, modelsById, new Map(), ALL, SPEND)).toEqual([]);
 	});
 });
 
