@@ -18,13 +18,13 @@ import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel } from "@/lib/displayLabel";
 import { ModelDetailView } from "@/models/ModelDetailView";
 import { modelWeekQueries } from "@/models/modelWeekQueries";
+import { toastModelEnabled } from "@/models/useModelLineActions";
 import {
 	pricingGraphQuery,
 	pricingsMatrixListQuery,
 } from "@/pricing/usePricingMatrix";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { PageLoader } from "@/shared/Spinner";
-import { toast } from "@/shared/Toast";
 import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 
 export const Route = createFileRoute("/_authenticated/models/$name")({
@@ -71,8 +71,7 @@ function ModelDetailInner() {
 		setEnabled.mutate(
 			{ model, enabled: next },
 			{
-				onSuccess: () =>
-					toast("success", next ? "Model enabled." : "Model disabled."),
+				onSuccess: () => toastModelEnabled(model, next),
 				onError: (err) => toastSaveError(err, "Failed to toggle model."),
 			},
 		);
