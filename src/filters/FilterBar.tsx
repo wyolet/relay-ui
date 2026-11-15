@@ -19,15 +19,13 @@ import {
 	fieldFrameClassName,
 	fieldInputFocusWithinClassName,
 } from "@/components/ui/field-focus";
-import { Toggle } from "@/components/ui/toggle";
 import { cn } from "@/lib/utils";
-import { FilterDropdown } from "@/shared/FilterDropdown";
 import { SearchBox } from "@/shared/SearchBox";
 import { activeFilterCount } from "./toQueryParams";
 import {
 	type FilterDef,
 	type FilterState,
-	type FilterValue,
+	type SelectFilter,
 	readBool,
 	readText,
 } from "./types";
@@ -79,6 +77,8 @@ export function FilterBar({
 }) {
 	const search = defs.find((d) => d.type === "search");
 	const controls = defs.filter((d) => d.type !== "search");
+	const selects = defs.filter((d): d is SelectFilter => d.type === "select");
+	const toggles = defs.filter((d) => d.type === "toggle");
 	const hasFilters = controls.length > 0 || extra != null;
 	const active = activeFilterCount(controls, state);
 	const narrowing = active + extraActive;
@@ -92,15 +92,20 @@ export function FilterBar({
 	};
 
 	return (
-		<div className={cn("grid gap-2", className)}>
-			<div className="flex flex-wrap items-center justify-between gap-3">
-				<div
-					className={cn(
-						"flex h-8 w-full max-w-xl min-w-0 items-stretch overflow-hidden",
-						fieldFrameClassName,
-						fieldInputFocusWithinClassName,
-					)}
-				>
+		<div
+			className={cn(
+				"flex flex-wrap items-start justify-between gap-3",
+				className,
+			)}
+		>
+			<div
+				className={cn(
+					"w-full max-w-xl min-w-0 overflow-hidden",
+					fieldFrameClassName,
+					fieldInputFocusWithinClassName,
+				)}
+			>
+				<div className="flex h-8 items-stretch">
 					{search && (
 						<SearchBox
 							bare
@@ -127,37 +132,141 @@ export function FilterBar({
 					)}
 					{sort && <SortSegment sort={sort} />}
 				</div>
-				{actions && (
-					<div className="flex shrink-0 flex-wrap items-center gap-2">
-						{actions}
+				{hasFilters && open && (
+					<div className="grid gap-2 border-t border-field-border px-3 py-2.5">
+						{selects.map((def) => (
+							<FacetRow
+								key={def.key}
+								def={def}
+								value={readText(state, def.key)}
+								onPick={(v) => onChange({ [def.key]: v })}
+							/>
+						))}
+						{(toggles.length > 0 || extra != null || active > 0) && (
+							<div className="flex flex-wrap items-center gap-1.5">
+								{toggles.map((def) => (
+									<Pill
+										key={def.key}
+										selected={readBool(state, def.key)}
+										onClick={() =>
+											onChange({ [def.key]: !readBool(state, def.key) })
+										}
+									>
+										{def.label}
+									</Pill>
+								))}
+								{extra}
+								{active > 0 && (
+									<Button
+										type="button"
+										variant="ghost"
+										size="sm"
+										onClick={clear}
+										className="ml-auto text-muted-foreground"
+									>
+										<X className="size-3.5" aria-hidden />
+										Clear
+									</Button>
+								)}
+							</div>
+						)}
 					</div>
 				)}
 			</div>
-			{hasFilters && open && (
-				<div className="flex flex-wrap items-center gap-2 rounded-md bg-muted/30 px-2 py-1.5">
-					{controls.map((def) => (
-						<Control
-							key={def.key}
-							def={def}
-							state={state}
-							onChange={onChange}
-						/>
-					))}
-					{extra}
-					{active > 0 && (
-						<Button
-							type="button"
-							variant="ghost"
-							onClick={clear}
-							className="ml-auto text-muted-foreground"
-						>
-							<X className="size-3.5" aria-hidden />
-							Clear
-						</Button>
-					)}
+			{actions && (
+				<div className="flex shrink-0 flex-wrap items-center gap-2">
+					{actions}
 				</div>
 			)}
 		</div>
+	);
+}
+
+/** Options a facet shows as pills before the rest fold under "More". */
+const SHOWN_OPTIONS = 6;
+
+/** A select filter as a labelled row of pills, one click per choice. */
+function FacetRow({
+	def,
+	value,
+	onPick,
+}: {
+	def: SelectFilter;
+	value: string;
+	onPick: (value: string) => void;
+}) {
+	const fold = def.options.length > SHOWN_OPTIONS + 1;
+	const shown = fold ? def.options.slice(0, SHOWN_OPTIONS) : def.options;
+	const rest = fold ? def.options.slice(SHOWN_OPTIONS) : [];
+	const picked = rest.find((o) => o.value === value);
+	return (
+		<div className="grid grid-cols-[5.5rem_minmax(0,1fr)] items-baseline gap-2">
+			<span className="text-meta text-ink-3">{def.label}</span>
+			<div className="flex flex-wrap items-center gap-1.5">
+				{[...shown, ...(picked ? [picked] : [])].map((o) => (
+					<Pill
+						key={o.value}
+						selected={o.value === value}
+						onClick={() => onPick(o.value)}
+					>
+						{o.label}
+					</Pill>
+				))}
+				{rest.length > 0 && (
+					<DropdownMenu>
+						<DropdownMenuTrigger className={cn(PILL, PILL_IDLE)}>
+							More
+							<ChevronDown className="size-3 opacity-60" aria-hidden />
+						</DropdownMenuTrigger>
+						<DropdownMenuContent align="start" className="max-h-72 min-w-40">
+							{rest.map((o) => (
+								<DropdownMenuItem key={o.value} onClick={() => onPick(o.value)}>
+									<Check
+										className={cn(
+											"size-3.5",
+											o.value === value ? "opacity-100" : "opacity-0",
+										)}
+									/>
+									{o.label}
+								</DropdownMenuItem>
+							))}
+						</DropdownMenuContent>
+					</DropdownMenu>
+				)}
+			</div>
+		</div>
+	);
+}
+
+const PILL =
+	"inline-flex h-6 items-center gap-1 rounded-full px-2.5 text-xs transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring";
+const PILL_IDLE =
+	"text-muted-foreground hover:bg-muted/60 hover:text-foreground";
+
+/** One choice in a facet: quiet until picked. */
+function Pill({
+	selected,
+	onClick,
+	children,
+}: {
+	selected: boolean;
+	onClick: () => void;
+	children: ReactNode;
+}) {
+	return (
+		<button
+			type="button"
+			aria-pressed={selected}
+			onClick={onClick}
+			className={cn(
+				PILL,
+				selected
+					? "bg-primary/15 text-foreground ring-1 ring-primary/40"
+					: PILL_IDLE,
+			)}
+		>
+			{children}
+		</button>
 	);
 }
 
@@ -212,41 +321,4 @@ function SortSegment({ sort }: { sort: SortControl }) {
 			</DropdownMenuContent>
 		</DropdownMenu>
 	);
-}
-
-function Control({
-	def,
-	state,
-	onChange,
-}: {
-	def: FilterDef;
-	state: FilterState;
-	onChange: (patch: FilterState) => void;
-}) {
-	if (def.type === "select") {
-		const value = readText(state, def.key);
-		const set = (v: FilterValue) => onChange({ [def.key]: v });
-		return (
-			<FilterDropdown
-				label={def.label}
-				value={value}
-				options={def.options}
-				onChange={set}
-				align="start"
-				active={value !== (def.default ?? "")}
-			/>
-		);
-	}
-	if (def.type === "toggle") {
-		return (
-			<Toggle
-				variant="outline"
-				pressed={readBool(state, def.key)}
-				onPressedChange={(v) => onChange({ [def.key]: v })}
-			>
-				{def.label}
-			</Toggle>
-		);
-	}
-	return null;
 }
