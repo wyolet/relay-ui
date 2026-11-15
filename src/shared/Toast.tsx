@@ -65,7 +65,7 @@ function ToastCard({ toast: t }: { toast: ToastMessage }) {
 			}}
 		>
 			<div
-				key={t.version}
+				key={`body-${t.version}`}
 				className={cn(
 					"flex items-center gap-3 py-3 pr-2 pl-3",
 					t.version > 0 && "animate-toast-bump motion-reduce:animate-none",
@@ -101,7 +101,7 @@ function ToastCard({ toast: t }: { toast: ToastMessage }) {
 			</div>
 			{timed && (
 				<span
-					key={t.version}
+					key={`line-${t.version}`}
 					aria-hidden
 					className={cn(
 						"absolute inset-x-0 bottom-0 h-0.5 origin-left opacity-60",
