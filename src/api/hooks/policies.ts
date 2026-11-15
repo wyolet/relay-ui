@@ -7,6 +7,7 @@ import {
 } from "@tanstack/react-query";
 import { apiClient } from "@/api/client";
 import { keepAcrossScopes, usableList } from "@/api/hooks/usableList";
+import { restoreCaches, swapIntoCaches } from "@/api/optimistic";
 import type { DetachedLinks } from "@/api/types/errors";
 import type {
 	Policy,
@@ -239,6 +240,43 @@ export function useUpdatePolicy() {
 			);
 		},
 		onSuccess: () => {
+			void queryClient.invalidateQueries({ queryKey: ["policies"] });
+		},
+	});
+}
+
+/** Turns a policy on or off; the switch flips before the save lands. */
+export function useSetPolicyEnabled() {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: async ({
+			policy,
+			enabled,
+		}: {
+			policy: Policy;
+			enabled: boolean;
+		}): Promise<Policy> =>
+			unwrap(
+				await apiClient.PUT("/policies/by-id/{id}", {
+					params: { path: { id: policy.metadata.id ?? "" } },
+					body: {
+						metadata: policy.metadata,
+						spec: { ...policy.spec, enabled },
+					},
+				}),
+			),
+		onMutate: async ({ policy, enabled }) => {
+			await queryClient.cancelQueries({ queryKey: ["policies"] });
+			const next = { ...policy, spec: { ...policy.spec, enabled } };
+			return { snapshot: swapIntoCaches(queryClient, ["policies"], next) };
+		},
+		onSuccess: (saved) => {
+			swapIntoCaches(queryClient, ["policies"], saved);
+		},
+		onError: (_err, _vars, context) => {
+			if (context) restoreCaches(queryClient, context.snapshot);
+		},
+		onSettled: () => {
 			void queryClient.invalidateQueries({ queryKey: ["policies"] });
 		},
 	});

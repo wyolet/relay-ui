@@ -36,6 +36,14 @@ export const MODE_LABELS: Record<BudgetMode, { label: string; hint: string }> =
 		},
 	};
 
+/** "$150 per day": the cap as one phrase. */
+export function capText(
+	spec: BudgetSpec,
+	fmtAmount: (usd: string) => string,
+): string {
+	return `${fmtAmount(spec.amountUsd)} per ${PERIOD_LABELS[spec.period ?? DEFAULT_PERIOD].toLowerCase()}`;
+}
+
 /** The server's amountUsd shape: whole dollars, or at most two cents digits. */
 export const AMOUNT_USD_PATTERN = /^\d+(\.\d{1,2})?$/;
 
