@@ -105,7 +105,7 @@ function PricingCatalog() {
 					}
 					actions={
 						<Link to="/pricing/new" className={toolbarMainActionClassName}>
-							<Plus className="size-3.5" />
+							<Plus data-icon="inline-start" className="size-3.5" />
 							New pricing
 						</Link>
 					}

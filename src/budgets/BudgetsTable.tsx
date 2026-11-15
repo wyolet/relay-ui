@@ -50,7 +50,7 @@ export function BudgetsTable() {
 						to="/policies/budgets/new"
 						className={toolbarMainActionClassName}
 					>
-						<Plus className="w-3.5 h-3.5" />
+						<Plus data-icon="inline-start" className="w-3.5 h-3.5" />
 						New budget
 					</Link>
 				}

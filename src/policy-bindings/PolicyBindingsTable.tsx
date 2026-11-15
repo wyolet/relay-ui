@@ -146,7 +146,7 @@ export function PolicyBindingsTable() {
 						to="/policy-bindings/new"
 						className={toolbarMainActionClassName}
 					>
-						<Plus className="w-3.5 h-3.5" />
+						<Plus data-icon="inline-start" className="w-3.5 h-3.5" />
 						New policy binding
 					</Link>
 				}
@@ -169,7 +169,7 @@ export function PolicyBindingsTable() {
 									to="/policy-bindings/new"
 									className={buttonVariants({ variant: "default", size: "lg" })}
 								>
-									<Plus className="w-4 h-4" />
+									<Plus data-icon="inline-start" className="w-4 h-4" />
 									Create policy binding
 								</Link>
 							</>

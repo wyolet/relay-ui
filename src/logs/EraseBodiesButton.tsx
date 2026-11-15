@@ -18,7 +18,7 @@ export function EraseBodiesButton({ scope }: { scope?: EraseSelection }) {
 				size="lg"
 				onClick={() => setOpen(true)}
 			>
-				<Eraser className="size-3.5" />
+				<Eraser data-icon="inline-start" className="size-3.5" />
 				Erase bodies
 			</Button>
 			{open && (

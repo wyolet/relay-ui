@@ -80,8 +80,8 @@ export function FilterBar({
 	/** Patch one or more keys; merge into the route's search params. */
 	onChange: (patch: FilterState) => void;
 	sort?: SortControl;
-	/** The page's actions at the right end as one split button (see
-	 * `ToolbarActions`): the main action first, then secondary ones. */
+	/** The page's actions at the right end (see `ToolbarActions`): the main
+	 * action first, then secondary ones. */
 	actions?: ReactNode;
 	/** Filter controls that aren't FilterDefs (e.g. the owner filter). */
 	extra?: ReactNode;
@@ -186,7 +186,7 @@ export function FilterBar({
 					)}
 				</div>
 				{actions && (
-					<div className="flex h-8 shrink-0 items-stretch gap-px overflow-hidden rounded-md [&>*]:rounded-none!">
+					<div className="flex shrink-0 flex-wrap items-center gap-2">
 						{actions}
 					</div>
 				)}

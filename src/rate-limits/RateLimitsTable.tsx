@@ -66,7 +66,7 @@ export function RateLimitsTable() {
 						to="/policies/rate-limits/new"
 						className={toolbarMainActionClassName}
 					>
-						<Plus className="w-3.5 h-3.5" />
+						<Plus data-icon="inline-start" className="w-3.5 h-3.5" />
 						New rate limit
 					</Link>
 				}
@@ -86,7 +86,7 @@ export function RateLimitsTable() {
 								to="/policies/rate-limits/new"
 								className={buttonVariants({ variant: "default", size: "lg" })}
 							>
-								<Plus className="w-4 h-4" />
+								<Plus data-icon="inline-start" className="w-4 h-4" />
 								Create your first rate limit
 							</Link>
 						</>

@@ -45,7 +45,7 @@ export function HostKeyAccountRow({
 					onClick={detect}
 					disabled={isPending}
 				>
-					<ScanSearch className="size-3" />
+					<ScanSearch data-icon="inline-start" className="size-3" />
 					{isPending ? "Detecting…" : "Detect account"}
 				</Button>
 			</DetailInline>

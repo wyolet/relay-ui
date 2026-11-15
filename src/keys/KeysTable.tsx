@@ -193,7 +193,7 @@ export function KeysTable() {
 				className="mb-3"
 				actions={
 					<Link to="/keys/new" className={toolbarMainActionClassName}>
-						<Plus className="w-3.5 h-3.5" />
+						<Plus data-icon="inline-start" className="w-3.5 h-3.5" />
 						New key
 					</Link>
 				}
@@ -218,7 +218,7 @@ export function KeysTable() {
 									to="/keys/new"
 									className={buttonVariants({ variant: "default", size: "lg" })}
 								>
-									<Plus className="w-4 h-4" />
+									<Plus data-icon="inline-start" className="w-4 h-4" />
 									Create API key
 								</Link>
 							</>

@@ -36,7 +36,7 @@ export function TokenKeySections({ isAdmin }: { isAdmin: boolean }) {
 							disabled={rotating}
 							className="self-start"
 						>
-							<RotateCw className="size-3.5" />
+							<RotateCw data-icon="inline-start" className="size-3.5" />
 							{rotating ? "Rotating…" : "Rotate signing key"}
 						</Button>
 					) : (

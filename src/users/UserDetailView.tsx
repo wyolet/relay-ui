@@ -101,7 +101,7 @@ export function UserDetailView({ id }: { id: string }) {
 						onClick={() => void handleRevoke()}
 						disabled={revokeTokens.isPending}
 					>
-						<ShieldOff className="h-3.5 w-3.5" />
+						<ShieldOff data-icon="inline-start" className="h-3.5 w-3.5" />
 						{revokeTokens.isPending ? "Revoking…" : "Revoke all tokens"}
 					</Button>
 				</div>

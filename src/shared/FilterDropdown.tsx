@@ -47,7 +47,10 @@ export function FilterDropdown<T extends string>({
 			>
 				{label && <span className="text-muted-foreground">{label}:</span>}
 				<span>{current?.label ?? value}</span>
-				<ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+				<ChevronDown
+					data-icon="inline-end"
+					className="w-3.5 h-3.5 text-muted-foreground"
+				/>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align={align} className="min-w-[140px]">
 				{options.map((o) => {

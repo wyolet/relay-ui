@@ -57,7 +57,7 @@ export function ScimClientsView() {
 			<div>
 				<div className="mb-3 flex justify-end">
 					<Button size="lg" onClick={() => setCreating(true)}>
-						<Plus className="w-3.5 h-3.5" />
+						<Plus data-icon="inline-start" className="w-3.5 h-3.5" />
 						New client
 					</Button>
 				</div>

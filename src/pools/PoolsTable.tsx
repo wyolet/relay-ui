@@ -42,7 +42,7 @@ export function PoolsTable() {
 				className="mb-3"
 				actions={
 					<Link to="/pools/new" className={toolbarMainActionClassName}>
-						<Plus className="w-3.5 h-3.5" />
+						<Plus data-icon="inline-start" className="w-3.5 h-3.5" />
 						New pool
 					</Link>
 				}

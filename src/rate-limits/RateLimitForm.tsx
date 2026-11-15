@@ -167,7 +167,7 @@ export function RateLimitForm({
 						onClick={addRule}
 						className="mt-2"
 					>
-						<Plus className="size-3.5" />
+						<Plus data-icon="inline-start" className="size-3.5" />
 						Add rule
 					</Button>
 					{rulesError && (
@@ -247,7 +247,7 @@ function RuleRow({
 								}
 								className="h-auto gap-0.5 px-0 text-[10px] text-muted-foreground hover:bg-transparent hover:text-foreground"
 							>
-								<Undo2 className="w-3 h-3" />
+								<Undo2 data-icon="inline-start" className="w-3 h-3" />
 								Preset
 							</Button>
 						) : undefined

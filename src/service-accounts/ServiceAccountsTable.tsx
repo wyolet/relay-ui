@@ -95,7 +95,7 @@ export function ServiceAccountsTable() {
 						to="/service-accounts/new"
 						className={toolbarMainActionClassName}
 					>
-						<Plus className="w-3.5 h-3.5" />
+						<Plus data-icon="inline-start" className="w-3.5 h-3.5" />
 						New service account
 					</Link>
 				}
@@ -117,7 +117,7 @@ export function ServiceAccountsTable() {
 									to="/service-accounts/new"
 									className={buttonVariants({ variant: "default", size: "lg" })}
 								>
-									<Plus className="w-4 h-4" />
+									<Plus data-icon="inline-start" className="w-4 h-4" />
 									Create service account
 								</Link>
 							</>

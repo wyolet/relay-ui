@@ -85,7 +85,7 @@ export function RolesTable() {
 				actions={
 					canAuthor ? (
 						<Link to="/roles/new" className={toolbarMainActionClassName}>
-							<Plus className="w-3.5 h-3.5" />
+							<Plus data-icon="inline-start" className="w-3.5 h-3.5" />
 							New role
 						</Link>
 					) : (
@@ -94,7 +94,7 @@ export function RolesTable() {
 							disabled
 							className={toolbarMainActionClassName}
 						>
-							<Plus className="w-3.5 h-3.5" />
+							<Plus data-icon="inline-start" className="w-3.5 h-3.5" />
 							New role
 						</button>
 					)

@@ -79,7 +79,7 @@ export function TeamsTable() {
 				className="mb-3"
 				actions={
 					<Link to="/teams/new" className={toolbarMainActionClassName}>
-						<Plus className="w-3.5 h-3.5" />
+						<Plus data-icon="inline-start" className="w-3.5 h-3.5" />
 						New team
 					</Link>
 				}
@@ -101,7 +101,7 @@ export function TeamsTable() {
 									to="/teams/new"
 									className={buttonVariants({ variant: "default", size: "lg" })}
 								>
-									<Plus className="w-4 h-4" />
+									<Plus data-icon="inline-start" className="w-4 h-4" />
 									Create team
 								</Link>
 							</>

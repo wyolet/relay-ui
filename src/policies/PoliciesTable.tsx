@@ -87,7 +87,7 @@ export function PoliciesTable() {
 				className="mb-3"
 				actions={
 					<Link to="/policies/new" className={toolbarMainActionClassName}>
-						<Plus className="w-3.5 h-3.5" />
+						<Plus data-icon="inline-start" className="w-3.5 h-3.5" />
 						New policy
 					</Link>
 				}
@@ -108,7 +108,7 @@ export function PoliciesTable() {
 								to="/policies/new"
 								className={buttonVariants({ variant: "default", size: "lg" })}
 							>
-								<Plus className="w-4 h-4" />
+								<Plus data-icon="inline-start" className="w-4 h-4" />
 								Create your first policy
 							</Link>
 						</>

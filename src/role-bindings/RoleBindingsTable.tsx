@@ -158,7 +158,7 @@ export function RoleBindingsTable() {
 				className="mb-3"
 				actions={
 					<Link to="/role-bindings/new" className={toolbarMainActionClassName}>
-						<Plus className="w-3.5 h-3.5" />
+						<Plus data-icon="inline-start" className="w-3.5 h-3.5" />
 						New role binding
 					</Link>
 				}
@@ -180,7 +180,7 @@ export function RoleBindingsTable() {
 									to="/role-bindings/new"
 									className={buttonVariants({ variant: "default", size: "lg" })}
 								>
-									<Plus className="w-4 h-4" />
+									<Plus data-icon="inline-start" className="w-4 h-4" />
 									Create role binding
 								</Link>
 							</>

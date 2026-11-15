@@ -75,11 +75,11 @@ export function AccountsTable() {
 				actions={
 					<>
 						<Link to="/host-keys/new" className={toolbarMainActionClassName}>
-							<KeyRound className="w-3.5 h-3.5" />
+							<KeyRound data-icon="inline-start" className="w-3.5 h-3.5" />
 							Add key
 						</Link>
 						<Link to="/accounts/new" className={toolbarActionClassName}>
-							<Plus className="w-3.5 h-3.5" />
+							<Plus data-icon="inline-start" className="w-3.5 h-3.5" />
 							New provider account
 						</Link>
 					</>

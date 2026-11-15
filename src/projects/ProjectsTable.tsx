@@ -92,7 +92,7 @@ export function ProjectsTable() {
 				className="mb-3"
 				actions={
 					<Link to="/projects/new" className={toolbarMainActionClassName}>
-						<Plus className="w-3.5 h-3.5" />
+						<Plus data-icon="inline-start" className="w-3.5 h-3.5" />
 						New project
 					</Link>
 				}
@@ -114,7 +114,7 @@ export function ProjectsTable() {
 									to="/projects/new"
 									className={buttonVariants({ variant: "default", size: "lg" })}
 								>
-									<Plus className="w-4 h-4" />
+									<Plus data-icon="inline-start" className="w-4 h-4" />
 									Create project
 								</Link>
 							</>
