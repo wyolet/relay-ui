@@ -32,7 +32,7 @@ const KIND_LABEL: Record<"team" | "project", string> = {
 	project: "Project",
 };
 
-/** The caller's contexts: personal first, System next for admins, then the rest in server order. */
+/** The caller's contexts: the organization first for admins (their default), then personal, then the rest in server order. */
 export function workContexts(
 	mine: readonly MyContext[],
 	isAdmin: boolean,
@@ -48,8 +48,8 @@ export function workContexts(
 	);
 	if (!isAdmin) return listed;
 	return [
-		...listed.filter((c) => c.kind === "personal"),
 		SYSTEM_CONTEXT,
+		...listed.filter((c) => c.kind === "personal"),
 		...listed.filter((c) => c.kind !== "personal"),
 	];
 }

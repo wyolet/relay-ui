@@ -73,7 +73,8 @@ export function WorkspaceSwitcher() {
 						<SidebarMenuButton
 							size="lg"
 							tooltip={currentTitle}
-							className="data-popup-open:text-sidebar-accent-foreground data-popup-open:before:opacity-100"
+							// Raised a step off the sidebar ground: it sets every page's data, unlike the nav below.
+							className="bg-card shadow-sm ring-1 ring-sidebar-border data-popup-open:text-sidebar-accent-foreground data-popup-open:before:opacity-100"
 						/>
 					}
 				>

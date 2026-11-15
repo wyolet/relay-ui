@@ -92,10 +92,10 @@ describe("workContexts", () => {
 		]);
 	});
 
-	test("puts System after personal for an admin", () => {
+	test("puts the organization first for an admin, then personal", () => {
 		expect(workContexts(mine, true).map((c) => c.kind)).toEqual([
-			"personal",
 			"system",
+			"personal",
 			"team",
 			"project",
 			"project",
@@ -121,6 +121,12 @@ describe("resolveWorkContext", () => {
 			resolveWorkContext(contexts, { kind: "team", id: "gone" })?.kind,
 		).toBe("personal");
 		expect(resolveWorkContext(contexts, null)?.kind).toBe("personal");
+	});
+
+	test("an admin with nothing stored starts in the organization", () => {
+		expect(resolveWorkContext(workContexts(mine, true), null)?.kind).toBe(
+			"system",
+		);
 	});
 
 	test("a stored Personal that /me/contexts dropped falls back to the next context", () => {
@@ -319,8 +325,8 @@ describe("contextRows", () => {
 	test("nests projects under their team; orphans follow unnested", () => {
 		const rows = contextRows(workContexts(mine, true));
 		expect(rows.map((r) => [r.context.kind, r.context.id, r.nested])).toEqual([
-			["personal", "u1", false],
 			["system", "", false],
+			["personal", "u1", false],
 			["team", "t1", false],
 			["project", "p1", true],
 			["project", "p2", false],

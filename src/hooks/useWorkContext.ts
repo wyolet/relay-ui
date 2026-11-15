@@ -31,11 +31,12 @@ function resolveWorkspace(
 ) {
 	const contexts = workContexts(mine ?? [], isAdmin);
 	const current = mine ? resolveWorkContext(contexts, selected) : undefined;
-	// Until the list loads, the stored pick (or personal) stands in.
+	// Until the list loads, the stored pick or the default stands in, so the
+	// first queries already carry the scope the list will resolve to.
 	const ref: WorkContextRef =
 		current ??
 		selected ??
-		(userId ? { kind: "personal", id: userId } : SYSTEM_CONTEXT);
+		(isAdmin || !userId ? SYSTEM_CONTEXT : { kind: "personal", id: userId });
 	return { contexts, current, ref };
 }
 

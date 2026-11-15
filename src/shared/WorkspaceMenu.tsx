@@ -9,7 +9,9 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useContextSwitcher } from "@/hooks/useContextSwitcher";
+import { cn } from "@/lib/utils";
 import { contextKey, contextLabel, contextRowDetail } from "@/lib/workContext";
+import { useSlidingHighlight } from "@/shared/useSlidingHighlight";
 import { WorkspaceAvatar } from "@/shared/WorkspaceAvatar";
 
 interface WorkspaceMenuProps {
@@ -40,6 +42,7 @@ export function WorkspaceMenu({
 	} = useContextSwitcher();
 	const value = formPick?.value ?? currentKey;
 	const onSelect = formPick?.onSelect ?? selectKey;
+	const slide = useSlidingHighlight();
 
 	return (
 		<DropdownMenu onOpenChange={onOpenChange}>
@@ -60,21 +63,34 @@ export function WorkspaceMenu({
 					) : (
 						<DropdownMenuLabel>Accounts</DropdownMenuLabel>
 					)}
-					{(formPick ? allRows : rows).map(({ context, nested }) => (
-						<DropdownMenuRadioItem
-							key={contextKey(context)}
-							value={contextKey(context)}
-							className={nested ? "gap-2.5 pl-6" : "gap-2.5"}
-						>
-							<WorkspaceAvatar context={context} size="sm" />
-							<span className="grid min-w-0 leading-tight">
-								<span className="truncate">{contextLabel(context)}</span>
-								<span className="truncate text-[11px] text-muted-foreground">
-									{contextRowDetail(context)}
+					<div className="relative" {...slide.listProps}>
+						<span
+							aria-hidden
+							className="pointer-events-none absolute inset-x-0 rounded-md bg-popover-hover transition-[top,height,opacity] duration-150 ease-out"
+							style={{
+								top: slide.box?.top ?? 0,
+								height: slide.box?.height ?? 0,
+								opacity: slide.box ? 1 : 0,
+							}}
+						/>
+						{(formPick ? allRows : rows).map(({ context, nested }) => (
+							<DropdownMenuRadioItem
+								key={contextKey(context)}
+								value={contextKey(context)}
+								{...slide.rowProps}
+								// The glide above paints the highlight; the row keeps its own clear.
+								className={cn("gap-2.5 focus:bg-transparent", nested && "pl-6")}
+							>
+								<WorkspaceAvatar context={context} size="sm" />
+								<span className="grid min-w-0 leading-tight">
+									<span className="truncate">{contextLabel(context)}</span>
+									<span className="truncate text-[11px] text-muted-foreground">
+										{contextRowDetail(context)}
+									</span>
 								</span>
-							</span>
-						</DropdownMenuRadioItem>
-					))}
+							</DropdownMenuRadioItem>
+						))}
+					</div>
 				</DropdownMenuRadioGroup>
 				{personalOffNote && (
 					<>
