@@ -101,7 +101,7 @@ function OwnAccountKeysCard({ accountName }: { accountName: string }) {
 				trailing={(row) => (
 					<>
 						<LastUsed
-							at={row.hostKey.lastUsedAt}
+							at={row.hostKey.status?.lastUsedAt}
 							className="w-16 text-right text-[11px]"
 						/>
 						<span

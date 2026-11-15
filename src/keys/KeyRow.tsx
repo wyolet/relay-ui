@@ -152,7 +152,7 @@ export function KeyRow({
 					/>
 				)}
 			</span>
-			<LastUsed at={rk.lastUsedAt} className="truncate" />
+			<LastUsed at={rk.status?.lastUsedAt} className="truncate" />
 			<SwitchCell
 				checked={enabled}
 				onChange={(next) => setEnabled(rk, next)}

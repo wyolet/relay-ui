@@ -27,7 +27,7 @@ function line(
 			principal: { id: "p", kind: "user" },
 			expiresAt: opts.expiresAt,
 		},
-		lastUsedAt: opts.lastUsedAt,
+		status: { lastUsedAt: opts.lastUsedAt },
 	};
 	return opts.requests == null
 		? { key }

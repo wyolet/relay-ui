@@ -97,7 +97,7 @@ export function useHostKeyDetail({ name, onDeleted }: UseHostKeyDetailOptions) {
 		isStored,
 		sourceLabel: isStored ? "Stored value" : "Environment variable",
 		envVar: hk.spec.valueFrom.env?.trim() || undefined,
-		lastUsedAt: hk.lastUsedAt,
+		lastUsedAt: hk.status?.lastUsedAt,
 
 		defaultTier: hk.spec.defaultTier?.trim() || undefined,
 
