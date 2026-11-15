@@ -214,7 +214,6 @@ function ModelsList() {
 				state={{ q: live.q, deprecated: live.deprecated, line: live.line }}
 				onChange={(next) => patch({ ...next, page: 1 })}
 				sort={sort}
-				summary={`${data.total} ${featured ? "featured " : ""}model${data.total === 1 ? "" : "s"}`}
 				className="mb-3"
 			/>
 
