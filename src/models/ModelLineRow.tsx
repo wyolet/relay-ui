@@ -14,10 +14,11 @@ import { useModelLineActions } from "@/models/useModelLineActions";
 import { RateValue } from "@/pricing/MeterGrid";
 import { AddPriceLink } from "@/pricing/ModelPrice";
 import { type MenuAction, RowMenu } from "@/shared/RowMenu";
+import { Switch } from "@/shared/Switch";
 import { fmtMoneyCompact } from "@/usage/format";
 
 const GRID =
-	"grid grid-cols-[minmax(12rem,1fr)_6rem_3.5rem_4.5rem_repeat(2,4.5rem)_3.5rem_4.5rem_1.75rem] items-center gap-x-4";
+	"grid grid-cols-[minmax(12rem,1fr)_6rem_3.5rem_4.5rem_repeat(2,4.5rem)_3.5rem_4.5rem_4.5rem] items-center gap-x-4";
 
 /** The pane's column labels, on the rows' grid. */
 export function ModelLineColumns() {
@@ -39,7 +40,7 @@ export function ModelLineColumns() {
 			<span className="text-right" title="Spend, last 7 days">
 				Spend 7d
 			</span>
-			<span />
+			<span className="text-right">On</span>
 		</div>
 	);
 }
@@ -54,27 +55,9 @@ export function ModelLineRow({
 }) {
 	const { model, host, price, usage } = line;
 	const actions = useModelLineActions(model);
-	const menu: MenuAction[] = [];
-	if (actions.canEdit) {
-		menu.push(
-			{
-				label: actions.enabled ? "Disable" : "Enable",
-				disabled: actions.pending,
-				onClick: () => void actions.setEnabled(!actions.enabled),
-			},
-			{
-				label: "Edit",
-				render: (
-					<Link
-						to="/models/$name/edit"
-						params={{ name: model.metadata.name }}
-					/>
-				),
-			},
-		);
-	}
-	if (actions.canDelete)
-		menu.push({ label: "Delete", danger: true, onClick: onDelete });
+	const menu: MenuAction[] = actions.canDelete
+		? [{ label: "Delete", danger: true, onClick: onDelete }]
+		: [];
 
 	return (
 		<div
@@ -135,7 +118,13 @@ export function ModelLineRow({
 			<NumberCell
 				value={usage?.usd != null ? fmtMoneyCompact(usage.usd, "USD") : null}
 			/>
-			<span className="flex justify-end">
+			<span className="flex items-center justify-end gap-1">
+				<Switch
+					checked={actions.enabled}
+					onChange={(next) => void actions.setEnabled(next)}
+					disabled={!actions.canEdit || actions.pending}
+					label={`${actions.enabled ? "Disable" : "Enable"} ${displayLabel(model.metadata)}`}
+				/>
 				{menu.length > 0 && <RowMenu actions={menu} />}
 			</span>
 		</div>
