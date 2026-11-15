@@ -19,8 +19,8 @@ export function CatalogIcon({
 	/** When true, the label is set as a `title` for native tooltips. */
 	titleTooltip?: boolean;
 }) {
-	// Remember which path failed, so a new path (or the same file served
-	// later) gets its own try instead of staying an initial.
+	// Remember which path failed, so a changed path gets its own try instead
+	// of staying an initial.
 	const [failed, setFailed] = useState<string>();
 	const style = { width: size, height: size } as const;
 	const title = titleTooltip ? label : undefined;
