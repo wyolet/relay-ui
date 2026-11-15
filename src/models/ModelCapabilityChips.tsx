@@ -44,6 +44,33 @@ const CAPABILITY_META: Record<string, { icon: LucideIcon; label: string }> = {
 	audioOutput: { icon: Volume2, label: "Audio output" },
 };
 
+/** The capabilities a dense row shows, in a fixed order so icons line up. */
+const ROW_CAPABILITIES = [
+	"tools",
+	"vision",
+	"reasoning",
+	"fileInput",
+	"webSearch",
+] as const;
+
+/** A dense row's capabilities: icons only, named on hover. */
+export function ModelCapabilityIcons({ caps }: { caps: readonly string[] }) {
+	const shown = ROW_CAPABILITIES.filter((c) => caps.includes(c));
+	return (
+		<ul className="flex items-center gap-1.5 text-ink-3">
+			{shown.map((c) => {
+				const meta = CAPABILITY_META[c] ?? { icon: ImageIcon, label: c };
+				const Icon = meta.icon;
+				return (
+					<li key={c} title={meta.label}>
+						<Icon className="size-3.5" aria-label={meta.label} />
+					</li>
+				);
+			})}
+		</ul>
+	);
+}
+
 export function ModelCapabilityChips({ caps }: { caps: string[] }) {
 	return (
 		<ul className="flex flex-wrap gap-1.5">
