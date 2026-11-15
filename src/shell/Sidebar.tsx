@@ -168,7 +168,7 @@ export function Sidebar() {
 			[item.capability].flat().some((kind) => capabilities[kind]));
 
 	return (
-		<SidebarRoot collapsible="icon">
+		<SidebarRoot collapsible="icon" variant="inset">
 			<SidebarHeader>
 				<div className="flex h-9 items-center gap-2.5 px-1.5 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
 					<BrandMark className="h-5 w-auto shrink-0" />
