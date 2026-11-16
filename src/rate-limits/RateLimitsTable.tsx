@@ -9,7 +9,7 @@ import type { FilterDef } from "@/filters/types";
 import { useOriginFilter } from "@/hooks/useOriginFilter";
 import { useOwnerFilter } from "@/hooks/useOwnerFilter";
 import { displayLabel } from "@/lib/displayLabel";
-import { onOrigins } from "@/lib/ownerFilter";
+import { filterByOrigin } from "@/lib/ownerFilter";
 import { RateLimitColumns, RateLimitRow } from "@/rate-limits/RateLimitRow";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { LineTable } from "@/shared/LineGrid";
@@ -33,10 +33,8 @@ export function RateLimitsTable() {
 	const [q, setQ] = useState("");
 	const owner = useOwnerFilter(rateLimitsData.items ?? []);
 	const origin = useOriginFilter();
-	const allItems = owner.visible;
-	const shown = allItems.filter((row) =>
-		onOrigins(row.metadata.owner, origin.selected),
-	);
+	const allItems = rateLimitsData.items ?? [];
+	const shown = filterByOrigin(allItems, origin.selected, owner.matches);
 	const needle = q.trim().toLowerCase();
 	const items = needle
 		? shown.filter((rl) =>

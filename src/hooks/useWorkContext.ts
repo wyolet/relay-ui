@@ -9,6 +9,7 @@ import {
 	contextOwner,
 	contextUsableBy,
 	contextUsageScope,
+	createContext,
 	type FormPlacement,
 	ownerName,
 	ownerUsableBy,
@@ -30,11 +31,15 @@ function resolveWorkspace(
 	selected: WorkContextRef | null,
 ) {
 	const contexts = workContexts(mine ?? [], isAdmin);
-	const current = mine ? resolveWorkContext(contexts, selected) : undefined;
-	// Until the list loads, the stored pick (or personal) stands in.
+	// System is relay's global catalog layer: a filter and owner, never a workspace.
+	const workspaces = contexts.filter((c) => c.kind !== "system");
+	const stored = selected?.kind === "system" ? null : selected;
+	const current = mine ? resolveWorkContext(workspaces, stored) : undefined;
+	// Until the list loads, the stored pick or the default stands in, so the
+	// first queries already carry the scope the list will resolve to.
 	const ref: WorkContextRef =
 		current ??
-		selected ??
+		stored ??
 		(userId ? { kind: "personal", id: userId } : SYSTEM_CONTEXT);
 	return { contexts, current, ref };
 }
@@ -52,13 +57,23 @@ export function useWorkContext() {
 		selected,
 	);
 
+	const personal: WorkContextRef | undefined = userId
+		? { kind: "personal", id: userId }
+		: undefined;
+	const createRef: WorkContextRef | undefined = current
+		? createContext(current, contexts)
+		: ref.kind === "system"
+			? personal
+			: ref;
+
 	return {
 		contexts,
 		contextsLoaded: data !== undefined,
 		current,
 		select,
-		owner: contextOwner(ref),
-		usableBy: contextUsableBy(ref),
+		// Creates never take the organization: see createContext.
+		owner: createRef ? contextOwner(createRef) : undefined,
+		usableBy: createRef ? contextUsableBy(createRef) : undefined,
 		usageScope: contextUsageScope(ref),
 	};
 }
@@ -101,11 +116,11 @@ export function useFormOwner(fixed?: { owner?: Owner }): {
 			context: undefined,
 		};
 	}
-	// A pick the caller lost (a revoked role) falls back to the workspace.
+	// A pick the caller lost (a revoked role) falls back to where the workspace creates.
 	const current =
 		(picked &&
 			work.contexts.find((c) => contextKey(c) === contextKey(picked))) ||
-		work.current;
+		(work.current && createContext(work.current, work.contexts));
 	if (!current) {
 		return {
 			owner: work.owner,

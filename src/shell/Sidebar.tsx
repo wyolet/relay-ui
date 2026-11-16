@@ -1,20 +1,9 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import {
-	Banknote,
-	BarChart3,
-	Bot,
-	Boxes,
-	KeyRound,
-	LayoutDashboard,
-	ShieldCheck,
-	UserRound,
-	Users,
-} from "lucide-react";
-import type { ComponentType } from "react";
 import { useAuth } from "@/api/auth";
-import { type Capability, useCapabilities } from "@/api/hooks/capabilities";
+import { useCapabilities } from "@/api/hooks/capabilities";
 import {
 	SidebarContent,
+	SidebarFooter,
 	SidebarGroup,
 	SidebarGroupLabel,
 	SidebarHeader,
@@ -25,120 +14,9 @@ import {
 	Sidebar as SidebarRoot,
 } from "@/components/ui/sidebar";
 import { BrandMark } from "@/shared/BrandMark";
+import { AccountMenu } from "@/shell/AccountMenu";
+import { isActive, NAV_GROUPS, type NavItem, SETTINGS_ITEM } from "@/shell/nav";
 import { WorkspaceSwitcher } from "@/shell/WorkspaceSwitcher";
-import { USERS_PAGE_TABS } from "@/users/useUsersPageTabs";
-
-interface NavItem {
-	to:
-		| "/"
-		| "/usage"
-		| "/models"
-		| "/keys"
-		| "/policies"
-		| "/pricing"
-		| "/service-accounts"
-		| "/teams"
-		| "/projects"
-		| "/audit"
-		| "/users"
-		| "/scim-clients";
-	label: string;
-	icon: ComponentType<{ className?: string }>;
-	/** Path prefixes that highlight the entry; a tabbed page lists every tab's
-	 * detail routes too. */
-	prefix: string | readonly string[];
-	/** Entry hides when the actor may list none of these kinds. Observe views
-	 * have none — they degrade to their own empty states instead. */
-	capability?: Capability | readonly Capability[];
-	/** Entry hides from non-admins: the kind takes an admin in every authz mode. */
-	adminOnly?: boolean;
-}
-
-interface NavGroup {
-	/** Section heading; the main group runs unlabeled at the top. */
-	label?: string;
-	items: NavItem[];
-}
-
-const NAV_GROUPS: NavGroup[] = [
-	{
-		items: [
-			{ to: "/", label: "Dashboard", icon: LayoutDashboard, prefix: "/" },
-			{
-				to: "/usage",
-				label: "Usage",
-				icon: BarChart3,
-				prefix: ["/usage", "/logs"],
-			},
-			{
-				to: "/models",
-				label: "Models",
-				icon: Boxes,
-				prefix: "/models",
-				capability: "models",
-			},
-			{
-				to: "/keys",
-				label: "Keys",
-				icon: KeyRound,
-				prefix: "/keys",
-				capability: "keys",
-			},
-			{
-				to: "/policies",
-				label: "Policies",
-				icon: ShieldCheck,
-				prefix: "/policies",
-				capability: "policies",
-			},
-			{
-				to: "/pricing",
-				label: "Pricing",
-				icon: Banknote,
-				prefix: "/pricing",
-				capability: "pricings",
-			},
-		],
-	},
-	{
-		label: "Identity",
-		items: [
-			{
-				to: "/teams",
-				label: "Teams",
-				icon: Users,
-				prefix: "/teams",
-				capability: "teams",
-			},
-			{
-				to: "/projects",
-				label: "Projects",
-				icon: Boxes,
-				prefix: "/projects",
-				capability: "projects",
-			},
-			{
-				to: "/service-accounts",
-				label: "Service accounts",
-				icon: Bot,
-				prefix: "/service-accounts",
-				capability: "service-accounts",
-			},
-			{
-				to: "/users",
-				label: "Users",
-				icon: UserRound,
-				prefix: ["/users", "/groups", "/roles", "/role-bindings"],
-				capability: USERS_PAGE_TABS,
-			},
-		],
-	},
-];
-
-function isActive(path: string, item: NavItem): boolean {
-	if (item.to === "/") return path === "/";
-	return [item.prefix].flat().some((prefix) => path.startsWith(prefix));
-}
 
 function NavMenuItem({ item, active }: { item: NavItem; active: boolean }) {
 	const Icon = item.icon;
@@ -202,6 +80,16 @@ export function Sidebar() {
 					</SidebarGroup>
 				))}
 			</SidebarContent>
+
+			<SidebarFooter>
+				<SidebarMenu>
+					<NavMenuItem
+						item={SETTINGS_ITEM}
+						active={isActive(path, SETTINGS_ITEM)}
+					/>
+				</SidebarMenu>
+				<AccountMenu />
+			</SidebarFooter>
 
 			<SidebarRail />
 		</SidebarRoot>

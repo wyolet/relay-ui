@@ -11,7 +11,7 @@ import type { FilterDef } from "@/filters/types";
 import { useOriginFilter } from "@/hooks/useOriginFilter";
 import { useOwnerFilter } from "@/hooks/useOwnerFilter";
 import { displayLabel } from "@/lib/displayLabel";
-import { onOrigins } from "@/lib/ownerFilter";
+import { filterByOrigin } from "@/lib/ownerFilter";
 import { POLICY_MIN_W, PolicyColumns, PolicyRow } from "@/policies/PolicyRow";
 import { usePolicyAppliesToCounts } from "@/policies/usePolicyAppliesTo";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
@@ -38,10 +38,8 @@ export function PoliciesTable() {
 	const [q, setQ] = useState("");
 	const owner = useOwnerFilter(policiesData.items ?? []);
 	const origin = useOriginFilter();
-	const allItems = owner.visible;
-	const shown = allItems.filter((row) =>
-		onOrigins(row.metadata.owner, origin.selected),
-	);
+	const allItems = policiesData.items ?? [];
+	const shown = filterByOrigin(allItems, origin.selected, owner.matches);
 	const needle = q.trim().toLowerCase();
 	const items = needle
 		? shown.filter((p) =>

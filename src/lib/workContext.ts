@@ -13,6 +13,8 @@ export interface WorkContext {
 	displayName: string;
 	/** The project's team. Projects only. */
 	teamId?: string;
+	/** The caller is an admin there (always for personal and the organization). */
+	admin: boolean;
 }
 
 /** What the store keeps across reloads. */
@@ -21,7 +23,8 @@ export type WorkContextRef = Pick<WorkContext, "kind" | "id">;
 export const SYSTEM_CONTEXT: WorkContext = {
 	kind: "system",
 	id: "",
-	displayName: "Organization",
+	displayName: "System",
+	admin: true,
 };
 
 const KIND_LABEL: Record<"team" | "project", string> = {
@@ -29,7 +32,7 @@ const KIND_LABEL: Record<"team" | "project", string> = {
 	project: "Project",
 };
 
-/** The caller's contexts: personal first, System next for admins, then the rest in server order. */
+/** The caller's contexts: the organization first for admins (their default), then personal, then the rest in server order. */
 export function workContexts(
 	mine: readonly MyContext[],
 	isAdmin: boolean,
@@ -39,13 +42,14 @@ export function workContexts(
 			kind: c.kind,
 			id: c.id,
 			displayName: c.displayName,
+			admin: c.admin,
 			...(c.teamId ? { teamId: c.teamId } : {}),
 		}),
 	);
 	if (!isAdmin) return listed;
 	return [
-		...listed.filter((c) => c.kind === "personal"),
 		SYSTEM_CONTEXT,
+		...listed.filter((c) => c.kind === "personal"),
 		...listed.filter((c) => c.kind !== "personal"),
 	];
 }
@@ -102,6 +106,23 @@ export function workspaceKeys(
 	return [current, ...projects].map(contextKey);
 }
 
+/**
+ * Where a create from this workspace lands. The organization is a view, not an
+ * owner (relay's system rows are global catalog data), so it creates in
+ * Personal, or the first team when personal accounts are off.
+ */
+export function createContext(
+	current: WorkContext,
+	contexts: readonly WorkContext[],
+): WorkContext | undefined {
+	if (current.kind !== "system") return current;
+	return (
+		contexts.find((c) => c.kind === "personal") ??
+		contexts.find((c) => c.kind === "team") ??
+		contexts.find((c) => c.kind === "project")
+	);
+}
+
 /** The owner a create sends; personal sends none, so the row lands in the caller's own scope. */
 export function contextOwner(ctx: WorkContextRef): Owner | undefined {
 	switch (ctx.kind) {
@@ -155,24 +176,34 @@ export function contextTitle(ctx: WorkContext): string {
 		: ctx.displayName;
 }
 
-/** The switcher trigger's second line: a project's team, else the kind. */
-export function contextSubtitle(
-	ctx: WorkContext,
-	contexts: readonly WorkContext[],
-): string {
+/** A workspace's second line: your role in a team or project, else what it spans. */
+export function contextSubtitle(ctx: WorkContext): string {
 	switch (ctx.kind) {
 		case "personal":
 			return "Personal";
 		case "system":
 			return "All teams";
-		case "team":
-			return KIND_LABEL.team;
-		case "project":
-			return (
-				contexts.find((c) => c.kind === "team" && c.id === ctx.teamId)
-					?.displayName ?? KIND_LABEL.project
-			);
+		default:
+			return `${KIND_LABEL[ctx.kind]} ${ctx.admin ? "admin" : "member"}`;
 	}
+}
+
+/** A switcher row's second line: whose your personal space is, else the subtitle. */
+export function contextRowDetail(ctx: WorkContext): string {
+	return ctx.kind === "personal" ? contextTitle(ctx) : contextSubtitle(ctx);
+}
+
+/** Up to two letters for a team or project's avatar: "Wyolet Relay" → "WR". */
+export function contextInitials(ctx: WorkContext): string {
+	const words = ctx.displayName
+		.trim()
+		.split(/[\s_-]+/)
+		.filter(Boolean);
+	const letters =
+		words.length > 1
+			? `${words[0]?.[0] ?? ""}${words[1]?.[0] ?? ""}`
+			: (words[0] ?? "").slice(0, 2);
+	return letters.toUpperCase();
 }
 
 /** "Team Platform": the context a create lands in. */
@@ -181,7 +212,7 @@ export function contextName(ctx: WorkContext): string {
 		case "personal":
 			return "Personal";
 		case "system":
-			return "Organization";
+			return "System";
 		default:
 			return `${KIND_LABEL[ctx.kind]} ${ctx.displayName}`;
 	}

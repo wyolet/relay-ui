@@ -1,15 +1,18 @@
 import { describe, expect, test } from "bun:test";
 import type { components } from "@/api/types.gen";
 import {
+	contextInitials,
 	contextLabel,
 	contextName,
 	contextOwner,
+	contextRowDetail,
 	contextRows,
 	contextSubtitle,
 	contextTeamId,
 	contextTitle,
 	contextUsableBy,
 	contextUsageScope,
+	createContext,
 	notAvailableLabel,
 	ownerName,
 	ownerUsableBy,
@@ -64,13 +67,20 @@ const personal: WorkContext = {
 	kind: "personal",
 	id: "u1",
 	displayName: "ana",
+	admin: true,
 };
-const team: WorkContext = { kind: "team", id: "t1", displayName: "Platform" };
+const team: WorkContext = {
+	kind: "team",
+	id: "t1",
+	displayName: "Platform",
+	admin: true,
+};
 const project: WorkContext = {
 	kind: "project",
 	id: "p1",
 	displayName: "Search",
 	teamId: "t1",
+	admin: false,
 };
 
 describe("workContexts", () => {
@@ -83,10 +93,10 @@ describe("workContexts", () => {
 		]);
 	});
 
-	test("puts System after personal for an admin", () => {
+	test("puts the organization first for an admin, then personal", () => {
 		expect(workContexts(mine, true).map((c) => c.kind)).toEqual([
-			"personal",
 			"system",
+			"personal",
 			"team",
 			"project",
 			"project",
@@ -171,7 +181,7 @@ describe("placement", () => {
 
 	test("names the context a create lands in", () => {
 		expect(contextName(personal)).toBe("Personal");
-		expect(contextName(SYSTEM_CONTEXT)).toBe("Organization");
+		expect(contextName(SYSTEM_CONTEXT)).toBe("System");
 		expect(contextName(team)).toBe("Team Platform");
 		expect(contextName(project)).toBe("Project Search");
 	});
@@ -197,22 +207,30 @@ describe("placement", () => {
 });
 
 describe("switcher trigger", () => {
-	const contexts = workContexts(mine, true);
-
 	test("personal shows whose it is; the rest by display name", () => {
 		expect(contextTitle(personal)).toBe("ana");
 		expect(contextTitle({ ...personal, displayName: "" })).toBe("Personal");
 		expect(contextTitle(team)).toBe("Platform");
 	});
 
-	test("a project's subtitle is its team, else the kind", () => {
-		expect(contextSubtitle(project, contexts)).toBe("Platform");
-		expect(contextSubtitle({ ...project, teamId: "t9" }, contexts)).toBe(
-			"Project",
+	test("the subtitle is your role in a team or project, else its span", () => {
+		expect(contextSubtitle(team)).toBe("Team admin");
+		expect(contextSubtitle(project)).toBe("Project member");
+		expect(contextSubtitle(personal)).toBe("Personal");
+		expect(contextSubtitle(SYSTEM_CONTEXT)).toBe("All teams");
+	});
+
+	test("a row names whose your personal space is", () => {
+		expect(contextRowDetail(personal)).toBe("ana");
+		expect(contextRowDetail(team)).toBe("Team admin");
+	});
+
+	test("initials take two words' first letters, else the name's first two", () => {
+		expect(contextInitials({ ...team, displayName: "Wyolet Relay" })).toBe(
+			"WR",
 		);
-		expect(contextSubtitle(team, contexts)).toBe("Team");
-		expect(contextSubtitle(personal, contexts)).toBe("Personal");
-		expect(contextSubtitle(SYSTEM_CONTEXT, contexts)).toBe("All teams");
+		expect(contextInitials(team)).toBe("PL");
+		expect(contextInitials({ ...team, displayName: "ml-ops" })).toBe("MO");
 	});
 });
 
@@ -302,8 +320,8 @@ describe("contextRows", () => {
 	test("nests projects under their team; orphans follow unnested", () => {
 		const rows = contextRows(workContexts(mine, true));
 		expect(rows.map((r) => [r.context.kind, r.context.id, r.nested])).toEqual([
-			["personal", "u1", false],
 			["system", "", false],
+			["personal", "u1", false],
 			["team", "t1", false],
 			["project", "p1", true],
 			["project", "p2", false],
@@ -370,5 +388,19 @@ describe("workspaceKeys", () => {
 		expect(workspaceKeys(team, contexts)).toEqual(["team:t1", "project:p1"]);
 		expect(workspaceKeys(personal, contexts)).toEqual(["personal:u1"]);
 		expect(workspaceKeys(SYSTEM_CONTEXT, contexts)).toEqual([]);
+	});
+});
+
+describe("createContext", () => {
+	const admin = workContexts(mine, true);
+	test("the organization creates in Personal", () => {
+		expect(createContext(SYSTEM_CONTEXT, admin)?.kind).toBe("personal");
+	});
+	test("without a personal account, in the first team", () => {
+		const noPersonal = admin.filter((c) => c.kind !== "personal");
+		expect(createContext(SYSTEM_CONTEXT, noPersonal)?.id).toBe("t1");
+	});
+	test("any other workspace creates in itself", () => {
+		expect(createContext(team, admin)).toBe(team);
 	});
 });

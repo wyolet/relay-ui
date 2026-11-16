@@ -21,12 +21,17 @@ export function isCatalogPreset(owner: Owner | undefined): boolean {
 	return owner !== undefined && isPresetKind(owner.kind);
 }
 
-export const ORIGINS = ["custom", "provider"] as const;
+export const ORIGINS = ["custom", "system", "provider"] as const;
 export type Origin = (typeof ORIGINS)[number];
 
 /** The quick filter's buttons; the explainer is each one's tooltip. */
 export const ORIGIN_OPTIONS = [
 	{ value: "custom", label: "Custom", title: "Made in this relay." },
+	{
+		value: "system",
+		label: "System",
+		title: "Relay's own built-ins, shared with every scope.",
+	},
 	{
 		value: "provider",
 		label: "Provider",
@@ -34,13 +39,32 @@ export const ORIGIN_OPTIONS = [
 	},
 ] as const satisfies readonly { value: Origin; label: string; title: string }[];
 
-/** Whether a row's origin is picked; none picked takes both. */
+/** Which layer a row comes from: made in this relay, relay's built-ins, or a catalog preset. */
+export function originOf(owner: Owner | undefined): Origin {
+	if (isCatalogPreset(owner)) return "provider";
+	return owner?.kind === "system" ? "system" : "custom";
+}
+
+/** Whether a row's origin is picked; none picked takes every one. */
 export function onOrigins(
 	owner: Owner | undefined,
 	picked: readonly Origin[],
 ): boolean {
-	if (picked.length === 0) return true;
-	return picked.includes(isCatalogPreset(owner) ? "provider" : "custom");
+	return picked.length === 0 || picked.includes(originOf(owner));
+}
+
+/** Rows on the picked layers. The owner filter narrows only custom rows:
+ * system and provider rows serve every scope, so any workspace may show them. */
+export function filterByOrigin<T extends { metadata: { owner?: Owner } }>(
+	rows: readonly T[],
+	picked: readonly Origin[],
+	ownerMatches: (row: T) => boolean,
+): T[] {
+	return rows.filter(
+		(row) =>
+			onOrigins(row.metadata.owner, picked) &&
+			(originOf(row.metadata.owner) !== "custom" || ownerMatches(row)),
+	);
 }
 
 /** A row owner as the filter keys it: the context it sits in, or a bucket. */
