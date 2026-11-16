@@ -34,3 +34,11 @@ export function nanosFromDraft({ amount, unit }: DurationDraft): number {
 	const u = DURATION_UNITS.find((d) => d.value === unit) ?? DURATION_UNITS[0];
 	return Math.round(amount * u.nanos);
 }
+
+/** "1 hour", "30 minutes": a duration in its largest whole unit. */
+export function durationText(nanos: number): string {
+	const { amount, unit } = draftFromNanos(nanos);
+	const label =
+		DURATION_UNITS.find((u) => u.value === unit)?.label ?? "minutes";
+	return `${amount} ${amount === 1 ? label.slice(0, -1) : label}`;
+}

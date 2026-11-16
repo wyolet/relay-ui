@@ -1,10 +1,8 @@
-import { Link } from "@tanstack/react-router";
-import { ChevronLeft } from "lucide-react";
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { StickyFooter } from "@/shared/FormFooter";
 
-/** The back link, title and lede every /settings/* page opens with. */
+/** The title and lede every /settings/* page opens with; the section list beside it is the way back. */
 export function SettingsPageHeader({
 	title,
 	children,
@@ -14,14 +12,7 @@ export function SettingsPageHeader({
 }) {
 	return (
 		<div>
-			<Link
-				to="/settings"
-				className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-			>
-				<ChevronLeft className="w-3.5 h-3.5" />
-				Settings
-			</Link>
-			<h1 className="mt-2 text-xl font-semibold text-foreground">{title}</h1>
+			<h1 className="text-xl font-semibold text-foreground">{title}</h1>
 			<p className="mt-1 text-xs text-muted-foreground max-w-2xl">{children}</p>
 		</div>
 	);
