@@ -94,6 +94,7 @@ export function useProjectForm({
 	const presetTeamId = project?.spec.teamId || teamId;
 	const { placement, context } = useFormOwner(
 		presetTeamId ? { owner: { kind: "team", id: presetTeamId } } : undefined,
+		false,
 	);
 	const fixedTeamId =
 		presetTeamId || (context ? contextTeamId(context) : undefined) || "";

@@ -14,10 +14,10 @@ import {
 	contextUsageScope,
 	createContext,
 	notAvailableLabel,
+	ORGANIZATION_CONTEXT,
 	ownerName,
 	ownerUsableBy,
 	resolveWorkContext,
-	SYSTEM_CONTEXT,
 	scopeOptions,
 	unavailablePicks,
 	unavailablePicksError,
@@ -83,33 +83,32 @@ const project: WorkContext = {
 	admin: false,
 };
 
+// An admin's list as relay sends it: the organization first.
+const adminMine: MyContext[] = [
+	{
+		kind: "organization",
+		id: "",
+		name: "organization",
+		displayName: "Organization",
+		admin: true,
+	},
+	...mine,
+];
+
 describe("workContexts", () => {
-	test("keeps server order for a non-admin", () => {
-		expect(workContexts(mine, false).map((c) => c.id)).toEqual([
+	test("keeps server order", () => {
+		expect(workContexts(mine).map((c) => c.id)).toEqual([
 			"u1",
 			"t1",
 			"p1",
 			"p2",
 		]);
-	});
-
-	test("puts the organization first for an admin, then personal", () => {
-		expect(workContexts(mine, true).map((c) => c.kind)).toEqual([
-			"system",
-			"personal",
-			"team",
-			"project",
-			"project",
-		]);
-	});
-
-	test("starts on System for the admin token, which has no personal scope", () => {
-		expect(workContexts(mine.slice(1), true)[0]).toEqual(SYSTEM_CONTEXT);
+		expect(workContexts(adminMine)[0]).toEqual(ORGANIZATION_CONTEXT);
 	});
 });
 
 describe("resolveWorkContext", () => {
-	const contexts = workContexts(mine, false);
+	const contexts = workContexts(mine);
 
 	test("keeps the stored context while it is listed", () => {
 		expect(resolveWorkContext(contexts, { kind: "team", id: "t1" })?.id).toBe(
@@ -125,7 +124,7 @@ describe("resolveWorkContext", () => {
 	});
 
 	test("a stored Personal that /me/contexts dropped falls back to the next context", () => {
-		const withoutPersonal = workContexts(mine.slice(1), false);
+		const withoutPersonal = workContexts(mine.slice(1));
 		expect(
 			resolveWorkContext(withoutPersonal, { kind: "personal", id: "u1" })?.id,
 		).toBe("t1");
@@ -141,8 +140,10 @@ describe("contextOwner", () => {
 		expect(contextOwner(personal)).toBeUndefined();
 	});
 
-	test("System, teams and projects send themselves", () => {
-		expect(contextOwner(SYSTEM_CONTEXT)).toEqual({ kind: "system" });
+	test("the organization, teams and projects send themselves", () => {
+		expect(contextOwner(ORGANIZATION_CONTEXT)).toEqual({
+			kind: "organization",
+		});
 		expect(contextOwner(team)).toEqual({ kind: "team", id: "t1" });
 		expect(contextOwner(project)).toEqual({ kind: "project", id: "p1" });
 	});
@@ -151,7 +152,7 @@ describe("contextOwner", () => {
 describe("contextUsableBy", () => {
 	test("names the scope the way the list filter takes it", () => {
 		expect(contextUsableBy(personal)).toBe("user:u1");
-		expect(contextUsableBy(SYSTEM_CONTEXT)).toBe("system");
+		expect(contextUsableBy(ORGANIZATION_CONTEXT)).toBe("organization");
 		expect(contextUsableBy(team)).toBe("team:t1");
 		expect(contextUsableBy(project)).toBe("project:p1");
 	});
@@ -164,9 +165,10 @@ describe("ownerUsableBy", () => {
 		expect(ownerUsableBy({ kind: "user", id: "u2" }, "u1")).toBe("user:u2");
 	});
 
-	test("tenancy owners and System map to the filter", () => {
+	test("tenancy owners, the organization and System map to the filter", () => {
 		expect(ownerUsableBy({ kind: "team", id: "t1" }, "u1")).toBe("team:t1");
 		expect(ownerUsableBy({ kind: "system" }, "u1")).toBe("system");
+		expect(ownerUsableBy({ kind: "organization" }, "u1")).toBe("organization");
 	});
 
 	test("owners the filter can't name send none", () => {
@@ -177,11 +179,11 @@ describe("ownerUsableBy", () => {
 });
 
 describe("placement", () => {
-	const contexts = workContexts(mine, false);
+	const contexts = workContexts(mine);
 
 	test("names the context a create lands in", () => {
 		expect(contextName(personal)).toBe("Personal");
-		expect(contextName(SYSTEM_CONTEXT)).toBe("System");
+		expect(contextName(ORGANIZATION_CONTEXT)).toBe("Organization");
 		expect(contextName(team)).toBe("Team Platform");
 		expect(contextName(project)).toBe("Project Search");
 	});
@@ -194,6 +196,9 @@ describe("placement", () => {
 			"Personal",
 		);
 		expect(ownerName({ kind: "system" }, contexts, "u1")).toBe("System");
+		expect(ownerName({ kind: "organization" }, contexts, "u1")).toBe(
+			"Organization",
+		);
 	});
 
 	test("falls back to a short id outside the caller's contexts", () => {
@@ -217,7 +222,7 @@ describe("switcher trigger", () => {
 		expect(contextSubtitle(team)).toBe("Team admin");
 		expect(contextSubtitle(project)).toBe("Project member");
 		expect(contextSubtitle(personal)).toBe("Personal");
-		expect(contextSubtitle(SYSTEM_CONTEXT)).toBe("All teams");
+		expect(contextSubtitle(ORGANIZATION_CONTEXT)).toBe("All teams");
 	});
 
 	test("a row names whose your personal space is", () => {
@@ -318,9 +323,9 @@ describe("unavailable pick copy", () => {
 
 describe("contextRows", () => {
 	test("nests projects under their team; orphans follow unnested", () => {
-		const rows = contextRows(workContexts(mine, true));
+		const rows = contextRows(workContexts(adminMine));
 		expect(rows.map((r) => [r.context.kind, r.context.id, r.nested])).toEqual([
-			["system", "", false],
+			["organization", "", false],
 			["personal", "u1", false],
 			["team", "t1", false],
 			["project", "p1", true],
@@ -338,7 +343,7 @@ describe("contextLabel", () => {
 
 describe("scopeOptions", () => {
 	test("lists one kind by id and display name", () => {
-		const contexts = workContexts(mine, true);
+		const contexts = workContexts(adminMine);
 		expect(scopeOptions(contexts, "team")).toEqual([
 			{ value: "t1", kind: "team", label: "Platform" },
 		]);
@@ -354,19 +359,19 @@ describe("contextTeamId", () => {
 		expect(contextTeamId(team)).toBe("t1");
 		expect(contextTeamId(project)).toBe("t1");
 		expect(contextTeamId(personal)).toBeUndefined();
-		expect(contextTeamId(SYSTEM_CONTEXT)).toBeUndefined();
+		expect(contextTeamId(ORGANIZATION_CONTEXT)).toBeUndefined();
 	});
 });
 
 describe("resolveWorkContext with a stored project", () => {
 	test("resolves to its team when the team is listed", () => {
-		const contexts = workContexts(mine, false);
+		const contexts = workContexts(mine);
 		expect(
 			resolveWorkContext(contexts, { kind: "project", id: "p1" })?.id,
 		).toBe("t1");
 	});
 	test("stays the project when its team isn't listed", () => {
-		const contexts = workContexts(mine, false);
+		const contexts = workContexts(mine);
 		expect(
 			resolveWorkContext(contexts, { kind: "project", id: "p2" })?.id,
 		).toBe("p2");
@@ -378,29 +383,38 @@ describe("contextUsageScope", () => {
 		expect(contextUsageScope(personal)).toEqual({ principal_id: ["u1"] });
 		expect(contextUsageScope(team)).toEqual({ team_id: ["t1"] });
 		expect(contextUsageScope(project)).toEqual({ project_id: ["p1"] });
-		expect(contextUsageScope(SYSTEM_CONTEXT)).toEqual({});
+		expect(contextUsageScope(ORGANIZATION_CONTEXT)).toEqual({});
 	});
 });
 
 describe("workspaceKeys", () => {
 	test("a team brings its listed projects", () => {
-		const contexts = workContexts(mine, false);
+		const contexts = workContexts(mine);
 		expect(workspaceKeys(team, contexts)).toEqual(["team:t1", "project:p1"]);
 		expect(workspaceKeys(personal, contexts)).toEqual(["personal:u1"]);
-		expect(workspaceKeys(SYSTEM_CONTEXT, contexts)).toEqual([]);
+		expect(workspaceKeys(ORGANIZATION_CONTEXT, contexts)).toEqual([]);
 	});
 });
 
 describe("createContext", () => {
-	const admin = workContexts(mine, true);
-	test("the organization creates in Personal", () => {
-		expect(createContext(SYSTEM_CONTEXT, admin)?.kind).toBe("personal");
+	const admin = workContexts(adminMine);
+	test("the organization creates in itself when it may own the kind", () => {
+		expect(createContext(ORGANIZATION_CONTEXT, admin, true)).toBe(
+			ORGANIZATION_CONTEXT,
+		);
 	});
-	test("without a personal account, in the first team", () => {
+	test("a kind it can't own goes to Personal", () => {
+		expect(createContext(ORGANIZATION_CONTEXT, admin, false)?.kind).toBe(
+			"personal",
+		);
+	});
+	test("without a personal account, to the first team", () => {
 		const noPersonal = admin.filter((c) => c.kind !== "personal");
-		expect(createContext(SYSTEM_CONTEXT, noPersonal)?.id).toBe("t1");
+		expect(createContext(ORGANIZATION_CONTEXT, noPersonal, false)?.id).toBe(
+			"t1",
+		);
 	});
 	test("any other workspace creates in itself", () => {
-		expect(createContext(team, admin)).toBe(team);
+		expect(createContext(team, admin, false)).toBe(team);
 	});
 });

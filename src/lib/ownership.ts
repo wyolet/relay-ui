@@ -11,7 +11,7 @@ export interface ScopeCaller {
 
 /**
  * Whether the caller administers a row's owner: the user itself, an admin for
- * the system, an admin of the team or project otherwise. The server has the
+ * the system or the organization, an admin of the team or project otherwise. The server has the
  * last word.
  */
 export function administersOwner(
@@ -22,6 +22,7 @@ export function administersOwner(
 		case "user":
 			return Boolean(owner.id) && owner.id === caller.userId;
 		case "system":
+		case "organization":
 			return caller.isAdmin;
 		case "team":
 		case "project":
@@ -44,7 +45,7 @@ type OwnershipMetadata = Pick<
  * combining its owner kind with the server's governance guardrail.
  *
  * Mirrors relay's governance tiers for these kinds (policies, models, hosts,
- * providers): system-owned rows change only for an admin; team-, project- and
+ * providers): system- and organization-owned rows change only for an admin; team-, project- and
  * user-owned (or unowned) rows always may; catalog-managed rows (host- or
  * provider-owned) follow the governance flags.
  *
@@ -62,7 +63,8 @@ export function resolveMutability(
 	const ownerKind = metadata.catalogDetachedAt ? "user" : metadata.owner?.kind;
 	if (ownerKind === "host" || ownerKind === "provider")
 		return { canEdit: gov.allowEdit, canDelete: gov.allowDelete };
-	if (ownerKind === "system") return { canEdit: isAdmin, canDelete: isAdmin };
+	if (ownerKind === "system" || ownerKind === "organization")
+		return { canEdit: isAdmin, canDelete: isAdmin };
 	return { canEdit: true, canDelete: true };
 }
 

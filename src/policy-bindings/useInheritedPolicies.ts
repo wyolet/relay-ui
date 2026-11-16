@@ -35,7 +35,8 @@ export function useInheritedPolicies(ref: AccountRef): Ladder | undefined {
 			},
 			policy: (p) => {
 				const row = policyItems.find((x) => x.metadata.id === p.id);
-				return row ? displayLabel(row.metadata) : p.name;
+				if (row) return displayLabel(row.metadata);
+				return p.name ?? "Organization policy";
 			},
 		},
 		binding !== undefined,

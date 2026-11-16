@@ -27,6 +27,7 @@ const KIND_LABEL: Record<string, string> = {
 	team: "Team",
 	project: "Project",
 	system: "System",
+	organization: "Organization",
 	host: "Host",
 	provider: "Provider",
 };

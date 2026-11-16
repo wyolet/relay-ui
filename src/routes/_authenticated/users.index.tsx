@@ -45,7 +45,7 @@ const searchSchema = z.object({
 	enabled: z.enum(["all", "true", "false"]).catch("all").default("all"),
 	role_id: z.string().catch("").default(""),
 	scope_kind: z
-		.enum(["all", "system", "team", "project"])
+		.enum(["all", "organization", "team", "project"])
 		.catch("all")
 		.default("all"),
 	scope_id: z.string().catch("").default(""),

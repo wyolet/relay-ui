@@ -20,8 +20,8 @@ export interface MeterReading {
 export interface LimitMeter {
 	key: string;
 	kind: LimitsTightest["kind"];
-	/** The rate limit's or budget's slug, for its link. */
-	name: string;
+	/** The rate limit's or budget's slug, for its link; absent for an organization row the caller may not see. */
+	name?: string;
 	/** "requests / 1m", or "per month" for a budget. */
 	measure: string;
 	/** The strategy of a rule, shown on hover. */
@@ -64,10 +64,11 @@ function isTightest(
 	tightest: LimitsTightest | undefined,
 	accountId: string,
 	kind: LimitsTightest["kind"],
-	id: string,
+	id: string | undefined,
 ): boolean {
 	return (
 		tightest !== undefined &&
+		id !== undefined &&
 		tightest.accountId === accountId &&
 		tightest.kind === kind &&
 		tightest.id === id
@@ -95,10 +96,10 @@ function rungMeters(
 	tightest: LimitsTightest | undefined,
 ): LimitMeter[] {
 	const accountId = rung.account.id;
-	const rules = (rung.rateLimits ?? []).flatMap((rl) =>
+	const rules = (rung.rateLimits ?? []).flatMap((rl, link) =>
 		(rl.rules ?? []).map(
 			(rule, i): LimitMeter => ({
-				key: `${rl.rateLimitId}-${i}`,
+				key: `${rl.rateLimitId ?? `hidden-${link}`}-${i}`,
 				kind: "rateLimit",
 				name: rl.name,
 				measure: `${rule.meter} / ${windowShort(rule.window)}`,
@@ -113,8 +114,8 @@ function rungMeters(
 		),
 	);
 	const budgets = (rung.budgets ?? []).map(
-		(b): LimitMeter => ({
-			key: b.budgetId,
+		(b, i): LimitMeter => ({
+			key: b.budgetId ?? `hidden-budget-${i}`,
 			kind: "budget",
 			name: b.name,
 			measure: `per ${b.period}`,

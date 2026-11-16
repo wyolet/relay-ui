@@ -11,6 +11,7 @@ import type { ReactNode } from "react";
 import { AccountHolderLink } from "@/accounts/AccountHolderLink";
 import { AccountScopeLink } from "@/accounts/AccountScopeLink";
 import { ACCOUNT_KIND_LABELS, type AccountKind } from "@/accounts/accountView";
+import { BoundPolicyLink } from "@/accounts/BoundPolicyLink";
 import { GroupedByRelayBadge } from "@/accounts/GroupedByRelayBadge";
 import type { MyAccountRow } from "@/accounts/myAccountRows";
 import { SharedByBadge } from "@/accounts/SharedByBadge";
@@ -233,17 +234,10 @@ export function MyAccountLine({ row }: { row: MyAccountRow }) {
 				<AccountScopeLink scope={row.scope} />
 			</span>
 			<span className="min-w-0 truncate">
-				{row.policy ? (
-					<Link
-						to="/policies/$name"
-						params={{ name: row.policy.name }}
-						className="text-foreground hover:underline"
-					>
-						{row.policy.name}
-					</Link>
-				) : (
-					<span className="text-ink-3">No policy</span>
-				)}
+				<BoundPolicyLink
+					policy={row.policy}
+					className="text-foreground hover:underline"
+				/>
 			</span>
 			<YourKeys row={row} />
 		</LineRow>

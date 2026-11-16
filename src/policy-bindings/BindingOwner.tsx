@@ -3,7 +3,7 @@ import { usersListQueryOptions } from "@/api/hooks/users";
 import type { PolicyBinding } from "@/api/types/policyBinding";
 import { OwnerLink } from "@/projects/OwnerLink";
 
-/** Who owns a binding: the system, a user, or a linked team or project. */
+/** Who owns a binding: the organization, the system, a user, or a linked team or project. */
 export function BindingOwner({ binding }: { binding: PolicyBinding }) {
 	const owner = binding.metadata.owner;
 	const userId = owner?.kind === "user" ? (owner.id ?? "") : "";
@@ -22,5 +22,9 @@ export function BindingOwner({ binding }: { binding: PolicyBinding }) {
 			</span>
 		);
 	}
-	return <span className="text-foreground">System</span>;
+	return (
+		<span className="text-foreground">
+			{owner?.kind === "organization" ? "Organization" : "System"}
+		</span>
+	);
 }

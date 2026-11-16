@@ -10,9 +10,9 @@ import { PageLoader } from "@/shared/Spinner";
 
 const searchSchema = z.object({
 	scope_kind: z
-		.enum(["system", "team", "project"])
-		.catch("system")
-		.default("system"),
+		.enum(["organization", "team", "project"])
+		.catch("organization")
+		.default("organization"),
 	scope_id: z.string().catch("").default(""),
 });
 

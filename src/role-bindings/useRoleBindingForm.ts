@@ -22,6 +22,7 @@ import {
 	type SubjectRow,
 	toSubjectRows,
 } from "@/role-bindings/SubjectsEditor";
+import { type ScopeKind, scopeKindOf } from "@/role-bindings/scope";
 import {
 	fromLabelPairs,
 	type LabelPair,
@@ -30,8 +31,6 @@ import {
 import { toast } from "@/shared/Toast";
 
 /** The first string error a field carries, or undefined. */
-/** `system` is the global scope on the wire — there is no `global` alias. */
-export type ScopeKind = "system" | "team" | "project";
 
 export interface RoleBindingFormValues {
 	displayName: string;
@@ -65,7 +64,7 @@ function toValues(binding: RoleBinding): RoleBindingFormValues {
 		displayName: displayLabel(binding.metadata),
 		description: binding.metadata.description ?? "",
 		roleId: binding.spec.roleId,
-		scopeKind: (binding.spec.scope.kind as ScopeKind) ?? "system",
+		scopeKind: scopeKindOf(binding.spec.scope),
 		scopeId: binding.spec.scope.id ?? "",
 		subjects: toSubjectRows(binding.spec.subjects),
 		enabled: binding.spec.enabled ?? true,
@@ -82,7 +81,7 @@ const schema = z
 			.max(120, "Display name is too long"),
 		description: z.string().trim().max(500, "Description is too long"),
 		roleId: z.string().min(1, "Pick the role this binding grants."),
-		scopeKind: z.enum(["system", "team", "project"]),
+		scopeKind: z.enum(["organization", "team", "project"]),
 		scopeId: z.string(),
 		subjects: z
 			.array(
@@ -101,7 +100,7 @@ const schema = z
 			z.object({ id: z.string(), key: z.string(), value: z.string() }),
 		),
 	})
-	.refine((v) => v.scopeKind === "system" || v.scopeId.length > 0, {
+	.refine((v) => v.scopeKind === "organization" || v.scopeId.length > 0, {
 		path: ["scopeId"],
 		message: "Pick the team or project this binding applies to.",
 	});
@@ -118,7 +117,7 @@ interface UseRoleBindingFormOptions {
 export function useRoleBindingForm({
 	open = true,
 	binding,
-	scopeKind = "system",
+	scopeKind = "organization",
 	scopeId = "",
 	onSaved,
 }: UseRoleBindingFormOptions) {
@@ -157,8 +156,8 @@ export function useRoleBindingForm({
 			// The global scope carries no id, and the server re-derives the
 			// owner from the scope on every write.
 			const scope: Owner =
-				value.scopeKind === "system"
-					? { kind: "system" }
+				value.scopeKind === "organization"
+					? { kind: "organization" }
 					: { kind: value.scopeKind, id: value.scopeId };
 			const spec = {
 				roleId: value.roleId,

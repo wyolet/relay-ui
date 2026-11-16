@@ -31,6 +31,7 @@ export function isSharedAccount(account: Account): boolean {
 /** Who shared it; a party the caller can't see shows a short id. */
 export function partyName(party: AccountShareParty): string {
 	if (party.kind === "system") return "System";
+	if (party.kind === "organization") return "Organization";
 	if (party.name) return party.name;
 	return party.id ? shortId(party.id) : "unknown";
 }

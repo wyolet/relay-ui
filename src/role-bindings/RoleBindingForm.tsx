@@ -12,10 +12,8 @@ import {
 } from "@/components/ui/select";
 import { displayLabel } from "@/lib/displayLabel";
 import { SubjectsEditor } from "@/role-bindings/SubjectsEditor";
-import {
-	type ScopeKind,
-	useRoleBindingForm,
-} from "@/role-bindings/useRoleBindingForm";
+import type { ScopeKind } from "@/role-bindings/scope";
+import { useRoleBindingForm } from "@/role-bindings/useRoleBindingForm";
 import { FormFooter } from "@/shared/FormFooter";
 import { FormSection } from "@/shared/FormSection";
 import { IdentitySection } from "@/shared/IdentitySection";
@@ -23,7 +21,7 @@ import { LabelsEditor } from "@/shared/LabelsEditor";
 import { ToggleSwitch } from "@/shared/ToggleSwitch";
 
 const SCOPE_KINDS: { value: ScopeKind; label: string }[] = [
-	{ value: "system", label: "Global (system)" },
+	{ value: "organization", label: "Organization (everywhere)" },
 	{ value: "team", label: "Team" },
 	{ value: "project", label: "Project" },
 ];
@@ -138,7 +136,11 @@ export function RoleBindingForm({
 							value={values.scopeKind}
 							items={SCOPE_KINDS}
 							onValueChange={(v) => {
-								form.setFieldValue("scopeKind", (v as ScopeKind) ?? "system");
+								form.setFieldValue(
+									"scopeKind",
+									SCOPE_KINDS.find((k) => k.value === v)?.value ??
+										"organization",
+								);
 								form.setFieldValue("scopeId", "");
 							}}
 						>
@@ -153,7 +155,7 @@ export function RoleBindingForm({
 								))}
 							</SelectContent>
 						</Select>
-						{values.scopeKind !== "system" && (
+						{values.scopeKind !== "organization" && (
 							<div>
 								<Select
 									value={values.scopeId}

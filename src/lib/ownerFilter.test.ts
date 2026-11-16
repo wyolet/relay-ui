@@ -31,7 +31,10 @@ describe("ownerFilterKey", () => {
 			"personal:me",
 		);
 		expect(ownerFilterKey(undefined, "me")).toBe("personal:me");
-		expect(ownerFilterKey({ kind: "system" }, "me")).toBe("system:");
+		expect(ownerFilterKey({ kind: "system" }, "me")).toBe("system");
+		expect(ownerFilterKey({ kind: "organization" }, "me")).toBe(
+			"organization:",
+		);
 	});
 
 	it("puts host and provider rows in one bucket", () => {
