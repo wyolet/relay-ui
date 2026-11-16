@@ -1,13 +1,26 @@
 import type { components } from "@/api/types.gen";
 import type { FilterOption } from "@/filters/types";
-import { contextKey, contextName, type WorkContext } from "@/lib/workContext";
+import {
+	contextKey,
+	contextName,
+	ORGANIZATION_CONTEXT,
+	type WorkContext,
+} from "@/lib/workContext";
 
 type Owner = components["schemas"]["Owner"];
 
 /** Host- and provider-owned catalog rows (tier presets). */
 export const HOST_OWNED = "host";
+/** Relay's own built-ins. */
+const SYSTEM_OWNED = "system";
 /** Rows owned by a scope the caller has no context for (another user's). */
 export const OTHER_OWNERS = "other";
+const ORGANIZATION_OWNED = contextKey(ORGANIZATION_CONTEXT);
+const BUCKETS: ReadonlySet<string> = new Set([
+	HOST_OWNED,
+	SYSTEM_OWNED,
+	ORGANIZATION_OWNED,
+]);
 
 /** Owned by a host or provider: a preset that came with a provider's catalog,
  * not one made in this relay. */
@@ -21,12 +34,17 @@ export function isCatalogPreset(owner: Owner | undefined): boolean {
 	return owner !== undefined && isPresetKind(owner.kind);
 }
 
-export const ORIGINS = ["custom", "provider"] as const;
+export const ORIGINS = ["custom", "system", "provider"] as const;
 export type Origin = (typeof ORIGINS)[number];
 
 /** The quick filter's buttons; the explainer is each one's tooltip. */
 export const ORIGIN_OPTIONS = [
 	{ value: "custom", label: "Custom", title: "Made in this relay." },
+	{
+		value: "system",
+		label: "System",
+		title: "Relay's own built-ins, shared with every scope.",
+	},
 	{
 		value: "provider",
 		label: "Provider",
@@ -34,13 +52,32 @@ export const ORIGIN_OPTIONS = [
 	},
 ] as const satisfies readonly { value: Origin; label: string; title: string }[];
 
-/** Whether a row's origin is picked; none picked takes both. */
+/** Which layer a row comes from: made in this relay, relay's built-ins, or a catalog preset. */
+export function originOf(owner: Owner | undefined): Origin {
+	if (isCatalogPreset(owner)) return "provider";
+	return owner?.kind === "system" ? "system" : "custom";
+}
+
+/** Whether a row's origin is picked; none picked takes every one. */
 export function onOrigins(
 	owner: Owner | undefined,
 	picked: readonly Origin[],
 ): boolean {
-	if (picked.length === 0) return true;
-	return picked.includes(isCatalogPreset(owner) ? "provider" : "custom");
+	return picked.length === 0 || picked.includes(originOf(owner));
+}
+
+/** Rows on the picked layers. The owner filter narrows only custom rows:
+ * system and provider rows serve every scope, so any workspace may show them. */
+export function filterByOrigin<T extends { metadata: { owner?: Owner } }>(
+	rows: readonly T[],
+	picked: readonly Origin[],
+	ownerMatches: (row: T) => boolean,
+): T[] {
+	return rows.filter(
+		(row) =>
+			onOrigins(row.metadata.owner, picked) &&
+			(originOf(row.metadata.owner) !== "custom" || ownerMatches(row)),
+	);
 }
 
 /** A row owner as the filter keys it: the context it sits in, or a bucket. */
@@ -50,7 +87,8 @@ export function ownerFilterKey(
 ): string {
 	const kind = owner?.kind ?? "user";
 	if (isPresetKind(kind)) return HOST_OWNED;
-	if (kind === "system") return contextKey({ kind: "system", id: "" });
+	if (kind === "system") return SYSTEM_OWNED;
+	if (kind === "organization") return ORGANIZATION_OWNED;
 	if (kind === "user") {
 		return contextKey({ kind: "personal", id: owner?.id || actorUserId || "" });
 	}
@@ -68,10 +106,14 @@ export function ownerFilterOptions(
 	}));
 	const listedKeys = new Set(listed.map((o) => o.value));
 	const buckets: FilterOption[] = [];
+	// A non-admin has no organization workspace but sees its shared rows.
+	if (rowKeys.has(ORGANIZATION_OWNED) && !listedKeys.has(ORGANIZATION_OWNED)) {
+		buckets.push({ value: ORGANIZATION_OWNED, label: "Organization" });
+	}
 	if (rowKeys.has(HOST_OWNED)) {
 		buckets.push({ value: HOST_OWNED, label: "Host presets" });
 	}
-	if ([...rowKeys].some((k) => k !== HOST_OWNED && !listedKeys.has(k))) {
+	if ([...rowKeys].some((k) => !BUCKETS.has(k) && !listedKeys.has(k))) {
 		buckets.push({ value: OTHER_OWNERS, label: "Other owners" });
 	}
 	return [...listed, ...buckets];
@@ -85,9 +127,7 @@ export function matchesOwnerFilter(
 ): boolean {
 	if (selected.length === 0 || selected.includes(key)) return true;
 	return (
-		selected.includes(OTHER_OWNERS) &&
-		key !== HOST_OWNED &&
-		!listedKeys.has(key)
+		selected.includes(OTHER_OWNERS) && !BUCKETS.has(key) && !listedKeys.has(key)
 	);
 }
 

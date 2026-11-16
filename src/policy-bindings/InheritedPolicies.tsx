@@ -27,13 +27,19 @@ export function InheritedPolicies({ accountRef }: { accountRef: AccountRef }) {
 								{step.scope}
 							</Link>
 							<span className="text-muted-foreground"> → </span>
-							<Link
-								to="/policies/$name"
-								params={{ name: step.policyName }}
-								className="hover:underline"
-							>
-								{step.policyLabel}
-							</Link>
+							{step.policyName ? (
+								<Link
+									to="/policies/$name"
+									params={{ name: step.policyName }}
+									className="hover:underline"
+								>
+									{step.policyLabel}
+								</Link>
+							) : (
+								<span className="text-muted-foreground">
+									{step.policyLabel}
+								</span>
+							)}
 						</li>
 					))}
 				</ul>

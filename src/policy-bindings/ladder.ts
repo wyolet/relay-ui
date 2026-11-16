@@ -10,7 +10,8 @@ export interface LadderStep {
 	/** "Team Platform". */
 	scope: string;
 	accountName: string;
-	policyName: string;
+	/** Absent for an organization policy the caller may not see. */
+	policyName?: string;
 	policyLabel: string;
 }
 

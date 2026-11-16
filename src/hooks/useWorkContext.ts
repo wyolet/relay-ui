@@ -9,11 +9,12 @@ import {
 	contextOwner,
 	contextUsableBy,
 	contextUsageScope,
+	createContext,
 	type FormPlacement,
+	ORGANIZATION_CONTEXT,
 	ownerName,
 	ownerUsableBy,
 	resolveWorkContext,
-	SYSTEM_CONTEXT,
 	type WorkContext,
 	type WorkContextRef,
 	workContexts,
@@ -23,19 +24,35 @@ import { useWorkContextStore } from "@/stores/workContext";
 type Owner = components["schemas"]["Owner"];
 type MyContext = components["schemas"]["MyContext"];
 
+function isWorkspaceKind(
+	kind: string | undefined,
+): kind is WorkContextRef["kind"] {
+	return (
+		kind === "personal" ||
+		kind === "team" ||
+		kind === "project" ||
+		kind === "organization"
+	);
+}
+
 function resolveWorkspace(
 	mine: readonly MyContext[] | undefined,
 	isAdmin: boolean,
 	userId: string | undefined,
 	selected: WorkContextRef | null,
 ) {
-	const contexts = workContexts(mine ?? [], isAdmin);
-	const current = mine ? resolveWorkContext(contexts, selected) : undefined;
-	// Until the list loads, the stored pick (or personal) stands in.
+	const contexts = workContexts(mine ?? []);
+	// A pick saved before the organization owner existed named relay's system layer.
+	const stored = isWorkspaceKind(selected?.kind) ? selected : null;
+	const current = mine ? resolveWorkContext(contexts, stored) : undefined;
+	// Until the list loads, the stored pick or the default stands in, so the
+	// first queries already carry the scope the list will resolve to.
 	const ref: WorkContextRef =
 		current ??
-		selected ??
-		(userId ? { kind: "personal", id: userId } : SYSTEM_CONTEXT);
+		stored ??
+		(!isAdmin && userId
+			? { kind: "personal", id: userId }
+			: ORGANIZATION_CONTEXT);
 	return { contexts, current, ref };
 }
 
@@ -56,9 +73,8 @@ export function useWorkContext() {
 		contexts,
 		contextsLoaded: data !== undefined,
 		current,
+		ref,
 		select,
-		owner: contextOwner(ref),
-		usableBy: contextUsableBy(ref),
 		usageScope: contextUsageScope(ref),
 	};
 }
@@ -77,9 +93,13 @@ export function cachedUsageScope(queryClient: QueryClient) {
 
 /**
  * Where a form's row sits and what its pickers may offer: the edited row's
- * metadata (or a page's preset owner), else the current context.
+ * metadata (or a page's preset owner), else the current context. A kind the
+ * organization can't own (`organizationOwns` false) creates elsewhere from it.
  */
-export function useFormOwner(fixed?: { owner?: Owner }): {
+export function useFormOwner(
+	fixed?: { owner?: Owner },
+	organizationOwns = true,
+): {
 	owner: Owner | undefined;
 	usableBy: string | undefined;
 	placement: FormPlacement | undefined;
@@ -101,15 +121,21 @@ export function useFormOwner(fixed?: { owner?: Owner }): {
 			context: undefined,
 		};
 	}
-	// A pick the caller lost (a revoked role) falls back to the workspace.
+	// A pick the caller lost (a revoked role) falls back to where the workspace creates.
 	const current =
 		(picked &&
 			work.contexts.find((c) => contextKey(c) === contextKey(picked))) ||
-		work.current;
+		(work.current &&
+			createContext(work.current, work.contexts, organizationOwns));
 	if (!current) {
+		// Contexts still loading: the workspace the list will resolve to.
+		const ref =
+			work.ref.kind === "organization" && !organizationOwns && userId
+				? { kind: "personal" as const, id: userId }
+				: work.ref;
 		return {
-			owner: work.owner,
-			usableBy: work.usableBy,
+			owner: contextOwner(ref),
+			usableBy: contextUsableBy(ref),
 			placement: undefined,
 			context: undefined,
 		};
@@ -125,6 +151,7 @@ export function useFormOwner(fixed?: { owner?: Owner }): {
 				const next = work.contexts.find((c) => contextKey(c) === key);
 				if (next) setPicked(next);
 			},
+			organization: organizationOwns,
 		},
 		context: current,
 	};

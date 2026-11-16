@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import {
+	filterByOrigin,
 	HOST_OWNED,
 	matchesOwnerFilter,
 	OTHER_OWNERS,
@@ -11,9 +12,15 @@ import {
 import type { WorkContext } from "@/lib/workContext";
 
 const contexts: WorkContext[] = [
-	{ kind: "personal", id: "me", displayName: "me" },
-	{ kind: "team", id: "t1", displayName: "Platform" },
-	{ kind: "project", id: "p1", displayName: "Search", teamId: "t1" },
+	{ kind: "personal", id: "me", displayName: "me", admin: true },
+	{ kind: "team", id: "t1", displayName: "Platform", admin: true },
+	{
+		kind: "project",
+		id: "p1",
+		displayName: "Search",
+		teamId: "t1",
+		admin: false,
+	},
 ];
 const listed = new Set(["personal:me", "team:t1", "project:p1"]);
 
@@ -24,7 +31,10 @@ describe("ownerFilterKey", () => {
 			"personal:me",
 		);
 		expect(ownerFilterKey(undefined, "me")).toBe("personal:me");
-		expect(ownerFilterKey({ kind: "system" }, "me")).toBe("system:");
+		expect(ownerFilterKey({ kind: "system" }, "me")).toBe("system");
+		expect(ownerFilterKey({ kind: "organization" }, "me")).toBe(
+			"organization:",
+		);
 	});
 
 	it("puts host and provider rows in one bucket", () => {
@@ -80,9 +90,33 @@ describe("ownerFilterSummary", () => {
 	});
 });
 
+describe("filterByOrigin", () => {
+	const rows = [
+		{ metadata: { owner: { kind: "user" as const, id: "me" } } },
+		{ metadata: { owner: { kind: "team" as const, id: "t1" } } },
+		{ metadata: { owner: { kind: "system" as const } } },
+		{ metadata: { owner: { kind: "host" as const, id: "h1" } } },
+	];
+	const onlyMine = (r: (typeof rows)[number]) =>
+		r.metadata.owner.kind === "user";
+	it("the owner filter narrows custom rows only", () => {
+		expect(
+			filterByOrigin(rows, ["custom", "system"], onlyMine).map(
+				(r) => r.metadata.owner.kind,
+			),
+		).toEqual(["user", "system"]);
+		expect(filterByOrigin(rows, [], onlyMine)).toHaveLength(3);
+	});
+});
+
 describe("onOrigins", () => {
 	const preset = { kind: "host" as const, id: "h1" };
 	const team = { kind: "team" as const, id: "t1" };
+	it("system rows are their own origin", () => {
+		const system = { kind: "system" as const };
+		expect(onOrigins(system, ["custom"])).toBe(false);
+		expect(onOrigins(system, ["system"])).toBe(true);
+	});
 	it("custom keeps relay-made rows, provider keeps catalog presets", () => {
 		expect(onOrigins(team, ["custom"])).toBe(true);
 		expect(onOrigins(preset, ["custom"])).toBe(false);

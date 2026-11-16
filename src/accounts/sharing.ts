@@ -25,6 +25,7 @@ export const RECEIVER_KINDS = [
 
 const PARTY_KIND_LABELS: Record<AccountShareParty["kind"], string> = {
 	system: "System",
+	organization: "Organization",
 	user: "User",
 	team: "Team",
 	project: "Project",

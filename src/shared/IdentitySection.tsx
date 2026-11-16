@@ -21,6 +21,7 @@ function PlacementText({ placement }: { placement: FormPlacement }) {
 							formPick: {
 								value: placement.contextKey,
 								onSelect: placement.choose,
+								organization: placement.organization ?? false,
 							},
 						}
 					: {})}

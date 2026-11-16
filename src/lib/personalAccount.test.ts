@@ -34,8 +34,9 @@ describe("choices", () => {
 	});
 });
 
-test("only system-owned groups take the switch", () => {
-	expect(groupTakesPersonalAccount({ kind: "system" })).toBe(true);
+test("only organization-owned groups take the switch", () => {
+	expect(groupTakesPersonalAccount({ kind: "organization" })).toBe(true);
+	expect(groupTakesPersonalAccount({ kind: "system" })).toBe(false);
 	expect(groupTakesPersonalAccount({ kind: "user", id: "u1" })).toBe(false);
 	expect(groupTakesPersonalAccount(undefined)).toBe(false);
 });
