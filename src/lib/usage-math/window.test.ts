@@ -4,6 +4,7 @@ import {
 	comparisonWindows,
 	daySliceStarts,
 	floorToInterval,
+	isEmptyWindow,
 	rollingWindow,
 	totalsBySlice,
 } from "@/lib/usage-math/window";
@@ -90,6 +91,29 @@ describe("comparisonWindows", () => {
 			"2026-06-10T00:00:00.000Z",
 		);
 		expect(previous.from).toBe(previous.to);
+	});
+});
+
+describe("isEmptyWindow", () => {
+	test("a period that just started has an empty previous window", () => {
+		const { previous } = comparisonWindows(
+			{ from: "2026-06-08T00:00:00.000Z", to: "2026-06-15T00:00:00.000Z" },
+			"2026-06-08T00:00:00.000Z",
+		);
+		expect(isEmptyWindow(previous)).toBe(true);
+	});
+
+	test("a window with elapsed time is not empty", () => {
+		expect(
+			isEmptyWindow({
+				from: "2026-06-01T00:00:00.000Z",
+				to: "2026-06-01T00:05:00.000Z",
+			}),
+		).toBe(false);
+	});
+
+	test("unparsable bounds count as empty", () => {
+		expect(isEmptyWindow({ from: "not-a-date", to: "not-a-date" })).toBe(true);
 	});
 });
 
