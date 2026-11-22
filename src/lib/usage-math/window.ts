@@ -43,13 +43,6 @@ export interface ComparisonWindows {
 }
 
 /**
- * Derive the comparison window for `win`: the immediately preceding period of
- * equal length, truncated to the same *elapsed* portion. Calendar presets give
- * `to` in the future (end of week/month), so comparing against the full prior
- * period would understate every partial period — Wednesday-of-this-week is
- * compared against Monday→Wednesday of last week, not all seven days.
- */
-/**
  * The trailing `[now − hours, now)` window. Callers pass a quantized "now" so
  * the resulting window (and any query key built from it) stays byte-stable
  * across renders.
@@ -65,6 +58,13 @@ export function rollingWindow(nowIso: string, hours: number): IsoWindow {
 	};
 }
 
+/**
+ * Derive the comparison window for `win`: the immediately preceding period of
+ * equal length, truncated to the same *elapsed* portion. Calendar presets give
+ * `to` in the future (end of week/month), so comparing against the full prior
+ * period would understate every partial period — Wednesday-of-this-week is
+ * compared against Monday→Wednesday of last week, not all seven days.
+ */
 export function comparisonWindows(
 	win: IsoWindow,
 	nowIso: string,
@@ -91,6 +91,11 @@ export function comparisonWindows(
 			to: new Date(prevFrom + elapsed).toISOString(),
 		},
 	};
+}
+
+/** True when the window covers no time (or its bounds don't parse). */
+export function isEmptyWindow(win: IsoWindow): boolean {
+	return !(Date.parse(win.to) > Date.parse(win.from));
 }
 
 const DAY_MS = 86_400_000;

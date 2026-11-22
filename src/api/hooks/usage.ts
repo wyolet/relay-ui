@@ -25,6 +25,7 @@ import {
 import {
 	comparisonWindows,
 	type IsoWindow,
+	isEmptyWindow,
 	rollingWindow,
 	USAGE_INTERVALS,
 	type UsageInterval,
@@ -733,8 +734,9 @@ export function usageCompareQueryOptions(
 							group_by: groupBy,
 							from: win.from,
 							to: win.to,
-							compare_from: previous.from,
-							compare_to: previous.to,
+							...(isEmptyWindow(previous)
+								? {}
+								: { compare_from: previous.from, compare_to: previous.to }),
 							distinct,
 						},
 					},
