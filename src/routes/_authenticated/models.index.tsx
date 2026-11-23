@@ -5,6 +5,7 @@ import { z } from "zod";
 import { governanceQueryOptions } from "@/api/hooks/governance";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
 import { modelsListQueryOptions } from "@/api/hooks/models";
+import { providersListQueryOptions } from "@/api/hooks/providers";
 import { usageNow, usageSummaryQueryOptions } from "@/api/hooks/usage";
 import { FilterBar, type SortControl } from "@/filters/FilterBar";
 import type { FilterDef } from "@/filters/types";
@@ -78,6 +79,7 @@ export const Route = createFileRoute("/_authenticated/models/")({
 		const week = pricingWindowAt(usageNow());
 		void queryClient.prefetchQuery(usageSummaryQueryOptions("model_id", week));
 		void queryClient.prefetchQuery(usageSummaryQueryOptions("host_id", week));
+		void queryClient.prefetchQuery(providersListQueryOptions);
 		return awaitOnEnter(
 			cause,
 			Promise.all([

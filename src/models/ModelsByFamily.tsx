@@ -4,6 +4,7 @@ import type { Model } from "@/api/types/model";
 import { displayLabel } from "@/lib/displayLabel";
 import { cn } from "@/lib/utils";
 import { groupModelsByFamily } from "@/models/groupModelsByFamily";
+import { ModelLogo } from "@/models/ModelLogo";
 import { StatusInline } from "@/shared/StatusBadge";
 
 /** A detail page's model list, grouped by family and then product line. */
@@ -85,6 +86,7 @@ function ModelRow({
 			)}
 		>
 			<div className="min-w-0 flex items-center gap-2">
+				<ModelLogo model={model} size={16} />
 				<Link
 					to="/models/$name"
 					params={{ name: model.metadata.name }}

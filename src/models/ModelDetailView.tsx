@@ -38,7 +38,6 @@ export function ModelDetailView({
 			<div className="grid grid-cols-1 gap-8">
 				<ModelDetailHeader
 					model={model}
-					provider={provider}
 					onToggleEnabled={onToggleEnabled}
 					onDelete={onDelete}
 					toggling={toggling}

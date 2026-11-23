@@ -5594,6 +5594,8 @@ export interface components {
             deprecation?: components["schemas"]["DeprecationView"];
             /** @description Display name. */
             displayName?: string;
+            /** @description The model's icon, or its provider's when the model has none. */
+            icon?: components["schemas"]["IconView"];
             /** @description Model id. */
             id: string;
             /** @description Model slug. */
@@ -5637,6 +5639,8 @@ export interface components {
             enabled?: boolean;
             /** @description Model family, such as claude or gpt. */
             family?: string;
+            /** @description Logo of the model, when it has one apart from its provider's. */
+            icon?: components["schemas"]["Icon"];
             /** @description Training-data cutoff, YYYY-MM or YYYY-MM-DD. */
             knowledgeCutoff?: string;
             /** @description License the weights are published under, for open models. */
