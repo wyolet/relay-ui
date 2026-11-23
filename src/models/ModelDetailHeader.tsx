@@ -1,23 +1,20 @@
-import { AlertTriangle, Boxes } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import type { Model } from "@/api/types/model";
 import { useMutability } from "@/hooks/useMutability";
 import { displayLabel } from "@/lib/displayLabel";
+import { ModelLogo } from "@/models/ModelLogo";
 import { deprecationNote } from "@/models/modelDetail";
-import type { ModelProvider } from "@/models/useModelProvider";
-import { ProviderLogo } from "@/providers/ProviderLogo";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
 import { CatalogDetachedBadge, QuietBadge } from "@/shared/StatusBadge";
 
 export function ModelDetailHeader({
 	model,
-	provider,
 	onToggleEnabled,
 	onDelete,
 	toggling,
 	deleting,
 }: {
 	model: Model;
-	provider: ModelProvider;
 	onToggleEnabled: () => void;
 	onDelete?: () => void;
 	toggling?: boolean;
@@ -31,17 +28,7 @@ export function ModelDetailHeader({
 		<header className="grid grid-cols-1 gap-3">
 			<div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
 				<div className="flex min-w-0 items-start gap-3">
-					{provider.provider ? (
-						<ProviderLogo
-							provider={provider.provider}
-							size={36}
-							className="mt-0.5 shrink-0"
-						/>
-					) : (
-						<span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-md bg-muted">
-							<Boxes className="size-4 text-ink-3" aria-hidden />
-						</span>
-					)}
+					<ModelLogo model={model} size={36} className="mt-0.5 shrink-0" />
 					<div className="grid min-w-0 gap-1">
 						<h1 className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1 text-2xl font-bold text-foreground">
 							<span className="truncate">{displayLabel(model.metadata)}</span>

@@ -12,6 +12,7 @@ import {
 import { useState } from "react";
 import type { Policy } from "@/api/types/policy";
 import { HostLogo, hostRefLogo } from "@/hosts/HostLogo";
+import { ModelRefLogo } from "@/models/ModelLogo";
 import {
 	type PolicyModelView,
 	usePolicyExcludedModels,
@@ -135,8 +136,9 @@ function ExcludedModelsPanel({ policyName }: { policyName: string }) {
 							{excluded.map((x) => (
 								<li
 									key={x.model.id}
-									className="flex items-baseline gap-3 px-3 py-1.5 text-sm"
+									className="flex items-center gap-3 px-3 py-1.5 text-sm"
 								>
+									<ModelRefLogo model={x.model} size={16} />
 									<div className="flex items-baseline gap-2 min-w-0 flex-1 flex-wrap">
 										{x.model.displayName?.trim() && (
 											<span className="text-foreground text-[13px] truncate">
@@ -230,6 +232,7 @@ function ModelRow({ row }: { row: PolicyModelView }) {
 	const refs = matchedBy ?? [];
 	return (
 		<li className="flex items-center gap-3 px-3 py-1.5 text-sm hover:bg-muted/40">
+			<ModelRefLogo model={model} size={16} />
 			<div className="flex items-baseline gap-2 min-w-0 flex-1 flex-wrap">
 				{displayName && (
 					<span className="text-foreground text-[13px] truncate">

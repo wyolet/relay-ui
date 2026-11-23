@@ -8,6 +8,7 @@ import {
 	type ModelLine,
 } from "@/lib/modelsByHost";
 import { ModelCapabilityIcons } from "@/models/ModelCapabilities";
+import { ModelLogo } from "@/models/ModelLogo";
 import { activeCapabilities } from "@/models/modelDetail";
 import { useModelLineActions } from "@/models/useModelLineActions";
 import { RateValue } from "@/pricing/MeterGrid";
@@ -56,22 +57,25 @@ export function ModelLineRow({ line }: { line: ModelLine }) {
 
 	return (
 		<LineRow cols={COLS} dimmed={!actions.enabled}>
-			<span className="grid min-w-0">
-				<span className="flex min-w-0 items-center gap-2">
-					<Link
-						to="/models/$name"
-						params={{ name: model.metadata.name }}
-						className="truncate text-foreground hover:underline"
-					>
-						{displayLabel(model.metadata)}
-					</Link>
-					{!actions.enabled && <QuietTag>off</QuietTag>}
-					{isDeprecatedModel(model) && <QuietTag>deprecated</QuietTag>}
-					<PlanIssueDot kind="model" id={model.metadata.id} />
+			<span className="flex min-w-0 items-center gap-2.5">
+				<ModelLogo model={model} size={20} />
+				<span className="grid min-w-0">
+					<span className="flex min-w-0 items-center gap-2">
+						<Link
+							to="/models/$name"
+							params={{ name: model.metadata.name }}
+							className="truncate text-foreground hover:underline"
+						>
+							{displayLabel(model.metadata)}
+						</Link>
+						{!actions.enabled && <QuietTag>off</QuietTag>}
+						{isDeprecatedModel(model) && <QuietTag>deprecated</QuietTag>}
+						<PlanIssueDot kind="model" id={model.metadata.id} />
+					</span>
+					<code className="truncate font-mono text-foot text-ink-3">
+						{model.metadata.name}
+					</code>
 				</span>
-				<code className="truncate font-mono text-foot text-ink-3">
-					{model.metadata.name}
-				</code>
 			</span>
 			<ModelCapabilityIcons
 				caps={activeCapabilities(model.spec.capabilities)}

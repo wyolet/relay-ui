@@ -26,6 +26,7 @@ export interface ModelRow {
 	id: string;
 	name: string;
 	displayName: string;
+	iconPath?: string;
 	provider: string;
 	hostNames: string[];
 	deprecated: boolean;
@@ -142,6 +143,7 @@ function buildIndex(
 			id: m.id,
 			name: m.name,
 			displayName: displayLabel(m),
+			iconPath: m.iconPath,
 			provider,
 			hostNames,
 			deprecated: Boolean(m.deprecated),

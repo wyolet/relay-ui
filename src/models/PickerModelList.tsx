@@ -6,6 +6,7 @@ import { isBindingCovered, modelCheckState } from "@/models/pickerCheckState";
 import type { ModelRow, PickerIndex } from "@/models/usePickerCatalog";
 import { ModelPrice } from "@/pricing/ModelPrice";
 import { useModelPrices } from "@/pricing/useModelPrices";
+import { CatalogIcon } from "@/shared/CatalogIcon";
 import { OptionRow } from "@/shared/OptionRow";
 
 export function PickerModelList({
@@ -36,6 +37,12 @@ export function PickerModelList({
 								<span className="self-center">
 									<PickerRowCheckbox state={state} />
 								</span>
+								<CatalogIcon
+									path={m.iconPath}
+									label={m.displayName}
+									size={16}
+									className="self-center"
+								/>
 								<span className="text-sm text-foreground truncate">
 									{m.displayName}
 								</span>
