@@ -7594,6 +7594,8 @@ export interface components {
             displayName?: string;
             /** @description The catalog marks the model as featured. */
             featured?: boolean;
+            /** @description Icon asset path: the model's, or its provider's when the model has none. */
+            iconPath?: string;
             /** @description Model id. */
             id: string;
             /** @description Model slug. */
