@@ -2523,7 +2523,7 @@ export interface paths {
         put?: never;
         /**
          * Create a provider key with its account, the account's tier and its shares
-         * @description First asks the create grants the host key and a new account will ask for the owner, with the owner rules of POST /host-keys: a refusal answers as that create would, before the host is asked anything or a value is stored. Then asks the host which organization spec.value belongs to, with the one read POST /host-keys/by-id/{id}/detect-account makes, to the host's own base URL: a 401 or 403 refuses the request with 422 provider_refused_key and nothing is stored; a host that names no organization, or does not answer, refuses nothing and is answered in detection. A detected organization another account of the owner at the host holds answers 409 organization_taken with that account. Then, in one transaction, makes the account (spec.account, taking the detected orgId) or uses spec.accountId, binds it alone to spec.tierPolicyId (one of the host's tier presets, else 400) as PUT /accounts/{ref}/policy does, makes the host key in it, and shares the account with each spec.shareWith receiver that neither holds a share of it nor reaches it by ownership; those are answered with existing: true. A host that takes no key takes no value and gets no host key. spec.value is sealed under the owner's scope before the transaction and removed if the transaction does not commit. Each row passes exactly what its own create call passes (POST /accounts, PUT /accounts/{ref}/policy, POST /host-keys, POST /accounts/{ref}/shares), with the same answers; a refusal names the row by pointer, the JSON pointer of the part of the body it came from, and nothing is written. Once every row passed, the rows are checked against the plans as a whole: errors they would raise that the plans do not have now refuse the request with 422 plan_issue. dryRun=true asks the host the same once and does everything else but storing the value and the commit, and answers 200 with the same body, ids included. Each row made is audited as its own create; a dry run that asked the host is audited as one pseudo-host-keys.dry-run row on the host, whatever it answered. The value never appears in an answer or audit row.
+         * @description First asks the create grants the host key and a new account will ask for the owner, with the owner rules of POST /host-keys: a refusal answers as that create would, before the host is asked anything or a value is stored. Then runs the whole write rolled back, without the value: every row's checks and the plan check refuse here, before the host is asked. Then asks the host which organization spec.value belongs to, with the one read POST /host-keys/by-id/{id}/detect-account makes, to the host's own base URL: a 401 or 403 refuses the request with 422 provider_refused_key and nothing is stored; a host that names no organization, or does not answer, refuses nothing and is answered in detection. A detected organization another account of the owner at the host holds answers 409 organization_taken with that account. Then, in one transaction, makes the account (spec.account, taking the detected orgId) or uses spec.accountId, binds it alone to spec.tierPolicyId (one of the host's tier presets, else 400) as PUT /accounts/{ref}/policy does, makes the host key in it, and shares the account with each spec.shareWith receiver that neither holds a share of it nor reaches it by ownership; those are answered with existing: true. A host that takes no key takes no value and gets no host key. spec.value is sealed under the owner's scope before the transaction and removed if the transaction does not commit. Each row passes exactly what its own create call passes (POST /accounts, PUT /accounts/{ref}/policy, POST /host-keys, POST /accounts/{ref}/shares), with the same answers; a refusal names the row by pointer, the JSON pointer of the part of the body it came from, and nothing is written. Once every row passed, the rows are checked against the plans as a whole: errors they would raise that the plans do not have now refuse the request with 422 plan_issue. dryRun=true asks the host the same once and does everything else but storing the value and the commit, and answers 200 with the same body, ids included. Each row made is audited as its own create; a dry run that asked the host is audited as one pseudo-host-keys.dry-run row on the host, whatever it answered. The value never appears in an answer or audit row.
          */
         post: operations["create_pseudo_host_key"];
         delete?: never;
@@ -6776,12 +6776,27 @@ export interface components {
              * @example https://example.com/schemas/PseudoAgentRemovalAnswer.json
              */
             readonly $schema?: string;
-            /** @description Every row deleted, in delete order: the service account's keys, the binding that held only its account, the shares it held and bindings their revoke left empty, the service account, its account, then the labelled policies and pools that go. */
+            /** @description Every row deleted that the caller may read, in delete order: the service account's keys, the binding that held only its account, the shares it held and bindings their revoke left empty, the service account, its account, then the labelled policies and pools that go. */
             deleted: components["schemas"]["CreatedRow"][] | null;
-            /** @description The policies and pools labelled agent-id=<service account id> that stay, with why. A labelled row owned outside the service account's scope that the caller may not see is not listed. */
+            /**
+             * Format: int64
+             * @description Rows deleted that the caller may not read, such as a binding a share's revoke left empty in another scope: counted, not named.
+             */
+            deletedHidden?: number;
+            /** @description The policies and pools labelled agent-id=<service account id> that the caller may see and that stay, with why. */
             kept: components["schemas"]["PseudoKept"][] | null;
-            /** @description Every row changed and kept, in write order: the binding the service account's account was taken out of when it holds other accounts too, and the bindings, keys and pools a share's revoke changed. */
+            /**
+             * Format: int64
+             * @description Labelled rows of the service account's scope that stay because the caller may not see them: counted, not named. One owned elsewhere that the caller may not see is not counted.
+             */
+            keptHidden?: number;
+            /** @description Every row changed and kept that the caller may read, in write order: the binding the service account's account was taken out of when it holds other accounts too, and the bindings, keys and pools a share's revoke changed. */
             updated: components["schemas"]["CreatedRow"][] | null;
+            /**
+             * Format: int64
+             * @description Rows changed that the caller may not read: counted, not named.
+             */
+            updatedHidden?: number;
             /** @description Plan warnings the deletes would raise that are not there now, on the rows deleted or changed (as the row carrying the warning, or the row it names). They refuse nothing; [] when none. A row the caller may not see keeps its code and kind only. */
             warnings: components["schemas"]["PseudoIssue"][] | null;
         };
@@ -6844,13 +6859,13 @@ export interface components {
              * @enum {string}
              */
             kind: "policy" | "pool";
-            /** @description Slug of the row; omitted when the caller may not see it. */
-            name?: string;
+            /** @description Slug of the row. */
+            name: string;
             /**
-             * @description in_use: a binding or policy the request does not delete still uses it, seen by the caller or not. kept_by_request: spec.keep names it. not_visible: the service account's scope owns it but the caller may not see it. not_deletable: it is owned outside the service account's scope, or its delete's grant or governance refuses the caller.
+             * @description in_use: a binding or policy the request does not delete still uses it, seen by the caller or not. kept_by_request: spec.keep names it. not_deletable: it is owned outside the service account's scope, or its delete's grant or governance refuses the caller.
              * @enum {string}
              */
-            reason: "in_use" | "kept_by_request" | "not_visible" | "not_deletable";
+            reason: "in_use" | "kept_by_request" | "not_deletable";
         };
         PseudoLimitLink: {
             /** @description The models a rate limit applies to, canonical; omitted for every model, and for a budget. */
@@ -6902,24 +6917,34 @@ export interface components {
         PseudoUnder: {
             /**
              * Format: int64
+             * @description Lanes under it that both lose and gain one. narrowed, widened and changed count each lane once at most.
+             */
+            changed: number;
+            /**
+             * Format: int64
              * @description Lanes under the target: those of its projects, service accounts and members, those the caller may not see included.
              */
             lanes: number;
             /**
              * Format: int64
-             * @description Lanes under it that lose at least one model, host, or pool or account a model comes through.
+             * @description Lanes under it that lose at least one model at a host they are served at and gain none. Another pool or account serving the same model at the same host is no change.
              */
             narrowed: number;
-            /** @description Lanes under it that served a model at some host before and serve none after, at most 20; a lane the caller may not see has no name. */
+            /** @description Lanes under it whose holder the caller may see that were served at some model and host before and at none after, at most 20. */
             unreachable: components["schemas"]["UnderLane"][] | null;
             /**
              * Format: int64
-             * @description Lanes that become unreachable beyond those listed.
+             * @description Lanes whose holder the caller may not see that become unreachable: counted, not named.
+             */
+            unreachableHidden?: number;
+            /**
+             * Format: int64
+             * @description Lanes the caller may see that become unreachable beyond those listed.
              */
             unreachableMore?: number;
             /**
              * Format: int64
-             * @description Lanes under it that gain at least one.
+             * @description Lanes under it that gain at least one model at a host and lose none.
              */
             widened: number;
         };
@@ -7719,12 +7744,15 @@ export interface components {
             points: components["schemas"]["TimeSeriesPoint"][] | null;
         };
         UnderLane: {
-            /** @description Id of the lane's account. */
+            /** @description Id of the holder. */
             id: string;
-            /** @description account: a lane is an account. */
-            kind: string;
-            /** @description Slug of the lane's account; omitted when the caller may not see it. */
-            name?: string;
+            /**
+             * @description Who holds the lane: a service account, a user (a member's lane), or a project or team for its own account.
+             * @enum {string}
+             */
+            kind: "service-account" | "user" | "project" | "team";
+            /** @description The service account's, project's or team's display name (its slug when it has none), or the user's username. */
+            name: string;
         };
         UnthrottledModel: {
             /** @description An allowed model no linked rate limit covers. */
@@ -8626,7 +8654,7 @@ export interface components {
              * @example https://example.com/schemas/pseudoRefusal.json
              */
             readonly $schema?: string;
-            /** @description With resource_in_use: the rows that still reference the row a delete step refused on, grouped as its own delete call groups them. */
+            /** @description With resource_in_use: the rows that still reference the row a delete step refused on, grouped by kind and field as its own delete call groups them; rows in scopes the caller may not see are counted, not listed. */
             blockers?: components["schemas"]["blockerGroup"][] | null;
             /** @description The error. */
             error: components["schemas"]["APIErrorBody"];
@@ -8690,12 +8718,24 @@ export interface components {
              * @example https://example.com/schemas/removalChanged.json
              */
             readonly $schema?: string;
+            /** @description With resource_in_use: the rows that still reference the row a delete step refused on, grouped by kind and field as its own delete call groups them; rows in scopes the caller may not see are counted, not listed. */
+            blockers?: components["schemas"]["blockerGroup"][] | null;
             /** @description What the request would delete now, as a dry run answers it. */
             deleted: components["schemas"]["CreatedRow"][] | null;
+            /**
+             * Format: int64
+             * @description As a dry run answers it.
+             */
+            deletedHidden?: number;
             /** @description The error. */
             error: components["schemas"]["APIErrorBody"];
             /** @description What it would keep now, as a dry run answers it. */
             kept: components["schemas"]["PseudoKept"][] | null;
+            /**
+             * Format: int64
+             * @description As a dry run answers it.
+             */
+            keptHidden?: number;
             /** @description /spec/expect. */
             pointer?: string;
         };
@@ -19780,7 +19820,7 @@ export interface operations {
                     "application/json": components["schemas"]["pseudoRefusal"];
                 };
             };
-            /** @description conflict: another change touched the same rows at the same time, retry; share_exists or already_reachable from a share; duplicate_binding from the binding. pointer names the row. */
+            /** @description conflict: another change touched the same rows at the same time, retry; share_exists or already_reachable from a share; duplicate_binding from the binding; resource_in_use, with blockers, from a step that deletes a row something still references. pointer names the row. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -19879,7 +19919,7 @@ export interface operations {
                     "application/json": components["schemas"]["pseudoRefusal"];
                 };
             };
-            /** @description changed: spec.expect is no longer exactly the set the request would delete; deleted and kept say what it is now, and nothing was deleted. resource_in_use, with the row's blockers in the message: a row still references one the request deletes, such as a role binding naming the service account. managed_by_source: an identity source manages the service account. conflict: another change touched the same rows at the same time, retry. pointer names the part of the body. */
+            /** @description changed: spec.expect is no longer exactly the set the request would delete; deleted and kept say what it is now, and nothing was deleted. resource_in_use, with blockers grouped as the row's own delete call answers them: a row still references one the request deletes, such as a role binding naming the service account. managed_by_source: an identity source manages the service account. conflict: another change touched the same rows at the same time, retry. pointer names the part of the body. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -20203,7 +20243,7 @@ export interface operations {
                     "application/json": components["schemas"]["pseudoRefusal"];
                 };
             };
-            /** @description conflict: another change touched the same rows at the same time, retry; duplicate_binding from the binding. pointer names the row. */
+            /** @description conflict: another change touched the same rows at the same time, retry; duplicate_binding from the binding; resource_in_use, with blockers, from a step that deletes a row something still references. pointer names the row. */
             409: {
                 headers: {
                     [name: string]: unknown;
