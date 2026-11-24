@@ -1,6 +1,10 @@
 import { describe, expect, it } from "bun:test";
 import type { AgentAccount } from "@/agents/agentAccounts";
-import { type AgentAnswers, agentWrites } from "@/agents/agentWrites";
+import {
+	type AgentAnswers,
+	accessErrors,
+	agentWrites,
+} from "@/agents/agentWrites";
 
 const anthropic: AgentAccount = {
 	id: "a1",
@@ -98,5 +102,29 @@ describe("agentWrites", () => {
 			"key",
 		]);
 		expect(writes[2]).toMatchObject({ policyId: "p1" });
+	});
+});
+
+describe("accessErrors", () => {
+	it("asks for an account when none of the picks is still offered", () => {
+		expect(accessErrors(answers({ reach: "accounts" }), [])).toEqual({
+			accountIds: "Pick an account, or use every credential.",
+		});
+		expect(
+			accessErrors(answers({ reach: "accounts", accounts: [anthropic] }), []),
+		).toEqual({});
+		expect(accessErrors(answers({ reach: "all" }), [])).toEqual({});
+	});
+
+	it("takes a policy only from the scope's options", () => {
+		const policy = (policyId: string) =>
+			answers({ access: "policy", policyId, reach: "accounts" });
+		expect(accessErrors(policy("p1"), ["p1", "p2"])).toEqual({});
+		expect(accessErrors(policy("p-stale"), ["p1"])).toEqual({
+			policyId: "Pick a policy.",
+		});
+		expect(accessErrors(policy(""), [""])).toEqual({
+			policyId: "Pick a policy.",
+		});
 	});
 });

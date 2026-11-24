@@ -25,7 +25,7 @@ export type ByokWrite = { id: string; label: string } & (
 	| { kind: "tier"; policyId: string }
 	| { kind: "hostKey"; displayName: string }
 	| { kind: "detect" }
-	| { kind: "share"; receiver: AccountReceiver }
+	| { kind: "share"; receiver: AccountReceiver; receiverLabel: string }
 );
 
 /** The requests that store the key, place it in an account and share that account. */
@@ -66,6 +66,7 @@ export function byokWrites(answers: ByokAnswers): ByokWrite[] {
 				id: `share:${r.kind}:${r.id}`,
 				label: `Share the account with ${r.label}`,
 				receiver: { kind: r.kind, id: r.id },
+				receiverLabel: r.label,
 			}),
 		),
 	);

@@ -1,11 +1,12 @@
 import { useQueryClient } from "@tanstack/react-query";
-import type { AccessWrite } from "@/agents/accessWrites";
+import { type AccessWrite, heldShareId } from "@/agents/accessWrites";
 import {
 	type AccountsListParams,
 	accountListQuery,
 	useShareAccount,
 } from "@/api/hooks/accounts";
 import { useCreatePool } from "@/api/hooks/pools";
+import { isShareExists } from "@/api/types/errors";
 import type { components } from "@/api/types.gen";
 import { required } from "@/lib/required";
 import { slugWithSuffix } from "@/lib/slug";
@@ -42,6 +43,29 @@ export function useAccessWrites() {
 	const shareAccount = useShareAccount();
 	const createPool = useCreatePool();
 
+	/** The new share's id; when the receiver already holds one, that one's. */
+	async function shareOrHeldShare(
+		accountId: string,
+		receiver: AccountReceiver,
+	): Promise<string> {
+		try {
+			const share = await shareAccount.mutateAsync({
+				ref: accountId,
+				receiver,
+			});
+			return required(share.metadata.id, "shared account");
+		} catch (err) {
+			if (!isShareExists(err)) throw err;
+			const accounts = await queryClient.fetchQuery({
+				...accountListQuery({ kind: ["provider"] }),
+				staleTime: 0,
+			});
+			const held = heldShareId(accounts.items ?? [], accountId, receiver);
+			if (!held) throw err;
+			return held;
+		}
+	}
+
 	return {
 		/** The id of the account relay's syncer opens shortly after a team, project or service account is made. */
 		async openedAccount(of: AccountOwnerRef): Promise<string> {
@@ -69,13 +93,9 @@ export function useAccessWrites() {
 			},
 		): Promise<void> {
 			if (write.kind === "share") {
-				const share = await shareAccount.mutateAsync({
-					ref: write.accountId,
-					receiver: rows.receiver,
-				});
 				made.shareIdBySource.set(
 					write.accountId,
-					required(share.metadata.id, "shared account"),
+					await shareOrHeldShare(write.accountId, rows.receiver),
 				);
 				return;
 			}

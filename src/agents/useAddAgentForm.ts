@@ -13,7 +13,9 @@ import {
 } from "@/agents/agentOwner";
 import {
 	type AgentAccess,
+	type AgentAnswers,
 	type AgentReach,
+	accessErrors,
 	agentWrites,
 } from "@/agents/agentWrites";
 import { useAgentWrites } from "@/agents/useAgentWrites";
@@ -22,7 +24,7 @@ import { accountListQuery, useUsableAccounts } from "@/api/hooks/accounts";
 import { useUsablePolicies } from "@/api/hooks/policies";
 import { stepFieldErrors, useFormSteps } from "@/hooks/useFormSteps";
 import { useWorkContext } from "@/hooks/useWorkContext";
-import { pickedScope, scopeUsableBy } from "@/lib/ownerPick";
+import { applyOwnerPick, pickedScope, scopeUsableBy } from "@/lib/ownerPick";
 import { randomSuffix, slugify } from "@/lib/slug";
 import { scopeOptions } from "@/lib/workContext";
 import type { PickerReach } from "@/models/narrowPickerIndex";
@@ -89,16 +91,6 @@ const schema = z
 		if (v.ownerKind === "team" && !v.teamId) {
 			missing("teamId", "Pick the team the agent belongs to.");
 		}
-		if (v.access === "policy" && !v.policyId) {
-			missing("policyId", "Pick a policy.");
-		}
-		if (
-			v.access === "choose" &&
-			v.reach === "accounts" &&
-			v.accountIds.length === 0
-		) {
-			missing("accountIds", "Pick an account, or use every credential.");
-		}
 	});
 
 const SNIPPET_MODEL_COUNT = 6;
@@ -145,16 +137,25 @@ export function useAddAgentForm() {
 	});
 	const visible = useQuery(accountListQuery({ kind: ["provider"] }));
 	const policies = useUsablePolicies(usableBy);
+	// The last scope's rows have another owner: offering them would send picks
+	// this scope can't use.
+	const accountsCurrent = scope !== undefined && !usable.fromPreviousScope;
+	const policiesCurrent = !policies.fromPreviousScope;
 
-	const accounts = agentAccounts(
-		scope ? usable.items : [],
-		scope ? (visible.data?.items ?? []) : [],
-		userId,
-		(hostId) => index.hosts.find((h) => h.id === hostId)?.displayName ?? "",
-	);
+	const accounts = accountsCurrent
+		? agentAccounts(
+				usable.items,
+				visible.data?.items ?? [],
+				userId,
+				(hostId) => index.hosts.find((h) => h.id === hostId)?.displayName ?? "",
+			)
+		: [];
 	const picked = values.accountIds.flatMap((id) =>
 		accounts.filter((a) => a.id === id),
 	);
+	const policyOptions = policiesCurrent
+		? bindingPolicyOptions(policies.items, policies.items, values.policyId)
+		: [];
 	const pickedHostNames = [
 		...new Set(
 			picked.flatMap(
@@ -180,14 +181,15 @@ export function useAddAgentForm() {
 		? `${slugify(displayName) || "agent"}-${suffix.current}`
 		: "";
 	const keyName = values.keyName.trim() || `${displayName} key`;
-	const planned = agentWrites({
+	const answers: AgentAnswers = {
 		displayName,
 		access: values.access,
 		reach: values.reach,
 		accounts: picked,
 		models: values.models,
 		policyId: values.policyId,
-	});
+	};
+	const planned = agentWrites(answers);
 
 	function createAgent() {
 		if (!scope) return;
@@ -211,16 +213,18 @@ export function useAddAgentForm() {
 	const { step, stepIndex, lastStep, errors, next, back } = useFormSteps({
 		steps: AGENT_FORM_STEPS,
 		fieldStep: FIELD_STEP,
-		fieldErrors: stepFieldErrors(schema, values, FIELD_STEP),
+		fieldErrors: {
+			...stepFieldErrors(schema, values, FIELD_STEP),
+			...accessErrors(
+				answers,
+				policyOptions.map((o) => o.value),
+			),
+		},
 		onFinish: createAgent,
 	});
 
 	function chooseOwner(pick: Partial<AgentOwnerPick>) {
-		if (pick.ownerKind) form.setFieldValue("ownerKind", pick.ownerKind);
-		if (pick.teamId !== undefined) form.setFieldValue("teamId", pick.teamId);
-		if (pick.projectId !== undefined) {
-			form.setFieldValue("projectId", pick.projectId);
-		}
+		applyOwnerPick(pick, form.setFieldValue);
 		form.setFieldValue("accountIds", []);
 		form.setFieldValue("policyId", "");
 	}
@@ -251,14 +255,10 @@ export function useAddAgentForm() {
 		projectOptions: scopeOptions(contexts, "project"),
 		chooseOwner,
 		accounts,
-		accountsLoaded: usable.loaded,
+		accountsLoaded: accountsCurrent && usable.loaded,
 		toggleAccount,
 		reach,
-		policyOptions: bindingPolicyOptions(
-			policies.items,
-			policies.items,
-			values.policyId,
-		),
+		policyOptions,
 		slugPreview: slug,
 		snippetModels: snippetModels(values.models, reach),
 		keyNamePlaceholder: displayName ? `${displayName} key` : "Agent key",

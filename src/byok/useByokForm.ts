@@ -17,6 +17,7 @@ import { stepFieldErrors, useFormSteps } from "@/hooks/useFormSteps";
 import { useWorkContext } from "@/hooks/useWorkContext";
 import { displayLabel } from "@/lib/displayLabel";
 import {
+	applyOwnerPick,
 	type OwnerPick,
 	type OwnerPickKind,
 	pickedScope,
@@ -194,11 +195,7 @@ export function useByokForm() {
 	}
 
 	function chooseOwner(pick: Partial<OwnerPick>) {
-		if (pick.ownerKind) form.setFieldValue("ownerKind", pick.ownerKind);
-		if (pick.teamId !== undefined) form.setFieldValue("teamId", pick.teamId);
-		if (pick.projectId !== undefined) {
-			form.setFieldValue("projectId", pick.projectId);
-		}
+		applyOwnerPick(pick, form.setFieldValue);
 		resetPlacement();
 	}
 

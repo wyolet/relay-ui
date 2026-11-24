@@ -14,6 +14,24 @@ export interface AgentAnswers {
 	policyId: string;
 }
 
+/**
+ * What is wrong with the access answers as they will be sent: `accounts` are
+ * the picks still offered, and the policy must be among `policyIds`.
+ */
+export function accessErrors(
+	answers: Pick<AgentAnswers, "access" | "reach" | "accounts" | "policyId">,
+	policyIds: readonly string[],
+): { accountIds?: string; policyId?: string } {
+	if (answers.access === "policy") {
+		return answers.policyId && policyIds.includes(answers.policyId)
+			? {}
+			: { policyId: "Pick a policy." };
+	}
+	return answers.reach === "accounts" && answers.accounts.length === 0
+		? { accountIds: "Pick an account, or use every credential." }
+		: {};
+}
+
 /** One request the form makes after the last step, in order. */
 export type AgentWrite =
 	| AccessWrite

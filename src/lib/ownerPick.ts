@@ -17,6 +17,22 @@ export interface PickedScope<K extends OwnerPickKind = OwnerPickKind> {
 	id: string;
 }
 
+/** A form's field setter, as an owner pick writes through it. */
+export interface OwnerPickSetter<K extends OwnerPickKind> {
+	(field: "ownerKind", value: K): void;
+	(field: "teamId" | "projectId", value: string): void;
+}
+
+/** Sets the fields a partial pick names, through the form's `set`. */
+export function applyOwnerPick<K extends OwnerPickKind>(
+	pick: Partial<OwnerPick<K>>,
+	set: OwnerPickSetter<K>,
+): void {
+	if (pick.ownerKind) set("ownerKind", pick.ownerKind);
+	if (pick.teamId !== undefined) set("teamId", pick.teamId);
+	if (pick.projectId !== undefined) set("projectId", pick.projectId);
+}
+
 /** The picked scope; undefined until its team or project is picked. */
 export function pickedScope<K extends OwnerPickKind>(
 	pick: OwnerPick<K>,

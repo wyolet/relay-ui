@@ -24,6 +24,19 @@ export function StoredStep({ stored }: { stored: StoredKey }) {
 				</AlertBanner>
 			)}
 
+			{stored.shareFailures.length > 0 && (
+				<AlertBanner severity="warn" title="Not shared with everyone">
+					<ul className="flex flex-col gap-0.5">
+						{stored.shareFailures.map((f) => (
+							<li key={f.id}>
+								<span className="text-foreground">{f.label}</span>: {f.message}
+							</li>
+						))}
+					</ul>
+					<p className="mt-1">Share the account again from its page.</p>
+				</AlertBanner>
+			)}
+
 			<div className="flex flex-wrap items-center gap-2">
 				<Link
 					to="/service-accounts/add-agent"

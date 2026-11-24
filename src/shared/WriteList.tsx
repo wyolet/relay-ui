@@ -10,15 +10,20 @@ export interface WriteListItem {
 
 function StatusIcon({ status }: { status: WriteStatus }) {
 	if (status === "done") {
-		return <Check className="size-3.5 text-primary" aria-label="Done" />;
+		return (
+			<Check className="size-3.5 text-primary" role="img" aria-label="Done" />
+		);
 	}
 	if (status === "running") return <Spinner className="size-3.5" />;
 	if (status === "failed") {
-		return <X className="size-3.5 text-destructive" aria-label="Failed" />;
+		return (
+			<X className="size-3.5 text-destructive" role="img" aria-label="Failed" />
+		);
 	}
 	return (
 		<Circle
 			className="size-3.5 text-muted-foreground/50"
+			role="img"
 			aria-label="Waiting"
 		/>
 	);
@@ -51,7 +56,10 @@ export function WriteList({
 							{item.label}
 						</span>
 						{item.status === "failed" && error && (
-							<span className="mt-0.5 block text-[11px] text-destructive">
+							<span
+								role="alert"
+								className="mt-0.5 block text-[11px] text-destructive"
+							>
 								{error}
 							</span>
 						)}

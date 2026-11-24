@@ -6,10 +6,10 @@ import {
 	useDetectHostKeyAccount,
 } from "@/api/hooks/hostkeys";
 import { useSetAccountPolicy } from "@/api/hooks/policyBindings";
-import { ApiError } from "@/api/types/errors";
+import { ApiError, isShareExists } from "@/api/types/errors";
 import type { ByokAccount } from "@/byok/byokChoices";
 import type { ByokWrite } from "@/byok/byokWrites";
-import { useWriteRunner } from "@/hooks/useWriteRunner";
+import { failureMessage, useWriteRunner } from "@/hooks/useWriteRunner";
 import { type PickedScope, scopeOwner } from "@/lib/ownerPick";
 import { required } from "@/lib/required";
 import { slugWithSuffix } from "@/lib/slug";
@@ -22,6 +22,15 @@ export interface ByokSettings {
 	account?: ByokAccount;
 }
 
+/** A share the key's account didn't get, and why. */
+export interface ShareFailure {
+	/** The share write's id. */
+	id: string;
+	/** The team or project it was for. */
+	label: string;
+	message: string;
+}
+
 export interface StoredKey {
 	hostKeyName: string;
 	accountName: string;
@@ -29,6 +38,7 @@ export interface StoredKey {
 	organization?: string;
 	/** Why the provider refused a call made with the key. */
 	refusal?: string;
+	shareFailures: readonly ShareFailure[];
 }
 
 interface Progress {
@@ -38,13 +48,15 @@ interface Progress {
 	hostKeyName?: string;
 	organization?: string;
 	refusal?: string;
+	shareFailures: ShareFailure[];
 }
 
 function alreadyReaches(err: unknown): boolean {
 	return (
-		err instanceof ApiError &&
-		err.status === 409 &&
-		(err.body.code === "already_reachable" || err.body.code === "share_exists")
+		isShareExists(err) ||
+		(err instanceof ApiError &&
+			err.status === 409 &&
+			err.body.code === "already_reachable")
 	);
 }
 
@@ -54,6 +66,7 @@ function storedKey(made: Progress): StoredKey {
 		accountName: required(made.accountName, "account"),
 		...(made.organization ? { organization: made.organization } : {}),
 		...(made.refusal ? { refusal: made.refusal } : {}),
+		shareFailures: made.shareFailures,
 	};
 }
 
@@ -66,7 +79,7 @@ export function useByokWrites() {
 	const shareAccount = useShareAccount();
 
 	const settingsRef = useRef<ByokSettings | null>(null);
-	const progress = useRef<Progress>({});
+	const progress = useRef<Progress>({ shareFailures: [] });
 	const [stored, setStored] = useState<StoredKey | null>(null);
 
 	async function runWrite(write: ByokWrite): Promise<void> {
@@ -112,27 +125,34 @@ export function useByokWrites() {
 			}
 			case "detect": {
 				// The key is stored either way: a host that names no organizations
-				// (422) is nothing to report, a refused call (502) is, on the result.
+				// (422) is nothing to report, any other failure is, on the result.
 				try {
 					const detected = await detectAccount.mutateAsync(
 						required(made.hostKeyId, "key"),
 					);
 					made.organization = detected.orgName?.trim() || detected.orgId;
 				} catch (err) {
-					if (err instanceof ApiError && err.status === 502) {
-						made.refusal = err.body.message || "The provider refused the call.";
+					if (!(err instanceof ApiError && err.status === 422)) {
+						made.refusal = failureMessage(err);
 					}
 				}
 				return;
 			}
 			case "share": {
+				// The key is stored by now; a missed share is reported on the result.
 				try {
 					await shareAccount.mutateAsync({
 						ref: required(made.accountId, "account"),
 						receiver: write.receiver,
 					});
 				} catch (err) {
-					if (!alreadyReaches(err)) throw err;
+					if (!alreadyReaches(err)) {
+						made.shareFailures.push({
+							id: write.id,
+							label: write.receiverLabel,
+							message: failureMessage(err),
+						});
+					}
 				}
 				return;
 			}
@@ -145,9 +165,14 @@ export function useByokWrites() {
 		phase: runner.phase,
 		error: runner.error,
 		steps: runner.steps,
+		doneCount: runner.doneCount,
 		stored,
 		retry: async () => {
 			if (await runner.retry()) setStored(storedKey(progress.current));
+		},
+		reset() {
+			setStored(null);
+			runner.reset();
 		},
 		async start(settings: ByokSettings, writes: readonly ByokWrite[]) {
 			settingsRef.current = settings;
@@ -155,8 +180,9 @@ export function useByokWrites() {
 				? {
 						accountId: settings.account.id,
 						accountName: settings.account.name,
+						shareFailures: [],
 					}
-				: {};
+				: { shareFailures: [] };
 			setStored(null);
 			if (await runner.start(writes)) setStored(storedKey(progress.current));
 		},

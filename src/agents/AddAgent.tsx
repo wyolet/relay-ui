@@ -7,10 +7,7 @@ import {
 	type AgentFormStep,
 	useAddAgentForm,
 } from "@/agents/useAddAgentForm";
-import { Button } from "@/components/ui/button";
-import { StickyFooter } from "@/shared/FormFooter";
-import { Stepper } from "@/shared/Stepper";
-import { WriteRun } from "@/shared/WriteRun";
+import { StepForm } from "@/shared/StepForm";
 
 const STEP_LABELS: Record<AgentFormStep, string> = {
 	agent: "Agent",
@@ -25,64 +22,23 @@ const STEPS = [
 
 export function AddAgent({ onCancel }: { onCancel: () => void }) {
 	const agent = useAddAgentForm();
-	const { step, stepIndex, lastStep, writes } = agent;
-
-	if (writes.phase !== "idle") {
-		return (
-			<div className="flex flex-col gap-8">
-				<Stepper steps={STEPS} current={AGENT_FORM_STEPS.length} />
-				{writes.created ? (
-					<CreatedStep created={writes.created} models={agent.snippetModels} />
-				) : (
-					<WriteRun
-						title="Creating the agent"
-						phase={writes.phase}
-						items={writes.steps.map(({ write, status }) => ({
-							id: write.id,
-							label: write.label,
-							status,
-						}))}
-						error={writes.error}
-						onRetry={() => void writes.retry()}
-					/>
-				)}
-			</div>
-		);
-	}
-
+	const { step, writes } = agent;
 	return (
-		<form
-			onSubmit={(e) => {
-				e.preventDefault();
-				e.stopPropagation();
-				agent.next();
-			}}
-			className="flex flex-col gap-8"
+		<StepForm
+			steps={STEPS}
+			form={agent}
+			finishLabel="Create agent"
+			runTitle="Creating the agent"
+			result={
+				writes.created && (
+					<CreatedStep created={writes.created} models={agent.snippetModels} />
+				)
+			}
+			onCancel={onCancel}
 		>
-			<Stepper steps={STEPS} current={stepIndex} />
-
 			{step === "agent" && <AgentStep agent={agent} />}
 			{step === "access" && <AccessStep agent={agent} />}
 			{step === "key" && <KeyStep agent={agent} />}
-
-			<StickyFooter>
-				<Button type="button" variant="outline" size="lg" onClick={onCancel}>
-					Cancel
-				</Button>
-				{stepIndex > 0 && (
-					<Button
-						type="button"
-						variant="outline"
-						size="lg"
-						onClick={agent.back}
-					>
-						Back
-					</Button>
-				)}
-				<Button type="submit" variant="cta" size="lg">
-					{lastStep ? "Create agent" : "Next"}
-				</Button>
-			</StickyFooter>
-		</form>
+		</StepForm>
 	);
 }

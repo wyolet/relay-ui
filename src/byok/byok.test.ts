@@ -31,6 +31,10 @@ describe("byokWrites", () => {
 			"detect",
 			"share:team:t1",
 		]);
+		expect(writes[4]).toMatchObject({
+			receiver: { kind: "team", id: "t1" },
+			receiverLabel: "Platform",
+		});
 	});
 
 	it("leaves an existing account and its tier as they are", () => {

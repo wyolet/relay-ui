@@ -162,8 +162,13 @@ export function useAgentWrites() {
 		phase: runner.phase,
 		error: runner.error,
 		steps: runner.steps,
+		doneCount: runner.doneCount,
 		created,
 		retry: runner.retry,
+		reset() {
+			setCreated(null);
+			runner.reset();
+		},
 		start(settings: AgentSettings, writes: readonly AgentWrite[]) {
 			settingsRef.current = settings;
 			progress.current = emptyAccessProgress();

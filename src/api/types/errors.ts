@@ -46,6 +46,15 @@ export function isAccountDisabled(err: unknown): err is ApiError {
 	return err instanceof ApiError && err.body.code === ACCOUNT_DISABLED;
 }
 
+/** A share refused because the receiver already holds a share of the account. */
+export function isShareExists(err: unknown): err is ApiError {
+	return (
+		err instanceof ApiError &&
+		err.status === 409 &&
+		err.body.code === "share_exists"
+	);
+}
+
 /** An update refused because the row changed after the caller loaded it. */
 export function isStaleResourceVersion(err: unknown): err is ApiError {
 	return (
