@@ -97,6 +97,7 @@ describe("pseudoAgentBody", () => {
 			pools: null,
 			shares: null,
 			key: { id: "k", name: "indexer-key", plaintext: "sk-test" },
+			warnings: [],
 		});
 		expect(createdAgent(answer(["service-account", "policy", "key"]))).toEqual({
 			serviceAccountName: "indexer",
