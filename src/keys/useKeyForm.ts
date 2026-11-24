@@ -84,7 +84,7 @@ const schema = z.object({
 
 /** A date-only <input> value becomes an end-of-day RFC3339 instant; empty
  * clears the expiry. */
-function expiryPatch(expiresAt: string): { expiresAt?: string } {
+export function expiryPatch(expiresAt: string): { expiresAt?: string } {
 	const trimmed = expiresAt.trim();
 	if (!trimmed) return { expiresAt: undefined };
 	return { expiresAt: new Date(`${trimmed}T23:59:59Z`).toISOString() };

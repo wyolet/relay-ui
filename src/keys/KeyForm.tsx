@@ -1,10 +1,9 @@
-import { Building2, CalendarClock, ToggleLeft, UserRound } from "lucide-react";
+import { Building2, UserRound } from "lucide-react";
 import { useId } from "react";
 import { useAuth } from "@/api/auth";
 import { useProjects } from "@/api/hooks/projects";
 import { useServiceAccountsInProject } from "@/api/hooks/serviceAccounts";
 import type { Key } from "@/api/types/key";
-import { Input } from "@/components/ui/input";
 import {
 	Select,
 	SelectContent,
@@ -12,6 +11,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { KeySettingsSections } from "@/keys/KeySettingsSections";
 import { useKeyForm } from "@/keys/useKeyForm";
 import { displayLabel } from "@/lib/displayLabel";
 import { NO_LANE_MESSAGE } from "@/lib/personalAccount";
@@ -19,7 +19,6 @@ import { FormFooter } from "@/shared/FormFooter";
 import { FormSection } from "@/shared/FormSection";
 import { IdentitySection } from "@/shared/IdentitySection";
 import { Segmented } from "@/shared/Segmented";
-import { ToggleSwitch } from "@/shared/ToggleSwitch";
 
 interface KeyFormProps {
 	apiKey?: Key;
@@ -227,38 +226,16 @@ export function KeyForm({
 					)}
 				</FormSection>
 
-				<FormSection
-					icon={CalendarClock}
-					title="Expiry"
-					description="After this date the key stops authenticating. Leave empty for a key that never expires."
-				>
-					<Input
-						type="date"
-						className="w-full max-w-xs"
-						value={values.expiresAt}
-						onChange={(e) => form.setFieldValue("expiresAt", e.target.value)}
-						aria-label="Expiry date"
-					/>
-				</FormSection>
-
-				<FormSection
-					icon={ToggleLeft}
-					title="Behavior"
-					description="Operational flags applied at request time."
-				>
-					<ToggleSwitch
-						value={values.passthroughAllowed}
-						onChange={(v) => form.setFieldValue("passthroughAllowed", v)}
-						label="Allow upstream passthrough"
-						hint="Permits the caller to forward their own provider API key instead of using the relay's host keys."
-					/>
-					<ToggleSwitch
-						value={values.payloadLoggingEnabled}
-						onChange={(v) => form.setFieldValue("payloadLoggingEnabled", v)}
-						label="Capture request & response payloads"
-						hint="Logs full request/response bodies for this key's traffic (visible under Logs). An account on the request's ladder that sets payload logging decides instead."
-					/>
-				</FormSection>
+				<KeySettingsSections
+					settings={values}
+					onExpiresAtChange={(v) => form.setFieldValue("expiresAt", v)}
+					onPassthroughAllowedChange={(v) =>
+						form.setFieldValue("passthroughAllowed", v)
+					}
+					onPayloadLoggingEnabledChange={(v) =>
+						form.setFieldValue("payloadLoggingEnabled", v)
+					}
+				/>
 			</div>
 
 			<form.Subscribe selector={(s) => s.isSubmitting}>

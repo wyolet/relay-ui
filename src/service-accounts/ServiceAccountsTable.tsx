@@ -7,7 +7,10 @@ import {
 } from "@/api/hooks/serviceAccounts";
 import { buttonVariants } from "@/components/ui/button";
 import { FilterBar } from "@/filters/FilterBar";
-import { toolbarMainActionClassName } from "@/filters/ToolbarActions";
+import {
+	toolbarActionClassName,
+	toolbarMainActionClassName,
+} from "@/filters/ToolbarActions";
 import { activeFilterCount } from "@/filters/toQueryParams";
 import type { FilterDef, FilterState } from "@/filters/types";
 import { useOwnerFilter } from "@/hooks/useOwnerFilter";
@@ -91,13 +94,19 @@ export function ServiceAccountsTable() {
 				extraActive={owner.isDefault ? 0 : 1}
 				className="mb-3"
 				actions={
-					<Link
-						to="/service-accounts/new"
-						className={toolbarMainActionClassName}
-					>
-						<Plus data-icon="inline-start" className="w-3.5 h-3.5" />
-						New service account
-					</Link>
+					<>
+						<Link to="/service-accounts/new" className={toolbarActionClassName}>
+							<Plus data-icon="inline-start" className="w-3.5 h-3.5" />
+							New service account
+						</Link>
+						<Link
+							to="/service-accounts/add-agent"
+							className={toolbarMainActionClassName}
+						>
+							<Bot data-icon="inline-start" className="w-3.5 h-3.5" />
+							Add agent
+						</Link>
+					</>
 				}
 			/>
 
