@@ -300,8 +300,14 @@ test.describe("Add a limit", () => {
 		await expect(page.getByText("Policy Platform policy", { exact: true })).toBeVisible();
 		await page.getByRole("button", { name: "Rate limit" }).click();
 		await page.getByRole("button", { name: "Next" }).click();
-		await expect(page.getByText("Enter a whole number of 1 or more.")).toBeVisible();
-		await page.getByRole("textbox", { name: "Maximum requests" }).fill("60");
+		await expect(page.getByText("Enter a whole number, 1 or more.")).toBeVisible();
+		const amount = page.getByRole("textbox", { name: "Maximum requests" });
+		await amount.fill("1.5");
+		await page.getByRole("button", { name: "Next" }).click();
+		await expect(amount).toHaveAttribute("aria-invalid", "true");
+		await expect(amount).toHaveAccessibleDescription("Enter a whole number, 1 or more.");
+		await expect(page.getByRole("button", { name: "Add limit" })).toHaveCount(0);
+		await amount.fill("60");
 		await page.getByRole("button", { name: "Next" }).click();
 		await page.getByRole("button", { name: "Add limit" }).click();
 

@@ -10,6 +10,7 @@ import {
 	policyCaseLine,
 	targetScope,
 	unpricedWarning,
+	wholeRateAmount,
 	withBudgetLink,
 	withRateLimitLink,
 } from "@/limits/limitWrites";
@@ -153,6 +154,20 @@ describe("limitSpec", () => {
 			],
 			models: ["anthropic"],
 		});
+	});
+});
+
+describe("wholeRateAmount", () => {
+	it("reads whole numbers of 1 or more, grouped digits included", () => {
+		expect(wholeRateAmount("60")).toBe(60);
+		expect(wholeRateAmount("1,000")).toBe(1000);
+		expect(wholeRateAmount("1 000")).toBe(1000);
+	});
+
+	it("refuses fractions, zero, text and nothing instead of truncating", () => {
+		for (const raw of ["1.5", "0", "abc", "12abc", "-3", ""]) {
+			expect(wholeRateAmount(raw)).toBeUndefined();
+		}
 	});
 });
 

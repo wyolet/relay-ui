@@ -4,6 +4,7 @@ import type { components } from "@/api/types.gen";
 import type { BudgetMode, BudgetPeriod } from "@/budgets/budgetFormat";
 import { displayLabel } from "@/lib/displayLabel";
 import type { UnpricedGrant } from "@/lib/pricingMatrix";
+import { required } from "@/lib/required";
 import {
 	type OwnPolicyCase,
 	type OwnPolicyWrite,
@@ -12,7 +13,6 @@ import {
 } from "@/policy-bindings/ownPolicy";
 import {
 	easyRateLimitRules,
-	parseAmount,
 	type RateLimitMeter,
 	type RateLimitPer,
 } from "@/rate-limits/easyRateLimit";
@@ -43,6 +43,14 @@ export type LimitSpec =
 	| { kind: "budget"; spec: BudgetSpec }
 	| { kind: "rateLimit"; rules: RateLimitRule[]; models: readonly string[] };
 
+/** A typed rate amount as a whole number of 1 or more, "1,000" included; undefined for anything else. */
+export function wholeRateAmount(raw: string): number | undefined {
+	const digits = raw.replace(/[,_\s]/g, "");
+	if (!/^\d+$/.test(digits)) return undefined;
+	const amount = Number(digits);
+	return amount >= 1 ? amount : undefined;
+}
+
 export function limitSpec(answers: LimitAnswers): LimitSpec {
 	if (answers.kind === "budget") {
 		return {
@@ -58,7 +66,7 @@ export function limitSpec(answers: LimitAnswers): LimitSpec {
 		kind: "rateLimit",
 		rules: easyRateLimitRules({
 			[answers.meter]: {
-				amount: parseAmount(answers.rateAmount),
+				amount: required(wholeRateAmount(answers.rateAmount), "rate amount"),
 				per: answers.per,
 			},
 		}),

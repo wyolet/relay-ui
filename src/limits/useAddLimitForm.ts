@@ -18,11 +18,11 @@ import {
 	limitWrites,
 	policyCaseLine,
 	unpricedWarning,
+	wholeRateAmount,
 } from "@/limits/limitWrites";
 import { useLimitWrites } from "@/limits/useLimitWrites";
 import { usePolicyUnpricedGrants } from "@/policies/usePolicyUnpricedModels";
 import type { OwnPolicyCase } from "@/policy-bindings/ownPolicy";
-import { parseAmount, validAmount } from "@/rate-limits/easyRateLimit";
 
 export const LIMIT_FORM_STEPS = ["limit", "review"] as const;
 export type LimitFormStep = (typeof LIMIT_FORM_STEPS)[number];
@@ -50,11 +50,11 @@ const schema = z
 					: "Enter the cap in USD.",
 			});
 		}
-		if (v.kind === "rateLimit" && !validAmount(parseAmount(v.rateAmount))) {
+		if (v.kind === "rateLimit" && wholeRateAmount(v.rateAmount) === undefined) {
 			ctx.addIssue({
 				code: "custom",
 				path: ["rateAmount"],
-				message: "Enter a whole number of 1 or more.",
+				message: "Enter a whole number, 1 or more.",
 			});
 		}
 	});
