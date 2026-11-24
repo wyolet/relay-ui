@@ -23,9 +23,18 @@ import type { CheckOption } from "@/shared/MultiSelect";
 import { toast } from "@/shared/Toast";
 import type { ShortcutTarget } from "@/shortcuts/registry";
 
+/** Once the agent is gone: says so and leaves its page for the list. */
+export function useAgentRemoved(target: ShortcutTarget) {
+	const navigate = useNavigate();
+	return () => {
+		toast("success", `Agent "${target.label}" removed.`);
+		void navigate({ to: "/service-accounts" });
+	};
+}
+
 /** What removing an agent deletes and keeps, and the run that deletes it. */
 export function useAgentRemoval(target: ShortcutTarget) {
-	const navigate = useNavigate();
+	const removed = useAgentRemoved(target);
 	const selector = [`${AGENT_ID_LABEL}=${target.id}`];
 	const keys = useKeysForPrincipals([target.id]);
 	const accounts = useQuery(accountListQueryOptions);
@@ -124,9 +133,7 @@ export function useAgentRemoval(target: ShortcutTarget) {
 	const runner = useWriteRunner(runWrite);
 
 	function finished(done: boolean) {
-		if (!done) return;
-		toast("success", `Agent "${target.label}" removed.`);
-		void navigate({ to: "/service-accounts" });
+		if (done) removed();
 	}
 
 	const loaded = reads.every((r) => r.data !== undefined);

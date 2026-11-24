@@ -1,4 +1,4 @@
-import { expect, type Page, test } from "@playwright/test";
+import { expect, type Locator, type Page, test } from "@playwright/test";
 import { EMPTY_GRAPH, mockApi } from "./fixtures/mockApi";
 
 const TEAM = "team-1";
@@ -159,21 +159,71 @@ interface FailOnce {
 	message: string;
 }
 
+interface Answer {
+	status: number;
+	json: object;
+}
+
+type RemovalBody = { spec: { serviceAccountId: string; keep?: string[]; expect?: string[] } };
+
+/** The Nth removal request (from 0, dry runs included); undefined answers {@link removalAnswer}. */
+type RemovalResponder = (body: RemovalBody, dryRun: boolean, n: number) => Answer | undefined;
+
 interface AgentPageMock {
 	/** A write refused the first time. */
 	failOnce?: FailOnce;
 	/** Serves `pseudoKinds: ["agents"]`, a keyless host, and the source policy linking its pool. */
 	oneRequest?: boolean;
+	/** Serves `pseudoKinds: ["agent-removals"]`; answers `POST /pseudo-agent-removals`. */
+	removal?: RemovalResponder;
+}
+
+const REMOVAL_DELETED = [
+	{ kind: "key", id: "k1", name: "indexer-key-k1" },
+	{ kind: "key", id: "k2", name: "indexer-key-k2" },
+	{ kind: "policy-binding", id: "pb-src", name: "pb-src" },
+	{ kind: "service-account", id: AGENT, name: "indexer-1234" },
+	{ kind: "account", id: "acct-src-lane", name: "acct-src-lane" },
+	{ kind: "policy", id: "pol-src", name: "indexer-policy" },
+	{ kind: "pool", id: "pool-a", name: "indexer-pool" },
+	{ kind: "pool", id: "pool-b", name: "indexer-spare-pool" },
+];
+const REMOVAL_IDS = REMOVAL_DELETED.map((row) => row.id);
+const SHARED_KEPT = [
+	{ kind: "policy", id: "pol-shared", name: "indexer-extra", reason: "in_use" },
+	{ kind: "pool", id: "pool-extra", name: "indexer-extra-pool", reason: "in_use" },
+];
+
+/** Relay's removal answer for a keep list: a kept policy keeps the pools it links. */
+function removalAnswer(keep: readonly string[] = [], warnings: object[] = []) {
+	const linked = keep.includes("pol-src") ? ["pool-a", "pool-b"] : [];
+	return {
+		deleted: REMOVAL_DELETED.filter((row) => !keep.includes(row.id) && !linked.includes(row.id)),
+		kept: [
+			...SHARED_KEPT,
+			...REMOVAL_DELETED.filter((row) => keep.includes(row.id)).map((row) => ({
+				...row,
+				reason: "kept_by_request",
+			})),
+			...REMOVAL_DELETED.filter((row) => linked.includes(row.id)).map((row) => ({
+				...row,
+				reason: "in_use",
+			})),
+		],
+		updated: [],
+		warnings,
+	};
 }
 
 /** Answers the agent page's reads and records its writes; a dry run is recorded as `pseudo-agents?dryRun`. */
 async function mockAgentPage(
 	page: Page,
 	features: Record<string, boolean>,
-	{ failOnce, oneRequest }: AgentPageMock = {},
+	{ failOnce, oneRequest, removal }: AgentPageMock = {},
 ): Promise<Sent[]> {
 	const sent: Sent[] = [];
 	let failed = false;
+	let removals = 0;
 	const sourcePolicy = oneRequest ? keylessOwnPolicy : ownPolicy;
 	const servedPools = oneRequest ? [...pools, localPool] : pools;
 	await mockApi(page, {
@@ -186,6 +236,7 @@ async function mockAgentPage(
 		policies: [sourcePolicy, sharedPolicy],
 		policyBindings: bindings,
 		...(oneRequest ? { pseudoKinds: ["agents"], hosts } : {}),
+		...(removal ? { pseudoKinds: ["agent-removals"] } : {}),
 	});
 	await page.route("**/api/catalog/graph**", (route) => route.fulfill({ json: catalog }));
 	await page.route("**/api/**", (route) => {
@@ -221,6 +272,16 @@ async function mockAgentPage(
 			const dryRun = url.searchParams.get("dryRun") === "true";
 			sent.push({ method, path: dryRun ? "pseudo-agents?dryRun" : path, body });
 			return route.fulfill({ status: dryRun ? 200 : 201, json: pseudoAnswer(dryRun) });
+		}
+		if (path === "pseudo-agent-removals" && removal) {
+			const dryRun = url.searchParams.get("dryRun") === "true";
+			sent.push({ method, path: dryRun ? `${path}?dryRun` : path, body });
+			const removalBody: RemovalBody = request.postDataJSON();
+			const answer = removal(removalBody, dryRun, removals++) ?? {
+				status: 200,
+				json: removalAnswer(removalBody.spec.keep),
+			};
+			return route.fulfill(answer);
 		}
 		sent.push({ method, path, body });
 		if (method === "DELETE") return route.fulfill({ status: 204 });
@@ -273,6 +334,18 @@ async function openRemoval(page: Page) {
 	await actions(page).remove.click();
 	const dialog = page.getByRole("dialog");
 	await expect(dialog.getByText("Delete service account Indexer")).toBeVisible();
+	return dialog;
+}
+
+const removalList = (dialog: Locator) =>
+	dialog.getByRole("list", { name: "Deleted, in this order" });
+const madeForAgent = (dialog: Locator) => dialog.getByRole("group", { name: "Made for this agent" });
+
+async function openOneRequestRemoval(page: Page) {
+	await openPage(page, "indexer-1234");
+	await actions(page).remove.click();
+	const dialog = page.getByRole("dialog");
+	await expect(removalList(dialog).getByRole("listitem").first()).toBeVisible();
 	return dialog;
 }
 
@@ -452,6 +525,228 @@ test.describe("Agent page shortcuts", () => {
 		expect(sent[0]?.body.spec).toMatchObject({
 			principal: { kind: "serviceaccount", id: AGENT },
 		});
+	});
+
+	test("Remove agent sends one request with relay's list as expect", async ({ page }) => {
+		const warning = "Policy rig-default would link a pool with no account.";
+		const sent = await mockAgentPage(page, FLAGS, {
+			removal: (body, dryRun) =>
+				dryRun ? { status: 200, json: removalAnswer(body.spec.keep, [{ code: "w", message: warning }]) } : undefined,
+		});
+		const dialog = await openOneRequestRemoval(page);
+		await expect(removalList(dialog).getByRole("listitem")).toHaveText([
+			/^Key\s*indexer-key-k1$/,
+			/^Key\s*indexer-key-k2$/,
+			/^Policy binding\s*pb-src$/,
+			/^Service account\s*indexer-1234$/,
+			/^Account\s*acct-src-lane$/,
+			/^Policy\s*indexer-policy$/,
+			/^Pool\s*indexer-pool$/,
+			/^Pool\s*indexer-spare-pool$/,
+		]);
+		await expect(madeForAgent(dialog).getByRole("button")).toHaveText([
+			/^Policy indexer-extra\s*Kept: used by something else$/,
+			/^Policy indexer-policy$/,
+			/^Pool indexer-extra-pool\s*Kept: used by something else$/,
+			/^Pool indexer-pool$/,
+			/^Pool indexer-spare-pool$/,
+		]);
+		await expect(dialog.getByRole("button", { name: /^Policy indexer-extra/ })).toBeDisabled();
+		await expect(
+			dialog.getByRole("status").filter({ hasText: "Relay will accept this, with warnings" }),
+		).toContainText(warning);
+
+		const remove = dialog.getByRole("button", { name: "Remove agent" });
+		await expect(remove).toBeDisabled();
+		await dialog.getByRole("textbox").fill("indexer-1234");
+		await remove.click();
+
+		await expect(page).toHaveURL(LIST_URL);
+		await expect(page.getByText('Agent "Indexer" removed.')).toBeVisible();
+		expect(sent.map((s) => `${s.method} ${s.path}`)).toEqual([
+			"POST pseudo-agent-removals?dryRun",
+			"POST pseudo-agent-removals",
+		]);
+		expect(sent[0]?.body).toEqual({ spec: { serviceAccountId: AGENT } });
+		expect(sent[1]?.body).toEqual({ spec: { serviceAccountId: AGENT, expect: REMOVAL_IDS } });
+	});
+
+	test("Remove agent: unticking the policy asks again and keeps what it links", async ({
+		page,
+	}) => {
+		const sent = await mockAgentPage(page, FLAGS, { removal: () => undefined });
+		const dialog = await openOneRequestRemoval(page);
+		await dialog.getByRole("button", { name: /^Policy indexer-policy/ }).click();
+
+		await expect(removalList(dialog).getByRole("listitem")).toHaveCount(5);
+		await expect(dialog.getByRole("button", { name: /^Policy indexer-policy/ })).toHaveText(
+			/Kept$/,
+		);
+		await expect(dialog.getByRole("button", { name: /^Pool indexer-pool/ })).toHaveText(
+			/Kept: used by something else$/,
+		);
+		await dialog.getByRole("textbox").fill("indexer-1234");
+		await dialog.getByRole("button", { name: "Remove agent" }).click();
+
+		await expect(page).toHaveURL(LIST_URL);
+		expect(sent.map((s) => s.body)).toEqual([
+			{ spec: { serviceAccountId: AGENT } },
+			{ spec: { serviceAccountId: AGENT, keep: ["pol-src"] } },
+			{
+				spec: {
+					serviceAccountId: AGENT,
+					keep: ["pol-src"],
+					expect: ["k1", "k2", "pb-src", AGENT, "acct-src-lane"],
+				},
+			},
+		]);
+	});
+
+	test("Remove agent: a set that changed shows relay's new list and asks for the name again", async ({
+		page,
+	}) => {
+		const added = { kind: "key", id: "k3", name: "indexer-key-k3" };
+		const sent = await mockAgentPage(page, FLAGS, {
+			removal: (_body, dryRun, n) => {
+				if (dryRun || n > 1) return undefined;
+				const now = removalAnswer();
+				return {
+					status: 409,
+					json: {
+						error: { type: "invalid_request_error", code: "changed", message: "the set changed" },
+						pointer: "/spec/expect",
+						deleted: [added, ...now.deleted],
+						kept: now.kept,
+					},
+				};
+			},
+		});
+		const dialog = await openOneRequestRemoval(page);
+		const remove = dialog.getByRole("button", { name: "Remove agent" });
+		await dialog.getByRole("textbox").fill("indexer-1234");
+		await remove.click();
+
+		await expect(
+			dialog.getByText("This changed while the dialog was open. Check the list again."),
+		).toBeVisible();
+		await expect(removalList(dialog).getByRole("listitem").first()).toHaveText(
+			/^Key\s*indexer-key-k3$/,
+		);
+		await expect(dialog.getByRole("textbox")).toHaveValue("");
+		await expect(remove).toBeDisabled();
+
+		await dialog.getByRole("textbox").fill("indexer-1234");
+		await remove.click();
+		await expect(page).toHaveURL(LIST_URL);
+		expect(sent.map((s) => s.path)).toEqual([
+			"pseudo-agent-removals?dryRun",
+			"pseudo-agent-removals",
+			"pseudo-agent-removals",
+		]);
+		expect(sent[2]?.body).toEqual({
+			spec: { serviceAccountId: AGENT, expect: ["k3", ...REMOVAL_IDS] },
+		});
+	});
+
+	test("Remove agent: an untick relay refuses shows its message by the row", async ({ page }) => {
+		await mockAgentPage(page, FLAGS, {
+			removal: (body) =>
+				body.spec.keep
+					? {
+							status: 400,
+							json: {
+								error: { type: "invalid_request_error", message: "pool-b can't be kept" },
+								pointer: "/spec/keep/0",
+							},
+						}
+					: undefined,
+		});
+		const dialog = await openOneRequestRemoval(page);
+		await dialog.getByRole("button", { name: /^Pool indexer-spare-pool/ }).click();
+
+		const row = madeForAgent(dialog).getByRole("listitem").filter({ hasText: "indexer-spare-pool" });
+		await expect(row).toContainText("pool-b can't be kept");
+		await dialog.getByRole("textbox").fill("indexer-1234");
+		await expect(dialog.getByRole("button", { name: "Remove agent" })).toBeDisabled();
+	});
+
+	test("Remove agent: a plan issue lists relay's issues", async ({ page }) => {
+		await mockAgentPage(page, FLAGS, {
+			removal: (_body, dryRun) =>
+				dryRun
+					? undefined
+					: {
+							status: 422,
+							json: {
+								error: { type: "invalid_request_error", code: "plan_issue", message: "plan issues" },
+								issues: [{ code: "dead_ref", kind: "policy", message: "Policy x would name a deleted pool." }],
+							},
+						},
+		});
+		const dialog = await openOneRequestRemoval(page);
+		await dialog.getByRole("textbox").fill("indexer-1234");
+		await dialog.getByRole("button", { name: "Remove agent" }).click();
+
+		const refused = dialog.getByRole("alert").filter({ hasText: "Relay would refuse this setup" });
+		await expect(refused.getByRole("listitem")).toHaveText(["Policy x would name a deleted pool."]);
+		await expect(dialog.getByRole("button", { name: "Remove agent" })).toBeDisabled();
+	});
+
+	test("Remove agent: a delete still referenced shows its blockers", async ({ page }) => {
+		await mockAgentPage(page, FLAGS, {
+			removal: (_body, dryRun) =>
+				dryRun
+					? undefined
+					: {
+							status: 409,
+							json: {
+								error: {
+									type: "invalid_request_error",
+									code: "resource_in_use",
+									message: "service account is referenced",
+								},
+								pointer: "/spec/serviceAccountId",
+								blockers: [
+									{
+										kind: "role-binding",
+										field: "spec.subjects",
+										count: 1,
+										hidden: 0,
+										detachable: false,
+										items: [{ id: "rb-1", name: "indexer-reader" }],
+									},
+								],
+							},
+						},
+		});
+		const dialog = await openOneRequestRemoval(page);
+		await dialog.getByRole("textbox").fill("indexer-1234");
+		await dialog.getByRole("button", { name: "Remove agent" }).click();
+
+		await expect(dialog.getByText("Still in use")).toBeVisible();
+		await expect(dialog.getByText("indexer-reader")).toBeVisible();
+		await expect(dialog.getByRole("button", { name: "Remove agent" })).toBeDisabled();
+	});
+
+	test("Remove agent: a busy relay asks to try again", async ({ page }) => {
+		const sent = await mockAgentPage(page, FLAGS, {
+			removal: (_body, dryRun, n) =>
+				dryRun || n > 1
+					? undefined
+					: {
+							status: 503,
+							json: { error: { type: "api_error", message: "plans not loaded" } },
+						},
+		});
+		const dialog = await openOneRequestRemoval(page);
+		await dialog.getByRole("textbox").fill("indexer-1234");
+		const remove = dialog.getByRole("button", { name: "Remove agent" });
+		await remove.click();
+
+		await expect(dialog.getByText("Relay is busy. Try again in a moment.")).toBeVisible();
+		await remove.click();
+		await expect(page).toHaveURL(LIST_URL);
+		expect(sent.filter((s) => s.path === "pseudo-agent-removals")).toHaveLength(2);
 	});
 
 	test("the key form ignores a preset while the flag is off", async ({ page }) => {
