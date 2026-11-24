@@ -31,7 +31,6 @@ export function BudgetCapFields({
 	onPeriodChange,
 	onModeChange,
 	amountError,
-	amountPlaceholder = "2000",
 }: {
 	amountUsd: string;
 	period: BudgetPeriod;
@@ -40,7 +39,6 @@ export function BudgetCapFields({
 	onPeriodChange: (period: BudgetPeriod) => void;
 	onModeChange: (mode: BudgetMode) => void;
 	amountError?: string;
-	amountPlaceholder?: string;
 }) {
 	const amountErrorId = useId();
 	return (
@@ -52,7 +50,7 @@ export function BudgetCapFields({
 					inputMode="decimal"
 					value={amountUsd}
 					onChange={(e) => onAmountChange(e.currentTarget.value)}
-					placeholder={amountPlaceholder}
+					placeholder="2000"
 					className="w-full max-w-xs tabular-nums"
 					aria-label="Amount in USD"
 					aria-invalid={amountError ? true : undefined}
