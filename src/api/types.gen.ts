@@ -2452,6 +2452,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/pseudo-agents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create a service account with what it may use and its first key
+         * @description In one transaction, makes the service account, its account (its keys' default lane, answered in account), and either a policy binding of that account to policyId, or from access: a share with the owner of each listed provider account the owner neither reaches nor holds a share of, one pool per host of accountIds (its accounts in the order given), a policy linking poolIds in the order given and then the pools made in the order each host first appears in accountIds, with models, and its binding; then the key when spec.key is given. With everyCredential and no models nothing more is made: the account's default reach is the access. An account at a host that takes no key answers 400: name that host's pool in poolIds. The pools and policy made are owned by the service account's owner and labelled agent-id=<service account id>. Each row passes exactly what its own create call passes (POST /service-accounts, /accounts/{ref}/shares, /pools, /policies, PUT /accounts/{ref}/policy, POST /keys), with the same answers; a refusal names the row by pointer, the JSON pointer of the part of the body it came from, and nothing is written. Once every row passed, the rows are checked against the plans as a whole: errors they would raise that the plans do not have now refuse the request with 422 plan_issue. dryRun=true does everything but the commit and answers 200 with the same body, ids included and the key's plaintext left out. Each row made is audited as its own create. A repeated request makes a second set, its names suffixed.
+         */
+        post: operations["create_pseudo_agent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/rate-limits": {
         parameters: {
             query?: never;
@@ -3938,6 +3958,66 @@ export interface components {
             /** @description The section's current value. */
             value: components["schemas"]["Accounts"];
         };
+        Agent: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Agent.json
+             */
+            readonly $schema?: string;
+            /** @description The service account's metadata. */
+            metadata: components["schemas"]["AgentMetadata"];
+            /** @description What the service account may use, and its first key. */
+            spec: components["schemas"]["AgentSpec"];
+        };
+        AgentAccess: {
+            /** @description Ids of the provider accounts the service account draws on, in order of preference. Each host gets one pool listing its accounts in the order given; the made pools follow poolIds in the policy, in the order each host first appears here. An account the owner reaches, or a share owned by the owner, is pooled as it is; an account the owner does not reach (the caller's personal account, an account outside the owner's team) is pooled through the owner's share of it, made first when there is none. An account at a host that takes no key answers 400: name that host's pool in poolIds. */
+            accountIds?: string[] | null;
+            /** @description True uses every credential the service account's account reaches by default; accountIds and poolIds must then be empty. With models, a policy of those models linking no pool is bound; without, nothing is. */
+            everyCredential?: boolean;
+            /** @description Models the service account may use, in the policy model grammar (provider or provider/model). Omitted allows every model the pools serve. */
+            models?: string[] | null;
+            /** @description Ids of existing pools the policy links first, in the order given, before the pools made from accountIds; each must be one a policy of the owner may link. Name a keyless host's pool here: its accounts are never pooled from accountIds. Unless everyCredential is true, poolIds or accountIds must not be empty. */
+            poolIds?: string[] | null;
+        };
+        AgentKey: {
+            /** @description Free-text name of the key; its slug is derived from it. */
+            displayName?: string;
+            /**
+             * Format: date-time
+             * @description When the key stops authenticating. Omitted or null never expires.
+             */
+            expiresAt?: string;
+            /** @description Let the key send its own upstream credential in proxy mode. */
+            passthroughAllowed?: boolean;
+            /** @description Capture request and response bodies of this key's requests. */
+            payloadLoggingEnabled?: boolean;
+        };
+        AgentMetadata: {
+            /** @description Free-text description of the service account. */
+            description?: string;
+            /** @description Free-text name shown in the UI. */
+            displayName?: string;
+            /** @description Labels of the service account. */
+            labels?: {
+                [key: string]: string;
+            };
+            /** @description Slug of the service account. Omitted: derived from displayName, suffixed -2, -3, … while taken. A given name that is taken is refused as POST /service-accounts refuses it. */
+            name?: string;
+            /** @description The scope that owns the service account, as POST /service-accounts takes it. The pools, policy and policy binding made for it are owned by the same scope. */
+            owner: components["schemas"]["Owner"];
+        };
+        AgentSpec: {
+            /** @description What the service account may use, made into a policy of its own. Exactly one of policyId and access. */
+            access?: components["schemas"]["AgentAccess"];
+            /** @description The service account's first key. Omitted makes no key. */
+            key?: components["schemas"]["AgentKey"];
+            /**
+             * Format: uuid
+             * @description Id of an existing policy to bind the service account's account to. Exactly one of policyId and access.
+             */
+            policyId?: string;
+        };
         Audit: {
             /**
              * Format: uri
@@ -4390,6 +4470,14 @@ export interface components {
              * @description Rows updated.
              */
             update: number;
+        };
+        CreatedRow: {
+            /** @description Id of the row; minted before the write, so a dry run answers it too. */
+            id: string;
+            /** @description API kind of the row, such as service-account or policy-binding. */
+            kind: string;
+            /** @description Slug of the row. */
+            name: string;
         };
         DataKeyStatus: {
             /**
@@ -4997,6 +5085,8 @@ export interface components {
             pricing: components["schemas"]["PricingView"];
         };
         HostPolicyRow: {
+            /** @description Free-text name of the policy. */
+            displayName?: string;
             /** @description Whether the policy is enabled. */
             enabled: boolean;
             /** @description Policy id. */
@@ -5041,6 +5131,10 @@ export interface components {
             noAuth?: boolean;
             /** @description Upstream path used instead of the wire shape's default. An empty string means baseURL is the complete endpoint; omitted keeps the default. */
             path?: string;
+            /** @description Upstream path per wire shape (adapter name, such as openai), used instead of path for that shape: {openai: /v1beta/openai/chat/completions}. A shape not listed uses path. */
+            paths?: {
+                [key: string]: string;
+            };
             /** @description Billing modes the host offers: api (per-token metered) and sub (flat-rate subscription). A host key picks one. Omitted means [api]. */
             pricingStrategies?: ("api" | "sub")[] | null;
             /** @description Top-level request-body keys the host expects under another name, per wire shape (adapter name, such as openai): {openai: {max_tokens: max_completion_tokens}}. Relay renames them before sending; when the caller already sent the new name, the old key is dropped and the drop reported. */
@@ -6352,6 +6446,52 @@ export interface components {
             /** @description The section's current value. */
             value: components["schemas"]["ProxyMode"];
         };
+        PseudoAgentCreated: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/PseudoAgentCreated.json
+             */
+            readonly $schema?: string;
+            /** @description The service account's account, its keys' default lane. */
+            account: components["schemas"]["RowRef"];
+            /** @description Every row made, in write order. */
+            created: components["schemas"]["CreatedRow"][] | null;
+            /** @description The key; absent when spec.key was omitted. */
+            key?: components["schemas"]["PseudoAgentKey"];
+            /** @description The policy the account is bound to: the one policyId names, or the one made from access. Absent when access made none. */
+            policy?: components["schemas"]["RowRef"];
+            /** @description The pools made, one per host of access.accountIds. */
+            pools: components["schemas"]["RowRef"][] | null;
+            /** @description The service account. */
+            serviceAccount: components["schemas"]["RowRef"];
+            /** @description The shares made of accounts the owner did not reach. */
+            shares: components["schemas"]["RowRef"][] | null;
+        };
+        PseudoAgentKey: {
+            /** @description Id of the key. */
+            id: string;
+            /** @description Slug of the key. */
+            name: string;
+            /** @description The bearer token to send as Authorization: Bearer. Returned only here; store it now. Absent on a dry run. */
+            plaintext?: string;
+        };
+        PseudoIssue: {
+            /** @description Stable snake_case diagnostic identifier, as GET /plan-issues answers it. */
+            code: string;
+            /** @description Spec path of the object the issue is about. */
+            field?: string;
+            /** @description Id of that object; empty when the caller may not see it. */
+            id?: string;
+            /** @description Kind of the object that would carry the issue. */
+            kind: string;
+            /** @description What would break. */
+            message: string;
+            /** @description Slug of that object; empty when the caller may not see it or it has none. */
+            name?: string;
+            /** @description JSON pointer of the part of the body the object came from; empty for an object that exists already. */
+            pointer?: string;
+        };
         Rate: {
             /**
              * Format: int64
@@ -6693,6 +6833,12 @@ export interface components {
             /** @description Rules the role grants; a request is allowed when any rule covers its kind and verb. */
             rules: components["schemas"]["RoleRule"][] | null;
         };
+        RowRef: {
+            /** @description Id of the row. */
+            id: string;
+            /** @description Slug of the row. */
+            name: string;
+        };
         RuntimeConfig: {
             /**
              * Format: uri
@@ -6715,6 +6861,8 @@ export interface components {
              * @enum {string}
              */
             mode?: "oss" | "cloud";
+            /** @description The pseudo kinds this relay serves, such as agents for POST /pseudo-agents; always present, empty when none. A kind not listed has no route. */
+            pseudoKinds: string[] | null;
             /** @description Support link shown in the UI. */
             supportUrl?: string;
             /** @description Public client-side error reporting config. */
@@ -7366,6 +7514,10 @@ export interface components {
         createKeyMetadata: {
             /** @description Free-text name shown in the UI. */
             displayName?: string;
+            /** @description Key/value selectors; GET /keys filters on them with ?label=key=value. */
+            labels?: {
+                [key: string]: string;
+            };
             /** @description Slug for the key; derived from displayName when omitted. */
             name?: string;
         };
@@ -7982,6 +8134,20 @@ export interface components {
             rateLimits: components["schemas"]["PolicyRateLimitRow"][] | null;
             /** @description Allowed models no linked rate limit covers. */
             unthrottled: components["schemas"]["UnthrottledModel"][] | null;
+        };
+        pseudoRefusal: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/pseudoRefusal.json
+             */
+            readonly $schema?: string;
+            /** @description The error. */
+            error: components["schemas"]["APIErrorBody"];
+            /** @description With plan_issue: each error the rows would raise in the plans that they do not have now. */
+            issues?: components["schemas"]["PseudoIssue"][] | null;
+            /** @description JSON pointer of the part of the body the refused row came from, such as /spec/access/accountIds/1. */
+            pointer?: string;
         };
         refResult: {
             /** @description The (model, host) bindings it matches. */
@@ -19038,6 +19204,105 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    create_pseudo_agent: {
+        parameters: {
+            query?: {
+                /** @description Run every check, the plan check included, and answer what would be made, without writing it. */
+                dryRun?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Agent"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PseudoAgentCreated"];
+                };
+            };
+            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description No valid session cookie or admin bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description No such row, or one the caller may not see. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description conflict: another change touched the same rows at the same time, retry; share_exists, already_reachable or reshare_refused from a share; duplicate_binding from the binding; managed_by_source. pointer names the row. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["pseudoRefusal"];
+                };
+            };
+            /** @description plan_issue: every row passes its own checks, but together they would raise errors in the plans that are not there now; issues lists them, each with the pointer of the part of the body it came from. Nothing was written. Also a body that does not match the schema, with error.details. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["pseudoRefusal"];
+                };
+            };
+            /** @description The server failed; error.message carries the cause. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description The plans are not loaded yet, or checking the rows against them took longer than RELAY_PLAN_CHECK_TIMEOUT_MS. Nothing was written. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["pseudoRefusal"];
                 };
             };
         };

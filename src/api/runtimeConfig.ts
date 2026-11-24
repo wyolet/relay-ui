@@ -19,7 +19,7 @@ import type { components } from "./types.gen";
  */
 export type RuntimeConfig = components["schemas"]["RuntimeConfig"];
 
-let loaded: RuntimeConfig = {};
+let loaded: RuntimeConfig = { pseudoKinds: [] };
 
 function pageOrigin(): string {
 	return typeof window !== "undefined"
