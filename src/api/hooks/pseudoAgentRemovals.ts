@@ -7,6 +7,7 @@ import {
 import { apiClient } from "@/api/client";
 import { PseudoRefusal } from "@/api/types/errors";
 import type { components } from "@/api/types.gen";
+import { DRY_RUN_META } from "@/pseudo/dryRunMeta";
 
 export type AgentRemoval = components["schemas"]["AgentRemoval"];
 export type AgentRemovalAnswer =
@@ -92,6 +93,7 @@ export function useRemoveAgent() {
 /** What the removal would delete and keep, without deleting. */
 export function useDryRunAgentRemoval() {
 	return useMutation({
+		meta: DRY_RUN_META,
 		mutationFn: (body: AgentRemoval) => postAgentRemoval(body, true),
 	});
 }

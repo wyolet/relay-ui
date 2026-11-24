@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/api/client";
 import { PseudoRefusal } from "@/api/types/errors";
 import type { components } from "@/api/types.gen";
+import { DRY_RUN_META } from "@/pseudo/dryRunMeta";
 
 export type PseudoAgent = components["schemas"]["Agent"];
 export type PseudoAgentCreated = components["schemas"]["PseudoAgentCreated"];
@@ -43,6 +44,7 @@ export function useCreatePseudoAgent() {
 /** What the request would make, with throwaway ids and no key plaintext. */
 export function useDryRunPseudoAgent() {
 	return useMutation({
+		meta: DRY_RUN_META,
 		mutationFn: (body: PseudoAgent) => postPseudoAgent(body, true),
 	});
 }

@@ -7,6 +7,7 @@ import {
 import { apiClient } from "@/api/client";
 import { PseudoRefusal } from "@/api/types/errors";
 import type { components } from "@/api/types.gen";
+import { DRY_RUN_META } from "@/pseudo/dryRunMeta";
 
 export type PseudoAccess = components["schemas"]["Access"];
 export type PseudoAccessAnswer = components["schemas"]["PseudoAccessAnswer"];
@@ -70,6 +71,7 @@ export function useCreatePseudoAccess() {
 /** What the request would make, change and delete, with throwaway ids. */
 export function useDryRunPseudoAccess() {
 	return useMutation({
+		meta: DRY_RUN_META,
 		mutationFn: (body: PseudoAccess) => postPseudoAccess(body, true),
 	});
 }

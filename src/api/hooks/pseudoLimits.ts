@@ -6,6 +6,7 @@ import {
 import { apiClient } from "@/api/client";
 import { PseudoRefusal } from "@/api/types/errors";
 import type { components } from "@/api/types.gen";
+import { DRY_RUN_META } from "@/pseudo/dryRunMeta";
 
 export type PseudoLimits = components["schemas"]["Limits"];
 export type PseudoLimitsAnswer = components["schemas"]["PseudoLimitsAnswer"];
@@ -60,6 +61,7 @@ export function useCreatePseudoLimits() {
 /** What the request would make and change, with throwaway ids. */
 export function useDryRunPseudoLimits() {
 	return useMutation({
+		meta: DRY_RUN_META,
 		mutationFn: (body: PseudoLimits) => postPseudoLimits(body, true),
 	});
 }
