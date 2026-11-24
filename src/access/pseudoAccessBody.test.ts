@@ -1,5 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import {
+	ACCESS_POINTER_FIELDS,
+	bindingOffLine,
 	prefillRefusal,
 	pseudoAccessBody,
 	pseudoCurrentLine,
@@ -8,6 +10,7 @@ import {
 	writesNothing,
 } from "@/access/pseudoAccessBody";
 import { PseudoRefusal } from "@/api/types/errors";
+import { parseRefusal } from "@/pseudo/refusal";
 
 const team = { kind: "team", id: "t1" } as const;
 
@@ -105,6 +108,47 @@ describe("pseudoCurrentLine", () => {
 		expect(pseudoCurrentLine("copy", "shared", "S agent")).toBe(
 			"Policy shared, shared or set elsewhere: saving makes a copy for S agent",
 		);
+	});
+});
+
+describe("bindingOffLine", () => {
+	it("says the policy doesn't apply when its binding is off", () => {
+		expect(bindingOffLine({ bindingEnabled: false })).toBe(
+			"Its binding is turned off, so this policy doesn't apply to it now.",
+		);
+	});
+
+	it("says nothing for an enabled binding or no policy", () => {
+		expect(bindingOffLine({ bindingEnabled: true })).toBeUndefined();
+		expect(bindingOffLine(undefined)).toBeUndefined();
+	});
+});
+
+describe("access refusals", () => {
+	const refusal = (status: number, code: string, pointer: string) =>
+		parseRefusal(
+			new PseudoRefusal(status, {
+				error: { type: "invalid_request_error", code, message: "relay says" },
+				pointer,
+			}),
+			ACCESS_POINTER_FIELDS,
+		);
+
+	it("puts hidden pools kept by the every credential switch", () => {
+		expect(
+			refusal(409, "hidden_pools_kept", "/spec/access/everyCredential"),
+		).toEqual({
+			kind: "field",
+			field: "everyCredential",
+			message: "relay says",
+		});
+	});
+
+	it("keeps other accounts changed general, for the review step", () => {
+		expect(refusal(422, "other_accounts_changed", "")).toEqual({
+			kind: "general",
+			message: "relay says",
+		});
 	});
 });
 

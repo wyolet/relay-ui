@@ -29,6 +29,7 @@ import { useFormSteps } from "@/hooks/useFormSteps";
 import { usePickerCatalog } from "@/models/usePickerCatalog";
 import { warnedFields, warningMessages } from "@/pseudo/dryRun";
 import { sameAnswers } from "@/pseudo/refusal";
+import { useUnderConfirm } from "@/pseudo/useUnderConfirm";
 
 export const ACCESS_FORM_STEPS = ["access", "review"] as const;
 export type AccessFormStep = (typeof ACCESS_FORM_STEPS)[number];
@@ -44,6 +45,7 @@ export interface SetAccessValues {
 }
 
 const FIELD_STEP = {
+	everyCredential: "access",
 	accountIds: "access",
 	poolIds: "access",
 	access: "access",
@@ -167,6 +169,10 @@ export function useSetAccessForm(
 		? warnedFields(pseudo.previewWarnings, () => unchangedSince(warnedAt))
 		: {};
 	const previewAnswer = pseudo.previewAnswer;
+	const under = useUnderConfirm(
+		previewAnswer,
+		pseudo.previewLoading || pseudo.previewStale,
+	);
 	const nothingChanged = oneRequest
 		? previewAnswer !== undefined &&
 			!pseudo.previewStale &&
@@ -231,6 +237,8 @@ export function useSetAccessForm(
 			opened.path === "chain"
 				? currentPolicyLine(opened.policyCase, target.label)
 				: pseudoCurrentLine(opened.accessCase, opened.policyName, target.label),
+		bindingOffLine:
+			opened.path === "oneRequest" ? opened.bindingOffLine : undefined,
 		hiddenPoolsLine:
 			opened.path === "oneRequest"
 				? hiddenPoolsLine(opened.prefill.hiddenPools)
@@ -244,8 +252,9 @@ export function useSetAccessForm(
 		reach,
 		planned,
 		nothingChanged,
-		/** No list yet, or one that says nothing would change. */
-		finishDisabled: nothingChanged || (oneRequest && pseudo.previewLoading),
+		/** Nothing would change, the dry run hasn't answered, or accounts that stop working aren't confirmed. */
+		finishDisabled: nothingChanged || (oneRequest && under.blocksSave),
+		under,
 		noWritesLine: noWritesLine(chainCase, target.label),
 		unlinksPools:
 			opened.path === "chain" &&

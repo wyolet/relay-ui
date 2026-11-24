@@ -6,7 +6,11 @@ import {
 	currentAccessPrefill,
 } from "@/access/accessOptions";
 import type { AccessTarget } from "@/access/accessTarget";
-import { ACCESS_KIND, prefillRefusal } from "@/access/pseudoAccessBody";
+import {
+	ACCESS_KIND,
+	bindingOffLine,
+	prefillRefusal,
+} from "@/access/pseudoAccessBody";
 import {
 	type AgentAccount,
 	type AgentPool,
@@ -53,6 +57,8 @@ export type OpenedAccess =
 			path: "oneRequest";
 			accessCase: AccessCase;
 			policyName?: string;
+			/** Beside the policy line when the binding holding the target is off. */
+			bindingOffLine?: string;
 			prefill: CurrentAccessPrefill;
 	  };
 
@@ -170,6 +176,7 @@ export function useAccessOpening(
 				path: "oneRequest",
 				accessCase: answer.case,
 				policyName: answer.current?.policy.name,
+				bindingOffLine: bindingOffLine(answer.current),
 				prefill: currentAccessPrefill(
 					answer.current,
 					offers.accounts,

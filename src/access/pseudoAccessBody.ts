@@ -2,6 +2,7 @@ import type { AccessTarget } from "@/access/accessTarget";
 import type { SavedAccess } from "@/access/useSetAccessWrites";
 import type {
 	AccessCase,
+	PolicyCurrent,
 	PseudoAccess,
 	PseudoAccessAnswer,
 } from "@/api/hooks/pseudoAccess";
@@ -14,14 +15,29 @@ import { pseudoTarget } from "@/pseudo/target";
 export const ACCESS_KIND = "access";
 
 /** The form field a part of the `POST /pseudo-access` body comes from; `access` is the access step as a whole. */
-export type AccessRefusalField = "accountIds" | "poolIds" | "access";
+export type AccessRefusalField =
+	| "everyCredential"
+	| "accountIds"
+	| "poolIds"
+	| "access";
 
 /** `/spec/target` (a policy set above, links a copy can't carry) belongs to no field. */
 export const ACCESS_POINTER_FIELDS: PointerFields<AccessRefusalField> = {
+	"/spec/access/everyCredential": "everyCredential",
 	"/spec/access/accountIds": "accountIds",
 	"/spec/access/poolIds": "poolIds",
 	"/spec/access": "access",
 };
+
+export const BINDING_OFF_LINE =
+	"Its binding is turned off, so this policy doesn't apply to it now.";
+
+/** Said beside the current policy line when the binding that holds the target is disabled. */
+export function bindingOffLine(
+	current: Pick<PolicyCurrent, "bindingEnabled"> | undefined,
+): string | undefined {
+	return current?.bindingEnabled === false ? BINDING_OFF_LINE : undefined;
+}
 
 export type AccessRefusal = Refusal<AccessRefusalField>;
 

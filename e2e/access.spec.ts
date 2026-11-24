@@ -913,6 +913,178 @@ test.describe("Set access in one request", () => {
 		expect(paths(sent).filter((p) => p === "pseudo-access")).toHaveLength(2);
 	});
 
+	test("accounts under the team: counts, the ones that stop working, and a confirm that each dry run asks again", async ({
+		page,
+	}) => {
+		const under = {
+			lanes: 4,
+			narrowed: 2,
+			widened: 1,
+			unreachable: [
+				{ kind: "account", id: "acct-lane", name: "sa-ci-bot" },
+				{ kind: "account", id: "acct-hidden" },
+			],
+		};
+		const sent = await mockAccessApi(page, {
+			usablePools: [ollamaPool],
+			oneRequest: {
+				opening: NONE_OPENING,
+				dryRuns: [answer({ case: "none", created: MADE_POLICY, under })],
+				saves: [NONE_SAVED],
+			},
+		});
+		await page.goto(SET_ACCESS);
+		await pickOllamaAndGemma(page);
+
+		const block = page.getByRole("region", { name: "Accounts under Platform" });
+		await expect(block.getByText("2 accounts under Platform get less.")).toBeVisible();
+		await expect(block.getByText("1 account under Platform gets more.")).toBeVisible();
+		await expect(block.getByText("2 accounts under Platform will stop working.")).toBeVisible();
+		await expect(block.getByRole("list", { name: "Will stop working" }).getByRole("listitem")).toHaveText([
+			/^Account\s*sa-ci-bot$/,
+			/^Account\s*one you can't see$/,
+		]);
+		const confirm = page.getByRole("checkbox", { name: "I understand these will stop working." });
+		const save = page.getByRole("button", { name: "Save access" });
+		await expect(save).toBeDisabled();
+		await confirm.click();
+		await expect(save).toBeEnabled();
+
+		await page.getByRole("button", { name: "Back" }).click();
+		await page.getByRole("button", { name: "Next" }).click();
+		await expect(confirm).not.toBeChecked();
+		await expect(save).toBeDisabled();
+		await confirm.click();
+		await save.click();
+
+		await expect(page.getByText("Access saved")).toBeVisible();
+		expect(paths(sent)).toEqual([
+			"pseudo-access?opening",
+			"pseudo-access?dryRun",
+			"pseudo-access?dryRun",
+			"pseudo-access",
+		]);
+	});
+
+	test("accounts under the team that keep working: counts only, Save needs no confirm", async ({
+		page,
+	}) => {
+		await mockAccessApi(page, {
+			usablePools: [ollamaPool],
+			oneRequest: {
+				opening: NONE_OPENING,
+				dryRuns: [
+					answer({
+						case: "none",
+						created: MADE_POLICY,
+						under: { lanes: 3, narrowed: 0, widened: 3, unreachable: null },
+					}),
+				],
+			},
+		});
+		await page.goto(SET_ACCESS);
+		await pickOllamaAndGemma(page);
+		const block = page.getByRole("region", { name: "Accounts under Platform" });
+		await expect(block.getByText("3 accounts under Platform get more.")).toBeVisible();
+		await expect(page.getByRole("checkbox")).toHaveCount(0);
+		await expect(page.getByRole("button", { name: "Save access" })).toBeEnabled();
+	});
+
+	test("other accounts changed: relay's message on the review step, no field marked, no confirm offered", async ({
+		page,
+	}) => {
+		const message =
+			"the change would alter what 1 other accounts may use (1 of them would lose something); nothing was written";
+		await mockAccessApi(page, {
+			oneRequest: {
+				opening: NONE_OPENING,
+				dryRuns: [refusal(422, { code: "other_accounts_changed", message })],
+			},
+		});
+		await page.goto(SET_ACCESS);
+		await page.getByRole("switch", { name: "Use every credential in scope" }).click();
+		await page.getByRole("button", { name: /Platform Anthropic/ }).click();
+		await page.getByRole("button", { name: "Next" }).click();
+		await expect(page.getByRole("alert")).toHaveText(message);
+		await expect(page.getByRole("checkbox")).toHaveCount(0);
+
+		await page.getByRole("button", { name: "Back" }).click();
+		await expect(page.getByRole("group", { name: "Accounts" })).not.toHaveAccessibleDescription(
+			message,
+		);
+		await expect(
+			page.getByRole("switch", { name: "Use every credential in scope" }),
+		).not.toHaveAttribute("aria-invalid", "true");
+	});
+
+	test("every credential over pools an admin set: back on the access step with relay's message by the switch", async ({
+		page,
+	}) => {
+		const message = "1 pool link you may not see would stay and narrow every credential to it";
+		const sent = await mockAccessApi(page, {
+			usablePools: [ollamaPool],
+			oneRequest: {
+				opening: answer({
+					case: "own",
+					current: {
+						policy: { id: "pol-1", name: "team-policy" },
+						pools: [currentPool("pool-ollama", OLLAMA)],
+						hiddenPools: 1,
+						models: [],
+						linksNoPools: false,
+						bindingEnabled: true,
+					},
+				}),
+				dryRuns: [answer({ case: "own", updated: [row("policy", "team-policy")] })],
+				saves: [
+					refusal(
+						409,
+						{ code: "hidden_pools_kept", message },
+						{ pointer: "/spec/access/everyCredential" },
+					),
+				],
+			},
+		});
+		await page.goto(SET_ACCESS);
+		const every = page.getByRole("switch", { name: "Use every credential in scope" });
+		await expect(every).not.toBeChecked();
+		await every.click();
+		await page.getByRole("button", { name: "Next" }).click();
+		await page.getByRole("button", { name: "Save access" }).click();
+
+		await expect(every).toBeChecked();
+		await expect(every).toHaveAttribute("aria-invalid", "true");
+		await expect(every).toHaveAccessibleDescription(message);
+		await expect(page.getByRole("button", { name: "Save access" })).toHaveCount(0);
+		expect(paths(sent).filter((p) => p === "pseudo-access")).toHaveLength(1);
+		expect(sent.at(-1)?.body).toEqual({
+			spec: { target: TEAM_TARGET, access: { everyCredential: true } },
+		});
+	});
+
+	test("a disabled binding: the policy line says the policy doesn't apply now", async ({ page }) => {
+		await mockAccessApi(page, {
+			oneRequest: {
+				opening: answer({
+					case: "own",
+					current: {
+						policy: { id: "pol-1", name: "team-policy" },
+						pools: null,
+						hiddenPools: 0,
+						models: [],
+						linksNoPools: true,
+						bindingEnabled: false,
+					},
+				}),
+			},
+		});
+		await page.goto(SET_ACCESS);
+		await expect(page.getByText("Policy team-policy", { exact: true })).toBeVisible();
+		await expect(
+			page.getByText("Its binding is turned off, so this policy doesn't apply to it now."),
+		).toBeVisible();
+	});
+
 	test("with the access kind off, the chain runs", async ({ page }) => {
 		const sent = await mockAccessApi(page, { pseudoKinds: ["agents"] });
 		await page.goto(SET_ACCESS);

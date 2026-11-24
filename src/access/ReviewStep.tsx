@@ -1,5 +1,6 @@
 import { ListChecks } from "lucide-react";
 import type { useSetAccessForm } from "@/access/useSetAccessForm";
+import { AccountsUnder } from "@/shared/AccountsUnder";
 import { DryRunReview } from "@/shared/DryRunReview";
 import { FormSection } from "@/shared/FormSection";
 import { WriteList } from "@/shared/WriteList";
@@ -12,18 +13,21 @@ function NoWritesLine({ access }: { access: SetAccessForm }) {
 
 function OneRequestReview({ access }: { access: SetAccessForm }) {
 	return (
-		<DryRunReview
-			issues={access.issueMessages}
-			warnings={access.previewWarnings}
-			refusalMessage={access.refusalMessage}
-			rows={access.previewRows}
-			label="What Save access does"
-			loading={access.previewLoading}
-			stale={access.previewStale}
-			nothingPlanned={
-				access.nothingChanged ? <NoWritesLine access={access} /> : undefined
-			}
-		/>
+		<div className="flex flex-col gap-3">
+			<DryRunReview
+				issues={access.issueMessages}
+				warnings={access.previewWarnings}
+				refusalMessage={access.refusalMessage}
+				rows={access.previewRows}
+				label="What Save access does"
+				loading={access.previewLoading}
+				stale={access.previewStale}
+				nothingPlanned={
+					access.nothingChanged ? <NoWritesLine access={access} /> : undefined
+				}
+			/>
+			<AccountsUnder state={access.under} target={access.target.label} />
+		</div>
 	);
 }
 

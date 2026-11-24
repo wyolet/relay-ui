@@ -28,6 +28,11 @@ export function SetAccessStep({ access }: { access: SetAccessForm }) {
 		<div className="flex flex-col gap-8">
 			<div className="flex flex-col gap-1.5">
 				<PolicyLine line={access.currentLine} />
+				{access.bindingOffLine && (
+					<p className="text-xs text-muted-foreground">
+						{access.bindingOffLine}
+					</p>
+				)}
 				{access.hiddenPoolsLine && (
 					<p className="text-xs text-muted-foreground">
 						{access.hiddenPoolsLine}
@@ -53,6 +58,7 @@ export function SetAccessStep({ access }: { access: SetAccessForm }) {
 					accountsError={
 						errors.accountIds ?? (listsPools ? undefined : errors.poolIds)
 					}
+					everyCredentialError={errors.everyCredential}
 					keptPools={
 						access.keptPools.length > 0 && (
 							<ul
