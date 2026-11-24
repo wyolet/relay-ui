@@ -88,7 +88,7 @@ export function AccessStep({ agent }: { agent: AddAgentForm }) {
 				<FormSection
 					icon={ShieldCheck}
 					title="Policy"
-					description="The agent gets this policy's accounts, models and limits. Provider presets list last."
+					description="The agent gets this policy's accounts, models and limits."
 				>
 					<Select
 						value={values.policyId}
@@ -109,14 +109,7 @@ export function AccessStep({ agent }: { agent: AddAgentForm }) {
 						<SelectContent>
 							{agent.policyOptions.map((o) => (
 								<SelectItem key={o.value} value={o.value}>
-									<span className="flex w-full items-center gap-2">
-										<span className="truncate">{o.label}</span>
-										{o.tierPreset && (
-											<span className="ml-auto pr-5 pl-3 text-[11px] text-muted-foreground">
-												Preset
-											</span>
-										)}
-									</span>
+									{o.label}
 								</SelectItem>
 							))}
 						</SelectContent>

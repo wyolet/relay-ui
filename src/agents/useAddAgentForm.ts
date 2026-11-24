@@ -261,8 +261,13 @@ export function useAddAgentForm(start?: Partial<AddAgentValues>) {
 	const pickedPools = values.poolIds.flatMap((id) =>
 		pools.filter((p) => p.id === id),
 	);
+	// A host tier preset describes a provider's limits; it is not an agent's policy.
 	const policyOptions = policiesCurrent
-		? bindingPolicyOptions(policies.items, policies.items, values.policyId)
+		? bindingPolicyOptions(
+				policies.items,
+				policies.items,
+				values.policyId,
+			).filter((o) => !o.tierPreset)
 		: [];
 	const pickedHostNames = [
 		...new Set(
