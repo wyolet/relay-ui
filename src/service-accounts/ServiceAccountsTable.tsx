@@ -95,16 +95,16 @@ export function ServiceAccountsTable() {
 				className="mb-3"
 				actions={
 					<>
-						<Link to="/service-accounts/new" className={toolbarActionClassName}>
-							<Plus data-icon="inline-start" className="w-3.5 h-3.5" />
-							New service account
-						</Link>
 						<Link
 							to="/service-accounts/add-agent"
 							className={toolbarMainActionClassName}
 						>
 							<Bot data-icon="inline-start" className="w-3.5 h-3.5" />
 							Add agent
+						</Link>
+						<Link to="/service-accounts/new" className={toolbarActionClassName}>
+							<Plus data-icon="inline-start" className="w-3.5 h-3.5" />
+							New service account
 						</Link>
 					</>
 				}
