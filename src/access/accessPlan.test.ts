@@ -228,6 +228,14 @@ describe("accessErrors", () => {
 		).toEqual({});
 		expect(accessErrors(answers())).toEqual({});
 	});
+
+	it("takes a picked keyless-host pool as enough", () => {
+		expect(
+			accessErrors(
+				answers({ everyCredential: false, poolIds: ["pool-ollama"] }),
+			),
+		).toEqual({});
+	});
 });
 
 describe("accessSpec", () => {

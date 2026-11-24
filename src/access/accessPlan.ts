@@ -16,6 +16,8 @@ export interface AccessAnswers {
 	accounts: readonly AgentAccount[];
 	/** The current policy's pools linked as they are, in their current order. */
 	keptPoolIds: readonly string[];
+	/** Picked pools at keyless hosts; only the one-request path offers them. */
+	poolIds?: readonly string[];
 	models: readonly string[];
 }
 
@@ -36,7 +38,8 @@ export function sentKeptPoolIds(answers: AccessAnswers): readonly string[] {
 export function accessErrors(answers: AccessAnswers): { accountIds?: string } {
 	return !answers.everyCredential &&
 		answers.accounts.length === 0 &&
-		answers.keptPoolIds.length === 0
+		answers.keptPoolIds.length === 0 &&
+		(answers.poolIds ?? []).length === 0
 		? { accountIds: "Pick an account, or use every credential." }
 		: {};
 }
@@ -128,7 +131,7 @@ export function accessPlan(
 
 /** Why a plan has no writes, for the disabled Save. */
 export function noWritesLine(
-	policyCase: OwnPolicyCase,
+	policyCase: Pick<OwnPolicyCase, "kind">,
 	target: string,
 ): string {
 	return policyCase.kind === "create"
@@ -166,6 +169,9 @@ export function unlinkedPoolIds(
 	return (policyCase.policy.spec.poolIds ?? []).filter((id) => !kept.has(id));
 }
 
+export const POLICY_SET_ABOVE_LINE =
+	"Limited by a policy you can't see or change. Ask whoever set it.";
+
 /** One line on what the target is under now and what a save does to it. */
 export function currentPolicyLine(
 	policyCase: OwnPolicyCase,
@@ -175,7 +181,7 @@ export function currentPolicyLine(
 		case "create":
 			return "No policy yet";
 		case "above":
-			return "Limited by a policy you can't see or change. Ask whoever set it.";
+			return POLICY_SET_ABOVE_LINE;
 		case "update":
 			return `Policy ${displayLabel(policyCase.policy.metadata)}`;
 		case "copy": {

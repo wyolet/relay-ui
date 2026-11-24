@@ -36,6 +36,10 @@ export interface AccessSettings {
 export interface SavedAccess {
 	/** The policy the target is under now. */
 	policyName: string;
+	/** What the save did to the policy, as relay answers it. */
+	caseLine?: string;
+	/** Pool links the caller can't see that the policy kept. */
+	hiddenPoolsKept?: number;
 }
 
 interface Progress extends AccessProgress, OwnPolicyProgress {}

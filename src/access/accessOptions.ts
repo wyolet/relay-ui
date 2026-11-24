@@ -1,5 +1,6 @@
-import type { AgentAccount } from "@/agents/agentAccounts";
+import type { AgentAccount, AgentPool } from "@/agents/agentAccounts";
 import type { Pool } from "@/api/hooks/pools";
+import type { CurrentPool, PolicyCurrent } from "@/api/hooks/pseudoAccess";
 import type { Policy } from "@/api/types/policy";
 import { displayLabel } from "@/lib/displayLabel";
 
@@ -30,21 +31,37 @@ export interface AccessPrefill {
 	models: string[];
 }
 
+/** Why the form keeps a pool whole rather than stand for it by its accounts. */
+type KeptReason =
+	| "keyless"
+	| "singleKeys"
+	| "noAccounts"
+	| "hiddenAccounts"
+	| "madeElsewhere"
+	| "unoffered";
+
+const KEPT_HINTS: Record<KeptReason, (hostLabel: string) => string> = {
+	keyless: (host) => `At ${host}, a host that takes no key.`,
+	singleKeys: (host) => `Lists single keys at ${host}.`,
+	noAccounts: (host) => `Lists no accounts at ${host}.`,
+	hiddenAccounts: (host) => `Lists accounts at ${host} you can't see.`,
+	madeElsewhere: (host) => `A pool at ${host} this form didn't make.`,
+	unoffered: (host) => `Lists accounts at ${host} this form can't offer.`,
+};
+
 function keptPoolHint(
 	pool: Pool,
 	hostLabel: string,
 	keyless: ReadonlySet<string>,
 ): string {
-	if (keyless.has(pool.spec.hostId)) {
-		return `At ${hostLabel}, a host that takes no key.`;
-	}
-	if ((pool.spec.credentialIds ?? []).length > 0) {
-		return `Lists single keys at ${hostLabel}.`;
-	}
-	if ((pool.spec.accountIds ?? []).length === 0) {
-		return `Lists no accounts at ${hostLabel}.`;
-	}
-	return `Lists accounts at ${hostLabel} this form can't offer.`;
+	const reason: KeptReason = keyless.has(pool.spec.hostId)
+		? "keyless"
+		: (pool.spec.credentialIds ?? []).length > 0
+			? "singleKeys"
+			: (pool.spec.accountIds ?? []).length === 0
+				? "noAccounts"
+				: "unoffered";
+	return KEPT_HINTS[reason](hostLabel);
 }
 
 /**
@@ -102,4 +119,90 @@ export function accessPrefill(
 		representedPools,
 		models: [...(policy?.spec.models ?? [])],
 	};
+}
+
+/** The fields as relay's dry run reads the current access, for the one-request path. */
+export interface CurrentAccessPrefill extends AccessPrefill {
+	/** The offered keyless-host pools the policy links, ticked in the Pools list. */
+	poolIds: string[];
+	/** The pools the policy links that the caller sees, in its order. */
+	currentPoolIds: string[];
+	/** Pools the policy links that the caller can't see; relay keeps them. */
+	hiddenPools: number;
+}
+
+function currentKeptReason(
+	pool: CurrentPool,
+	offeredIds: ReadonlySet<string>,
+	keyless: ReadonlySet<string>,
+): KeptReason | undefined {
+	const accounts = pool.accounts ?? [];
+	if (keyless.has(pool.host.id)) return "keyless";
+	if (pool.hiddenAccounts > 0) return "hiddenAccounts";
+	if (accounts.length === 0) return "noAccounts";
+	// Relay reuses only the pools it labelled; sending another pool's accounts makes a new pool.
+	if (!pool.labelled) return "madeElsewhere";
+	if (!accounts.every((a) => offeredIds.has(a.id))) return "unoffered";
+	return undefined;
+}
+
+/**
+ * The fields filled from relay's reading of the current access. An offered
+ * keyless pool is ticked in the Pools list; a labelled pool listing only
+ * offered accounts is ticked as those accounts; any other pool is kept whole.
+ * No policy, or one linking no pools, reaches every credential.
+ */
+export function currentAccessPrefill(
+	current: PolicyCurrent | undefined,
+	offered: readonly AgentAccount[],
+	offeredPools: readonly AgentPool[],
+	hostLabel: (hostId: string) => string,
+	keyless: ReadonlySet<string>,
+): CurrentAccessPrefill {
+	const offeredIds = new Set(offered.map((a) => a.id));
+	const pools = current?.pools ?? [];
+	const prefill: CurrentAccessPrefill = {
+		everyCredential: current?.linksNoPools ?? true,
+		accountIds: [],
+		keptPools: [],
+		representedPools: [],
+		models: [...(current?.models ?? [])],
+		poolIds: [],
+		currentPoolIds: pools.map((p) => p.id),
+		hiddenPools: current?.hiddenPools ?? 0,
+	};
+	for (const pool of pools) {
+		if (offeredPools.some((p) => p.id === pool.id)) {
+			prefill.poolIds.push(pool.id);
+			continue;
+		}
+		const reason = currentKeptReason(pool, offeredIds, keyless);
+		if (reason) {
+			prefill.keptPools.push({
+				id: pool.id,
+				label: pool.name,
+				hint: KEPT_HINTS[reason](hostLabel(pool.host.id) || pool.host.name),
+				hostId: pool.host.id,
+			});
+			continue;
+		}
+		const accountIds = (pool.accounts ?? []).map((a) => a.id);
+		for (const a of accountIds) {
+			if (!prefill.accountIds.includes(a)) prefill.accountIds.push(a);
+		}
+		prefill.representedPools.push({
+			id: pool.id,
+			hostId: pool.host.id,
+			accountIds,
+		});
+	}
+	return prefill;
+}
+
+/** The line for pools relay keeps that the caller can't see; none for zero. */
+export function hiddenPoolsLine(count: number | undefined): string | undefined {
+	if (!count) return undefined;
+	return count === 1
+		? "1 more pool set by an admin stays."
+		: `${count} more pools set by an admin stay.`;
 }
