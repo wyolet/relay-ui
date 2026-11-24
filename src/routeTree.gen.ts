@@ -31,6 +31,7 @@ import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedTeamsRouteImport } from './routes/_authenticated/teams'
 import { Route as AuthenticatedUsageRouteImport } from './routes/_authenticated/usage'
 import { Route as AuthenticatedUsersRouteImport } from './routes/_authenticated/users'
+import { Route as AuthenticatedAccessSetRouteImport } from './routes/_authenticated/access.set'
 import { Route as AuthenticatedAccountsIndexRouteImport } from './routes/_authenticated/accounts.index'
 import { Route as AuthenticatedAccountsNameRouteImport } from './routes/_authenticated/accounts.$name'
 import { Route as AuthenticatedAccountsNewRouteImport } from './routes/_authenticated/accounts.new'
@@ -224,6 +225,11 @@ const AuthenticatedUsageRoute = AuthenticatedUsageRouteImport.update({
 const AuthenticatedUsersRoute = AuthenticatedUsersRouteImport.update({
   id: '/users',
   path: '/users',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedAccessSetRoute = AuthenticatedAccessSetRouteImport.update({
+  id: '/access/set',
+  path: '/access/set',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedAccountsIndexRoute =
@@ -714,6 +720,7 @@ export interface FileRoutesByFullPath {
   '/teams': typeof AuthenticatedTeamsRouteWithChildren
   '/usage': typeof AuthenticatedUsageRoute
   '/users': typeof AuthenticatedUsersRouteWithChildren
+  '/access/set': typeof AuthenticatedAccessSetRoute
   '/accounts/$name': typeof AuthenticatedAccountsNameRoute
   '/accounts/new': typeof AuthenticatedAccountsNewRoute
   '/groups/$name': typeof AuthenticatedGroupsNameRoute
@@ -805,6 +812,7 @@ export interface FileRoutesByTo {
   '/scim-clients': typeof AuthenticatedScimClientsRoute
   '/usage': typeof AuthenticatedUsageRoute
   '/': typeof AuthenticatedIndexRoute
+  '/access/set': typeof AuthenticatedAccessSetRoute
   '/accounts/$name': typeof AuthenticatedAccountsNameRoute
   '/accounts/new': typeof AuthenticatedAccountsNewRoute
   '/groups/$name': typeof AuthenticatedGroupsNameRoute
@@ -911,6 +919,7 @@ export interface FileRoutesById {
   '/_authenticated/usage': typeof AuthenticatedUsageRoute
   '/_authenticated/users': typeof AuthenticatedUsersRouteWithChildren
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/access/set': typeof AuthenticatedAccessSetRoute
   '/_authenticated/accounts/$name': typeof AuthenticatedAccountsNameRoute
   '/_authenticated/accounts/new': typeof AuthenticatedAccountsNewRoute
   '/_authenticated/groups/$name': typeof AuthenticatedGroupsNameRoute
@@ -1017,6 +1026,7 @@ export interface FileRouteTypes {
     | '/teams'
     | '/usage'
     | '/users'
+    | '/access/set'
     | '/accounts/$name'
     | '/accounts/new'
     | '/groups/$name'
@@ -1108,6 +1118,7 @@ export interface FileRouteTypes {
     | '/scim-clients'
     | '/usage'
     | '/'
+    | '/access/set'
     | '/accounts/$name'
     | '/accounts/new'
     | '/groups/$name'
@@ -1213,6 +1224,7 @@ export interface FileRouteTypes {
     | '/_authenticated/usage'
     | '/_authenticated/users'
     | '/_authenticated/'
+    | '/_authenticated/access/set'
     | '/_authenticated/accounts/$name'
     | '/_authenticated/accounts/new'
     | '/_authenticated/groups/$name'
@@ -1456,6 +1468,13 @@ declare module '@tanstack/react-router' {
       path: '/users'
       fullPath: '/users'
       preLoaderRoute: typeof AuthenticatedUsersRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/access/set': {
+      id: '/_authenticated/access/set'
+      path: '/access/set'
+      fullPath: '/access/set'
+      preLoaderRoute: typeof AuthenticatedAccessSetRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/accounts/': {
@@ -2336,6 +2355,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedUsageRoute: typeof AuthenticatedUsageRoute
   AuthenticatedUsersRoute: typeof AuthenticatedUsersRouteWithChildren
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedAccessSetRoute: typeof AuthenticatedAccessSetRoute
   AuthenticatedAccountsNameRoute: typeof AuthenticatedAccountsNameRoute
   AuthenticatedAccountsNewRoute: typeof AuthenticatedAccountsNewRoute
   AuthenticatedHostsNameRoute: typeof AuthenticatedHostsNameRoute
@@ -2376,6 +2396,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedUsageRoute: AuthenticatedUsageRoute,
   AuthenticatedUsersRoute: AuthenticatedUsersRouteWithChildren,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedAccessSetRoute: AuthenticatedAccessSetRoute,
   AuthenticatedAccountsNameRoute: AuthenticatedAccountsNameRoute,
   AuthenticatedAccountsNewRoute: AuthenticatedAccountsNewRoute,
   AuthenticatedHostsNameRoute: AuthenticatedHostsNameRoute,

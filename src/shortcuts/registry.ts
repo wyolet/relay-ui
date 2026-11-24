@@ -1,4 +1,6 @@
 import type { ComponentType } from "react";
+import { SetAccessAction } from "@/access/SetAccessAction";
+import { SHORTCUT_FLAGS } from "@/lib/shortcutFlags";
 
 export type ShortcutTargetKind = "team" | "project" | "serviceaccount";
 
@@ -21,4 +23,10 @@ export interface Shortcut {
 }
 
 /** Every shortcut a detail page may offer. Dropping one is removing its line and its folder. */
-export const SHORTCUTS: readonly Shortcut[] = [];
+export const SHORTCUTS: readonly Shortcut[] = [
+	{
+		flag: SHORTCUT_FLAGS.access,
+		targets: ["team", "project", "serviceaccount"],
+		Action: SetAccessAction,
+	},
+];
