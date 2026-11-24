@@ -1,8 +1,9 @@
 import { Server, Users } from "lucide-react";
-import { useState } from "react";
+import { useId, useState } from "react";
 import type { useByokForm } from "@/byok/useByokForm";
 import { HostLogo } from "@/hosts/HostLogo";
 import type { OwnerPickKind } from "@/lib/ownerPick";
+import { FieldError } from "@/shared/FieldError";
 import { FormSection } from "@/shared/FormSection";
 import { OptionRow } from "@/shared/OptionRow";
 import { OwnerCards } from "@/shared/OwnerCards";
@@ -22,6 +23,7 @@ const SEARCH_FROM = 9;
 export function ProviderStep({ byok }: { byok: ByokForm }) {
 	const { values, errors } = byok;
 	const [needle, setNeedle] = useState("");
+	const hostErrorId = useId();
 	const shown = needle
 		? byok.hosts.filter((h) =>
 				h.label.toLowerCase().includes(needle.toLowerCase()),
@@ -46,18 +48,17 @@ export function ProviderStep({ byok }: { byok: ByokForm }) {
 							className="max-w-md"
 						/>
 					)}
-					<div
-						role="radiogroup"
+					<fieldset
 						aria-label="Provider"
-						className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3"
+						aria-describedby={errors.hostId ? hostErrorId : undefined}
+						className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3"
 					>
 						{shown.map((h) => {
 							const selected = h.id === values.hostId;
 							return (
 								<OptionRow
 									key={h.id}
-									role="radio"
-									aria-checked={selected}
+									aria-pressed={selected}
 									selected={selected}
 									onClick={() => byok.chooseHost(h.id)}
 									className="rounded-lg border border-border bg-card px-3 py-2.5 data-[selected]:border-primary"
@@ -69,15 +70,13 @@ export function ProviderStep({ byok }: { byok: ByokForm }) {
 								</OptionRow>
 							);
 						})}
-					</div>
+					</fieldset>
 					{shown.length === 0 && (
 						<p className="text-xs text-muted-foreground">
 							No provider matches.
 						</p>
 					)}
-					{errors.hostId && (
-						<p className="text-[11px] text-destructive">{errors.hostId}</p>
-					)}
+					<FieldError id={hostErrorId} message={errors.hostId} />
 				</div>
 			</FormSection>
 

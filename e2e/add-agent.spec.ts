@@ -59,8 +59,14 @@ interface Sent {
 	body: Record<string, unknown>;
 }
 
-/** Answers the form's reads and writes; `failOnce` names a write path that fails the first time. */
-async function mockAgentApi(page: Page, failOnce?: string): Promise<Sent[]> {
+interface FailOnce {
+	path: string;
+	status: number;
+	message: string;
+}
+
+/** Answers the form's reads and writes; `failOnce` names a write that fails the first time. */
+async function mockAgentApi(page: Page, failOnce?: FailOnce): Promise<Sent[]> {
 	const sent: Sent[] = [];
 	let failed = false;
 	await mockApi(page, { ...EMPTY_GRAPH, contexts });
@@ -82,11 +88,11 @@ async function mockAgentApi(page: Page, failOnce?: string): Promise<Sent[]> {
 				: [projectAccount, myAccount];
 			return route.fulfill({ json: { items, total: items.length } });
 		}
-		if (failOnce === path && !failed) {
+		if (failOnce?.path === path && !failed) {
 			failed = true;
 			return route.fulfill({
-				status: 409,
-				json: { error: { type: "conflict", message: "pool refused" } },
+				status: failOnce.status,
+				json: { error: { type: "refused", message: failOnce.message } },
 			});
 		}
 		const body = request.postDataJSON() ?? {};
@@ -129,9 +135,16 @@ test.describe("Add agent", () => {
 	test("offers only the owner kinds relay can place an agent in", async ({ page }) => {
 		await mockAgentApi(page);
 		await page.goto("/service-accounts/add-agent");
-		await expect(page.getByRole("radio", { name: /Project/ })).toBeChecked();
-		await expect(page.getByRole("radio", { name: /Personal/ })).toBeDisabled();
-		await expect(page.getByRole("radio", { name: /Team/ })).toBeDisabled();
+		const owner = page.getByRole("group", { name: "Owner" });
+		await expect(
+			owner.getByRole("button", { name: /^Project/, pressed: true }),
+		).toBeVisible();
+		for (const kind of [/^Personal/, /^Team/]) {
+			const card = owner.getByRole("button", { name: kind });
+			await expect(card).toHaveAttribute("aria-disabled", "true");
+			await card.click({ force: true });
+			await expect(card).toHaveAttribute("aria-pressed", "false");
+		}
 
 		await page.getByRole("button", { name: "Next" }).click();
 		await expect(page.getByText("Name the agent.")).toBeVisible();
@@ -192,7 +205,11 @@ test.describe("Add agent", () => {
 	});
 
 	test("a failed write stops the run and Retry resumes at it", async ({ page }) => {
-		const sent = await mockAgentApi(page, "pools");
+		const sent = await mockAgentApi(page, {
+			path: "pools",
+			status: 409,
+			message: "pool refused",
+		});
 		await nameAgentInProject(page);
 		await page.getByRole("switch", { name: "Use every credential in scope" }).click();
 		await page.getByRole("button", { name: /Search Anthropic/ }).click();
@@ -201,6 +218,8 @@ test.describe("Add agent", () => {
 
 		await expect(page.getByText("pool refused")).toBeVisible();
 		expect(sent.map((s) => s.path)).toEqual(["service-accounts"]);
+		await expect(page.getByText("2 of 6 steps are done and kept.")).toBeVisible();
+		await expect(page.getByRole("button", { name: "Back to the form" })).toHaveCount(0);
 
 		await page.getByRole("button", { name: "Retry" }).click();
 		await expect(page.getByText("sk-wr-test-secret", { exact: true })).toBeVisible();
@@ -211,5 +230,25 @@ test.describe("Add agent", () => {
 			"accounts/acct-lane/policy",
 			"keys",
 		]);
+	});
+
+	test("a refused first write leads back to the form as it was", async ({ page }) => {
+		const sent = await mockAgentApi(page, {
+			path: "service-accounts",
+			status: 403,
+			message: "not allowed in this project",
+		});
+		await nameAgentInProject(page);
+		await page.getByRole("button", { name: "Next" }).click();
+		await page.getByRole("button", { name: "Create agent" }).click();
+
+		await expect(page.getByRole("alert")).toHaveText("not allowed in this project");
+		expect(sent).toEqual([]);
+		await page.getByRole("button", { name: "Back to the form" }).click();
+
+		await expect(page.getByRole("button", { name: "Create agent" })).toBeVisible();
+		await page.getByRole("button", { name: "Back" }).click();
+		await page.getByRole("button", { name: "Back" }).click();
+		await expect(page.getByPlaceholder("Support triage agent")).toHaveValue("Indexer");
 	});
 });

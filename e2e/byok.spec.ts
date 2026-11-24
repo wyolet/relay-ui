@@ -48,8 +48,11 @@ interface Sent {
 	body: Record<string, unknown>;
 }
 
-/** Answers the form's reads and writes; `detectStatus` is what the provider call answers. */
-async function mockByokApi(page: Page, detectStatus = 200): Promise<Sent[]> {
+/** Answers the form's reads and writes; `detectStatus` is what the provider call answers, `shareStatus` what each share does. */
+async function mockByokApi(
+	page: Page,
+	{ detectStatus = 200, shareStatus = 200 } = {},
+): Promise<Sent[]> {
 	const sent: Sent[] = [];
 	await mockApi(page, { ...EMPTY_GRAPH, contexts, hosts, accounts: [teamAccount] });
 	await page.route("**/api/hosts/anthropic/policies", (route) =>
@@ -80,12 +83,35 @@ async function mockByokApi(page: Page, detectStatus = 200): Promise<Sent[]> {
 						json: { error: { type: "upstream_error", message: "invalid x-api-key" } },
 					});
 		}
+		if (path.endsWith("/shares") && shareStatus !== 200) {
+			return route.fulfill({
+				status: shareStatus,
+				json: { error: { type: "forbidden", message: "not an admin of Billing" } },
+			});
+		}
 		const id = `made-${sent.length}`;
 		return route.fulfill({
 			json: { ...body, metadata: { ...body.metadata, id, name: id } },
 		});
 	});
 	return sent;
+}
+
+async function pickAnthropic(page: Page) {
+	const provider = page
+		.getByRole("group", { name: "Provider" })
+		.getByRole("button", { name: "Anthropic" });
+	await provider.click();
+	await expect(provider).toHaveAttribute("aria-pressed", "true");
+}
+
+/** Fills the key and leaves it in a new account, on the sharing step. */
+async function storeNewKey(page: Page) {
+	await page.goto("/host-keys/byok");
+	await pickAnthropic(page);
+	await page.getByRole("button", { name: "Next" }).click();
+	await page.getByLabel("Key", { exact: true }).fill("sk-ant-secret");
+	await page.getByRole("button", { name: "Next" }).click();
 }
 
 async function inTeamWorkspace(page: Page) {
@@ -105,8 +131,12 @@ test.describe("Bring your own key", () => {
 
 		await page.getByRole("button", { name: "Next" }).click();
 		await expect(page.getByText("Pick the provider the key is for.")).toBeVisible();
-		await page.getByRole("radio", { name: "Anthropic" }).click();
-		await expect(page.getByRole("radio", { name: /Team/ })).toBeChecked();
+		await pickAnthropic(page);
+		await expect(
+			page
+				.getByRole("group", { name: "Owner" })
+				.getByRole("button", { name: /^Team/, pressed: true }),
+		).toBeVisible();
 		await page.getByRole("button", { name: "Next" }).click();
 
 		await page.getByRole("button", { name: "Next" }).click();
@@ -145,10 +175,10 @@ test.describe("Bring your own key", () => {
 	});
 
 	test("a key joining an existing account leaves the account as it is", async ({ page }) => {
-		const sent = await mockByokApi(page, 502);
+		const sent = await mockByokApi(page, { detectStatus: 502 });
 		await inTeamWorkspace(page);
 		await page.goto("/host-keys/byok");
-		await page.getByRole("radio", { name: "Anthropic" }).click();
+		await pickAnthropic(page);
 		await page.getByRole("button", { name: "Next" }).click();
 
 		await page.getByLabel("Key", { exact: true }).fill("sk-ant-secret");
@@ -165,5 +195,38 @@ test.describe("Bring your own key", () => {
 			"host-keys/by-id/made-1/detect-account",
 		]);
 		expect(sent[0]?.body.spec).toMatchObject({ accountId: "acct-team" });
+	});
+
+	test("a refused share still ends on the stored key and names the share", async ({
+		page,
+	}) => {
+		const sent = await mockByokApi(page, { shareStatus: 403 });
+		await inTeamWorkspace(page);
+		await storeNewKey(page);
+		await page.getByRole("button", { name: /Billing/ }).click();
+		await page.getByRole("button", { name: "Store key" }).click();
+
+		await expect(page.getByText("Key stored")).toBeVisible();
+		await expect(page.getByText("Not shared with everyone")).toBeVisible();
+		await expect(page.getByText("not an admin of Billing")).toBeVisible();
+		expect(sent.map((s) => s.path)).toEqual([
+			"accounts",
+			"host-keys",
+			"host-keys/by-id/made-2/detect-account",
+			"accounts/made-1/shares",
+		]);
+	});
+
+	test("a failed organization lookup is reported on the stored key", async ({ page }) => {
+		await mockByokApi(page, { detectStatus: 500 });
+		await inTeamWorkspace(page);
+		await storeNewKey(page);
+		await page.getByRole("button", { name: "Store key" }).click();
+
+		await expect(page.getByText("Key stored")).toBeVisible();
+		await expect(
+			page.getByText("The provider refused a call made with this key"),
+		).toBeVisible();
+		await expect(page.getByText(/invalid x-api-key/)).toBeVisible();
 	});
 });

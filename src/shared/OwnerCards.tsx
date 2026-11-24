@@ -5,6 +5,7 @@ import {
 	UserRound,
 	Users,
 } from "lucide-react";
+import { useId } from "react";
 import {
 	Select,
 	SelectContent,
@@ -15,6 +16,7 @@ import {
 import type { OwnerPick, OwnerPickKind } from "@/lib/ownerPick";
 import type { OwnerOption } from "@/lib/ownerScopes";
 import { ChoiceCards } from "@/shared/ChoiceCards";
+import { FieldError } from "@/shared/FieldError";
 
 const KIND_CARD: Record<OwnerPickKind, { title: string; icon: LucideIcon }> = {
 	personal: { title: "Personal", icon: UserRound },
@@ -27,7 +29,7 @@ export interface OwnerCardKind<K extends OwnerPickKind> {
 	kind: K;
 	/** What owning it there means, in the form's terms. */
 	description: string;
-	/** Why the kind can't be picked; set, its card is disabled. */
+	/** Why the kind can't be picked; set, its card can't be picked and says why. */
 	unavailable?: string;
 }
 
@@ -46,6 +48,7 @@ function ScopeSelect({
 	onChange: (value: string) => void;
 	error?: string;
 }) {
+	const errorId = useId();
 	return (
 		<div>
 			<Select
@@ -57,6 +60,7 @@ function ScopeSelect({
 					className="w-full max-w-md"
 					aria-label={label}
 					aria-invalid={error ? true : undefined}
+					aria-describedby={error ? errorId : undefined}
 				>
 					<SelectValue placeholder={placeholder} />
 				</SelectTrigger>
@@ -68,7 +72,7 @@ function ScopeSelect({
 					))}
 				</SelectContent>
 			</Select>
-			{error && <p className="mt-1.5 text-[11px] text-destructive">{error}</p>}
+			<FieldError id={errorId} message={error} />
 		</div>
 	);
 }

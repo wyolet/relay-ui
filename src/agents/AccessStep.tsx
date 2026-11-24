@@ -1,4 +1,5 @@
 import { Boxes, KeyRound, ShieldCheck, SlidersHorizontal } from "lucide-react";
+import { useId } from "react";
 import type { AgentAccount } from "@/agents/agentAccounts";
 import type { AgentAccess } from "@/agents/agentWrites";
 import type { useAddAgentForm } from "@/agents/useAddAgentForm";
@@ -10,6 +11,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { ModelPicker } from "@/models/ModelPicker";
+import { FieldError } from "@/shared/FieldError";
 import { FormSection } from "@/shared/FormSection";
 import { BoxedCheckList, type CheckOption } from "@/shared/MultiSelect";
 import { Segmented } from "@/shared/Segmented";
@@ -42,6 +44,8 @@ function accountOptions(accounts: readonly AgentAccount[]): CheckOption[] {
 export function AccessStep({ agent }: { agent: AddAgentForm }) {
 	const { form, values, errors } = agent;
 	const everyCredential = values.reach === "all";
+	const policyErrorId = useId();
+	const accountsErrorId = useId();
 	return (
 		<div className="divide-y divide-border">
 			<FormSection
@@ -74,6 +78,7 @@ export function AccessStep({ agent }: { agent: AddAgentForm }) {
 							className="w-full max-w-md"
 							aria-label="Policy"
 							aria-invalid={errors.policyId ? true : undefined}
+							aria-describedby={errors.policyId ? policyErrorId : undefined}
 						>
 							<SelectValue placeholder="Pick a policy…" />
 						</SelectTrigger>
@@ -92,11 +97,7 @@ export function AccessStep({ agent }: { agent: AddAgentForm }) {
 							))}
 						</SelectContent>
 					</Select>
-					{errors.policyId && (
-						<p className="mt-1.5 text-[11px] text-destructive">
-							{errors.policyId}
-						</p>
-					)}
+					<FieldError id={policyErrorId} message={errors.policyId} />
 				</FormSection>
 			) : (
 				<>
@@ -116,19 +117,26 @@ export function AccessStep({ agent }: { agent: AddAgentForm }) {
 							/>
 							{!everyCredential && (
 								<div>
-									<BoxedCheckList
-										options={accountOptions(agent.accounts)}
-										selected={values.accountIds}
-										onToggle={agent.toggleAccount}
-										emptyLabel={
-											agent.accountsLoaded ? "accounts" : "accounts yet"
+									<fieldset
+										aria-label="Accounts"
+										aria-describedby={
+											errors.accountIds ? accountsErrorId : undefined
 										}
+										className="min-w-0"
+									>
+										<BoxedCheckList
+											options={accountOptions(agent.accounts)}
+											selected={values.accountIds}
+											onToggle={agent.toggleAccount}
+											emptyLabel={
+												agent.accountsLoaded ? "accounts" : "accounts yet"
+											}
+										/>
+									</fieldset>
+									<FieldError
+										id={accountsErrorId}
+										message={errors.accountIds}
 									/>
-									{errors.accountIds && (
-										<p className="mt-1.5 text-[11px] text-destructive">
-											{errors.accountIds}
-										</p>
-									)}
 								</div>
 							)}
 						</div>

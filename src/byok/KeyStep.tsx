@@ -1,4 +1,5 @@
 import { Building2, Gauge, KeyRound, Tag } from "lucide-react";
+import { useId } from "react";
 import { NEW_ACCOUNT, type useByokForm } from "@/byok/useByokForm";
 import { Input } from "@/components/ui/input";
 import {
@@ -8,6 +9,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { FieldError } from "@/shared/FieldError";
 import { FormSection } from "@/shared/FormSection";
 import { SecretInput } from "@/shared/SecretInput";
 
@@ -16,13 +18,11 @@ type ByokForm = ReturnType<typeof useByokForm>;
 const NEW_ACCOUNT_OPTION = "new";
 const NO_TIER_OPTION = "none";
 
-function FieldError({ message }: { message?: string }) {
-	if (!message) return null;
-	return <p className="mt-1.5 text-[11px] text-destructive">{message}</p>;
-}
-
 export function KeyStep({ byok }: { byok: ByokForm }) {
 	const { form, values, errors } = byok;
+	const secretErrorId = useId();
+	const accountNameErrorId = useId();
+	const keyNameErrorId = useId();
 	const hostLabel = byok.host?.label ?? "the provider";
 	const accountItems = [
 		{ value: NEW_ACCOUNT_OPTION, label: "New account" },
@@ -46,9 +46,10 @@ export function KeyStep({ byok }: { byok: ByokForm }) {
 					placeholder="Paste the key"
 					aria-label="Key"
 					aria-invalid={errors.secret ? true : undefined}
+					aria-describedby={errors.secret ? secretErrorId : undefined}
 					autoFocus
 				/>
-				<FieldError message={errors.secret} />
+				<FieldError id={secretErrorId} message={errors.secret} />
 			</FormSection>
 
 			<FormSection
@@ -90,8 +91,14 @@ export function KeyStep({ byok }: { byok: ByokForm }) {
 								placeholder={byok.accountNamePlaceholder}
 								aria-label="Account name"
 								aria-invalid={errors.accountName ? true : undefined}
+								aria-describedby={
+									errors.accountName ? accountNameErrorId : undefined
+								}
 							/>
-							<FieldError message={errors.accountName} />
+							<FieldError
+								id={accountNameErrorId}
+								message={errors.accountName}
+							/>
 						</div>
 					)}
 				</div>
@@ -140,8 +147,9 @@ export function KeyStep({ byok }: { byok: ByokForm }) {
 					placeholder={byok.keyNamePlaceholder}
 					aria-label="Key name"
 					aria-invalid={errors.keyName ? true : undefined}
+					aria-describedby={errors.keyName ? keyNameErrorId : undefined}
 				/>
-				<FieldError message={errors.keyName} />
+				<FieldError id={keyNameErrorId} message={errors.keyName} />
 			</FormSection>
 		</div>
 	);

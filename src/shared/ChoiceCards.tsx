@@ -7,11 +7,14 @@ export interface ChoiceCard<T extends string> {
 	title: string;
 	description: string;
 	icon: LucideIcon;
-	/** Why the card can't be picked; set, it is shown disabled. */
+	/** Why the card can't be picked; set, it is dimmed and shows this instead of its description. */
 	unavailable?: string;
 }
 
-/** A single choice among a few options, each a card with an icon and a line of explanation. */
+/**
+ * A single choice among a few options, each a card with an icon and a line of
+ * explanation. An unavailable card stays focusable so its reason is read.
+ */
 export function ChoiceCards<T extends string>({
 	options,
 	value,
@@ -24,11 +27,10 @@ export function ChoiceCards<T extends string>({
 	label: string;
 }) {
 	return (
-		<div
-			role="radiogroup"
+		<fieldset
 			aria-label={label}
 			className={cn(
-				"grid grid-cols-1 gap-3",
+				"grid min-w-0 grid-cols-1 gap-3",
 				options.length === 4
 					? "sm:grid-cols-2 xl:grid-cols-4"
 					: "sm:grid-cols-3",
@@ -37,15 +39,17 @@ export function ChoiceCards<T extends string>({
 			{options.map((o) => {
 				const Icon = o.icon;
 				const selected = o.value === value;
+				const unavailable = o.unavailable !== undefined;
 				return (
 					<OptionRow
 						key={o.value}
-						role="radio"
-						aria-checked={selected}
+						aria-pressed={selected}
+						aria-disabled={unavailable ? "true" : undefined}
 						selected={selected}
-						disabled={o.unavailable !== undefined}
-						onClick={() => onChange(o.value)}
-						className="h-full flex-col items-start gap-1.5 rounded-lg border border-border bg-card p-4 disabled:opacity-60 disabled:hover:bg-card data-[selected]:border-primary"
+						onClick={() => {
+							if (!unavailable) onChange(o.value);
+						}}
+						className="h-full flex-col items-start gap-1.5 rounded-lg border border-border bg-card p-4 aria-disabled:cursor-not-allowed aria-disabled:opacity-60 aria-disabled:hover:bg-card data-[selected]:border-primary"
 					>
 						<Icon className="size-4 text-muted-foreground" aria-hidden="true" />
 						<span className="text-sm font-medium text-foreground">
@@ -57,6 +61,6 @@ export function ChoiceCards<T extends string>({
 					</OptionRow>
 				);
 			})}
-		</div>
+		</fieldset>
 	);
 }
