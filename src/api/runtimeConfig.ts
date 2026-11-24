@@ -94,9 +94,14 @@ export function runtimeMode(): "oss" | "cloud" {
 	return loaded.mode === "cloud" ? "cloud" : "oss";
 }
 
+// Dev-only: flags to turn on without a relay that advertises them.
+const devFeatures: readonly string[] = import.meta.env.DEV
+	? (import.meta.env.VITE_FEATURES ?? "").split(",").map((f) => f.trim())
+	: [];
+
 /** A feature flag; absent = off. */
 export function feature(key: string): boolean {
-	return loaded.features?.[key] ?? false;
+	return loaded.features?.[key] ?? devFeatures.includes(key);
 }
 
 /** The whole config object — escape hatch for less-common fields. */

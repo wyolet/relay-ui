@@ -1,27 +1,10 @@
 import { Wallet } from "lucide-react";
-import { useId } from "react";
 import type { Budget } from "@/api/hooks/budgets";
-import {
-	BUDGET_MODES,
-	BUDGET_PERIODS,
-	MODE_LABELS,
-	PERIOD_LABELS,
-} from "@/budgets/budgetFormat";
+import { BudgetCapFields } from "@/budgets/BudgetCapFields";
 import { useBudgetForm } from "@/budgets/useBudgetForm";
-import { Input } from "@/components/ui/input";
 import { FormFooter } from "@/shared/FormFooter";
 import { FormSection } from "@/shared/FormSection";
 import { IdentitySection } from "@/shared/IdentitySection";
-import { Segmented } from "@/shared/Segmented";
-
-const PERIOD_OPTIONS = BUDGET_PERIODS.map((p) => ({
-	value: p,
-	label: PERIOD_LABELS[p],
-}));
-const MODE_OPTIONS = BUDGET_MODES.map((m) => ({
-	value: m,
-	label: MODE_LABELS[m].label,
-}));
 
 interface BudgetFormProps {
 	budget?: Budget;
@@ -32,7 +15,6 @@ interface BudgetFormProps {
 export function BudgetForm({ budget, onSaved, onCancel }: BudgetFormProps) {
 	const { form, values, errors, isEdit, slugPreview, placement, setAmount } =
 		useBudgetForm({ budget, onSaved });
-	const amountErrorId = useId();
 
 	return (
 		<form
@@ -62,55 +44,15 @@ export function BudgetForm({ budget, onSaved, onCancel }: BudgetFormProps) {
 					title="Cap"
 					description="Spend allowed per calendar period, in UTC. A policy that links this budget enforces it on the requests it governs."
 				>
-					<div className="flex flex-col gap-4">
-						<div>
-							<div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-1">
-								Amount (USD)
-							</div>
-							<Input
-								type="text"
-								inputMode="decimal"
-								value={values.amountUsd}
-								onChange={(e) => setAmount(e.currentTarget.value)}
-								placeholder="2000"
-								className="w-full max-w-xs tabular-nums"
-								aria-label="Amount in USD"
-								aria-invalid={errors.amountUsd ? true : undefined}
-								aria-describedby={errors.amountUsd ? amountErrorId : undefined}
-							/>
-							{errors.amountUsd && (
-								<p
-									id={amountErrorId}
-									className="mt-1.5 text-[11px] text-destructive"
-								>
-									{errors.amountUsd}
-								</p>
-							)}
-						</div>
-						<div>
-							<div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-1">
-								Period
-							</div>
-							<Segmented
-								options={PERIOD_OPTIONS}
-								value={values.period}
-								onChange={(p) => form.setFieldValue("period", p)}
-							/>
-						</div>
-						<div>
-							<div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-1">
-								Mode
-							</div>
-							<Segmented
-								options={MODE_OPTIONS}
-								value={values.mode}
-								onChange={(m) => form.setFieldValue("mode", m)}
-							/>
-							<p className="mt-1.5 text-[11px] text-muted-foreground">
-								{MODE_LABELS[values.mode].hint}
-							</p>
-						</div>
-					</div>
+					<BudgetCapFields
+						amountUsd={values.amountUsd}
+						period={values.period}
+						mode={values.mode}
+						onAmountChange={setAmount}
+						onPeriodChange={(p) => form.setFieldValue("period", p)}
+						onModeChange={(m) => form.setFieldValue("mode", m)}
+						amountError={errors.amountUsd}
+					/>
 				</FormSection>
 			</div>
 

@@ -47,4 +47,5 @@ runtime via a small public config document fetched once at boot — the
 exposes `controlApiUrl()` / `feature()`, and honors a dev-only
 `VITE_CONTROL_API_URL` override with precedence over the document — the escape
 hatch for backends whose document advertises a stale base (e.g. routes moved
-under `/api` while the doc still says the bare origin).
+under `/api` while the doc still says the bare origin). A dev-only
+`VITE_FEATURES` (comma-separated) turns on flags the document doesn't carry.
