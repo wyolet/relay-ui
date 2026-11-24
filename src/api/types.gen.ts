@@ -7341,6 +7341,8 @@ export interface components {
             mode?: "oss" | "cloud";
             /** @description The pseudo kinds this relay serves, such as agents for POST /pseudo-agents; always present, empty when none. A kind not listed has no route. */
             pseudoKinds: string[] | null;
+            /** @description The kinds of metadata.owner a service account takes on this relay, in order: project, then team and user where accepted; always present. A relay that answers without the field takes project only. */
+            serviceAccountOwnerKinds: string[] | null;
             /** @description Support link shown in the UI. */
             supportUrl?: string;
             /** @description Public client-side error reporting config. */
