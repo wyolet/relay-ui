@@ -4004,18 +4004,24 @@ export interface components {
             };
             /** @description Slug of the service account. Omitted: derived from displayName, suffixed -2, -3, … while taken. A given name that is taken is refused as POST /service-accounts refuses it. */
             name?: string;
-            /** @description The scope that owns the service account, as POST /service-accounts takes it. The pools, policy and policy binding made for it are owned by the same scope. */
-            owner: components["schemas"]["Owner"];
+            /** @description The scope that owns the service account; required, with no default. The pools, policy and policy binding made for it are owned by the same scope. */
+            owner?: components["schemas"]["AgentOwner"];
+        };
+        AgentOwner: {
+            /** @description Id of the owning scope. */
+            id?: string;
+            /**
+             * @description Kind of the owning scope: one a service account may be owned by.
+             * @enum {string}
+             */
+            kind?: "project";
         };
         AgentSpec: {
             /** @description What the service account may use, made into a policy of its own. Exactly one of policyId and access. */
             access?: components["schemas"]["AgentAccess"];
             /** @description The service account's first key. Omitted makes no key. */
             key?: components["schemas"]["AgentKey"];
-            /**
-             * Format: uuid
-             * @description Id of an existing policy to bind the service account's account to. Exactly one of policyId and access.
-             */
+            /** @description Id (metadata.id) of an existing policy to bind the service account's account to; a slug answers 400. Exactly one of policyId and access. */
             policyId?: string;
         };
         Audit: {
@@ -19224,6 +19230,15 @@ export interface operations {
             };
         };
         responses: {
+            /** @description dryRun=true: what the write would make, ids included and key plaintexts left out. Nothing was written. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PseudoAgentCreated"];
+                };
+            };
             /** @description Created */
             201: {
                 headers: {
@@ -19233,13 +19248,13 @@ export interface operations {
                     "application/json": components["schemas"]["PseudoAgentCreated"];
                 };
             };
-            /** @description The request breaks a rule the schema cannot express, such as a cross-row reference or an unknown filter parameter; error.message says which. */
+            /** @description The body, or a row it makes, breaks a rule the schema cannot express; error.message says which and pointer names the part of the body. */
             400: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["APIError"];
+                    "application/json": components["schemas"]["pseudoRefusal"];
                 };
             };
             /** @description No valid session cookie or admin bearer token. */
@@ -19251,22 +19266,22 @@ export interface operations {
                     "application/json": components["schemas"]["APIError"];
                 };
             };
-            /** @description Authenticated, but a role, a governance setting or a scope rule does not allow it. */
+            /** @description A row's own grant refuses it, as its own create call would; pointer names the part of the body it came from. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["APIError"];
+                    "application/json": components["schemas"]["pseudoRefusal"];
                 };
             };
-            /** @description No such row, or one the caller may not see. */
+            /** @description The body names a row the caller may not see; pointer names where. */
             404: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["APIError"];
+                    "application/json": components["schemas"]["pseudoRefusal"];
                 };
             };
             /** @description conflict: another change touched the same rows at the same time, retry; share_exists, already_reachable or reshare_refused from a share; duplicate_binding from the binding; managed_by_source. pointer names the row. */
@@ -19278,7 +19293,7 @@ export interface operations {
                     "application/json": components["schemas"]["pseudoRefusal"];
                 };
             };
-            /** @description plan_issue: every row passes its own checks, but together they would raise errors in the plans that are not there now; issues lists them, each with the pointer of the part of the body it came from. Nothing was written. Also a body that does not match the schema, with error.details. */
+            /** @description plan_issue: every row passes its own checks, but together they would raise errors in the plans that are not there now, or a lane they make or bind would refuse every request; issues lists them, each with the pointer of the part of the body it came from. Nothing was written. Also a body that does not match the schema, with error.details. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -19287,13 +19302,13 @@ export interface operations {
                     "application/json": components["schemas"]["pseudoRefusal"];
                 };
             };
-            /** @description The server failed; error.message carries the cause. */
+            /** @description The write failed on the server; nothing was written. */
             500: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["APIError"];
+                    "application/json": components["schemas"]["pseudoRefusal"];
                 };
             };
             /** @description The plans are not loaded yet, or checking the rows against them took longer than RELAY_PLAN_CHECK_TIMEOUT_MS. Nothing was written. */
