@@ -38,6 +38,7 @@ export interface AgentPool {
 	hostLabel: string;
 }
 
+/** The hosts that take no key: relay ignores a pool's accounts there. */
 export function keylessHostIds(hosts: readonly Host[]): Set<string> {
 	return new Set(
 		hosts.flatMap((h) => (h.spec.noAuth && h.metadata.id ? h.metadata.id : [])),

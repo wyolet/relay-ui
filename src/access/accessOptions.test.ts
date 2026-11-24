@@ -1,12 +1,7 @@
 import { describe, expect, it } from "bun:test";
-import {
-	accessPrefill,
-	keylessHostIds,
-	offeredAccounts,
-} from "@/access/accessOptions";
+import { accessPrefill } from "@/access/accessOptions";
 import type { AgentAccount } from "@/agents/agentAccounts";
 import type { Pool } from "@/api/hooks/pools";
-import type { Host } from "@/api/types/host";
 import type { Policy } from "@/api/types/policy";
 
 function account(id: string, hostId = "anthropic"): AgentAccount {
@@ -16,13 +11,6 @@ function account(id: string, hostId = "anthropic"): AgentAccount {
 		hostId,
 		hostLabel: hostId,
 		needsShare: false,
-	};
-}
-
-function host(id: string, noAuth = false): Host {
-	return {
-		metadata: { id, name: id },
-		spec: { baseURL: "", ...(noAuth ? { noAuth } : {}) },
 	};
 }
 
@@ -39,17 +27,6 @@ function policy(spec: Policy["spec"]): Policy {
 
 const hostLabel = (id: string) => `host ${id}`;
 const keyless = new Set(["ollama"]);
-
-describe("offeredAccounts", () => {
-	it("leaves out accounts at a host that takes no key", () => {
-		const hosts = [host("anthropic"), host("ollama", true)];
-		const rows = offeredAccounts(
-			[account("a"), account("o", "ollama")],
-			keylessHostIds(hosts),
-		);
-		expect(rows.map((r) => r.id)).toEqual(["a"]);
-	});
-});
 
 describe("accessPrefill", () => {
 	it("starts on every credential with no policy", () => {

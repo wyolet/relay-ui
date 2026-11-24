@@ -2,11 +2,7 @@ import { useForm } from "@tanstack/react-form";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useStore } from "@tanstack/react-store";
 import { useMemo, useState } from "react";
-import {
-	accessPrefill,
-	keylessHostIds,
-	offeredAccounts,
-} from "@/access/accessOptions";
+import { accessPrefill } from "@/access/accessOptions";
 import {
 	type AccessAnswers,
 	accessErrors,
@@ -19,7 +15,11 @@ import {
 } from "@/access/accessPlan";
 import type { AccessTarget } from "@/access/accessTarget";
 import { useSetAccessWrites } from "@/access/useSetAccessWrites";
-import { agentAccounts, hostReach } from "@/agents/agentAccounts";
+import {
+	agentAccounts,
+	hostReach,
+	keylessHostIds,
+} from "@/agents/agentAccounts";
 import { useAuth } from "@/api/auth";
 import { useAccountsList } from "@/api/hooks/accounts";
 import { useHosts } from "@/api/hooks/hosts";
@@ -69,14 +69,11 @@ export function useSetAccessForm(target: AccessTarget) {
 		return host ? displayLabel(host.metadata) : hostId;
 	};
 	const keyless = keylessHostIds(hostItems);
-	const accounts = offeredAccounts(
-		agentAccounts(
-			usable.items ?? [],
-			visible.items ?? [],
-			userId,
-			hostLabel,
-			keyless,
-		),
+	const accounts = agentAccounts(
+		usable.items ?? [],
+		visible.items ?? [],
+		userId,
+		hostLabel,
 		keyless,
 	);
 	const policyCase = ownPolicyCase(

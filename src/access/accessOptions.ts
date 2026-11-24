@@ -1,25 +1,7 @@
 import type { AgentAccount } from "@/agents/agentAccounts";
 import type { Pool } from "@/api/hooks/pools";
-import type { Host } from "@/api/types/host";
 import type { Policy } from "@/api/types/policy";
 import { displayLabel } from "@/lib/displayLabel";
-
-/** The hosts that take no key: relay ignores a pool's accounts there. */
-export function keylessHostIds(hosts: readonly Host[]): Set<string> {
-	return new Set(
-		hosts.flatMap((h) =>
-			h.spec.noAuth && h.metadata.id ? [h.metadata.id] : [],
-		),
-	);
-}
-
-/** The accounts the form may offer: none at a host that takes no key. */
-export function offeredAccounts(
-	accounts: readonly AgentAccount[],
-	keyless: ReadonlySet<string>,
-): AgentAccount[] {
-	return accounts.filter((a) => !keyless.has(a.hostId));
-}
 
 /** A pool of the current policy the form can't stand for by its accounts, linked as it is unless dropped. */
 export interface KeptPool {
