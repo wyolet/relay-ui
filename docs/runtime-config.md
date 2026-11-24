@@ -31,6 +31,15 @@ runtime via a small public config document fetched once at boot — the
   "mode": "oss",                    // "oss" | "cloud" — gates deploy-specific surfaces
   "version": "1.4.2",               // backend build version (optional)
   "features": { "oidc": true },     // free-form flags; unknown keys ignored, absent = off
+
+  // One-request form endpoints this relay serves (`POST /api/pseudo-<kind>`).
+  // A form posts once when its kind is listed and chains the ordinary
+  // creates otherwise. Absent or [] = none.
+  "pseudoKinds": ["agents", "host-keys", "access", "limits", "agent-removals"],
+
+  // Owner kinds a service account may have. Absent = ["project"].
+  "serviceAccountOwnerKinds": ["project", "team", "user"],
+
   "telemetry": { "sentryDsn": "…" } // PUBLIC client-side values only
 }
 ```
