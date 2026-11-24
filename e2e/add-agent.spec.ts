@@ -111,6 +111,7 @@ interface PseudoBody {
 	spec: {
 		policyId?: string;
 		access?: { accountIds?: string[]; poolIds?: string[]; models?: string[] };
+		key?: { displayName?: string };
 	};
 }
 
@@ -122,13 +123,14 @@ function pseudoAnswer(body: PseudoBody, dryRun: boolean) {
 	);
 	const name = body.metadata.name;
 	const row = (kind: string, rowName: string) => ({ kind, id: `${kind}-1`, name: rowName });
+	const keyName = (body.spec.key?.displayName ?? "key").toLowerCase().replaceAll(" ", "-");
 	return {
 		created: [
 			row("service-account", name),
 			row("account", `sa-${name}`),
 			...(madePolicy ? [row("policy", `${name}-policy`)] : []),
 			...(madePolicy || body.spec.policyId ? [row("policy-binding", `${name}-binding`)] : []),
-			row("key", "indexer-key"),
+			row("key", keyName),
 		],
 		serviceAccount: { id: SERVICE_ACCOUNT, name },
 		account: { id: "acct-lane", name: `sa-${name}` },
@@ -137,7 +139,7 @@ function pseudoAnswer(body: PseudoBody, dryRun: boolean) {
 			: {}),
 		pools: [],
 		shares: [],
-		key: { id: "key-1", name: "indexer-key", ...(dryRun ? {} : { plaintext: "sk-wr-test-secret" }) },
+		key: { id: "key-1", name: keyName, ...(dryRun ? {} : { plaintext: "sk-wr-test-secret" }) },
 	};
 }
 
@@ -395,9 +397,9 @@ test.describe("Add agent in one request", () => {
 
 		const planned = page.getByRole("list", { name: "What Create agent makes" });
 		await expect(planned.getByRole("listitem")).toHaveText([
-			/service account\s*indexer-/,
-			/account\s*sa-indexer-/,
-			/key\s*indexer-key/,
+			/^Service account\s*indexer-/,
+			/^Account\s*sa-indexer-/,
+			/^Key\s*indexer-key/,
 		]);
 		await page.getByRole("button", { name: "Create agent" }).click();
 
@@ -409,6 +411,22 @@ test.describe("Add agent in one request", () => {
 		});
 		expect(sent[0]?.body).toEqual(sent[1]?.body ?? {});
 		await expect(page.getByRole("link", { name: "View policy" })).toHaveCount(0);
+	});
+
+	test("a new key name on the last step reruns the dry run once typing settles", async ({
+		page,
+	}) => {
+		const sent = await mockAgentApi(page, { oneRequest: true });
+		await nameAgentInProject(page);
+		await page.getByRole("button", { name: "Next" }).click();
+		const planned = page.getByRole("list", { name: "What Create agent makes" });
+		await expect(planned.getByRole("listitem").last()).toHaveText(/^Key\s*indexer-key/);
+
+		await page.getByRole("textbox", { name: "Key name" }).pressSequentially("Crawler key");
+		await expect(planned.getByRole("listitem").last()).toHaveText(/^Key\s*crawler-key/);
+		const dryRuns = sent.filter((s) => s.path === "pseudo-agents?dryRun");
+		expect(dryRuns).toHaveLength(2);
+		expect(dryRuns[1]?.body.spec).toMatchObject({ key: { displayName: "Crawler key" } });
 	});
 
 	test("picked accounts and models: one request naming them", async ({ page }) => {

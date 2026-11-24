@@ -1,4 +1,6 @@
+import { rowKindLabel } from "@/agents/rowKindLabel";
 import type { components } from "@/api/types.gen";
+import { StaleContent } from "@/shared/StaleContent";
 import { TextPlaceholder } from "@/shared/TextPlaceholder";
 
 type CreatedRow = components["schemas"]["CreatedRow"];
@@ -8,12 +10,16 @@ const PLACEHOLDER_WIDTHS = ["w-40", "w-48", "w-36", "w-44"];
 /** The rows a dry run says Create agent makes, in write order. */
 export function PlannedRows({
 	rows,
-	pending,
+	loading,
+	stale,
 }: {
 	rows: readonly CreatedRow[];
-	pending: boolean;
+	/** No list yet. */
+	loading: boolean;
+	/** The list is from earlier answers; a newer one is on its way. */
+	stale: boolean;
 }) {
-	if (pending) {
+	if (loading) {
 		return (
 			<div className="flex max-w-md flex-col gap-2 text-xs">
 				<span className="sr-only" role="status">
@@ -28,18 +34,22 @@ export function PlannedRows({
 		);
 	}
 	return (
-		<ol
-			aria-label="What Create agent makes"
-			className="flex max-w-md flex-col gap-2"
-		>
-			{rows.map((row) => (
-				<li key={row.id} className="grid grid-cols-[8rem_1fr] gap-3 text-xs">
-					<span className="text-muted-foreground">
-						{row.kind.replaceAll("-", " ")}
-					</span>
-					<span className="truncate font-mono text-foreground">{row.name}</span>
-				</li>
-			))}
-		</ol>
+		<StaleContent stale={stale}>
+			<ol
+				aria-label="What Create agent makes"
+				className="flex max-w-md flex-col gap-2"
+			>
+				{rows.map((row) => (
+					<li key={row.id} className="grid grid-cols-[8rem_1fr] gap-3 text-xs">
+						<span className="text-muted-foreground">
+							{rowKindLabel(row.kind)}
+						</span>
+						<span className="truncate font-mono text-foreground">
+							{row.name}
+						</span>
+					</li>
+				))}
+			</ol>
+		</StaleContent>
 	);
 }

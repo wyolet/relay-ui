@@ -164,6 +164,24 @@ function refusalStep(refusal: AgentRefusal): AgentFormStep | undefined {
 	);
 }
 
+type KeyAnswer =
+	| "keyName"
+	| "expiresAt"
+	| "passthroughAllowed"
+	| "payloadLoggingEnabled";
+
+function keySettings(
+	v: AddAgentValues,
+	agentName: string,
+): AgentSettings["key"] {
+	return {
+		displayName: v.keyName.trim() || `${agentName} key`,
+		expiresAt: v.expiresAt,
+		passthroughAllowed: v.passthroughAllowed,
+		payloadLoggingEnabled: v.payloadLoggingEnabled,
+	};
+}
+
 function sameAnswers(
 	a: AddAgentValues,
 	b: AddAgentValues,
@@ -268,7 +286,6 @@ export function useAddAgentForm() {
 	const slug = displayName
 		? `${slugify(displayName) || "agent"}-${suffix.current}`
 		: "";
-	const keyName = values.keyName.trim() || `${displayName} key`;
 	const answers: AgentAnswers = {
 		displayName,
 		access: values.access,
@@ -285,21 +302,17 @@ export function useAddAgentForm() {
 		description: values.description.trim(),
 		projectId: values.projectId,
 		scope,
-		key: {
-			displayName: keyName,
-			expiresAt: values.expiresAt,
-			passthroughAllowed: values.passthroughAllowed,
-			payloadLoggingEnabled: values.payloadLoggingEnabled,
-		},
+		key: keySettings(values, displayName),
 	};
 
-	const answersErrors = {
-		...stepFieldErrors(schema, values, FIELD_STEP),
+	const errorsFor = (v: AddAgentValues) => ({
+		...stepFieldErrors(schema, v, FIELD_STEP),
 		...accessErrors(
 			answers,
 			policyOptions.map((o) => o.value),
 		),
-	};
+	});
+	const answersErrors = errorsFor(values);
 	const refusedNow = (field: RefusalField, at: AddAgentValues) =>
 		sameAnswers(values, at, REFUSAL_INPUTS[field]);
 	const refusedField: Partial<Record<RefusalField, string>> =
@@ -373,6 +386,32 @@ export function useAddAgentForm() {
 		form.setFieldValue("policyId", "");
 	}
 
+	/** Sets key answers; on the open last step the dry run follows once typing settles. */
+	function setKeyAnswers(patch: Partial<Pick<AddAgentValues, KeyAnswer>>) {
+		const next: AddAgentValues = { ...values, ...patch };
+		if (patch.keyName !== undefined)
+			form.setFieldValue("keyName", next.keyName);
+		if (patch.expiresAt !== undefined) {
+			form.setFieldValue("expiresAt", next.expiresAt);
+		}
+		if (patch.passthroughAllowed !== undefined) {
+			form.setFieldValue("passthroughAllowed", next.passthroughAllowed);
+		}
+		if (patch.payloadLoggingEnabled !== undefined) {
+			form.setFieldValue("payloadLoggingEnabled", next.payloadLoggingEnabled);
+		}
+		if (!oneRequest || step !== "key" || !settings) return;
+		if (Object.keys(errorsFor(next)).length > 0) return;
+		setRefused(null);
+		pseudo.previewSoon(
+			pseudoAgentBody(
+				{ ...settings, key: keySettings(next, displayName) },
+				answers,
+			),
+			(r) => refuse(r, next, true),
+		);
+	}
+
 	function toggle(field: "accountIds" | "poolIds", id: string) {
 		const list = values[field];
 		form.setFieldValue(
@@ -409,8 +448,10 @@ export function useAddAgentForm() {
 		keyNamePlaceholder: displayName ? `${displayName} key` : "Agent key",
 		oneRequest,
 		planned,
+		setKeyAnswers,
 		previewRows: pseudo.previewRows,
-		previewPending: pseudo.previewPending,
+		previewLoading: pseudo.previewLoading,
+		previewStale: pseudo.previewStale,
 		/** Why the request was refused, for the On create list: a dry run's field refusal, or one no field owns. */
 		refusalMessage: dryRunMessage ?? generalMessage,
 		/** Plan issues relay found on the open step; the key step lists its own by what Create makes. */
