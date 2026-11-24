@@ -139,6 +139,7 @@ function current(over: Partial<PolicyCurrent> = {}): PolicyCurrent {
 		models: [],
 		linksNoPools: false,
 		...over,
+		bindingEnabled: over.bindingEnabled ?? true,
 	};
 }
 

@@ -33,7 +33,8 @@ function served(
 	return {
 		provider: ref(provider),
 		model: ref(model),
-		hosts: hosts.map((h) => ref(h)),
+		hosts: hosts.map((h) => ({ ...ref(h), snapshots: [] })),
+		snapshots: [],
 		via: [],
 		upstream: [],
 	};
@@ -52,6 +53,7 @@ function excluded(
 		provider: ref(provider),
 		model: ref(model),
 		hosts: hosts.map((h) => ref(h)),
+		snapshots: [],
 		upstream: [],
 	};
 }

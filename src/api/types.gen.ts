@@ -2463,9 +2463,29 @@ export interface paths {
         put?: never;
         /**
          * Set what a team, project or service account may use
-         * @description In one transaction, sets the whole access of the target's account (a team's or project's own account, a service account's account): access has the meaning and rules of POST /pseudo-agents' access. The policy the account is under is changed by case: none (the account is in no binding) makes a policy owned by the target's scope and binds the account alone; own (bound alone to a policy of the target's scope the caller may update) changes it in place; copy (a policy bound to other accounts too, a preset, or one owned elsewhere) copies it into the target's scope with its models, links, description and labels, changes the copy and binds the account to it alone, as PUT /accounts/{ref}/policy does. A policy or binding the caller may not see or change answers 403 policy_set_above naming the scope that holds it. The policy's pools become poolIds, then one pool per host of accountIds; its models become access.models; its rate limits and budgets stay. The pools made are owned by the target's scope and labelled access-for=<account id>; on a later call the labelled pool of a host is updated in place when only the policy changed in place links it, and a labelled pool the policy no longer links that nothing else links is deleted. Other pools are only linked or unlinked. everyCredential links no pools; in case none without models nothing is written. A copy that would carry links the target's scope may not link answers 400 links_not_carried, unless access drops them. Each row passes what its own create, update or delete call passes, with the same answers; then the result is checked against the plans (422 plan_issue) and against what every other account reaches (422 other_accounts_changed). dryRun=true answers 200 with the same body and writes nothing; with access omitted it answers only case and current.
+         * @description In one transaction, sets the whole access of the target's account (a team's or project's own account, a service account's account): access has the meaning and rules of POST /pseudo-agents' access. The policy the account is under is changed by case: none (the account is in no binding) makes a policy owned by the target's scope and binds the account alone; own (bound alone to a policy of the target's scope the caller may update) changes it in place; copy (a policy bound to other accounts too, a preset, or one owned elsewhere) copies it into the target's scope with its models, links, description and labels, changes the copy and binds the account to it alone, as PUT /accounts/{ref}/policy does. A policy or binding the caller may not see or change answers 403 policy_set_above naming the scope that holds it. The policy's pools become poolIds, then one pool per host of accountIds; its models become access.models; its rate limits and budgets stay. The pools made are owned by the target's scope and labelled access-for=<account id>; a labelled pool counts as this route's only while the target's scope owns it, the caller sees it and no policy but the account's links it. On a later call such a pool of a host is updated in place when only the policy changed in place links it, and one the policy no longer links is deleted when the caller may delete it, else only unlinked. Other pools are only linked or unlinked. everyCredential links no pools; in case none without models nothing is written. A copy that would carry links the target's scope may not link answers 400 links_not_carried, unless access drops them. Each row passes what its own create, update or delete call passes, with the same answers; then the result is checked against the plans (422 plan_issue) and against what every other account reaches (422 other_accounts_changed). dryRun=true answers 200 with the same body and writes nothing; with access omitted it answers only case and current.
          */
         post: operations["create_pseudo_access"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/pseudo-agent-removals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Delete a service account and what was made for it
+         * @description In one transaction, deletes the service account's keys, takes its account out of the policy binding holding it as PUT /accounts/{ref}/policy with a null policyId does (the binding is deleted when it held only that account, else shrinks), revokes the shares the service account holds as DELETE /accounts/by-id/{id} does, deletes the service account, which takes its account along, then the policies and pools labelled agent-id=<service account id> that its scope owns, the caller may see and delete, spec.keep does not name, and no binding or policy left after the earlier deletes uses, those the caller may not see included. The other labelled rows stay and are listed in kept with why; one owned outside the scope that the caller may not see is neither touched nor listed. Each delete passes the grant, governance and reference check of its own delete call, with the same answers, pointer /spec/serviceAccountId; a refused delete refuses the request and nothing is deleted. Then the result is checked against the plans (422 plan_issue: an error on a row that stays that is not there now) and against what every other account reaches (422 other_accounts_changed). A deleted key stops authenticating once this pod's plans hear the delete, as after DELETE /keys/by-id/{id}. dryRun=true does everything but the commit and answers 200 with the same body. spec.expect, given, must be exactly the ids of the deleted list: when the set differs, the request answers 409 changed with the current deleted and kept lists and deletes nothing. Each row deleted or changed is audited as its own delete call records it.
+         */
+        post: operations["create_pseudo_agent_removal"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2503,7 +2523,7 @@ export interface paths {
         put?: never;
         /**
          * Create a provider key with its account, the account's tier and its shares
-         * @description First asks the host which organization spec.value belongs to, with the one read POST /host-keys/by-id/{id}/detect-account makes, to the host's own base URL: a 401 or 403 refuses the request with 422 provider_refused_key and nothing is stored; a host that names no organization, or does not answer, refuses nothing and is answered in detection. A detected organization another account of the owner at the host holds answers 409 organization_taken with that account. Then, in one transaction, makes the account (spec.account, taking the detected orgId) or uses spec.accountId, binds it alone to spec.tierPolicyId (one of the host's tier presets, else 400) as PUT /accounts/{ref}/policy does, makes the host key in it, and shares the account with each spec.shareWith receiver that neither holds a share of it nor reaches it by ownership; those are answered with existing: true. A host that takes no key takes no value and gets no host key. spec.value is sealed under the owner's scope before the transaction and removed if the transaction does not commit. Each row passes exactly what its own create call passes (POST /accounts, PUT /accounts/{ref}/policy, POST /host-keys, POST /accounts/{ref}/shares), with the same answers; a refusal names the row by pointer, the JSON pointer of the part of the body it came from, and nothing is written. Once every row passed, the rows are checked against the plans as a whole: errors they would raise that the plans do not have now refuse the request with 422 plan_issue. dryRun=true asks the host the same once and does everything else but storing the value and the commit, and answers 200 with the same body, ids included. Each row made is audited as its own create. The value never appears in an answer.
+         * @description First asks the create grants the host key and a new account will ask for the owner, with the owner rules of POST /host-keys: a refusal answers as that create would, before the host is asked anything or a value is stored. Then asks the host which organization spec.value belongs to, with the one read POST /host-keys/by-id/{id}/detect-account makes, to the host's own base URL: a 401 or 403 refuses the request with 422 provider_refused_key and nothing is stored; a host that names no organization, or does not answer, refuses nothing and is answered in detection. A detected organization another account of the owner at the host holds answers 409 organization_taken with that account. Then, in one transaction, makes the account (spec.account, taking the detected orgId) or uses spec.accountId, binds it alone to spec.tierPolicyId (one of the host's tier presets, else 400) as PUT /accounts/{ref}/policy does, makes the host key in it, and shares the account with each spec.shareWith receiver that neither holds a share of it nor reaches it by ownership; those are answered with existing: true. A host that takes no key takes no value and gets no host key. spec.value is sealed under the owner's scope before the transaction and removed if the transaction does not commit. Each row passes exactly what its own create call passes (POST /accounts, PUT /accounts/{ref}/policy, POST /host-keys, POST /accounts/{ref}/shares), with the same answers; a refusal names the row by pointer, the JSON pointer of the part of the body it came from, and nothing is written. Once every row passed, the rows are checked against the plans as a whole: errors they would raise that the plans do not have now refuse the request with 422 plan_issue. dryRun=true asks the host the same once and does everything else but storing the value and the commit, and answers 200 with the same body, ids included. Each row made is audited as its own create; a dry run that asked the host is audited as one pseudo-host-keys.dry-run row on the host, whatever it answered. The value never appears in an answer or audit row.
          */
         post: operations["create_pseudo_host_key"];
         delete?: never;
@@ -2523,7 +2543,7 @@ export interface paths {
         put?: never;
         /**
          * Put a budget or rate limit on a team, project or service account
-         * @description In one transaction, makes the budget or rate limit (exactly one of spec.budget and spec.rateLimit, each the spec its own create takes) owned by the target's scope, then links it from the policy over the target's account beside what that policy links already, by the cases POST /pseudo-access describes: none, own, copy, and 403 policy_set_above. A copy that would carry links the target's scope may not link answers 400 links_not_carried. Each row passes what its own create, update or delete call passes, with the same answers; then the result is checked against the plans (422 plan_issue) and against what every other account reaches (422 other_accounts_changed). A budget's answer lists unpricedModels, the models the target uses now that the budget would refuse for want of pricing; it does not refuse. dryRun=true answers 200 with the same body and writes nothing; with both limits omitted it answers only case and current.
+         * @description In one transaction, makes the budget or rate limit (exactly one of spec.budget and spec.rateLimit, each the spec its own create takes) owned by the target's scope, then links it from the policy over the target's account beside what that policy links already, by the cases POST /pseudo-access describes: none, own, copy, and 403 policy_set_above. A copy that would carry links the target's scope may not link answers 400 links_not_carried. spec.link sets the link's own fields: shared (omitted means true) counts the limit once for everyone under the target, false once per account under it; models, with a rate limit only, scopes it to those models, checked as a policy update checks a rate-limit link's models (400 at /spec/link/models, as is models with a budget). The answer's budget or rateLimit carries the link as stored. Each row passes what its own create, update or delete call passes, with the same answers; then the result is checked against the plans (422 plan_issue) and against what every other account reaches (422 other_accounts_changed). A budget's answer lists unpricedModels, the models the target uses now that the budget would refuse for want of pricing; it does not refuse. dryRun=true answers 200 with the same body and writes nothing; with both limits omitted it answers only case and current.
          */
         post: operations["create_pseudo_limits"];
         delete?: never;
@@ -4092,6 +4112,24 @@ export interface components {
              */
             kind?: "project";
         };
+        AgentRemoval: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/AgentRemoval.json
+             */
+            readonly $schema?: string;
+            /** @description The service account to remove, and what of its labelled rows to keep. */
+            spec: components["schemas"]["AgentRemovalSpec"];
+        };
+        AgentRemovalSpec: {
+            /** @description The ids of a dry run's deleted. Given, the request answers 409 changed and deletes nothing when the rows it would delete are no longer exactly these. */
+            expect?: string[] | null;
+            /** @description Ids of policies or pools labelled agent-id=<service account id> to leave in place. An id that is not one of the labelled rows the answer lists answers 400. */
+            keep?: string[] | null;
+            /** @description Id (metadata.id) of the service account; a slug answers 400. */
+            serviceAccountId: string;
+        };
         AgentSpec: {
             /** @description What the service account may use, made into a policy of its own. Exactly one of policyId and access. */
             access?: components["schemas"]["AgentAccess"];
@@ -4376,7 +4414,7 @@ export interface components {
             pricingId?: string;
             /** @description The model's snapshot names this host serves. Empty serves them all. */
             snapshots?: string[] | null;
-            /** @description Model name sent upstream. Empty sends the model's own name. */
+            /** @description Model name sent upstream. Applies only while the binding serves one snapshot of the model (snapshots lists one, or the model has one); otherwise, or when empty, the model's own name is sent. */
             upstreamName?: string;
         };
         BindingView: {
@@ -4744,7 +4782,7 @@ export interface components {
              * @description Milliseconds from request start until the response closed.
              */
             duration_ms: number;
-            /** @description Error code of a failed request, such as model_not_allowed, rate_limit_exceeded or upstream_error. */
+            /** @description Error code of a failed request, such as model_not_allowed, rate_limited or upstream_error. */
             error_kind?: string;
             /** @description Error message of a failed request. */
             error_message?: string;
@@ -4853,6 +4891,8 @@ export interface components {
             reason: string;
             /** @description The rung that refuses: team, project, lane (caller rungs) or account (an upstream tier); empty when no rung decides, as for a disabled model. */
             rung?: string;
+            /** @description Each snapshot name of the model, with its aliases and the refusal a request naming it gets. */
+            snapshots: components["schemas"]["ReachSnapshot"][] | null;
             /** @description Each provider account whose keys could serve it, with its tier's verdict. */
             upstream: components["schemas"]["ReachUpstream"][] | null;
         };
@@ -4942,7 +4982,7 @@ export interface components {
             /** @description Identity and provenance: id, name, owner, labels. */
             metadata: components["schemas"]["MetadataCreate"];
             /** @description The row's configuration. */
-            spec: components["schemas"]["GroupSpec"];
+            spec?: components["schemas"]["GroupSpec"];
         };
         GroupExternal: {
             /** @description The group's id at that source. */
@@ -5164,7 +5204,7 @@ export interface components {
              * @enum {string}
              */
             pricingStrategy?: "api" | "sub";
-            /** @description The secret, for valueFrom.kind stored or oauth (an OAuth token blob). Sealed at rest and never returned. Set on create only: an update keeps the stored value and refuses a new one (use POST /host-keys/by-id/{id}/rotate). */
+            /** @description The secret, for valueFrom.kind stored or oauth. For oauth: an OAuth token blob, or a service-account key file (JSON with type service_account) with an added scopes array, which relay exchanges for access tokens; an endpoint that rejects the key refuses the write. Sealed at rest and never returned. Set on create only: an update keeps the stored value and refuses a new one (use POST /host-keys/by-id/{id}/rotate). */
             value?: string;
             /** @description Where the secret comes from. */
             valueFrom: components["schemas"]["HostKeyValueFrom"];
@@ -5188,11 +5228,11 @@ export interface components {
             /** @description Environment variable holding the secret, for kind env. RELAY_* and WYOLET_* names are refused. */
             env?: string;
             /**
-             * @description env reads the secret from an environment variable; stored seals the value sent in spec.value; oauth stores an OAuth token blob from spec.value and refreshes it.
+             * @description env reads the secret from an environment variable; stored seals the value sent in spec.value; oauth stores an OAuth token blob or service-account key file from spec.value and renews its access token.
              * @enum {string}
              */
             kind: "env" | "stored" | "oauth";
-            /** @description OAuth provider whose settings section refreshes the token, for kind oauth. */
+            /** @description For kind oauth: the OAuth provider whose settings section refreshes a token blob. Required; a service-account key renews from the key itself, so here it is only a label. */
             provider?: string;
         };
         HostKeyView: {
@@ -5267,7 +5307,7 @@ export interface components {
             name: string;
         };
         HostSpec: {
-            /** @description Backend-specific settings, such as a region or deployment name; each adapter reads the keys it needs. */
+            /** @description Backend-specific settings, such as a region or deployment name; each adapter reads the keys it needs. A {key} placeholder in path or paths takes the value of key here. */
             backend?: {
                 [key: string]: string;
             };
@@ -5285,9 +5325,9 @@ export interface components {
             icon?: components["schemas"]["Icon"];
             /** @description The upstream needs no API key (such as a self-hosted Ollama). Requests go out without credentials, reached through a pool that names the host. */
             noAuth?: boolean;
-            /** @description Upstream path used instead of the wire shape's default. An empty string means baseURL is the complete endpoint; omitted keeps the default. */
+            /** @description Upstream path used instead of the wire shape's default. An empty string means baseURL is the complete endpoint; omitted keeps the default. Each {key} placeholder (key of letters, digits and _, before any ?) is replaced with backend[key]; a request through the host answers host_misconfigured while one is unset. */
             path?: string;
-            /** @description Upstream path per wire shape (adapter name, such as openai), used instead of path for that shape: {openai: /v1beta/openai/chat/completions}. A shape not listed uses path. */
+            /** @description Upstream path per wire shape (adapter name, such as openai), used instead of path for that shape: {openai: /v1beta/openai/chat/completions}. A shape not listed uses path. Placeholders are filled as in path. */
             paths?: {
                 [key: string]: string;
             };
@@ -5497,6 +5537,12 @@ export interface components {
             /** @description The window as a duration string, such as 1m0s. */
             window: string;
         };
+        LimitLink: {
+            /** @description With a rate limit only: the models it applies to, in the policy model grammar (provider or provider/model), checked as a policy update checks a rate-limit link's models and stored in their canonical form. Empty or omitted applies it to every model. With a budget, 400: a budget link has no model scope. */
+            models?: string[] | null;
+            /** @description True or omitted counts the limit once for everyone under the target; false counts it separately for each account under it (each lane its own counter). Stored as the link's shared field. */
+            shared?: boolean;
+        };
         Limits: {
             /**
              * Format: uri
@@ -5621,6 +5667,8 @@ export interface components {
         LimitsSpec: {
             /** @description A spend cap, as POST /budgets takes its spec. Exactly one of budget and rateLimit; both omitted, with dryRun=true, answers only case and current. */
             budget?: components["schemas"]["BudgetSpec"];
+            /** @description How the policy links the limit. Omitted: counted once for everyone under the target, over every model. */
+            link?: components["schemas"]["LimitLink"];
             /** @description A rate limit, as POST /rate-limits takes its spec. Exactly one of budget and rateLimit. */
             rateLimit?: components["schemas"]["RateLimitSpec"];
             /** @description The team, project or service account whose account the limit applies to. */
@@ -6282,6 +6330,8 @@ export interface components {
             spec: components["schemas"]["PolicySpec"];
         };
         PolicyCurrent: {
+            /** @description False when the binding holding the account is disabled: a disabled binding binds nothing, so this policy does not govern the account now and the account is served as if in no binding. A change made through the form binds the account in an enabled binding (case copy). */
+            bindingEnabled: boolean;
             /**
              * Format: int64
              * @description Pools it links that the caller may not see: counted, not named.
@@ -6501,7 +6551,7 @@ export interface components {
         PricingSpec: {
             /** @description ISO 4217 currency of the amounts, such as USD. */
             currency: string;
-            /** @description False stops costing traffic with this sheet, leaving it unpriced. Omitted means true. */
+            /** @description False stops costing traffic with this sheet, leaving it unpriced: while a budget applies, requests for its bindings are refused (403 unpriced_under_budget). A model meant to be free under a budget needs an enabled sheet with zero rates. Omitted means true. */
             enabled?: boolean;
             /** @description One entry per priced meter, context tier and service tier. */
             rates: components["schemas"]["PricingRate"][] | null;
@@ -6680,6 +6730,8 @@ export interface components {
             shares?: components["schemas"]["RowRef"][] | null;
             /** @description True when nothing needed writing: the account is in no binding and access is everyCredential without models, which is what it has already. */
             unchanged?: boolean;
+            /** @description For a team or project target: what the change does to the lanes under it, which it applies to. Never a refusal; absent for a service account target and on the dry run without access. */
+            under?: components["schemas"]["PseudoUnder"];
             /** @description Every row updated, in write order. */
             updated?: components["schemas"]["CreatedRow"][] | null;
             /** @description Plan warnings the rows written would raise that are not there now, on those rows (as the row carrying the warning, or the row it names). They refuse nothing; [] when none, and on the dry run without access. A row the caller may not see keeps its code and kind only. */
@@ -6716,6 +6768,22 @@ export interface components {
             name: string;
             /** @description The bearer token to send as Authorization: Bearer. Returned only here; store it now. Absent on a dry run. */
             plaintext?: string;
+        };
+        PseudoAgentRemovalAnswer: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/PseudoAgentRemovalAnswer.json
+             */
+            readonly $schema?: string;
+            /** @description Every row deleted, in delete order: the service account's keys, the binding that held only its account, the shares it held and bindings their revoke left empty, the service account, its account, then the labelled policies and pools that go. */
+            deleted: components["schemas"]["CreatedRow"][] | null;
+            /** @description The policies and pools labelled agent-id=<service account id> that stay, with why. A labelled row owned outside the service account's scope that the caller may not see is not listed. */
+            kept: components["schemas"]["PseudoKept"][] | null;
+            /** @description Every row changed and kept, in write order: the binding the service account's account was taken out of when it holds other accounts too, and the bindings, keys and pools a share's revoke changed. */
+            updated: components["schemas"]["CreatedRow"][] | null;
+            /** @description Plan warnings the deletes would raise that are not there now, on the rows deleted or changed (as the row carrying the warning, or the row it names). They refuse nothing; [] when none. A row the caller may not see keeps its code and kind only. */
+            warnings: components["schemas"]["PseudoIssue"][] | null;
         };
         PseudoHostKeyCreated: {
             /**
@@ -6768,6 +6836,36 @@ export interface components {
             /** @description JSON pointer of the part of the body the object came from; empty for an object that exists already. */
             pointer?: string;
         };
+        PseudoKept: {
+            /** @description Id of the row. */
+            id: string;
+            /**
+             * @description policy or pool.
+             * @enum {string}
+             */
+            kind: "policy" | "pool";
+            /** @description Slug of the row; omitted when the caller may not see it. */
+            name?: string;
+            /**
+             * @description in_use: a binding or policy the request does not delete still uses it, seen by the caller or not. kept_by_request: spec.keep names it. not_visible: the service account's scope owns it but the caller may not see it. not_deletable: it is owned outside the service account's scope, or its delete's grant or governance refuses the caller.
+             * @enum {string}
+             */
+            reason: "in_use" | "kept_by_request" | "not_visible" | "not_deletable";
+        };
+        PseudoLimitLink: {
+            /** @description The models a rate limit applies to, canonical; omitted for every model, and for a budget. */
+            models?: string[] | null;
+            /** @description True counts the limit once for everyone under the target; false once per account under it. */
+            shared: boolean;
+        };
+        PseudoLimitRef: {
+            /** @description Id of the budget or rate limit. */
+            id: string;
+            /** @description The link as the policy stores it. */
+            link: components["schemas"]["PseudoLimitLink"];
+            /** @description Slug of the budget or rate limit. */
+            name: string;
+        };
         PseudoLimitsAnswer: {
             /**
              * Format: uri
@@ -6775,8 +6873,8 @@ export interface components {
              * @example https://example.com/schemas/PseudoLimitsAnswer.json
              */
             readonly $schema?: string;
-            /** @description The budget made. */
-            budget?: components["schemas"]["RowRef"];
+            /** @description The budget made, with its link as stored. */
+            budget?: components["schemas"]["PseudoLimitRef"];
             /**
              * @description What the policy step did, as POST /pseudo-access answers it.
              * @enum {string}
@@ -6790,14 +6888,40 @@ export interface components {
             deleted?: components["schemas"]["CreatedRow"][] | null;
             /** @description The policy the account is under once written, now linking the limit. */
             policy?: components["schemas"]["RowRef"];
-            /** @description The rate limit made. */
-            rateLimit?: components["schemas"]["RowRef"];
+            /** @description The rate limit made, with its link as stored. */
+            rateLimit?: components["schemas"]["PseudoLimitRef"];
+            /** @description For a team or project target: what the limit does to the lanes under it, which it applies to, such as a budget leaving a lane only unpriced models. Never a refusal; absent for a service account target and on the dry run without a limit. */
+            under?: components["schemas"]["PseudoUnder"];
             /** @description With a budget: the models the target reaches now that have no pricing, as provider/model; requests for them answer unpriced_under_budget once the budget applies. A warning, not a refusal. */
             unpricedModels?: string[] | null;
             /** @description Every row updated, in write order. */
             updated?: components["schemas"]["CreatedRow"][] | null;
             /** @description Plan warnings the rows written would raise that are not there now, on those rows (as the row carrying the warning, or the row it names). They refuse nothing; [] when none, and on the dry run without a limit. A row the caller may not see keeps its code and kind only. */
             warnings: components["schemas"]["PseudoIssue"][] | null;
+        };
+        PseudoUnder: {
+            /**
+             * Format: int64
+             * @description Lanes under the target: those of its projects, service accounts and members, those the caller may not see included.
+             */
+            lanes: number;
+            /**
+             * Format: int64
+             * @description Lanes under it that lose at least one model, host, or pool or account a model comes through.
+             */
+            narrowed: number;
+            /** @description Lanes under it that served a model at some host before and serve none after, at most 20; a lane the caller may not see has no name. */
+            unreachable: components["schemas"]["UnderLane"][] | null;
+            /**
+             * Format: int64
+             * @description Lanes that become unreachable beyond those listed.
+             */
+            unreachableMore?: number;
+            /**
+             * Format: int64
+             * @description Lanes under it that gain at least one.
+             */
+            widened: number;
         };
         Rate: {
             /**
@@ -6899,6 +7023,16 @@ export interface components {
             /** @description The same in words, with what to change. */
             reason: string;
         };
+        ReachHost: {
+            /** @description Display name. */
+            displayName?: string;
+            /** @description Id (UUIDv7). */
+            id: string;
+            /** @description Slug. */
+            name: string;
+            /** @description The model's snapshot names whose requests this host serves for the lane; a request naming another is not routed here. */
+            snapshots: string[] | null;
+        };
         ReachModelRef: {
             /** @description Display name. */
             displayName?: string;
@@ -6927,6 +7061,14 @@ export interface components {
             /** @description The rung that refuses: team, project, lane (caller rungs) or account (an upstream tier); empty when no rung decides, as for a disabled model. */
             rung?: string;
         };
+        ReachSnapshot: {
+            /** @description The model's declared exact aliases that resolve to this snapshot. */
+            aliases?: string[] | null;
+            /** @description The snapshot name, usable as the model of a request. */
+            name: string;
+            /** @description The refusal a request naming this snapshot gets; omitted when it reaches a host. */
+            refused?: components["schemas"]["ReachRefusal"];
+        };
         ReachUpstream: {
             /** @description The provider account holding the keys. */
             account: components["schemas"]["ReachRef"];
@@ -6946,6 +7088,8 @@ export interface components {
             account?: components["schemas"]["ReachRef"];
             /** @description The pool; omitted for a key reached by its scope's ownership, or a pool the caller may not read. */
             pool?: components["schemas"]["ReachRef"];
+            /** @description The model's snapshot names whose requests this pool and account serve; a request naming another is not routed here. */
+            snapshots: string[] | null;
         };
         Reachable: {
             /**
@@ -6970,12 +7114,14 @@ export interface components {
         ReachedModel: {
             /** @description For a bound policy: the bound accounts that reach it. */
             accounts?: components["schemas"]["ReachRef"][] | null;
-            /** @description Hosts serving it for the lane, in failover order. */
-            hosts: components["schemas"]["ReachRef"][] | null;
+            /** @description Hosts serving it for the lane, in failover order, each with the snapshot names it serves. */
+            hosts: components["schemas"]["ReachHost"][] | null;
             /** @description The model. */
             model: components["schemas"]["ReachModelRef"];
             /** @description The model's provider. */
             provider: components["schemas"]["ReachRef"];
+            /** @description Each snapshot name of the model, with its aliases and, for a name that reaches nothing, the refusal a request naming it gets. */
+            snapshots: components["schemas"]["ReachSnapshot"][] | null;
             /** @description Each provider account whose keys could serve it, with its tier's verdict. */
             upstream: components["schemas"]["ReachUpstream"][] | null;
             /** @description What brings it, in failover order. */
@@ -7247,7 +7393,7 @@ export interface components {
             total: number;
         };
         ServiceAccountSpec: {
-            /** @description False refuses inference with the service account's keys (403 subject_disabled). Omitted means true. */
+            /** @description False refuses inference with the service account's keys (401 unauthenticated). Omitted means true. */
             enabled?: boolean;
             /** @description Id of the project the service account belongs to. The owner follows it. */
             projectId: string;
@@ -7456,7 +7602,7 @@ export interface components {
             /** @description Identity and provenance: id, name, owner, labels. */
             metadata: components["schemas"]["MetadataCreate"];
             /** @description The row's configuration. */
-            spec: components["schemas"]["TeamSpec"];
+            spec?: components["schemas"]["TeamSpec"];
         };
         TeamList: {
             /**
@@ -7571,6 +7717,14 @@ export interface components {
             };
             /** @description Non-empty buckets in time order; zero-fill the gaps. */
             points: components["schemas"]["TimeSeriesPoint"][] | null;
+        };
+        UnderLane: {
+            /** @description Id of the lane's account. */
+            id: string;
+            /** @description account: a lane is an account. */
+            kind: string;
+            /** @description Slug of the lane's account; omitted when the caller may not see it. */
+            name?: string;
         };
         UnthrottledModel: {
             /** @description An allowed model no linked rate limit covers. */
@@ -8472,6 +8626,8 @@ export interface components {
              * @example https://example.com/schemas/pseudoRefusal.json
              */
             readonly $schema?: string;
+            /** @description With resource_in_use: the rows that still reference the row a delete step refused on, grouped as its own delete call groups them. */
+            blockers?: components["schemas"]["blockerGroup"][] | null;
             /** @description The error. */
             error: components["schemas"]["APIErrorBody"];
             /** @description With plan_issue: each error the rows would raise in the plans that they do not have now. */
@@ -8526,6 +8682,22 @@ export interface components {
             license?: components["schemas"]["reloadLicense"];
             /** @description ok once the snapshot is rebuilt. */
             status: string;
+        };
+        removalChanged: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/removalChanged.json
+             */
+            readonly $schema?: string;
+            /** @description What the request would delete now, as a dry run answers it. */
+            deleted: components["schemas"]["CreatedRow"][] | null;
+            /** @description The error. */
+            error: components["schemas"]["APIErrorBody"];
+            /** @description What it would keep now, as a dry run answers it. */
+            kept: components["schemas"]["PseudoKept"][] | null;
+            /** @description /spec/expect. */
+            pointer?: string;
         };
         resolveBindingRef: {
             /** @description Host id. */
@@ -8773,7 +8945,7 @@ export interface components {
              * @example https://example.com/schemas/setAccountPolicyInputBody.json
              */
             readonly $schema?: string;
-            /** @description Id of the policy to bind the account to; null unbinds it. */
+            /** @description Id of the policy to bind the account to; null unbinds it. An empty string is refused. */
             policyId: string | null;
         };
         settingsCatalogItem: {
@@ -14801,7 +14973,7 @@ export interface operations {
                 status_min?: number;
                 /** @description Maximum HTTP status to include. */
                 status_max?: number;
-                /** @description Match any of the given HostKey.metadata.id values. */
+                /** @description Match any of the given host_key_id values: hashes of the upstream credential's value, not HostKey.metadata.id. */
                 host_key_id?: string[] | null;
                 /** @description Match any of the model strings as the caller sent them. */
                 requested_model?: string[] | null;
@@ -19615,6 +19787,105 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["pseudoRefusal"];
+                };
+            };
+            /** @description plan_issue: every row passes its own checks, but together they would raise errors in the plans that are not there now, or a lane they make or bind would refuse every request; issues lists them, each with the pointer of the part of the body it came from. Nothing was written. Also a body that does not match the schema, with error.details. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["pseudoRefusal"];
+                };
+            };
+            /** @description The write failed on the server; nothing was written. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["pseudoRefusal"];
+                };
+            };
+            /** @description The plans are not loaded yet, or checking the rows against them took longer than RELAY_PLAN_CHECK_TIMEOUT_MS. Nothing was written. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["pseudoRefusal"];
+                };
+            };
+        };
+    };
+    create_pseudo_agent_removal: {
+        parameters: {
+            query?: {
+                /** @description Run every check, the plan check included, and answer what would be deleted and kept, without deleting it. */
+                dryRun?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentRemoval"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PseudoAgentRemovalAnswer"];
+                };
+            };
+            /** @description The body, or a row it makes, breaks a rule the schema cannot express; error.message says which and pointer names the part of the body. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["pseudoRefusal"];
+                };
+            };
+            /** @description No valid session cookie or admin bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description A row's own grant refuses it, as its own create call would; pointer names the part of the body it came from. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["pseudoRefusal"];
+                };
+            };
+            /** @description The body names a row the caller may not see; pointer names where. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["pseudoRefusal"];
+                };
+            };
+            /** @description changed: spec.expect is no longer exactly the set the request would delete; deleted and kept say what it is now, and nothing was deleted. resource_in_use, with the row's blockers in the message: a row still references one the request deletes, such as a role binding naming the service account. managed_by_source: an identity source manages the service account. conflict: another change touched the same rows at the same time, retry. pointer names the part of the body. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["removalChanged"];
                 };
             };
             /** @description plan_issue: every row passes its own checks, but together they would raise errors in the plans that are not there now, or a lane they make or bind would refuse every request; issues lists them, each with the pointer of the part of the body it came from. Nothing was written. Also a body that does not match the schema, with error.details. */
@@ -24875,7 +25146,7 @@ export interface operations {
                 status_min?: number;
                 /** @description Maximum HTTP status to include. */
                 status_max?: number;
-                /** @description Match any of the given HostKey.metadata.id values. */
+                /** @description Match any of the given host_key_id values: hashes of the upstream credential's value, not HostKey.metadata.id. */
                 host_key_id?: string[] | null;
                 /** @description Match any of the model strings as the caller sent them. */
                 requested_model?: string[] | null;
@@ -25014,7 +25285,7 @@ export interface operations {
                 status_min?: number;
                 /** @description Maximum HTTP status to include. */
                 status_max?: number;
-                /** @description Match any of the given HostKey.metadata.id values. */
+                /** @description Match any of the given host_key_id values: hashes of the upstream credential's value, not HostKey.metadata.id. */
                 host_key_id?: string[] | null;
                 /** @description Match any of the model strings as the caller sent them. */
                 requested_model?: string[] | null;
@@ -25153,7 +25424,7 @@ export interface operations {
                 status_min?: number;
                 /** @description Maximum HTTP status to include. */
                 status_max?: number;
-                /** @description Match any of the given HostKey.metadata.id values. */
+                /** @description Match any of the given host_key_id values: hashes of the upstream credential's value, not HostKey.metadata.id. */
                 host_key_id?: string[] | null;
                 /** @description Match any of the model strings as the caller sent them. */
                 requested_model?: string[] | null;
@@ -25298,7 +25569,7 @@ export interface operations {
                 status_min?: number;
                 /** @description Maximum HTTP status to include. */
                 status_max?: number;
-                /** @description Match any of the given HostKey.metadata.id values. */
+                /** @description Match any of the given host_key_id values: hashes of the upstream credential's value, not HostKey.metadata.id. */
                 host_key_id?: string[] | null;
                 /** @description Match any of the model strings as the caller sent them. */
                 requested_model?: string[] | null;
