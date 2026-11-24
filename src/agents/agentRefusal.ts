@@ -4,6 +4,7 @@ import { failureMessage } from "@/hooks/useWriteRunner";
 /** The form field a part of the `POST /pseudo-agents` body comes from; `access` is the access step as a whole. */
 export type RefusalField =
 	| "displayName"
+	| "projectId"
 	| "accountIds"
 	| "poolIds"
 	| "access"
@@ -12,6 +13,7 @@ export type RefusalField =
 
 // Most specific first: a pointer belongs to the first prefix it starts with.
 const POINTER_FIELDS: readonly (readonly [string, RefusalField])[] = [
+	["/metadata/owner", "projectId"],
 	["/metadata", "displayName"],
 	["/spec/access/accountIds", "accountIds"],
 	["/spec/access/poolIds", "poolIds"],
@@ -29,8 +31,8 @@ export function pointerField(pointer: string): RefusalField | undefined {
 
 export const HIDDEN_ROW_ISSUE = "A row you can't see blocks this.";
 export const CONFLICT_MESSAGE = "Something changed while saving. Try again.";
-export const STARTING_MESSAGE =
-	"Relay is still starting. Try again in a moment.";
+/** 503: relay's plans are still loading, or another check is running; nothing was written. */
+export const BUSY_MESSAGE = "Relay is busy. Try again in a moment.";
 
 export interface RefusalIssue {
 	/** Unset for a row that exists already: it has no part in the body. */
@@ -48,7 +50,7 @@ export function agentRefusal(err: unknown): AgentRefusal {
 	if (!(err instanceof PseudoRefusal)) {
 		return { kind: "general", message: failureMessage(err) };
 	}
-	if (err.status === 503) return { kind: "general", message: STARTING_MESSAGE };
+	if (err.status === 503) return { kind: "general", message: BUSY_MESSAGE };
 	if (err.status === 409 && err.body.code === "conflict") {
 		return { kind: "general", message: CONFLICT_MESSAGE };
 	}

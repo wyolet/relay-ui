@@ -87,6 +87,7 @@ type CheckedField = keyof typeof FIELD_STEP;
 const REFUSAL_INPUTS: Record<RefusalField, readonly (keyof AddAgentValues)[]> =
 	{
 		displayName: ["displayName", "description", "ownerKind", "projectId"],
+		projectId: ["ownerKind", "teamId", "projectId"],
 		accountIds: ["access", "reach", "accountIds", "poolIds"],
 		poolIds: ["access", "reach", "accountIds", "poolIds"],
 		access: ["access", "reach", "accountIds", "poolIds", "models", "policyId"],

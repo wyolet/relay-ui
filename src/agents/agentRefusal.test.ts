@@ -1,10 +1,10 @@
 import { describe, expect, it } from "bun:test";
 import {
 	agentRefusal,
+	BUSY_MESSAGE,
 	CONFLICT_MESSAGE,
 	HIDDEN_ROW_ISSUE,
 	pointerField,
-	STARTING_MESSAGE,
 } from "@/agents/agentRefusal";
 import { PseudoRefusal, type PseudoRefusalBody } from "@/api/types/errors";
 
@@ -12,6 +12,8 @@ describe("pointerField", () => {
 	it("maps each part of the body to the field that holds it", () => {
 		expect(pointerField("/metadata")).toBe("displayName");
 		expect(pointerField("/metadata/name")).toBe("displayName");
+		expect(pointerField("/metadata/owner")).toBe("projectId");
+		expect(pointerField("/metadata/owner/id")).toBe("projectId");
 		expect(pointerField("/spec/access/accountIds/0")).toBe("accountIds");
 		expect(pointerField("/spec/access/accountIds")).toBe("accountIds");
 		expect(pointerField("/spec/access/poolIds/2")).toBe("poolIds");
@@ -61,7 +63,7 @@ describe("agentRefusal", () => {
 		});
 	});
 
-	it("asks for a retry on a conflict and while relay starts", () => {
+	it("asks for a retry on a conflict and while relay is busy", () => {
 		expect(
 			agentRefusal(refused(409, { pointer: "/metadata" }, "conflict")),
 		).toEqual({
@@ -70,8 +72,14 @@ describe("agentRefusal", () => {
 		});
 		expect(agentRefusal(refused(503, {}))).toEqual({
 			kind: "general",
-			message: STARTING_MESSAGE,
+			message: BUSY_MESSAGE,
 		});
+	});
+
+	it("never puts a 503 by a field, even with a pointer", () => {
+		expect(
+			agentRefusal(refused(503, { pointer: "/spec/access/accountIds/0" })),
+		).toEqual({ kind: "general", message: BUSY_MESSAGE });
 	});
 
 	it("lists plan issues by field, hiding rows the caller can't see", () => {

@@ -150,15 +150,18 @@ interface AgentMock {
 	oneRequest?: boolean;
 	/** Relay's answer to the first `POST /pseudo-agents` that isn't a dry run. */
 	refuseOnce?: { status: number; json: object };
+	/** Relay's answer to the first dry run. */
+	refuseDryRunOnce?: { status: number; json: object };
 }
 
 /** Answers the form's reads and writes; a dry run is recorded as `pseudo-agents?dryRun`. */
 async function mockAgentApi(
 	page: Page,
-	{ failOnce, oneRequest, refuseOnce }: AgentMock = {},
+	{ failOnce, oneRequest, refuseOnce, refuseDryRunOnce }: AgentMock = {},
 ): Promise<Sent[]> {
 	const sent: Sent[] = [];
 	let failed = false;
+	let dryRunRefused = false;
 	await mockApi(page, {
 		...EMPTY_GRAPH,
 		contexts,
@@ -201,6 +204,10 @@ async function mockAgentApi(
 			if (!dryRun && refuseOnce && !failed) {
 				failed = true;
 				return route.fulfill({ status: refuseOnce.status, json: refuseOnce.json });
+			}
+			if (dryRun && refuseDryRunOnce && !dryRunRefused) {
+				dryRunRefused = true;
+				return route.fulfill({ status: refuseDryRunOnce.status, json: refuseDryRunOnce.json });
 			}
 			return route.fulfill({
 				status: dryRun ? 200 : 201,
@@ -554,5 +561,85 @@ test.describe("Add agent in one request", () => {
 			"A row you can't see blocks this.",
 		]);
 		await expect(page.getByRole("switch", { name: "Use every credential in scope" })).toBeVisible();
+	});
+
+	test("a plan issue on the policy shows on the step with the policy select", async ({
+		page,
+	}) => {
+		await mockAgentApi(page, {
+			oneRequest: true,
+			refuseOnce: {
+				status: 422,
+				json: {
+					error: { type: "invalid_request_error", code: "plan_issue", message: "plan issues" },
+					issues: [
+						{
+							code: "policy_disabled",
+							kind: "policy",
+							message: "The policy is disabled.",
+							pointer: "/spec/policyId",
+						},
+					],
+				},
+			},
+		});
+		await nameAgentInProject(page);
+		await page.getByRole("button", { name: "Use a policy" }).click();
+		await page.getByRole("combobox", { name: "Policy" }).click();
+		await page.getByRole("option", { name: "Search default" }).click();
+		await page.getByRole("button", { name: "Next" }).click();
+		await page.getByRole("button", { name: "Create agent" }).click();
+
+		await expect(
+			page.getByRole("alert").filter({ hasText: "Relay would refuse this setup" }),
+		).toContainText("The policy is disabled.");
+		await expect(page.getByRole("combobox", { name: "Policy" })).toBeVisible();
+	});
+
+	test("a missing owner returns to the agent step with the message by the project", async ({
+		page,
+	}) => {
+		await mockAgentApi(page, {
+			oneRequest: true,
+			refuseOnce: {
+				status: 400,
+				json: {
+					error: { type: "invalid_request_error", message: "metadata.owner is required" },
+					pointer: "/metadata/owner",
+				},
+			},
+		});
+		await nameAgentInProject(page);
+		await page.getByRole("button", { name: "Next" }).click();
+		await page.getByRole("button", { name: "Create agent" }).click();
+
+		await expect(page.getByPlaceholder("Support triage agent")).toBeVisible();
+		await expect(page.getByText("metadata.owner is required")).toBeVisible();
+	});
+
+	test("a busy relay asks to retry, for the dry run and the create alike", async ({ page }) => {
+		const busy = {
+			status: 503,
+			json: {
+				error: { type: "server_error", message: "a check is already running" },
+				pointer: "/spec/access/accountIds/0",
+			},
+		};
+		const sent = await mockAgentApi(page, {
+			oneRequest: true,
+			refuseOnce: busy,
+			refuseDryRunOnce: busy,
+		});
+		await nameAgentInProject(page);
+		await page.getByRole("button", { name: "Next" }).click();
+		await expect(page.getByRole("alert")).toHaveText("Relay is busy. Try again in a moment.");
+
+		await page.getByRole("button", { name: "Create agent" }).click();
+		await expect(page.getByRole("alert")).toHaveText("Relay is busy. Try again in a moment.");
+		await expect(page.getByRole("button", { name: "Create agent" })).toBeEnabled();
+
+		await page.getByRole("button", { name: "Create agent" }).click();
+		await expect(page.getByText("sk-wr-test-secret", { exact: true })).toBeVisible();
+		expect(submits(sent)).toHaveLength(2);
 	});
 });

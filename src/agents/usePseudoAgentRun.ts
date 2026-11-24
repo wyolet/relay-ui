@@ -4,13 +4,13 @@ import { createdAgent } from "@/agents/pseudoAgentBody";
 import type { CreatedAgent } from "@/agents/useAgentWrites";
 import {
 	type PseudoAgent,
-	type PseudoAgentCreated,
 	useCreatePseudoAgent,
 	useDryRunPseudoAgent,
 } from "@/api/hooks/pseudoAgents";
+import type { components } from "@/api/types.gen";
 import type { StepFormWrites } from "@/shared/StepForm";
 
-type CreatedRow = NonNullable<PseudoAgentCreated["created"]>[number];
+type CreatedRow = components["schemas"]["CreatedRow"];
 
 interface PreviewRequest {
 	body: PseudoAgent;

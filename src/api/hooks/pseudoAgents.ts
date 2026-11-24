@@ -1,12 +1,12 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/api/client";
-import { PseudoRefusal, type PseudoRefusalBody } from "@/api/types/errors";
+import { PseudoRefusal } from "@/api/types/errors";
 import type { components } from "@/api/types.gen";
 
 export type PseudoAgent = components["schemas"]["Agent"];
 export type PseudoAgentCreated = components["schemas"]["PseudoAgentCreated"];
 
-/** Throws a {@link PseudoRefusal}; every refusal, the 400s included, may carry a pointer. */
+/** The dry run answers 200 and the write 201, with the same body; a refusal throws a {@link PseudoRefusal}. */
 async function postPseudoAgent(
 	body: PseudoAgent,
 	dryRun: boolean,
@@ -16,8 +16,7 @@ async function postPseudoAgent(
 		params: { query: dryRun ? { dryRun } : {} },
 	});
 	if (error === undefined) return data;
-	const refusal: PseudoRefusalBody = error;
-	throw new PseudoRefusal(response.status, refusal);
+	throw new PseudoRefusal(response.status, error);
 }
 
 /** Makes the agent's rows in one request; a refusal writes nothing. */
