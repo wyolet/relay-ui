@@ -1,25 +1,49 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import {
+	createFileRoute,
+	Link,
+	redirect,
+	useNavigate,
+} from "@tanstack/react-router";
 import { ChevronLeft } from "lucide-react";
 import { Suspense } from "react";
+import { z } from "zod";
+import { AddAgentLikeThis } from "@/agent-page/AddAgentLikeThis";
+import { loadAgentCopy } from "@/agent-page/useAgentCopy";
 import { AddAgent } from "@/agents/AddAgent";
 import { catalogGraphQueryOptions } from "@/api/hooks/catalog";
 import { myContextsQueryOptions } from "@/api/hooks/contexts";
+import { feature } from "@/api/runtimeConfig";
+import { SHORTCUT_FLAGS } from "@/lib/shortcutFlags";
 import { PageLoader } from "@/shared/Spinner";
 
 export const Route = createFileRoute(
 	"/_authenticated/service-accounts/add-agent",
 )({
-	loader: ({ context }) => {
+	// `from`: a service account id whose setup the form starts on.
+	validateSearch: z.object({ from: z.string().optional() }),
+	beforeLoad: ({ search }) => {
+		if (search.from && !feature(SHORTCUT_FLAGS.copyAgent)) {
+			throw redirect({ to: "/service-accounts/add-agent", search: {} });
+		}
+	},
+	loaderDeps: ({ search }) => ({ from: search.from }),
+	loader: async ({ context, deps }) => {
 		void context.queryClient.prefetchQuery(
 			catalogGraphQueryOptions({ includeDeprecated: true }),
 		);
-		return context.queryClient.ensureQueryData(myContextsQueryOptions);
+		const contexts = context.queryClient.ensureQueryData(
+			myContextsQueryOptions,
+		);
+		if (deps.from) await loadAgentCopy(context.queryClient, deps.from);
+		return contexts;
 	},
 	component: AddAgentPage,
 });
 
 function AddAgentPage() {
 	const navigate = useNavigate();
+	const { from } = Route.useSearch();
+	const cancel = () => void navigate({ to: "/service-accounts" });
 	return (
 		<div className="flex flex-col gap-6">
 			<div>
@@ -38,7 +62,11 @@ function AddAgentPage() {
 				</p>
 			</div>
 			<Suspense fallback={<PageLoader />}>
-				<AddAgent onCancel={() => void navigate({ to: "/service-accounts" })} />
+				{from ? (
+					<AddAgentLikeThis key={from} from={from} onCancel={cancel} />
+				) : (
+					<AddAgent onCancel={cancel} />
+				)}
 			</Suspense>
 		</div>
 	);

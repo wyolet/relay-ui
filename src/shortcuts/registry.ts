@@ -1,4 +1,8 @@
 import type { ComponentType } from "react";
+import { CopyAgentAction } from "@/agent-page/CopyAgentAction";
+import { NewKeyAction } from "@/agent-page/NewKeyAction";
+import { RemoveAgentAction } from "@/agent-page/RemoveAgentAction";
+import { SHORTCUT_FLAGS } from "@/lib/shortcutFlags";
 
 export type ShortcutTargetKind = "team" | "project" | "serviceaccount";
 
@@ -21,4 +25,20 @@ export interface Shortcut {
 }
 
 /** Every shortcut a detail page may offer. Dropping one is removing its line and its folder. */
-export const SHORTCUTS: readonly Shortcut[] = [];
+export const SHORTCUTS: readonly Shortcut[] = [
+	{
+		flag: SHORTCUT_FLAGS.agentKey,
+		targets: ["serviceaccount"],
+		Action: NewKeyAction,
+	},
+	{
+		flag: SHORTCUT_FLAGS.copyAgent,
+		targets: ["serviceaccount"],
+		Action: CopyAgentAction,
+	},
+	{
+		flag: SHORTCUT_FLAGS.removeAgent,
+		targets: ["serviceaccount"],
+		Action: RemoveAgentAction,
+	},
+];

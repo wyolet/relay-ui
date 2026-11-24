@@ -3,4 +3,6 @@ export const SHORTCUT_FLAGS = {
 	access: "shortcutAccess",
 	limit: "shortcutLimit",
 	removeAgent: "shortcutRemoveAgent",
+	copyAgent: "shortcutCopyAgent",
+	agentKey: "shortcutAgentKey",
 } as const;
