@@ -20,6 +20,7 @@ import { DetailPageHeader } from "@/shared/DetailPageHeader";
 import { ReferencesList } from "@/shared/ReferencesList";
 import { StatusBadge } from "@/shared/StatusBadge";
 import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
+import { ShortcutActions } from "@/shortcuts/ShortcutActions";
 
 export function ServiceAccountDetailView({ name }: { name: string }) {
 	const { data: sa } = useServiceAccount(name);
@@ -77,6 +78,15 @@ export function ServiceAccountDetailView({ name }: { name: string }) {
 						</Link>
 					)}
 				>
+					<ShortcutActions
+						target={{
+							kind: "serviceaccount",
+							id: sa.metadata.id ?? "",
+							name: sa.metadata.name,
+							label: displayLabel(sa.metadata),
+							labels: sa.metadata.labels ?? undefined,
+						}}
+					/>
 					<CheckAccessButton
 						subject={{ kind: "serviceaccount", name: sa.metadata.name }}
 						subjectLabel={displayLabel(sa.metadata)}

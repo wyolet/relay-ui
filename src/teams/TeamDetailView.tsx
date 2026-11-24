@@ -22,6 +22,7 @@ import { DetailPageHeader } from "@/shared/DetailPageHeader";
 import { ReferencesList } from "@/shared/ReferencesList";
 import { StatusBadge } from "@/shared/StatusBadge";
 import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
+import { ShortcutActions } from "@/shortcuts/ShortcutActions";
 import { ScopeSpendCard } from "@/teams/ScopeSpendCard";
 import { useToggleTeamEnabled } from "@/teams/useToggleTeamEnabled";
 
@@ -90,7 +91,16 @@ export function TeamDetailView({ name }: { name: string }) {
 							{content}
 						</Link>
 					)}
-				/>
+				>
+					<ShortcutActions
+						target={{
+							kind: "team",
+							id: teamId,
+							name: team.metadata.name,
+							label: displayLabel(team.metadata),
+						}}
+					/>
+				</DetailHeaderActions>
 			</DetailPageHeader>
 
 			{labels.length > 0 && (

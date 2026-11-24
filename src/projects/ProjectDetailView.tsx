@@ -35,6 +35,7 @@ import { DetailPageHeader } from "@/shared/DetailPageHeader";
 import { ReferencesList } from "@/shared/ReferencesList";
 import { StatusBadge } from "@/shared/StatusBadge";
 import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
+import { ShortcutActions } from "@/shortcuts/ShortcutActions";
 import { ScopeSpendCard } from "@/teams/ScopeSpendCard";
 
 export function ProjectDetailView({ name }: { name: string }) {
@@ -112,6 +113,14 @@ export function ProjectDetailView({ name }: { name: string }) {
 						</Link>
 					)}
 				>
+					<ShortcutActions
+						target={{
+							kind: "project",
+							id: projectId,
+							name: project.metadata.name,
+							label: displayLabel(project.metadata),
+						}}
+					/>
 					<EraseBodiesButton
 						scope={{
 							project: {
