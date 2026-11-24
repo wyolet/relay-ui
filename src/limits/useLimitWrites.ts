@@ -6,10 +6,13 @@ import { required } from "@/lib/required";
 import { slugWithSuffix } from "@/lib/slug";
 import {
 	type LimitKind,
+	type LimitLink,
 	type LimitSpec,
 	type LimitTarget,
 	type LimitWrite,
 	limitPolicyName,
+	type SavedPolicyCase,
+	savedPolicyCase,
 	withBudgetLink,
 	withRateLimitLink,
 } from "@/limits/limitWrites";
@@ -25,14 +28,14 @@ export interface LimitSettings {
 	policyCase: OwnPolicyCase;
 	displayName: string;
 	limit: LimitSpec;
-	/** False gives each account under the target a cap or count of its own. */
-	shared: boolean;
+	link: LimitLink;
 }
 
 export interface AddedLimit {
 	kind: LimitKind;
 	limitName: string;
 	policyName: string;
+	policyCase: SavedPolicyCase;
 	target: LimitTarget;
 }
 
@@ -65,10 +68,7 @@ export function useLimitWrites() {
 				const row =
 					limit.kind === "budget"
 						? await createBudget.mutateAsync({ metadata, spec: limit.spec })
-						: await createRateLimit.mutateAsync({
-								metadata,
-								spec: { enabled: true, rules: limit.rules },
-							});
+						: await createRateLimit.mutateAsync({ metadata, spec: limit.spec });
 				made.limitId = row.metadata.id;
 				made.limitName = row.metadata.name;
 				return;
@@ -85,8 +85,12 @@ export function useLimitWrites() {
 						displayName: limitPolicyName(target.label),
 					},
 					limit.kind === "budget"
-						? withBudgetLink(limitId, settings.shared)
-						: withRateLimitLink(limitId, limit.models, settings.shared),
+						? withBudgetLink(limitId, settings.link.shared)
+						: withRateLimitLink(
+								limitId,
+								settings.link.models,
+								settings.link.shared,
+							),
 				);
 				return;
 			}
@@ -100,6 +104,7 @@ export function useLimitWrites() {
 			kind: settings.limit.kind,
 			limitName: required(made.limitName, "limit"),
 			policyName: required(made.policy?.metadata.name, "policy"),
+			policyCase: savedPolicyCase(settings.policyCase),
 			target: settings.target,
 		};
 	}

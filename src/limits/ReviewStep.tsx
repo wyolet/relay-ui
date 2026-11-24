@@ -1,48 +1,96 @@
 import { CircleDollarSign, ListChecks } from "lucide-react";
+import type { UnpricedWarning } from "@/limits/limitWrites";
 import type { useAddLimitForm } from "@/limits/useAddLimitForm";
 import { UnpricedGrantList } from "@/policies/UnpricedUnderBudget";
 import { AlertBanner } from "@/shared/AlertBanner";
+import { DryRunWarnings } from "@/shared/DryRunWarnings";
 import { FormSection } from "@/shared/FormSection";
+import { MessagesBanner } from "@/shared/MessagesBanner";
+import { PlannedRows } from "@/shared/PlannedRows";
+import { RefusedIssues } from "@/shared/RefusedIssues";
 import { WriteList } from "@/shared/WriteList";
 
 type AddLimitForm = ReturnType<typeof useAddLimitForm>;
 
+const UNPRICED_TITLE = "These models will be refused once the cap applies";
+
+function UnpricedList({ unpriced }: { unpriced: UnpricedWarning }) {
+	switch (unpriced.kind) {
+		case "none":
+			return null;
+		case "noPolicy":
+			return (
+				<p className="text-xs text-muted-foreground">
+					Models without a price are refused under a spend cap.
+				</p>
+			);
+		case "grants":
+			return (
+				<AlertBanner
+					severity="warn"
+					title={UNPRICED_TITLE}
+					body={<UnpricedGrantList grants={unpriced.grants} />}
+				/>
+			);
+		case "models":
+			return (
+				<MessagesBanner
+					severity="warn"
+					title={UNPRICED_TITLE}
+					messages={unpriced.models}
+					role="status"
+				/>
+			);
+	}
+}
+
 export function ReviewStep({ limit }: { limit: AddLimitForm }) {
-	const { unpriced } = limit;
 	return (
 		<div className="divide-y divide-border">
-			{unpriced.kind !== "none" && (
+			{limit.unpriced.kind !== "none" && (
 				<FormSection
 					icon={CircleDollarSign}
 					title="Unpriced models"
 					description="Relay can't count spend on a model without a price, so a spend cap refuses it (403 unpriced_under_budget)."
 				>
-					{unpriced.kind === "noPolicy" ? (
-						<p className="text-xs text-muted-foreground">
-							Models without a price are refused under a spend cap.
-						</p>
-					) : (
-						<AlertBanner
-							severity="warn"
-							title="These models will be refused once the cap applies"
-							body={<UnpricedGrantList grants={unpriced.grants} />}
-						/>
-					)}
+					<UnpricedList unpriced={limit.unpriced} />
 				</FormSection>
 			)}
 
 			<FormSection
 				icon={ListChecks}
 				title="On save"
-				description="What Add limit does, in this order."
+				description={
+					limit.oneRequest
+						? "What Add limit makes and changes, in one request. Relay does all of it or none."
+						: "What Add limit does, in this order."
+				}
 			>
-				<WriteList
-					items={limit.planned.map((w) => ({
-						id: w.id,
-						label: w.label,
-						status: "waiting",
-					}))}
-				/>
+				{limit.oneRequest ? (
+					<div className="flex flex-col gap-3">
+						<RefusedIssues messages={limit.refusedIssues} />
+						<DryRunWarnings messages={limit.previewWarnings} />
+						{limit.refusalMessage && (
+							<p role="alert" className="text-[11px] text-destructive">
+								{limit.refusalMessage}
+							</p>
+						)}
+						<PlannedRows
+							rows={limit.previewRows}
+							label="What Add limit does"
+							loading={limit.previewLoading}
+							stale={limit.previewStale}
+						/>
+					</div>
+				) : (
+					<WriteList
+						items={limit.planned.map((w) => ({
+							id: w.id,
+							label: w.label,
+							status: "waiting",
+						}))}
+					/>
+				)}
 			</FormSection>
 		</div>
 	);
