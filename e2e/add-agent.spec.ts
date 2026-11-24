@@ -847,9 +847,9 @@ test.describe("Add agent owned by a team or a user", () => {
 					error: {
 						type: "permission_error",
 						code: "personal_account_off",
-						message: "personal accounts are off for this user",
+						message: "personal accounts are turned off for test",
 					},
-					pointer: "/metadata/owner",
+					pointer: "/spec/key",
 				},
 			},
 		});
