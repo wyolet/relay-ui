@@ -4,10 +4,11 @@ import { DelayedFallback } from "@/shared/DelayedFallback";
 import { FigureRowSkeleton } from "@/shared/FigureRow";
 import { NO_TRAFFIC_ACTION, NoTraffic } from "@/shared/NoTraffic";
 import { Section, SectionSkeleton } from "@/shared/Section";
+import { AgentsPanel } from "./AgentsPanel";
 import { AttentionList } from "./AttentionList";
 import { Breakdown } from "./Breakdown";
-import { HealthBlock } from "./HealthBlock";
 import { Headline } from "./Headline";
+import { HealthBlock } from "./HealthBlock";
 import { TrafficChart } from "./TrafficChart";
 import { useDashboardTraffic } from "./useDashboardTraffic";
 import { WeekFacts } from "./WeekFacts";
@@ -38,24 +39,27 @@ export function DashboardUsage() {
 
 	if (!hasTraffic) {
 		return (
-			<div className={SPLIT}>
-				<NoTraffic
-					title={`No traffic ${period}`}
-					actions={
-						<>
-							<Link to="/keys/new" className={NO_TRAFFIC_ACTION}>
-								Issue a key →
-							</Link>
-							<Link to="/logs" className={NO_TRAFFIC_ACTION}>
-								Open logs →
-							</Link>
-						</>
-					}
-				>
-					Requests sent through this relay show up here: spend, tokens, the
-					busiest hours and who sent them.
-				</NoTraffic>
-				<AttentionSection />
+			<div className="grid gap-14">
+				<div className={SPLIT}>
+					<NoTraffic
+						title={`No traffic ${period}`}
+						actions={
+							<>
+								<Link to="/keys/new" className={NO_TRAFFIC_ACTION}>
+									Issue a key →
+								</Link>
+								<Link to="/logs" className={NO_TRAFFIC_ACTION}>
+									Open logs →
+								</Link>
+							</>
+						}
+					>
+						Requests sent through this relay show up here: spend, tokens, the
+						busiest hours and who sent them.
+					</NoTraffic>
+					<AttentionSection />
+				</div>
+				<AgentsPanel />
 			</div>
 		);
 	}
@@ -70,6 +74,7 @@ export function DashboardUsage() {
 				<HealthBlock />
 			</div>
 			<WeekHeatmap />
+			<AgentsPanel />
 			<Breakdown />
 		</div>
 	);
@@ -89,6 +94,7 @@ export function DashboardUsageSkeleton() {
 				<SectionSkeleton title="Health" height="h-[260px]" />
 			</div>
 			<SectionSkeleton title="Activity" height="h-[200px]" />
+			<SectionSkeleton title="Agents" height="h-[160px]" />
 		</div>
 	);
 }
