@@ -4,33 +4,40 @@ import type {
 } from "@/api/hooks/pseudoLimits";
 import type { components } from "@/api/types.gen";
 import { required } from "@/lib/required";
-import type { LimitLink, LimitSpec, LimitTarget } from "@/limits/limitWrites";
+import type {
+	LimitKind,
+	LimitLink,
+	LimitSpec,
+	LimitTarget,
+} from "@/limits/limitWrites";
 import type { AddedLimit } from "@/limits/useLimitWrites";
 import { pseudoTarget } from "@/pseudo/target";
 
-type LimitsSpec = components["schemas"]["LimitsSpec"];
+type LinkBody = components["schemas"]["LimitLink"];
+type StoredLink = components["schemas"]["PseudoLimitLink"];
 
-/**
- * Whether relay's body takes the link options. Once the generated spec gains
- * `link` this stops compiling: set it true and fill `link` in the body.
- */
-export const BODY_HAS_LINK: "link" extends keyof LimitsSpec ? true : false =
-	false;
-
-/** Whether one request says it all: always once the body has the link, else only for its defaults (shared, every model). */
-export function postsOnce(link: LimitLink, bodyHasLink: boolean): boolean {
-	return bodyHasLink || (link.shared && link.models.length === 0);
+/** The link options that differ from relay's defaults (shared, every model); undefined when none do. A budget never sends models. */
+export function pseudoLimitLink(
+	kind: LimitKind,
+	link: LimitLink,
+): LinkBody | undefined {
+	const body: LinkBody = {
+		...(link.shared ? {} : { shared: false }),
+		...(kind === "rateLimit" && link.models.length > 0
+			? { models: [...link.models] }
+			: {}),
+	};
+	return Object.keys(body).length > 0 ? body : undefined;
 }
 
-/**
- * The `POST /pseudo-limits` body; relay links the limit with the defaults.
- * `name` is always sent: relay answers 409 when a name it derives is taken.
- */
+/** The `POST /pseudo-limits` body. `name` is always sent: relay answers 409 when a name it derives is taken. */
 export function pseudoLimitsBody(
 	target: Pick<LimitTarget, "kind" | "id">,
 	metadata: { name: string; displayName: string },
 	limit: LimitSpec,
+	link: LimitLink,
 ): PseudoLimits {
+	const linkBody = pseudoLimitLink(limit.kind, link);
 	return {
 		metadata,
 		spec: {
@@ -38,8 +45,14 @@ export function pseudoLimitsBody(
 			...(limit.kind === "budget"
 				? { budget: limit.spec }
 				: { rateLimit: limit.spec }),
+			...(linkBody ? { link: linkBody } : {}),
 		},
 	};
+}
+
+/** The link as relay stored it. */
+export function storedLink(link: StoredLink): LimitLink {
+	return { shared: link.shared, models: link.models ?? [] };
 }
 
 /** The done screen's data from relay's answer. */
@@ -47,9 +60,11 @@ export function addedFromAnswer(
 	answer: PseudoLimitsAnswer,
 	target: LimitTarget,
 ): AddedLimit {
+	const limit = required(answer.budget ?? answer.rateLimit, "limit");
 	return {
 		kind: answer.budget ? "budget" : "rateLimit",
-		limitName: required(answer.budget ?? answer.rateLimit, "limit").name,
+		limitName: limit.name,
+		link: storedLink(limit.link),
 		policyName: required(answer.policy, "policy").name,
 		policyCase: answer.case,
 		target,

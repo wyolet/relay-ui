@@ -2,6 +2,7 @@ import { CircleDollarSign, ListChecks } from "lucide-react";
 import type { UnpricedWarning } from "@/limits/limitWrites";
 import type { useAddLimitForm } from "@/limits/useAddLimitForm";
 import { UnpricedGrantList } from "@/policies/UnpricedUnderBudget";
+import { AccountsUnder } from "@/shared/AccountsUnder";
 import { AlertBanner } from "@/shared/AlertBanner";
 import { DryRunReview } from "@/shared/DryRunReview";
 import { FormSection } from "@/shared/FormSection";
@@ -65,15 +66,18 @@ export function ReviewStep({ limit }: { limit: AddLimitForm }) {
 				}
 			>
 				{limit.oneRequest ? (
-					<DryRunReview
-						issues={limit.refusedIssues}
-						warnings={limit.previewWarnings}
-						refusalMessage={limit.refusalMessage}
-						rows={limit.previewRows}
-						label="What Add limit does"
-						loading={limit.previewLoading}
-						stale={limit.previewStale}
-					/>
+					<div className="flex flex-col gap-3">
+						<DryRunReview
+							issues={limit.refusedIssues}
+							warnings={limit.previewWarnings}
+							refusalMessage={limit.refusalMessage}
+							rows={limit.previewRows}
+							label="What Add limit does"
+							loading={limit.previewLoading}
+							stale={limit.previewStale}
+						/>
+						<AccountsUnder state={limit.under} target={limit.target.label} />
+					</div>
 				) : (
 					<WriteList
 						items={limit.planned.map((w) => ({

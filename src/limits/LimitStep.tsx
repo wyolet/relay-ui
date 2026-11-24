@@ -32,12 +32,14 @@ function perAccountHint(kind: LimitKind, target: string): string {
 export function LimitStep({ limit }: { limit: AddLimitForm }) {
 	const { form, values, errors, target } = limit;
 	const nameErrorId = useId();
+	const modelsErrorId = useId();
 	const perAccount = limit.perAccountOffered && (
 		<ToggleSwitch
 			value={values.perAccount}
 			onChange={(on) => form.setFieldValue("perAccount", on)}
 			label={PER_ACCOUNT_LABEL[values.kind]}
 			hint={perAccountHint(values.kind, target.label)}
+			error={errors.perAccount}
 		/>
 	);
 	return (
@@ -87,11 +89,18 @@ export function LimitStep({ limit }: { limit: AddLimitForm }) {
 						title="Models"
 						description="Providers or single models the limit counts. Leave it empty to count every model."
 					>
-						<ModelPicker
-							value={values.models}
-							onChange={(next) => form.setFieldValue("models", next)}
-							emptyText="Every model counts. Pick providers or models to count only those."
-						/>
+						<fieldset
+							aria-label="Models counted"
+							aria-describedby={errors.models ? modelsErrorId : undefined}
+							className="min-w-0"
+						>
+							<ModelPicker
+								value={values.models}
+								onChange={(next) => form.setFieldValue("models", next)}
+								emptyText="Every model counts. Pick providers or models to count only those."
+							/>
+						</fieldset>
+						<FieldError id={modelsErrorId} message={errors.models} />
 					</FormSection>
 				)}
 

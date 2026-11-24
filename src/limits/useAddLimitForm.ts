@@ -24,11 +24,7 @@ import {
 	unpricedWarning,
 	wholeRateAmount,
 } from "@/limits/limitWrites";
-import {
-	BODY_HAS_LINK,
-	postsOnce,
-	pseudoLimitsBody,
-} from "@/limits/pseudoLimitsBody";
+import { pseudoLimitsBody } from "@/limits/pseudoLimitsBody";
 import { useLimitCurrent } from "@/limits/useLimitCurrent";
 import { useLimitWrites } from "@/limits/useLimitWrites";
 import { usePseudoLimitRun } from "@/limits/usePseudoLimitRun";
@@ -39,6 +35,7 @@ import {
 } from "@/policy-bindings/ownPolicy";
 import { warnedFields, warningMessages } from "@/pseudo/dryRun";
 import { sameAnswers } from "@/pseudo/refusal";
+import { useUnderConfirm } from "@/pseudo/useUnderConfirm";
 
 export const LIMIT_FORM_STEPS = ["limit", "review"] as const;
 export type LimitFormStep = (typeof LIMIT_FORM_STEPS)[number];
@@ -47,6 +44,8 @@ const FIELD_STEP = {
 	displayName: "limit",
 	amountUsd: "limit",
 	rateAmount: "limit",
+	perAccount: "limit",
+	models: "limit",
 } as const satisfies Partial<Record<keyof LimitAnswers, LimitFormStep>> &
 	Record<LimitRefusalField, LimitFormStep>;
 
@@ -58,6 +57,8 @@ const REFUSAL_INPUTS: Record<
 	displayName: ["kind", "displayName"],
 	amountUsd: ["kind", "amountUsd", "period", "mode"],
 	rateAmount: ["kind", "rateAmount", "meter", "per", "models"],
+	perAccount: ["kind", "perAccount"],
+	models: ["kind", "models"],
 };
 
 const schema = z
@@ -116,9 +117,13 @@ export function useAddLimitForm({ target, accountId, policyCase }: LimitStart) {
 	const namePlaceholder = defaultLimitName(values.kind, target.label);
 	const perAccountOffered = hasAccountsUnder(target.kind);
 	const link = limitLink(values, target.kind);
-	const oneRequest = pseudo.oneRequest && postsOnce(link, BODY_HAS_LINK);
+	const { oneRequest } = pseudo;
+	const under = useUnderConfirm(
+		pseudo.previewAnswer,
+		pseudo.previewLoading || pseudo.previewStale,
+	);
 	const idle = writes.phase === "idle" && pseudo.run.phase === "idle";
-	const current = useLimitCurrent(target, pseudo.oneRequest, idle);
+	const current = useLimitCurrent(target, oneRequest, idle);
 	const planned = limitWrites(values.kind, policyCase, target.label);
 	const currentPolicy =
 		policyCase.kind === "update" || policyCase.kind === "copy"
@@ -162,6 +167,7 @@ export function useAddLimitForm({ target, accountId, policyCase }: LimitStart) {
 			target,
 			{ name: slugEndingIn(displayName, suffix.current), displayName },
 			limitSpec(values),
+			link,
 		);
 	}
 
@@ -240,6 +246,8 @@ export function useAddLimitForm({ target, accountId, policyCase }: LimitStart) {
 		previewWarnings: warningMessages(pseudo.previewWarnings),
 		refusedIssues,
 		refusalMessage,
+		under,
+		finishDisabled: oneRequest && under.blocksSave,
 		writes: oneRequest ? pseudo.run : writes,
 		added: oneRequest ? pseudo.created : writes.added,
 	};

@@ -34,6 +34,8 @@ export interface LimitSettings {
 export interface AddedLimit {
 	kind: LimitKind;
 	limitName: string;
+	/** How the policy links the limit, as saved. */
+	link: LimitLink;
 	policyName: string;
 	policyCase: SavedPolicyCase;
 	target: LimitTarget;
@@ -103,6 +105,7 @@ export function useLimitWrites() {
 		return {
 			kind: settings.limit.kind,
 			limitName: required(made.limitName, "limit"),
+			link: settings.link,
 			policyName: required(made.policy?.metadata.name, "policy"),
 			policyCase: savedPolicyCase(settings.policyCase),
 			target: settings.target,

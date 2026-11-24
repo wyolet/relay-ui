@@ -57,6 +57,7 @@ function LimitForm({ start }: { start: LimitStart }) {
 			steps={STEPS}
 			form={limit}
 			finishLabel="Add limit"
+			finishDisabled={limit.finishDisabled}
 			runTitle="Adding the limit"
 			result={limit.added && <LimitAdded added={limit.added} />}
 			onCancel={openTarget}

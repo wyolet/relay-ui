@@ -96,6 +96,27 @@ export function limitLink(
 	};
 }
 
+/** How a saved limit counts the accounts under its target; nothing for a service account, which has only its own. */
+export function linkCountedLine(
+	link: Pick<LimitLink, "shared">,
+	targetKind: ShortcutTargetKind,
+	targetLabel: string,
+): string | undefined {
+	if (!hasAccountsUnder(targetKind)) return undefined;
+	return link.shared
+		? `Once for everyone under ${targetLabel}`
+		: `Separately for each account under ${targetLabel}`;
+}
+
+/** The models a saved rate limit counts, one per line; nothing for a spend cap, which counts every model. */
+export function linkModelLines(
+	kind: LimitKind,
+	link: Pick<LimitLink, "models">,
+): readonly string[] | undefined {
+	if (kind !== "rateLimit") return undefined;
+	return link.models.length > 0 ? link.models : ["Every model"];
+}
+
 /**
  * What a spend cap refuses for want of a price: the current policy's unpriced
  * models, or, with no policy yet, whatever unpriced model the target reaches.

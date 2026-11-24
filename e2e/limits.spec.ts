@@ -137,32 +137,37 @@ interface PseudoSetup {
 	policyCase?: "none" | "own" | "copy";
 	unpricedModels?: string[];
 	dryRunWarnings?: object[];
+	/** What each dry run with a limit says about the accounts under the target. */
+	under?: object;
 	/** Relay's answer to the first `POST /pseudo-limits` that isn't a dry run. */
 	refuseOnce?: MockAnswer;
 }
 
 const LIMIT_POLICY = { id: "pol-1", name: "platform-limits" };
 
-/** Relay's answer to a limit: the rows it makes and changes for the case, in write order. */
-function pseudoLimitsAnswer(
-	body: { spec?: { budget?: object } },
-	pseudo: PseudoSetup,
-	dryRun: boolean,
-) {
+interface LimitsBody {
+	spec?: { budget?: object; link?: { shared?: boolean; models?: string[] } };
+}
+
+/** Relay's answer to a limit: the rows it makes and changes for the case, in write order, and the link as stored. */
+function pseudoLimitsAnswer(body: LimitsBody, pseudo: PseudoSetup, dryRun: boolean) {
 	const policyCase = pseudo.policyCase ?? "none";
 	const budget = Boolean(body.spec?.budget);
 	const limit = budget
 		? { kind: "budget", id: "b-1", name: "platform-cap" }
 		: { kind: "rate-limit", id: "rl-1", name: "platform-rate-limit" };
+	const models = body.spec?.link?.models;
+	const link = { shared: body.spec?.link?.shared ?? true, ...(models ? { models } : {}) };
 	const policy = { kind: "policy", ...LIMIT_POLICY };
 	const binding = { kind: "policy-binding", id: "pb-1", name: "platform-limits-binding" };
 	return {
 		case: policyCase,
 		policy: LIMIT_POLICY,
-		...(budget ? { budget: limit } : { rateLimit: limit }),
+		...(budget ? { budget: { ...limit, link } } : { rateLimit: { ...limit, link } }),
 		created: policyCase === "own" ? [limit] : [limit, policy, binding],
 		...(policyCase === "own" ? { updated: [policy] } : {}),
 		...(budget && pseudo.unpricedModels ? { unpricedModels: pseudo.unpricedModels } : {}),
+		...(pseudo.under ? { under: pseudo.under } : {}),
 		warnings: dryRun ? (pseudo.dryRunWarnings ?? []) : [],
 	};
 }
@@ -765,33 +770,36 @@ test.describe("Add a limit in one request", () => {
 		expect(writes(sent)).toEqual(["POST pseudo-limits?current"]);
 	});
 
-	test("one cap for each account runs the chain while relay's body has no link options", async ({
-		page,
-	}) => {
+	test("one cap for each account goes in the one request as shared: false", async ({ page }) => {
 		const sent = await mockLimitApi(page, { pseudo: {} });
 		await page.goto(`/limits/add?targetKind=team&id=${TEAM}`);
 		await page.getByRole("switch", { name: "One cap for each account under it" }).click();
 		await fillCap(page, "20");
-		await expect(page.getByText("What Add limit does, in this order.")).toBeVisible();
+		await expect(page.getByText(/in one request\. Relay does all of it or none\./)).toBeVisible();
 		await page.getByRole("button", { name: "Add limit" }).click();
 
 		await expect(page.getByRole("heading", { name: "Limit added" })).toBeVisible();
 		expect(writes(sent)).toEqual([
 			"POST pseudo-limits?current",
-			"POST budgets",
-			"POST policies",
-			"PUT accounts/acct-team/policy",
+			"POST pseudo-limits?dryRun",
+			"POST pseudo-limits",
 		]);
-		expect(sent[2]?.body.spec).toMatchObject({
-			budgets: [{ budgetId: "made-2", shared: false }],
+		expect(submits(sent)[0]?.body.spec).toEqual({
+			target: { kind: "team", id: TEAM },
+			budget: { amountUsd: "20", period: "month", mode: "hard" },
+			link: { shared: false },
 		});
+		await expect(page.getByText("Separately for each account under Platform")).toBeVisible();
 	});
 
-	test("a model-scoped rate limit runs the chain", async ({ page }) => {
+	test("one count each, scoped to a model, goes in the one request with the rate limit", async ({
+		page,
+	}) => {
 		const sent = await mockLimitApi(page, { pseudo: {} });
-		await page.goto(`/limits/add?targetKind=serviceaccount&id=${SERVICE_ACCOUNT}`);
+		await page.goto(`/limits/add?targetKind=project&id=${PROJECT}`);
 		await page.getByRole("button", { name: "Rate limit" }).click();
-		await page.getByRole("textbox", { name: "Maximum requests" }).fill("10");
+		await page.getByRole("textbox", { name: "Maximum requests" }).fill("2");
+		await page.getByRole("switch", { name: "One count for each account under it" }).click();
 		await page.getByRole("tab", { name: "Models" }).click();
 		await page.getByRole("button", { name: /Claude Sonnet/ }).click();
 		await page.getByRole("button", { name: "Next" }).click();
@@ -800,12 +808,123 @@ test.describe("Add a limit in one request", () => {
 		await expect(page.getByRole("heading", { name: "Limit added" })).toBeVisible();
 		expect(writes(sent)).toEqual([
 			"POST pseudo-limits?current",
-			"POST rate-limits",
-			"POST policies",
-			"PUT accounts/acct-lane/policy",
+			"POST pseudo-limits?dryRun",
+			"POST pseudo-limits",
 		]);
-		expect(sent[2]?.body.spec).toMatchObject({
-			rateLimits: [{ rateLimitId: "made-2", models: ["anthropic/claude-sonnet"], shared: true }],
+		expect(submits(sent)[0]?.body.spec).toEqual({
+			target: { kind: "project", id: PROJECT },
+			rateLimit: {
+				enabled: true,
+				rules: [{ amount: 2, meter: "requests", strategy: "sliding-window", window: 60 }],
+			},
+			link: { shared: false, models: ["anthropic/claude-sonnet"] },
 		});
+		await expect(page.getByText("Separately for each account under Search")).toBeVisible();
+		await expect(page.getByText("anthropic/claude-sonnet", { exact: true })).toBeVisible();
+	});
+
+	test("accounts under the team: counts, the ones that stop working, and a confirm before Add limit", async ({
+		page,
+	}) => {
+		const sent = await mockLimitApi(page, {
+			pseudo: {
+				under: {
+					lanes: 6,
+					narrowed: 2,
+					widened: 1,
+					unreachable: [
+						{ kind: "account", id: "acct-lane", name: "acct-lane" },
+						{ kind: "account", id: "acct-hidden" },
+					],
+					unreachableMore: 3,
+				},
+			},
+		});
+		await page.goto(`/limits/add?targetKind=team&id=${TEAM}`);
+		await fillCap(page, "5");
+
+		const under = page.getByRole("region", { name: "Accounts under Platform" });
+		await expect(under.getByText("2 accounts under Platform get less.")).toBeVisible();
+		await expect(under.getByText("1 account under Platform gets more.")).toBeVisible();
+		await expect(under.getByText("5 accounts under Platform will stop working.")).toBeVisible();
+		await expect(under.getByRole("list", { name: "Will stop working" }).getByRole("listitem")).toHaveText([
+			/^Account\s*acct-lane$/,
+			/^Account\s*one you can't see$/,
+			"and 3 more",
+		]);
+		const confirm = page.getByRole("checkbox", { name: "I understand these will stop working." });
+		const add = page.getByRole("button", { name: "Add limit" });
+		await expect(add).toBeDisabled();
+		await confirm.click();
+		await expect(add).toBeEnabled();
+
+		await page.getByRole("button", { name: "Back" }).click();
+		await page.getByRole("button", { name: "Next" }).click();
+		await expect(confirm).not.toBeChecked();
+		await expect(add).toBeDisabled();
+		await confirm.click();
+		await add.click();
+
+		await expect(page.getByRole("heading", { name: "Limit added" })).toBeVisible();
+		expect(writes(sent)).toEqual([
+			"POST pseudo-limits?current",
+			"POST pseudo-limits?dryRun",
+			"POST pseudo-limits?dryRun",
+			"POST pseudo-limits",
+		]);
+	});
+
+	test("accounts under the team that keep working need no confirm", async ({ page }) => {
+		await mockLimitApi(page, {
+			pseudo: { under: { lanes: 3, narrowed: 3, widened: 0, unreachable: null } },
+		});
+		await page.goto(`/limits/add?targetKind=team&id=${TEAM}`);
+		await fillCap(page, "5");
+
+		const under = page.getByRole("region", { name: "Accounts under Platform" });
+		await expect(under.getByText("3 accounts under Platform get less.")).toBeVisible();
+		await expect(page.getByRole("checkbox")).toHaveCount(0);
+		await expect(page.getByRole("button", { name: "Add limit" })).toBeEnabled();
+	});
+
+	test("other accounts changed: relay's message on the review step, no field marked, the confirm can't pass it", async ({
+		page,
+	}) => {
+		const message =
+			"the change would alter what 2 other accounts may use (1 of them would lose something); nothing was written";
+		const sent = await mockLimitApi(page, {
+			pseudo: {
+				under: {
+					lanes: 2,
+					narrowed: 1,
+					widened: 0,
+					unreachable: [{ kind: "account", id: "acct-lane", name: "acct-lane" }],
+				},
+				refuseOnce: {
+					status: 422,
+					json: {
+						error: {
+							type: "invalid_request_error",
+							code: "other_accounts_changed",
+							message,
+						},
+					},
+				},
+			},
+		});
+		await page.goto(`/limits/add?targetKind=team&id=${TEAM}`);
+		await fillCap(page, "5");
+		await page.getByRole("checkbox", { name: "I understand these will stop working." }).click();
+		await page.getByRole("button", { name: "Add limit" }).click();
+
+		await expect(page.getByRole("alert")).toHaveText(message);
+		await expect(page.getByRole("heading", { name: "Limit added" })).toHaveCount(0);
+		expect(submits(sent)).toHaveLength(1);
+		await page.getByRole("button", { name: "Back" }).click();
+		await expect(page.getByRole("textbox", { name: "Amount in USD" })).not.toHaveAttribute(
+			"aria-invalid",
+			"true",
+		);
+		await expect(page.getByRole("alert")).toHaveCount(0);
 	});
 });

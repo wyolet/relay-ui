@@ -10,6 +10,8 @@ import {
 	limitPolicyName,
 	limitSpec,
 	limitWrites,
+	linkCountedLine,
+	linkModelLines,
 	policyCaseLine,
 	savedCaseLine,
 	savedPolicyCase,
@@ -187,6 +189,40 @@ describe("limitLink", () => {
 
 	it("stays shared for a service account, which has only its own account", () => {
 		expect(limitLink(answers, "serviceaccount").shared).toBe(true);
+	});
+});
+
+describe("linkCountedLine", () => {
+	it("says whether everyone under a team or project shares the limit", () => {
+		expect(linkCountedLine({ shared: true }, "team", "Platform")).toBe(
+			"Once for everyone under Platform",
+		);
+		expect(linkCountedLine({ shared: false }, "project", "Search")).toBe(
+			"Separately for each account under Search",
+		);
+	});
+
+	it("says nothing for a service account, which has only its own account", () => {
+		expect(
+			linkCountedLine({ shared: true }, "serviceaccount", "Indexer"),
+		).toBeUndefined();
+	});
+});
+
+describe("linkModelLines", () => {
+	it("lists a rate limit's models, or every model when it names none", () => {
+		expect(
+			linkModelLines("rateLimit", {
+				models: ["google/gemma4-e4b", "anthropic"],
+			}),
+		).toEqual(["google/gemma4-e4b", "anthropic"]);
+		expect(linkModelLines("rateLimit", { models: [] })).toEqual([
+			"Every model",
+		]);
+	});
+
+	it("lists nothing for a spend cap", () => {
+		expect(linkModelLines("budget", { models: [] })).toBeUndefined();
 	});
 });
 
