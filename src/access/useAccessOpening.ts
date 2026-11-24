@@ -6,11 +6,7 @@ import {
 	currentAccessPrefill,
 } from "@/access/accessOptions";
 import type { AccessTarget } from "@/access/accessTarget";
-import {
-	ACCESS_KIND,
-	prefillRefusal,
-	pseudoAccessTarget,
-} from "@/access/pseudoAccessBody";
+import { ACCESS_KIND, prefillRefusal } from "@/access/pseudoAccessBody";
 import {
 	type AgentAccount,
 	type AgentPool,
@@ -37,6 +33,7 @@ import { pseudoKind } from "@/api/runtimeConfig";
 import { displayLabel } from "@/lib/displayLabel";
 import { scopeOwner, scopeUsableBy } from "@/lib/ownerPick";
 import { type OwnPolicyCase, ownPolicyCase } from "@/policy-bindings/ownPolicy";
+import { pseudoTarget } from "@/pseudo/target";
 
 /** What the form may offer the target. */
 export interface AccessOffers {
@@ -124,7 +121,7 @@ export function useAccessCase(target: AccessTarget): AccessCaseState {
 	const policies = useQuery({ ...policiesListQueryOptions, ...chain });
 	const bindings = useQuery({ ...policyBindingsAllQueryOptions, ...chain });
 	const pools = useQuery({ ...poolListQueryOptions, ...chain });
-	const current = usePseudoAccessCurrent(pseudoAccessTarget(target), {
+	const current = usePseudoAccessCurrent(pseudoTarget(target), {
 		enabled: oneRequest,
 	});
 

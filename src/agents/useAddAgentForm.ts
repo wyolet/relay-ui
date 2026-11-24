@@ -42,6 +42,7 @@ import { usePickerCatalog } from "@/models/usePickerCatalog";
 import { bindingPolicyOptions } from "@/policy-bindings/accountLookup";
 import { warnedFields, warningMessages } from "@/pseudo/dryRun";
 import type { FieldIssue } from "@/pseudo/pointerField";
+import { sameAnswers } from "@/pseudo/refusal";
 
 export const AGENT_FORM_STEPS = ["agent", "access", "key"] as const;
 export type AgentFormStep = (typeof AGENT_FORM_STEPS)[number];
@@ -171,14 +172,6 @@ function keySettings(
 		passthroughAllowed: v.passthroughAllowed,
 		payloadLoggingEnabled: v.payloadLoggingEnabled,
 	};
-}
-
-function sameAnswers(
-	a: AddAgentValues,
-	b: AddAgentValues,
-	keys: readonly (keyof AddAgentValues)[],
-): boolean {
-	return keys.every((k) => JSON.stringify(a[k]) === JSON.stringify(b[k]));
 }
 
 export function useAddAgentForm(start?: Partial<AddAgentValues>) {

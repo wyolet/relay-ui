@@ -1,14 +1,12 @@
 import { describe, expect, it } from "bun:test";
 import type { PseudoLimitsAnswer } from "@/api/hooks/pseudoLimits";
-import { PseudoRefusal } from "@/api/types/errors";
-import { isPolicySetAbove, LIMIT_POINTER_FIELDS } from "@/limits/limitRefusal";
+import { LIMIT_POINTER_FIELDS } from "@/limits/limitRefusal";
 import type { LimitTarget } from "@/limits/limitWrites";
 import {
 	addedFromAnswer,
 	BODY_HAS_LINK,
 	postsOnce,
 	pseudoLimitsBody,
-	pseudoTargetKind,
 } from "@/limits/pseudoLimitsBody";
 import { pointerField } from "@/pseudo/pointerField";
 
@@ -28,14 +26,6 @@ const rules = [
 		window: 60,
 	},
 ];
-
-describe("pseudoTargetKind", () => {
-	it("spells a service account as relay does and keeps team and project", () => {
-		expect(pseudoTargetKind("serviceaccount")).toBe("service-account");
-		expect(pseudoTargetKind("team")).toBe("team");
-		expect(pseudoTargetKind("project")).toBe("project");
-	});
-});
 
 describe("postsOnce", () => {
 	it("posts once for the link's defaults while the body has no link", () => {
@@ -140,28 +130,5 @@ describe("limit pointer fields", () => {
 
 	it("names no field for the target, which the form doesn't edit", () => {
 		expect(field("/spec/target")).toBeUndefined();
-	});
-});
-
-describe("isPolicySetAbove", () => {
-	it("is relay's 403 for a policy set above the caller", () => {
-		const above = new PseudoRefusal(403, {
-			error: {
-				type: "permission_error",
-				code: "policy_set_above",
-				message: "set by the organization",
-			},
-			pointer: "/spec/target",
-		});
-		expect(isPolicySetAbove(above)).toBe(true);
-		expect(
-			isPolicySetAbove(
-				new PseudoRefusal(404, {
-					error: { type: "not_found_error", message: "no such team" },
-					pointer: "/spec/target",
-				}),
-			),
-		).toBe(false);
-		expect(isPolicySetAbove(new Error("offline"))).toBe(false);
 	});
 });

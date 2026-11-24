@@ -1,9 +1,7 @@
 import { ListChecks } from "lucide-react";
 import type { useSetAccessForm } from "@/access/useSetAccessForm";
-import { DryRunWarnings } from "@/shared/DryRunWarnings";
+import { DryRunReview } from "@/shared/DryRunReview";
 import { FormSection } from "@/shared/FormSection";
-import { PlannedRows } from "@/shared/PlannedRows";
-import { RefusedIssues } from "@/shared/RefusedIssues";
 import { WriteList } from "@/shared/WriteList";
 
 type SetAccessForm = ReturnType<typeof useSetAccessForm>;
@@ -14,25 +12,18 @@ function NoWritesLine({ access }: { access: SetAccessForm }) {
 
 function OneRequestReview({ access }: { access: SetAccessForm }) {
 	return (
-		<div className="flex flex-col gap-3">
-			<RefusedIssues messages={access.issueMessages} />
-			<DryRunWarnings messages={access.previewWarnings} />
-			{access.refusalMessage && (
-				<p role="alert" className="text-[11px] text-destructive">
-					{access.refusalMessage}
-				</p>
-			)}
-			{access.nothingChanged ? (
-				<NoWritesLine access={access} />
-			) : (
-				<PlannedRows
-					rows={access.previewRows}
-					label="What Save access does"
-					loading={access.previewLoading}
-					stale={access.previewStale}
-				/>
-			)}
-		</div>
+		<DryRunReview
+			issues={access.issueMessages}
+			warnings={access.previewWarnings}
+			refusalMessage={access.refusalMessage}
+			rows={access.previewRows}
+			label="What Save access does"
+			loading={access.previewLoading}
+			stale={access.previewStale}
+			nothingPlanned={
+				access.nothingChanged ? <NoWritesLine access={access} /> : undefined
+			}
+		/>
 	);
 }
 

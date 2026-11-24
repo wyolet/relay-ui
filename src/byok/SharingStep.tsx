@@ -2,12 +2,10 @@ import { ListChecks, Share2 } from "lucide-react";
 import { useId } from "react";
 import { receiverKey } from "@/byok/byokChoices";
 import type { useByokForm } from "@/byok/useByokForm";
-import { DryRunWarnings } from "@/shared/DryRunWarnings";
+import { DryRunReview } from "@/shared/DryRunReview";
 import { FieldError } from "@/shared/FieldError";
 import { FormSection } from "@/shared/FormSection";
 import { BoxedCheckList } from "@/shared/MultiSelect";
-import { PlannedRows } from "@/shared/PlannedRows";
-import { RefusedIssues } from "@/shared/RefusedIssues";
 import { WriteList } from "@/shared/WriteList";
 
 type ByokForm = ReturnType<typeof useByokForm>;
@@ -68,21 +66,15 @@ export function SharingStep({ byok }: { byok: ByokForm }) {
 				}
 			>
 				{byok.oneRequest ? (
-					<div className="flex flex-col gap-3">
-						<RefusedIssues messages={byok.onCreateIssues} />
-						<DryRunWarnings messages={byok.previewWarnings} />
-						{byok.refusalMessage && (
-							<p role="alert" className="text-[11px] text-destructive">
-								{byok.refusalMessage}
-							</p>
-						)}
-						<PlannedRows
-							rows={byok.previewRows}
-							label={`What ${finishLabel} makes`}
-							loading={byok.previewLoading}
-							stale={byok.previewStale}
-						/>
-					</div>
+					<DryRunReview
+						issues={byok.onCreateIssues}
+						warnings={byok.previewWarnings}
+						refusalMessage={byok.refusalMessage}
+						rows={byok.previewRows}
+						label={`What ${finishLabel} makes`}
+						loading={byok.previewLoading}
+						stale={byok.previewStale}
+					/>
 				) : (
 					<WriteList
 						items={byok.planned.map((w) => ({

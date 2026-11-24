@@ -1,10 +1,9 @@
 import { ChevronLeft } from "lucide-react";
 import { Suspense } from "react";
-import { POLICY_SET_ABOVE_LINE } from "@/access/accessPlan";
 import type { AccessTarget, AccessTargetKind } from "@/access/accessTarget";
 import { ReviewStep } from "@/access/ReviewStep";
 import { SavedStep } from "@/access/SavedStep";
-import { CurrentPolicyLine, SetAccessStep } from "@/access/SetAccessStep";
+import { SetAccessStep } from "@/access/SetAccessStep";
 import { TargetLink, useOpenTarget } from "@/access/TargetLink";
 import {
 	type AccessOffers,
@@ -19,6 +18,7 @@ import {
 	type AccessFormStep,
 	useSetAccessForm,
 } from "@/access/useSetAccessForm";
+import { PolicySetAbove } from "@/policy-bindings/PolicyLine";
 import { PageLoader } from "@/shared/Spinner";
 import { StepForm } from "@/shared/StepForm";
 
@@ -110,14 +110,7 @@ function SetAccessOpening({ target }: { target: AccessTarget }) {
 		case "loading":
 			return <PageLoader />;
 		case "above":
-			return (
-				<div className="flex flex-col gap-1.5">
-					<CurrentPolicyLine line={POLICY_SET_ABOVE_LINE} />
-					{state.message && (
-						<p className="text-xs text-muted-foreground">{state.message}</p>
-					)}
-				</div>
-			);
+			return <PolicySetAbove message={state.message} />;
 		case "failed":
 			return (
 				<p role="alert" className="text-xs text-destructive">

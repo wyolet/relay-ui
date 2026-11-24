@@ -1,13 +1,12 @@
 import type {
 	PseudoLimits,
 	PseudoLimitsAnswer,
-	PseudoLimitsTarget,
 } from "@/api/hooks/pseudoLimits";
 import type { components } from "@/api/types.gen";
 import { required } from "@/lib/required";
 import type { LimitLink, LimitSpec, LimitTarget } from "@/limits/limitWrites";
 import type { AddedLimit } from "@/limits/useLimitWrites";
-import type { ShortcutTargetKind } from "@/shortcuts/registry";
+import { pseudoTarget } from "@/pseudo/target";
 
 type LimitsSpec = components["schemas"]["LimitsSpec"];
 
@@ -17,20 +16,6 @@ type LimitsSpec = components["schemas"]["LimitsSpec"];
  */
 export const BODY_HAS_LINK: "link" extends keyof LimitsSpec ? true : false =
 	false;
-
-/** Relay's spelling of the form's target kind. */
-export function pseudoTargetKind(
-	kind: ShortcutTargetKind,
-): PseudoLimitsTarget["kind"] {
-	return kind === "serviceaccount" ? "service-account" : kind;
-}
-
-export function pseudoTarget({
-	kind,
-	id,
-}: Pick<LimitTarget, "kind" | "id">): PseudoLimitsTarget {
-	return { kind: pseudoTargetKind(kind), id };
-}
 
 /** Whether one request says it all: always once the body has the link, else only for its defaults (shared, every model). */
 export function postsOnce(link: LimitLink, bodyHasLink: boolean): boolean {

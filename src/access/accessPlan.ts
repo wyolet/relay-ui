@@ -7,6 +7,7 @@ import {
 	type OwnPolicyCase,
 	type OwnPolicyWrite,
 	ownPolicyWrites,
+	POLICY_SET_ABOVE_LINE,
 } from "@/policy-bindings/ownPolicy";
 
 /** The whole access a target is given. */
@@ -168,9 +169,6 @@ export function unlinkedPoolIds(
 	);
 	return (policyCase.policy.spec.poolIds ?? []).filter((id) => !kept.has(id));
 }
-
-export const POLICY_SET_ABOVE_LINE =
-	"Limited by a policy you can't see or change. Ask whoever set it.";
 
 /** One line on what the target is under now and what a save does to it. */
 export function currentPolicyLine(

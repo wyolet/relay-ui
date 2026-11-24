@@ -3,6 +3,7 @@ import { PseudoRefusal, type PseudoRefusalBody } from "@/api/types/errors";
 import {
 	BUSY_MESSAGE,
 	CONFLICT_MESSAGE,
+	isPolicySetAbove,
 	parseRefusal,
 	sameAnswers,
 } from "@/pseudo/refusal";
@@ -88,6 +89,29 @@ describe("parseRefusal", () => {
 				FIELDS,
 			),
 		).toEqual({ kind: "field", field: "ids", message: "relay says no" });
+	});
+});
+
+describe("isPolicySetAbove", () => {
+	it("is relay's 403 for a policy set above the caller", () => {
+		const above = new PseudoRefusal(403, {
+			error: {
+				type: "permission_error",
+				code: "policy_set_above",
+				message: "set by the organization",
+			},
+			pointer: "/spec/target",
+		});
+		expect(isPolicySetAbove(above)).toBe(true);
+		expect(
+			isPolicySetAbove(
+				new PseudoRefusal(404, {
+					error: { type: "not_found_error", message: "no such team" },
+					pointer: "/spec/target",
+				}),
+			),
+		).toBe(false);
+		expect(isPolicySetAbove(new Error("offline"))).toBe(false);
 	});
 });
 

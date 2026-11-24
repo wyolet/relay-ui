@@ -47,6 +47,15 @@ export function parseRefusal<F extends string>(
 		: { kind: "field", field, message };
 }
 
+/** relay's 403 for a target whose policy a scope above the caller holds, which the caller may not see or change. */
+export function isPolicySetAbove(err: unknown): boolean {
+	return (
+		err instanceof PseudoRefusal &&
+		err.status === 403 &&
+		err.body.code === "policy_set_above"
+	);
+}
+
 /** Whether the answers `keys` name still hold what they held `at` a refusal or warning. */
 export function sameAnswers<T>(
 	now: T,

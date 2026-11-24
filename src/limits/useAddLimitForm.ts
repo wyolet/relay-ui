@@ -13,7 +13,6 @@ import type { LimitRefusalField } from "@/limits/limitRefusal";
 import {
 	defaultLimitName,
 	dryRunUnpriced,
-	HELD_ABOVE_LINE,
 	hasAccountsUnder,
 	type LimitAnswers,
 	type LimitTarget,
@@ -33,7 +32,10 @@ import { useLimitCurrent } from "@/limits/useLimitCurrent";
 import { useLimitWrites } from "@/limits/useLimitWrites";
 import { usePseudoLimitRun } from "@/limits/usePseudoLimitRun";
 import { usePolicyUnpricedGrants } from "@/policies/usePolicyUnpricedModels";
-import type { OwnPolicyCase } from "@/policy-bindings/ownPolicy";
+import {
+	type OwnPolicyCase,
+	POLICY_SET_ABOVE_LINE,
+} from "@/policy-bindings/ownPolicy";
 import { warnedFields, warningMessages } from "@/pseudo/dryRun";
 import { sameAnswers } from "@/pseudo/refusal";
 
@@ -213,7 +215,7 @@ export function useAddLimitForm({ target, accountId, policyCase }: LimitStart) {
 			current.status === "known"
 				? current.line
 				: heldAbove
-					? HELD_ABOVE_LINE
+					? POLICY_SET_ABOVE_LINE
 					: policyCaseLine(policyCase, target.label),
 		namePlaceholder,
 		perAccountOffered,

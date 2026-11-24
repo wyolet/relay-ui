@@ -22,6 +22,9 @@ export type OwnPolicyCase =
 	  }
 	| { kind: "above"; policyId: string };
 
+export const POLICY_SET_ABOVE_LINE =
+	"Limited by a policy you can't see or change. Ask whoever set it.";
+
 function sameOwner(a: Owner | undefined, b: Owner | undefined): boolean {
 	return (a?.kind ?? "") === (b?.kind ?? "") && (a?.id ?? "") === (b?.id ?? "");
 }

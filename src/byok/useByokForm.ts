@@ -28,6 +28,7 @@ import {
 import { scopeOptions, type WorkContext } from "@/lib/workContext";
 import { warnedFields, warningMessages } from "@/pseudo/dryRun";
 import type { FieldIssue } from "@/pseudo/pointerField";
+import { sameAnswers } from "@/pseudo/refusal";
 
 export const BYOK_FORM_STEPS = ["provider", "key", "sharing"] as const;
 export type ByokFormStep = (typeof BYOK_FORM_STEPS)[number];
@@ -146,14 +147,6 @@ function refusalStep(refusal: ByokRefusal): ByokFormStep | undefined {
 	return BYOK_FORM_STEPS.find((step) =>
 		fields.some((f) => FIELD_STEP[f] === step),
 	);
-}
-
-function sameAnswers(
-	a: ByokValues,
-	b: ByokValues,
-	keys: readonly (keyof ByokValues)[],
-): boolean {
-	return keys.every((k) => JSON.stringify(a[k]) === JSON.stringify(b[k]));
 }
 
 export function useByokForm() {

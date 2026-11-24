@@ -1,4 +1,3 @@
-import { ShieldCheck } from "lucide-react";
 import type { AccessTarget } from "@/access/accessTarget";
 import type { useSetAccessForm } from "@/access/useSetAccessForm";
 import {
@@ -6,6 +5,7 @@ import {
 	type AccessFieldsText,
 	KeylessPoolList,
 } from "@/agents/AccessFields";
+import { PolicyLine } from "@/policy-bindings/PolicyLine";
 import { ToggleSwitch } from "@/shared/ToggleSwitch";
 
 type SetAccessForm = ReturnType<typeof useSetAccessForm>;
@@ -21,23 +21,13 @@ function accessText(target: AccessTarget): AccessFieldsText {
 	};
 }
 
-/** What the target is under now, above the fields that replace it. */
-export function CurrentPolicyLine({ line }: { line: string }) {
-	return (
-		<p className="flex items-center gap-2 text-xs text-muted-foreground">
-			<ShieldCheck className="size-3.5 shrink-0" aria-hidden="true" />
-			{line}
-		</p>
-	);
-}
-
 export function SetAccessStep({ access }: { access: SetAccessForm }) {
 	const { form, values, errors, target } = access;
 	const listsPools = access.pools.length > 0;
 	return (
 		<div className="flex flex-col gap-8">
 			<div className="flex flex-col gap-1.5">
-				<CurrentPolicyLine line={access.currentLine} />
+				<PolicyLine line={access.currentLine} />
 				{access.hiddenPoolsLine && (
 					<p className="text-xs text-muted-foreground">
 						{access.hiddenPoolsLine}

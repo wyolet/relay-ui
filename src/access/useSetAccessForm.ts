@@ -28,6 +28,7 @@ import { hostReach } from "@/agents/agentAccounts";
 import { useFormSteps } from "@/hooks/useFormSteps";
 import { usePickerCatalog } from "@/models/usePickerCatalog";
 import { warnedFields, warningMessages } from "@/pseudo/dryRun";
+import { sameAnswers } from "@/pseudo/refusal";
 
 export const ACCESS_FORM_STEPS = ["access", "review"] as const;
 export type AccessFormStep = (typeof ACCESS_FORM_STEPS)[number];
@@ -48,6 +49,7 @@ const FIELD_STEP = {
 	access: "access",
 } as const satisfies Record<AccessRefusalField, AccessFormStep>;
 
+/** The answers a refusal or warning was about: all of them, since the body states the whole access. */
 const ACCESS_INPUTS = [
 	"everyCredential",
 	"accountIds",
@@ -55,13 +57,6 @@ const ACCESS_INPUTS = [
 	"poolIds",
 	"models",
 ] as const satisfies readonly (keyof SetAccessValues)[];
-
-/** Whether the answers a refusal or warning was about are still the ones on screen. */
-function sameAnswers(a: SetAccessValues, b: SetAccessValues): boolean {
-	return ACCESS_INPUTS.every(
-		(k) => JSON.stringify(a[k]) === JSON.stringify(b[k]),
-	);
-}
 
 /** The case as the chain's plan names it, for the lines both paths share. */
 const CHAIN_KIND = { none: "create", own: "update", copy: "copy" } as const;
@@ -150,12 +145,14 @@ export function useSetAccessForm(
 	});
 
 	const { refused } = pseudo;
+	const unchangedSince = (at: SetAccessValues) =>
+		sameAnswers(values, at, ACCESS_INPUTS);
 	const refusedField: Partial<Record<AccessRefusalField, string>> =
-		refused?.refusal.kind === "field" && sameAnswers(values, refused.at)
+		refused?.refusal.kind === "field" && unchangedSince(refused.at)
 			? { [refused.refusal.field]: refused.refusal.message }
 			: {};
 	const issueMessages =
-		refused?.refusal.kind === "issues" && sameAnswers(values, refused.at)
+		refused?.refusal.kind === "issues" && unchangedSince(refused.at)
 			? [...new Set(refused.refusal.issues.map((i) => i.message))]
 			: undefined;
 	const dryRunMessage =
@@ -167,7 +164,7 @@ export function useSetAccessForm(
 	const warnedAt = pseudo.previewAt;
 	// Kept out of useFormSteps' errors: a warning never holds Next or Save.
 	const warned = warnedAt
-		? warnedFields(pseudo.previewWarnings, () => sameAnswers(values, warnedAt))
+		? warnedFields(pseudo.previewWarnings, () => unchangedSince(warnedAt))
 		: {};
 	const previewAnswer = pseudo.previewAnswer;
 	const nothingChanged = oneRequest

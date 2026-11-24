@@ -3,11 +3,9 @@ import type { UnpricedWarning } from "@/limits/limitWrites";
 import type { useAddLimitForm } from "@/limits/useAddLimitForm";
 import { UnpricedGrantList } from "@/policies/UnpricedUnderBudget";
 import { AlertBanner } from "@/shared/AlertBanner";
-import { DryRunWarnings } from "@/shared/DryRunWarnings";
+import { DryRunReview } from "@/shared/DryRunReview";
 import { FormSection } from "@/shared/FormSection";
 import { MessagesBanner } from "@/shared/MessagesBanner";
-import { PlannedRows } from "@/shared/PlannedRows";
-import { RefusedIssues } from "@/shared/RefusedIssues";
 import { WriteList } from "@/shared/WriteList";
 
 type AddLimitForm = ReturnType<typeof useAddLimitForm>;
@@ -67,21 +65,15 @@ export function ReviewStep({ limit }: { limit: AddLimitForm }) {
 				}
 			>
 				{limit.oneRequest ? (
-					<div className="flex flex-col gap-3">
-						<RefusedIssues messages={limit.refusedIssues} />
-						<DryRunWarnings messages={limit.previewWarnings} />
-						{limit.refusalMessage && (
-							<p role="alert" className="text-[11px] text-destructive">
-								{limit.refusalMessage}
-							</p>
-						)}
-						<PlannedRows
-							rows={limit.previewRows}
-							label="What Add limit does"
-							loading={limit.previewLoading}
-							stale={limit.previewStale}
-						/>
-					</div>
+					<DryRunReview
+						issues={limit.refusedIssues}
+						warnings={limit.previewWarnings}
+						refusalMessage={limit.refusalMessage}
+						rows={limit.previewRows}
+						label="What Add limit does"
+						loading={limit.previewLoading}
+						stale={limit.previewStale}
+					/>
 				) : (
 					<WriteList
 						items={limit.planned.map((w) => ({

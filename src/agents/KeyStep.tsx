@@ -3,11 +3,9 @@ import { useId } from "react";
 import type { useAddAgentForm } from "@/agents/useAddAgentForm";
 import { Input } from "@/components/ui/input";
 import { KeySettingsSections } from "@/keys/KeySettingsSections";
-import { DryRunWarnings } from "@/shared/DryRunWarnings";
+import { DryRunReview } from "@/shared/DryRunReview";
 import { FieldError } from "@/shared/FieldError";
 import { FormSection } from "@/shared/FormSection";
-import { PlannedRows } from "@/shared/PlannedRows";
-import { RefusedIssues } from "@/shared/RefusedIssues";
 import { WriteList } from "@/shared/WriteList";
 
 type AddAgentForm = ReturnType<typeof useAddAgentForm>;
@@ -56,21 +54,15 @@ export function KeyStep({ agent }: { agent: AddAgentForm }) {
 				}
 			>
 				{agent.oneRequest ? (
-					<div className="flex flex-col gap-3">
-						<RefusedIssues messages={agent.onCreateIssues} />
-						<DryRunWarnings messages={agent.previewWarnings} />
-						{agent.refusalMessage && (
-							<p role="alert" className="text-[11px] text-destructive">
-								{agent.refusalMessage}
-							</p>
-						)}
-						<PlannedRows
-							rows={agent.previewRows}
-							label="What Create agent makes"
-							loading={agent.previewLoading}
-							stale={agent.previewStale}
-						/>
-					</div>
+					<DryRunReview
+						issues={agent.onCreateIssues}
+						warnings={agent.previewWarnings}
+						refusalMessage={agent.refusalMessage}
+						rows={agent.previewRows}
+						label="What Create agent makes"
+						loading={agent.previewLoading}
+						stale={agent.previewStale}
+					/>
 				) : (
 					<WriteList
 						items={agent.planned.map((w) => ({

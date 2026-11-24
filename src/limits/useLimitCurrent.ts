@@ -3,9 +3,9 @@ import { policiesListQueryOptions } from "@/api/hooks/policies";
 import { pseudoLimitsCurrentQuery } from "@/api/hooks/pseudoLimits";
 import { failureMessage } from "@/hooks/useWriteRunner";
 import { displayLabel } from "@/lib/displayLabel";
-import { isPolicySetAbove } from "@/limits/limitRefusal";
 import { currentCaseLine, type LimitTarget } from "@/limits/limitWrites";
-import { pseudoTarget } from "@/limits/pseudoLimitsBody";
+import { isPolicySetAbove } from "@/pseudo/refusal";
+import { pseudoTarget } from "@/pseudo/target";
 
 /** The target's policy as relay states it; `unknown` leaves the form's own reading of it. */
 export type LimitCurrent =

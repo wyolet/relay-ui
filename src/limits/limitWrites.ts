@@ -9,6 +9,7 @@ import {
 	type OwnPolicyCase,
 	type OwnPolicyWrite,
 	ownPolicyWrites,
+	POLICY_SET_ABOVE_LINE,
 	type PolicySpecChange,
 } from "@/policy-bindings/ownPolicy";
 import {
@@ -212,9 +213,6 @@ export function limitWrites(
 	];
 }
 
-export const HELD_ABOVE_LINE =
-	"Limited by a policy you can't see or change. Ask whoever set it.";
-
 /** What the target is under now, and what saving does to it. */
 export function policyCaseLine(
 	policyCase: OwnPolicyCase,
@@ -224,7 +222,7 @@ export function policyCaseLine(
 		case "create":
 			return "No policy yet";
 		case "above":
-			return HELD_ABOVE_LINE;
+			return POLICY_SET_ABOVE_LINE;
 		case "update":
 			return `Policy ${displayLabel(policyCase.policy.metadata)}`;
 		case "copy": {

@@ -11,6 +11,7 @@ import {
 } from "@/limits/useAddLimitForm";
 import { useLimitTarget } from "@/limits/useLimitTarget";
 import { useOpenTarget } from "@/limits/useOpenTarget";
+import { PolicySetAbove } from "@/policy-bindings/PolicyLine";
 import { PageLoader } from "@/shared/Spinner";
 import { StepForm } from "@/shared/StepForm";
 import type { ShortcutTargetKind } from "@/shortcuts/registry";
@@ -44,8 +45,7 @@ function LimitForm({ start }: { start: LimitStart }) {
 	if (limit.heldAbove) {
 		return (
 			<NoFormNotice>
-				<p>{limit.caseLine}</p>
-				{limit.heldAboveMessage && <p>{limit.heldAboveMessage}</p>}
+				<PolicySetAbove message={limit.heldAboveMessage} />
 				<TargetLink kind={target.kind} name={target.name} className={BACK_LINK}>
 					Back to {target.label}
 				</TargetLink>

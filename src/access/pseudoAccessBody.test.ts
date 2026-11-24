@@ -2,7 +2,6 @@ import { describe, expect, it } from "bun:test";
 import {
 	prefillRefusal,
 	pseudoAccessBody,
-	pseudoAccessTarget,
 	pseudoCurrentLine,
 	savedAccess,
 	sentPoolIds,
@@ -11,20 +10,6 @@ import {
 import { PseudoRefusal } from "@/api/types/errors";
 
 const team = { kind: "team", id: "t1" } as const;
-
-describe("pseudoAccessTarget", () => {
-	it("spells a service account as relay's target kind", () => {
-		expect(pseudoAccessTarget({ kind: "serviceaccount", id: "sa-1" })).toEqual({
-			kind: "service-account",
-			id: "sa-1",
-		});
-		expect(pseudoAccessTarget({ kind: "project", id: "p1" })).toEqual({
-			kind: "project",
-			id: "p1",
-		});
-		expect(pseudoAccessTarget(team)).toEqual({ kind: "team", id: "t1" });
-	});
-});
 
 describe("pseudoAccessBody", () => {
 	const none = { poolIds: [], accountIds: [], models: [] };

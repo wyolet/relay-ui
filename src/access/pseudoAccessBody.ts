@@ -1,30 +1,17 @@
-import type { AccessTarget, AccessTargetKind } from "@/access/accessTarget";
+import type { AccessTarget } from "@/access/accessTarget";
 import type { SavedAccess } from "@/access/useSetAccessWrites";
 import type {
 	AccessCase,
 	PseudoAccess,
 	PseudoAccessAnswer,
-	PseudoAccessTarget,
 } from "@/api/hooks/pseudoAccess";
-import { PseudoRefusal } from "@/api/types/errors";
 import { required } from "@/lib/required";
 import type { PointerFields } from "@/pseudo/pointerField";
-import { parseRefusal, type Refusal } from "@/pseudo/refusal";
+import { isPolicySetAbove, parseRefusal, type Refusal } from "@/pseudo/refusal";
+import { pseudoTarget } from "@/pseudo/target";
 
 /** The `pseudoKinds` name relay lists while it serves `POST /pseudo-access`. */
 export const ACCESS_KIND = "access";
-
-const TARGET_KINDS: Record<AccessTargetKind, PseudoAccessTarget["kind"]> = {
-	team: "team",
-	project: "project",
-	serviceaccount: "service-account",
-};
-
-export function pseudoAccessTarget(
-	target: Pick<AccessTarget, "kind" | "id">,
-): PseudoAccessTarget {
-	return { kind: TARGET_KINDS[target.kind], id: target.id };
-}
 
 /** The form field a part of the `POST /pseudo-access` body comes from; `access` is the access step as a whole. */
 export type AccessRefusalField = "accountIds" | "poolIds" | "access";
@@ -82,7 +69,7 @@ export function pseudoAccessBody(
 					: {}),
 				...models,
 			};
-	return { spec: { target: pseudoAccessTarget(target), access } };
+	return { spec: { target: pseudoTarget(target), access } };
 }
 
 /** Whether the dry run says Save would write nothing. */
@@ -127,10 +114,7 @@ export function prefillRefusal(err: unknown): {
 	above: boolean;
 	message: string;
 } {
-	const above =
-		err instanceof PseudoRefusal &&
-		err.status === 403 &&
-		err.body.code === "policy_set_above";
+	const above = isPolicySetAbove(err);
 	const refusal = parseRefusal(err, ACCESS_POINTER_FIELDS);
 	const message =
 		refusal.kind === "issues"
