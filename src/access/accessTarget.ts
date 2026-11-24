@@ -1,5 +1,5 @@
 import { displayLabel } from "@/lib/displayLabel";
-import type { PickedScope } from "@/lib/ownerPick";
+import type { ServiceAccountScope } from "@/lib/serviceAccountScope";
 import type { ShortcutTargetKind } from "@/shortcuts/registry";
 
 export const ACCESS_TARGET_KINDS = [
@@ -10,8 +10,14 @@ export const ACCESS_TARGET_KINDS = [
 
 export type AccessTargetKind = (typeof ACCESS_TARGET_KINDS)[number];
 
-/** The team or project whose accounts, pools and policies apply. */
-export type AccessScope = PickedScope<"team" | "project">;
+/** The team, project or user whose accounts, pools and policies apply. */
+export type AccessScope = ServiceAccountScope;
+
+const SCOPE_NOUN: Record<AccessScope["kind"], string> = {
+	project: "project",
+	team: "team",
+	personal: "owner",
+};
 
 /** The team, project or service account whose access the form sets. */
 export interface AccessTarget {
@@ -30,11 +36,11 @@ export interface AccessTarget {
 /** A team, project or service account row as the form reads it. */
 export interface AccessTargetRow {
 	metadata: { id?: string; name: string; displayName?: string };
-	/** A service account's project. */
-	projectId?: string;
+	/** A service account's owner. */
+	scope?: AccessScope;
 }
 
-/** The target for a row; a service account's scope is its project. */
+/** The target for a row; a service account's scope is its owner. */
 export function accessTarget(
 	kind: AccessTargetKind,
 	row: AccessTargetRow,
@@ -47,10 +53,10 @@ export function accessTarget(
 	if (kind !== "serviceaccount") {
 		return { ...base, scope: { kind, id }, scopeLabel: label };
 	}
-	if (!row.projectId) return undefined;
+	if (!row.scope) return undefined;
 	return {
 		...base,
-		scope: { kind: "project", id: row.projectId },
-		scopeLabel: `${label}'s project`,
+		scope: row.scope,
+		scopeLabel: `${label}'s ${SCOPE_NOUN[row.scope.kind]}`,
 	};
 }

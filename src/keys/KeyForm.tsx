@@ -1,8 +1,6 @@
 import { Building2, UserRound } from "lucide-react";
 import { useId } from "react";
 import { useAuth } from "@/api/auth";
-import { useProjects } from "@/api/hooks/projects";
-import { useServiceAccountsInProject } from "@/api/hooks/serviceAccounts";
 import type { Key } from "@/api/types/key";
 import {
 	Select,
@@ -13,7 +11,7 @@ import {
 } from "@/components/ui/select";
 import { KeySettingsSections } from "@/keys/KeySettingsSections";
 import { type KeyPrincipalPreset, useKeyForm } from "@/keys/useKeyForm";
-import { displayLabel } from "@/lib/displayLabel";
+import { useServiceAccountPicker } from "@/keys/useServiceAccountPicker";
 import { NO_LANE_MESSAGE } from "@/lib/personalAccount";
 import { FormFooter } from "@/shared/FormFooter";
 import { FormSection } from "@/shared/FormSection";
@@ -54,19 +52,8 @@ export function KeyForm({
 	const laneErrorId = useId();
 
 	const { userId } = useAuth();
-	const { data: projectsData } = useProjects();
-	const { data: serviceAccountsData } = useServiceAccountsInProject(
-		values.projectId,
-	);
-	const projectOptions = (projectsData.items ?? []).map((p) => ({
-		value: p.metadata.id ?? "",
-		label: displayLabel(p.metadata),
-	}));
-	const serviceAccountOptions = (serviceAccountsData?.items ?? []).map(
-		(sa) => ({
-			value: sa.metadata.id ?? "",
-			label: displayLabel(sa.metadata),
-		}),
+	const { ownerOptions, serviceAccountOptions } = useServiceAccountPicker(
+		values.ownerId,
 	);
 
 	return (
@@ -94,7 +81,7 @@ export function KeyForm({
 				<FormSection
 					icon={UserRound}
 					title="Principal"
-					description="Who this key authenticates as — a service account in a project, or you. Fixed once the key exists."
+					description="Who this key authenticates as — a service account, or you. Fixed once the key exists."
 				>
 					{isEdit ? (
 						<p className="text-xs text-foreground">
@@ -119,18 +106,21 @@ export function KeyForm({
 							{values.principalKind === "serviceaccount" ? (
 								<div className="flex flex-col gap-2">
 									<Select
-										value={values.projectId}
-										items={projectOptions}
+										value={values.ownerId}
+										items={ownerOptions}
 										onValueChange={(v) => {
-											form.setFieldValue("projectId", v ?? "");
+											form.setFieldValue("ownerId", v ?? "");
 											choosePrincipal("serviceaccount", "");
 										}}
 									>
-										<SelectTrigger className="w-full max-w-md">
-											<SelectValue placeholder="Pick a project…" />
+										<SelectTrigger
+											className="w-full max-w-md"
+											aria-label="Owner"
+										>
+											<SelectValue placeholder="Pick an owner…" />
 										</SelectTrigger>
 										<SelectContent>
-											{projectOptions.map((p) => (
+											{ownerOptions.map((p) => (
 												<SelectItem key={p.value} value={p.value}>
 													{p.label}
 												</SelectItem>
@@ -146,14 +136,14 @@ export function KeyForm({
 									>
 										<SelectTrigger
 											className="w-full max-w-md"
-											disabled={!values.projectId}
+											disabled={!values.ownerId}
 											aria-invalid={principalIdError ? true : undefined}
 										>
 											<SelectValue
 												placeholder={
-													values.projectId
+													values.ownerId
 														? "Pick a service account…"
-														: "Pick a project first"
+														: "Pick an owner first"
 												}
 											/>
 										</SelectTrigger>

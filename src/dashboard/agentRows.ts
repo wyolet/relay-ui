@@ -1,11 +1,15 @@
 import type { UsageGroupStat } from "@/api/hooks/usage";
 import type { ServiceAccount } from "@/api/types/serviceAccount";
 import { displayLabel } from "@/lib/displayLabel";
+import {
+	type ServiceAccountOwner,
+	serviceAccountOwner,
+	serviceAccountScope,
+} from "@/lib/serviceAccountScope";
 import type { WorkContextRef } from "@/lib/workContext";
 
 export interface AgentProject {
 	id: string;
-	label: string;
 	teamId: string;
 }
 
@@ -19,26 +23,33 @@ export interface AgentRow {
 	id: string;
 	name: string;
 	label: string;
-	project: string;
+	owner?: ServiceAccountOwner;
 	enabled: boolean;
 	/** The period's usage; absent when the agent sent nothing. */
 	usage?: AgentUsage;
 }
 
-/** The service accounts a workspace holds: all for the organization, a team's projects', one project's; a personal workspace holds none. */
+/**
+ * The service accounts a workspace holds: all for the organization, a team's
+ * own and its projects', one project's, and the caller's own in Personal.
+ */
 export function workspaceAgents(
 	serviceAccounts: readonly ServiceAccount[],
 	projects: readonly AgentProject[],
 	workspace: WorkContextRef,
 ): ServiceAccount[] {
 	if (workspace.kind === "organization") return [...serviceAccounts];
-	if (workspace.kind === "personal") return [];
-	const projectIds = new Set(
-		workspace.kind === "project"
-			? [workspace.id]
-			: projects.filter((p) => p.teamId === workspace.id).map((p) => p.id),
+	const teamProjects = new Set(
+		projects.filter((p) => p.teamId === workspace.id).map((p) => p.id),
 	);
-	return serviceAccounts.filter((sa) => projectIds.has(sa.spec.projectId));
+	return serviceAccounts.filter((sa) => {
+		const scope = serviceAccountScope(sa);
+		if (!scope) return false;
+		if (workspace.kind === "team" && scope.kind === "project") {
+			return teamProjects.has(scope.id);
+		}
+		return scope.kind === workspace.kind && scope.id === workspace.id;
+	});
 }
 
 function spendOf(row: AgentRow): number {
@@ -48,21 +59,20 @@ function spendOf(row: AgentRow): number {
 /** Agents with their period usage, by spend, then requests, then name. */
 export function agentRows(
 	serviceAccounts: readonly ServiceAccount[],
-	projects: readonly AgentProject[],
 	usageByPrincipal: readonly AgentUsage[],
 ): AgentRow[] {
 	const usage = new Map(usageByPrincipal.map((g) => [g.key, g]));
-	const projectLabel = new Map(projects.map((p) => [p.id, p.label]));
 	return serviceAccounts
 		.flatMap((sa): AgentRow[] => {
 			const id = sa.metadata.id;
 			if (!id) return [];
+			const owner = serviceAccountOwner(sa);
 			return [
 				{
 					id,
 					name: sa.metadata.name,
 					label: displayLabel(sa.metadata),
-					project: projectLabel.get(sa.spec.projectId) ?? "",
+					...(owner ? { owner } : {}),
 					enabled: sa.spec.enabled ?? true,
 					usage: usage.get(id),
 				},

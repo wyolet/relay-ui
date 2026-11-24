@@ -6,7 +6,6 @@ import {
 	type PoolLink,
 } from "@/access/accessPlan";
 import type { AccessTarget } from "@/access/accessTarget";
-import { scopeReceiver } from "@/agents/agentOwner";
 import {
 	type AccessProgress,
 	emptyAccessProgress,
@@ -14,8 +13,8 @@ import {
 } from "@/agents/useAccessWrites";
 import { useWriteRunner } from "@/hooks/useWriteRunner";
 import { accessRowLabels } from "@/lib/agentLabel";
-import { scopeOwner } from "@/lib/ownerPick";
 import { required } from "@/lib/required";
+import { serviceAccountScopeOwner } from "@/lib/serviceAccountScope";
 import type { OwnPolicyCase } from "@/policy-bindings/ownPolicy";
 import {
 	type OwnPolicyProgress,
@@ -57,10 +56,10 @@ export function useSetAccessWrites() {
 		const settings = required(settingsRef.current ?? undefined, "access");
 		const { target } = settings;
 		const made = progress.current;
-		const owner = scopeOwner(target.scope);
+		const owner = serviceAccountScopeOwner(target.scope);
 		if (write.kind === "share" || write.kind === "pool") {
 			await access.runAccessWrite(write, made, {
-				receiver: scopeReceiver(target.scope),
+				receiver: owner,
 				owner,
 				labels: accessRowLabels(target.accountId),
 			});

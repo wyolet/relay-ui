@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Bot } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
+import { OwnerLink } from "@/projects/OwnerLink";
 import { LastUsed } from "@/shared/LastUsed";
 import { Section } from "@/shared/Section";
 import {
@@ -41,7 +42,7 @@ export function AgentsPanel() {
 				<div className="grid">
 					<div className={`${GRID} ${TABLE_HEAD_ROW}`}>
 						<span>Name</span>
-						<span className={WIDE}>Project</span>
+						<span className={WIDE}>Owner</span>
 						<span className={WIDE}>Last request</span>
 						<span className="text-right">Spend</span>
 						<span className="text-right">Requests</span>
@@ -61,7 +62,9 @@ export function AgentsPanel() {
 									<span className="shrink-0 text-meta text-ink-3">Off</span>
 								)}
 							</span>
-							<span className={`${WIDE} truncate text-ink-2`}>{r.project}</span>
+							<span className={`${WIDE} min-w-0 truncate`}>
+								<OwnerLink owner={r.owner} showUser />
+							</span>
 							<LastUsed at={r.lastRequestAt} className={WIDE} />
 							<span className="text-right font-medium text-foreground">
 								{r.spend}

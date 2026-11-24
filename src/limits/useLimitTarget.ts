@@ -7,6 +7,7 @@ import { serviceAccountDetailQueryOptions } from "@/api/hooks/serviceAccounts";
 import { teamDetailQueryOptions } from "@/api/hooks/teams";
 import { failureMessage } from "@/hooks/useWriteRunner";
 import { displayLabel } from "@/lib/displayLabel";
+import { serviceAccountOwner } from "@/lib/serviceAccountScope";
 import { type LimitTarget, targetScope } from "@/limits/limitWrites";
 import { ownAccount } from "@/policy-bindings/accountLookup";
 import { type OwnPolicyCase, ownPolicyCase } from "@/policy-bindings/ownPolicy";
@@ -24,7 +25,7 @@ export type LimitTargetState =
 			policyCase: OwnPolicyCase;
 	  };
 
-/** The target's row by kind; a service account also names its project. */
+/** The target's row by kind; a service account also names its owner. */
 function useTargetRow(kind: ShortcutTargetKind | undefined, id: string) {
 	const team = useQuery({
 		...teamDetailQueryOptions(id),
@@ -38,11 +39,11 @@ function useTargetRow(kind: ShortcutTargetKind | undefined, id: string) {
 		...serviceAccountDetailQueryOptions(id),
 		enabled: kind === "serviceaccount" && id.length > 0,
 	});
-	if (kind === "team") return { query: team, projectId: "" };
-	if (kind === "project") return { query: project, projectId: "" };
+	if (kind === "team") return { query: team, agentOwner: undefined };
+	if (kind === "project") return { query: project, agentOwner: undefined };
 	return {
 		query: serviceAccount,
-		projectId: serviceAccount.data?.spec.projectId ?? "",
+		agentOwner: serviceAccount.data && serviceAccountOwner(serviceAccount.data),
 	};
 }
 
@@ -76,12 +77,14 @@ export function useLimitTarget(
 	}
 
 	const targetId = loaded.metadata.id ?? id;
+	const scope = targetScope(kind, targetId, row.agentOwner);
+	if (!scope) return { status: "notFound" };
 	const target: LimitTarget = {
 		kind,
 		id: targetId,
 		name: loaded.metadata.name,
 		label: displayLabel(loaded.metadata),
-		scope: targetScope(kind, targetId, row.projectId),
+		scope,
 	};
 	const accountId = ownAccount(accounts.data.items ?? [], {
 		kind,

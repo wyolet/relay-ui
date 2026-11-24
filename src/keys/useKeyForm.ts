@@ -23,8 +23,8 @@ export interface KeyFormValues {
 	displayName: string;
 	description: string;
 	principalKind: PrincipalKind;
-	/** Only used to narrow the service-account picker; never sent. */
-	projectId: string;
+	/** The project, team or user whose service accounts the picker lists; never sent. */
+	ownerId: string;
 	principalId: string;
 	/** The lane account; "" leaves it to the server's default. */
 	accountId: string;
@@ -40,7 +40,7 @@ function emptyValues(): KeyFormValues {
 		displayName: "",
 		description: "",
 		principalKind: "serviceaccount",
-		projectId: "",
+		ownerId: "",
 		principalId: "",
 		accountId: "",
 		expiresAt: "",
@@ -55,7 +55,7 @@ function keyToValues(rk: Key): KeyFormValues {
 		displayName: displayLabel(rk.metadata),
 		description: rk.metadata.description ?? "",
 		principalKind: rk.spec.principal.kind,
-		projectId: rk.metadata.owner?.id ?? "",
+		ownerId: rk.metadata.owner?.id ?? "",
 		principalId: rk.spec.principal.id,
 		accountId: rk.spec.accountId ?? "",
 		expiresAt: rk.spec.expiresAt?.slice(0, 10) ?? "",
@@ -73,7 +73,7 @@ const schema = z.object({
 		.max(120, "Display name is too long"),
 	description: z.string().trim().max(500, "Description is too long"),
 	principalKind: z.enum(["serviceaccount", "user"]),
-	projectId: z.string(),
+	ownerId: z.string(),
 	principalId: z.string().min(1, "Pick who this key authenticates as."),
 	accountId: z.string(),
 	expiresAt: z.string(),
@@ -90,11 +90,8 @@ export function expiryPatch(expiresAt: string): { expiresAt?: string } {
 	return { expiresAt: new Date(`${trimmed}T23:59:59Z`).toISOString() };
 }
 
-/** A new key's principal picked in advance: a service account and its project. */
-export type KeyPrincipalPreset = Pick<
-	KeyFormValues,
-	"projectId" | "principalId"
->;
+/** A new key's principal picked in advance: a service account and its owner. */
+export type KeyPrincipalPreset = Pick<KeyFormValues, "ownerId" | "principalId">;
 
 interface UseKeyFormOptions {
 	open?: boolean;
@@ -121,7 +118,7 @@ export function useKeyForm({
 		apiKey?.metadata.resourceVersion,
 	);
 
-	const presetProjectId = preset?.projectId ?? "";
+	const presetOwnerId = preset?.ownerId ?? "";
 	const presetPrincipalId = preset?.principalId ?? "";
 	const initial = useMemo<KeyFormValues>(
 		() =>
@@ -129,10 +126,10 @@ export function useKeyForm({
 				? keyToValues(apiKey)
 				: {
 						...emptyValues(),
-						projectId: presetProjectId,
+						ownerId: presetOwnerId,
 						principalId: presetPrincipalId,
 					},
-		[apiKey, presetProjectId, presetPrincipalId],
+		[apiKey, presetOwnerId, presetPrincipalId],
 	);
 	const suffixRef = useRef<string>(
 		apiKey?.metadata.name.match(/-(\d{4,8})$/)?.[1] ?? randomSuffix(),

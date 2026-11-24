@@ -17,13 +17,13 @@ import { CopyableValue } from "@/shared/CopyableValue";
 import { PageLoader } from "@/shared/Spinner";
 
 export const Route = createFileRoute("/_authenticated/keys_/new")({
-	// A service account id and its project id, picked in advance.
+	// A service account id and its owner's id, picked in advance.
 	validateSearch: z.object({
 		principal: z.string().optional(),
-		project: z.string().optional(),
+		owner: z.string().optional(),
 	}),
 	beforeLoad: ({ search }) => {
-		const preset = search.principal || search.project;
+		const preset = search.principal || search.owner;
 		if (preset && !feature(SHORTCUT_FLAGS.agentKey)) {
 			throw redirect({ to: "/keys/new", search: {} });
 		}
@@ -37,7 +37,7 @@ export const Route = createFileRoute("/_authenticated/keys_/new")({
 
 function NewKeyInner() {
 	const navigate = useNavigate();
-	const { principal, project } = Route.useSearch();
+	const { principal, owner } = Route.useSearch();
 	const [plaintext, setPlaintext] = useState<string | null>(null);
 	const [savedName, setSavedName] = useState<string | null>(null);
 
@@ -99,7 +99,7 @@ function NewKeyInner() {
 				</p>
 			</div>
 			<KeyForm
-				preset={{ principalId: principal ?? "", projectId: project ?? "" }}
+				preset={{ principalId: principal ?? "", ownerId: owner ?? "" }}
 				onSaved={(name) => setSavedName(name)}
 				onCreated={(secret) => setPlaintext(secret)}
 				onCancel={() =>

@@ -11,6 +11,7 @@ import { serviceAccountDetailQueryOptions } from "@/api/hooks/serviceAccounts";
 import { teamDetailQueryOptions } from "@/api/hooks/teams";
 import { ApiError } from "@/api/types/errors";
 import { displayLabel } from "@/lib/displayLabel";
+import { serviceAccountScope } from "@/lib/serviceAccountScope";
 import {
 	type AccountOwnerRef,
 	ownAccount,
@@ -57,7 +58,7 @@ export function useAccessTarget(
 		kind === "serviceaccount"
 			? serviceAccount.data && {
 					metadata: serviceAccount.data.metadata,
-					projectId: serviceAccount.data.spec.projectId,
+					scope: serviceAccountScope(serviceAccount.data),
 				}
 			: loaded.data && { metadata: loaded.data.metadata };
 

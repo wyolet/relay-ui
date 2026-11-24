@@ -160,13 +160,13 @@ export interface LimitTarget {
 	scope: Owner;
 }
 
-/** The scope that owns what the form makes: the target itself, or a service account's project. */
+/** The scope that owns what the form makes: the target itself, or a service account's owner. */
 export function targetScope(
 	kind: ShortcutTargetKind,
 	id: string,
-	projectId: string,
-): Owner {
-	if (kind === "serviceaccount") return { kind: "project", id: projectId };
+	agentOwner: Owner | undefined,
+): Owner | undefined {
+	if (kind === "serviceaccount") return agentOwner;
 	return { kind, id };
 }
 

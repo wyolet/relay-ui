@@ -35,7 +35,8 @@ import {
 } from "@/api/hooks/pseudoAccess";
 import { pseudoKind } from "@/api/runtimeConfig";
 import { displayLabel } from "@/lib/displayLabel";
-import { scopeOwner, scopeUsableBy } from "@/lib/ownerPick";
+import { scopeUsableBy } from "@/lib/ownerPick";
+import { serviceAccountScopeOwner } from "@/lib/serviceAccountScope";
 import { type OwnPolicyCase, ownPolicyCase } from "@/policy-bindings/ownPolicy";
 import { pseudoTarget } from "@/pseudo/target";
 
@@ -149,7 +150,7 @@ export function useAccessCase(target: AccessTarget): AccessCaseState {
 		target.accountId,
 		bindings.data.items ?? [],
 		policies.data.items ?? [],
-		scopeOwner(target.scope),
+		serviceAccountScopeOwner(target.scope),
 	);
 	if (policyCase.kind === "above") return { status: "above" };
 	return {

@@ -3,7 +3,7 @@ import { useServiceAccountsList } from "@/api/hooks/serviceAccounts";
 import { useUsageOverviewWithDeltas } from "@/api/hooks/usage";
 import { useWorkContext } from "@/hooks/useWorkContext";
 import { AGENT_LABEL_SELECTOR } from "@/lib/agentLabel";
-import { displayLabel } from "@/lib/displayLabel";
+import type { ServiceAccountOwner } from "@/lib/serviceAccountScope";
 import { fmtCompact, fmtMoneyCompact } from "@/usage/format";
 import { agentRows, workspaceAgents } from "./agentRows";
 import { useDashboardWindow } from "./useDashboardWindow";
@@ -15,7 +15,7 @@ export interface AgentPanelRow {
 	id: string;
 	name: string;
 	label: string;
-	project: string;
+	owner?: ServiceAccountOwner;
 	enabled: boolean;
 	lastRequestAt?: string;
 	requests: string;
@@ -35,19 +35,10 @@ export function useAgentsPanel(): {
 	const { groups } = useUsageOverviewWithDeltas("principal_id", win, filter);
 
 	const agentProjects = (projects.items ?? []).flatMap((p) =>
-		p.metadata.id
-			? [
-					{
-						id: p.metadata.id,
-						label: displayLabel(p.metadata),
-						teamId: p.spec.teamId,
-					},
-				]
-			: [],
+		p.metadata.id ? [{ id: p.metadata.id, teamId: p.spec.teamId }] : [],
 	);
 	const rows = agentRows(
 		workspaceAgents(serviceAccounts.items ?? [], agentProjects, ref),
-		agentProjects,
 		groups,
 	);
 	return {
@@ -55,7 +46,7 @@ export function useAgentsPanel(): {
 			id: r.id,
 			name: r.name,
 			label: r.label,
-			project: r.project,
+			owner: r.owner,
 			enabled: r.enabled,
 			lastRequestAt: r.usage?.lastSeen || undefined,
 			requests: r.usage ? fmtCompact(r.usage.requests) : "—",

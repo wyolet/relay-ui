@@ -46,7 +46,7 @@ export function agentCopyValues(source: AgentCopySource): AgentCopyValues {
 		displayName: `${displayLabel(sa.metadata)} copy`,
 		ownerKind: "project",
 		teamId: "",
-		projectId: sa.spec.projectId,
+		projectId: sa.spec.projectId ?? "",
 		access: "choose",
 		reach: "all",
 		accountIds: [],

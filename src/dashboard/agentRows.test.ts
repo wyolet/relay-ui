@@ -6,32 +6,62 @@ import {
 	workspaceAgents,
 } from "@/dashboard/agentRows";
 
-const sa = (id: string, projectId: string): ServiceAccount => ({
-	metadata: { id, name: id, displayName: id.toUpperCase() },
-	spec: { projectId, enabled: true },
+const sa = (
+	id: string,
+	kind: "project" | "team" | "user",
+	ownerId: string,
+): ServiceAccount => ({
+	metadata: {
+		id,
+		name: id,
+		displayName: id.toUpperCase(),
+		owner: { kind, id: ownerId },
+	},
+	spec: {
+		...(kind === "project" ? { projectId: ownerId } : {}),
+		enabled: true,
+	},
 });
 
 const projects = [
-	{ id: "p1", label: "Search", teamId: "t1" },
-	{ id: "p2", label: "Billing", teamId: "t2" },
+	{ id: "p1", teamId: "t1" },
+	{ id: "p2", teamId: "t2" },
 ];
-const all = [sa("a", "p1"), sa("b", "p2"), sa("c", "p1")];
+const all = [
+	sa("a", "project", "p1"),
+	sa("b", "project", "p2"),
+	sa("c", "project", "p1"),
+	sa("d", "team", "t1"),
+	sa("e", "user", "me"),
+	sa("f", "user", "other"),
+];
 
 describe("workspaceAgents", () => {
-	it("narrows to the workspace's projects", () => {
-		const ids = (
-			kind: "organization" | "team" | "project" | "personal",
-			id: string,
-		) => workspaceAgents(all, projects, { kind, id }).map((s) => s.metadata.id);
-		expect(ids("organization", "")).toEqual(["a", "b", "c"]);
-		expect(ids("team", "t1")).toEqual(["a", "c"]);
+	const ids = (
+		kind: "organization" | "team" | "project" | "personal",
+		id: string,
+	) => workspaceAgents(all, projects, { kind, id }).map((s) => s.metadata.id);
+
+	it("holds every agent in the organization", () => {
+		expect(ids("organization", "")).toEqual(["a", "b", "c", "d", "e", "f"]);
+	});
+
+	it("holds a team's own agents and its projects'", () => {
+		expect(ids("team", "t1")).toEqual(["a", "c", "d"]);
+		expect(ids("team", "t2")).toEqual(["b"]);
+	});
+
+	it("holds a project's own agents", () => {
 		expect(ids("project", "p2")).toEqual(["b"]);
-		expect(ids("personal", "me")).toEqual([]);
+	});
+
+	it("holds the caller's own agents in Personal", () => {
+		expect(ids("personal", "me")).toEqual(["e"]);
 	});
 });
 
 describe("agentRows", () => {
-	it("ranks by spend, then requests, then name, and names the project", () => {
+	it("ranks by spend, then requests, then name, and names the owner", () => {
 		const usage: AgentUsage[] = [
 			{
 				key: "c",
@@ -46,9 +76,20 @@ describe("agentRows", () => {
 				lastSeen: "",
 			},
 		];
-		const rows = agentRows(all, projects, usage);
+		const rows = agentRows(all.slice(0, 3), usage);
 		expect(rows.map((r) => r.id)).toEqual(["c", "b", "a"]);
-		expect(rows[0]).toMatchObject({ label: "C", project: "Search" });
+		expect(rows[0]).toMatchObject({
+			label: "C",
+			owner: { kind: "project", id: "p1" },
+		});
 		expect(rows[2]?.usage).toBeUndefined();
+	});
+
+	it("names a user owner", () => {
+		const personal = all.filter((s) => s.metadata.id === "e");
+		expect(agentRows(personal, [])[0]?.owner).toEqual({
+			kind: "user",
+			id: "me",
+		});
 	});
 });

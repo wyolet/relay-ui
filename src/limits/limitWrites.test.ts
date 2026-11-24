@@ -329,16 +329,23 @@ describe("names", () => {
 });
 
 describe("targetScope", () => {
-	it("is the team or project itself, and a service account's project", () => {
-		expect(targetScope("team", "t1", "")).toEqual({ kind: "team", id: "t1" });
-		expect(targetScope("project", "p1", "")).toEqual({
+	it("is the team or project itself, and a service account's owner", () => {
+		expect(targetScope("team", "t1", undefined)).toEqual({
+			kind: "team",
+			id: "t1",
+		});
+		expect(targetScope("project", "p1", undefined)).toEqual({
 			kind: "project",
 			id: "p1",
 		});
-		expect(targetScope("serviceaccount", "sa1", "p1")).toEqual({
-			kind: "project",
-			id: "p1",
-		});
+		for (const owner of [
+			{ kind: "project", id: "p1" },
+			{ kind: "team", id: "t1" },
+			{ kind: "user", id: "u1" },
+		] as const) {
+			expect(targetScope("serviceaccount", "sa1", owner)).toEqual(owner);
+		}
+		expect(targetScope("serviceaccount", "sa1", undefined)).toBeUndefined();
 	});
 
 	it("offers one limit per account only where accounts sit under the target", () => {

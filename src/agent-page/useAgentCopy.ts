@@ -53,8 +53,8 @@ export async function loadAgentCopy(
 		queryClient.ensureQueryData(poolListQueryOptions),
 		queryClient.ensureQueryData(hostsListQueryOptions),
 		queryClient.ensureQueryData(providerAccountsQuery),
-		queryClient.ensureQueryData(projectAccountsQuery(sa.spec.projectId)),
-		queryClient.ensureQueryData(projectPoolsQuery(sa.spec.projectId)),
+		queryClient.ensureQueryData(projectAccountsQuery(sa.spec.projectId ?? "")),
+		queryClient.ensureQueryData(projectPoolsQuery(sa.spec.projectId ?? "")),
 	]);
 }
 
@@ -69,10 +69,10 @@ export function useAgentCopy(from: string): AgentCopyValues {
 	const { data: hosts } = useSuspenseQuery(hostsListQueryOptions);
 	const { data: providers } = useSuspenseQuery(providerAccountsQuery);
 	const { data: usable } = useSuspenseQuery(
-		projectAccountsQuery(sa.spec.projectId),
+		projectAccountsQuery(sa.spec.projectId ?? ""),
 	);
 	const { data: usablePools } = useSuspenseQuery(
-		projectPoolsQuery(sa.spec.projectId),
+		projectPoolsQuery(sa.spec.projectId ?? ""),
 	);
 	const keyless = keylessHostIds(hosts.items ?? []);
 	const offered = agentAccounts(

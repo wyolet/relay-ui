@@ -853,8 +853,8 @@ test.describe("Agent page shortcuts", () => {
 
 	test("the key form ignores a preset while the flag is off", async ({ page }) => {
 		await mockAgentPage(page, {});
-		await page.goto(`/keys/new?principal=${AGENT}&project=${PROJECT}`);
-		await expect(page.getByText("Pick a project…")).toBeVisible(FIRST_RENDER);
+		await page.goto(`/keys/new?principal=${AGENT}&owner=${PROJECT}`);
+		await expect(page.getByText("Pick an owner…")).toBeVisible(FIRST_RENDER);
 		await expect(page).not.toHaveURL(/principal=/);
 	});
 });
