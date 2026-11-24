@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import type { WriteRunPhase } from "@/hooks/useWriteRunner";
+import { Spinner } from "@/shared/Spinner";
 import { WriteList, type WriteListItem } from "@/shared/WriteList";
 
 /**
@@ -26,10 +27,13 @@ export function WriteRun({
 }) {
 	const failed = phase === "failed";
 	const nothingWritten = doneCount === 0;
+	// A one-request write has no steps to list: its title is the whole status.
+	const single = items.length === 0;
 	return (
 		<div className="flex flex-col gap-4">
-			<div>
-				<h2 className="text-sm font-semibold text-foreground">
+			<div role={single ? "status" : undefined}>
+				<h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+					{single && !failed && <Spinner className="size-3.5" />}
 					{failed ? "Stopped" : title}
 				</h2>
 				{failed && (
@@ -38,9 +42,11 @@ export function WriteRun({
 					</p>
 				)}
 			</div>
-			<div role="status">
-				<WriteList items={items} error={error} />
-			</div>
+			{!single && (
+				<div role="status">
+					<WriteList items={items} error={error} />
+				</div>
+			)}
 			{failed && !nothingWritten && (
 				<p className="text-xs text-muted-foreground">
 					{doneCount} of {items.length} steps are done and kept.

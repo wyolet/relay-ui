@@ -10,6 +10,8 @@ export interface AgentAnswers {
 	reach: AgentReach;
 	/** The picked accounts, in pick order. */
 	accounts: readonly AgentAccount[];
+	/** The picked keyless-host pools, in pick order; only the one-request path offers them. */
+	poolIds: readonly string[];
 	models: readonly string[];
 	policyId: string;
 }
@@ -19,7 +21,10 @@ export interface AgentAnswers {
  * the picks still offered, and the policy must be among `policyIds`.
  */
 export function accessErrors(
-	answers: Pick<AgentAnswers, "access" | "reach" | "accounts" | "policyId">,
+	answers: Pick<
+		AgentAnswers,
+		"access" | "reach" | "accounts" | "poolIds" | "policyId"
+	>,
 	policyIds: readonly string[],
 ): { accountIds?: string; policyId?: string } {
 	if (answers.access === "policy") {
@@ -27,7 +32,9 @@ export function accessErrors(
 			? {}
 			: { policyId: "Pick a policy." };
 	}
-	return answers.reach === "accounts" && answers.accounts.length === 0
+	return answers.reach === "accounts" &&
+		answers.accounts.length === 0 &&
+		answers.poolIds.length === 0
 		? { accountIds: "Pick an account, or use every credential." }
 		: {};
 }

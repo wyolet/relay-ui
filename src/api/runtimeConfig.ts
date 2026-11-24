@@ -19,7 +19,7 @@ import type { components } from "./types.gen";
  */
 export type RuntimeConfig = components["schemas"]["RuntimeConfig"];
 
-let loaded: RuntimeConfig = {};
+let loaded: RuntimeConfig = { pseudoKinds: [] };
 
 function pageOrigin(): string {
 	return typeof window !== "undefined"
@@ -102,6 +102,11 @@ const devFeatures: readonly string[] = import.meta.env.DEV
 /** A feature flag; absent = off. */
 export function feature(key: string): boolean {
 	return loaded.features?.[key] ?? devFeatures.includes(key);
+}
+
+/** Whether relay serves `POST /pseudo-<kind>`, the one-request form of a kind; absent = off. */
+export function pseudoKind(kind: string): boolean {
+	return loaded.pseudoKinds?.includes(kind) ?? false;
 }
 
 /** The whole config object — escape hatch for less-common fields. */

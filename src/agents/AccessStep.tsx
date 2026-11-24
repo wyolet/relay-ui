@@ -1,6 +1,7 @@
 import { ShieldCheck, SlidersHorizontal } from "lucide-react";
 import { useId } from "react";
 import { AccessFields, type AccessFieldsText } from "@/agents/AccessFields";
+import type { AgentPool } from "@/agents/agentAccounts";
 import type { AgentAccess } from "@/agents/agentWrites";
 import type { useAddAgentForm } from "@/agents/useAddAgentForm";
 import {
@@ -12,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import { FieldError } from "@/shared/FieldError";
 import { FormSection } from "@/shared/FormSection";
+import { BoxedCheckList, type CheckOption } from "@/shared/MultiSelect";
 import { Segmented } from "@/shared/Segmented";
 
 type AddAgentForm = ReturnType<typeof useAddAgentForm>;
@@ -33,8 +35,39 @@ const AGENT_ACCESS_TEXT: AccessFieldsText = {
 		"All models the owner's credentials serve. Pick providers or models to narrow it.",
 };
 
+function poolOptions(pools: readonly AgentPool[]): CheckOption[] {
+	return pools.map((p) => ({ value: p.id, label: p.label, hint: p.hostLabel }));
+}
+
+function KeylessPoolList({ agent }: { agent: AddAgentForm }) {
+	const { values, errors } = agent;
+	const poolsErrorId = useId();
+	return (
+		<div>
+			<h3 className="text-xs font-medium text-foreground">Pools</h3>
+			<p className="mt-0.5 mb-2 text-[11px] text-muted-foreground">
+				Hosts that take no key are reached through a pool.
+			</p>
+			<fieldset
+				aria-label="Pools"
+				aria-describedby={errors.poolIds ? poolsErrorId : undefined}
+				className="min-w-0"
+			>
+				<BoxedCheckList
+					options={poolOptions(agent.pools)}
+					selected={values.poolIds}
+					onToggle={agent.togglePool}
+					emptyLabel="pools"
+				/>
+			</fieldset>
+			<FieldError id={poolsErrorId} message={errors.poolIds} />
+		</div>
+	);
+}
+
 export function AccessStep({ agent }: { agent: AddAgentForm }) {
 	const { form, values, errors } = agent;
+	const accessErrorId = useId();
 	const policyErrorId = useId();
 	return (
 		<div className="divide-y divide-border">
@@ -48,6 +81,7 @@ export function AccessStep({ agent }: { agent: AddAgentForm }) {
 					value={values.access}
 					onChange={(access) => form.setFieldValue("access", access)}
 				/>
+				<FieldError id={accessErrorId} message={errors.access} />
 			</FormSection>
 
 			{values.access === "policy" ? (
@@ -101,6 +135,9 @@ export function AccessStep({ agent }: { agent: AddAgentForm }) {
 					selectedAccountIds={values.accountIds}
 					onToggleAccount={agent.toggleAccount}
 					accountsError={errors.accountIds}
+					keylessPools={
+						agent.pools.length > 0 && <KeylessPoolList agent={agent} />
+					}
 					models={values.models}
 					onModelsChange={(next) => form.setFieldValue("models", next)}
 					reach={agent.reach}

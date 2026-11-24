@@ -70,7 +70,13 @@ export function useSetAccessForm(target: AccessTarget) {
 	};
 	const keyless = keylessHostIds(hostItems);
 	const accounts = offeredAccounts(
-		agentAccounts(usable.items ?? [], visible.items ?? [], userId, hostLabel),
+		agentAccounts(
+			usable.items ?? [],
+			visible.items ?? [],
+			userId,
+			hostLabel,
+			keyless,
+		),
 		keyless,
 	);
 	const policyCase = ownPolicyCase(

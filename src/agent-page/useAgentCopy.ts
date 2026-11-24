@@ -1,12 +1,13 @@
 import { type QueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { type AgentCopyValues, agentCopyValues } from "@/agent-page/agentCopy";
-import { agentAccounts } from "@/agents/agentAccounts";
+import { agentAccounts, keylessHostIds } from "@/agents/agentAccounts";
 import { useAuth } from "@/api/auth";
 import {
 	accountListQuery,
 	accountListQueryOptions,
 	usableAccountsQuery,
 } from "@/api/hooks/accounts";
+import { hostsListQueryOptions } from "@/api/hooks/hosts";
 import { policiesListQueryOptions } from "@/api/hooks/policies";
 import { policyBindingsAllQueryOptions } from "@/api/hooks/policyBindings";
 import { poolListQueryOptions } from "@/api/hooks/pools";
@@ -38,6 +39,7 @@ export async function loadAgentCopy(
 		queryClient.ensureQueryData(policyBindingsAllQueryOptions),
 		queryClient.ensureQueryData(policiesListQueryOptions),
 		queryClient.ensureQueryData(poolListQueryOptions),
+		queryClient.ensureQueryData(hostsListQueryOptions),
 		queryClient.ensureQueryData(providerAccountsQuery),
 		queryClient.ensureQueryData(projectAccountsQuery(sa.spec.projectId)),
 	]);
@@ -51,6 +53,7 @@ export function useAgentCopy(from: string): AgentCopyValues {
 	const { data: bindings } = useSuspenseQuery(policyBindingsAllQueryOptions);
 	const { data: policies } = useSuspenseQuery(policiesListQueryOptions);
 	const { data: pools } = useSuspenseQuery(poolListQueryOptions);
+	const { data: hosts } = useSuspenseQuery(hostsListQueryOptions);
 	const { data: providers } = useSuspenseQuery(providerAccountsQuery);
 	const { data: usable } = useSuspenseQuery(
 		projectAccountsQuery(sa.spec.projectId),
@@ -60,6 +63,7 @@ export function useAgentCopy(from: string): AgentCopyValues {
 		providers.items ?? [],
 		userId,
 		() => "",
+		keylessHostIds(hosts.items ?? []),
 	);
 	return agentCopyValues({
 		serviceAccount: sa,

@@ -4,6 +4,7 @@ import { EMPTY_GRAPH, mockApi } from "./fixtures/mockApi";
 const TEAM = "team-1";
 const PROJECT = "project-1";
 const HOST = "host-anthropic";
+const KEYLESS_HOST = "host-local";
 const SERVICE_ACCOUNT = "sa-1";
 
 const contexts = [
@@ -20,8 +21,14 @@ const contexts = [
 ];
 
 const catalog = {
-	providers: [{ id: "prov-anthropic", name: "anthropic", displayName: "Anthropic" }],
-	hosts: [{ id: HOST, name: "anthropic", displayName: "Anthropic" }],
+	providers: [
+		{ id: "prov-anthropic", name: "anthropic", displayName: "Anthropic" },
+		{ id: "prov-google", name: "google", displayName: "Google" },
+	],
+	hosts: [
+		{ id: HOST, name: "anthropic", displayName: "Anthropic" },
+		{ id: KEYLESS_HOST, name: "local", displayName: "Local Ollama" },
+	],
 	models: [
 		{
 			id: "m-sonnet",
@@ -30,13 +37,28 @@ const catalog = {
 			providerId: "prov-anthropic",
 			bindings: [{ hostId: HOST }],
 		},
+		{
+			id: "m-gemma",
+			name: "gemma",
+			displayName: "Gemma",
+			providerId: "prov-google",
+			bindings: [{ hostId: KEYLESS_HOST }],
+		},
 	],
 };
 
-function providerAccount(id: string, displayName: string, owner: object) {
+const hosts = [
+	{ metadata: { id: HOST, name: "anthropic" }, spec: { baseURL: "https://anthropic.test" } },
+	{
+		metadata: { id: KEYLESS_HOST, name: "local" },
+		spec: { baseURL: "http://local.test", noAuth: true },
+	},
+];
+
+function providerAccount(id: string, displayName: string, owner: object, hostId = HOST) {
 	return {
 		metadata: { id, name: id, displayName, owner },
-		spec: { kind: "provider", hostId: HOST },
+		spec: { kind: "provider", hostId },
 	};
 }
 
@@ -48,6 +70,25 @@ const myAccount = providerAccount("acct-mine", "My Anthropic", {
 	kind: "user",
 	id: "test-user",
 });
+const keylessAccount = providerAccount(
+	"acct-local",
+	"Office Ollama account",
+	{ kind: "organization" },
+	KEYLESS_HOST,
+);
+const keylessPool = {
+	metadata: { id: "pool-local", name: "local-pool", displayName: "Local pool" },
+	spec: { hostId: KEYLESS_HOST, accountIds: ["acct-local"] },
+};
+const projectPolicy = {
+	metadata: {
+		id: "pol-search",
+		name: "search-default",
+		displayName: "Search default",
+		owner: { kind: "project", id: PROJECT },
+	},
+	spec: { enabled: true },
+};
 const laneAccount = {
 	metadata: { id: "acct-lane", name: "acct-lane", owner: { kind: "project", id: PROJECT } },
 	spec: { kind: "service", holder: { kind: "serviceaccount", id: SERVICE_ACCOUNT } },
@@ -65,11 +106,69 @@ interface FailOnce {
 	message: string;
 }
 
-/** Answers the form's reads and writes; `failOnce` names a write that fails the first time. */
-async function mockAgentApi(page: Page, failOnce?: FailOnce): Promise<Sent[]> {
+interface PseudoBody {
+	metadata: { name: string };
+	spec: {
+		policyId?: string;
+		access?: { accountIds?: string[]; poolIds?: string[]; models?: string[] };
+		key?: { displayName?: string };
+	};
+}
+
+/** Relay's answer to a one-request agent: rows in write order, the plaintext unless a dry run. */
+function pseudoAnswer(body: PseudoBody, dryRun: boolean) {
+	const access = body.spec.access;
+	const madePolicy = Boolean(
+		access?.accountIds?.length || access?.poolIds?.length || access?.models?.length,
+	);
+	const name = body.metadata.name;
+	const row = (kind: string, rowName: string) => ({ kind, id: `${kind}-1`, name: rowName });
+	const keyName = (body.spec.key?.displayName ?? "key").toLowerCase().replaceAll(" ", "-");
+	return {
+		created: [
+			row("service-account", name),
+			row("account", `sa-${name}`),
+			...(madePolicy ? [row("policy", `${name}-policy`)] : []),
+			...(madePolicy || body.spec.policyId ? [row("policy-binding", `${name}-binding`)] : []),
+			row("key", keyName),
+		],
+		serviceAccount: { id: SERVICE_ACCOUNT, name },
+		account: { id: "acct-lane", name: `sa-${name}` },
+		...(madePolicy || body.spec.policyId
+			? { policy: { id: "policy-1", name: `${name}-policy` } }
+			: {}),
+		pools: [],
+		shares: [],
+		key: { id: "key-1", name: keyName, ...(dryRun ? {} : { plaintext: "sk-wr-test-secret" }) },
+	};
+}
+
+interface AgentMock {
+	/** A write that fails the first time. */
+	failOnce?: FailOnce;
+	/** Serves `pseudoKinds: ["agents"]`. */
+	oneRequest?: boolean;
+	/** Relay's answer to the first `POST /pseudo-agents` that isn't a dry run. */
+	refuseOnce?: { status: number; json: object };
+	/** Relay's answer to the first dry run. */
+	refuseDryRunOnce?: { status: number; json: object };
+}
+
+/** Answers the form's reads and writes; a dry run is recorded as `pseudo-agents?dryRun`. */
+async function mockAgentApi(
+	page: Page,
+	{ failOnce, oneRequest, refuseOnce, refuseDryRunOnce }: AgentMock = {},
+): Promise<Sent[]> {
 	const sent: Sent[] = [];
 	let failed = false;
-	await mockApi(page, { ...EMPTY_GRAPH, contexts });
+	let dryRunRefused = false;
+	await mockApi(page, {
+		...EMPTY_GRAPH,
+		contexts,
+		hosts,
+		policies: [projectPolicy],
+		...(oneRequest ? { pseudoKinds: ["agents"] } : {}),
+	});
 	await page.route("**/api/catalog/graph**", (route) =>
 		route.fulfill({ json: catalog }),
 	);
@@ -79,13 +178,16 @@ async function mockAgentApi(page: Page, failOnce?: FailOnce): Promise<Sent[]> {
 		const path = url.pathname.replace(/^.*?\/api\//, "");
 		const method = request.method();
 		if (method === "GET") {
+			if (path === "pools" && url.searchParams.has("usable_by")) {
+				return route.fulfill({ json: { items: [keylessPool], total: 1 } });
+			}
 			if (path !== "accounts") return route.fallback();
 			if (url.searchParams.get("kind") === "service") {
 				return route.fulfill({ json: { items: [laneAccount], total: 1 } });
 			}
 			const items = url.searchParams.has("usable_by")
-				? [projectAccount]
-				: [projectAccount, myAccount];
+				? [projectAccount, keylessAccount]
+				: [projectAccount, myAccount, keylessAccount];
 			return route.fulfill({ json: { items, total: items.length } });
 		}
 		if (failOnce?.path === path && !failed) {
@@ -96,6 +198,22 @@ async function mockAgentApi(page: Page, failOnce?: FailOnce): Promise<Sent[]> {
 			});
 		}
 		const body = request.postDataJSON() ?? {};
+		if (path === "pseudo-agents") {
+			const dryRun = url.searchParams.get("dryRun") === "true";
+			sent.push({ method, path: dryRun ? "pseudo-agents?dryRun" : path, body });
+			if (!dryRun && refuseOnce && !failed) {
+				failed = true;
+				return route.fulfill({ status: refuseOnce.status, json: refuseOnce.json });
+			}
+			if (dryRun && refuseDryRunOnce && !dryRunRefused) {
+				dryRunRefused = true;
+				return route.fulfill({ status: refuseDryRunOnce.status, json: refuseDryRunOnce.json });
+			}
+			return route.fulfill({
+				status: dryRun ? 200 : 201,
+				json: pseudoAnswer(body, dryRun),
+			});
+		}
 		sent.push({ method, path, body });
 		const id = `made-${sent.length}`;
 		if (path === "service-accounts") {
@@ -173,6 +291,8 @@ test.describe("Add agent", () => {
 		await page.getByRole("switch", { name: "Use every credential in scope" }).click();
 		await page.getByRole("button", { name: "Next" }).click();
 		await expect(page.getByText("Pick an account, or use every credential.")).toBeVisible();
+		await expect(page.getByRole("button", { name: /Office Ollama account/ })).toHaveCount(0);
+		await expect(page.getByRole("group", { name: "Pools" })).toHaveCount(0);
 
 		await page.getByRole("button", { name: /Search Anthropic/ }).click();
 		await page.getByRole("button", { name: /My Anthropic/ }).click();
@@ -206,9 +326,7 @@ test.describe("Add agent", () => {
 
 	test("a failed write stops the run and Retry resumes at it", async ({ page }) => {
 		const sent = await mockAgentApi(page, {
-			path: "pools",
-			status: 409,
-			message: "pool refused",
+			failOnce: { path: "pools", status: 409, message: "pool refused" },
 		});
 		await nameAgentInProject(page);
 		await page.getByRole("switch", { name: "Use every credential in scope" }).click();
@@ -234,9 +352,11 @@ test.describe("Add agent", () => {
 
 	test("a refused first write leads back to the form as it was", async ({ page }) => {
 		const sent = await mockAgentApi(page, {
-			path: "service-accounts",
-			status: 403,
-			message: "not allowed in this project",
+			failOnce: {
+				path: "service-accounts",
+				status: 403,
+				message: "not allowed in this project",
+			},
 		});
 		await nameAgentInProject(page);
 		await page.getByRole("button", { name: "Next" }).click();
@@ -258,5 +378,268 @@ test.describe("Add agent", () => {
 		await page.getByRole("button", { name: "Next" }).dblclick();
 		await expect(page.getByRole("button", { name: "Create agent" })).toBeVisible();
 		expect(sent).toEqual([]);
+	});
+});
+
+const AGENT_METADATA = {
+	name: expect.stringMatching(/^indexer-/),
+	displayName: "Indexer",
+	description: "",
+	labels: { "sa-type": "agent" },
+	owner: { kind: "project", id: PROJECT },
+};
+const AGENT_KEY = {
+	displayName: "Indexer key",
+	passthroughAllowed: false,
+	payloadLoggingEnabled: false,
+};
+
+const submits = (sent: Sent[]) => sent.filter((s) => s.path === "pseudo-agents");
+
+test.describe("Add agent in one request", () => {
+	test("every credential: one request, the dry run lists what it makes", async ({ page }) => {
+		const sent = await mockAgentApi(page, { oneRequest: true });
+		await nameAgentInProject(page);
+		await page.getByRole("button", { name: "Next" }).click();
+
+		const planned = page.getByRole("list", { name: "What Create agent makes" });
+		await expect(planned.getByRole("listitem")).toHaveText([
+			/^Service account\s*indexer-/,
+			/^Account\s*sa-indexer-/,
+			/^Key\s*indexer-key/,
+		]);
+		await page.getByRole("button", { name: "Create agent" }).click();
+
+		await expect(page.getByText("sk-wr-test-secret", { exact: true })).toBeVisible();
+		expect(sent.map((s) => s.path)).toEqual(["pseudo-agents?dryRun", "pseudo-agents"]);
+		expect(submits(sent)[0]?.body).toEqual({
+			metadata: AGENT_METADATA,
+			spec: { access: { everyCredential: true }, key: AGENT_KEY },
+		});
+		expect(sent[0]?.body).toEqual(sent[1]?.body ?? {});
+		await expect(page.getByRole("link", { name: "View policy" })).toHaveCount(0);
+	});
+
+	test("a new key name on the last step reruns the dry run once typing settles", async ({
+		page,
+	}) => {
+		const sent = await mockAgentApi(page, { oneRequest: true });
+		await nameAgentInProject(page);
+		await page.getByRole("button", { name: "Next" }).click();
+		const planned = page.getByRole("list", { name: "What Create agent makes" });
+		await expect(planned.getByRole("listitem").last()).toHaveText(/^Key\s*indexer-key/);
+
+		await page.getByRole("textbox", { name: "Key name" }).pressSequentially("Crawler key");
+		await expect(planned.getByRole("listitem").last()).toHaveText(/^Key\s*crawler-key/);
+		const dryRuns = sent.filter((s) => s.path === "pseudo-agents?dryRun");
+		expect(dryRuns).toHaveLength(2);
+		expect(dryRuns[1]?.body.spec).toMatchObject({ key: { displayName: "Crawler key" } });
+	});
+
+	test("picked accounts and models: one request naming them", async ({ page }) => {
+		const sent = await mockAgentApi(page, { oneRequest: true });
+		await nameAgentInProject(page);
+		await page.getByRole("switch", { name: "Use every credential in scope" }).click();
+		await expect(page.getByRole("button", { name: /Office Ollama account/ })).toHaveCount(0);
+		await page.getByRole("button", { name: /Search Anthropic/ }).click();
+		await page.getByRole("button", { name: /My Anthropic/ }).click();
+		await page.getByRole("button", { name: /^Anthropic/ }).click();
+		await page.getByRole("button", { name: "Next" }).click();
+		await page.getByRole("button", { name: "Create agent" }).click();
+
+		await expect(page.getByText("sk-wr-test-secret", { exact: true })).toBeVisible();
+		expect(submits(sent).map((s) => s.body)).toEqual([
+			{
+				metadata: AGENT_METADATA,
+				spec: {
+					access: {
+						everyCredential: false,
+						accountIds: ["acct-project", "acct-mine"],
+						models: ["anthropic"],
+					},
+					key: AGENT_KEY,
+				},
+			},
+		]);
+		await expect(page.getByRole("link", { name: "View policy" })).toBeVisible();
+	});
+
+	test("an existing policy: one request binding it", async ({ page }) => {
+		const sent = await mockAgentApi(page, { oneRequest: true });
+		await nameAgentInProject(page);
+		await page.getByRole("button", { name: "Use a policy" }).click();
+		await page.getByRole("combobox", { name: "Policy" }).click();
+		await page.getByRole("option", { name: "Search default" }).click();
+		await page.getByRole("button", { name: "Next" }).click();
+		await page.getByRole("button", { name: "Create agent" }).click();
+
+		await expect(page.getByText("sk-wr-test-secret", { exact: true })).toBeVisible();
+		expect(submits(sent).map((s) => s.body)).toEqual([
+			{ metadata: AGENT_METADATA, spec: { policyId: "pol-search", key: AGENT_KEY } },
+		]);
+		await expect(page.getByRole("link", { name: "View policy" })).toHaveCount(0);
+	});
+
+	test("a keyless host is offered as its pool and sent first", async ({ page }) => {
+		const sent = await mockAgentApi(page, { oneRequest: true });
+		await nameAgentInProject(page);
+		await page.getByRole("switch", { name: "Use every credential in scope" }).click();
+		await page.getByRole("button", { name: /Search Anthropic/ }).click();
+		await page
+			.getByRole("group", { name: "Pools" })
+			.getByRole("button", { name: /Local pool/ })
+			.click();
+		await page.getByRole("tab", { name: "Models" }).click();
+		await expect(page.getByRole("button", { name: /Gemma/ })).toBeVisible();
+		await page.getByRole("button", { name: "Next" }).click();
+		await page.getByRole("button", { name: "Create agent" }).click();
+
+		await expect(page.getByText("sk-wr-test-secret", { exact: true })).toBeVisible();
+		expect(submits(sent)[0]?.body.spec).toEqual({
+			access: {
+				everyCredential: false,
+				poolIds: ["pool-local"],
+				accountIds: ["acct-project"],
+			},
+			key: AGENT_KEY,
+		});
+	});
+
+	test("a refused account returns to the access step with relay's message by the list", async ({
+		page,
+	}) => {
+		const sent = await mockAgentApi(page, {
+			oneRequest: true,
+			refuseOnce: {
+				status: 400,
+				json: {
+					error: { type: "invalid_request_error", message: "account is closed" },
+					pointer: "/spec/access/accountIds/0",
+				},
+			},
+		});
+		await nameAgentInProject(page);
+		await page.getByRole("switch", { name: "Use every credential in scope" }).click();
+		await page.getByRole("button", { name: /Search Anthropic/ }).click();
+		await page.getByRole("button", { name: "Next" }).click();
+		await page.getByRole("button", { name: "Create agent" }).click();
+
+		const accounts = page.getByRole("group", { name: "Accounts" });
+		await expect(accounts).toHaveAccessibleDescription("account is closed");
+		expect(submits(sent)).toHaveLength(1);
+
+		await page.getByRole("button", { name: /My Anthropic/ }).click();
+		await expect(accounts).not.toHaveAccessibleDescription("account is closed");
+	});
+
+	test("a plan issue shows under the refusal heading on its step", async ({ page }) => {
+		await mockAgentApi(page, {
+			oneRequest: true,
+			refuseOnce: {
+				status: 422,
+				json: {
+					error: { type: "invalid_request_error", code: "plan_issue", message: "plan issues" },
+					issues: [
+						{
+							code: "policy_serves_nothing",
+							kind: "policy",
+							message: "The policy serves no model.",
+							pointer: "/spec/access",
+						},
+						{ code: "budget_unpriced", kind: "budget" },
+					],
+				},
+			},
+		});
+		await nameAgentInProject(page);
+		await page.getByRole("button", { name: "Next" }).click();
+		await page.getByRole("button", { name: "Create agent" }).click();
+
+		const refused = page.getByRole("alert").filter({ hasText: "Relay would refuse this setup" });
+		await expect(refused.getByRole("listitem")).toHaveText([
+			"The policy serves no model.",
+			"A row you can't see blocks this.",
+		]);
+		await expect(page.getByRole("switch", { name: "Use every credential in scope" })).toBeVisible();
+	});
+
+	test("a plan issue on the policy shows on the step with the policy select", async ({
+		page,
+	}) => {
+		await mockAgentApi(page, {
+			oneRequest: true,
+			refuseOnce: {
+				status: 422,
+				json: {
+					error: { type: "invalid_request_error", code: "plan_issue", message: "plan issues" },
+					issues: [
+						{
+							code: "policy_disabled",
+							kind: "policy",
+							message: "The policy is disabled.",
+							pointer: "/spec/policyId",
+						},
+					],
+				},
+			},
+		});
+		await nameAgentInProject(page);
+		await page.getByRole("button", { name: "Use a policy" }).click();
+		await page.getByRole("combobox", { name: "Policy" }).click();
+		await page.getByRole("option", { name: "Search default" }).click();
+		await page.getByRole("button", { name: "Next" }).click();
+		await page.getByRole("button", { name: "Create agent" }).click();
+
+		await expect(
+			page.getByRole("alert").filter({ hasText: "Relay would refuse this setup" }),
+		).toContainText("The policy is disabled.");
+		await expect(page.getByRole("combobox", { name: "Policy" })).toBeVisible();
+	});
+
+	test("a missing owner returns to the agent step with the message by the project", async ({
+		page,
+	}) => {
+		await mockAgentApi(page, {
+			oneRequest: true,
+			refuseOnce: {
+				status: 400,
+				json: {
+					error: { type: "invalid_request_error", message: "metadata.owner is required" },
+					pointer: "/metadata/owner",
+				},
+			},
+		});
+		await nameAgentInProject(page);
+		await page.getByRole("button", { name: "Next" }).click();
+		await page.getByRole("button", { name: "Create agent" }).click();
+
+		await expect(page.getByPlaceholder("Support triage agent")).toBeVisible();
+		await expect(page.getByText("metadata.owner is required")).toBeVisible();
+	});
+
+	test("a busy relay asks to retry, for the dry run and the create alike", async ({ page }) => {
+		const busy = {
+			status: 503,
+			json: {
+				error: { type: "server_error", message: "a check is already running" },
+				pointer: "/spec/access/accountIds/0",
+			},
+		};
+		const sent = await mockAgentApi(page, {
+			oneRequest: true,
+			refuseOnce: busy,
+			refuseDryRunOnce: busy,
+		});
+		await nameAgentInProject(page);
+		await page.getByRole("button", { name: "Next" }).click();
+		await expect(page.getByRole("alert")).toHaveText("Relay is busy. Try again in a moment.");
+
+		await page.getByRole("button", { name: "Create agent" }).click();
+		await expect(page.getByRole("alert")).toHaveText("Relay is busy. Try again in a moment.");
+		await expect(page.getByRole("button", { name: "Create agent" })).toBeEnabled();
+
+		await page.getByRole("button", { name: "Create agent" }).click();
+		await expect(page.getByText("sk-wr-test-secret", { exact: true })).toBeVisible();
+		expect(submits(sent)).toHaveLength(2);
 	});
 });

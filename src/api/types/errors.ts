@@ -33,6 +33,24 @@ export class ApiError extends Error {
 	}
 }
 
+export type PseudoRefusalBody = components["schemas"]["pseudoRefusal"];
+export type PseudoIssue = components["schemas"]["PseudoIssue"];
+
+/** A refused one-request write; nothing was written. */
+export class PseudoRefusal extends ApiError {
+	/** JSON Pointer into the request body naming the refused part; "" when relay names none. */
+	readonly pointer: string;
+	/** With `plan_issue`: what the rows would break together. */
+	readonly issues: PseudoIssue[];
+
+	constructor(status: number, body: PseudoRefusalBody) {
+		super(status, body.error);
+		this.name = "PseudoRefusal";
+		this.pointer = body.pointer ?? "";
+		this.issues = body.issues ?? [];
+	}
+}
+
 /** A delete refused because other rows still reference the target. */
 export function isResourceInUse(err: unknown): err is ApiError {
 	return (

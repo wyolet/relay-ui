@@ -45,6 +45,7 @@ export function AccessFields({
 	onToggleAccount,
 	accountsError,
 	keptPools,
+	keylessPools,
 	models,
 	onModelsChange,
 	reach,
@@ -59,6 +60,8 @@ export function AccessFields({
 	accountsError?: string;
 	/** Rows for pools that stay linked as they are, above the account list. */
 	keptPools?: ReactNode;
+	/** A pick list of pools at hosts that take no key, below the account list. */
+	keylessPools?: ReactNode;
 	models: string[];
 	onModelsChange: (models: string[]) => void;
 	reach: PickerReach | undefined;
@@ -96,6 +99,7 @@ export function AccessFields({
 								</fieldset>
 								<FieldError id={accountsErrorId} message={accountsError} />
 							</div>
+							{keylessPools}
 						</div>
 					)}
 				</div>

@@ -1,5 +1,7 @@
 import { ListChecks, Tag } from "lucide-react";
 import { useId } from "react";
+import { PlannedRows } from "@/agents/PlannedRows";
+import { RefusedIssues } from "@/agents/RefusedIssues";
 import type { useAddAgentForm } from "@/agents/useAddAgentForm";
 import { Input } from "@/components/ui/input";
 import { KeySettingsSections } from "@/keys/KeySettingsSections";
@@ -10,7 +12,7 @@ import { WriteList } from "@/shared/WriteList";
 type AddAgentForm = ReturnType<typeof useAddAgentForm>;
 
 export function KeyStep({ agent }: { agent: AddAgentForm }) {
-	const { form, values, errors } = agent;
+	const { values, errors, setKeyAnswers } = agent;
 	const keyNameErrorId = useId();
 	return (
 		<div className="divide-y divide-border">
@@ -23,7 +25,7 @@ export function KeyStep({ agent }: { agent: AddAgentForm }) {
 					type="text"
 					className="w-full max-w-md"
 					value={values.keyName}
-					onChange={(e) => form.setFieldValue("keyName", e.currentTarget.value)}
+					onChange={(e) => setKeyAnswers({ keyName: e.currentTarget.value })}
 					placeholder={agent.keyNamePlaceholder}
 					aria-label="Key name"
 					aria-invalid={errors.keyName ? true : undefined}
@@ -34,27 +36,47 @@ export function KeyStep({ agent }: { agent: AddAgentForm }) {
 
 			<KeySettingsSections
 				settings={values}
-				onExpiresAtChange={(v) => form.setFieldValue("expiresAt", v)}
+				onExpiresAtChange={(v) => setKeyAnswers({ expiresAt: v })}
 				onPassthroughAllowedChange={(v) =>
-					form.setFieldValue("passthroughAllowed", v)
+					setKeyAnswers({ passthroughAllowed: v })
 				}
 				onPayloadLoggingEnabledChange={(v) =>
-					form.setFieldValue("payloadLoggingEnabled", v)
+					setKeyAnswers({ payloadLoggingEnabled: v })
 				}
 			/>
 
 			<FormSection
 				icon={ListChecks}
 				title="On create"
-				description="What Create agent does, in this order."
+				description={
+					agent.oneRequest
+						? "What Create agent makes, in one request. Relay makes all of it or none."
+						: "What Create agent does, in this order."
+				}
 			>
-				<WriteList
-					items={agent.planned.map((w) => ({
-						id: w.id,
-						label: w.label,
-						status: "waiting",
-					}))}
-				/>
+				{agent.oneRequest ? (
+					<div className="flex flex-col gap-3">
+						<RefusedIssues messages={agent.onCreateIssues} />
+						{agent.refusalMessage && (
+							<p role="alert" className="text-[11px] text-destructive">
+								{agent.refusalMessage}
+							</p>
+						)}
+						<PlannedRows
+							rows={agent.previewRows}
+							loading={agent.previewLoading}
+							stale={agent.previewStale}
+						/>
+					</div>
+				) : (
+					<WriteList
+						items={agent.planned.map((w) => ({
+							id: w.id,
+							label: w.label,
+							status: "waiting",
+						}))}
+					/>
+				)}
 			</FormSection>
 		</div>
 	);
