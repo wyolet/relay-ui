@@ -1,5 +1,5 @@
 import { ACCOUNT_KIND_LABELS } from "@/accounts/accountView";
-import type { Account } from "@/api/hooks/accounts";
+import type { Account, AccountsListParams } from "@/api/hooks/accounts";
 import { ApiError } from "@/api/types/errors";
 import type { Policy } from "@/api/types/policy";
 import type { PolicyBinding } from "@/api/types/policyBinding";
@@ -60,6 +60,13 @@ export function defaultLane(
 export interface AccountOwnerRef {
 	kind: "team" | "project" | "serviceaccount";
 	id: string;
+}
+
+/** The account list filter that holds the row's own account. */
+export function ownAccountParams(of: AccountOwnerRef): AccountsListParams {
+	return of.kind === "serviceaccount"
+		? { kind: ["service"], holder_id: [of.id] }
+		: { kind: [of.kind] };
 }
 
 /** A team's or project's own account by kind and owner; a service account's by holder. */

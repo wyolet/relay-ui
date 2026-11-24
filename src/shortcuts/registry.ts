@@ -1,4 +1,5 @@
 import type { ComponentType } from "react";
+import { SetAccessAction } from "@/access/SetAccessAction";
 import { CopyAgentAction } from "@/agent-page/CopyAgentAction";
 import { NewKeyAction } from "@/agent-page/NewKeyAction";
 import { RemoveAgentAction } from "@/agent-page/RemoveAgentAction";
@@ -26,6 +27,11 @@ export interface Shortcut {
 
 /** Every shortcut a detail page may offer. Dropping one is removing its line and its folder. */
 export const SHORTCUTS: readonly Shortcut[] = [
+	{
+		flag: SHORTCUT_FLAGS.access,
+		targets: ["team", "project", "serviceaccount"],
+		Action: SetAccessAction,
+	},
 	{
 		flag: SHORTCUT_FLAGS.agentKey,
 		targets: ["serviceaccount"],
