@@ -39,11 +39,13 @@ function NoFormNotice({ children }: { children: ReactNode }) {
 function LimitForm({ start }: { start: LimitStart }) {
 	const limit = useAddLimitForm(start);
 	const openTarget = useOpenTarget(start.target);
-	const { step, writes, target } = limit;
+	const { step, target } = limit;
+	if (limit.currentLoading) return <PageLoader />;
 	if (limit.heldAbove) {
 		return (
 			<NoFormNotice>
 				<p>{limit.caseLine}</p>
+				{limit.heldAboveMessage && <p>{limit.heldAboveMessage}</p>}
 				<TargetLink kind={target.kind} name={target.name} className={BACK_LINK}>
 					Back to {target.label}
 				</TargetLink>
@@ -56,7 +58,7 @@ function LimitForm({ start }: { start: LimitStart }) {
 			form={limit}
 			finishLabel="Add limit"
 			runTitle="Adding the limit"
-			result={writes.added && <LimitAdded added={writes.added} />}
+			result={limit.added && <LimitAdded added={limit.added} />}
 			onCancel={openTarget}
 		>
 			{step === "limit" && <LimitStep limit={limit} />}

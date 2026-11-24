@@ -1,6 +1,11 @@
 import { describe, expect, it } from "bun:test";
 import { PseudoRefusal, type PseudoRefusalBody } from "@/api/types/errors";
-import { BUSY_MESSAGE, CONFLICT_MESSAGE, parseRefusal } from "@/pseudo/refusal";
+import {
+	BUSY_MESSAGE,
+	CONFLICT_MESSAGE,
+	parseRefusal,
+	sameAnswers,
+} from "@/pseudo/refusal";
 
 const FIELDS = { "/spec/ids": "ids", "/metadata": "name" } as const;
 
@@ -83,5 +88,16 @@ describe("parseRefusal", () => {
 				FIELDS,
 			),
 		).toEqual({ kind: "field", field: "ids", message: "relay says no" });
+	});
+});
+
+describe("sameAnswers", () => {
+	const at = { name: "a", ids: ["1", "2"], on: false };
+
+	it("compares only the named answers, lists by value", () => {
+		expect(
+			sameAnswers({ ...at, ids: ["1", "2"], on: true }, at, ["name", "ids"]),
+		).toBe(true);
+		expect(sameAnswers({ ...at, ids: ["2", "1"] }, at, ["ids"])).toBe(false);
 	});
 });

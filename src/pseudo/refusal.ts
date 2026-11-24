@@ -46,3 +46,12 @@ export function parseRefusal<F extends string>(
 		? { kind: "field", field, message, account: err.account }
 		: { kind: "field", field, message };
 }
+
+/** Whether the answers `keys` name still hold what they held `at` a refusal or warning. */
+export function sameAnswers<T>(
+	now: T,
+	at: T,
+	keys: readonly (keyof T)[],
+): boolean {
+	return keys.every((k) => JSON.stringify(now[k]) === JSON.stringify(at[k]));
+}

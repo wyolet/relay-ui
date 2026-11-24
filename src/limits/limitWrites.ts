@@ -1,5 +1,5 @@
 import type { BudgetSpec } from "@/api/hooks/budgets";
-import type { RateLimitRule } from "@/api/types/ratelimit";
+import type { RateLimitSpec } from "@/api/types/ratelimit";
 import type { components } from "@/api/types.gen";
 import type { BudgetMode, BudgetPeriod } from "@/budgets/budgetFormat";
 import { displayLabel } from "@/lib/displayLabel";
@@ -38,10 +38,18 @@ export interface LimitAnswers {
 	perAccount: boolean;
 }
 
-/** The limit as its own create takes it; a rate limit also carries the models its link counts. */
+/** The limit as its own create takes it. */
 export type LimitSpec =
 	| { kind: "budget"; spec: BudgetSpec }
-	| { kind: "rateLimit"; rules: RateLimitRule[]; models: readonly string[] };
+	| { kind: "rateLimit"; spec: RateLimitSpec };
+
+/** How the policy links the limit. */
+export interface LimitLink {
+	/** False gives each account under the target a cap or count of its own. */
+	shared: boolean;
+	/** The models a rate limit counts; empty counts every model. */
+	models: readonly string[];
+}
 
 /** A typed rate amount as a whole number of 1 or more, "1,000" included; undefined for anything else. */
 export function wholeRateAmount(raw: string): number | undefined {
@@ -64,13 +72,26 @@ export function limitSpec(answers: LimitAnswers): LimitSpec {
 	}
 	return {
 		kind: "rateLimit",
-		rules: easyRateLimitRules({
-			[answers.meter]: {
-				amount: required(wholeRateAmount(answers.rateAmount), "rate amount"),
-				per: answers.per,
-			},
-		}),
-		models: answers.models,
+		spec: {
+			enabled: true,
+			rules: easyRateLimitRules({
+				[answers.meter]: {
+					amount: required(wholeRateAmount(answers.rateAmount), "rate amount"),
+					per: answers.per,
+				},
+			}),
+		},
+	};
+}
+
+/** A spend cap counts every model; one each only where accounts sit under the target. */
+export function limitLink(
+	answers: Pick<LimitAnswers, "kind" | "models" | "perAccount">,
+	targetKind: ShortcutTargetKind,
+): LimitLink {
+	return {
+		shared: !(hasAccountsUnder(targetKind) && answers.perAccount),
+		models: answers.kind === "rateLimit" ? answers.models : [],
 	};
 }
 
@@ -81,7 +102,18 @@ export function limitSpec(answers: LimitAnswers): LimitSpec {
 export type UnpricedWarning =
 	| { kind: "none" }
 	| { kind: "noPolicy" }
-	| { kind: "grants"; grants: readonly UnpricedGrant[] };
+	| { kind: "grants"; grants: readonly UnpricedGrant[] }
+	| { kind: "models"; models: readonly string[] };
+
+/** A spend cap's unpriced models as relay's dry run lists them, provider/model each. */
+export function dryRunUnpriced(
+	kind: LimitKind,
+	models: readonly string[] | null | undefined,
+): UnpricedWarning {
+	return kind === "budget" && models && models.length > 0
+		? { kind: "models", models }
+		: { kind: "none" };
+}
 
 export function unpricedWarning(
 	kind: LimitKind,
@@ -180,6 +212,9 @@ export function limitWrites(
 	];
 }
 
+export const HELD_ABOVE_LINE =
+	"Limited by a policy you can't see or change. Ask whoever set it.";
+
 /** What the target is under now, and what saving does to it. */
 export function policyCaseLine(
 	policyCase: OwnPolicyCase,
@@ -189,7 +224,7 @@ export function policyCaseLine(
 		case "create":
 			return "No policy yet";
 		case "above":
-			return "Limited by a policy you can't see or change. Ask whoever set it.";
+			return HELD_ABOVE_LINE;
 		case "update":
 			return `Policy ${displayLabel(policyCase.policy.metadata)}`;
 		case "copy": {
@@ -204,4 +239,49 @@ export function policyCaseLine(
 				: `Policy ${name}, owned elsewhere: ${copy}`;
 		}
 	}
+}
+
+/** What saving does to the target's policy, as relay's one-request answer names it. */
+export type SavedPolicyCase =
+	components["schemas"]["PseudoLimitsAnswer"]["case"];
+
+/** The chain's case in relay's terms; a policy set above is never saved to. */
+export function savedPolicyCase(policyCase: OwnPolicyCase): SavedPolicyCase {
+	switch (policyCase.kind) {
+		case "create":
+			return "none";
+		case "update":
+			return "own";
+		case "copy":
+			return "copy";
+		case "above":
+			throw new Error("a policy set above the caller is never saved to");
+	}
+}
+
+/** What saving did to the policy, for the done screen. */
+export function savedCaseLine(
+	policyCase: SavedPolicyCase,
+	targetLabel: string,
+): string {
+	switch (policyCase) {
+		case "none":
+			return "Made a policy";
+		case "own":
+			return "Added to its policy";
+		case "copy":
+			return `Made a copy of the shared policy for ${targetLabel}`;
+	}
+}
+
+/** What the target is under now, from relay's case and current policy, and what saving does to it. */
+export function currentCaseLine(
+	policyCase: SavedPolicyCase,
+	policyLabel: string | undefined,
+	targetLabel: string,
+): string {
+	if (policyCase === "none" || policyLabel === undefined)
+		return "No policy yet";
+	if (policyCase === "own") return `Policy ${policyLabel}`;
+	return `Policy ${policyLabel}, shared with other accounts or owned elsewhere: saving makes a copy for ${targetLabel}`;
 }

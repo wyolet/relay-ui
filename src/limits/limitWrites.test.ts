@@ -1,13 +1,18 @@
 import { describe, expect, it } from "bun:test";
 import type { Policy, PolicySpec } from "@/api/types/policy";
 import {
+	currentCaseLine,
 	defaultLimitName,
+	dryRunUnpriced,
 	hasAccountsUnder,
 	type LimitAnswers,
+	limitLink,
 	limitPolicyName,
 	limitSpec,
 	limitWrites,
 	policyCaseLine,
+	savedCaseLine,
+	savedPolicyCase,
 	targetScope,
 	unpricedWarning,
 	wholeRateAmount,
@@ -144,16 +149,96 @@ describe("limitSpec", () => {
 	it("builds one sliding-window rule for the picked meter and window", () => {
 		expect(limitSpec({ ...answers, kind: "rateLimit" })).toEqual({
 			kind: "rateLimit",
-			rules: [
-				{
-					amount: 1000,
-					meter: "tokens",
-					strategy: "sliding-window",
-					window: 3600,
-				},
-			],
+			spec: {
+				enabled: true,
+				rules: [
+					{
+						amount: 1000,
+						meter: "tokens",
+						strategy: "sliding-window",
+						window: 3600,
+					},
+				],
+			},
+		});
+	});
+});
+
+describe("limitLink", () => {
+	const answers = {
+		kind: "rateLimit" as const,
+		models: ["anthropic"],
+		perAccount: true,
+	};
+
+	it("carries a rate limit's models and one each under a team or project", () => {
+		expect(limitLink(answers, "team")).toEqual({
+			shared: false,
 			models: ["anthropic"],
 		});
+	});
+
+	it("counts every model for a spend cap, whatever was picked before", () => {
+		expect(limitLink({ ...answers, kind: "budget" }, "project")).toEqual({
+			shared: false,
+			models: [],
+		});
+	});
+
+	it("stays shared for a service account, which has only its own account", () => {
+		expect(limitLink(answers, "serviceaccount").shared).toBe(true);
+	});
+});
+
+describe("dryRunUnpriced", () => {
+	it("warns under a spend cap with the models relay lists", () => {
+		expect(dryRunUnpriced("budget", ["google/gemma4-e4b"])).toEqual({
+			kind: "models",
+			models: ["google/gemma4-e4b"],
+		});
+	});
+
+	it("says nothing for a rate limit, or when relay lists none", () => {
+		expect(dryRunUnpriced("rateLimit", ["google/gemma4-e4b"])).toEqual({
+			kind: "none",
+		});
+		expect(dryRunUnpriced("budget", [])).toEqual({ kind: "none" });
+		expect(dryRunUnpriced("budget", null)).toEqual({ kind: "none" });
+		expect(dryRunUnpriced("budget", undefined)).toEqual({ kind: "none" });
+	});
+});
+
+describe("relay's policy case", () => {
+	it("reads the chain's case in relay's terms", () => {
+		expect(savedPolicyCase({ kind: "create" })).toBe("none");
+		expect(savedPolicyCase({ kind: "update", policy: policy() })).toBe("own");
+		expect(
+			savedPolicyCase({
+				kind: "copy",
+				policy: policy(),
+				otherAccounts: 1,
+				ownedElsewhere: false,
+			}),
+		).toBe("copy");
+		expect(() => savedPolicyCase({ kind: "above", policyId: "p9" })).toThrow();
+	});
+
+	it("says what saving did", () => {
+		expect(savedCaseLine("none", "Search")).toBe("Made a policy");
+		expect(savedCaseLine("own", "Search")).toBe("Added to its policy");
+		expect(savedCaseLine("copy", "Search")).toBe(
+			"Made a copy of the shared policy for Search",
+		);
+	});
+
+	it("says what the target is under now and what saving does", () => {
+		expect(currentCaseLine("none", undefined, "Search")).toBe("No policy yet");
+		expect(currentCaseLine("own", "Search policy", "Search")).toBe(
+			"Policy Search policy",
+		);
+		expect(currentCaseLine("copy", "Shared", "Search")).toBe(
+			"Policy Shared, shared with other accounts or owned elsewhere: saving makes a copy for Search",
+		);
 	});
 });
 

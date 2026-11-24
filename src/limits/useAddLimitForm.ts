@@ -9,20 +9,33 @@ import {
 	DEFAULT_PERIOD,
 } from "@/budgets/budgetFormat";
 import { stepFieldErrors, useFormSteps } from "@/hooks/useFormSteps";
+import type { LimitRefusalField } from "@/limits/limitRefusal";
 import {
 	defaultLimitName,
+	dryRunUnpriced,
+	HELD_ABOVE_LINE,
 	hasAccountsUnder,
 	type LimitAnswers,
 	type LimitTarget,
+	limitLink,
 	limitSpec,
 	limitWrites,
 	policyCaseLine,
 	unpricedWarning,
 	wholeRateAmount,
 } from "@/limits/limitWrites";
+import {
+	BODY_HAS_LINK,
+	postsOnce,
+	pseudoLimitsBody,
+} from "@/limits/pseudoLimitsBody";
+import { useLimitCurrent } from "@/limits/useLimitCurrent";
 import { useLimitWrites } from "@/limits/useLimitWrites";
+import { usePseudoLimitRun } from "@/limits/usePseudoLimitRun";
 import { usePolicyUnpricedGrants } from "@/policies/usePolicyUnpricedModels";
 import type { OwnPolicyCase } from "@/policy-bindings/ownPolicy";
+import { warnedFields, warningMessages } from "@/pseudo/dryRun";
+import { sameAnswers } from "@/pseudo/refusal";
 
 export const LIMIT_FORM_STEPS = ["limit", "review"] as const;
 export type LimitFormStep = (typeof LIMIT_FORM_STEPS)[number];
@@ -31,7 +44,18 @@ const FIELD_STEP = {
 	displayName: "limit",
 	amountUsd: "limit",
 	rateAmount: "limit",
-} as const satisfies Partial<Record<keyof LimitAnswers, LimitFormStep>>;
+} as const satisfies Partial<Record<keyof LimitAnswers, LimitFormStep>> &
+	Record<LimitRefusalField, LimitFormStep>;
+
+/** The answers a refusal or warning of a field was about; it shows until one of them changes. */
+const REFUSAL_INPUTS: Record<
+	LimitRefusalField,
+	readonly (keyof LimitAnswers)[]
+> = {
+	displayName: ["kind", "displayName"],
+	amountUsd: ["kind", "amountUsd", "period", "mode"],
+	rateAmount: ["kind", "rateAmount", "meter", "per", "models"],
+};
 
 const schema = z
 	.object({
@@ -68,6 +92,8 @@ export interface LimitStart {
 
 export function useAddLimitForm({ target, accountId, policyCase }: LimitStart) {
 	const writes = useLimitWrites();
+	const pseudo = usePseudoLimitRun<LimitAnswers>(target);
+	const { refused } = pseudo;
 	const [initial] = useState<LimitAnswers>(() => ({
 		kind: "budget",
 		displayName: "",
@@ -85,6 +111,10 @@ export function useAddLimitForm({ target, accountId, policyCase }: LimitStart) {
 
 	const namePlaceholder = defaultLimitName(values.kind, target.label);
 	const perAccountOffered = hasAccountsUnder(target.kind);
+	const link = limitLink(values, target.kind);
+	const oneRequest = pseudo.oneRequest && postsOnce(link, BODY_HAS_LINK);
+	const idle = writes.phase === "idle" && pseudo.run.phase === "idle";
+	const current = useLimitCurrent(target, pseudo.oneRequest, idle);
 	const planned = limitWrites(values.kind, policyCase, target.label);
 	const currentPolicy =
 		policyCase.kind === "update" || policyCase.kind === "copy"
@@ -92,10 +122,56 @@ export function useAddLimitForm({ target, accountId, policyCase }: LimitStart) {
 			: undefined;
 	const unpricedGrants = usePolicyUnpricedGrants(
 		currentPolicy?.metadata.name,
-		values.kind === "budget" && currentPolicy !== undefined,
+		!oneRequest && values.kind === "budget" && currentPolicy !== undefined,
 	);
+	const heldAbove =
+		current.status === "above" ||
+		(current.status === "unknown" && policyCase.kind === "above");
+
+	const answersErrors = stepFieldErrors(schema, values, FIELD_STEP);
+	const unchangedSince = (field: LimitRefusalField, at: LimitAnswers) =>
+		sameAnswers(values, at, REFUSAL_INPUTS[field]);
+	const refusedField: Partial<Record<LimitRefusalField, string>> =
+		refused?.refusal.kind === "field" &&
+		unchangedSince(refused.refusal.field, refused.at)
+			? { [refused.refusal.field]: refused.refusal.message }
+			: {};
+	const refusedIssues =
+		refused?.refusal.kind === "issues"
+			? [...new Set(refused.refusal.issues.map((i) => i.message))]
+			: undefined;
+	const refusal = refused?.refusal;
+	const refusalMessage =
+		refusal?.kind === "general" ||
+		(refused?.fromDryRun && refusal?.kind === "field")
+			? refusal.message
+			: undefined;
+	const warnedAt = pseudo.previewAt;
+	// Kept out of useFormSteps' errors: a warning never holds Next or Add limit.
+	const warned = warnedAt
+		? warnedFields(pseudo.previewWarnings, (f) => unchangedSince(f, warnedAt))
+		: {};
+
+	function body() {
+		return pseudoLimitsBody(
+			target,
+			values.displayName.trim() || namePlaceholder,
+			limitSpec(values),
+		);
+	}
+
+	function previewLimit(entered: LimitFormStep) {
+		if (!oneRequest || entered !== "review") return;
+		pseudo.preview(body(), values);
+	}
 
 	function addLimit() {
+		if (oneRequest) {
+			void pseudo.submit(body(), values).then((refusal) => {
+				if (refusal?.kind === "field") open("limit");
+			});
+			return;
+		}
 		void writes.start(
 			{
 				target,
@@ -103,43 +179,63 @@ export function useAddLimitForm({ target, accountId, policyCase }: LimitStart) {
 				policyCase,
 				displayName: values.displayName.trim() || namePlaceholder,
 				limit: limitSpec(values),
-				shared: !(perAccountOffered && values.perAccount),
+				link,
 			},
 			planned,
 		);
 	}
 
-	const { step, stepIndex, lastStep, errors, next, back } = useFormSteps({
+	const { step, stepIndex, lastStep, errors, next, back, open } = useFormSteps({
 		steps: LIMIT_FORM_STEPS,
 		fieldStep: FIELD_STEP,
-		fieldErrors: stepFieldErrors(schema, values, FIELD_STEP),
+		fieldErrors: { ...refusedField, ...answersErrors },
 		onFinish: addLimit,
+		onEnter: previewLimit,
 	});
 
 	return {
 		form,
 		values,
-		errors,
+		errors: { ...warned, ...errors },
 		step,
 		stepIndex,
 		lastStep,
 		next,
 		back,
 		target,
+		/** Relay hasn't said yet what the target is under. */
+		currentLoading: idle && current.status === "loading",
 		/** Set above the caller, with no run of this form under way: no fields to offer. */
-		heldAbove: policyCase.kind === "above" && writes.phase === "idle",
-		caseLine: policyCaseLine(policyCase, target.label),
+		heldAbove: heldAbove && idle,
+		/** Relay's own words on why, under the held line. */
+		heldAboveMessage: current.status === "above" ? current.message : undefined,
+		caseLine:
+			current.status === "known"
+				? current.line
+				: heldAbove
+					? HELD_ABOVE_LINE
+					: policyCaseLine(policyCase, target.label),
 		namePlaceholder,
 		perAccountOffered,
-		unpriced: unpricedWarning(
-			values.kind,
-			currentPolicy !== undefined,
-			unpricedGrants,
-		),
+		unpriced: oneRequest
+			? dryRunUnpriced(values.kind, pseudo.previewAnswer?.unpricedModels)
+			: unpricedWarning(
+					values.kind,
+					currentPolicy !== undefined,
+					unpricedGrants,
+				),
 		setAmountUsd(raw: string) {
 			form.setFieldValue("amountUsd", amountInput(raw));
 		},
+		oneRequest,
 		planned,
-		writes,
+		previewRows: pseudo.previewRows,
+		previewLoading: pseudo.previewLoading,
+		previewStale: pseudo.previewStale,
+		previewWarnings: warningMessages(pseudo.previewWarnings),
+		refusedIssues,
+		refusalMessage,
+		writes: oneRequest ? pseudo.run : writes,
+		added: oneRequest ? pseudo.created : writes.added,
 	};
 }
