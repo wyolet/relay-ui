@@ -1,8 +1,12 @@
 import type { UseMutationResult } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { pseudoKind } from "@/api/runtimeConfig";
-import type { PlannedRowLists, PseudoAnswer } from "@/pseudo/dryRun";
-import type { PointerFields } from "@/pseudo/pointerField";
+import {
+	dryRunWarnings,
+	type PlannedRowLists,
+	type PseudoAnswer,
+} from "@/pseudo/dryRun";
+import type { FieldIssue, PointerFields } from "@/pseudo/pointerField";
 import { parseRefusal, type Refusal } from "@/pseudo/refusal";
 import type { StepFormWrites } from "@/shared/StepForm";
 
@@ -11,6 +15,12 @@ export interface Refused<F extends string, At> {
 	refusal: Refusal<F>;
 	at: At;
 	fromDryRun: boolean;
+}
+
+interface DryRunShown<F extends string, At> {
+	rows: PlannedRowLists;
+	warnings: FieldIssue<F>[];
+	at: At;
 }
 
 interface RunRequest<Body, At> {
@@ -50,7 +60,7 @@ export function usePseudoRun<
 	const [created, setCreated] = useState<Created | null>(null);
 	const [refused, setRefused] = useState<Refused<F, At> | null>(null);
 	// The last dry run's answer, kept on screen while a newer one runs.
-	const [shown, setShown] = useState<PlannedRowLists | null>(null);
+	const [shown, setShown] = useState<DryRunShown<F, At> | null>(null);
 	const [waiting, setWaiting] = useState(false);
 	const inFlight = useRef(false);
 	const queued = useRef<RunRequest<Body, At> | null>(null);
@@ -77,7 +87,11 @@ export function usePseudoRun<
 		dryRun.mutate(request.body, {
 			onSuccess: (answer) => {
 				if (queued.current) return;
-				setShown(answer);
+				setShown({
+					rows: answer,
+					warnings: dryRunWarnings(answer, pointerFields),
+					at: request.at,
+				});
 			},
 			onError: (err) => {
 				if (queued.current) return;
@@ -114,7 +128,11 @@ export function usePseudoRun<
 		run,
 		created,
 		refused,
-		previewRows: shown ?? NO_ROWS,
+		previewRows: shown?.rows ?? NO_ROWS,
+		/** What relay accepts but warns about; never a reason to stop. */
+		previewWarnings: shown?.warnings ?? [],
+		/** The answers the shown dry run was built from. */
+		previewAt: shown?.at,
 		/** No list yet: what the write does is still being asked. */
 		previewLoading: shown === null && (waiting || dryRun.isPending),
 		/** A list is shown, but answers changed since it was asked. */

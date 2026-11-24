@@ -116,7 +116,7 @@ interface PseudoBody {
 }
 
 /** Relay's answer to a one-request agent: rows in write order, the plaintext unless a dry run. */
-function pseudoAnswer(body: PseudoBody, dryRun: boolean) {
+function pseudoAnswer(body: PseudoBody, dryRun: boolean, warnings: object[] = []) {
 	const access = body.spec.access;
 	const madePolicy = Boolean(
 		access?.accountIds?.length || access?.poolIds?.length || access?.models?.length,
@@ -140,6 +140,7 @@ function pseudoAnswer(body: PseudoBody, dryRun: boolean) {
 		pools: [],
 		shares: [],
 		key: { id: "key-1", name: keyName, ...(dryRun ? {} : { plaintext: "sk-wr-test-secret" }) },
+		warnings,
 	};
 }
 
@@ -152,12 +153,14 @@ interface AgentMock {
 	refuseOnce?: { status: number; json: object };
 	/** Relay's answer to the first dry run. */
 	refuseDryRunOnce?: { status: number; json: object };
+	/** The warnings every dry run answers. */
+	dryRunWarnings?: object[];
 }
 
 /** Answers the form's reads and writes; a dry run is recorded as `pseudo-agents?dryRun`. */
 async function mockAgentApi(
 	page: Page,
-	{ failOnce, oneRequest, refuseOnce, refuseDryRunOnce }: AgentMock = {},
+	{ failOnce, oneRequest, refuseOnce, refuseDryRunOnce, dryRunWarnings }: AgentMock = {},
 ): Promise<Sent[]> {
 	const sent: Sent[] = [];
 	let failed = false;
@@ -211,7 +214,7 @@ async function mockAgentApi(
 			}
 			return route.fulfill({
 				status: dryRun ? 200 : 201,
-				json: pseudoAnswer(body, dryRun),
+				json: pseudoAnswer(body, dryRun, dryRun ? dryRunWarnings : []),
 			});
 		}
 		sent.push({ method, path, body });
@@ -418,6 +421,40 @@ test.describe("Add agent in one request", () => {
 		});
 		expect(sent[0]?.body).toEqual(sent[1]?.body ?? {});
 		await expect(page.getByRole("link", { name: "View policy" })).toHaveCount(0);
+	});
+
+	test("a dry run's warning shows on the last step, marks its field and still lets the user create", async ({
+		page,
+	}) => {
+		const warning = "A policy above excludes anthropic/claude-opus.";
+		const sent = await mockAgentApi(page, {
+			oneRequest: true,
+			dryRunWarnings: [
+				{
+					code: "model_ref_blocked",
+					kind: "policy",
+					message: warning,
+					pointer: "/spec/access/models",
+				},
+			],
+		});
+		await nameAgentInProject(page);
+		await page.getByRole("button", { name: "Next" }).click();
+
+		const warned = page
+			.getByRole("status")
+			.filter({ hasText: "Relay will accept this, with warnings" });
+		await expect(warned.getByRole("listitem")).toHaveText([warning]);
+		await expect(page.getByRole("alert")).toHaveCount(0);
+
+		await page.getByRole("button", { name: "Back" }).click();
+		await expect(page.getByText(warning)).toBeVisible();
+		await page.getByRole("button", { name: "Next" }).click();
+		await expect(warned).toBeVisible();
+
+		await page.getByRole("button", { name: "Create agent" }).click();
+		await expect(page.getByText("sk-wr-test-secret", { exact: true })).toBeVisible();
+		expect(submits(sent)).toHaveLength(1);
 	});
 
 	test("a new key name on the last step reruns the dry run once typing settles", async ({

@@ -3,6 +3,7 @@ import { useId } from "react";
 import type { useAddAgentForm } from "@/agents/useAddAgentForm";
 import { Input } from "@/components/ui/input";
 import { KeySettingsSections } from "@/keys/KeySettingsSections";
+import { DryRunWarnings } from "@/shared/DryRunWarnings";
 import { FieldError } from "@/shared/FieldError";
 import { FormSection } from "@/shared/FormSection";
 import { PlannedRows } from "@/shared/PlannedRows";
@@ -57,6 +58,7 @@ export function KeyStep({ agent }: { agent: AddAgentForm }) {
 				{agent.oneRequest ? (
 					<div className="flex flex-col gap-3">
 						<RefusedIssues messages={agent.onCreateIssues} />
+						<DryRunWarnings messages={agent.previewWarnings} />
 						{agent.refusalMessage && (
 							<p role="alert" className="text-[11px] text-destructive">
 								{agent.refusalMessage}

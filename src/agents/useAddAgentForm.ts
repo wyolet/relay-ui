@@ -40,6 +40,7 @@ import { scopeOptions } from "@/lib/workContext";
 import type { PickerReach } from "@/models/narrowPickerIndex";
 import { usePickerCatalog } from "@/models/usePickerCatalog";
 import { bindingPolicyOptions } from "@/policy-bindings/accountLookup";
+import { warnedFields, warningMessages } from "@/pseudo/dryRun";
 import type { FieldIssue } from "@/pseudo/pointerField";
 
 export const AGENT_FORM_STEPS = ["agent", "access", "key"] as const;
@@ -79,7 +80,7 @@ const FIELD_STEP = {
 
 type CheckedField = keyof typeof FIELD_STEP;
 
-/** The answers a refusal of a field was about; it shows until one of them changes. */
+/** The answers a refusal or warning of a field was about; it shows until one of them changes. */
 const REFUSAL_INPUTS: Record<RefusalField, readonly (keyof AddAgentValues)[]> =
 	{
 		displayName: ["displayName", "description", "ownerKind", "projectId"],
@@ -308,18 +309,18 @@ export function useAddAgentForm(start?: Partial<AddAgentValues>) {
 		),
 	});
 	const answersErrors = errorsFor(values);
-	const refusedNow = (field: RefusalField, at: AddAgentValues) =>
+	const unchangedSince = (field: RefusalField, at: AddAgentValues) =>
 		sameAnswers(values, at, REFUSAL_INPUTS[field]);
 	const refusedField: Partial<Record<RefusalField, string>> =
 		refused?.refusal.kind === "field" &&
-		refusedNow(refused.refusal.field, refused.at)
+		unchangedSince(refused.refusal.field, refused.at)
 			? { [refused.refusal.field]: refused.refusal.message }
 			: {};
 	const issues: Partial<Record<AgentFormStep, string[]>> = {};
 	if (refused?.refusal.kind === "issues") {
 		for (const issue of refused.refusal.issues) {
 			const field = issueField(issue);
-			if (!refusedNow(field, refused.at)) continue;
+			if (!unchangedSince(field, refused.at)) continue;
 			// A dry run's issues show where it ran, by the list of what it would make.
 			const step = refused.fromDryRun ? "key" : FIELD_STEP[field];
 			const listed = issues[step] ?? [];
@@ -333,6 +334,11 @@ export function useAddAgentForm(start?: Partial<AddAgentValues>) {
 			: undefined;
 	const generalMessage =
 		refused?.refusal.kind === "general" ? refused.refusal.message : undefined;
+	const warnedAt = pseudo.previewAt;
+	// Kept out of useFormSteps' errors: a warning never holds Next or Create.
+	const warned = warnedAt
+		? warnedFields(pseudo.previewWarnings, (f) => unchangedSince(f, warnedAt))
+		: {};
 
 	function previewAgent(entered: AgentFormStep) {
 		if (!oneRequest || entered !== "key" || !settings) return;
@@ -404,7 +410,7 @@ export function useAddAgentForm(start?: Partial<AddAgentValues>) {
 	return {
 		form,
 		values,
-		errors,
+		errors: { ...warned, ...errors },
 		step,
 		stepIndex,
 		lastStep,
@@ -433,6 +439,7 @@ export function useAddAgentForm(start?: Partial<AddAgentValues>) {
 		previewRows: pseudo.previewRows,
 		previewLoading: pseudo.previewLoading,
 		previewStale: pseudo.previewStale,
+		previewWarnings: warningMessages(pseudo.previewWarnings),
 		/** Why the request was refused, for the On create list: a dry run's field refusal, or one no field owns. */
 		refusalMessage: dryRunMessage ?? generalMessage,
 		/** Plan issues relay found on the open step; the key step lists its own by what Create makes. */
