@@ -58,6 +58,24 @@ describe("parseRefusal", () => {
 		).toEqual({ kind: "field", field: "name", message: "relay says no" });
 	});
 
+	it("keeps the account an organization_taken offers instead", () => {
+		const taken = new PseudoRefusal(409, {
+			error: {
+				type: "conflict_error",
+				message: "relay says no",
+				code: "organization_taken",
+			},
+			pointer: "/metadata",
+			account: { id: "acct-1", name: "acme" },
+		});
+		expect(parseRefusal(taken, FIELDS)).toEqual({
+			kind: "field",
+			field: "name",
+			message: "relay says no",
+			account: { id: "acct-1", name: "acme" },
+		});
+	});
+
 	it("reads a plan_issue with no issues by its pointer", () => {
 		expect(
 			parseRefusal(

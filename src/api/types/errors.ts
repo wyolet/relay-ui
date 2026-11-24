@@ -34,7 +34,10 @@ export class ApiError extends Error {
 }
 
 export type PseudoRefusalBody = components["schemas"]["pseudoRefusal"];
+export type PseudoOrganizationRefusalBody =
+	components["schemas"]["pseudoOrganizationRefusal"];
 export type PseudoIssue = components["schemas"]["PseudoIssue"];
+type RowRef = components["schemas"]["RowRef"];
 
 /** A refused one-request write; nothing was written. */
 export class PseudoRefusal extends ApiError {
@@ -42,12 +45,18 @@ export class PseudoRefusal extends ApiError {
 	readonly pointer: string;
 	/** With `plan_issue`: what the rows would break together. */
 	readonly issues: PseudoIssue[];
+	/** With `organization_taken`: the owner's account that holds the key's organization. */
+	readonly account?: RowRef;
 
-	constructor(status: number, body: PseudoRefusalBody) {
+	constructor(
+		status: number,
+		body: PseudoRefusalBody | PseudoOrganizationRefusalBody,
+	) {
 		super(status, body.error);
 		this.name = "PseudoRefusal";
 		this.pointer = body.pointer ?? "";
-		this.issues = body.issues ?? [];
+		this.issues = "issues" in body ? (body.issues ?? []) : [];
+		if ("account" in body && body.account) this.account = body.account;
 	}
 }
 
