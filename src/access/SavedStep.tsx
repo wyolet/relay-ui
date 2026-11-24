@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { hiddenPoolsLine } from "@/access/accessOptions";
 import type { AccessTarget } from "@/access/accessTarget";
 import { TargetLink } from "@/access/TargetLink";
 import type { SavedAccess } from "@/access/useSetAccessWrites";
@@ -11,11 +12,18 @@ export function SavedStep({
 	saved: SavedAccess;
 	target: AccessTarget;
 }) {
+	const hiddenLine = hiddenPoolsLine(saved.hiddenPoolsKept);
 	return (
 		<div className="flex max-w-2xl flex-col gap-6">
-			<div>
+			<div className="flex flex-col gap-1">
 				<h2 className="text-sm font-semibold text-foreground">Access saved</h2>
-				<p className="mt-1 text-xs text-muted-foreground">
+				{saved.caseLine && (
+					<p className="text-xs text-foreground">{saved.caseLine}</p>
+				)}
+				{hiddenLine && (
+					<p className="text-xs text-muted-foreground">{hiddenLine}</p>
+				)}
+				<p className="text-xs text-muted-foreground">
 					Requests from {target.label} follow it within a few seconds.
 				</p>
 			</div>

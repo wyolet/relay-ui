@@ -1,7 +1,11 @@
 import { ShieldCheck } from "lucide-react";
 import type { AccessTarget } from "@/access/accessTarget";
 import type { useSetAccessForm } from "@/access/useSetAccessForm";
-import { AccessFields, type AccessFieldsText } from "@/agents/AccessFields";
+import {
+	AccessFields,
+	type AccessFieldsText,
+	KeylessPoolList,
+} from "@/agents/AccessFields";
 import { ToggleSwitch } from "@/shared/ToggleSwitch";
 
 type SetAccessForm = ReturnType<typeof useSetAccessForm>;
@@ -29,9 +33,22 @@ export function CurrentPolicyLine({ line }: { line: string }) {
 
 export function SetAccessStep({ access }: { access: SetAccessForm }) {
 	const { form, values, errors, target } = access;
+	const listsPools = access.pools.length > 0;
 	return (
 		<div className="flex flex-col gap-8">
-			<CurrentPolicyLine line={access.currentLine} />
+			<div className="flex flex-col gap-1.5">
+				<CurrentPolicyLine line={access.currentLine} />
+				{access.hiddenPoolsLine && (
+					<p className="text-xs text-muted-foreground">
+						{access.hiddenPoolsLine}
+					</p>
+				)}
+				{errors.access && (
+					<p role="alert" className="text-[11px] text-destructive">
+						{errors.access}
+					</p>
+				)}
+			</div>
 			<div className="divide-y divide-border">
 				<AccessFields
 					text={accessText(target)}
@@ -43,7 +60,9 @@ export function SetAccessStep({ access }: { access: SetAccessForm }) {
 					accountsLoaded
 					selectedAccountIds={values.accountIds}
 					onToggleAccount={access.toggleAccount}
-					accountsError={errors.accountIds}
+					accountsError={
+						errors.accountIds ?? (listsPools ? undefined : errors.poolIds)
+					}
 					keptPools={
 						access.keptPools.length > 0 && (
 							<ul
@@ -61,6 +80,16 @@ export function SetAccessStep({ access }: { access: SetAccessForm }) {
 									</li>
 								))}
 							</ul>
+						)
+					}
+					keylessPools={
+						listsPools && (
+							<KeylessPoolList
+								pools={access.pools}
+								selected={values.poolIds}
+								onToggle={access.togglePool}
+								error={errors.poolIds}
+							/>
 						)
 					}
 					models={values.models}

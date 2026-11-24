@@ -1,8 +1,7 @@
 import { useForm } from "@tanstack/react-form";
-import { useSuspenseQuery } from "@tanstack/react-query";
 import { useStore } from "@tanstack/react-store";
 import { useMemo, useState } from "react";
-import { accessPrefill } from "@/access/accessOptions";
+import { hiddenPoolsLine } from "@/access/accessOptions";
 import {
 	type AccessAnswers,
 	accessErrors,
@@ -14,23 +13,21 @@ import {
 	unlinkedPoolIds,
 } from "@/access/accessPlan";
 import type { AccessTarget } from "@/access/accessTarget";
-import { useSetAccessWrites } from "@/access/useSetAccessWrites";
 import {
-	agentAccounts,
-	hostReach,
-	keylessHostIds,
-} from "@/agents/agentAccounts";
-import { useAuth } from "@/api/auth";
-import { useAccountsList } from "@/api/hooks/accounts";
-import { useHosts } from "@/api/hooks/hosts";
-import { usePolicies } from "@/api/hooks/policies";
-import { policyBindingsAllQueryOptions } from "@/api/hooks/policyBindings";
-import { usePools } from "@/api/hooks/pools";
+	type AccessRefusal,
+	type AccessRefusalField,
+	pseudoAccessBody,
+	pseudoCurrentLine,
+	sentPoolIds,
+	writesNothing,
+} from "@/access/pseudoAccessBody";
+import type { AccessOffers, OpenedAccess } from "@/access/useAccessOpening";
+import { usePseudoAccessRun } from "@/access/usePseudoAccessRun";
+import { useSetAccessWrites } from "@/access/useSetAccessWrites";
+import { hostReach } from "@/agents/agentAccounts";
 import { useFormSteps } from "@/hooks/useFormSteps";
-import { displayLabel } from "@/lib/displayLabel";
-import { scopeOwner, scopeUsableBy } from "@/lib/ownerPick";
 import { usePickerCatalog } from "@/models/usePickerCatalog";
-import { ownPolicyCase } from "@/policy-bindings/ownPolicy";
+import { warnedFields, warningMessages } from "@/pseudo/dryRun";
 
 export const ACCESS_FORM_STEPS = ["access", "review"] as const;
 export type AccessFormStep = (typeof ACCESS_FORM_STEPS)[number];
@@ -40,69 +37,57 @@ export interface SetAccessValues {
 	accountIds: string[];
 	/** The kept pools switched on. */
 	keptPoolIds: string[];
+	/** The keyless-host pools picked; the one-request path only. */
+	poolIds: string[];
 	models: string[];
 }
 
-const FIELD_STEP = { accountIds: "access" } as const satisfies Partial<
-	Record<keyof SetAccessValues, AccessFormStep>
->;
+const FIELD_STEP = {
+	accountIds: "access",
+	poolIds: "access",
+	access: "access",
+} as const satisfies Record<AccessRefusalField, AccessFormStep>;
+
+const ACCESS_INPUTS = [
+	"everyCredential",
+	"accountIds",
+	"keptPoolIds",
+	"poolIds",
+	"models",
+] as const satisfies readonly (keyof SetAccessValues)[];
+
+/** Whether the answers a refusal or warning was about are still the ones on screen. */
+function sameAnswers(a: SetAccessValues, b: SetAccessValues): boolean {
+	return ACCESS_INPUTS.every(
+		(k) => JSON.stringify(a[k]) === JSON.stringify(b[k]),
+	);
+}
+
+/** The case as the chain's plan names it, for the lines both paths share. */
+const CHAIN_KIND = { none: "create", own: "update", copy: "copy" } as const;
 
 /** The form that states the whole access of `target`, opened on what it has now. */
-export function useSetAccessForm(target: AccessTarget) {
-	const { userId } = useAuth();
-	const writes = useSetAccessWrites();
+export function useSetAccessForm(
+	target: AccessTarget,
+	offers: AccessOffers,
+	openedNow: OpenedAccess,
+) {
+	const chainWrites = useSetAccessWrites();
+	const pseudo = usePseudoAccessRun<SetAccessValues>(target.label);
 	const index = usePickerCatalog();
-	const { data: hosts } = useHosts();
-	const { data: policies } = usePolicies();
-	const { data: bindings } = useSuspenseQuery(policyBindingsAllQueryOptions);
-	const { data: pools } = usePools();
-	const { data: visible } = useAccountsList({ kind: ["provider"] });
-	const { data: usable } = useAccountsList({
-		kind: ["provider"],
-		usable_by: scopeUsableBy(target.scope),
-		usable_for: "pool",
-	});
+	const { accounts, pools } = offers;
 
-	const hostItems = hosts.items ?? [];
-	const hostLabel = (hostId: string) => {
-		const host = hostItems.find((h) => h.metadata.id === hostId);
-		return host ? displayLabel(host.metadata) : hostId;
-	};
-	const keyless = keylessHostIds(hostItems);
-	const accounts = agentAccounts(
-		usable.items ?? [],
-		visible.items ?? [],
-		userId,
-		hostLabel,
-		keyless,
-	);
-	const policyCase = ownPolicyCase(
-		target.accountId,
-		bindings.items ?? [],
-		policies.items ?? [],
-		scopeOwner(target.scope),
-	);
-
-	// Fixed at open: the writes refetch these lists, and the form states what
-	// the target had when it was opened.
-	const [opened] = useState(() => ({
-		policyCase,
-		prefill: accessPrefill(
-			policyCase.kind === "update" || policyCase.kind === "copy"
-				? policyCase.policy
-				: undefined,
-			pools.items ?? [],
-			accounts,
-			hostLabel,
-			keyless,
-		),
-	}));
+	// Fixed at open: the writes refetch what it was read from, and the form
+	// states what the target had when it was opened.
+	const [opened] = useState(openedNow);
+	const oneRequest = opened.path === "oneRequest";
 	const { prefill } = opened;
 	const form = useForm({
 		defaultValues: {
 			everyCredential: prefill.everyCredential,
 			accountIds: prefill.accountIds,
 			keptPoolIds: prefill.keptPools.map((p) => p.id),
+			poolIds: opened.path === "oneRequest" ? opened.prefill.poolIds : [],
 			models: prefill.models,
 		} satisfies SetAccessValues,
 	});
@@ -111,6 +96,9 @@ export function useSetAccessForm(target: AccessTarget) {
 	const picked = values.accountIds.flatMap((id) =>
 		accounts.filter((a) => a.id === id),
 	);
+	const pickedPools = values.poolIds.flatMap((id) =>
+		pools.filter((p) => p.id === id),
+	);
 	const keptPools = prefill.keptPools.filter((p) =>
 		values.keptPoolIds.includes(p.id),
 	);
@@ -118,6 +106,7 @@ export function useSetAccessForm(target: AccessTarget) {
 		...new Set(
 			[
 				...picked.map((a) => a.hostId),
+				...pickedPools.map((p) => p.hostId),
 				...keptPools.flatMap((p) => p.hostId ?? []),
 			].flatMap((id) => index.hosts.find((h) => h.id === id)?.name ?? []),
 		),
@@ -137,36 +126,88 @@ export function useSetAccessForm(target: AccessTarget) {
 		everyCredential: values.everyCredential,
 		accounts: picked,
 		keptPoolIds: keptPools.map((p) => p.id),
+		poolIds: pickedPools.map((p) => p.id),
 		models: values.models,
 	};
-	const planned = accessPlan(
-		answers,
-		opened.policyCase,
-		{ target: target.label, scope: target.scopeLabel },
-		prefill.representedPools,
-	);
-
-	function save() {
-		if (planned.length === 0) return;
-		void writes.start(
-			{
-				target,
-				policyCase: opened.policyCase,
-				keptPoolIds: sentKeptPoolIds(answers),
-				poolLinks: poolLinks(answers, prefill.representedPools),
-				models: values.models,
-			},
-			planned,
-		);
-	}
-	const { step, stepIndex, lastStep, errors, next, back } = useFormSteps({
-		steps: ACCESS_FORM_STEPS,
-		fieldStep: FIELD_STEP,
-		fieldErrors: accessErrors(answers),
-		onFinish: save,
+	const planned =
+		opened.path === "chain"
+			? accessPlan(
+					answers,
+					opened.policyCase,
+					{ target: target.label, scope: target.scopeLabel },
+					prefill.representedPools,
+				)
+			: [];
+	const body = pseudoAccessBody(target, {
+		everyCredential: values.everyCredential,
+		poolIds: sentPoolIds(
+			values.everyCredential,
+			opened.path === "oneRequest" ? opened.prefill.currentPoolIds : [],
+			[...answers.keptPoolIds, ...(answers.poolIds ?? [])],
+		),
+		accountIds: picked.map((a) => a.id),
+		models: values.models,
 	});
 
-	function toggle(field: "accountIds" | "keptPoolIds", id: string) {
+	const { refused } = pseudo;
+	const refusedField: Partial<Record<AccessRefusalField, string>> =
+		refused?.refusal.kind === "field" && sameAnswers(values, refused.at)
+			? { [refused.refusal.field]: refused.refusal.message }
+			: {};
+	const issueMessages =
+		refused?.refusal.kind === "issues" && sameAnswers(values, refused.at)
+			? [...new Set(refused.refusal.issues.map((i) => i.message))]
+			: undefined;
+	const dryRunMessage =
+		refused?.fromDryRun && refused.refusal.kind === "field"
+			? refused.refusal.message
+			: undefined;
+	const generalMessage =
+		refused?.refusal.kind === "general" ? refused.refusal.message : undefined;
+	const warnedAt = pseudo.previewAt;
+	// Kept out of useFormSteps' errors: a warning never holds Next or Save.
+	const warned = warnedAt
+		? warnedFields(pseudo.previewWarnings, () => sameAnswers(values, warnedAt))
+		: {};
+	const previewAnswer = pseudo.previewAnswer;
+	const nothingChanged = oneRequest
+		? previewAnswer !== undefined &&
+			!pseudo.previewStale &&
+			writesNothing(previewAnswer)
+		: planned.length === 0;
+
+	function previewAccess(entered: AccessFormStep) {
+		if (oneRequest && entered === "review") pseudo.preview(body, values);
+	}
+
+	function save() {
+		if (!oneRequest) {
+			if (planned.length === 0 || opened.path !== "chain") return;
+			void chainWrites.start(
+				{
+					target,
+					policyCase: opened.policyCase,
+					keptPoolIds: sentKeptPoolIds(answers),
+					poolLinks: poolLinks(answers, prefill.representedPools),
+					models: values.models,
+				},
+				planned,
+			);
+			return;
+		}
+		void pseudo.submit(body, values).then((refusal: AccessRefusal | null) => {
+			if (refusal?.kind === "field") open(FIELD_STEP[refusal.field]);
+		});
+	}
+	const { step, stepIndex, lastStep, errors, next, back, open } = useFormSteps({
+		steps: ACCESS_FORM_STEPS,
+		fieldStep: FIELD_STEP,
+		fieldErrors: { ...refusedField, ...accessErrors(answers) },
+		onFinish: save,
+		onEnter: previewAccess,
+	});
+
+	function toggle(field: "accountIds" | "keptPoolIds" | "poolIds", id: string) {
 		const current = values[field];
 		form.setFieldValue(
 			field,
@@ -174,28 +215,53 @@ export function useSetAccessForm(target: AccessTarget) {
 		);
 	}
 
+	const chainCase =
+		opened.path === "chain"
+			? opened.policyCase
+			: { kind: CHAIN_KIND[opened.accessCase] };
 	return {
 		form,
 		values,
-		errors,
+		errors: { ...warned, ...errors },
 		step,
 		stepIndex,
 		lastStep,
 		next,
 		back,
 		target,
-		above: opened.policyCase.kind === "above",
-		currentLine: currentPolicyLine(opened.policyCase, target.label),
+		oneRequest,
+		currentLine:
+			opened.path === "chain"
+				? currentPolicyLine(opened.policyCase, target.label)
+				: pseudoCurrentLine(opened.accessCase, opened.policyName, target.label),
+		hiddenPoolsLine:
+			opened.path === "oneRequest"
+				? hiddenPoolsLine(opened.prefill.hiddenPools)
+				: undefined,
 		accounts,
 		toggleAccount: (id: string) => toggle("accountIds", id),
 		keptPools: prefill.keptPools,
 		toggleKeptPool: (id: string) => toggle("keptPoolIds", id),
+		pools,
+		togglePool: (id: string) => toggle("poolIds", id),
 		reach,
 		planned,
-		noWritesLine: noWritesLine(opened.policyCase, target.label),
+		nothingChanged,
+		/** No list yet, or one that says nothing would change. */
+		finishDisabled: nothingChanged || (oneRequest && pseudo.previewLoading),
+		noWritesLine: noWritesLine(chainCase, target.label),
 		unlinksPools:
+			opened.path === "chain" &&
 			unlinkedPoolIds(opened.policyCase, answers, prefill.representedPools)
 				.length > 0,
-		writes,
+		previewRows: pseudo.previewRows,
+		previewLoading: pseudo.previewLoading,
+		previewStale: pseudo.previewStale,
+		previewWarnings: warningMessages(pseudo.previewWarnings),
+		/** Why relay refused, for the review step: a dry run's field refusal, or one no field owns. */
+		refusalMessage: dryRunMessage ?? generalMessage,
+		issueMessages,
+		writes: oneRequest ? pseudo.run : chainWrites,
+		saved: oneRequest ? pseudo.created : chainWrites.saved,
 	};
 }

@@ -2,13 +2,14 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { z } from "zod";
 import { ACCESS_TARGET_KINDS } from "@/access/accessTarget";
+import { ACCESS_KIND } from "@/access/pseudoAccessBody";
 import { SetAccess } from "@/access/SetAccess";
 import { catalogGraphQueryOptions } from "@/api/hooks/catalog";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
 import { policiesListQueryOptions } from "@/api/hooks/policies";
 import { policyBindingsAllQueryOptions } from "@/api/hooks/policyBindings";
 import { poolListQueryOptions } from "@/api/hooks/pools";
-import { feature } from "@/api/runtimeConfig";
+import { feature, pseudoKind } from "@/api/runtimeConfig";
 import { SHORTCUT_FLAGS } from "@/lib/shortcutFlags";
 import { PageLoader } from "@/shared/Spinner";
 
@@ -25,9 +26,12 @@ export const Route = createFileRoute("/_authenticated/access/set")({
 	},
 	loader: ({ context }) => {
 		const { queryClient } = context;
-		void queryClient.prefetchQuery(policiesListQueryOptions);
-		void queryClient.prefetchQuery(policyBindingsAllQueryOptions);
-		void queryClient.prefetchQuery(poolListQueryOptions);
+		// On the one-request path relay's dry run reads the target's policy instead.
+		if (!pseudoKind(ACCESS_KIND)) {
+			void queryClient.prefetchQuery(policiesListQueryOptions);
+			void queryClient.prefetchQuery(policyBindingsAllQueryOptions);
+			void queryClient.prefetchQuery(poolListQueryOptions);
+		}
 		void queryClient.prefetchQuery(hostsListQueryOptions);
 		void queryClient.prefetchQuery(
 			catalogGraphQueryOptions({ includeDeprecated: true }),
