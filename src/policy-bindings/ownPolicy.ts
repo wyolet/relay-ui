@@ -19,7 +19,8 @@ export type OwnPolicyCase =
 			policy: Policy;
 			otherAccounts: number;
 			ownedElsewhere: boolean;
-	  };
+	  }
+	| { kind: "above"; policyId: string };
 
 function sameOwner(a: Owner | undefined, b: Owner | undefined): boolean {
 	return (a?.kind ?? "") === (b?.kind ?? "") && (a?.id ?? "") === (b?.id ?? "");
@@ -34,9 +35,9 @@ export function ownPolicyCase(
 	const holding = bindings.find((b) =>
 		(b.spec.accountIds ?? []).includes(accountId),
 	);
-	const policy =
-		holding && policies.find((p) => p.metadata.id === holding.spec.policyId);
-	if (!policy) return { kind: "create" };
+	if (!holding) return { kind: "create" };
+	const policy = policies.find((p) => p.metadata.id === holding.spec.policyId);
+	if (!policy) return { kind: "above", policyId: holding.spec.policyId };
 	const bound = new Set(
 		bindings.flatMap((b) =>
 			b.spec.policyId === policy.metadata.id ? (b.spec.accountIds ?? []) : [],
@@ -66,6 +67,7 @@ export function ownPolicyWrites(
 		id: "policy-bind",
 		label: `Apply the policy to ${target}`,
 	};
+	if (policyCase.kind === "above") return [];
 	if (policyCase.kind === "create") {
 		return [
 			{ kind: "policyCreate", id: "policy-create", label: "Create the policy" },

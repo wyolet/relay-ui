@@ -1,6 +1,6 @@
-import { Boxes, KeyRound, ShieldCheck, SlidersHorizontal } from "lucide-react";
+import { ShieldCheck, SlidersHorizontal } from "lucide-react";
 import { useId } from "react";
-import type { AgentAccount } from "@/agents/agentAccounts";
+import { AccessFields, type AccessFieldsText } from "@/agents/AccessFields";
 import type { AgentAccess } from "@/agents/agentWrites";
 import type { useAddAgentForm } from "@/agents/useAddAgentForm";
 import {
@@ -10,12 +10,9 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { ModelPicker } from "@/models/ModelPicker";
 import { FieldError } from "@/shared/FieldError";
 import { FormSection } from "@/shared/FormSection";
-import { BoxedCheckList, type CheckOption } from "@/shared/MultiSelect";
 import { Segmented } from "@/shared/Segmented";
-import { ToggleSwitch } from "@/shared/ToggleSwitch";
 
 type AddAgentForm = ReturnType<typeof useAddAgentForm>;
 
@@ -24,28 +21,21 @@ const ACCESS_OPTIONS: { value: AgentAccess; label: string }[] = [
 	{ value: "policy", label: "Use a policy" },
 ];
 
-function accountHint(account: AgentAccount): string {
-	if (account.needsShare) {
-		return `${account.hostLabel}, yours. Shared with the agent's owner on create.`;
-	}
-	return account.sharedBy
-		? `${account.hostLabel}, shared by ${account.sharedBy}`
-		: account.hostLabel;
-}
-
-function accountOptions(accounts: readonly AgentAccount[]): CheckOption[] {
-	return accounts.map((a) => ({
-		value: a.id,
-		label: a.label,
-		hint: accountHint(a),
-	}));
-}
+const AGENT_ACCESS_TEXT: AccessFieldsText = {
+	accountsDescription:
+		"The provider accounts whose keys the agent's requests may use.",
+	everyCredentialHint:
+		"Requests use the keys the agent's owner holds, then the system's.",
+	shareNote: "Shared with the agent's owner on create.",
+	modelsDescription:
+		"Providers or single models the agent may call. Leave it empty to allow everything its accounts serve.",
+	everyCredentialModels:
+		"All models the owner's credentials serve. Pick providers or models to narrow it.",
+};
 
 export function AccessStep({ agent }: { agent: AddAgentForm }) {
 	const { form, values, errors } = agent;
-	const everyCredential = values.reach === "all";
 	const policyErrorId = useId();
-	const accountsErrorId = useId();
 	return (
 		<div className="divide-y divide-border">
 			<FormSection
@@ -100,71 +90,21 @@ export function AccessStep({ agent }: { agent: AddAgentForm }) {
 					<FieldError id={policyErrorId} message={errors.policyId} />
 				</FormSection>
 			) : (
-				<>
-					<FormSection
-						icon={KeyRound}
-						title="Accounts"
-						description="The provider accounts whose keys the agent's requests may use."
-					>
-						<div className="flex flex-col gap-3">
-							<ToggleSwitch
-								value={everyCredential}
-								onChange={(on) =>
-									form.setFieldValue("reach", on ? "all" : "accounts")
-								}
-								label="Use every credential in scope"
-								hint="Requests use the keys the agent's owner holds, then the system's."
-							/>
-							{!everyCredential && (
-								<div>
-									<fieldset
-										aria-label="Accounts"
-										aria-describedby={
-											errors.accountIds ? accountsErrorId : undefined
-										}
-										className="min-w-0"
-									>
-										<BoxedCheckList
-											options={accountOptions(agent.accounts)}
-											selected={values.accountIds}
-											onToggle={agent.toggleAccount}
-											emptyLabel={
-												agent.accountsLoaded ? "accounts" : "accounts yet"
-											}
-										/>
-									</fieldset>
-									<FieldError
-										id={accountsErrorId}
-										message={errors.accountIds}
-									/>
-								</div>
-							)}
-						</div>
-					</FormSection>
-
-					<FormSection
-						icon={Boxes}
-						title="Models"
-						description="Providers or single models the agent may call. Leave it empty to allow everything its accounts serve."
-					>
-						{agent.reach?.models.size === 0 && values.models.length === 0 ? (
-							<p className="text-xs text-muted-foreground">
-								Pick an account to see the models it serves.
-							</p>
-						) : (
-							<ModelPicker
-								value={values.models}
-								onChange={(next) => form.setFieldValue("models", next)}
-								emptyText={
-									everyCredential
-										? "All models the owner's credentials serve. Pick providers or models to narrow it."
-										: "All models these accounts serve. Pick providers or models to narrow it."
-								}
-								reach={agent.reach}
-							/>
-						)}
-					</FormSection>
-				</>
+				<AccessFields
+					text={AGENT_ACCESS_TEXT}
+					everyCredential={values.reach === "all"}
+					onEveryCredentialChange={(on) =>
+						form.setFieldValue("reach", on ? "all" : "accounts")
+					}
+					accounts={agent.accounts}
+					accountsLoaded={agent.accountsLoaded}
+					selectedAccountIds={values.accountIds}
+					onToggleAccount={agent.toggleAccount}
+					accountsError={errors.accountIds}
+					models={values.models}
+					onModelsChange={(next) => form.setFieldValue("models", next)}
+					reach={agent.reach}
+				/>
 			)}
 		</div>
 	);

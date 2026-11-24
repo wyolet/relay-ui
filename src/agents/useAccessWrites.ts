@@ -1,10 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { type AccessWrite, heldShareId } from "@/agents/accessWrites";
-import {
-	type AccountsListParams,
-	accountListQuery,
-	useShareAccount,
-} from "@/api/hooks/accounts";
+import { accountListQuery, useShareAccount } from "@/api/hooks/accounts";
 import { useCreatePool } from "@/api/hooks/pools";
 import { isShareExists } from "@/api/types/errors";
 import type { components } from "@/api/types.gen";
@@ -13,6 +9,7 @@ import { slugWithSuffix } from "@/lib/slug";
 import {
 	type AccountOwnerRef,
 	ownAccount,
+	ownAccountParams,
 } from "@/policy-bindings/accountLookup";
 
 type Owner = components["schemas"]["Owner"];
@@ -30,12 +27,6 @@ export function emptyAccessProgress(): AccessProgress {
 
 const ACCOUNT_POLLS = 20;
 const ACCOUNT_POLL_MS = 500;
-
-function ownAccountParams(of: AccountOwnerRef): AccountsListParams {
-	return of.kind === "serviceaccount"
-		? { kind: ["service"], holder_id: [of.id] }
-		: { kind: [of.kind] };
-}
 
 /** Runs share and pool writes, and waits for the account relay opens for a new row. */
 export function useAccessWrites() {

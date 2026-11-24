@@ -42,6 +42,13 @@ describe("ownPolicyCase", () => {
 			ownPolicyCase("a1", [binding("p1", ["a1"])], [p], team),
 		).toMatchObject({ kind: "copy", otherAccounts: 0, ownedElsewhere: true });
 	});
+
+	it("is above the caller when the holding binding's policy isn't visible", () => {
+		expect(ownPolicyCase("a1", [binding("p9", ["a1"])], [], team)).toEqual({
+			kind: "above",
+			policyId: "p9",
+		});
+	});
 });
 
 describe("ownPolicyWrites", () => {
@@ -60,5 +67,6 @@ describe("ownPolicyWrites", () => {
 				ownedElsewhere: false,
 			}),
 		).toEqual(["policyCopy", "policyUpdate", "policyBind"]);
+		expect(kinds({ kind: "above", policyId: "p9" })).toEqual([]);
 	});
 });

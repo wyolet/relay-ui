@@ -33,6 +33,7 @@ export function StepForm({
 	steps,
 	form,
 	finishLabel,
+	finishDisabled = false,
 	runTitle,
 	result,
 	onCancel,
@@ -43,6 +44,8 @@ export function StepForm({
 	form: StepFormState;
 	/** The last step's submit, e.g. "Create agent". */
 	finishLabel: string;
+	/** The last step has nothing to send; its own fields say why. */
+	finishDisabled?: boolean;
 	/** What the run makes, e.g. "Creating the agent". */
 	runTitle: string;
 	/** Shown once the run is done; until it is set the run stays on screen. */
@@ -106,6 +109,7 @@ export function StepForm({
 					type="submit"
 					variant="cta"
 					size="lg"
+					disabled={lastStep && finishDisabled}
 					onClick={(e) => {
 						if (e.detail > 1) e.preventDefault();
 					}}
