@@ -4,6 +4,7 @@ import { CopyAgentAction } from "@/agent-page/CopyAgentAction";
 import { NewKeyAction } from "@/agent-page/NewKeyAction";
 import { RemoveAgentAction } from "@/agent-page/RemoveAgentAction";
 import { SHORTCUT_FLAGS } from "@/lib/shortcutFlags";
+import { AddLimitAction } from "@/limits/AddLimitAction";
 
 export type ShortcutTargetKind = "team" | "project" | "serviceaccount";
 
@@ -46,5 +47,10 @@ export const SHORTCUTS: readonly Shortcut[] = [
 		flag: SHORTCUT_FLAGS.removeAgent,
 		targets: ["serviceaccount"],
 		Action: RemoveAgentAction,
+	},
+	{
+		flag: SHORTCUT_FLAGS.limit,
+		targets: ["team", "project", "serviceaccount"],
+		Action: AddLimitAction,
 	},
 ];

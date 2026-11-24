@@ -45,6 +45,7 @@ import { Route as AuthenticatedHostKeysNewRouteImport } from './routes/_authenti
 import { Route as AuthenticatedHostsNameRouteImport } from './routes/_authenticated/hosts.$name'
 import { Route as AuthenticatedKeysNameRouteImport } from './routes/_authenticated/keys_.$name'
 import { Route as AuthenticatedKeysNewRouteImport } from './routes/_authenticated/keys_.new'
+import { Route as AuthenticatedLimitsAddRouteImport } from './routes/_authenticated/limits.add'
 import { Route as AuthenticatedLogsIndexRouteImport } from './routes/_authenticated/logs.index'
 import { Route as AuthenticatedLogsRequestIdRouteImport } from './routes/_authenticated/logs.$requestId'
 import { Route as AuthenticatedMeAccountsRouteImport } from './routes/_authenticated/me.accounts'
@@ -303,6 +304,11 @@ const AuthenticatedKeysNameRoute = AuthenticatedKeysNameRouteImport.update({
 const AuthenticatedKeysNewRoute = AuthenticatedKeysNewRouteImport.update({
   id: '/keys_/new',
   path: '/keys/new',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedLimitsAddRoute = AuthenticatedLimitsAddRouteImport.update({
+  id: '/limits/add',
+  path: '/limits/add',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedLogsIndexRoute = AuthenticatedLogsIndexRouteImport.update({
@@ -731,6 +737,7 @@ export interface FileRoutesByFullPath {
   '/hosts/$name': typeof AuthenticatedHostsNameRoute
   '/keys/$name': typeof AuthenticatedKeysNameRoute
   '/keys/new': typeof AuthenticatedKeysNewRoute
+  '/limits/add': typeof AuthenticatedLimitsAddRoute
   '/logs/$requestId': typeof AuthenticatedLogsRequestIdRoute
   '/me/accounts': typeof AuthenticatedMeAccountsRoute
   '/models/$name': typeof AuthenticatedModelsNameRouteWithChildren
@@ -823,6 +830,7 @@ export interface FileRoutesByTo {
   '/hosts/$name': typeof AuthenticatedHostsNameRoute
   '/keys/$name': typeof AuthenticatedKeysNameRoute
   '/keys/new': typeof AuthenticatedKeysNewRoute
+  '/limits/add': typeof AuthenticatedLimitsAddRoute
   '/logs/$requestId': typeof AuthenticatedLogsRequestIdRoute
   '/me/accounts': typeof AuthenticatedMeAccountsRoute
   '/models/$name': typeof AuthenticatedModelsNameRouteWithChildren
@@ -930,6 +938,7 @@ export interface FileRoutesById {
   '/_authenticated/hosts/$name': typeof AuthenticatedHostsNameRoute
   '/_authenticated/keys_/$name': typeof AuthenticatedKeysNameRoute
   '/_authenticated/keys_/new': typeof AuthenticatedKeysNewRoute
+  '/_authenticated/limits/add': typeof AuthenticatedLimitsAddRoute
   '/_authenticated/logs/$requestId': typeof AuthenticatedLogsRequestIdRoute
   '/_authenticated/me/accounts': typeof AuthenticatedMeAccountsRoute
   '/_authenticated/models/$name': typeof AuthenticatedModelsNameRouteWithChildren
@@ -1037,6 +1046,7 @@ export interface FileRouteTypes {
     | '/hosts/$name'
     | '/keys/$name'
     | '/keys/new'
+    | '/limits/add'
     | '/logs/$requestId'
     | '/me/accounts'
     | '/models/$name'
@@ -1129,6 +1139,7 @@ export interface FileRouteTypes {
     | '/hosts/$name'
     | '/keys/$name'
     | '/keys/new'
+    | '/limits/add'
     | '/logs/$requestId'
     | '/me/accounts'
     | '/models/$name'
@@ -1235,6 +1246,7 @@ export interface FileRouteTypes {
     | '/_authenticated/hosts/$name'
     | '/_authenticated/keys_/$name'
     | '/_authenticated/keys_/new'
+    | '/_authenticated/limits/add'
     | '/_authenticated/logs/$requestId'
     | '/_authenticated/me/accounts'
     | '/_authenticated/models/$name'
@@ -1566,6 +1578,13 @@ declare module '@tanstack/react-router' {
       path: '/keys/new'
       fullPath: '/keys/new'
       preLoaderRoute: typeof AuthenticatedKeysNewRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/limits/add': {
+      id: '/_authenticated/limits/add'
+      path: '/limits/add'
+      fullPath: '/limits/add'
+      preLoaderRoute: typeof AuthenticatedLimitsAddRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/logs/': {
@@ -2361,6 +2380,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedHostsNameRoute: typeof AuthenticatedHostsNameRoute
   AuthenticatedKeysNameRoute: typeof AuthenticatedKeysNameRoute
   AuthenticatedKeysNewRoute: typeof AuthenticatedKeysNewRoute
+  AuthenticatedLimitsAddRoute: typeof AuthenticatedLimitsAddRoute
   AuthenticatedLogsRequestIdRoute: typeof AuthenticatedLogsRequestIdRoute
   AuthenticatedMeAccountsRoute: typeof AuthenticatedMeAccountsRoute
   AuthenticatedPoolsNameRoute: typeof AuthenticatedPoolsNameRoute
@@ -2402,6 +2422,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedHostsNameRoute: AuthenticatedHostsNameRoute,
   AuthenticatedKeysNameRoute: AuthenticatedKeysNameRoute,
   AuthenticatedKeysNewRoute: AuthenticatedKeysNewRoute,
+  AuthenticatedLimitsAddRoute: AuthenticatedLimitsAddRoute,
   AuthenticatedLogsRequestIdRoute: AuthenticatedLogsRequestIdRoute,
   AuthenticatedMeAccountsRoute: AuthenticatedMeAccountsRoute,
   AuthenticatedPoolsNameRoute: AuthenticatedPoolsNameRoute,
