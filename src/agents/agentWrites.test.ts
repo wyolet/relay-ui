@@ -34,6 +34,7 @@ function answers(patch: Partial<AgentAnswers>): AgentAnswers {
 		access: "choose",
 		reach: "all",
 		accounts: [],
+		poolIds: [],
 		models: [],
 		policyId: "",
 		...patch,
@@ -112,6 +113,9 @@ describe("accessErrors", () => {
 		});
 		expect(
 			accessErrors(answers({ reach: "accounts", accounts: [anthropic] }), []),
+		).toEqual({});
+		expect(
+			accessErrors(answers({ reach: "accounts", poolIds: ["pool-local"] }), []),
 		).toEqual({});
 		expect(accessErrors(answers({ reach: "all" }), [])).toEqual({});
 	});

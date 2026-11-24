@@ -1,5 +1,7 @@
 import { ListChecks, Tag } from "lucide-react";
 import { useId } from "react";
+import { PlannedRows } from "@/agents/PlannedRows";
+import { RefusedIssues } from "@/agents/RefusedIssues";
 import type { useAddAgentForm } from "@/agents/useAddAgentForm";
 import { Input } from "@/components/ui/input";
 import { KeySettingsSections } from "@/keys/KeySettingsSections";
@@ -46,15 +48,34 @@ export function KeyStep({ agent }: { agent: AddAgentForm }) {
 			<FormSection
 				icon={ListChecks}
 				title="On create"
-				description="What Create agent does, in this order."
+				description={
+					agent.oneRequest
+						? "What Create agent makes, in one request. Relay makes all of it or none."
+						: "What Create agent does, in this order."
+				}
 			>
-				<WriteList
-					items={agent.planned.map((w) => ({
-						id: w.id,
-						label: w.label,
-						status: "waiting",
-					}))}
-				/>
+				{agent.oneRequest ? (
+					<div className="flex flex-col gap-3">
+						<RefusedIssues messages={agent.onCreateIssues} />
+						{agent.refusalMessage && (
+							<p role="alert" className="text-[11px] text-destructive">
+								{agent.refusalMessage}
+							</p>
+						)}
+						<PlannedRows
+							rows={agent.previewRows}
+							pending={agent.previewPending}
+						/>
+					</div>
+				) : (
+					<WriteList
+						items={agent.planned.map((w) => ({
+							id: w.id,
+							label: w.label,
+							status: "waiting",
+						}))}
+					/>
+				)}
 			</FormSection>
 		</div>
 	);

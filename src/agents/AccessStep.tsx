@@ -1,6 +1,6 @@
 import { Boxes, KeyRound, ShieldCheck, SlidersHorizontal } from "lucide-react";
 import { useId } from "react";
-import type { AgentAccount } from "@/agents/agentAccounts";
+import type { AgentAccount, AgentPool } from "@/agents/agentAccounts";
 import type { AgentAccess } from "@/agents/agentWrites";
 import type { useAddAgentForm } from "@/agents/useAddAgentForm";
 import {
@@ -41,11 +41,17 @@ function accountOptions(accounts: readonly AgentAccount[]): CheckOption[] {
 	}));
 }
 
+function poolOptions(pools: readonly AgentPool[]): CheckOption[] {
+	return pools.map((p) => ({ value: p.id, label: p.label, hint: p.hostLabel }));
+}
+
 export function AccessStep({ agent }: { agent: AddAgentForm }) {
 	const { form, values, errors } = agent;
 	const everyCredential = values.reach === "all";
+	const accessErrorId = useId();
 	const policyErrorId = useId();
 	const accountsErrorId = useId();
+	const poolsErrorId = useId();
 	return (
 		<div className="divide-y divide-border">
 			<FormSection
@@ -58,6 +64,7 @@ export function AccessStep({ agent }: { agent: AddAgentForm }) {
 					value={values.access}
 					onChange={(access) => form.setFieldValue("access", access)}
 				/>
+				<FieldError id={accessErrorId} message={errors.access} />
 			</FormSection>
 
 			{values.access === "policy" ? (
@@ -137,6 +144,27 @@ export function AccessStep({ agent }: { agent: AddAgentForm }) {
 										id={accountsErrorId}
 										message={errors.accountIds}
 									/>
+								</div>
+							)}
+							{!everyCredential && agent.pools.length > 0 && (
+								<div>
+									<h3 className="text-xs font-medium text-foreground">Pools</h3>
+									<p className="mt-0.5 mb-2 text-[11px] text-muted-foreground">
+										Hosts that take no key are reached through a pool.
+									</p>
+									<fieldset
+										aria-label="Pools"
+										aria-describedby={errors.poolIds ? poolsErrorId : undefined}
+										className="min-w-0"
+									>
+										<BoxedCheckList
+											options={poolOptions(agent.pools)}
+											selected={values.poolIds}
+											onToggle={agent.togglePool}
+											emptyLabel="pools"
+										/>
+									</fieldset>
+									<FieldError id={poolsErrorId} message={errors.poolIds} />
 								</div>
 							)}
 						</div>

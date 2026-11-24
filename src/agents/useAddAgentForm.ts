@@ -3,7 +3,12 @@ import { useQuery } from "@tanstack/react-query";
 import { useStore } from "@tanstack/react-store";
 import { useMemo, useRef, useState } from "react";
 import { z } from "zod";
-import { agentAccounts, hostReach } from "@/agents/agentAccounts";
+import {
+	agentAccounts,
+	hostReach,
+	keylessHostIds,
+	keylessPools,
+} from "@/agents/agentAccounts";
 import {
 	AGENT_OWNER_KINDS,
 	type AgentOwnerKind,
@@ -11,6 +16,11 @@ import {
 	initialOwnerPick,
 	ownerKindPlaceable,
 } from "@/agents/agentOwner";
+import type {
+	AgentRefusal,
+	RefusalField,
+	RefusalIssue,
+} from "@/agents/agentRefusal";
 import {
 	type AgentAccess,
 	type AgentAnswers,
@@ -18,10 +28,15 @@ import {
 	accessErrors,
 	agentWrites,
 } from "@/agents/agentWrites";
-import { useAgentWrites } from "@/agents/useAgentWrites";
+import { pseudoAgentBody } from "@/agents/pseudoAgentBody";
+import { type AgentSettings, useAgentWrites } from "@/agents/useAgentWrites";
+import { usePseudoAgentRun } from "@/agents/usePseudoAgentRun";
 import { useAuth } from "@/api/auth";
 import { accountListQuery, useUsableAccounts } from "@/api/hooks/accounts";
+import { hostsListQueryOptions } from "@/api/hooks/hosts";
 import { useUsablePolicies } from "@/api/hooks/policies";
+import { useUsablePools } from "@/api/hooks/pools";
+import { pseudoKind } from "@/api/runtimeConfig";
 import { stepFieldErrors, useFormSteps } from "@/hooks/useFormSteps";
 import { useWorkContext } from "@/hooks/useWorkContext";
 import { applyOwnerPick, pickedScope, scopeUsableBy } from "@/lib/ownerPick";
@@ -43,6 +58,7 @@ export interface AddAgentValues {
 	access: AgentAccess;
 	reach: AgentReach;
 	accountIds: string[];
+	poolIds: string[];
 	models: string[];
 	policyId: string;
 	/** "" names the key after the agent. */
@@ -57,12 +73,38 @@ const FIELD_STEP = {
 	description: "agent",
 	teamId: "agent",
 	projectId: "agent",
+	access: "access",
 	accountIds: "access",
+	poolIds: "access",
 	policyId: "access",
 	keyName: "key",
-} as const satisfies Partial<Record<keyof AddAgentValues, AgentFormStep>>;
+} as const satisfies Partial<Record<keyof AddAgentValues, AgentFormStep>> &
+	Record<RefusalField, AgentFormStep>;
 
 type CheckedField = keyof typeof FIELD_STEP;
+
+/** The answers a refusal of a field was about; it shows until one of them changes. */
+const REFUSAL_INPUTS: Record<RefusalField, readonly (keyof AddAgentValues)[]> =
+	{
+		displayName: ["displayName", "description", "ownerKind", "projectId"],
+		accountIds: ["access", "reach", "accountIds", "poolIds"],
+		poolIds: ["access", "reach", "accountIds", "poolIds"],
+		access: ["access", "reach", "accountIds", "poolIds", "models", "policyId"],
+		policyId: ["access", "policyId"],
+		keyName: [
+			"keyName",
+			"expiresAt",
+			"passthroughAllowed",
+			"payloadLoggingEnabled",
+		],
+	};
+
+interface Refused {
+	refusal: AgentRefusal;
+	/** The answers the refused request was built from. */
+	at: AddAgentValues;
+	fromDryRun: boolean;
+}
 
 const schema = z
 	.object({
@@ -107,10 +149,36 @@ function snippetModels(
 	return (named.length > 0 ? named : served).slice(0, SNIPPET_MODEL_COUNT);
 }
 
+/** An issue on a row that exists already belongs to the access step: what the agent may use is what changes the plans. */
+function issueField(issue: RefusalIssue): RefusalField {
+	return issue.field ?? "access";
+}
+
+/** The step a refused submit returns to: the earliest one holding a refused part. */
+function refusalStep(refusal: AgentRefusal): AgentFormStep | undefined {
+	if (refusal.kind === "general") return undefined;
+	const fields =
+		refusal.kind === "field" ? [refusal.field] : refusal.issues.map(issueField);
+	return AGENT_FORM_STEPS.find((step) =>
+		fields.some((f) => FIELD_STEP[f] === step),
+	);
+}
+
+function sameAnswers(
+	a: AddAgentValues,
+	b: AddAgentValues,
+	keys: readonly (keyof AddAgentValues)[],
+): boolean {
+	return keys.every((k) => JSON.stringify(a[k]) === JSON.stringify(b[k]));
+}
+
 export function useAddAgentForm() {
 	const { userId } = useAuth();
 	const { contexts, current } = useWorkContext();
+	const oneRequest = pseudoKind("agents");
 	const writes = useAgentWrites();
+	const pseudo = usePseudoAgentRun();
+	const [refused, setRefused] = useState<Refused | null>(null);
 
 	const [initial] = useState<AddAgentValues>(() => ({
 		displayName: "",
@@ -119,6 +187,7 @@ export function useAddAgentForm() {
 		access: "choose",
 		reach: "all",
 		accountIds: [],
+		poolIds: [],
 		models: [],
 		policyId: "",
 		keyName: "",
@@ -136,29 +205,48 @@ export function useAddAgentForm() {
 		enabled: scope !== undefined,
 	});
 	const visible = useQuery(accountListQuery({ kind: ["provider"] }));
+	const hosts = useQuery(hostsListQueryOptions);
+	const usablePools = useUsablePools(
+		usableBy,
+		{},
+		{ enabled: scope !== undefined && oneRequest },
+	);
 	const policies = useUsablePolicies(usableBy);
 	// The last scope's rows have another owner: offering them would send picks
-	// this scope can't use.
-	const accountsCurrent = scope !== undefined && !usable.fromPreviousScope;
+	// this scope can't use. Until the hosts load, keyless ones can't be told apart.
+	const accountsCurrent =
+		scope !== undefined && !usable.fromPreviousScope && !hosts.isPending;
+	const poolsCurrent =
+		oneRequest && accountsCurrent && !usablePools.fromPreviousScope;
 	const policiesCurrent = !policies.fromPreviousScope;
 
+	const keylessHosts = keylessHostIds(hosts.data?.items ?? []);
+	const hostLabel = (hostId: string) =>
+		index.hosts.find((h) => h.id === hostId)?.displayName ?? "";
 	const accounts = accountsCurrent
 		? agentAccounts(
 				usable.items,
 				visible.data?.items ?? [],
 				userId,
-				(hostId) => index.hosts.find((h) => h.id === hostId)?.displayName ?? "",
+				hostLabel,
+				keylessHosts,
 			)
+		: [];
+	const pools = poolsCurrent
+		? keylessPools(usablePools.items, keylessHosts, hostLabel)
 		: [];
 	const picked = values.accountIds.flatMap((id) =>
 		accounts.filter((a) => a.id === id),
+	);
+	const pickedPools = values.poolIds.flatMap((id) =>
+		pools.filter((p) => p.id === id),
 	);
 	const policyOptions = policiesCurrent
 		? bindingPolicyOptions(policies.items, policies.items, values.policyId)
 		: [];
 	const pickedHostNames = [
 		...new Set(
-			picked.flatMap(
+			[...pickedPools, ...picked].flatMap(
 				(a) => index.hosts.find((h) => h.id === a.hostId)?.name ?? [],
 			),
 		),
@@ -186,55 +274,110 @@ export function useAddAgentForm() {
 		access: values.access,
 		reach: values.reach,
 		accounts: picked,
+		poolIds: pickedPools.map((p) => p.id),
 		models: values.models,
 		policyId: values.policyId,
 	};
 	const planned = agentWrites(answers);
+	const settings: AgentSettings | undefined = scope && {
+		name: slug,
+		displayName,
+		description: values.description.trim(),
+		projectId: values.projectId,
+		scope,
+		key: {
+			displayName: keyName,
+			expiresAt: values.expiresAt,
+			passthroughAllowed: values.passthroughAllowed,
+			payloadLoggingEnabled: values.payloadLoggingEnabled,
+		},
+	};
 
-	function createAgent() {
-		if (!scope) return;
-		void writes.start(
-			{
-				name: slug,
-				displayName,
-				description: values.description.trim(),
-				projectId: values.projectId,
-				scope,
-				key: {
-					displayName: keyName,
-					expiresAt: values.expiresAt,
-					passthroughAllowed: values.passthroughAllowed,
-					payloadLoggingEnabled: values.payloadLoggingEnabled,
-				},
-			},
-			planned,
+	const answersErrors = {
+		...stepFieldErrors(schema, values, FIELD_STEP),
+		...accessErrors(
+			answers,
+			policyOptions.map((o) => o.value),
+		),
+	};
+	const refusedNow = (field: RefusalField, at: AddAgentValues) =>
+		sameAnswers(values, at, REFUSAL_INPUTS[field]);
+	const refusedField: Partial<Record<RefusalField, string>> =
+		refused?.refusal.kind === "field" &&
+		refusedNow(refused.refusal.field, refused.at)
+			? { [refused.refusal.field]: refused.refusal.message }
+			: {};
+	const issues: Partial<Record<AgentFormStep, string[]>> = {};
+	if (refused?.refusal.kind === "issues") {
+		for (const issue of refused.refusal.issues) {
+			const field = issueField(issue);
+			if (!refusedNow(field, refused.at)) continue;
+			// A dry run's issues show where it ran, by the list of what it would make.
+			const step = refused.fromDryRun ? "key" : FIELD_STEP[field];
+			const listed = issues[step] ?? [];
+			if (!listed.includes(issue.message))
+				issues[step] = [...listed, issue.message];
+		}
+	}
+	const dryRunMessage =
+		refused?.fromDryRun && refused.refusal.kind === "field"
+			? refused.refusal.message
+			: undefined;
+	const generalMessage =
+		refused?.refusal.kind === "general" ? refused.refusal.message : undefined;
+
+	function refuse(
+		refusal: AgentRefusal,
+		at: AddAgentValues,
+		fromDryRun: boolean,
+	) {
+		setRefused({ refusal, at, fromDryRun });
+		const step = fromDryRun ? undefined : refusalStep(refusal);
+		if (step) open(step);
+	}
+
+	function previewAgent(entered: AgentFormStep) {
+		if (!oneRequest || entered !== "key" || !settings) return;
+		if (Object.keys(answersErrors).length > 0) return;
+		const at = values;
+		setRefused(null);
+		pseudo.preview(pseudoAgentBody(settings, answers), (r) =>
+			refuse(r, at, true),
 		);
 	}
-	const { step, stepIndex, lastStep, errors, next, back } = useFormSteps({
+
+	function createAgent() {
+		if (!settings) return;
+		if (!oneRequest) {
+			void writes.start(settings, planned);
+			return;
+		}
+		const at = values;
+		setRefused(null);
+		void pseudo.submit(pseudoAgentBody(settings, answers), (r) =>
+			refuse(r, at, false),
+		);
+	}
+	const { step, stepIndex, lastStep, errors, next, back, open } = useFormSteps({
 		steps: AGENT_FORM_STEPS,
 		fieldStep: FIELD_STEP,
-		fieldErrors: {
-			...stepFieldErrors(schema, values, FIELD_STEP),
-			...accessErrors(
-				answers,
-				policyOptions.map((o) => o.value),
-			),
-		},
+		fieldErrors: { ...refusedField, ...answersErrors },
 		onFinish: createAgent,
+		onEnter: previewAgent,
 	});
 
 	function chooseOwner(pick: Partial<AgentOwnerPick>) {
 		applyOwnerPick(pick, form.setFieldValue);
 		form.setFieldValue("accountIds", []);
+		form.setFieldValue("poolIds", []);
 		form.setFieldValue("policyId", "");
 	}
 
-	function toggleAccount(id: string) {
+	function toggle(field: "accountIds" | "poolIds", id: string) {
+		const list = values[field];
 		form.setFieldValue(
-			"accountIds",
-			values.accountIds.includes(id)
-				? values.accountIds.filter((a) => a !== id)
-				: [...values.accountIds, id],
+			field,
+			list.includes(id) ? list.filter((a) => a !== id) : [...list, id],
 		);
 	}
 
@@ -256,13 +399,24 @@ export function useAddAgentForm() {
 		chooseOwner,
 		accounts,
 		accountsLoaded: accountsCurrent && usable.loaded,
-		toggleAccount,
+		toggleAccount: (id: string) => toggle("accountIds", id),
+		pools,
+		togglePool: (id: string) => toggle("poolIds", id),
 		reach,
 		policyOptions,
 		slugPreview: slug,
 		snippetModels: snippetModels(values.models, reach),
 		keyNamePlaceholder: displayName ? `${displayName} key` : "Agent key",
+		oneRequest,
 		planned,
-		writes,
+		previewRows: pseudo.previewRows,
+		previewPending: pseudo.previewPending,
+		/** Why the request was refused, for the On create list: a dry run's field refusal, or one no field owns. */
+		refusalMessage: dryRunMessage ?? generalMessage,
+		/** Plan issues relay found on the open step; the key step lists its own by what Create makes. */
+		stepIssues: step === "key" ? undefined : issues[step],
+		onCreateIssues: issues.key,
+		writes: oneRequest ? pseudo.run : writes,
+		created: oneRequest ? pseudo.created : writes.created,
 	};
 }

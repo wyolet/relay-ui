@@ -1,6 +1,13 @@
 import { describe, expect, it } from "bun:test";
-import { agentAccounts, hostReach } from "@/agents/agentAccounts";
+import {
+	agentAccounts,
+	hostReach,
+	keylessHostIds,
+	keylessPools,
+} from "@/agents/agentAccounts";
 import type { Account } from "@/api/hooks/accounts";
+import type { Pool } from "@/api/hooks/pools";
+import type { Host } from "@/api/types/host";
 import type { ModelRow } from "@/models/usePickerCatalog";
 
 function provider(
@@ -26,6 +33,7 @@ describe("agentAccounts", () => {
 			[projectOwned, own, someoneElses],
 			"me",
 			hostLabel,
+			new Set(),
 		);
 		expect(rows.map((r) => [r.id, r.needsShare])).toEqual([
 			["p", false],
@@ -41,8 +49,70 @@ describe("agentAccounts", () => {
 			{ kind: "project", id: "proj" },
 			{ sourceAccountId: "mine" },
 		);
-		const rows = agentAccounts([share], [share, own], "me", hostLabel);
+		const rows = agentAccounts(
+			[share],
+			[share, own],
+			"me",
+			hostLabel,
+			new Set(),
+		);
 		expect(rows.map((r) => r.id)).toEqual(["share"]);
+	});
+
+	it("leaves out accounts at keyless hosts, usable or own", () => {
+		const keyless = provider(
+			"local",
+			{ kind: "project", id: "proj" },
+			{ hostId: "h-local" },
+		);
+		const ownKeyless = provider(
+			"my-local",
+			{ kind: "user", id: "me" },
+			{ hostId: "h-local" },
+		);
+		const keyed = provider("p", { kind: "project", id: "proj" });
+		const rows = agentAccounts(
+			[keyless, keyed],
+			[keyless, keyed, ownKeyless],
+			"me",
+			hostLabel,
+			new Set(["h-local"]),
+		);
+		expect(rows.map((r) => r.id)).toEqual(["p"]);
+	});
+});
+
+describe("keylessHostIds", () => {
+	it("lists the hosts that take no key", () => {
+		const host = (id: string, noAuth?: boolean): Host => ({
+			metadata: { id, name: id },
+			spec: { baseURL: "", noAuth },
+		});
+		expect([
+			...keylessHostIds([host("a", true), host("b"), host("c", false)]),
+		]).toEqual(["a"]);
+	});
+});
+
+describe("keylessPools", () => {
+	it("keeps the usable pools at keyless hosts", () => {
+		const pool = (id: string, hostId: string): Pool => ({
+			metadata: { id, name: id, displayName: `${id} pool` },
+			spec: { hostId, accountIds: [] },
+		});
+		const rows = keylessPools(
+			[pool("p1", "h-local"), pool("p2", "h1")],
+			new Set(["h-local"]),
+			hostLabel,
+		);
+		expect(rows).toEqual([
+			{
+				id: "p1",
+				label: "p1 pool",
+				hostId: "h-local",
+				hostLabel: "host h-local",
+			},
+		]);
 	});
 });
 

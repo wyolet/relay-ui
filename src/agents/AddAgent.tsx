@@ -2,6 +2,7 @@ import { AccessStep } from "@/agents/AccessStep";
 import { AgentStep } from "@/agents/AgentStep";
 import { CreatedStep } from "@/agents/CreatedStep";
 import { KeyStep } from "@/agents/KeyStep";
+import { RefusedIssues } from "@/agents/RefusedIssues";
 import {
 	AGENT_FORM_STEPS,
 	type AgentFormStep,
@@ -22,7 +23,7 @@ const STEPS = [
 
 export function AddAgent({ onCancel }: { onCancel: () => void }) {
 	const agent = useAddAgentForm();
-	const { step, writes } = agent;
+	const { step, created } = agent;
 	return (
 		<StepForm
 			steps={STEPS}
@@ -30,12 +31,13 @@ export function AddAgent({ onCancel }: { onCancel: () => void }) {
 			finishLabel="Create agent"
 			runTitle="Creating the agent"
 			result={
-				writes.created && (
-					<CreatedStep created={writes.created} models={agent.snippetModels} />
+				created && (
+					<CreatedStep created={created} models={agent.snippetModels} />
 				)
 			}
 			onCancel={onCancel}
 		>
+			<RefusedIssues messages={agent.stepIssues} />
 			{step === "agent" && <AgentStep agent={agent} />}
 			{step === "access" && <AccessStep agent={agent} />}
 			{step === "key" && <KeyStep agent={agent} />}

@@ -29,11 +29,14 @@ export function useFormSteps<S extends string, F extends string>({
 	fieldStep,
 	fieldErrors,
 	onFinish,
+	onEnter,
 }: {
 	steps: readonly S[];
 	fieldStep: Record<F, S>;
 	fieldErrors: Partial<Record<F, string>>;
 	onFinish: () => void;
+	/** Called when `next` opens a step. */
+	onEnter?: (step: S) => void;
 }) {
 	const [stepIndex, setStepIndex] = useState(0);
 	const [tried, setTried] = useState<readonly S[]>([]);
@@ -57,11 +60,21 @@ export function useFormSteps<S extends string, F extends string>({
 			if (step === undefined) return;
 			setTried((t) => (t.includes(step) ? t : [...t, step]));
 			if (!stepValid) return;
-			if (stepIndex < steps.length - 1) setStepIndex(stepIndex + 1);
-			else onFinish();
+			const entered = steps[stepIndex + 1];
+			if (entered === undefined) {
+				onFinish();
+				return;
+			}
+			setStepIndex(stepIndex + 1);
+			onEnter?.(entered);
 		},
 		back() {
 			setStepIndex(Math.max(stepIndex - 1, 0));
+		},
+		/** Opens an earlier step, e.g. the one owning a field the server refused. */
+		open(to: S) {
+			const index = steps.indexOf(to);
+			if (index >= 0) setStepIndex(index);
 		},
 	};
 }
