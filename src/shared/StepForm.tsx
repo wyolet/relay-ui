@@ -100,12 +100,15 @@ export function StepForm({
 						Back
 					</Button>
 				)}
-				{/* A distinct key remounts the button, so a click meant for Next never lands on the final submit. */}
+				{/* The second click of a double-click on Next lands on the final submit; `detail` counts clicks. */}
 				<Button
 					key={lastStep ? "finish" : "next"}
 					type="submit"
 					variant="cta"
 					size="lg"
+					onClick={(e) => {
+						if (e.detail > 1) e.preventDefault();
+					}}
 				>
 					{lastStep ? finishLabel : "Next"}
 				</Button>

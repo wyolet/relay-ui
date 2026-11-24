@@ -251,4 +251,12 @@ test.describe("Add agent", () => {
 		await page.getByRole("button", { name: "Back" }).click();
 		await expect(page.getByPlaceholder("Support triage agent")).toHaveValue("Indexer");
 	});
+
+	test("a double-click on Next does not create the agent", async ({ page }) => {
+		const sent = await mockAgentApi(page);
+		await nameAgentInProject(page);
+		await page.getByRole("button", { name: "Next" }).dblclick();
+		await expect(page.getByRole("button", { name: "Create agent" })).toBeVisible();
+		expect(sent).toEqual([]);
+	});
 });
