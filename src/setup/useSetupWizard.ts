@@ -20,10 +20,10 @@ import type { Host } from "@/api/types/host";
 import type { Policy, PolicySpec } from "@/api/types/policy";
 import { displayLabel } from "@/lib/displayLabel";
 import { slugWithSuffix } from "@/lib/slug";
-import type {
-	RateLimitMeter as CanonicalMeter,
-	RateLimitStrategy,
-} from "@/rate-limits/useRateLimitForm";
+import {
+	type EasyRateLimit,
+	easyRateLimitRules,
+} from "@/rate-limits/easyRateLimit";
 import { ownProviderAccountAt } from "@/setup/providerAccount";
 import { toast } from "@/shared/Toast";
 import { useSetupStore } from "@/stores/setup";
@@ -36,24 +36,6 @@ import {
 } from "./providerCatalog";
 
 export type SetupStep = "provider" | "credentials" | "limits" | "done";
-
-export type RateLimitPer = "minute" | "hour" | "day";
-
-// The meters surfaced in the easy form are a deliberate subset of the canonical
-// rate-limit meter enum. Deriving via Extract keeps us in sync and fails the
-// build if either literal ever leaves the source enum.
-export type RateLimitMeter = Extract<CanonicalMeter, "requests" | "tokens">;
-
-export interface EasyRateLimitRule {
-	amount: number;
-	per: RateLimitPer;
-}
-
-/**
- * Independent, optionally-combined limits — a user can cap requests, tokens, or
- * both. Each present key becomes one RateLimitRule on a single rate limit.
- */
-export type EasyRateLimit = Partial<Record<RateLimitMeter, EasyRateLimitRule>>;
 
 export interface ProviderCard {
 	def: ProviderDef;
@@ -76,12 +58,6 @@ export interface SampleModel {
 	/** Value sent in the request body — the model `pointer`, else `name`. */
 	value: string;
 }
-
-const PER_SECONDS: Record<RateLimitPer, number> = {
-	minute: 60,
-	hour: 3600,
-	day: 86400,
-};
 
 /** How many of a host's models to surface in the snippet picker. */
 const MAX_SAMPLE_MODELS = 6;
@@ -415,22 +391,7 @@ export function useSetupWizard() {
 		setBusy(true);
 		setError(null);
 		try {
-			const strategy: RateLimitStrategy = "sliding-window";
-			const meters: RateLimitMeter[] = ["requests", "tokens"];
-			const rules = meters.flatMap((meter) => {
-				const rule = limit?.[meter];
-				return rule
-					? [
-							{
-								amount: rule.amount,
-								meter,
-								strategy,
-								// `window` is whole seconds on the wire (see timeWindow.ts).
-								window: PER_SECONDS[rule.per],
-							},
-						]
-					: [];
-			});
+			const rules = easyRateLimitRules(limit ?? {});
 			if (rules.length > 0) {
 				const bindAccountId = policy
 					? undefined
