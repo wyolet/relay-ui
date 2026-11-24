@@ -198,6 +198,11 @@ export function useSetAccessForm(
 			);
 			return;
 		}
+		// Without a dry run on screen a save could skip the stop confirm: ask again first.
+		if (pseudo.previewBusy) {
+			pseudo.preview(body, values);
+			return;
+		}
 		void pseudo.submit(body, values).then((refusal: AccessRefusal | null) => {
 			if (refusal?.kind === "field") open(FIELD_STEP[refusal.field]);
 		});

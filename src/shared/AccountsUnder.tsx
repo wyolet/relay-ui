@@ -1,6 +1,7 @@
 import { useId } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
+	hiddenStoppedLine,
 	moreStoppedLine,
 	type PseudoUnder,
 	stoppedLanes,
@@ -10,28 +11,30 @@ import {
 import type { UnderConfirm } from "@/pseudo/useUnderConfirm";
 import { AlertBanner } from "@/shared/AlertBanner";
 
+const STOPPED_TITLE = "Will stop working";
+
 function StoppedList({ under }: { under: PseudoUnder }) {
 	const lanes = stoppedLanes(under);
-	const more = moreStoppedLine(under);
-	if (lanes.length === 0) return null;
+	const counted = [moreStoppedLine(under), hiddenStoppedLine(under)].filter(
+		(line): line is string => line !== undefined,
+	);
 	return (
-		<ul aria-label="Will stop working" className="flex flex-col gap-1">
-			{lanes.map((lane) => (
-				<li key={lane.id} className="grid grid-cols-[6rem_1fr] gap-3">
-					<span className="text-muted-foreground">{lane.kind}</span>
-					<span
-						className={
-							lane.unseen
-								? "truncate text-muted-foreground"
-								: "truncate font-mono text-foreground"
-						}
-					>
-						{lane.name}
-					</span>
-				</li>
-			))}
-			{more && <li className="text-muted-foreground">{more}</li>}
-		</ul>
+		<div className="flex flex-col gap-1">
+			<p className="font-medium text-foreground">{STOPPED_TITLE}</p>
+			<ul aria-label={STOPPED_TITLE} className="flex flex-col gap-1">
+				{lanes.map((lane) => (
+					<li key={lane.id} className="grid grid-cols-[7rem_1fr] gap-3">
+						<span className="text-muted-foreground">{lane.kind}</span>
+						<span className="truncate text-foreground">{lane.name}</span>
+					</li>
+				))}
+				{counted.map((line) => (
+					<li key={line} className="text-muted-foreground">
+						{line}
+					</li>
+				))}
+			</ul>
+		</div>
 	);
 }
 

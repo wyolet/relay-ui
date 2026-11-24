@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import {
 	changesAccountsUnder,
+	hiddenStoppedLine,
 	moreStoppedLine,
 	needsStopConfirm,
 	type PseudoUnder,
@@ -13,22 +14,28 @@ const untouched: PseudoUnder = {
 	lanes: 4,
 	narrowed: 0,
 	widened: 0,
+	changed: 0,
 	unreachable: null,
 };
 
-const agent2 = { kind: "account", id: "acct-2", name: "sa-s-agent-2" };
-const unseen = { kind: "account", id: "acct-9" };
+const agent2 = {
+	kind: "service-account",
+	id: "sa-2",
+	name: "S agent 2",
+} as const;
+const member = { kind: "user", id: "u-1", name: "dana" } as const;
 
 describe("stopsWorkingCount", () => {
-	it("counts the listed accounts and those beyond the list", () => {
+	it("counts the listed holders, those beyond the list and those the caller can't see", () => {
 		expect(stopsWorkingCount(untouched)).toBe(0);
 		expect(
 			stopsWorkingCount({
 				...untouched,
-				unreachable: [agent2, unseen],
+				unreachable: [agent2, member],
 				unreachableMore: 3,
+				unreachableHidden: 2,
 			}),
-		).toBe(5);
+		).toBe(7);
 	});
 });
 
@@ -38,72 +45,88 @@ describe("changesAccountsUnder", () => {
 		expect(changesAccountsUnder(untouched)).toBe(false);
 	});
 
-	it("is true for any account narrowed, widened or stopped", () => {
+	it("is true for any account narrowed, widened, changed or stopped", () => {
 		expect(changesAccountsUnder({ ...untouched, narrowed: 1 })).toBe(true);
 		expect(changesAccountsUnder({ ...untouched, widened: 2 })).toBe(true);
-		expect(changesAccountsUnder({ ...untouched, unreachableMore: 1 })).toBe(
+		expect(changesAccountsUnder({ ...untouched, changed: 1 })).toBe(true);
+		expect(changesAccountsUnder({ ...untouched, unreachableHidden: 1 })).toBe(
 			true,
 		);
 	});
 });
 
 describe("needsStopConfirm", () => {
-	it("asks only when some account stops working", () => {
+	it("asks only when some account stops working, seen or not", () => {
 		expect(needsStopConfirm(undefined)).toBe(false);
-		expect(needsStopConfirm({ ...untouched, narrowed: 3, widened: 1 })).toBe(
-			false,
-		);
+		expect(
+			needsStopConfirm({ ...untouched, narrowed: 3, widened: 1, changed: 2 }),
+		).toBe(false);
 		expect(needsStopConfirm({ ...untouched, unreachable: [agent2] })).toBe(
 			true,
 		);
 		expect(
-			needsStopConfirm({ ...untouched, unreachable: [], unreachableMore: 2 }),
+			needsStopConfirm({ ...untouched, unreachable: [], unreachableHidden: 2 }),
 		).toBe(true);
 	});
 });
 
 describe("underSentences", () => {
-	it("says each count that moved in its own sentence, less, more, then stop", () => {
+	it("says each count in its own sentence, the first naming the target", () => {
 		expect(
 			underSentences(
-				{
-					...untouched,
-					narrowed: 2,
-					widened: 1,
-					unreachable: [agent2],
-					unreachableMore: 1,
-				},
+				{ ...untouched, narrowed: 2, widened: 3, changed: 4 },
 				"S project",
 			),
 		).toEqual([
 			"2 accounts under S project get less.",
-			"1 account under S project gets more.",
-			"2 accounts under S project will stop working.",
+			"3 get more.",
+			"4 change: they lose some and gain some.",
 		]);
 	});
 
-	it("leaves out the counts that are zero", () => {
-		expect(underSentences({ ...untouched, narrowed: 1 }, "U team")).toEqual([
+	it("uses the singular for one", () => {
+		expect(
+			underSentences(
+				{ ...untouched, narrowed: 1, widened: 1, changed: 1 },
+				"U team",
+			),
+		).toEqual([
 			"1 account under U team gets less.",
+			"1 gets more.",
+			"1 changes: it loses some and gains some.",
+		]);
+	});
+
+	it("leaves out the counts that are zero; the first one shown names the target", () => {
+		expect(underSentences({ ...untouched, narrowed: 2 }, "U team")).toEqual([
+			"2 accounts under U team get less.",
+		]);
+		expect(underSentences({ ...untouched, changed: 2 }, "U team")).toEqual([
+			"2 accounts under U team change: they lose some and gain some.",
 		]);
 		expect(
 			underSentences({ ...untouched, unreachable: [agent2] }, "U team"),
-		).toEqual(["1 account under U team will stop working."]);
+		).toEqual([]);
 	});
 });
 
 describe("stoppedLanes", () => {
-	it("names each with its kind, and one without a name as one you can't see", () => {
+	it("names each holder with a readable kind", () => {
 		expect(
-			stoppedLanes({ ...untouched, unreachable: [agent2, unseen] }),
+			stoppedLanes({
+				...untouched,
+				unreachable: [
+					agent2,
+					member,
+					{ kind: "project", id: "p-1", name: "S project" },
+					{ kind: "team", id: "t-1", name: "S team" },
+				],
+			}),
 		).toEqual([
-			{ id: "acct-2", kind: "Account", name: "sa-s-agent-2", unseen: false },
-			{
-				id: "acct-9",
-				kind: "Account",
-				name: "one you can't see",
-				unseen: true,
-			},
+			{ id: "sa-2", kind: "Service account", name: "S agent 2" },
+			{ id: "u-1", kind: "User", name: "dana" },
+			{ id: "p-1", kind: "Project", name: "S project" },
+			{ id: "t-1", kind: "Team", name: "S team" },
 		]);
 	});
 });
@@ -125,6 +148,27 @@ describe("moreStoppedLine", () => {
 		).toBeUndefined();
 		expect(
 			moreStoppedLine({ ...untouched, unreachable: [], unreachableMore: 4 }),
+		).toBeUndefined();
+	});
+});
+
+describe("hiddenStoppedLine", () => {
+	it("counts the ones the caller can't see after the named ones", () => {
+		expect(
+			hiddenStoppedLine({
+				...untouched,
+				unreachable: [agent2],
+				unreachableHidden: 2,
+			}),
+		).toBe("and 2 you can't see");
+	});
+
+	it("stands alone when none is named, and is absent at zero", () => {
+		expect(hiddenStoppedLine({ ...untouched, unreachableHidden: 1 })).toBe(
+			"1 you can't see",
+		);
+		expect(
+			hiddenStoppedLine({ ...untouched, unreachable: [agent2] }),
 		).toBeUndefined();
 	});
 });

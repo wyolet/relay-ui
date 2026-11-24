@@ -141,6 +141,8 @@ interface PseudoSetup {
 	under?: object;
 	/** Relay's answer to the first `POST /pseudo-limits` that isn't a dry run. */
 	refuseOnce?: MockAnswer;
+	/** Relay's answer to the first dry run with a limit. */
+	refuseDryRunOnce?: MockAnswer;
 }
 
 const LIMIT_POLICY = { id: "pol-1", name: "platform-limits" };
@@ -187,6 +189,7 @@ const DETAILS: Record<string, unknown> = {
 async function mockLimitApi(page: Page, setup: Setup = {}): Promise<Sent[]> {
 	const sent: Sent[] = [];
 	let failed = false;
+	let dryRunFailed = false;
 	const policies = setup.policies ?? [];
 	const { pseudo } = setup;
 	await mockApi(page, {
@@ -237,6 +240,11 @@ async function mockLimitApi(page: Page, setup: Setup = {}): Promise<Sent[]> {
 			if (current) {
 				const answer = pseudo.current ?? NO_POLICY;
 				return route.fulfill({ status: answer.status, json: answer.json });
+			}
+			if (dryRun && pseudo.refuseDryRunOnce && !dryRunFailed) {
+				dryRunFailed = true;
+				const refused = pseudo.refuseDryRunOnce;
+				return route.fulfill({ status: refused.status, json: refused.json });
 			}
 			if (!dryRun && pseudo.refuseOnce && !failed) {
 				failed = true;
@@ -742,6 +750,44 @@ test.describe("Add a limit in one request", () => {
 		expect(submits(sent)).toHaveLength(2);
 	});
 
+	test("a busy dry run asks to retry; Add limit asks again before it adds", async ({ page }) => {
+		const sent = await mockLimitApi(page, {
+			pseudo: {
+				refuseDryRunOnce: {
+					status: 503,
+					json: { error: { type: "server_error", message: "the reach check ran out of time" } },
+				},
+				under: {
+					lanes: 2,
+					narrowed: 1,
+					widened: 0,
+					changed: 0,
+					unreachable: [{ kind: "service-account", id: "sa-1", name: "Indexer" }],
+				},
+			},
+		});
+		await page.goto(`/limits/add?targetKind=team&id=${TEAM}`);
+		await fillCap(page, "5");
+		const add = page.getByRole("button", { name: "Add limit" });
+		await expect(page.getByRole("alert")).toHaveText("Relay is busy. Try again in a moment.");
+		await expect(add).toBeEnabled();
+
+		await add.click();
+		await expect(page.getByRole("list", { name: "Will stop working" })).toHaveText(
+			/Service account\s*Indexer/,
+		);
+		await expect(add).toBeDisabled();
+		await page.getByRole("checkbox", { name: "I understand these will stop working." }).click();
+		await add.click();
+		await expect(page.getByRole("heading", { name: "Limit added" })).toBeVisible();
+		expect(writes(sent)).toEqual([
+			"POST pseudo-limits?current",
+			"POST pseudo-limits?dryRun",
+			"POST pseudo-limits?dryRun",
+			"POST pseudo-limits",
+		]);
+	});
+
 	test("a policy relay says is set above the caller offers no fields, with relay's message", async ({
 		page,
 	}) => {
@@ -829,14 +875,16 @@ test.describe("Add a limit in one request", () => {
 		const sent = await mockLimitApi(page, {
 			pseudo: {
 				under: {
-					lanes: 6,
+					lanes: 9,
 					narrowed: 2,
-					widened: 1,
+					widened: 0,
+					changed: 3,
 					unreachable: [
-						{ kind: "account", id: "acct-lane", name: "acct-lane" },
-						{ kind: "account", id: "acct-hidden" },
+						{ kind: "project", id: PROJECT, name: "Search" },
+						{ kind: "team", id: TEAM, name: "Platform" },
 					],
 					unreachableMore: 3,
+					unreachableHidden: 1,
 				},
 			},
 		});
@@ -845,12 +893,13 @@ test.describe("Add a limit in one request", () => {
 
 		const under = page.getByRole("region", { name: "Accounts under Platform" });
 		await expect(under.getByText("2 accounts under Platform get less.")).toBeVisible();
-		await expect(under.getByText("1 account under Platform gets more.")).toBeVisible();
-		await expect(under.getByText("5 accounts under Platform will stop working.")).toBeVisible();
+		await expect(under.getByText("3 change: they lose some and gain some.")).toBeVisible();
+		await expect(under.getByText(/get more/)).toHaveCount(0);
 		await expect(under.getByRole("list", { name: "Will stop working" }).getByRole("listitem")).toHaveText([
-			/^Account\s*acct-lane$/,
-			/^Account\s*one you can't see$/,
+			/^Project\s*Search$/,
+			/^Team\s*Platform$/,
 			"and 3 more",
+			"and 1 you can't see",
 		]);
 		const confirm = page.getByRole("checkbox", { name: "I understand these will stop working." });
 		const add = page.getByRole("button", { name: "Add limit" });
@@ -876,7 +925,7 @@ test.describe("Add a limit in one request", () => {
 
 	test("accounts under the team that keep working need no confirm", async ({ page }) => {
 		await mockLimitApi(page, {
-			pseudo: { under: { lanes: 3, narrowed: 3, widened: 0, unreachable: null } },
+			pseudo: { under: { lanes: 3, narrowed: 3, widened: 0, changed: 0, unreachable: null } },
 		});
 		await page.goto(`/limits/add?targetKind=team&id=${TEAM}`);
 		await fillCap(page, "5");
@@ -898,7 +947,8 @@ test.describe("Add a limit in one request", () => {
 					lanes: 2,
 					narrowed: 1,
 					widened: 0,
-					unreachable: [{ kind: "account", id: "acct-lane", name: "acct-lane" }],
+					changed: 0,
+					unreachable: [{ kind: "service-account", id: "sa-1", name: "Indexer" }],
 				},
 				refuseOnce: {
 					status: 422,

@@ -3,6 +3,7 @@ import { PseudoRefusal, type PseudoRefusalBody } from "@/api/types/errors";
 import {
 	BUSY_MESSAGE,
 	CONFLICT_MESSAGE,
+	isBusy,
 	isPolicySetAbove,
 	parseRefusal,
 	sameAnswers,
@@ -89,6 +90,14 @@ describe("parseRefusal", () => {
 				FIELDS,
 			),
 		).toEqual({ kind: "field", field: "ids", message: "relay says no" });
+	});
+});
+
+describe("isBusy", () => {
+	it("is relay's 503 and nothing else", () => {
+		expect(isBusy(refused(503, {}))).toBe(true);
+		expect(isBusy(refused(409, {}, "conflict"))).toBe(false);
+		expect(isBusy(new Error("offline"))).toBe(false);
 	});
 });
 

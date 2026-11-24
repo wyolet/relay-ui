@@ -917,13 +917,15 @@ test.describe("Set access in one request", () => {
 		page,
 	}) => {
 		const under = {
-			lanes: 4,
+			lanes: 7,
 			narrowed: 2,
 			widened: 1,
+			changed: 1,
 			unreachable: [
-				{ kind: "account", id: "acct-lane", name: "sa-ci-bot" },
-				{ kind: "account", id: "acct-hidden" },
+				{ kind: "service-account", id: "sa-ci-bot", name: "CI bot" },
+				{ kind: "user", id: "u-dana", name: "dana" },
 			],
+			unreachableHidden: 2,
 		};
 		const sent = await mockAccessApi(page, {
 			usablePools: [ollamaPool],
@@ -938,11 +940,12 @@ test.describe("Set access in one request", () => {
 
 		const block = page.getByRole("region", { name: "Accounts under Platform" });
 		await expect(block.getByText("2 accounts under Platform get less.")).toBeVisible();
-		await expect(block.getByText("1 account under Platform gets more.")).toBeVisible();
-		await expect(block.getByText("2 accounts under Platform will stop working.")).toBeVisible();
+		await expect(block.getByText("1 gets more.")).toBeVisible();
+		await expect(block.getByText("1 changes: it loses some and gains some.")).toBeVisible();
 		await expect(block.getByRole("list", { name: "Will stop working" }).getByRole("listitem")).toHaveText([
-			/^Account\s*sa-ci-bot$/,
-			/^Account\s*one you can't see$/,
+			/^Service account\s*CI bot$/,
+			/^User\s*dana$/,
+			"and 2 you can't see",
 		]);
 		const confirm = page.getByRole("checkbox", { name: "I understand these will stop working." });
 		const save = page.getByRole("button", { name: "Save access" });
@@ -977,7 +980,7 @@ test.describe("Set access in one request", () => {
 					answer({
 						case: "none",
 						created: MADE_POLICY,
-						under: { lanes: 3, narrowed: 0, widened: 3, unreachable: null },
+						under: { lanes: 3, narrowed: 0, widened: 3, changed: 0, unreachable: null },
 					}),
 				],
 			},
@@ -988,6 +991,52 @@ test.describe("Set access in one request", () => {
 		await expect(block.getByText("3 accounts under Platform get more.")).toBeVisible();
 		await expect(page.getByRole("checkbox")).toHaveCount(0);
 		await expect(page.getByRole("button", { name: "Save access" })).toBeEnabled();
+	});
+
+	test("a busy check asks to retry: Save after a busy dry run asks again, a busy save keeps Save open", async ({
+		page,
+	}) => {
+		const busy = refusal(503, { type: "server_error", message: "the reach check ran out of time" });
+		const under = {
+			lanes: 2,
+			narrowed: 1,
+			widened: 0,
+			changed: 0,
+			unreachable: [],
+			unreachableHidden: 1,
+		};
+		const sent = await mockAccessApi(page, {
+			usablePools: [ollamaPool],
+			oneRequest: {
+				opening: NONE_OPENING,
+				dryRuns: [busy, answer({ case: "none", created: MADE_POLICY, under })],
+				saves: [busy, NONE_SAVED],
+			},
+		});
+		await page.goto(SET_ACCESS);
+		await pickOllamaAndGemma(page);
+		const save = page.getByRole("button", { name: "Save access" });
+		await expect(page.getByRole("alert")).toHaveText("Relay is busy. Try again in a moment.");
+		await expect(save).toBeEnabled();
+
+		await save.click();
+		const block = page.getByRole("region", { name: "Accounts under Platform" });
+		await expect(block.getByRole("list", { name: "Will stop working" })).toHaveText("1 you can't see");
+		await expect(save).toBeDisabled();
+		await page.getByRole("checkbox", { name: "I understand these will stop working." }).click();
+		await save.click();
+		await expect(page.getByRole("alert")).toHaveText("Relay is busy. Try again in a moment.");
+		await expect(save).toBeEnabled();
+
+		await save.click();
+		await expect(page.getByText("Access saved")).toBeVisible();
+		expect(paths(sent)).toEqual([
+			"pseudo-access?opening",
+			"pseudo-access?dryRun",
+			"pseudo-access?dryRun",
+			"pseudo-access",
+			"pseudo-access",
+		]);
 	});
 
 	test("other accounts changed: relay's message on the review step, no field marked, no confirm offered", async ({

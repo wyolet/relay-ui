@@ -7,7 +7,7 @@ import {
 	type PseudoAnswer,
 } from "@/pseudo/dryRun";
 import type { FieldIssue, PointerFields } from "@/pseudo/pointerField";
-import { parseRefusal, type Refusal } from "@/pseudo/refusal";
+import { isBusy, parseRefusal, type Refusal } from "@/pseudo/refusal";
 import type { StepFormWrites } from "@/shared/StepForm";
 
 /** A refusal with the form answers `at` the refused request was built from. */
@@ -142,6 +142,8 @@ export function usePseudoRun<
 		previewLoading: shown === null && (waiting || dryRun.isPending),
 		/** A list is shown, but answers changed since it was asked. */
 		previewStale: shown !== null && (waiting || dryRun.isPending),
+		/** The last dry run answered 503, so there is no list to save from yet. */
+		previewBusy: refused?.fromDryRun === true && isBusy(refused.error),
 		preview(body: Body, at: At) {
 			setRefused(null);
 			preview({ body, at });

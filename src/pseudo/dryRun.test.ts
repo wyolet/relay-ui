@@ -34,6 +34,9 @@ describe("rowKindLabel", () => {
 		expect(
 			[
 				"service-account",
+				"user",
+				"project",
+				"team",
 				"account",
 				"share",
 				"pool",
@@ -46,6 +49,9 @@ describe("rowKindLabel", () => {
 			].map(rowKindLabel),
 		).toEqual([
 			"Service account",
+			"User",
+			"Project",
+			"Team",
 			"Account",
 			"Share",
 			"Pool",
@@ -59,7 +65,7 @@ describe("rowKindLabel", () => {
 	});
 
 	it("keeps a kind it doesn't know as relay sent it", () => {
-		expect(rowKindLabel("team")).toBe("team");
+		expect(rowKindLabel("role-binding")).toBe("role-binding");
 	});
 });
 

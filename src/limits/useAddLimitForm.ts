@@ -177,6 +177,11 @@ export function useAddLimitForm({ target, accountId, policyCase }: LimitStart) {
 	}
 
 	function addLimit() {
+		// Without a dry run on screen a save could skip the stop confirm: ask again first.
+		if (oneRequest && pseudo.previewBusy) {
+			pseudo.preview(body(), values);
+			return;
+		}
 		if (oneRequest) {
 			void pseudo.submit(body(), values).then((refusal) => {
 				if (refusal?.kind === "field") open("limit");

@@ -39,6 +39,9 @@ export function plannedGroups(lists: PlannedRowLists): PlannedGroup[] {
 
 const ROW_KIND_LABELS: Record<string, string> = {
 	"service-account": "Service account",
+	user: "User",
+	project: "Project",
+	team: "Team",
 	account: "Account",
 	share: "Share",
 	pool: "Pool",

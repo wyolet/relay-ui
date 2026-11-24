@@ -29,7 +29,7 @@ export function parseRefusal<F extends string>(
 	if (!(err instanceof PseudoRefusal)) {
 		return { kind: "general", message: failureMessage(err) };
 	}
-	if (err.status === 503) return { kind: "general", message: BUSY_MESSAGE };
+	if (isBusy(err)) return { kind: "general", message: BUSY_MESSAGE };
 	if (err.status === 409 && err.body.code === "conflict") {
 		return { kind: "general", message: CONFLICT_MESSAGE };
 	}
@@ -45,6 +45,11 @@ export function parseRefusal<F extends string>(
 	return err.account
 		? { kind: "field", field, message, account: err.account }
 		: { kind: "field", field, message };
+}
+
+/** relay's 503: nothing was written and the same request may pass in a moment. */
+export function isBusy(err: unknown): boolean {
+	return err instanceof PseudoRefusal && err.status === 503;
 }
 
 /** relay's 403 for a target whose policy a scope above the caller holds, which the caller may not see or change. */
