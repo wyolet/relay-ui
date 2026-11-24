@@ -856,12 +856,12 @@ test.describe("Add agent owned by a team or a user", () => {
 		await nameAgent(page);
 		await page.getByRole("button", { name: "Next" }).click();
 		await page.getByRole("button", { name: "Next" }).click();
-		await expect(page.getByText("Personal accounts are off on this relay.")).toBeVisible();
+		await expect(page.getByText("Your personal account is turned off.")).toBeVisible();
 
 		await page.getByRole("button", { name: "Create agent" }).click();
 		const personal = page.getByRole("group", { name: "Owner" }).getByRole("button", { name: /^Personal/ });
 		await expect(personal).toHaveAttribute("aria-disabled", "true");
-		await expect(personal).toContainText("Personal accounts are off on this relay.");
+		await expect(personal).toContainText("Your personal account is turned off.");
 		await expect(page.getByText("Pick another owner for the agent.")).toBeVisible();
 		await page.getByRole("button", { name: "Next" }).click();
 		await expect(page.getByPlaceholder("Support triage agent")).toBeVisible();
@@ -888,7 +888,7 @@ test.describe("Add agent owned by a team or a user", () => {
 		const owner = page.getByRole("group", { name: "Owner" });
 		const personal = owner.getByRole("button", { name: /^Personal/ });
 		await expect(personal).toHaveAttribute("aria-disabled", "true");
-		await expect(personal).toContainText("Personal accounts are off on this relay.");
+		await expect(personal).toContainText("Your personal account is turned off.");
 		await expect(owner.getByRole("button", { name: /^Project/, pressed: true })).toBeVisible();
 		await expect(owner.getByRole("button", { name: /^Team/ })).not.toHaveAttribute(
 			"aria-disabled",

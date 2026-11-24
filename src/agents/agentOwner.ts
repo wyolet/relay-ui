@@ -14,7 +14,7 @@ export type AgentOwnerPick = OwnerPick<AgentOwnerKind>;
 export type AgentScope = ServiceAccountScope;
 
 const NOT_PLACEABLE = "Relay places agents in projects only.";
-export const PERSONAL_OFF = "Personal accounts are off on this relay.";
+export const PERSONAL_OFF = "Your personal account is turned off.";
 
 /** What the owner cards can't offer now: kinds relay doesn't take, and Personal while it is off. */
 export interface OwnerLimits {
