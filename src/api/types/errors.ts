@@ -52,7 +52,7 @@ export class PseudoRefusal extends ApiError {
 		status: number,
 		body: PseudoRefusalBody | PseudoOrganizationRefusalBody,
 	) {
-		super(status, body.error);
+		super(status, body.error, "blockers" in body ? body.blockers : null);
 		this.name = "PseudoRefusal";
 		this.pointer = body.pointer ?? "";
 		this.issues = "issues" in body ? (body.issues ?? []) : [];
