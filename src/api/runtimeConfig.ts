@@ -104,6 +104,11 @@ export function feature(key: string): boolean {
 	return loaded.features?.[key] ?? devFeatures.includes(key);
 }
 
+/** Whether relay serves `POST /pseudo-<kind>`, the one-request form of a kind; absent = off. */
+export function pseudoKind(kind: string): boolean {
+	return loaded.pseudoKinds?.includes(kind) ?? false;
+}
+
 /** The whole config object — escape hatch for less-common fields. */
 export function runtimeConfig(): Readonly<RuntimeConfig> {
 	return loaded;
