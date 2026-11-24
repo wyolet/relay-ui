@@ -453,6 +453,8 @@ export function useAddAgentForm(start?: Partial<AddAgentValues>) {
 		accountsLoaded: accountsCurrent && usable.loaded,
 		toggleAccount: (id: string) => toggle("accountIds", id),
 		pools,
+		keylessHostsWithoutPool:
+			poolsCurrent && keylessHosts.size > 0 && pools.length === 0,
 		togglePool: (id: string) => toggle("poolIds", id),
 		reach,
 		policyOptions,

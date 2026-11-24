@@ -101,13 +101,20 @@ export function AccessStep({ agent }: { agent: AddAgentForm }) {
 					onToggleAccount={agent.toggleAccount}
 					accountsError={errors.accountIds}
 					keylessPools={
-						agent.pools.length > 0 && (
+						agent.pools.length > 0 ? (
 							<KeylessPoolList
 								pools={agent.pools}
 								selected={values.poolIds}
 								onToggle={agent.togglePool}
 								error={errors.poolIds}
 							/>
+						) : (
+							agent.keylessHostsWithoutPool && (
+								<p className="text-[11px] text-muted-foreground">
+									Hosts that take no key are reached through a pool, and none is
+									available here. Ask an admin to share one.
+								</p>
+							)
 						)
 					}
 					models={values.models}
