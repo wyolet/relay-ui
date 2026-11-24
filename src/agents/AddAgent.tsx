@@ -2,13 +2,13 @@ import { AccessStep } from "@/agents/AccessStep";
 import { AgentStep } from "@/agents/AgentStep";
 import { CreatedStep } from "@/agents/CreatedStep";
 import { KeyStep } from "@/agents/KeyStep";
-import { RefusedIssues } from "@/agents/RefusedIssues";
 import {
 	type AddAgentValues,
 	AGENT_FORM_STEPS,
 	type AgentFormStep,
 	useAddAgentForm,
 } from "@/agents/useAddAgentForm";
+import { RefusedIssues } from "@/shared/RefusedIssues";
 import { StepForm } from "@/shared/StepForm";
 
 const STEP_LABELS: Record<AgentFormStep, string> = {

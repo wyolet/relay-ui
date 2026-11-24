@@ -16,11 +16,7 @@ import {
 	initialOwnerPick,
 	ownerKindPlaceable,
 } from "@/agents/agentOwner";
-import type {
-	AgentRefusal,
-	RefusalField,
-	RefusalIssue,
-} from "@/agents/agentRefusal";
+import type { AgentRefusal, RefusalField } from "@/agents/agentRefusal";
 import {
 	type AgentAccess,
 	type AgentAnswers,
@@ -36,7 +32,6 @@ import { accountListQuery, useUsableAccounts } from "@/api/hooks/accounts";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
 import { useUsablePolicies } from "@/api/hooks/policies";
 import { useUsablePools } from "@/api/hooks/pools";
-import { pseudoKind } from "@/api/runtimeConfig";
 import { stepFieldErrors, useFormSteps } from "@/hooks/useFormSteps";
 import { useWorkContext } from "@/hooks/useWorkContext";
 import { applyOwnerPick, pickedScope, scopeUsableBy } from "@/lib/ownerPick";
@@ -45,6 +40,7 @@ import { scopeOptions } from "@/lib/workContext";
 import type { PickerReach } from "@/models/narrowPickerIndex";
 import { usePickerCatalog } from "@/models/usePickerCatalog";
 import { bindingPolicyOptions } from "@/policy-bindings/accountLookup";
+import type { FieldIssue } from "@/pseudo/pointerField";
 
 export const AGENT_FORM_STEPS = ["agent", "access", "key"] as const;
 export type AgentFormStep = (typeof AGENT_FORM_STEPS)[number];
@@ -100,13 +96,6 @@ const REFUSAL_INPUTS: Record<RefusalField, readonly (keyof AddAgentValues)[]> =
 		],
 	};
 
-interface Refused {
-	refusal: AgentRefusal;
-	/** The answers the refused request was built from. */
-	at: AddAgentValues;
-	fromDryRun: boolean;
-}
-
 const schema = z
 	.object({
 		displayName: z
@@ -151,7 +140,7 @@ function snippetModels(
 }
 
 /** An issue on a row that exists already belongs to the access step: what the agent may use is what changes the plans. */
-function issueField(issue: RefusalIssue): RefusalField {
+function issueField(issue: FieldIssue<RefusalField>): RefusalField {
 	return issue.field ?? "access";
 }
 
@@ -194,10 +183,9 @@ function sameAnswers(
 export function useAddAgentForm(start?: Partial<AddAgentValues>) {
 	const { userId } = useAuth();
 	const { contexts, current } = useWorkContext();
-	const oneRequest = pseudoKind("agents");
 	const writes = useAgentWrites();
-	const pseudo = usePseudoAgentRun();
-	const [refused, setRefused] = useState<Refused | null>(null);
+	const pseudo = usePseudoAgentRun<AddAgentValues>();
+	const { oneRequest, refused } = pseudo;
 
 	const [initial] = useState<AddAgentValues>(() => ({
 		displayName: "",
@@ -346,24 +334,10 @@ export function useAddAgentForm(start?: Partial<AddAgentValues>) {
 	const generalMessage =
 		refused?.refusal.kind === "general" ? refused.refusal.message : undefined;
 
-	function refuse(
-		refusal: AgentRefusal,
-		at: AddAgentValues,
-		fromDryRun: boolean,
-	) {
-		setRefused({ refusal, at, fromDryRun });
-		const step = fromDryRun ? undefined : refusalStep(refusal);
-		if (step) open(step);
-	}
-
 	function previewAgent(entered: AgentFormStep) {
 		if (!oneRequest || entered !== "key" || !settings) return;
 		if (Object.keys(answersErrors).length > 0) return;
-		const at = values;
-		setRefused(null);
-		pseudo.preview(pseudoAgentBody(settings, answers), (r) =>
-			refuse(r, at, true),
-		);
+		pseudo.preview(pseudoAgentBody(settings, answers), values);
 	}
 
 	function createAgent() {
@@ -372,11 +346,12 @@ export function useAddAgentForm(start?: Partial<AddAgentValues>) {
 			void writes.start(settings, planned);
 			return;
 		}
-		const at = values;
-		setRefused(null);
-		void pseudo.submit(pseudoAgentBody(settings, answers), (r) =>
-			refuse(r, at, false),
-		);
+		void pseudo
+			.submit(pseudoAgentBody(settings, answers), values)
+			.then((refusal) => {
+				const step = refusal && refusalStep(refusal);
+				if (step) open(step);
+			});
 	}
 	const { step, stepIndex, lastStep, errors, next, back, open } = useFormSteps({
 		steps: AGENT_FORM_STEPS,
@@ -409,13 +384,12 @@ export function useAddAgentForm(start?: Partial<AddAgentValues>) {
 		}
 		if (!oneRequest || step !== "key" || !settings) return;
 		if (Object.keys(errorsFor(next)).length > 0) return;
-		setRefused(null);
 		pseudo.previewSoon(
 			pseudoAgentBody(
 				{ ...settings, key: keySettings(next, displayName) },
 				answers,
 			),
-			(r) => refuse(r, next, true),
+			next,
 		);
 	}
 

@@ -1,6 +1,6 @@
 import { AlertBanner } from "@/shared/AlertBanner";
 
-/** The plan issues relay would refuse the agent for. */
+/** The plan issues relay would refuse a one-request write for. */
 export function RefusedIssues({
 	messages,
 }: {

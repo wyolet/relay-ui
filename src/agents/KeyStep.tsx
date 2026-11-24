@@ -1,12 +1,12 @@
 import { ListChecks, Tag } from "lucide-react";
 import { useId } from "react";
-import { PlannedRows } from "@/agents/PlannedRows";
-import { RefusedIssues } from "@/agents/RefusedIssues";
 import type { useAddAgentForm } from "@/agents/useAddAgentForm";
 import { Input } from "@/components/ui/input";
 import { KeySettingsSections } from "@/keys/KeySettingsSections";
 import { FieldError } from "@/shared/FieldError";
 import { FormSection } from "@/shared/FormSection";
+import { PlannedRows } from "@/shared/PlannedRows";
+import { RefusedIssues } from "@/shared/RefusedIssues";
 import { WriteList } from "@/shared/WriteList";
 
 type AddAgentForm = ReturnType<typeof useAddAgentForm>;
@@ -64,6 +64,7 @@ export function KeyStep({ agent }: { agent: AddAgentForm }) {
 						)}
 						<PlannedRows
 							rows={agent.previewRows}
+							label="What Create agent makes"
 							loading={agent.previewLoading}
 							stale={agent.previewStale}
 						/>
