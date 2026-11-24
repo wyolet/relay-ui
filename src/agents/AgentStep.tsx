@@ -1,6 +1,8 @@
 import { Users } from "lucide-react";
+import { useId } from "react";
 import type { AgentOwnerKind } from "@/agents/agentOwner";
 import type { useAddAgentForm } from "@/agents/useAddAgentForm";
+import { FieldError } from "@/shared/FieldError";
 import { FormSection } from "@/shared/FormSection";
 import { IdentitySection } from "@/shared/IdentitySection";
 import { OwnerCards } from "@/shared/OwnerCards";
@@ -13,10 +15,9 @@ const OWNER_DESCRIPTIONS: Record<AgentOwnerKind, string> = {
 	project: "Belongs to one project, under its team's limits.",
 };
 
-const NOT_PLACEABLE = "Relay places agents in projects only.";
-
 export function AgentStep({ agent }: { agent: AddAgentForm }) {
 	const { form, values, errors } = agent;
+	const ownerErrorId = useId();
 	return (
 		<div className="divide-y divide-border">
 			<IdentitySection
@@ -37,10 +38,10 @@ export function AgentStep({ agent }: { agent: AddAgentForm }) {
 				description="Who the agent belongs to. Its accounts, policy and spend sit there."
 			>
 				<OwnerCards
-					kinds={agent.ownerKinds.map(({ kind, placeable }) => ({
+					kinds={agent.ownerKinds.map(({ kind, unavailable }) => ({
 						kind,
 						description: OWNER_DESCRIPTIONS[kind],
-						...(placeable ? {} : { unavailable: NOT_PLACEABLE }),
+						...(unavailable ? { unavailable } : {}),
 					}))}
 					pick={values}
 					onPick={agent.chooseOwner}
@@ -49,6 +50,7 @@ export function AgentStep({ agent }: { agent: AddAgentForm }) {
 					teamError={errors.teamId}
 					projectError={errors.projectId}
 				/>
+				<FieldError id={ownerErrorId} message={errors.owner} />
 			</FormSection>
 		</div>
 	);

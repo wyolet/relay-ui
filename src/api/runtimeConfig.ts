@@ -109,6 +109,12 @@ export function pseudoKind(kind: string): boolean {
 	return loaded.pseudoKinds?.includes(kind) ?? false;
 }
 
+/** The `metadata.owner` kinds relay takes for a new service account; a relay that lists none takes projects only. */
+export function serviceAccountOwnerKinds(): readonly string[] {
+	const kinds = loaded.serviceAccountOwnerKinds ?? [];
+	return kinds.length > 0 ? kinds : ["project"];
+}
+
 /** The whole config object — escape hatch for less-common fields. */
 export function runtimeConfig(): Readonly<RuntimeConfig> {
 	return loaded;

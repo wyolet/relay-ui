@@ -3,8 +3,10 @@ import type { AgentAccount } from "@/agents/agentAccounts";
 import {
 	type AgentAnswers,
 	accessErrors,
+	agentServiceAccountBody,
 	agentWrites,
 } from "@/agents/agentWrites";
+import type { AgentSettings } from "@/agents/useAgentWrites";
 
 const anthropic: AgentAccount = {
 	id: "a1",
@@ -129,6 +131,42 @@ describe("accessErrors", () => {
 		});
 		expect(accessErrors(policy(""), [""])).toEqual({
 			policyId: "Pick a policy.",
+		});
+	});
+});
+
+describe("agentServiceAccountBody", () => {
+	const named = { name: "bot-ab12", displayName: "Bot", description: "" };
+
+	it("restates a project owner as spec.projectId", () => {
+		expect(
+			agentServiceAccountBody({
+				...named,
+				scope: { kind: "project", id: "p1" },
+			}),
+		).toEqual({
+			metadata: {
+				...named,
+				labels: { "sa-type": "agent" },
+				owner: { kind: "project", id: "p1" },
+			},
+			spec: { projectId: "p1", enabled: true },
+		});
+	});
+
+	it("names a team or the user as owner with no project", () => {
+		const body = (scope: AgentSettings["scope"]) =>
+			agentServiceAccountBody({ ...named, scope });
+		expect(body({ kind: "team", id: "t1" })).toMatchObject({
+			metadata: { owner: { kind: "team", id: "t1" } },
+			spec: { enabled: true },
+		});
+		expect(body({ kind: "personal", id: "u1" }).metadata.owner).toEqual({
+			kind: "user",
+			id: "u1",
+		});
+		expect(body({ kind: "personal", id: "u1" }).spec).toEqual({
+			enabled: true,
 		});
 	});
 });

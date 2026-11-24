@@ -10,8 +10,8 @@ describe("agent pointer fields", () => {
 	it("maps each part of the body to the field that holds it", () => {
 		expect(field("/metadata")).toBe("displayName");
 		expect(field("/metadata/name")).toBe("displayName");
-		expect(field("/metadata/owner")).toBe("projectId");
-		expect(field("/metadata/owner/id")).toBe("projectId");
+		expect(field("/metadata/owner")).toBe("owner");
+		expect(field("/metadata/owner/id")).toBe("owner");
 		expect(field("/spec/access/accountIds/0")).toBe("accountIds");
 		expect(field("/spec/access/accountIds")).toBe("accountIds");
 		expect(field("/spec/access/poolIds/2")).toBe("poolIds");

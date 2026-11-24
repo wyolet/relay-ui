@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
-import { type AgentScope, scopeReceiver } from "@/agents/agentOwner";
-import type { AgentWrite } from "@/agents/agentWrites";
+import type { AgentScope } from "@/agents/agentOwner";
+import { type AgentWrite, agentServiceAccountBody } from "@/agents/agentWrites";
 import {
 	type AccessProgress,
 	emptyAccessProgress,
@@ -12,9 +12,10 @@ import { useSetAccountPolicy } from "@/api/hooks/policyBindings";
 import { useCreateServiceAccount } from "@/api/hooks/serviceAccounts";
 import { useWriteRunner } from "@/hooks/useWriteRunner";
 import { expiryPatch } from "@/keys/useKeyForm";
-import { agentLabels, agentRowLabels } from "@/lib/agentLabel";
-import { scopeOwner } from "@/lib/ownerPick";
+import { agentRowLabels } from "@/lib/agentLabel";
+import { isPersonalAccountOff } from "@/lib/personalAccount";
 import { required } from "@/lib/required";
+import { serviceAccountScopeOwner } from "@/lib/serviceAccountScope";
 import { slugWithSuffix } from "@/lib/slug";
 
 export interface AgentSettings {
@@ -22,7 +23,6 @@ export interface AgentSettings {
 	name: string;
 	displayName: string;
 	description: string;
-	projectId: string;
 	scope: AgentScope;
 	key: {
 		displayName: string;
@@ -59,23 +59,20 @@ export function useAgentWrites() {
 	const settingsRef = useRef<AgentSettings | null>(null);
 	const progress = useRef<Progress>(emptyAccessProgress());
 	const [created, setCreated] = useState<CreatedAgent | null>(null);
+	const [personalOffRefused, setPersonalOffRefused] = useState(false);
 
 	async function runWrite(write: AgentWrite): Promise<void> {
 		const settings = required(settingsRef.current ?? undefined, "agent");
 		const made = progress.current;
-		const owner = scopeOwner(settings.scope);
+		const owner = serviceAccountScopeOwner(settings.scope);
 		switch (write.kind) {
 			case "serviceAccount": {
-				const sa = await createServiceAccount.mutateAsync({
-					metadata: {
-						name: settings.name,
-						displayName: settings.displayName,
-						description: settings.description,
-						labels: agentLabels(),
-						owner: { kind: "project", id: settings.projectId },
-					},
-					spec: { projectId: settings.projectId, enabled: true },
-				});
+				const sa = await createServiceAccount
+					.mutateAsync(agentServiceAccountBody(settings))
+					.catch((err: unknown) => {
+						if (isPersonalAccountOff(err)) setPersonalOffRefused(true);
+						throw err;
+					});
 				made.serviceAccountId = sa.metadata.id;
 				made.serviceAccountName = sa.metadata.name;
 				return;
@@ -90,7 +87,7 @@ export function useAgentWrites() {
 			case "share":
 			case "pool": {
 				await access.runAccessWrite(write, made, {
-					receiver: scopeReceiver(settings.scope),
+					receiver: owner,
 					owner,
 					labels: agentRowLabels(
 						required(made.serviceAccountId, "service account"),
@@ -103,7 +100,7 @@ export function useAgentWrites() {
 					metadata: {
 						name: slugWithSuffix(write.displayName),
 						displayName: write.displayName,
-						...(owner ? { owner } : {}),
+						owner,
 						labels: agentRowLabels(
 							required(made.serviceAccountId, "service account"),
 						),
@@ -164,6 +161,8 @@ export function useAgentWrites() {
 		steps: runner.steps,
 		doneCount: runner.doneCount,
 		created,
+		/** Relay refused a personal agent: the caller's personal accounts are off. */
+		personalOffRefused,
 		retry: runner.retry,
 		reset() {
 			setCreated(null);

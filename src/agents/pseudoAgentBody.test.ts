@@ -2,12 +2,13 @@ import { describe, expect, it } from "bun:test";
 import type { AgentAccount } from "@/agents/agentAccounts";
 import type { AgentAnswers } from "@/agents/agentWrites";
 import { createdAgent, pseudoAgentBody } from "@/agents/pseudoAgentBody";
+import type { AgentSettings } from "@/agents/useAgentWrites";
 
-const settings = {
+const settings: AgentSettings = {
 	name: "indexer-ab12",
 	displayName: "Indexer",
 	description: "Reads the docs",
-	projectId: "proj-1",
+	scope: { kind: "project", id: "proj-1" },
 	key: {
 		displayName: "Indexer key",
 		expiresAt: "",
@@ -41,6 +42,19 @@ describe("pseudoAgentBody", () => {
 			description: "Reads the docs",
 			labels: { "sa-type": "agent" },
 			owner: { kind: "project", id: "proj-1" },
+		});
+	});
+
+	it("names a team owner, and the user for a personal agent", () => {
+		const owner = (scope: AgentSettings["scope"]) =>
+			pseudoAgentBody({ ...settings, scope }, answers({})).metadata.owner;
+		expect(owner({ kind: "team", id: "team-1" })).toEqual({
+			kind: "team",
+			id: "team-1",
+		});
+		expect(owner({ kind: "personal", id: "user-1" })).toEqual({
+			kind: "user",
+			id: "user-1",
 		});
 	});
 

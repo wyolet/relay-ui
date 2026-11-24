@@ -14,8 +14,10 @@ import {
 	type AgentOwnerKind,
 	type AgentOwnerPick,
 	initialOwnerPick,
-	ownerKindPlaceable,
+	ownerUnavailable,
+	PERSONAL_OFF,
 } from "@/agents/agentOwner";
+import { agentOwnerLimits } from "@/agents/agentOwnerLimits";
 import type { AgentRefusal, RefusalField } from "@/agents/agentRefusal";
 import {
 	type AgentAccess,
@@ -35,6 +37,7 @@ import { useUsablePools } from "@/api/hooks/pools";
 import { stepFieldErrors, useFormSteps } from "@/hooks/useFormSteps";
 import { useWorkContext } from "@/hooks/useWorkContext";
 import { applyOwnerPick, pickedScope, scopeUsableBy } from "@/lib/ownerPick";
+import { isPersonalAccountOff } from "@/lib/personalAccount";
 import { randomSuffix, slugify } from "@/lib/slug";
 import { scopeOptions } from "@/lib/workContext";
 import type { PickerReach } from "@/models/narrowPickerIndex";
@@ -71,6 +74,7 @@ const FIELD_STEP = {
 	description: "agent",
 	teamId: "agent",
 	projectId: "agent",
+	owner: "agent",
 	access: "access",
 	accountIds: "access",
 	poolIds: "access",
@@ -84,8 +88,14 @@ type CheckedField = keyof typeof FIELD_STEP;
 /** The answers a refusal or warning of a field was about; it shows until one of them changes. */
 const REFUSAL_INPUTS: Record<RefusalField, readonly (keyof AddAgentValues)[]> =
 	{
-		displayName: ["displayName", "description", "ownerKind", "projectId"],
-		projectId: ["ownerKind", "teamId", "projectId"],
+		displayName: [
+			"displayName",
+			"description",
+			"ownerKind",
+			"teamId",
+			"projectId",
+		],
+		owner: ["ownerKind", "teamId", "projectId"],
 		accountIds: ["access", "reach", "accountIds", "poolIds"],
 		poolIds: ["access", "reach", "accountIds", "poolIds"],
 		access: ["access", "reach", "accountIds", "poolIds", "models", "policyId"],
@@ -126,6 +136,8 @@ const schema = z
 			missing("teamId", "Pick the team the agent belongs to.");
 		}
 	});
+
+const OWNER_UNAVAILABLE = "Pick another owner for the agent.";
 
 const SNIPPET_MODEL_COUNT = 6;
 
@@ -175,16 +187,28 @@ function keySettings(
 }
 
 export function useAddAgentForm(start?: Partial<AddAgentValues>) {
-	const { userId } = useAuth();
+	const { userId, personalAccountEffective } = useAuth();
 	const { contexts, current } = useWorkContext();
 	const writes = useAgentWrites();
 	const pseudo = usePseudoAgentRun<AddAgentValues>();
 	const { oneRequest, refused } = pseudo;
 
+	// Once relay refuses Personal as off, it stays off for this form.
+	const personalOffRefused =
+		isPersonalAccountOff(refused?.error) || writes.personalOffRefused;
+	const [personalOffSeen, setPersonalOffSeen] = useState(false);
+	if (personalOffRefused && !personalOffSeen) setPersonalOffSeen(true);
+	const knownLimits = agentOwnerLimits(personalAccountEffective);
+	const ownerLimits = {
+		...knownLimits,
+		personalOff:
+			knownLimits.personalOff || personalOffSeen || personalOffRefused,
+	};
+
 	const [initial] = useState<AddAgentValues>(() => ({
 		displayName: "",
 		description: "",
-		...initialOwnerPick(current),
+		...initialOwnerPick(current, knownLimits),
 		access: "choose",
 		reach: "all",
 		accountIds: [],
@@ -289,23 +313,26 @@ export function useAddAgentForm(start?: Partial<AddAgentValues>) {
 		name: slug,
 		displayName,
 		description: values.description.trim(),
-		projectId: values.projectId,
 		scope,
 		key: keySettings(values, displayName),
 	};
 
+	const pickedUnavailable = ownerUnavailable(values.ownerKind, ownerLimits);
 	const errorsFor = (v: AddAgentValues) => ({
 		...stepFieldErrors(schema, v, FIELD_STEP),
 		...accessErrors(
 			answers,
 			policyOptions.map((o) => o.value),
 		),
+		...(pickedUnavailable ? { owner: OWNER_UNAVAILABLE } : {}),
 	});
 	const answersErrors = errorsFor(values);
 	const unchangedSince = (field: RefusalField, at: AddAgentValues) =>
 		sameAnswers(values, at, REFUSAL_INPUTS[field]);
+	// The Personal card says why on its own; the refusal is not a field's.
 	const refusedField: Partial<Record<RefusalField, string>> =
 		refused?.refusal.kind === "field" &&
+		!personalOffRefused &&
 		unchangedSince(refused.refusal.field, refused.at)
 			? { [refused.refusal.field]: refused.refusal.message }
 			: {};
@@ -322,9 +349,11 @@ export function useAddAgentForm(start?: Partial<AddAgentValues>) {
 		}
 	}
 	const dryRunMessage =
-		refused?.fromDryRun && refused.refusal.kind === "field"
-			? refused.refusal.message
-			: undefined;
+		refused?.fromDryRun && personalOffRefused
+			? PERSONAL_OFF
+			: refused?.fromDryRun && refused.refusal.kind === "field"
+				? refused.refusal.message
+				: undefined;
 	const generalMessage =
 		refused?.refusal.kind === "general" ? refused.refusal.message : undefined;
 	const warnedAt = pseudo.previewAt;
@@ -341,6 +370,10 @@ export function useAddAgentForm(start?: Partial<AddAgentValues>) {
 
 	function createAgent() {
 		if (!settings) return;
+		if (pickedUnavailable) {
+			open("agent");
+			return;
+		}
 		if (!oneRequest) {
 			void writes.start(settings, planned);
 			return;
@@ -411,7 +444,7 @@ export function useAddAgentForm(start?: Partial<AddAgentValues>) {
 		back,
 		ownerKinds: AGENT_OWNER_KINDS.map((kind) => ({
 			kind,
-			placeable: ownerKindPlaceable(kind),
+			unavailable: ownerUnavailable(kind, ownerLimits),
 		})),
 		teamOptions: scopeOptions(contexts, "team"),
 		projectOptions: scopeOptions(contexts, "project"),

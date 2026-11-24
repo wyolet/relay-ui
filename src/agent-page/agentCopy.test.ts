@@ -20,6 +20,7 @@ function source(patch: Partial<AgentCopySource> = {}): AgentCopySource {
 			metadata: { id: SA, name: "indexer-1234", displayName: "Indexer" },
 			spec: { projectId: "project-1" },
 		},
+		owner: { ownerKind: "project", teamId: "", projectId: "project-1" },
 		account: {
 			metadata: { id: LANE, name: LANE },
 			spec: { kind: "service", holder: { kind: "serviceaccount", id: SA } },
@@ -122,6 +123,11 @@ describe("agentCopyValues", () => {
 			models: [],
 			policyId: "",
 		});
+	});
+
+	it("starts on the owner pick it is given", () => {
+		const owner = { ownerKind: "team" as const, teamId: "t1", projectId: "" };
+		expect(agentCopyValues(source({ owner }))).toMatchObject(owner);
 	});
 
 	it("does not read another agent's policy as its own", () => {

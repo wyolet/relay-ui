@@ -5,6 +5,7 @@ import type { components } from "@/api/types.gen";
 import { expiryPatch } from "@/keys/useKeyForm";
 import { agentLabels } from "@/lib/agentLabel";
 import { required } from "@/lib/required";
+import { serviceAccountScopeOwner } from "@/lib/serviceAccountScope";
 
 type AgentAccess = components["schemas"]["AgentAccess"];
 
@@ -40,7 +41,7 @@ function access(
 
 /** The `POST /pseudo-agents` body for the form's answers. */
 export function pseudoAgentBody(
-	settings: Omit<AgentSettings, "scope">,
+	settings: AgentSettings,
 	answers: Pick<
 		AgentAnswers,
 		"access" | "reach" | "accounts" | "poolIds" | "models" | "policyId"
@@ -52,7 +53,7 @@ export function pseudoAgentBody(
 			displayName: settings.displayName,
 			description: settings.description,
 			labels: agentLabels(),
-			owner: { kind: "project", id: settings.projectId },
+			owner: serviceAccountScopeOwner(settings.scope),
 		},
 		spec: {
 			...(answers.access === "policy"

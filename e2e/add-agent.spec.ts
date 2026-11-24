@@ -155,12 +155,26 @@ interface AgentMock {
 	refuseDryRunOnce?: { status: number; json: object };
 	/** The warnings every dry run answers. */
 	dryRunWarnings?: object[];
+	/** Serves `serviceAccountOwnerKinds`. */
+	ownerKinds?: string[];
+	personalAccountEffective?: { state: "on" | "off"; source: string };
+	/** Collects the `usable_by` of every picker read. */
+	usableBy?: string[];
 }
 
 /** Answers the form's reads and writes; a dry run is recorded as `pseudo-agents?dryRun`. */
 async function mockAgentApi(
 	page: Page,
-	{ failOnce, oneRequest, refuseOnce, refuseDryRunOnce, dryRunWarnings }: AgentMock = {},
+	{
+		failOnce,
+		oneRequest,
+		refuseOnce,
+		refuseDryRunOnce,
+		dryRunWarnings,
+		ownerKinds,
+		personalAccountEffective,
+		usableBy,
+	}: AgentMock = {},
 ): Promise<Sent[]> {
 	const sent: Sent[] = [];
 	let failed = false;
@@ -171,6 +185,8 @@ async function mockAgentApi(
 		hosts,
 		policies: [projectPolicy],
 		...(oneRequest ? { pseudoKinds: ["agents"] } : {}),
+		...(ownerKinds ? { serviceAccountOwnerKinds: ownerKinds } : {}),
+		...(personalAccountEffective ? { personalAccountEffective } : {}),
 	});
 	await page.route("**/api/catalog/graph**", (route) =>
 		route.fulfill({ json: catalog }),
@@ -181,6 +197,10 @@ async function mockAgentApi(
 		const path = url.pathname.replace(/^.*?\/api\//, "");
 		const method = request.method();
 		if (method === "GET") {
+			const usable = url.searchParams.get("usable_by");
+			if (usable && (path === "accounts" || path === "pools" || path === "policies")) {
+				usableBy?.push(`${path} ${usable}`);
+			}
 			if (path === "pools" && url.searchParams.has("usable_by")) {
 				return route.fulfill({ json: { items: [keylessPool], total: 1 } });
 			}
@@ -678,5 +698,201 @@ test.describe("Add agent in one request", () => {
 		await page.getByRole("button", { name: "Create agent" }).click();
 		await expect(page.getByText("sk-wr-test-secret", { exact: true })).toBeVisible();
 		expect(submits(sent)).toHaveLength(2);
+	});
+});
+
+const ALL_OWNERS = ["project", "team", "user"];
+const ME = "test-user";
+
+/** The default workspace here is Personal, so the form starts on the Personal card. */
+async function nameAgent(page: Page) {
+	await page.goto("/service-accounts/add-agent");
+	await page.getByPlaceholder("Support triage agent").fill("Indexer");
+}
+
+async function pickTeam(page: Page) {
+	await page.getByRole("group", { name: "Owner" }).getByRole("button", { name: /^Team/ }).click();
+	await page.getByText("Pick a team…").click();
+	await page.getByRole("option", { name: "Platform" }).click();
+}
+
+test.describe("Add agent owned by a team or a user", () => {
+	test("Team and Personal stay unavailable while relay takes projects only", async ({ page }) => {
+		await mockAgentApi(page, { oneRequest: true, ownerKinds: ["project"] });
+		await page.goto("/service-accounts/add-agent");
+		const owner = page.getByRole("group", { name: "Owner" });
+		await expect(owner.getByRole("button", { name: /^Project/, pressed: true })).toBeVisible();
+		for (const kind of [/^Personal/, /^Team/]) {
+			const card = owner.getByRole("button", { name: kind });
+			await expect(card).toHaveAttribute("aria-disabled", "true");
+			await expect(card).toContainText("Relay places agents in projects only.");
+		}
+	});
+
+	test("Personal in one request names the caller as owner and reads the user's pickers", async ({
+		page,
+	}) => {
+		const usableBy: string[] = [];
+		const sent = await mockAgentApi(page, { oneRequest: true, ownerKinds: ALL_OWNERS, usableBy });
+		await nameAgent(page);
+		const owner = page.getByRole("group", { name: "Owner" });
+		await expect(owner.getByRole("button", { name: /^Personal/, pressed: true })).toBeVisible();
+		await page.getByRole("button", { name: "Next" }).click();
+		await page.getByRole("button", { name: "Next" }).click();
+		await page.getByRole("button", { name: "Create agent" }).click();
+
+		await expect(page.getByText("sk-wr-test-secret", { exact: true })).toBeVisible();
+		expect(submits(sent)[0]?.body).toEqual({
+			metadata: { ...AGENT_METADATA, owner: { kind: "user", id: ME } },
+			spec: { access: { everyCredential: true }, key: AGENT_KEY },
+		});
+		expect(new Set(usableBy)).toEqual(
+			new Set([`accounts user:${ME}`, `pools user:${ME}`, `policies user:${ME}`]),
+		);
+	});
+
+	test("Team in one request names the team as owner and reads the team's pickers", async ({
+		page,
+	}) => {
+		const usableBy: string[] = [];
+		const sent = await mockAgentApi(page, { oneRequest: true, ownerKinds: ALL_OWNERS, usableBy });
+		await nameAgent(page);
+		await pickTeam(page);
+		usableBy.length = 0;
+		await page.getByRole("button", { name: "Next" }).click();
+		await page.getByRole("switch", { name: "Use every credential in scope" }).click();
+		await page.getByRole("button", { name: /Search Anthropic/ }).click();
+		await page.getByRole("button", { name: "Next" }).click();
+		await page.getByRole("button", { name: "Create agent" }).click();
+
+		await expect(page.getByText("sk-wr-test-secret", { exact: true })).toBeVisible();
+		expect(submits(sent)[0]?.body).toEqual({
+			metadata: { ...AGENT_METADATA, owner: { kind: "team", id: TEAM } },
+			spec: {
+				access: { everyCredential: false, accountIds: ["acct-project"] },
+				key: AGENT_KEY,
+			},
+		});
+		expect(usableBy.length).toBeGreaterThan(0);
+		for (const read of usableBy) expect(read).toMatch(new RegExp(` team:${TEAM}$`));
+	});
+
+	test("Personal on the chain makes a user-owned service account with no project", async ({
+		page,
+	}) => {
+		const sent = await mockAgentApi(page, { ownerKinds: ALL_OWNERS });
+		await nameAgent(page);
+		await page.getByRole("button", { name: "Next" }).click();
+		await page.getByRole("switch", { name: "Use every credential in scope" }).click();
+		await page.getByRole("button", { name: /My Anthropic/ }).click();
+		await page.getByRole("button", { name: "Next" }).click();
+		await page.getByRole("button", { name: "Create agent" }).click();
+
+		await expect(page.getByText("sk-wr-test-secret", { exact: true })).toBeVisible();
+		expect(sent.map((s) => `${s.method} ${s.path}`)).toEqual([
+			"POST service-accounts",
+			"POST accounts/acct-mine/shares",
+			"POST pools",
+			"POST policies",
+			"PUT accounts/acct-lane/policy",
+			"POST keys",
+		]);
+		const me = { kind: "user", id: ME };
+		expect(sent[0]?.body.metadata).toMatchObject({ owner: me });
+		expect(sent[0]?.body.spec).toEqual({ enabled: true });
+		expect(sent[1]?.body).toEqual({ receiver: me });
+		expect(sent[2]?.body.metadata).toMatchObject({ owner: me });
+		expect(sent[3]?.body.metadata).toMatchObject({ owner: me });
+	});
+
+	test("Team on the chain makes the service account, share, pool and policy in the team", async ({
+		page,
+	}) => {
+		const sent = await mockAgentApi(page, { ownerKinds: ALL_OWNERS });
+		await nameAgent(page);
+		await pickTeam(page);
+		await page.getByRole("button", { name: "Next" }).click();
+		await page.getByRole("switch", { name: "Use every credential in scope" }).click();
+		await page.getByRole("button", { name: /Search Anthropic/ }).click();
+		await page.getByRole("button", { name: /My Anthropic/ }).click();
+		await page.getByRole("button", { name: "Next" }).click();
+		await page.getByRole("button", { name: "Create agent" }).click();
+
+		await expect(page.getByText("sk-wr-test-secret", { exact: true })).toBeVisible();
+		const team = { kind: "team", id: TEAM };
+		expect(sent.map((s) => s.path)).toEqual([
+			"service-accounts",
+			"accounts/acct-mine/shares",
+			"pools",
+			"policies",
+			"accounts/acct-lane/policy",
+			"keys",
+		]);
+		expect(sent[0]?.body.metadata).toMatchObject({ owner: team });
+		expect(sent[0]?.body.spec).toEqual({ enabled: true });
+		expect(sent[1]?.body).toEqual({ receiver: team });
+		expect(sent[2]?.body.metadata).toMatchObject({ owner: team });
+		expect(sent[3]?.body.metadata).toMatchObject({ owner: team });
+	});
+
+	test("personal accounts off: relay's refusal turns Personal off and keeps the form from it", async ({
+		page,
+	}) => {
+		const sent = await mockAgentApi(page, {
+			oneRequest: true,
+			ownerKinds: ALL_OWNERS,
+			refuseDryRunOnce: {
+				status: 403,
+				json: {
+					error: {
+						type: "permission_error",
+						code: "personal_account_off",
+						message: "personal accounts are off for this user",
+					},
+					pointer: "/metadata/owner",
+				},
+			},
+		});
+		await nameAgent(page);
+		await page.getByRole("button", { name: "Next" }).click();
+		await page.getByRole("button", { name: "Next" }).click();
+		await expect(page.getByText("Personal accounts are off on this relay.")).toBeVisible();
+
+		await page.getByRole("button", { name: "Create agent" }).click();
+		const personal = page.getByRole("group", { name: "Owner" }).getByRole("button", { name: /^Personal/ });
+		await expect(personal).toHaveAttribute("aria-disabled", "true");
+		await expect(personal).toContainText("Personal accounts are off on this relay.");
+		await expect(page.getByText("Pick another owner for the agent.")).toBeVisible();
+		await page.getByRole("button", { name: "Next" }).click();
+		await expect(page.getByPlaceholder("Support triage agent")).toBeVisible();
+		expect(submits(sent)).toHaveLength(0);
+
+		await pickTeam(page);
+		await expect(page.getByText("Pick another owner for the agent.")).toHaveCount(0);
+		await page.getByRole("button", { name: "Next" }).click();
+		await page.getByRole("button", { name: "Next" }).click();
+		await page.getByRole("button", { name: "Create agent" }).click();
+		await expect(page.getByText("sk-wr-test-secret", { exact: true })).toBeVisible();
+		expect(submits(sent)[0]?.body.metadata).toMatchObject({ owner: { kind: "team", id: TEAM } });
+	});
+
+	test("personal accounts off up front: Personal is unavailable and the form starts on Project", async ({
+		page,
+	}) => {
+		await mockAgentApi(page, {
+			oneRequest: true,
+			ownerKinds: ALL_OWNERS,
+			personalAccountEffective: { state: "off", source: "user" },
+		});
+		await page.goto("/service-accounts/add-agent");
+		const owner = page.getByRole("group", { name: "Owner" });
+		const personal = owner.getByRole("button", { name: /^Personal/ });
+		await expect(personal).toHaveAttribute("aria-disabled", "true");
+		await expect(personal).toContainText("Personal accounts are off on this relay.");
+		await expect(owner.getByRole("button", { name: /^Project/, pressed: true })).toBeVisible();
+		await expect(owner.getByRole("button", { name: /^Team/ })).not.toHaveAttribute(
+			"aria-disabled",
+			"true",
+		);
 	});
 });

@@ -1,3 +1,4 @@
+import type { AgentOwnerPick } from "@/agents/agentOwner";
 import type { AddAgentValues } from "@/agents/useAddAgentForm";
 import type { Account } from "@/api/hooks/accounts";
 import type { Pool } from "@/api/hooks/pools";
@@ -24,14 +25,16 @@ export type AgentCopyValues = Pick<
 
 export interface AgentCopySource {
 	serviceAccount: ServiceAccount;
+	/** The owner card and pick the copy starts on. */
+	owner: AgentOwnerPick;
 	/** The service account's own account. */
 	account: Account | undefined;
 	bindings: readonly PolicyBinding[];
 	policies: readonly Policy[];
 	pools: readonly Pool[];
-	/** The account ids the Add agent form offers in the agent's project. */
+	/** The account ids the Add agent form offers the copy's owner. */
 	offeredAccountIds: readonly string[];
-	/** The keyless-host pool ids the Add agent form offers in the agent's project. */
+	/** The keyless-host pool ids the Add agent form offers the copy's owner. */
 	offeredPoolIds: readonly string[];
 }
 
@@ -44,9 +47,7 @@ export function agentCopyValues(source: AgentCopySource): AgentCopyValues {
 	const { serviceAccount: sa } = source;
 	const base: AgentCopyValues = {
 		displayName: `${displayLabel(sa.metadata)} copy`,
-		ownerKind: "project",
-		teamId: "",
-		projectId: sa.spec.projectId ?? "",
+		...source.owner,
 		access: "choose",
 		reach: "all",
 		accountIds: [],

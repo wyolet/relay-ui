@@ -29,6 +29,10 @@ export interface MockGraph {
 	features?: Record<string, boolean>;
 	/** Runtime-config one-request kinds, such as "agents". */
 	pseudoKinds?: string[];
+	/** Runtime-config owner kinds a service account takes; absent = projects only. */
+	serviceAccountOwnerKinds?: string[];
+	/** whoami's state of the caller's own personal account. */
+	personalAccountEffective?: { state: "on" | "off"; source: string };
 	/** Relay's plan issues; `/plan-issues` applies its `about` filter. */
 	planIssues?: MockPlanIssue[];
 }
@@ -98,6 +102,8 @@ const GRAPH_COLLECTIONS: Record<
 		| "accessReview"
 		| "features"
 		| "pseudoKinds"
+		| "serviceAccountOwnerKinds"
+		| "personalAccountEffective"
 		| "planIssues"
 		| "contexts"
 	>
@@ -144,10 +150,14 @@ const NOT_FOUND = { error: { type: "invalid_request_error", message: "not found"
  * this; Playwright runs the latest matching route first.
  */
 export async function mockApi(page: Page, graph: MockGraph): Promise<void> {
-	const { features, pseudoKinds } = graph;
-	if (features || pseudoKinds) {
+	const { features, pseudoKinds, serviceAccountOwnerKinds } = graph;
+	if (features || pseudoKinds || serviceAccountOwnerKinds) {
 		await page.route("**/*config.json", (route) =>
-			fulfillJson(route, { features, pseudoKinds: pseudoKinds ?? [] }),
+			fulfillJson(route, {
+				features,
+				pseudoKinds: pseudoKinds ?? [],
+				serviceAccountOwnerKinds,
+			}),
 		);
 	}
 	await page.route("**/api/**", (route) => {
@@ -159,6 +169,7 @@ export async function mockApi(page: Page, graph: MockGraph): Promise<void> {
 				user_id: "test-user",
 				username: "test",
 				roles: graph.roles ?? [],
+				personalAccountEffective: graph.personalAccountEffective,
 			});
 		}
 		if (path === "settings/proxy-mode") {

@@ -1,5 +1,9 @@
 import { type AccessWrite, accessWrites } from "@/agents/accessWrites";
 import type { AgentAccount } from "@/agents/agentAccounts";
+import type { AgentSettings } from "@/agents/useAgentWrites";
+import type { ServiceAccount } from "@/api/types/serviceAccount";
+import { agentLabels } from "@/lib/agentLabel";
+import { serviceAccountScopeOwner } from "@/lib/serviceAccountScope";
 
 export type AgentAccess = "choose" | "policy";
 export type AgentReach = "all" | "accounts";
@@ -98,4 +102,27 @@ export function agentWrites(answers: AgentAnswers): AgentWrite[] {
 		bind(),
 		key,
 	];
+}
+
+/** The chain's `POST /service-accounts` body: the owner named, a project restated in the spec. */
+export function agentServiceAccountBody(
+	settings: Pick<
+		AgentSettings,
+		"name" | "displayName" | "description" | "scope"
+	>,
+): ServiceAccount {
+	const { scope } = settings;
+	return {
+		metadata: {
+			name: settings.name,
+			displayName: settings.displayName,
+			description: settings.description,
+			labels: agentLabels(),
+			owner: serviceAccountScopeOwner(scope),
+		},
+		spec: {
+			...(scope.kind === "project" ? { projectId: scope.id } : {}),
+			enabled: true,
+		},
+	};
 }
