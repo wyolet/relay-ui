@@ -42,6 +42,7 @@ function source(patch: Partial<AgentCopySource> = {}): AgentCopySource {
 			},
 		],
 		offeredAccountIds: ["acct-1", "acct-2"],
+		offeredPoolIds: [],
 		...patch,
 	};
 }
@@ -56,8 +57,27 @@ describe("agentCopyValues", () => {
 			access: "choose",
 			reach: "accounts",
 			accountIds: ["acct-1", "acct-2"],
+			poolIds: [],
 			models: ["anthropic/claude-sonnet"],
 			policyId: "",
+		});
+	});
+
+	it("ticks the policy's keyless-host pools the form offers", () => {
+		const keyless: Policy = {
+			...own,
+			spec: { ...own.spec, poolIds: ["pool-local", "pool-a", "pool-gone"] },
+		};
+		const values = agentCopyValues(
+			source({
+				policies: [keyless],
+				offeredPoolIds: ["pool-other", "pool-local"],
+			}),
+		);
+		expect(values).toMatchObject({
+			reach: "accounts",
+			accountIds: ["acct-1", "acct-2"],
+			poolIds: ["pool-local"],
 		});
 	});
 

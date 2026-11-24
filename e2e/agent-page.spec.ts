@@ -97,6 +97,45 @@ const pools = [
 	pool("pool-b", "Indexer spare pool", ["acct-project"]),
 	pool("pool-extra", "Indexer extra pool", ["acct-project"]),
 ];
+
+const KEYLESS_HOST = "host-local";
+const hosts = [
+	{ metadata: { id: HOST, name: "anthropic" }, spec: { baseURL: "https://anthropic.test" } },
+	{
+		metadata: { id: KEYLESS_HOST, name: "local" },
+		spec: { baseURL: "http://local.test", noAuth: true },
+	},
+];
+const localPool = {
+	metadata: { id: "pool-local", name: "pool-local", displayName: "Local pool" },
+	spec: { hostId: KEYLESS_HOST, accountIds: [] },
+};
+/** The source policy linking a keyless host's pool beside its own. */
+const keylessOwnPolicy = {
+	...ownPolicy,
+	spec: { ...ownPolicy.spec, poolIds: ["pool-a", "pool-local"] },
+};
+
+/** Relay's answer to `POST /pseudo-agents`, the plaintext unless a dry run. */
+function pseudoAnswer(dryRun: boolean) {
+	return {
+		created: [
+			{ kind: "service-account", id: NEW_AGENT, name: "indexer-copy" },
+			{ kind: "policy", id: "policy-1", name: "indexer-copy-policy" },
+			{ kind: "key", id: "key-1", name: "indexer-copy-key" },
+		],
+		serviceAccount: { id: NEW_AGENT, name: "indexer-copy" },
+		account: { id: "acct-new-lane", name: "acct-new-lane" },
+		policy: { id: "policy-1", name: "indexer-copy-policy" },
+		pools: [],
+		shares: [],
+		key: {
+			id: "key-1",
+			name: "indexer-copy-key",
+			...(dryRun ? {} : { plaintext: "sk-wr-test-secret" }),
+		},
+	};
+}
 const bindings = [
 	{
 		metadata: { id: "pb-src", name: "pb-src" },
@@ -120,14 +159,23 @@ interface FailOnce {
 	message: string;
 }
 
-/** Answers the agent page's reads and records its writes; `failOnce` names a write refused the first time. */
+interface AgentPageMock {
+	/** A write refused the first time. */
+	failOnce?: FailOnce;
+	/** Serves `pseudoKinds: ["agents"]`, a keyless host, and the source policy linking its pool. */
+	oneRequest?: boolean;
+}
+
+/** Answers the agent page's reads and records its writes; a dry run is recorded as `pseudo-agents?dryRun`. */
 async function mockAgentPage(
 	page: Page,
 	features: Record<string, boolean>,
-	failOnce?: FailOnce,
+	{ failOnce, oneRequest }: AgentPageMock = {},
 ): Promise<Sent[]> {
 	const sent: Sent[] = [];
 	let failed = false;
+	const sourcePolicy = oneRequest ? keylessOwnPolicy : ownPolicy;
+	const servedPools = oneRequest ? [...pools, localPool] : pools;
 	await mockApi(page, {
 		...EMPTY_GRAPH,
 		contexts,
@@ -135,8 +183,9 @@ async function mockAgentPage(
 		serviceAccounts: [agent, plain],
 		accounts,
 		keys,
-		policies: [ownPolicy, sharedPolicy],
+		policies: [sourcePolicy, sharedPolicy],
 		policyBindings: bindings,
+		...(oneRequest ? { pseudoKinds: ["agents"], hosts } : {}),
 	});
 	await page.route("**/api/catalog/graph**", (route) => route.fulfill({ json: catalog }));
 	await page.route("**/api/**", (route) => {
@@ -146,9 +195,11 @@ async function mockAgentPage(
 		const method = request.method();
 		if (method === "GET") {
 			if (path === "projects") return route.fulfill({ json: { items: projects, total: 1 } });
-			if (path === "pools") return route.fulfill({ json: { items: pools, total: pools.length } });
+			if (path === "pools") {
+				return route.fulfill({ json: { items: servedPools, total: servedPools.length } });
+			}
 			if (path === "policies" && url.searchParams.getAll("label").includes(LABEL)) {
-				return route.fulfill({ json: { items: [ownPolicy, sharedPolicy], total: 2 } });
+				return route.fulfill({ json: { items: [sourcePolicy, sharedPolicy], total: 2 } });
 			}
 			if (path === "keys" && url.searchParams.getAll("principal_id").includes(AGENT)) {
 				return route.fulfill({ json: { items: keys, total: keys.length } });
@@ -166,6 +217,11 @@ async function mockAgentPage(
 			});
 		}
 		const body = request.postDataJSON() ?? {};
+		if (path === "pseudo-agents") {
+			const dryRun = url.searchParams.get("dryRun") === "true";
+			sent.push({ method, path: dryRun ? "pseudo-agents?dryRun" : path, body });
+			return route.fulfill({ status: dryRun ? 200 : 201, json: pseudoAnswer(dryRun) });
+		}
 		sent.push({ method, path, body });
 		if (method === "DELETE") return route.fulfill({ status: 204 });
 		const id = `made-${sent.length}`;
@@ -285,9 +341,11 @@ test.describe("Agent page shortcuts", () => {
 
 	test("a refused delete stops the run and Retry resumes at it", async ({ page }) => {
 		const sent = await mockAgentPage(page, FLAGS, {
-			method: "DELETE",
-			path: "service-accounts/by-id/sa-src",
-			message: "service account is referenced",
+			failOnce: {
+				method: "DELETE",
+				path: "service-accounts/by-id/sa-src",
+				message: "service account is referenced",
+			},
 		});
 		const dialog = await openRemoval(page);
 		await dialog.getByRole("textbox").fill("indexer-1234");
@@ -348,6 +406,34 @@ test.describe("Agent page shortcuts", () => {
 			models: ["anthropic/claude-sonnet"],
 		});
 		expect(sent[3]?.body).toEqual({ policyId: "made-3" });
+	});
+
+	test("Add an agent like this ticks the agent's keyless pool and sends it in one request", async ({
+		page,
+	}) => {
+		const sent = await mockAgentPage(page, FLAGS, { oneRequest: true });
+		await openPage(page, "indexer-1234");
+		await actions(page).copy.click();
+
+		await expect(page.getByPlaceholder("Support triage agent")).toHaveValue("Indexer copy");
+		await page.getByRole("button", { name: "Next" }).click();
+		await expect(
+			page.getByRole("group", { name: "Pools" }).getByRole("button", { name: /Local pool/ }),
+		).toHaveAttribute("aria-pressed", "true");
+
+		await page.getByRole("button", { name: "Next" }).click();
+		await page.getByRole("button", { name: "Create agent" }).click();
+		await expect(page.getByText("sk-wr-test-secret", { exact: true })).toBeVisible();
+		const creates = sent.filter((s) => s.path === "pseudo-agents");
+		expect(creates).toHaveLength(1);
+		expect(creates[0]?.body.spec).toMatchObject({
+			access: {
+				everyCredential: false,
+				poolIds: ["pool-local"],
+				accountIds: ["acct-project"],
+				models: ["anthropic/claude-sonnet"],
+			},
+		});
 	});
 
 	test("New key opens the key form on the service account", async ({ page }) => {

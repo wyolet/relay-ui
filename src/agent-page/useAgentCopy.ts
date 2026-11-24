@@ -1,6 +1,10 @@
 import { type QueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { type AgentCopyValues, agentCopyValues } from "@/agent-page/agentCopy";
-import { agentAccounts, keylessHostIds } from "@/agents/agentAccounts";
+import {
+	agentAccounts,
+	keylessHostIds,
+	keylessPools,
+} from "@/agents/agentAccounts";
 import { useAuth } from "@/api/auth";
 import {
 	accountListQuery,
@@ -10,8 +14,9 @@ import {
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
 import { policiesListQueryOptions } from "@/api/hooks/policies";
 import { policyBindingsAllQueryOptions } from "@/api/hooks/policyBindings";
-import { poolListQueryOptions } from "@/api/hooks/pools";
+import { poolListQuery, poolListQueryOptions } from "@/api/hooks/pools";
 import { serviceAccountDetailQueryOptions } from "@/api/hooks/serviceAccounts";
+import { pseudoKind } from "@/api/runtimeConfig";
 import { scopeUsableBy } from "@/lib/ownerPick";
 import { ownAccount } from "@/policy-bindings/accountLookup";
 
@@ -24,6 +29,13 @@ function projectAccountsQuery(projectId: string) {
 		{ kind: ["provider"] },
 		"pool",
 	);
+}
+
+/** The pools a project agent may link, as the Add agent form lists them. */
+function projectPoolsQuery(projectId: string) {
+	return poolListQuery({
+		usable_by: scopeUsableBy({ kind: "project", id: projectId }),
+	});
 }
 
 /** Loads what {@link useAgentCopy} reads, so the form starts on it. */
@@ -42,6 +54,7 @@ export async function loadAgentCopy(
 		queryClient.ensureQueryData(hostsListQueryOptions),
 		queryClient.ensureQueryData(providerAccountsQuery),
 		queryClient.ensureQueryData(projectAccountsQuery(sa.spec.projectId)),
+		queryClient.ensureQueryData(projectPoolsQuery(sa.spec.projectId)),
 	]);
 }
 
@@ -58,13 +71,21 @@ export function useAgentCopy(from: string): AgentCopyValues {
 	const { data: usable } = useSuspenseQuery(
 		projectAccountsQuery(sa.spec.projectId),
 	);
+	const { data: usablePools } = useSuspenseQuery(
+		projectPoolsQuery(sa.spec.projectId),
+	);
+	const keyless = keylessHostIds(hosts.items ?? []);
 	const offered = agentAccounts(
 		usable.items ?? [],
 		providers.items ?? [],
 		userId,
 		() => "",
-		keylessHostIds(hosts.items ?? []),
+		keyless,
 	);
+	// Only the one-request path lists pools; the chain path offers none.
+	const offeredPools = pseudoKind("agents")
+		? keylessPools(usablePools.items ?? [], keyless, () => "")
+		: [];
 	return agentCopyValues({
 		serviceAccount: sa,
 		account: ownAccount(accounts.items ?? [], {
@@ -75,5 +96,6 @@ export function useAgentCopy(from: string): AgentCopyValues {
 		policies: policies.items ?? [],
 		pools: pools.items ?? [],
 		offeredAccountIds: offered.map((a) => a.id),
+		offeredPoolIds: offeredPools.map((p) => p.id),
 	});
 }
