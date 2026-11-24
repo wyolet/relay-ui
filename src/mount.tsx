@@ -7,6 +7,7 @@ import { refreshPlanIssues } from "@/api/hooks/planIssues";
 import { ApiError, isAccountDisabled } from "@/api/types/errors";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ACCOUNT_DISABLED } from "@/lib/signInError";
+import { writesNothing } from "@/pseudo/dryRunMeta";
 import { applyTheme, useThemeStore } from "@/stores/theme";
 import { getRouter } from "./router";
 
@@ -39,7 +40,9 @@ export function mountApp(): void {
 	const queryClient: QueryClient = new QueryClient({
 		// Any control write can change what relay's plan reports.
 		mutationCache: new MutationCache({
-			onSuccess: (): void => refreshPlanIssues(queryClient),
+			onSuccess: (_data, _variables, _context, mutation): void => {
+				if (!writesNothing(mutation.meta)) refreshPlanIssues(queryClient);
+			},
 		}),
 		queryCache: new QueryCache({
 			onError: (error) => {

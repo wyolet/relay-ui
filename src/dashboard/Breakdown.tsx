@@ -5,6 +5,13 @@ import { Section } from "@/shared/Section";
 import { Segmented } from "@/shared/Segmented";
 import { ShareBar } from "@/shared/ShareBar";
 import {
+	TABLE_EMPTY,
+	TABLE_FOOT,
+	TABLE_HEAD_ROW,
+	TABLE_ROW,
+	WIDE,
+} from "./tableRows";
+import {
 	BREAKDOWN_DIMENSIONS,
 	type BreakdownDimension,
 	useBreakdown,
@@ -13,7 +20,6 @@ import { useDashboardWindow } from "./useDashboardWindow";
 
 const GRID =
 	"grid grid-cols-[minmax(0,12rem)_minmax(4rem,1fr)_5rem_4.5rem] items-center gap-x-5 md:grid-cols-[minmax(0,14rem)_minmax(4rem,1fr)_5rem_4.5rem_5rem_5rem_6.5rem]";
-const WIDE = "hidden md:block";
 
 /** The period by model, host, team, project or key: one table, top rows by spend. */
 export function Breakdown() {
@@ -43,11 +49,11 @@ function BreakdownTable({ groupBy }: { groupBy: BreakdownDimension }) {
 	const { rows, more, totals } = useBreakdown(groupBy);
 	const { period, vs } = useDashboardWindow();
 	if (rows.length === 0) {
-		return <p className="text-label text-ink-2">No traffic {period}.</p>;
+		return <p className={TABLE_EMPTY}>No traffic {period}.</p>;
 	}
 	return (
 		<div className="grid">
-			<div className={`${GRID} border-b border-rule pb-2 text-meta text-ink-3`}>
+			<div className={`${GRID} ${TABLE_HEAD_ROW}`}>
 				<span>Name</span>
 				<span>Share</span>
 				<span className="text-right">Spend</span>
@@ -57,10 +63,7 @@ function BreakdownTable({ groupBy }: { groupBy: BreakdownDimension }) {
 				<span className={`${WIDE} text-right`}>{vs}</span>
 			</div>
 			{rows.map((r) => (
-				<div
-					key={r.key}
-					className={`${GRID} border-b border-rule py-2.5 text-label tabular-nums`}
-				>
+				<div key={r.key} className={`${GRID} ${TABLE_ROW}`}>
 					<span className="truncate text-foreground" title={r.label}>
 						{r.label}
 					</span>
@@ -74,7 +77,7 @@ function BreakdownTable({ groupBy }: { groupBy: BreakdownDimension }) {
 					<span className={`${WIDE} text-right text-ink-3`}>{r.change}</span>
 				</div>
 			))}
-			<div className="flex items-center justify-between pt-2.5 text-meta text-ink-3">
+			<div className={`${TABLE_FOOT} justify-between`}>
 				<Facts items={totals} />
 				<Link
 					to="/usage"

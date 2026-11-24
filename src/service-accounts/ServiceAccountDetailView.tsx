@@ -1,17 +1,18 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Bot, ChevronLeft, Link2, ShieldCheck } from "lucide-react";
 import { CheckAccessButton } from "@/access-review/CheckAccessButton";
-import { useProjects } from "@/api/hooks/projects";
 import {
 	useDeleteServiceAccount,
 	useServiceAccount,
 	useServiceAccountReferences,
 } from "@/api/hooks/serviceAccounts";
 import { displayLabel } from "@/lib/displayLabel";
+import { serviceAccountOwner } from "@/lib/serviceAccountScope";
 import { EraseBodiesButton } from "@/logs/EraseBodiesButton";
 import { AccountPolicy } from "@/policy-bindings/AccountPolicy";
 import { InheritedPolicies } from "@/policy-bindings/InheritedPolicies";
 import type { AccountRef } from "@/policy-bindings/useAccountPolicy";
+import { OwnerLink } from "@/projects/OwnerLink";
 import { useToggleServiceAccountEnabled } from "@/service-accounts/useToggleServiceAccountEnabled";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { DetailCard, DetailRow } from "@/shared/DetailCard";
@@ -20,10 +21,10 @@ import { DetailPageHeader } from "@/shared/DetailPageHeader";
 import { ReferencesList } from "@/shared/ReferencesList";
 import { StatusBadge } from "@/shared/StatusBadge";
 import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
+import { ShortcutActions } from "@/shortcuts/ShortcutActions";
 
 export function ServiceAccountDetailView({ name }: { name: string }) {
 	const { data: sa } = useServiceAccount(name);
-	const { data: projectsData } = useProjects();
 	const { data: refs } = useServiceAccountReferences(sa.metadata.id);
 	const { setEnabled, isPending: isToggling } =
 		useToggleServiceAccountEnabled();
@@ -34,9 +35,7 @@ export function ServiceAccountDetailView({ name }: { name: string }) {
 	});
 
 	const enabled = sa.spec.enabled !== false;
-	const project = (projectsData.items ?? []).find(
-		(p) => p.metadata.id === sa.spec.projectId,
-	);
+	const owner = serviceAccountOwner(sa);
 	const accountRef: AccountRef = {
 		ownerOf: { kind: "serviceaccount", id: sa.metadata.id ?? "" },
 	};
@@ -77,6 +76,15 @@ export function ServiceAccountDetailView({ name }: { name: string }) {
 						</Link>
 					)}
 				>
+					<ShortcutActions
+						target={{
+							kind: "serviceaccount",
+							id: sa.metadata.id ?? "",
+							name: sa.metadata.name,
+							label: displayLabel(sa.metadata),
+							labels: sa.metadata.labels ?? undefined,
+						}}
+					/>
 					<CheckAccessButton
 						subject={{ kind: "serviceaccount", name: sa.metadata.name }}
 						subjectLabel={displayLabel(sa.metadata)}
@@ -97,21 +105,14 @@ export function ServiceAccountDetailView({ name }: { name: string }) {
 
 			<DetailCard title="Configuration" icon={ShieldCheck}>
 				<dl className="divide-y divide-border">
-					<DetailRow label="Project">
-						{project ? (
-							<span className="text-foreground">
-								{displayLabel(project.metadata)}
-							</span>
-						) : (
-							<code className="font-mono text-[11px]">{sa.spec.projectId}</code>
-						)}
+					<DetailRow label="Owner">
+						<OwnerLink owner={owner} showUser />
 					</DetailRow>
 					<AccountPolicy
 						accountRef={accountRef}
-						attach={{
-							label: displayLabel(sa.metadata),
-							owner: { kind: "project", id: sa.spec.projectId },
-						}}
+						{...(owner
+							? { attach: { label: displayLabel(sa.metadata), owner } }
+							: {})}
 					/>
 					<InheritedPolicies accountRef={accountRef} />
 				</dl>

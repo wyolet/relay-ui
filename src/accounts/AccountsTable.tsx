@@ -60,8 +60,12 @@ export function AccountsTable() {
 				className="mb-3"
 				actions={
 					<>
-						<Link to="/host-keys/new" className={toolbarMainActionClassName}>
+						<Link to="/host-keys/byok" className={toolbarMainActionClassName}>
 							<KeyRound data-icon="inline-start" className="w-3.5 h-3.5" />
+							Bring your own key
+						</Link>
+						<Link to="/host-keys/new" className={toolbarActionClassName}>
+							<Plus data-icon="inline-start" className="w-3.5 h-3.5" />
 							Add key
 						</Link>
 						<Link to="/accounts/new" className={toolbarActionClassName}>

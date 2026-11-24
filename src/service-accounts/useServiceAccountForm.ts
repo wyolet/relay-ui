@@ -12,6 +12,7 @@ import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { useFormOwner, useWorkContext } from "@/hooks/useWorkContext";
 import { displayLabel } from "@/lib/displayLabel";
 import { shownError, zodFieldValidator } from "@/lib/formErrors";
+import { serviceAccountOwner } from "@/lib/serviceAccountScope";
 import { randomSuffix, slugify } from "@/lib/slug";
 import { scopeOptions } from "@/lib/workContext";
 import { toast } from "@/shared/Toast";
@@ -37,7 +38,7 @@ function toValues(sa: ServiceAccount): ServiceAccountFormValues {
 	return {
 		displayName: displayLabel(sa.metadata),
 		description: sa.metadata.description ?? "",
-		projectId: sa.spec.projectId,
+		projectId: sa.spec.projectId ?? "",
 		enabled: sa.spec.enabled ?? true,
 	};
 }
@@ -77,19 +78,19 @@ export function useServiceAccountForm({
 		serviceAccount?.metadata.resourceVersion,
 	);
 
-	// The edited row's project, else the project the form creates in; any
-	// other context leaves the project to pick, among a team's own when it's one.
+	// The edited row keeps its owner; a create lands in the context's project,
+	// else in one to pick, among a team's own when it's one.
 	const { contexts } = useWorkContext();
 	const { placement, context } = useFormOwner(
-		serviceAccount
-			? { owner: { kind: "project", id: serviceAccount.spec.projectId } }
-			: undefined,
+		serviceAccount ? { owner: serviceAccountOwner(serviceAccount) } : undefined,
 		false,
 	);
-	const fixedProjectId =
-		serviceAccount?.spec.projectId ||
-		(context?.kind === "project" ? context.id : "");
-	const picksProject = fixedProjectId === "";
+	const fixedProjectId = serviceAccount
+		? (serviceAccount.spec.projectId ?? "")
+		: context?.kind === "project"
+			? context.id
+			: "";
+	const picksProject = !isEdit && fixedProjectId === "";
 	const projectOptions = scopeOptions(contexts, "project").filter(
 		(o) =>
 			context?.kind !== "team" ||
@@ -119,8 +120,10 @@ export function useServiceAccountForm({
 		onSubmit: async ({ value }) => {
 			const displayName = value.displayName.trim();
 			const description = value.description.trim();
+			const projectId = fixedProjectId || value.projectId;
+			// A team or user owner has no project to restate.
 			const spec = {
-				projectId: fixedProjectId || value.projectId,
+				...(projectId ? { projectId } : {}),
 				enabled: value.enabled,
 			};
 			try {
@@ -146,8 +149,7 @@ export function useServiceAccountForm({
 							name: computeSlug(displayName),
 							displayName,
 							description,
-							// Owner is re-derived from spec.projectId server-side.
-							owner: { kind: "project", id: spec.projectId },
+							owner: { kind: "project", id: projectId },
 						},
 						spec,
 					});

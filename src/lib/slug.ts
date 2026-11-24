@@ -65,10 +65,15 @@ export function randomSuffix(digits = 6): string {
 }
 
 export function slugWithSuffix(displayName: string, digits = 6): string {
+	return slugEndingIn(displayName, randomSuffix(digits));
+}
+
+/** `displayName`'s slug ending in `-suffix`, the base cut so the whole fits {@link MAX_LEN}. */
+export function slugEndingIn(displayName: string, suffix: string): string {
 	const base = from(displayName) || "item";
-	const suffix = `-${randomSuffix(digits)}`;
-	const maxBase = MAX_LEN - suffix.length;
+	const tail = `-${suffix}`;
+	const maxBase = MAX_LEN - tail.length;
 	let trimmed = base.length > maxBase ? base.slice(0, maxBase) : base;
 	while (trimmed.endsWith("-")) trimmed = trimmed.slice(0, -1);
-	return trimmed + suffix;
+	return trimmed + tail;
 }

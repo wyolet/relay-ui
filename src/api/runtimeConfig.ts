@@ -19,7 +19,7 @@ import type { components } from "./types.gen";
  */
 export type RuntimeConfig = components["schemas"]["RuntimeConfig"];
 
-let loaded: RuntimeConfig = {};
+let loaded: RuntimeConfig = { pseudoKinds: [], serviceAccountOwnerKinds: [] };
 
 function pageOrigin(): string {
 	return typeof window !== "undefined"
@@ -94,9 +94,25 @@ export function runtimeMode(): "oss" | "cloud" {
 	return loaded.mode === "cloud" ? "cloud" : "oss";
 }
 
+// Dev-only: flags to turn on without a relay that advertises them.
+const devFeatures: readonly string[] = import.meta.env.DEV
+	? (import.meta.env.VITE_FEATURES ?? "").split(",").map((f) => f.trim())
+	: [];
+
 /** A feature flag; absent = off. */
 export function feature(key: string): boolean {
-	return loaded.features?.[key] ?? false;
+	return loaded.features?.[key] ?? devFeatures.includes(key);
+}
+
+/** Whether relay serves `POST /pseudo-<kind>`, the one-request form of a kind; absent = off. */
+export function pseudoKind(kind: string): boolean {
+	return loaded.pseudoKinds?.includes(kind) ?? false;
+}
+
+/** The `metadata.owner` kinds relay takes for a new service account; a relay that lists none takes projects only. */
+export function serviceAccountOwnerKinds(): readonly string[] {
+	const kinds = loaded.serviceAccountOwnerKinds ?? [];
+	return kinds.length > 0 ? kinds : ["project"];
 }
 
 /** The whole config object — escape hatch for less-common fields. */

@@ -1,14 +1,33 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import {
+	createFileRoute,
+	Link,
+	redirect,
+	useNavigate,
+} from "@tanstack/react-router";
 import { ChevronLeft } from "lucide-react";
 import { Suspense, useState } from "react";
+import { z } from "zod";
 import { accountListQueryOptions } from "@/api/hooks/accounts";
 import { projectsListQueryOptions } from "@/api/hooks/projects";
+import { feature } from "@/api/runtimeConfig";
 import { Button } from "@/components/ui/button";
 import { KeyForm } from "@/keys/KeyForm";
+import { SHORTCUT_FLAGS } from "@/lib/shortcutFlags";
 import { CopyableValue } from "@/shared/CopyableValue";
 import { PageLoader } from "@/shared/Spinner";
 
 export const Route = createFileRoute("/_authenticated/keys_/new")({
+	// A service account id and its owner's id, picked in advance.
+	validateSearch: z.object({
+		principal: z.string().optional(),
+		owner: z.string().optional(),
+	}),
+	beforeLoad: ({ search }) => {
+		const preset = search.principal || search.owner;
+		if (preset && !feature(SHORTCUT_FLAGS.agentKey)) {
+			throw redirect({ to: "/keys/new", search: {} });
+		}
+	},
 	loader: ({ context }) => {
 		void context.queryClient.prefetchQuery(accountListQueryOptions);
 		return context.queryClient.ensureQueryData(projectsListQueryOptions);
@@ -18,6 +37,7 @@ export const Route = createFileRoute("/_authenticated/keys_/new")({
 
 function NewKeyInner() {
 	const navigate = useNavigate();
+	const { principal, owner } = Route.useSearch();
 	const [plaintext, setPlaintext] = useState<string | null>(null);
 	const [savedName, setSavedName] = useState<string | null>(null);
 
@@ -79,6 +99,7 @@ function NewKeyInner() {
 				</p>
 			</div>
 			<KeyForm
+				preset={{ principalId: principal ?? "", ownerId: owner ?? "" }}
 				onSaved={(name) => setSavedName(name)}
 				onCreated={(secret) => setPlaintext(secret)}
 				onCancel={() =>
