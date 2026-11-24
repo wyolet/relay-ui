@@ -14,9 +14,7 @@ export function ReviewStep({ access }: { access: SetAccessForm }) {
 			description="What Save access does, in this order."
 		>
 			{planned.length === 0 ? (
-				<p className="text-xs text-muted-foreground">
-					This is what {access.target.label} reaches already.
-				</p>
+				<p className="text-xs text-muted-foreground">{access.noWritesLine}</p>
 			) : (
 				<div className="flex flex-col gap-3">
 					<WriteList

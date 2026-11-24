@@ -31,12 +31,20 @@ export interface KeptPool {
 	hostId?: string;
 }
 
+/** A pool of the current policy the form stands for by its accounts. */
+export interface RepresentedPool {
+	id: string;
+	hostId: string;
+	accountIds: string[];
+}
+
 /** The access fields as the current policy fills them. */
 export interface AccessPrefill {
 	everyCredential: boolean;
 	/** The accounts of the pools the form stands for, in pool order. */
 	accountIds: string[];
 	keptPools: KeptPool[];
+	representedPools: RepresentedPool[];
 	models: string[];
 }
 
@@ -59,9 +67,8 @@ function keptPoolHint(
 
 /**
  * The fields filled from the policy the target is under. A pool listing only
- * offered accounts is ticked as those accounts (the save makes a fresh pool for
- * them); any other pool is kept whole. A policy linking no pools reaches every
- * credential.
+ * offered accounts is ticked as those accounts; any other pool is kept whole.
+ * A policy linking no pools reaches every credential.
  */
 export function accessPrefill(
 	policy: Policy | undefined,
@@ -74,6 +81,7 @@ export function accessPrefill(
 	const offeredIds = new Set(offered.map((a) => a.id));
 	const accountIds: string[] = [];
 	const keptPools: KeptPool[] = [];
+	const representedPools: RepresentedPool[] = [];
 	for (const id of poolIds) {
 		const pool = pools.find((p) => p.metadata.id === id);
 		if (!pool) {
@@ -91,6 +99,11 @@ export function accessPrefill(
 			listed.every((a) => offeredIds.has(a));
 		if (representable) {
 			for (const a of listed) if (!accountIds.includes(a)) accountIds.push(a);
+			representedPools.push({
+				id,
+				hostId: pool.spec.hostId,
+				accountIds: [...listed],
+			});
 			continue;
 		}
 		keptPools.push({
@@ -104,6 +117,7 @@ export function accessPrefill(
 		everyCredential: poolIds.length === 0,
 		accountIds,
 		keptPools,
+		representedPools,
 		models: [...(policy?.spec.models ?? [])],
 	};
 }

@@ -57,6 +57,7 @@ describe("accessPrefill", () => {
 			everyCredential: true,
 			accountIds: [],
 			keptPools: [],
+			representedPools: [],
 			models: [],
 		});
 	});
@@ -85,6 +86,9 @@ describe("accessPrefill", () => {
 			everyCredential: false,
 			accountIds: ["b", "a"],
 			keptPools: [],
+			representedPools: [
+				{ id: "pool-a", hostId: "anthropic", accountIds: ["b", "a"] },
+			],
 		});
 	});
 
@@ -104,6 +108,7 @@ describe("accessPrefill", () => {
 			keyless,
 		);
 		expect(prefill.accountIds).toEqual(["a"]);
+		expect(prefill.representedPools.map((p) => p.id)).toEqual(["mine"]);
 		expect(prefill.keptPools).toEqual([
 			{
 				id: "keys",

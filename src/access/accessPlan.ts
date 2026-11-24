@@ -1,3 +1,4 @@
+import type { RepresentedPool } from "@/access/accessOptions";
 import { type AccessWrite, accessWrites } from "@/agents/accessWrites";
 import type { AgentAccount } from "@/agents/agentAccounts";
 import type { PolicySpec } from "@/api/types/policy";
@@ -45,23 +46,94 @@ function narrows(answers: AccessAnswers): boolean {
 	return !answers.everyCredential || answers.models.length > 0;
 }
 
+function sameIds(a: readonly string[], b: readonly string[]): boolean {
+	return a.length === b.length && a.every((id, i) => id === b[i]);
+}
+
+/** One picked host's pool once saved: `poolId` names the current pool kept for it, unset means a new one. */
+export interface PoolLink {
+	hostId: string;
+	poolId?: string;
+}
+
 /**
- * The requests that give the target its access: shares and fresh pools for the
- * picked accounts, then the policy step for its case. None when a policy is set
- * above the caller, or when a target under no policy would reach what it does.
+ * A pool per host of the picks, hosts in the order they first appear: the
+ * current pool listing exactly that host's picks, in order, else a new one.
+ */
+export function poolLinks(
+	answers: AccessAnswers,
+	represented: readonly RepresentedPool[],
+): PoolLink[] {
+	if (answers.everyCredential) return [];
+	const byHost = new Map<string, string[]>();
+	for (const a of answers.accounts) {
+		byHost.set(a.hostId, [...(byHost.get(a.hostId) ?? []), a.id]);
+	}
+	return [...byHost].map(([hostId, ids]) => {
+		const same = represented.find(
+			(p) => p.hostId === hostId && sameIds(p.accountIds, ids),
+		);
+		return same ? { hostId, poolId: same.id } : { hostId };
+	});
+}
+
+/** The policy's pools once saved: kept pools, then each host's current or newly made pool. */
+export function linkedPoolIds(
+	keptPoolIds: readonly string[],
+	links: readonly PoolLink[],
+	madePoolIds: readonly string[],
+): string[] {
+	const ids = [...keptPoolIds];
+	let made = 0;
+	for (const link of links) {
+		const id = link.poolId ?? madePoolIds[made++];
+		if (id) ids.push(id);
+	}
+	return ids;
+}
+
+/**
+ * The requests that give the target its access: shares and new pools for the
+ * hosts no current pool stands for, then the policy step for its case. None
+ * when a policy is set above the caller, when a target under no policy would
+ * reach what it does, or when its own policy would stay as it is.
  */
 export function accessPlan(
 	answers: AccessAnswers,
 	policyCase: OwnPolicyCase,
 	names: AccessNames,
+	represented: readonly RepresentedPool[],
 ): AccessPlanWrite[] {
 	if (policyCase.kind === "above") return [];
 	if (policyCase.kind === "create" && !narrows(answers)) return [];
-	const pooled = answers.everyCredential ? [] : answers.accounts;
+	const links = poolLinks(answers, represented);
+	const newHosts = new Set(links.flatMap((l) => (l.poolId ? [] : l.hostId)));
+	if (
+		policyCase.kind === "update" &&
+		newHosts.size === 0 &&
+		sameIds(
+			policyCase.policy.spec.poolIds ?? [],
+			linkedPoolIds(sentKeptPoolIds(answers), links, []),
+		) &&
+		sameIds(policyCase.policy.spec.models ?? [], answers.models)
+	) {
+		return [];
+	}
+	const pooled = answers.accounts.filter((a) => newHosts.has(a.hostId));
 	return [
 		...accessWrites(names.target, pooled, names.scope),
 		...ownPolicyWrites(policyCase, names.target),
 	];
+}
+
+/** Why a plan has no writes, for the disabled Save. */
+export function noWritesLine(
+	policyCase: OwnPolicyCase,
+	target: string,
+): string {
+	return policyCase.kind === "create"
+		? `This is what ${target} reaches already.`
+		: "Nothing changed.";
 }
 
 /** The policy's spec with its pools and models replaced; limits, budgets and `enabled` stay. */
@@ -81,9 +153,16 @@ export function accessSpec(
 export function unlinkedPoolIds(
 	policyCase: OwnPolicyCase,
 	answers: AccessAnswers,
+	represented: readonly RepresentedPool[],
 ): string[] {
 	if (policyCase.kind !== "update" && policyCase.kind !== "copy") return [];
-	const kept = new Set(sentKeptPoolIds(answers));
+	const kept = new Set(
+		linkedPoolIds(
+			sentKeptPoolIds(answers),
+			poolLinks(answers, represented),
+			[],
+		),
+	);
 	return (policyCase.policy.spec.poolIds ?? []).filter((id) => !kept.has(id));
 }
 

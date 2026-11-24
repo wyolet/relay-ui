@@ -1,22 +1,26 @@
 import { describe, expect, it } from "bun:test";
+import type { RepresentedPool } from "@/access/accessOptions";
 import {
 	type AccessAnswers,
 	accessErrors,
 	accessPlan,
 	accessSpec,
 	currentPolicyLine,
+	linkedPoolIds,
+	noWritesLine,
+	poolLinks,
 	unlinkedPoolIds,
 } from "@/access/accessPlan";
 import type { AgentAccount } from "@/agents/agentAccounts";
 import type { Policy } from "@/api/types/policy";
 import type { OwnPolicyCase } from "@/policy-bindings/ownPolicy";
 
-function account(id: string, needsShare = false): AgentAccount {
+function account(id: string, needsShare = false, hostId = "h1"): AgentAccount {
 	return {
 		id,
 		label: id,
-		hostId: "h1",
-		hostLabel: "Anthropic",
+		hostId,
+		hostLabel: hostId === "h1" ? "Anthropic" : "OpenAI",
 		needsShare,
 	};
 }
@@ -49,16 +53,114 @@ const copy = (otherAccounts: number, p = policy()): OwnPolicyCase => ({
 	ownedElsewhere: otherAccounts === 0,
 });
 
+const represented: RepresentedPool[] = [
+	{ id: "pool-h1", hostId: "h1", accountIds: ["a"] },
+	{ id: "pool-h2", hostId: "h2", accountIds: ["o"] },
+];
+
+describe("poolLinks and linkedPoolIds", () => {
+	it("keeps a host's pool listing exactly its picks, else plans a new one", () => {
+		const links = poolLinks(
+			answers({
+				everyCredential: false,
+				accounts: [account("o", false, "h2"), account("a"), account("b")],
+			}),
+			represented,
+		);
+		expect(links).toEqual([
+			{ hostId: "h2", poolId: "pool-h2" },
+			{ hostId: "h1" },
+		]);
+		expect(linkedPoolIds(["kept"], links, ["made"])).toEqual([
+			"kept",
+			"pool-h2",
+			"made",
+		]);
+	});
+
+	it("tells a reordered pick from the pool's order", () => {
+		const links = poolLinks(
+			answers({
+				everyCredential: false,
+				accounts: [account("b"), account("a")],
+			}),
+			[{ id: "pool-ab", hostId: "h1", accountIds: ["a", "b"] }],
+		);
+		expect(links).toEqual([{ hostId: "h1" }]);
+	});
+});
+
 describe("accessPlan", () => {
-	const kinds = (a: AccessAnswers, c: OwnPolicyCase) =>
-		accessPlan(a, c, names).map((w) => w.kind);
+	const kinds = (
+		a: AccessAnswers,
+		c: OwnPolicyCase,
+		pools: readonly RepresentedPool[] = [],
+	) => accessPlan(a, c, names, pools).map((w) => w.kind);
+	const current = policy({
+		enabled: true,
+		poolIds: ["pool-h1", "pool-h2"],
+		models: ["anthropic"],
+	});
+	const unchanged = answers({
+		everyCredential: false,
+		accounts: [account("a"), account("o", false, "h2")],
+		models: ["anthropic"],
+	});
 
 	it("writes nothing for a target under no policy that reaches it already", () => {
 		expect(kinds(answers(), create)).toEqual([]);
 	});
 
+	it("writes nothing when the target's own policy stays as it is", () => {
+		expect(kinds(unchanged, update(current), represented)).toEqual([]);
+		expect(kinds(answers(), update())).toEqual([]);
+	});
+
+	it("still copies and rebinds an unchanged shared policy", () => {
+		expect(kinds(unchanged, copy(1, current), represented)).toEqual([
+			"policyCopy",
+			"policyUpdate",
+			"policyBind",
+		]);
+	});
+
+	it("updates only the policy when only the models change", () => {
+		expect(
+			kinds({ ...unchanged, models: [] }, update(current), represented),
+		).toEqual(["policyUpdate"]);
+	});
+
+	it("makes one pool for a host whose picks changed", () => {
+		const plan = accessPlan(
+			{
+				...unchanged,
+				accounts: [...unchanged.accounts, account("mine", true)],
+			},
+			update(current),
+			names,
+			represented,
+		);
+		expect(plan.map((w) => w.id)).toEqual([
+			"share:mine",
+			"pool:h1",
+			"policy-update",
+		]);
+	});
+
+	it("makes no pool for a host whose picks were all removed", () => {
+		expect(
+			kinds(
+				{ ...unchanged, accounts: [account("a")] },
+				update(current),
+				represented,
+			),
+		).toEqual(["policyUpdate"]);
+	});
+
 	it("still clears the pools and models of a target's own policy", () => {
-		expect(kinds(answers(), update())).toEqual(["policyUpdate"]);
+		expect(kinds(answers(), update(current), represented)).toEqual([
+			"policyUpdate",
+		]);
 	});
 
 	it("shares, pools, then creates and binds", () => {
@@ -69,6 +171,7 @@ describe("accessPlan", () => {
 			}),
 			create,
 			names,
+			[],
 		);
 		expect(plan.map((w) => w.kind)).toEqual([
 			"share",
@@ -151,25 +254,43 @@ describe("accessSpec", () => {
 });
 
 describe("unlinkedPoolIds", () => {
-	const current = policy({ poolIds: ["kept", "dropped"] });
+	const current = policy({ poolIds: ["kept", "dropped", "pool-h1"] });
 
 	it("lists the current pools the save leaves out", () => {
 		expect(
 			unlinkedPoolIds(
 				update(current),
-				answers({ everyCredential: false, keptPoolIds: ["kept"] }),
+				answers({
+					everyCredential: false,
+					keptPoolIds: ["kept"],
+					accounts: [account("a")],
+				}),
+				represented,
 			),
 		).toEqual(["dropped"]);
 	});
 
 	it("drops every pool with every credential on", () => {
 		expect(
-			unlinkedPoolIds(update(current), answers({ keptPoolIds: ["kept"] })),
-		).toEqual(["kept", "dropped"]);
+			unlinkedPoolIds(
+				update(current),
+				answers({ keptPoolIds: ["kept"] }),
+				represented,
+			),
+		).toEqual(["kept", "dropped", "pool-h1"]);
 	});
 
 	it("has nothing to unlink without a current policy", () => {
-		expect(unlinkedPoolIds(create, answers())).toEqual([]);
+		expect(unlinkedPoolIds(create, answers(), [])).toEqual([]);
+	});
+});
+
+describe("noWritesLine", () => {
+	it("says why Save has nothing to send", () => {
+		expect(noWritesLine(create, "Platform")).toBe(
+			"This is what Platform reaches already.",
+		);
+		expect(noWritesLine(update(), "Platform")).toBe("Nothing changed.");
 	});
 });
 

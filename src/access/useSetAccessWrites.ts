@@ -1,5 +1,10 @@
 import { useRef, useState } from "react";
-import { type AccessPlanWrite, accessSpec } from "@/access/accessPlan";
+import {
+	type AccessPlanWrite,
+	accessSpec,
+	linkedPoolIds,
+	type PoolLink,
+} from "@/access/accessPlan";
 import type { AccessTarget } from "@/access/accessTarget";
 import { scopeReceiver } from "@/agents/agentOwner";
 import {
@@ -21,8 +26,10 @@ export interface AccessSettings {
 	target: AccessTarget;
 	/** The case as the form showed it; a run never re-reads it. */
 	policyCase: OwnPolicyCase;
-	/** Linked first, in their order, before the pools the run makes. */
+	/** Linked first, in their order. */
 	keptPoolIds: readonly string[];
+	/** Then a pool per picked host: the current one, or the one the run makes. */
+	poolLinks: readonly PoolLink[];
 	models: readonly string[];
 }
 
@@ -67,7 +74,7 @@ export function useSetAccessWrites() {
 			(spec) =>
 				accessSpec(
 					spec,
-					[...settings.keptPoolIds, ...made.poolIds],
+					linkedPoolIds(settings.keptPoolIds, settings.poolLinks, made.poolIds),
 					settings.models,
 				),
 		);

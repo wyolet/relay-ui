@@ -274,7 +274,7 @@ test.describe("Set access", () => {
 		);
 	});
 
-	test("update: keeps limits, budgets and kept pools, replaces the rest", async ({ page }) => {
+	test.describe("update", () => {
 		const spec = {
 			enabled: true,
 			poolIds: ["pool-ollama", "pool-old"],
@@ -282,39 +282,93 @@ test.describe("Set access", () => {
 			rateLimits: [{ rateLimitId: "rl-1", models: [], shared: true }],
 			budgets: [{ budgetId: "budget-1", shared: true }],
 		};
-		const sent = await mockAccessApi(page, {
-			policies: [policy("pol-1", "Team policy", { kind: "team", id: TEAM }, spec)],
-			bindings: [binding("pol-1", ["acct-team"])],
-			pools: [
-				pool("pool-ollama", "Ollama pool", { hostId: OLLAMA, accountIds: [] }),
-				pool("pool-old", "Old pool", { hostId: ANTHROPIC, accountIds: ["acct-anthropic"] }),
-			],
-		});
-		await page.goto(SET_ACCESS);
-		await expect(page.getByText("Policy Team policy", { exact: true })).toBeVisible();
-		await expect(page.getByRole("switch", { name: "Ollama pool" })).toBeChecked();
-		await expect(page.getByRole("button", { name: /Platform Anthropic/ })).toHaveAttribute(
-			"aria-pressed",
-			"true",
-		);
-		await page.getByRole("button", { name: "Next" }).click();
-		await expect(
-			page.getByText("Pools no longer linked are kept; delete them from Pools if unused."),
-		).toBeVisible();
-		await page.getByRole("button", { name: "Save access" }).click();
+		const metadata = {
+			id: "pol-1",
+			name: "pol-1",
+			displayName: "Team policy",
+			owner: { kind: "team", id: TEAM },
+			resourceVersion: "7",
+		};
+		const unlinkedNote = "Pools no longer linked are kept; delete them from Pools if unused.";
 
-		await expect(page.getByText("Access saved")).toBeVisible();
-		expect(writes(sent)).toEqual(["POST pools", "PUT policies/by-id/pol-1"]);
-		expect(sent[0]?.body.spec).toEqual({ hostId: ANTHROPIC, accountIds: ["acct-anthropic"] });
-		expect(sent[1]?.body).toEqual({
-			metadata: {
-				id: "pol-1",
-				name: "pol-1",
-				displayName: "Team policy",
-				owner: { kind: "team", id: TEAM },
-				resourceVersion: "7",
-			},
-			spec: { ...spec, poolIds: ["pool-ollama", "made-1"] },
+		/** Opens the form on the team's own policy: a kept keyless pool, then one pool of its Anthropic account. */
+		async function openOwnPolicy(page: Page): Promise<Sent[]> {
+			const sent = await mockAccessApi(page, {
+				policies: [policy("pol-1", "Team policy", { kind: "team", id: TEAM }, spec)],
+				bindings: [binding("pol-1", ["acct-team"])],
+				pools: [
+					pool("pool-ollama", "Ollama pool", { hostId: OLLAMA, accountIds: [] }),
+					pool("pool-old", "Old pool", { hostId: ANTHROPIC, accountIds: ["acct-anthropic"] }),
+				],
+			});
+			await page.goto(SET_ACCESS);
+			await expect(page.getByText("Policy Team policy", { exact: true })).toBeVisible();
+			await expect(page.getByRole("switch", { name: "Ollama pool" })).toBeChecked();
+			await expect(page.getByRole("button", { name: /Platform Anthropic/ })).toHaveAttribute(
+				"aria-pressed",
+				"true",
+			);
+			return sent;
+		}
+
+		async function save(page: Page) {
+			await page.getByRole("button", { name: "Next" }).click();
+			await page.getByRole("button", { name: "Save access" }).click();
+			await expect(page.getByText("Access saved")).toBeVisible();
+		}
+
+		test("an unchanged save has nothing to send", async ({ page }) => {
+			const sent = await openOwnPolicy(page);
+			await page.getByRole("button", { name: "Next" }).click();
+			await expect(page.getByText("Nothing changed.")).toBeVisible();
+			await expect(page.getByRole("button", { name: "Save access" })).toBeDisabled();
+			expect(sent).toEqual([]);
+		});
+
+		test("changing only the models sends one PUT with the same pools", async ({ page }) => {
+			const sent = await openOwnPolicy(page);
+			await page.getByRole("button", { name: "Remove anthropic" }).click();
+			await save(page);
+			expect(writes(sent)).toEqual(["PUT policies/by-id/pol-1"]);
+			expect(sent[0]?.body).toEqual({ metadata, spec: { ...spec, models: [] } });
+		});
+
+		test("one more account at a host makes one new pool and unlinks the old", async ({
+			page,
+		}) => {
+			const sent = await openOwnPolicy(page);
+			await page.getByRole("button", { name: /My Anthropic/ }).click();
+			await page.getByRole("button", { name: "Next" }).click();
+			await expect(page.getByText(unlinkedNote)).toBeVisible();
+			await page.getByRole("button", { name: "Save access" }).click();
+			await expect(page.getByText("Access saved")).toBeVisible();
+			expect(writes(sent)).toEqual([
+				"POST accounts/acct-mine/shares",
+				"POST pools",
+				"PUT policies/by-id/pol-1",
+			]);
+			expect(sent[1]?.body.spec).toEqual({
+				hostId: ANTHROPIC,
+				accountIds: ["acct-anthropic", "acct-share"],
+			});
+			expect(sent[2]?.body).toEqual({
+				metadata,
+				spec: { ...spec, poolIds: ["pool-ollama", "made-2"] },
+			});
+		});
+
+		test("removing a host's accounts unlinks its pool and makes none", async ({ page }) => {
+			const sent = await openOwnPolicy(page);
+			await page.getByRole("button", { name: /Platform Anthropic/ }).click();
+			await page.getByRole("button", { name: "Next" }).click();
+			await expect(page.getByText(unlinkedNote)).toBeVisible();
+			await page.getByRole("button", { name: "Save access" }).click();
+			await expect(page.getByText("Access saved")).toBeVisible();
+			expect(writes(sent)).toEqual(["PUT policies/by-id/pol-1"]);
+			expect(sent[0]?.body).toEqual({
+				metadata,
+				spec: { ...spec, poolIds: ["pool-ollama"] },
+			});
 		});
 	});
 

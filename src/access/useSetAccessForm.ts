@@ -12,6 +12,8 @@ import {
 	accessErrors,
 	accessPlan,
 	currentPolicyLine,
+	noWritesLine,
+	poolLinks,
 	sentKeptPoolIds,
 	unlinkedPoolIds,
 } from "@/access/accessPlan";
@@ -134,10 +136,12 @@ export function useSetAccessForm(target: AccessTarget) {
 		keptPoolIds: keptPools.map((p) => p.id),
 		models: values.models,
 	};
-	const planned = accessPlan(answers, opened.policyCase, {
-		target: target.label,
-		scope: target.scopeLabel,
-	});
+	const planned = accessPlan(
+		answers,
+		opened.policyCase,
+		{ target: target.label, scope: target.scopeLabel },
+		prefill.representedPools,
+	);
 
 	function save() {
 		if (planned.length === 0) return;
@@ -146,6 +150,7 @@ export function useSetAccessForm(target: AccessTarget) {
 				target,
 				policyCase: opened.policyCase,
 				keptPoolIds: sentKeptPoolIds(answers),
+				poolLinks: poolLinks(answers, prefill.representedPools),
 				models: values.models,
 			},
 			planned,
@@ -184,7 +189,10 @@ export function useSetAccessForm(target: AccessTarget) {
 		toggleKeptPool: (id: string) => toggle("keptPoolIds", id),
 		reach,
 		planned,
-		unlinksPools: unlinkedPoolIds(opened.policyCase, answers).length > 0,
+		noWritesLine: noWritesLine(opened.policyCase, target.label),
+		unlinksPools:
+			unlinkedPoolIds(opened.policyCase, answers, prefill.representedPools)
+				.length > 0,
 		writes,
 	};
 }
