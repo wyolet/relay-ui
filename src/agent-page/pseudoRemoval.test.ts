@@ -1,10 +1,14 @@
 import { describe, expect, it } from "bun:test";
 import {
+	hiddenRowsLine,
+	isRemovalDenied,
 	pseudoRemovalBody,
 	type RemovalList,
 	refusedKeepId,
+	removalList,
 	removalOptions,
 } from "@/agent-page/pseudoRemoval";
+import { PseudoRefusal } from "@/api/types/errors";
 
 const SA = "sa-1";
 
@@ -17,6 +21,9 @@ const list: RemovalList = {
 		{ kind: "pool", id: "pool-b", name: "indexer-pool-b" },
 		{ kind: "policy", id: "pol-1", name: "indexer-policy" },
 	],
+	deletedHidden: 0,
+	updated: [],
+	updatedHidden: 0,
 	kept: [
 		{ kind: "pool", id: "pool-a", name: "indexer-pool-a", reason: "in_use" },
 		{
@@ -25,7 +32,6 @@ const list: RemovalList = {
 			name: "indexer-pool-c",
 			reason: "kept_by_request",
 		},
-		{ kind: "policy", id: "pol-hidden", reason: "not_visible" },
 		{
 			kind: "pool",
 			id: "pool-d",
@@ -33,6 +39,7 @@ const list: RemovalList = {
 			reason: "not_deletable",
 		},
 	],
+	keptHidden: 0,
 };
 
 describe("pseudoRemovalBody", () => {
@@ -70,13 +77,6 @@ describe("removalOptions", () => {
 				notes: undefined,
 			},
 			{
-				value: "pol-hidden",
-				label: "Policy",
-				hint: "Kept: you can't see it",
-				disabled: true,
-				notes: undefined,
-			},
-			{
 				value: "pool-a",
 				label: "Pool indexer-pool-a",
 				hint: "Kept: used by something else",
@@ -111,6 +111,61 @@ describe("removalOptions", () => {
 		const options = removalOptions(list, { id: "pool-c", message: "no" });
 		expect(options.find((o) => o.value === "pool-c")?.notes).toEqual(["no"]);
 		expect(options.filter((o) => o.notes)).toHaveLength(1);
+	});
+});
+
+describe("removalList", () => {
+	it("reads the counts of rows the caller can't see, zero when relay omits them", () => {
+		expect(
+			removalList({
+				deleted: list.deleted,
+				deletedHidden: 2,
+				kept: null,
+				updated: [{ kind: "policy-binding", id: "pb2", name: "shared" }],
+				updatedHidden: 1,
+			}),
+		).toEqual({
+			deleted: list.deleted,
+			deletedHidden: 2,
+			updated: [{ kind: "policy-binding", id: "pb2", name: "shared" }],
+			updatedHidden: 1,
+			kept: [],
+			keptHidden: 0,
+		});
+	});
+
+	it("takes a 409 changed body, which has no changed rows", () => {
+		expect(
+			removalList({ deleted: null, kept: list.kept, keptHidden: 3 }),
+		).toEqual({
+			deleted: [],
+			deletedHidden: 0,
+			updated: [],
+			updatedHidden: 0,
+			kept: list.kept,
+			keptHidden: 3,
+		});
+	});
+});
+
+describe("hiddenRowsLine", () => {
+	it("counts the rows the caller can't see, and says nothing at zero", () => {
+		expect(hiddenRowsLine(2)).toBe("and 2 more you can't see");
+		expect(hiddenRowsLine(0)).toBeUndefined();
+	});
+});
+
+describe("isRemovalDenied", () => {
+	const refusedWith = (status: number) =>
+		new PseudoRefusal(status, {
+			error: { type: "permission_error", message: "no" },
+		});
+
+	it("is relay's 403 or 404 for a caller who may not remove the agent", () => {
+		expect(isRemovalDenied(refusedWith(403))).toBe(true);
+		expect(isRemovalDenied(refusedWith(404))).toBe(true);
+		expect(isRemovalDenied(refusedWith(409))).toBe(false);
+		expect(isRemovalDenied(new Error("offline"))).toBe(false);
 	});
 });
 

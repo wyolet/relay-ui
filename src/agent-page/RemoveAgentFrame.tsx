@@ -19,6 +19,7 @@ export function RemoveAgentFrame({
 	running,
 	idle,
 	canRemove,
+	closeOnly = false,
 	onRemove,
 	onClose,
 	children,
@@ -28,6 +29,8 @@ export function RemoveAgentFrame({
 	running: boolean;
 	idle: boolean;
 	canRemove: boolean;
+	/** The caller may not remove this agent: the footer offers only Close. */
+	closeOnly?: boolean;
 	onRemove: () => void;
 	onClose: () => void;
 	children: ReactNode;
@@ -42,7 +45,8 @@ export function RemoveAgentFrame({
 					</DialogDescription>
 				</DialogHeader>
 				{children}
-				{idle && (
+				{idle && closeOnly && <DialogFooter showCloseButton />}
+				{idle && !closeOnly && (
 					<DialogFooter>
 						<Button type="button" variant="ghost" onClick={onClose}>
 							Cancel
@@ -62,31 +66,45 @@ export function RemoveAgentFrame({
 	);
 }
 
+/** A count of rows the caller may not read, under the list they belong to. */
+export function HiddenRowsLine({ line }: { line: string | undefined }) {
+	if (!line) return null;
+	return <p className="mt-2 text-xs text-muted-foreground">{line}</p>;
+}
+
 /** The policies and pools made for the agent, ticked to delete. */
 export function MadeForAgent({
 	options,
 	ticked,
 	onToggle,
+	hiddenLine,
 }: {
 	options: readonly CheckOption[];
 	ticked: readonly string[];
 	onToggle: (id: string) => void;
+	/** Kept rows the caller may not read. */
+	hiddenLine?: string;
 }) {
-	if (options.length === 0) return null;
+	if (options.length === 0 && !hiddenLine) return null;
 	return (
 		<section>
 			<SectionTitle>Made for this agent</SectionTitle>
-			<p className="mb-2 text-xs text-muted-foreground">
-				Ticked rows are deleted; untick one to keep it.
-			</p>
-			<fieldset aria-label="Made for this agent" className="min-w-0">
-				<BoxedCheckList
-					options={options}
-					selected={ticked}
-					onToggle={onToggle}
-					emptyLabel="rows"
-				/>
-			</fieldset>
+			{options.length > 0 && (
+				<>
+					<p className="mb-2 text-xs text-muted-foreground">
+						Ticked rows are deleted; untick one to keep it.
+					</p>
+					<fieldset aria-label="Made for this agent" className="min-w-0">
+						<BoxedCheckList
+							options={options}
+							selected={ticked}
+							onToggle={onToggle}
+							emptyLabel="rows"
+						/>
+					</fieldset>
+				</>
+			)}
+			<HiddenRowsLine line={hiddenLine} />
 		</section>
 	);
 }

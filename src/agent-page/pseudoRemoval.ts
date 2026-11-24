@@ -1,8 +1,10 @@
 import type {
 	AgentRemoval,
+	AgentRemovalAnswer,
 	RemovalKept,
 	RemovalRow,
 } from "@/api/hooks/pseudoAgentRemovals";
+import { ApiError } from "@/api/types/errors";
 import { rowKindLabel } from "@/pseudo/dryRun";
 import type { PointerFields } from "@/pseudo/pointerField";
 import type { CheckOption } from "@/shared/MultiSelect";
@@ -22,14 +24,48 @@ export const CHANGED_MESSAGE =
 const KEPT_REASONS: Record<RemovalKept["reason"], string> = {
 	in_use: "used by something else",
 	kept_by_request: "kept",
-	not_visible: "you can't see it",
 	not_deletable: "can't be deleted here",
 };
 
-/** What relay says the removal deletes, in order, and which labelled rows stay. */
+/**
+ * What relay says the removal deletes, in order, changes, and which labelled
+ * rows stay; rows the caller may not read are only counted.
+ */
 export interface RemovalList {
 	deleted: RemovalRow[];
+	deletedHidden: number;
+	updated: RemovalRow[];
+	updatedHidden: number;
 	kept: RemovalKept[];
+	keptHidden: number;
+}
+
+type ListedAnswer = Pick<
+	AgentRemovalAnswer,
+	"deleted" | "deletedHidden" | "kept" | "keptHidden"
+> &
+	Partial<Pick<AgentRemovalAnswer, "updated" | "updatedHidden">>;
+
+/** The lists from a dry run, or from a 409 `changed`, which answers no changed rows. */
+export function removalList(answer: ListedAnswer): RemovalList {
+	return {
+		deleted: answer.deleted ?? [],
+		deletedHidden: answer.deletedHidden ?? 0,
+		updated: answer.updated ?? [],
+		updatedHidden: answer.updatedHidden ?? 0,
+		kept: answer.kept ?? [],
+		keptHidden: answer.keptHidden ?? 0,
+	};
+}
+
+/** relay refuses a caller who may not remove the agent before it lists anything. */
+export function isRemovalDenied(err: unknown): boolean {
+	return err instanceof ApiError && (err.status === 403 || err.status === 404);
+}
+
+/** "and N more you can't see" under a list; nothing at zero. */
+export function hiddenRowsLine(count: number): string | undefined {
+	return count > 0 ? `and ${count} more you can't see` : undefined;
 }
 
 /** The request body; `keep` is left out when empty and `expect` sent only with the removal itself. */
@@ -84,13 +120,11 @@ export function removalOptions(
 		.sort(
 			(a, b) =>
 				KIND_ORDER.indexOf(a.kind) - KIND_ORDER.indexOf(b.kind) ||
-				(a.name ?? a.id).localeCompare(b.name ?? b.id),
+				a.name.localeCompare(b.name),
 		)
 		.map((row) => ({
 			value: row.id,
-			label: row.name
-				? `${rowKindLabel(row.kind)} ${row.name}`
-				: rowKindLabel(row.kind),
+			label: `${rowKindLabel(row.kind)} ${row.name}`,
 			hint: keptHint(row.reason),
 			disabled: row.reason !== undefined && row.reason !== "kept_by_request",
 			notes: refusedKeep?.id === row.id ? [refusedKeep.message] : undefined,

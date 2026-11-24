@@ -18,13 +18,17 @@ type RemovalChangedBody = components["schemas"]["removalChanged"];
 /** 409 `changed`: `expect` no longer matches; relay answers what it would delete and keep now. */
 export class RemovalChanged extends PseudoRefusal {
 	readonly deleted: RemovalRow[];
+	readonly deletedHidden: number;
 	readonly kept: RemovalKept[];
+	readonly keptHidden: number;
 
 	constructor(status: number, body: RemovalChangedBody) {
 		super(status, body);
 		this.name = "RemovalChanged";
 		this.deleted = body.deleted ?? [];
+		this.deletedHidden = body.deletedHidden ?? 0;
 		this.kept = body.kept ?? [];
+		this.keptHidden = body.keptHidden ?? 0;
 	}
 }
 
@@ -38,7 +42,9 @@ async function postAgentRemoval(
 		{ body, params: { query: dryRun ? { dryRun } : {} } },
 	);
 	if (error === undefined) return data;
-	if ("kept" in error) throw new RemovalChanged(response.status, error);
+	if (error.error.code === "changed" && "kept" in error) {
+		throw new RemovalChanged(response.status, error);
+	}
 	throw new PseudoRefusal(response.status, error);
 }
 

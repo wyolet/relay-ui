@@ -616,6 +616,7 @@ test.describe("Agent page shortcuts", () => {
 						error: { type: "invalid_request_error", code: "changed", message: "the set changed" },
 						pointer: "/spec/expect",
 						deleted: [added, ...now.deleted],
+						deletedHidden: 1,
 						kept: now.kept,
 					},
 				};
@@ -623,6 +624,7 @@ test.describe("Agent page shortcuts", () => {
 		});
 		const dialog = await openOneRequestRemoval(page);
 		const remove = dialog.getByRole("button", { name: "Remove agent" });
+		await expect(dialog.getByText(/you can't see/)).toHaveCount(0);
 		await dialog.getByRole("textbox").fill("indexer-1234");
 		await remove.click();
 
@@ -632,6 +634,7 @@ test.describe("Agent page shortcuts", () => {
 		await expect(removalList(dialog).getByRole("listitem").first()).toHaveText(
 			/^Key\s*indexer-key-k3$/,
 		);
+		await expect(dialog.getByText("and 1 more you can't see")).toBeVisible();
 		await expect(dialog.getByRole("textbox")).toHaveValue("");
 		await expect(remove).toBeDisabled();
 
@@ -706,6 +709,8 @@ test.describe("Agent page shortcuts", () => {
 									message: "service account is referenced",
 								},
 								pointer: "/spec/serviceAccountId",
+								deleted: null,
+								kept: null,
 								blockers: [
 									{
 										kind: "role-binding",
@@ -725,7 +730,104 @@ test.describe("Agent page shortcuts", () => {
 
 		await expect(dialog.getByText("Still in use")).toBeVisible();
 		await expect(dialog.getByText("indexer-reader")).toBeVisible();
+		await expect(dialog.getByText("This changed while the dialog was open.")).toHaveCount(0);
 		await expect(dialog.getByRole("button", { name: "Remove agent" })).toBeDisabled();
+	});
+
+	test("Remove agent: blockers on the first dry run show alone, with nothing to confirm", async ({ page }) => {
+		const sent = await mockAgentPage(page, FLAGS, {
+			removal: () => ({
+				status: 409,
+				json: {
+					error: {
+						type: "invalid_request_error",
+						code: "resource_in_use",
+						message: "service account is referenced",
+					},
+					pointer: "/spec/serviceAccountId",
+					blockers: [
+						{
+							kind: "role-binding",
+							field: "spec.subjects",
+							count: 1,
+							hidden: 0,
+							detachable: false,
+							items: [{ id: "rb-1", name: "indexer-reader" }],
+						},
+					],
+				},
+			}),
+		});
+		await openPage(page, "indexer-1234");
+		await actions(page).remove.click();
+		const dialog = page.getByRole("dialog");
+
+		await expect(dialog.getByText("Still in use")).toBeVisible();
+		await expect(dialog.getByText("indexer-reader")).toBeVisible();
+		await expect(removalList(dialog)).toHaveCount(0);
+		await expect(dialog.getByRole("textbox")).toHaveCount(0);
+		await expect(dialog.getByRole("button", { name: "Remove agent" })).toBeDisabled();
+		expect(sent.map((s) => s.path)).toEqual(["pseudo-agent-removals?dryRun"]);
+	});
+
+	test("Remove agent: rows the caller can't read are counted under their lists, never sent as expect", async ({
+		page,
+	}) => {
+		const shared = { kind: "policy-binding", id: "pb-shared", name: "shared-binding" };
+		const sent = await mockAgentPage(page, FLAGS, {
+			removal: (body, dryRun) => {
+				if (!dryRun) return undefined;
+				return {
+					status: 200,
+					json: {
+						...removalAnswer(body.spec.keep),
+						deletedHidden: 2,
+						updated: [shared],
+						updatedHidden: 1,
+						keptHidden: 3,
+					},
+				};
+			},
+		});
+		const dialog = await openOneRequestRemoval(page);
+		await expect(removalList(dialog).getByRole("listitem")).toHaveCount(REMOVAL_IDS.length);
+		await expect(dialog.getByText("and 2 more you can't see")).toBeVisible();
+		await expect(dialog.getByRole("list", { name: "Changed and kept" }).getByRole("listitem")).toHaveText([
+			/^Policy binding\s*shared-binding$/,
+		]);
+		await expect(dialog.getByText("and 1 more you can't see")).toBeVisible();
+		await expect(dialog.getByText("and 3 more you can't see")).toBeVisible();
+		await expect(dialog.getByText("Kept: you can't see it")).toHaveCount(0);
+
+		await dialog.getByRole("textbox").fill("indexer-1234");
+		await dialog.getByRole("button", { name: "Remove agent" }).click();
+		await expect(page).toHaveURL(LIST_URL);
+		expect(sent[1]?.body).toEqual({ spec: { serviceAccountId: AGENT, expect: REMOVAL_IDS } });
+	});
+
+	test("Remove agent: a caller who may not remove it sees relay's reason and only Close", async ({
+		page,
+	}) => {
+		const sent = await mockAgentPage(page, FLAGS, {
+			removal: () => ({
+				status: 403,
+				json: {
+					error: { type: "permission_error", message: "you may not delete this service account" },
+					pointer: "/spec/serviceAccountId",
+				},
+			}),
+		});
+		await openPage(page, "indexer-1234");
+		await actions(page).remove.click();
+		const dialog = page.getByRole("dialog");
+
+		await expect(dialog.getByRole("alert")).toHaveText("you may not delete this service account");
+		await expect(removalList(dialog)).toHaveCount(0);
+		await expect(dialog.getByRole("textbox")).toHaveCount(0);
+		await expect(dialog.getByRole("button", { name: "Remove agent" })).toHaveCount(0);
+		await dialog.getByRole("button", { name: "Close" }).first().click();
+		await expect(dialog).toHaveCount(0);
+		expect(sent.map((s) => s.path)).toEqual(["pseudo-agent-removals?dryRun"]);
 	});
 
 	test("Remove agent: a busy relay asks to try again", async ({ page }) => {

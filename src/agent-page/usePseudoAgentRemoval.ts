@@ -1,11 +1,14 @@
 import { useState } from "react";
 import {
 	CHANGED_MESSAGE,
+	hiddenRowsLine,
+	isRemovalDenied,
 	pseudoRemovalBody,
 	REMOVAL_POINTER_FIELDS,
 	type RemovalField,
 	type RemovalList,
 	refusedKeepId,
+	removalList,
 	removalOptions,
 } from "@/agent-page/pseudoRemoval";
 import { useAgentRemoved } from "@/agent-page/useAgentRemoval";
@@ -33,6 +36,8 @@ export function removesInOneRequest(): boolean {
 
 type Keep = readonly string[];
 
+export type PseudoAgentRemoval = ReturnType<typeof usePseudoAgentRemoval>;
+
 function usePseudoRemovalRun() {
 	return usePseudoRun<
 		AgentRemoval,
@@ -47,10 +52,6 @@ function usePseudoRemovalRun() {
 		pointerFields: REMOVAL_POINTER_FIELDS,
 		toCreated: (answer) => answer,
 	});
-}
-
-function listOf(answer: AgentRemovalAnswer): RemovalList {
-	return { deleted: answer.deleted ?? [], kept: answer.kept ?? [] };
 }
 
 /**
@@ -81,7 +82,10 @@ export function usePseudoAgentRemoval(target: ShortcutTarget) {
 	const changed =
 		refused?.error instanceof RemovalChanged ? refused.error : null;
 	const answer = pseudo.previewAnswer ?? first.data;
-	const list = changed ?? (answer ? listOf(answer) : undefined);
+	const shownAnswer = changed ?? answer;
+	const list: RemovalList | undefined = shownAnswer
+		? removalList(shownAnswer)
+		: undefined;
 
 	const blockers = isResourceInUse(refused?.error)
 		? refused.error.blockers
@@ -126,7 +130,15 @@ export function usePseudoAgentRemoval(target: ShortcutTarget) {
 
 	return {
 		loaded: list !== undefined || refused !== null,
-		rows: { deleted: list?.deleted ?? [] },
+		/** relay refused before listing anything, so there is nothing to confirm. */
+		listed: list !== undefined,
+		/** The caller may not remove this agent: only Close is offered. */
+		denied: isRemovalDenied(first.error),
+		deleted: list?.deleted ?? [],
+		deletedHiddenLine: hiddenRowsLine(list?.deletedHidden ?? 0),
+		updated: list?.updated ?? [],
+		updatedHiddenLine: hiddenRowsLine(list?.updatedHidden ?? 0),
+		keptHiddenLine: hiddenRowsLine(list?.keptHidden ?? 0),
 		options,
 		ticked: options
 			.filter((o) => !keep.includes(o.value) && !o.disabled)
