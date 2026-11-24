@@ -15,6 +15,8 @@ export interface Refused<F extends string, At> {
 	refusal: Refusal<F>;
 	at: At;
 	fromDryRun: boolean;
+	/** What was thrown, for what a kind's refusal carries beside its message. */
+	error: unknown;
 }
 
 interface DryRunShown<Answer, F extends string, At> {
@@ -100,6 +102,7 @@ export function usePseudoRun<
 					refusal: parseRefusal(err, pointerFields),
 					at: request.at,
 					fromDryRun: true,
+					error: err,
 				});
 			},
 			onSettled: () => {
@@ -164,7 +167,7 @@ export function usePseudoRun<
 			} catch (err) {
 				create.reset();
 				const refusal = parseRefusal(err, pointerFields);
-				setRefused({ refusal, at, fromDryRun: false });
+				setRefused({ refusal, at, fromDryRun: false, error: err });
 				return refusal;
 			}
 		},
