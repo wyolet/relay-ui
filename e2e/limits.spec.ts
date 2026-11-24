@@ -536,7 +536,10 @@ test.describe("Add a limit in one request", () => {
 		]);
 		expect(sent[0]?.body).toEqual({ spec: { target: { kind: "team", id: TEAM } } });
 		expect(submits(sent)[0]?.body).toEqual({
-			metadata: { displayName: "Platform cap" },
+			metadata: {
+				name: expect.stringMatching(/^platform-cap-\d{6}$/),
+				displayName: "Platform cap",
+			},
 			spec: {
 				target: { kind: "team", id: TEAM },
 				budget: { amountUsd: "0.01", period: "day", mode: "hard" },
@@ -597,7 +600,10 @@ test.describe("Add a limit in one request", () => {
 		await expect(page.getByRole("heading", { name: "Limit added" })).toBeVisible();
 		expect(submits(sent).map((s) => s.body)).toEqual([
 			{
-				metadata: { displayName: "Indexer rate limit" },
+				metadata: {
+					name: expect.stringMatching(/^indexer-rate-limit-\d{6}$/),
+					displayName: "Indexer rate limit",
+				},
 				spec: {
 					target: { kind: "service-account", id: SERVICE_ACCOUNT },
 					rateLimit: {
@@ -672,6 +678,12 @@ test.describe("Add a limit in one request", () => {
 			{ budget: { amountUsd: "0.01" } },
 			{ budget: { amountUsd: "1" } },
 		]);
+		const [refusedName, addedName] = submits(sent).map((s) => s.body.metadata);
+		expect(refusedName).toEqual({
+			name: expect.stringMatching(/^platform-cap-\d{6}$/),
+			displayName: "Platform cap",
+		});
+		expect(addedName).toEqual(refusedName);
 	});
 
 	test("a plan issue shows under the refusal heading on the review step", async ({ page }) => {

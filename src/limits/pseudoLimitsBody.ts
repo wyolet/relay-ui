@@ -22,14 +22,17 @@ export function postsOnce(link: LimitLink, bodyHasLink: boolean): boolean {
 	return bodyHasLink || (link.shared && link.models.length === 0);
 }
 
-/** The `POST /pseudo-limits` body; relay names the limit after `displayName` and links it with the defaults. */
+/**
+ * The `POST /pseudo-limits` body; relay links the limit with the defaults.
+ * `name` is always sent: relay answers 409 when a name it derives is taken.
+ */
 export function pseudoLimitsBody(
 	target: Pick<LimitTarget, "kind" | "id">,
-	displayName: string,
+	metadata: { name: string; displayName: string },
 	limit: LimitSpec,
 ): PseudoLimits {
 	return {
-		metadata: { displayName },
+		metadata,
 		spec: {
 			target: pseudoTarget(target),
 			...(limit.kind === "budget"

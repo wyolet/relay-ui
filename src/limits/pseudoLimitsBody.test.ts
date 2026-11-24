@@ -53,12 +53,19 @@ describe("postsOnce", () => {
 describe("pseudoLimitsBody", () => {
 	it("sends a rate limit as POST /rate-limits takes its spec, for the target by id", () => {
 		expect(
-			pseudoLimitsBody(agent, "Indexer rate limit", {
-				kind: "rateLimit",
-				spec: { enabled: true, rules },
-			}),
+			pseudoLimitsBody(
+				agent,
+				{
+					name: "indexer-rate-limit-042817",
+					displayName: "Indexer rate limit",
+				},
+				{ kind: "rateLimit", spec: { enabled: true, rules } },
+			),
 		).toEqual({
-			metadata: { displayName: "Indexer rate limit" },
+			metadata: {
+				name: "indexer-rate-limit-042817",
+				displayName: "Indexer rate limit",
+			},
 			spec: {
 				target: { kind: "service-account", id: "sa-1" },
 				rateLimit: { enabled: true, rules },
@@ -68,12 +75,16 @@ describe("pseudoLimitsBody", () => {
 
 	it("sends a spend cap as POST /budgets takes its spec", () => {
 		expect(
-			pseudoLimitsBody({ kind: "team", id: "t-1" }, "Platform cap", {
-				kind: "budget",
-				spec: { amountUsd: "0.01", period: "day", mode: "hard" },
-			}),
+			pseudoLimitsBody(
+				{ kind: "team", id: "t-1" },
+				{ name: "platform-cap-042817", displayName: "Platform cap" },
+				{
+					kind: "budget",
+					spec: { amountUsd: "0.01", period: "day", mode: "hard" },
+				},
+			),
 		).toEqual({
-			metadata: { displayName: "Platform cap" },
+			metadata: { name: "platform-cap-042817", displayName: "Platform cap" },
 			spec: {
 				target: { kind: "team", id: "t-1" },
 				budget: { amountUsd: "0.01", period: "day", mode: "hard" },

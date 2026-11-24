@@ -1,6 +1,6 @@
 import { useForm } from "@tanstack/react-form";
 import { useStore } from "@tanstack/react-store";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { z } from "zod";
 import {
 	AMOUNT_USD_PATTERN,
@@ -9,6 +9,7 @@ import {
 	DEFAULT_PERIOD,
 } from "@/budgets/budgetFormat";
 import { stepFieldErrors, useFormSteps } from "@/hooks/useFormSteps";
+import { randomSuffix, slugEndingIn } from "@/lib/slug";
 import type { LimitRefusalField } from "@/limits/limitRefusal";
 import {
 	defaultLimitName,
@@ -110,6 +111,7 @@ export function useAddLimitForm({ target, accountId, policyCase }: LimitStart) {
 	}));
 	const form = useForm({ defaultValues: initial });
 	const values = useStore(form.store, (s) => s.values);
+	const suffix = useRef(randomSuffix());
 
 	const namePlaceholder = defaultLimitName(values.kind, target.label);
 	const perAccountOffered = hasAccountsUnder(target.kind);
@@ -155,9 +157,10 @@ export function useAddLimitForm({ target, accountId, policyCase }: LimitStart) {
 		: {};
 
 	function body() {
+		const displayName = values.displayName.trim() || namePlaceholder;
 		return pseudoLimitsBody(
 			target,
-			values.displayName.trim() || namePlaceholder,
+			{ name: slugEndingIn(displayName, suffix.current), displayName },
 			limitSpec(values),
 		);
 	}
