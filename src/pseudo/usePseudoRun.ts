@@ -17,8 +17,8 @@ export interface Refused<F extends string, At> {
 	fromDryRun: boolean;
 }
 
-interface DryRunShown<F extends string, At> {
-	rows: PlannedRowLists;
+interface DryRunShown<Answer, F extends string, At> {
+	answer: Answer;
 	warnings: FieldIssue<F>[];
 	at: At;
 }
@@ -60,7 +60,7 @@ export function usePseudoRun<
 	const [created, setCreated] = useState<Created | null>(null);
 	const [refused, setRefused] = useState<Refused<F, At> | null>(null);
 	// The last dry run's answer, kept on screen while a newer one runs.
-	const [shown, setShown] = useState<DryRunShown<F, At> | null>(null);
+	const [shown, setShown] = useState<DryRunShown<Answer, F, At> | null>(null);
 	const [waiting, setWaiting] = useState(false);
 	const inFlight = useRef(false);
 	const queued = useRef<RunRequest<Body, At> | null>(null);
@@ -88,7 +88,7 @@ export function usePseudoRun<
 			onSuccess: (answer) => {
 				if (queued.current) return;
 				setShown({
-					rows: answer,
+					answer,
 					warnings: dryRunWarnings(answer, pointerFields),
 					at: request.at,
 				});
@@ -128,7 +128,9 @@ export function usePseudoRun<
 		run,
 		created,
 		refused,
-		previewRows: shown?.rows ?? NO_ROWS,
+		previewRows: shown?.answer ?? NO_ROWS,
+		/** The shown dry run's whole answer, for what a kind answers beside its rows. */
+		previewAnswer: shown?.answer,
 		/** What relay accepts but warns about; never a reason to stop. */
 		previewWarnings: shown?.warnings ?? [],
 		/** The answers the shown dry run was built from. */

@@ -1,6 +1,6 @@
 import { Boxes, KeyRound } from "lucide-react";
 import { type ReactNode, useId } from "react";
-import type { AgentAccount } from "@/agents/agentAccounts";
+import type { AgentAccount, AgentPool } from "@/agents/agentAccounts";
 import { ModelPicker } from "@/models/ModelPicker";
 import type { PickerReach } from "@/models/narrowPickerIndex";
 import { FieldError } from "@/shared/FieldError";
@@ -32,6 +32,46 @@ function accountOptions(
 				? `${a.hostLabel}, shared by ${a.sharedBy}`
 				: a.hostLabel,
 	}));
+}
+
+function poolOptions(pools: readonly AgentPool[]): CheckOption[] {
+	return pools.map((p) => ({ value: p.id, label: p.label, hint: p.hostLabel }));
+}
+
+/** The pick list of pools at hosts that take no key, for the `keylessPools` slot. */
+export function KeylessPoolList({
+	pools,
+	selected,
+	onToggle,
+	error,
+}: {
+	pools: readonly AgentPool[];
+	selected: readonly string[];
+	onToggle: (id: string) => void;
+	error?: string;
+}) {
+	const errorId = useId();
+	return (
+		<div>
+			<h3 className="text-xs font-medium text-foreground">Pools</h3>
+			<p className="mt-0.5 mb-2 text-[11px] text-muted-foreground">
+				Hosts that take no key are reached through a pool.
+			</p>
+			<fieldset
+				aria-label="Pools"
+				aria-describedby={error ? errorId : undefined}
+				className="min-w-0"
+			>
+				<BoxedCheckList
+					options={poolOptions(pools)}
+					selected={selected}
+					onToggle={onToggle}
+					emptyLabel="pools"
+				/>
+			</fieldset>
+			<FieldError id={errorId} message={error} />
+		</div>
+	);
 }
 
 /** The provider accounts (or every credential in scope) and the models a caller may use. */
