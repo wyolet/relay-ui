@@ -84,6 +84,7 @@ export function AccessFields({
 	selectedAccountIds,
 	onToggleAccount,
 	accountsError,
+	everyCredentialError,
 	keptPools,
 	keylessPools,
 	models,
@@ -98,6 +99,7 @@ export function AccessFields({
 	selectedAccountIds: readonly string[];
 	onToggleAccount: (id: string) => void;
 	accountsError?: string;
+	everyCredentialError?: string;
 	/** Rows for pools that stay linked as they are, above the account list. */
 	keptPools?: ReactNode;
 	/** A pick list of pools at hosts that take no key, below the account list. */
@@ -120,6 +122,7 @@ export function AccessFields({
 						onChange={onEveryCredentialChange}
 						label="Use every credential in scope"
 						hint={text.everyCredentialHint}
+						error={everyCredentialError}
 					/>
 					{!everyCredential && (
 						<div className="flex flex-col gap-3">
