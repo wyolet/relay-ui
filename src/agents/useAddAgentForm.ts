@@ -107,7 +107,7 @@ function snippetModels(
 	return (named.length > 0 ? named : served).slice(0, SNIPPET_MODEL_COUNT);
 }
 
-export function useAddAgentForm() {
+export function useAddAgentForm(start?: Partial<AddAgentValues>) {
 	const { userId } = useAuth();
 	const { contexts, current } = useWorkContext();
 	const writes = useAgentWrites();
@@ -125,6 +125,7 @@ export function useAddAgentForm() {
 		expiresAt: "",
 		passthroughAllowed: false,
 		payloadLoggingEnabled: false,
+		...start,
 	}));
 	const form = useForm({ defaultValues: initial });
 	const values = useStore(form.store, (s) => s.values);

@@ -12,7 +12,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { KeySettingsSections } from "@/keys/KeySettingsSections";
-import { useKeyForm } from "@/keys/useKeyForm";
+import { type KeyPrincipalPreset, useKeyForm } from "@/keys/useKeyForm";
 import { displayLabel } from "@/lib/displayLabel";
 import { NO_LANE_MESSAGE } from "@/lib/personalAccount";
 import { FormFooter } from "@/shared/FormFooter";
@@ -22,6 +22,7 @@ import { Segmented } from "@/shared/Segmented";
 
 interface KeyFormProps {
 	apiKey?: Key;
+	preset?: KeyPrincipalPreset;
 	onSaved: (savedName: string) => void;
 	onCreated?: (plaintext: string) => void;
 	onCancel: () => void;
@@ -29,6 +30,7 @@ interface KeyFormProps {
 
 export function KeyForm({
 	apiKey,
+	preset,
 	onSaved,
 	onCreated,
 	onCancel,
@@ -48,7 +50,7 @@ export function KeyForm({
 		hasDefaultLane,
 		noLane,
 		laneError,
-	} = useKeyForm({ open: true, apiKey, onSaved, onCreated });
+	} = useKeyForm({ open: true, apiKey, preset, onSaved, onCreated });
 	const laneErrorId = useId();
 
 	const { userId } = useAuth();

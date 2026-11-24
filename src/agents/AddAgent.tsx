@@ -3,6 +3,7 @@ import { AgentStep } from "@/agents/AgentStep";
 import { CreatedStep } from "@/agents/CreatedStep";
 import { KeyStep } from "@/agents/KeyStep";
 import {
+	type AddAgentValues,
 	AGENT_FORM_STEPS,
 	type AgentFormStep,
 	useAddAgentForm,
@@ -20,8 +21,15 @@ const STEPS = [
 	{ id: "created", label: "Connect" },
 ];
 
-export function AddAgent({ onCancel }: { onCancel: () => void }) {
-	const agent = useAddAgentForm();
+export function AddAgent({
+	initial,
+	onCancel,
+}: {
+	/** Where the form starts instead of empty, e.g. copied from another agent. */
+	initial?: Partial<AddAgentValues>;
+	onCancel: () => void;
+}) {
+	const agent = useAddAgentForm(initial);
 	const { step, writes } = agent;
 	return (
 		<StepForm

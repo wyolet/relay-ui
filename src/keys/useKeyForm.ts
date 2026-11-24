@@ -90,9 +90,17 @@ export function expiryPatch(expiresAt: string): { expiresAt?: string } {
 	return { expiresAt: new Date(`${trimmed}T23:59:59Z`).toISOString() };
 }
 
+/** A new key's principal picked in advance: a service account and its project. */
+export type KeyPrincipalPreset = Pick<
+	KeyFormValues,
+	"projectId" | "principalId"
+>;
+
 interface UseKeyFormOptions {
 	open?: boolean;
 	apiKey?: Key;
+	/** Ignored when editing. */
+	preset?: KeyPrincipalPreset;
 	onSaved: (savedName: string) => void;
 	onCreated?: (plaintext: string) => void;
 }
@@ -100,6 +108,7 @@ interface UseKeyFormOptions {
 export function useKeyForm({
 	open = true,
 	apiKey,
+	preset,
 	onSaved,
 	onCreated,
 }: UseKeyFormOptions) {
@@ -112,9 +121,18 @@ export function useKeyForm({
 		apiKey?.metadata.resourceVersion,
 	);
 
+	const presetProjectId = preset?.projectId ?? "";
+	const presetPrincipalId = preset?.principalId ?? "";
 	const initial = useMemo<KeyFormValues>(
-		() => (apiKey ? keyToValues(apiKey) : emptyValues()),
-		[apiKey],
+		() =>
+			apiKey
+				? keyToValues(apiKey)
+				: {
+						...emptyValues(),
+						projectId: presetProjectId,
+						principalId: presetPrincipalId,
+					},
+		[apiKey, presetProjectId, presetPrincipalId],
 	);
 	const suffixRef = useRef<string>(
 		apiKey?.metadata.name.match(/-(\d{4,8})$/)?.[1] ?? randomSuffix(),
