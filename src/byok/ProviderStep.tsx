@@ -24,6 +24,7 @@ export function ProviderStep({ byok }: { byok: ByokForm }) {
 	const { values, errors } = byok;
 	const [needle, setNeedle] = useState("");
 	const hostErrorId = useId();
+	const ownerErrorId = useId();
 	const shown = needle
 		? byok.hosts.filter((h) =>
 				h.label.toLowerCase().includes(needle.toLowerCase()),
@@ -97,6 +98,7 @@ export function ProviderStep({ byok }: { byok: ByokForm }) {
 					teamError={errors.teamId}
 					projectError={errors.projectId}
 				/>
+				<FieldError id={ownerErrorId} message={errors.ownerKind} />
 			</FormSection>
 		</div>
 	);

@@ -1,4 +1,5 @@
 import { PseudoRefusal } from "@/api/types/errors";
+import type { components } from "@/api/types.gen";
 import { failureMessage } from "@/hooks/useWriteRunner";
 import {
 	type FieldIssue,
@@ -12,9 +13,11 @@ export const CONFLICT_MESSAGE = "Something changed while saving. Try again.";
 /** 503: relay's plans are still loading, or another check is running; nothing was written. */
 export const BUSY_MESSAGE = "Relay is busy. Try again in a moment.";
 
-/** Why relay refused a one-request write, sorted by where the form shows it. */
+type RowRef = components["schemas"]["RowRef"];
+
+/** Why relay refused a one-request write, sorted by where the form shows it; `account` is the existing row relay offers instead. */
 export type Refusal<F extends string> =
-	| { kind: "field"; field: F; message: string }
+	| { kind: "field"; field: F; message: string; account?: RowRef }
 	| { kind: "issues"; issues: FieldIssue<F>[] }
 	| { kind: "general"; message: string };
 
@@ -38,7 +41,8 @@ export function parseRefusal<F extends string>(
 	}
 	const field = pointerField(err.pointer, fields);
 	const message = failureMessage(err);
-	return field
-		? { kind: "field", field, message }
-		: { kind: "general", message };
+	if (!field) return { kind: "general", message };
+	return err.account
+		? { kind: "field", field, message, account: err.account }
+		: { kind: "field", field, message };
 }

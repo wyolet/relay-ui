@@ -1,10 +1,13 @@
 import { isSharedAccount, PROVIDER_KIND } from "@/accounts/accountView";
 import type { Account } from "@/api/hooks/accounts";
+import type { components } from "@/api/types.gen";
 import type { ByokReceiver } from "@/byok/byokWrites";
 import { displayLabel } from "@/lib/displayLabel";
 import { type PickedScope, scopeOwnerKey } from "@/lib/ownerPick";
 import { ownerKey } from "@/lib/ownerScopes";
 import type { WorkContext } from "@/lib/workContext";
+
+type AccountReceiver = components["schemas"]["AccountReceiver"];
 
 export interface ByokAccount {
 	id: string;
@@ -40,9 +43,7 @@ export function ownedAccountsAt(
 	);
 }
 
-export function receiverKey(
-	receiver: Pick<ByokReceiver, "kind" | "id">,
-): string {
+export function receiverKey(receiver: AccountReceiver): string {
 	return `${receiver.kind}:${receiver.id}`;
 }
 

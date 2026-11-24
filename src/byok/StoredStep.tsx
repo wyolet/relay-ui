@@ -3,17 +3,52 @@ import type { StoredKey } from "@/byok/useByokWrites";
 import { buttonVariants } from "@/components/ui/button";
 import { AlertBanner } from "@/shared/AlertBanner";
 
+function storedTitle(stored: StoredKey): string {
+	if (stored.hostKeyName) return "Key stored";
+	return stored.accountMade ? "Account made" : "Account updated";
+}
+
+function storedSummary(stored: StoredKey): string {
+	if (!stored.hostKeyName)
+		return "This provider takes no key, so none is needed.";
+	return stored.organization
+		? `The provider names its organization ${stored.organization}.`
+		: "Requests its owner sends can use it now.";
+}
+
 export function StoredStep({ stored }: { stored: StoredKey }) {
+	const { hostKeyName } = stored;
 	return (
 		<div className="flex max-w-2xl flex-col gap-6">
 			<div>
-				<h2 className="text-sm font-semibold text-foreground">Key stored</h2>
+				<h2 className="text-sm font-semibold text-foreground">
+					{storedTitle(stored)}
+				</h2>
 				<p className="mt-1 text-xs text-muted-foreground">
-					{stored.organization
-						? `The provider names its organization ${stored.organization}.`
-						: "Requests its owner sends can use it now."}
+					{storedSummary(stored)}
 				</p>
+				{stored.detectionNote && (
+					<p className="mt-1 text-xs text-muted-foreground">
+						{stored.detectionNote}
+					</p>
+				)}
 			</div>
+
+			{stored.shares.length > 0 && (
+				<section aria-label="Shared with" className="flex flex-col gap-2">
+					<h3 className="text-xs font-medium text-foreground">Shared with</h3>
+					<ul className="flex max-w-md flex-col gap-1 text-xs">
+						{stored.shares.map((share) => (
+							<li key={share.id} className="flex items-center gap-2">
+								<span className="truncate text-foreground">{share.label}</span>
+								{share.existing && (
+									<span className="text-muted-foreground">already shared</span>
+								)}
+							</li>
+						))}
+					</ul>
+				</section>
+			)}
 
 			{stored.refusal && (
 				<AlertBanner
@@ -51,13 +86,15 @@ export function StoredStep({ stored }: { stored: StoredKey }) {
 				>
 					Open the account
 				</Link>
-				<Link
-					to="/host-keys/$name"
-					params={{ name: stored.hostKeyName }}
-					className={buttonVariants({ variant: "outline", size: "lg" })}
-				>
-					View key
-				</Link>
+				{hostKeyName && (
+					<Link
+						to="/host-keys/$name"
+						params={{ name: hostKeyName }}
+						className={buttonVariants({ variant: "outline", size: "lg" })}
+					>
+						View key
+					</Link>
+				)}
 			</div>
 		</div>
 	);
