@@ -7,6 +7,7 @@ import {
 	type ByokFormStep,
 	useByokForm,
 } from "@/byok/useByokForm";
+import { RefusedIssues } from "@/shared/RefusedIssues";
 import { StepForm } from "@/shared/StepForm";
 
 const STEP_LABELS: Record<ByokFormStep, string> = {
@@ -22,16 +23,17 @@ const STEPS = [
 
 export function Byok({ onCancel }: { onCancel: () => void }) {
 	const byok = useByokForm();
-	const { step, writes } = byok;
+	const { step, stored } = byok;
 	return (
 		<StepForm
 			steps={STEPS}
 			form={byok}
-			finishLabel="Store key"
-			runTitle="Storing the key"
-			result={writes.stored && <StoredStep stored={writes.stored} />}
+			finishLabel={byok.finishLabel}
+			runTitle={byok.keyless ? "Saving the account" : "Storing the key"}
+			result={stored && <StoredStep stored={stored} />}
 			onCancel={onCancel}
 		>
+			<RefusedIssues messages={byok.stepIssues} />
 			{step === "provider" && <ProviderStep byok={byok} />}
 			{step === "key" && <KeyStep byok={byok} />}
 			{step === "sharing" && <SharingStep byok={byok} />}

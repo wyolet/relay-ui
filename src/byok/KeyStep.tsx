@@ -1,6 +1,7 @@
 import { Building2, Gauge, KeyRound, Tag } from "lucide-react";
 import { useId } from "react";
 import { NEW_ACCOUNT, type useByokForm } from "@/byok/useByokForm";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
 	Select,
@@ -19,9 +20,11 @@ const NEW_ACCOUNT_OPTION = "new";
 const NO_TIER_OPTION = "none";
 
 export function KeyStep({ byok }: { byok: ByokForm }) {
-	const { form, values, errors } = byok;
+	const { form, values, errors, takenAccount } = byok;
 	const secretErrorId = useId();
+	const accountErrorId = useId();
 	const accountNameErrorId = useId();
+	const tierErrorId = useId();
 	const keyNameErrorId = useId();
 	const hostLabel = byok.host?.label ?? "the provider";
 	const accountItems = [
@@ -29,56 +32,85 @@ export function KeyStep({ byok }: { byok: ByokForm }) {
 		...byok.accounts.map((a) => ({ value: a.id, label: a.label })),
 	];
 	const tierItems = [
-		{ value: NO_TIER_OPTION, label: "No tier" },
+		{
+			value: NO_TIER_OPTION,
+			label: byok.newAccount ? "No tier" : "Keep the account's tier",
+		},
 		...byok.tiers,
 	];
 	return (
 		<div className="divide-y divide-border">
-			<FormSection
-				icon={KeyRound}
-				title="Key"
-				description={`The API key from ${hostLabel}. Relay seals it at rest and never shows it again.`}
-			>
-				<SecretInput
-					className="w-full max-w-md"
-					value={values.secret}
-					onChange={(e) => form.setFieldValue("secret", e.currentTarget.value)}
-					placeholder="Paste the key"
-					aria-label="Key"
-					aria-invalid={errors.secret ? true : undefined}
-					aria-describedby={errors.secret ? secretErrorId : undefined}
-					autoFocus
-				/>
-				<FieldError id={secretErrorId} message={errors.secret} />
-			</FormSection>
+			{!byok.keyless && (
+				<FormSection
+					icon={KeyRound}
+					title="Key"
+					description={`The API key from ${hostLabel}. Relay seals it at rest and never shows it again.`}
+				>
+					<SecretInput
+						className="w-full max-w-md"
+						value={values.secret}
+						onChange={(e) =>
+							form.setFieldValue("secret", e.currentTarget.value)
+						}
+						placeholder="Paste the key"
+						aria-label="Key"
+						aria-invalid={errors.secret ? true : undefined}
+						aria-describedby={errors.secret ? secretErrorId : undefined}
+						autoFocus
+					/>
+					<FieldError id={secretErrorId} message={errors.secret} />
+				</FormSection>
+			)}
 
 			<FormSection
 				icon={Building2}
 				title="Account"
-				description={`Your organization at ${hostLabel}. Keys of one account share its limits there, so a second key of the same organization joins its account.`}
+				description={
+					byok.keyless
+						? `${hostLabel} takes no key, so only the account is made.`
+						: `Your organization at ${hostLabel}. Keys of one account share its limits there, so a second key of the same organization joins its account.`
+				}
 			>
 				<div className="flex flex-col gap-3">
-					<Select
-						value={byok.newAccount ? NEW_ACCOUNT_OPTION : values.accountId}
-						items={accountItems}
-						onValueChange={(v) =>
-							form.setFieldValue(
-								"accountId",
-								!v || v === NEW_ACCOUNT_OPTION ? NEW_ACCOUNT : v,
-							)
-						}
-					>
-						<SelectTrigger className="w-full max-w-md" aria-label="Account">
-							<SelectValue />
-						</SelectTrigger>
-						<SelectContent>
-							{accountItems.map((o) => (
-								<SelectItem key={o.value} value={o.value}>
-									{o.label}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
+					<div>
+						<Select
+							value={byok.newAccount ? NEW_ACCOUNT_OPTION : values.accountId}
+							items={accountItems}
+							onValueChange={(v) =>
+								byok.chooseAccount(
+									!v || v === NEW_ACCOUNT_OPTION ? NEW_ACCOUNT : v,
+								)
+							}
+						>
+							<SelectTrigger
+								className="w-full max-w-md"
+								aria-label="Account"
+								aria-invalid={errors.accountId ? true : undefined}
+								aria-describedby={errors.accountId ? accountErrorId : undefined}
+							>
+								<SelectValue />
+							</SelectTrigger>
+							<SelectContent>
+								{accountItems.map((o) => (
+									<SelectItem key={o.value} value={o.value}>
+										{o.label}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+						<FieldError id={accountErrorId} message={errors.accountId} />
+						{takenAccount && (
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								className="mt-2"
+								onClick={() => byok.chooseAccount(takenAccount.id)}
+							>
+								Use {takenAccount.label}
+							</Button>
+						)}
+					</div>
 					{byok.newAccount && (
 						<div>
 							<Input
@@ -104,7 +136,7 @@ export function KeyStep({ byok }: { byok: ByokForm }) {
 				</div>
 			</FormSection>
 
-			{byok.newAccount && byok.tiers.length > 0 && (
+			{byok.tierOffered && (
 				<FormSection
 					icon={Gauge}
 					title="Tier"
@@ -120,7 +152,12 @@ export function KeyStep({ byok }: { byok: ByokForm }) {
 							)
 						}
 					>
-						<SelectTrigger className="w-full max-w-md" aria-label="Tier">
+						<SelectTrigger
+							className="w-full max-w-md"
+							aria-label="Tier"
+							aria-invalid={errors.tierPolicyId ? true : undefined}
+							aria-describedby={errors.tierPolicyId ? tierErrorId : undefined}
+						>
 							<SelectValue />
 						</SelectTrigger>
 						<SelectContent>
@@ -131,26 +168,31 @@ export function KeyStep({ byok }: { byok: ByokForm }) {
 							))}
 						</SelectContent>
 					</Select>
+					<FieldError id={tierErrorId} message={errors.tierPolicyId} />
 				</FormSection>
 			)}
 
-			<FormSection
-				icon={Tag}
-				title="Key name"
-				description="How the key reads in lists. Leave it empty to name it after the provider."
-			>
-				<Input
-					type="text"
-					className="w-full max-w-md"
-					value={values.keyName}
-					onChange={(e) => form.setFieldValue("keyName", e.currentTarget.value)}
-					placeholder={byok.keyNamePlaceholder}
-					aria-label="Key name"
-					aria-invalid={errors.keyName ? true : undefined}
-					aria-describedby={errors.keyName ? keyNameErrorId : undefined}
-				/>
-				<FieldError id={keyNameErrorId} message={errors.keyName} />
-			</FormSection>
+			{!byok.keyless && (
+				<FormSection
+					icon={Tag}
+					title="Key name"
+					description="How the key reads in lists. Leave it empty to name it after the provider."
+				>
+					<Input
+						type="text"
+						className="w-full max-w-md"
+						value={values.keyName}
+						onChange={(e) =>
+							form.setFieldValue("keyName", e.currentTarget.value)
+						}
+						placeholder={byok.keyNamePlaceholder}
+						aria-label="Key name"
+						aria-invalid={errors.keyName ? true : undefined}
+						aria-describedby={errors.keyName ? keyNameErrorId : undefined}
+					/>
+					<FieldError id={keyNameErrorId} message={errors.keyName} />
+				</FormSection>
+			)}
 		</div>
 	);
 }

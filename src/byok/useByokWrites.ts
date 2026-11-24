@@ -31,17 +31,32 @@ export interface ShareFailure {
 	message: string;
 }
 
+/** A team or project the account is shared with. */
+export interface StoredShare {
+	id: string;
+	label: string;
+	/** It held a share of the account, or reached it, before this request. */
+	existing: boolean;
+}
+
 export interface StoredKey {
-	hostKeyName: string;
+	/** Absent at a host that takes no key: only the account was made or set. */
+	hostKeyName?: string;
 	accountName: string;
+	/** The request made the account rather than adding to an existing one. */
+	accountMade: boolean;
 	/** The organization the provider named for the key. */
 	organization?: string;
+	/** Why the provider named no organization for the key. */
+	detectionNote?: string;
 	/** Why the provider refused a call made with the key. */
 	refusal?: string;
+	shares: readonly StoredShare[];
 	shareFailures: readonly ShareFailure[];
 }
 
 interface Progress {
+	accountMade: boolean;
 	accountId?: string;
 	accountName?: string;
 	hostKeyId?: string;
@@ -64,8 +79,10 @@ function storedKey(made: Progress): StoredKey {
 	return {
 		hostKeyName: required(made.hostKeyName, "key"),
 		accountName: required(made.accountName, "account"),
+		accountMade: made.accountMade,
 		...(made.organization ? { organization: made.organization } : {}),
 		...(made.refusal ? { refusal: made.refusal } : {}),
+		shares: [],
 		shareFailures: made.shareFailures,
 	};
 }
@@ -79,7 +96,7 @@ export function useByokWrites() {
 	const shareAccount = useShareAccount();
 
 	const settingsRef = useRef<ByokSettings | null>(null);
-	const progress = useRef<Progress>({ shareFailures: [] });
+	const progress = useRef<Progress>({ accountMade: false, shareFailures: [] });
 	const [stored, setStored] = useState<StoredKey | null>(null);
 
 	async function runWrite(write: ByokWrite): Promise<void> {
@@ -97,6 +114,7 @@ export function useByokWrites() {
 					metadata: metadata(write.displayName),
 					spec: { kind: PROVIDER_KIND, hostId: settings.hostId },
 				});
+				made.accountMade = true;
 				made.accountId = account.metadata.id;
 				made.accountName = account.metadata.name;
 				return;
@@ -178,11 +196,12 @@ export function useByokWrites() {
 			settingsRef.current = settings;
 			progress.current = settings.account
 				? {
+						accountMade: false,
 						accountId: settings.account.id,
 						accountName: settings.account.name,
 						shareFailures: [],
 					}
-				: { shareFailures: [] };
+				: { accountMade: false, shareFailures: [] };
 			setStored(null);
 			if (await runner.start(writes)) setStored(storedKey(progress.current));
 		},
