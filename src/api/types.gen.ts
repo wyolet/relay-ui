@@ -58,7 +58,7 @@ export interface paths {
         get?: never;
         /**
          * Update account by id
-         * @description Replaces the account. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field.
+         * @description Replaces the account. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.teamId on a project, spec.scope on a role binding) take it from that field. A service account keeps the project, team or user it was made under: a spec.projectId that contradicts its owner answers 400, a new owner 409 resource_in_use.
          */
         put: operations["update_account"];
         post?: never;
@@ -227,7 +227,7 @@ export interface paths {
         put?: never;
         /**
          * Share a provider account with a user, team, project or service account
-         * @description Creates an account owned by the receiver (a service account's by its project, held by it so only its lane draws on it) that reaches the real account's keys: current ones, keys added later, and their rotations. The shared account holds no keys and never shows a secret; its requests count on the real account's tier, and a policy bound to it only narrows them. It changes no routing by itself: the receiving scope uses it by listing it in one of its pools. Only the real account's owner shares it: its user alone for a personal account (no admin), an admin of its team, project or the system otherwise (403). A receiver that does not exist, or that the caller may not see, answers 404. One share per receiver: a second answers 409 share_exists. A shared account is not shared on: 409 reshare_refused. A receiver that already reaches the account through ownership (a project of the team that owns it, any scope for a system account) answers 409 already_reachable. A user whose personal accounts are turned off answers 403 personal_account_off: share with their team or project instead.
+         * @description Creates an account owned by the receiver (a service account's by the service account's project, team or user, held by it so only its lane draws on it) that reaches the real account's keys: current ones, keys added later, and their rotations. The shared account holds no keys and never shows a secret; its requests count on the real account's tier, and a policy bound to it only narrows them. It changes no routing by itself: the receiving scope uses it by listing it in one of its pools. Only the real account's owner shares it: its user alone for a personal account (no admin), an admin of its team, project or the system otherwise (403). A receiver that does not exist, or that the caller may not see, answers 404. One share per receiver: a second answers 409 share_exists. A shared account is not shared on: 409 reshare_refused. A receiver that already reaches the account through ownership (a project of the team that owns it, any scope for a system account) answers 409 already_reachable. A user whose personal accounts are turned off, or a service account that user owns, answers 403 personal_account_off: share with their team or project instead.
          */
         post: operations["share_account"];
         delete?: never;
@@ -470,7 +470,7 @@ export interface paths {
         get?: never;
         /**
          * Update budget by id
-         * @description Replaces the budget. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field. The update is refused with 403 policy_in_use while a policy linking the budget is applied to an account whose policy the caller may not set, as an update of that policy would be; blockedBy lists those accounts.
+         * @description Replaces the budget. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.teamId on a project, spec.scope on a role binding) take it from that field. A service account keeps the project, team or user it was made under: a spec.projectId that contradicts its owner answers 400, a new owner 409 resource_in_use. The update is refused with 403 policy_in_use while a policy linking the budget is applied to an account whose policy the caller may not set, as an update of that policy would be; blockedBy lists those accounts.
          */
         put: operations["update_budget"];
         post?: never;
@@ -738,7 +738,7 @@ export interface paths {
         get?: never;
         /**
          * Update group by id
-         * @description Replaces the group. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field.
+         * @description Replaces the group. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.teamId on a project, spec.scope on a role binding) take it from that field. A service account keeps the project, team or user it was made under: a spec.projectId that contradicts its owner answers 400, a new owner 409 resource_in_use.
          */
         put: operations["update_group"];
         post?: never;
@@ -866,7 +866,7 @@ export interface paths {
         get?: never;
         /**
          * Update host-binding by id
-         * @description Replaces the host-binding. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field.
+         * @description Replaces the host-binding. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.teamId on a project, spec.scope on a role binding) take it from that field. A service account keeps the project, team or user it was made under: a spec.projectId that contradicts its owner answers 400, a new owner 409 resource_in_use.
          */
         put: operations["update_host-binding"];
         post?: never;
@@ -934,7 +934,7 @@ export interface paths {
         get?: never;
         /**
          * Update host-key by id
-         * @description Replaces the host-key. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field.
+         * @description Replaces the host-key. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.teamId on a project, spec.scope on a role binding) take it from that field. A service account keeps the project, team or user it was made under: a spec.projectId that contradicts its owner answers 400, a new owner 409 resource_in_use.
          */
         put: operations["update_host-key"];
         post?: never;
@@ -1102,7 +1102,7 @@ export interface paths {
         get?: never;
         /**
          * Update host by id
-         * @description Replaces the host. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field.
+         * @description Replaces the host. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.teamId on a project, spec.scope on a role binding) take it from that field. A service account keeps the project, team or user it was made under: a spec.projectId that contradicts its owner answers 400, a new owner 409 resource_in_use.
          */
         put: operations["update_host"];
         post?: never;
@@ -1270,7 +1270,7 @@ export interface paths {
         get?: never;
         /**
          * Update key by id
-         * @description Replaces the key. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field.
+         * @description Replaces the key. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.teamId on a project, spec.scope on a role binding) take it from that field. A service account keeps the project, team or user it was made under: a spec.projectId that contradicts its owner answers 400, a new owner 409 resource_in_use.
          */
         put: operations["update_key"];
         post?: never;
@@ -1542,7 +1542,7 @@ export interface paths {
         get?: never;
         /**
          * Update model by id
-         * @description Replaces the model. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field.
+         * @description Replaces the model. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.teamId on a project, spec.scope on a role binding) take it from that field. A service account keeps the project, team or user it was made under: a spec.projectId that contradicts its owner answers 400, a new owner 409 resource_in_use.
          */
         put: operations["update_model"];
         post?: never;
@@ -1758,7 +1758,7 @@ export interface paths {
         get?: never;
         /**
          * Update policy by id
-         * @description Replaces the policy. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field. The update is refused with 403 policy_in_use while the policy is applied, through an enabled policy binding, to an account whose policy the caller may not set (the check PUT /accounts/{ref}/policy runs on the binding holding it); blockedBy lists those accounts. An admin is never refused. A policy bound nowhere is not checked. POST /policies/{ref}/duplicate makes a copy to edit instead.
+         * @description Replaces the policy. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.teamId on a project, spec.scope on a role binding) take it from that field. A service account keeps the project, team or user it was made under: a spec.projectId that contradicts its owner answers 400, a new owner 409 resource_in_use. The update is refused with 403 policy_in_use while the policy is applied, through an enabled policy binding, to an account whose policy the caller may not set (the check PUT /accounts/{ref}/policy runs on the binding holding it); blockedBy lists those accounts. An admin is never refused. A policy bound nowhere is not checked. POST /policies/{ref}/duplicate makes a copy to edit instead.
          */
         put: operations["update_policy"];
         post?: never;
@@ -1966,7 +1966,7 @@ export interface paths {
         get?: never;
         /**
          * Update policy-binding by id
-         * @description Replaces the policy-binding. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field.
+         * @description Replaces the policy-binding. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.teamId on a project, spec.scope on a role binding) take it from that field. A service account keeps the project, team or user it was made under: a spec.projectId that contradicts its owner answers 400, a new owner 409 resource_in_use.
          */
         put: operations["update_policy-binding"];
         post?: never;
@@ -2034,7 +2034,7 @@ export interface paths {
         get?: never;
         /**
          * Update pool by id
-         * @description Replaces the pool. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field.
+         * @description Replaces the pool. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.teamId on a project, spec.scope on a role binding) take it from that field. A service account keeps the project, team or user it was made under: a spec.projectId that contradicts its owner answers 400, a new owner 409 resource_in_use.
          */
         put: operations["update_pool"];
         post?: never;
@@ -2162,7 +2162,7 @@ export interface paths {
         get?: never;
         /**
          * Update pricing by id
-         * @description Replaces the pricing. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field.
+         * @description Replaces the pricing. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.teamId on a project, spec.scope on a role binding) take it from that field. A service account keeps the project, team or user it was made under: a spec.projectId that contradicts its owner answers 400, a new owner 409 resource_in_use.
          */
         put: operations["update_pricing"];
         post?: never;
@@ -2270,7 +2270,7 @@ export interface paths {
         get?: never;
         /**
          * Update project by id
-         * @description Replaces the project. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field.
+         * @description Replaces the project. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.teamId on a project, spec.scope on a role binding) take it from that field. A service account keeps the project, team or user it was made under: a spec.projectId that contradicts its owner answers 400, a new owner 409 resource_in_use.
          */
         put: operations["update_project"];
         post?: never;
@@ -2378,7 +2378,7 @@ export interface paths {
         get?: never;
         /**
          * Update provider by id
-         * @description Replaces the provider. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field.
+         * @description Replaces the provider. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.teamId on a project, spec.scope on a role binding) take it from that field. A service account keeps the project, team or user it was made under: a spec.projectId that contradicts its owner answers 400, a new owner 409 resource_in_use.
          */
         put: operations["update_provider"];
         post?: never;
@@ -2586,7 +2586,7 @@ export interface paths {
         get?: never;
         /**
          * Update rate-limit by id
-         * @description Replaces the rate-limit. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field. The update is refused with 403 policy_in_use while a policy linking the rate limit is applied to an account whose policy the caller may not set, as an update of that policy would be; blockedBy lists those accounts.
+         * @description Replaces the rate-limit. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.teamId on a project, spec.scope on a role binding) take it from that field. A service account keeps the project, team or user it was made under: a spec.projectId that contradicts its owner answers 400, a new owner 409 resource_in_use. The update is refused with 403 policy_in_use while a policy linking the rate limit is applied to an account whose policy the caller may not set, as an update of that policy would be; blockedBy lists those accounts.
          */
         put: operations["update_rate-limit"];
         post?: never;
@@ -2714,7 +2714,7 @@ export interface paths {
         get?: never;
         /**
          * Update role-binding by id
-         * @description Replaces the role-binding. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field.
+         * @description Replaces the role-binding. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.teamId on a project, spec.scope on a role binding) take it from that field. A service account keeps the project, team or user it was made under: a spec.projectId that contradicts its owner answers 400, a new owner 409 resource_in_use.
          */
         put: operations["update_role-binding"];
         post?: never;
@@ -2782,7 +2782,7 @@ export interface paths {
         get?: never;
         /**
          * Update role by id
-         * @description Replaces the role. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field.
+         * @description Replaces the role. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.teamId on a project, spec.scope on a role binding) take it from that field. A service account keeps the project, team or user it was made under: a spec.projectId that contradicts its owner answers 400, a new owner 409 resource_in_use.
          */
         put: operations["update_role"];
         post?: never;
@@ -3034,7 +3034,7 @@ export interface paths {
         get?: never;
         /**
          * Update service-account by id
-         * @description Replaces the service-account. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field.
+         * @description Replaces the service-account. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.teamId on a project, spec.scope on a role binding) take it from that field. A service account keeps the project, team or user it was made under: a spec.projectId that contradicts its owner answers 400, a new owner 409 resource_in_use.
          */
         put: operations["update_service-account"];
         post?: never;
@@ -3566,7 +3566,7 @@ export interface paths {
         get?: never;
         /**
          * Update team by id
-         * @description Replaces the team. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field.
+         * @description Replaces the team. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.teamId on a project, spec.scope on a role binding) take it from that field. A service account keeps the project, team or user it was made under: a spec.projectId that contradicts its owner answers 400, a new owner 409 resource_in_use.
          */
         put: operations["update_team"];
         post?: never;
@@ -4110,7 +4110,7 @@ export interface components {
              * @description Kind of the owning scope: one a service account may be owned by.
              * @enum {string}
              */
-            kind?: "project";
+            kind?: "project" | "team" | "user";
         };
         AgentRemoval: {
             /**
@@ -7400,7 +7400,7 @@ export interface components {
             /** @description Identity and provenance: id, name, owner, labels. */
             metadata: components["schemas"]["MetadataCreate"];
             /** @description The row's configuration. */
-            spec: components["schemas"]["ServiceAccountSpec"];
+            spec?: components["schemas"]["ServiceAccountSpec"];
         };
         ServiceAccountList: {
             /**
@@ -7420,8 +7420,12 @@ export interface components {
         ServiceAccountSpec: {
             /** @description False refuses inference with the service account's keys (401 unauthenticated). Omitted means true. */
             enabled?: boolean;
-            /** @description Id of the project the service account belongs to. The owner follows it. */
-            projectId: string;
+            /** @description Id of the owning project when metadata.owner is a project. A create that names only spec.projectId is owned by that project. */
+            projectId?: string;
+            /** @description Id of the owning team when metadata.owner is a team. Mirrors the owner; ignored on write. */
+            readonly teamId?: string;
+            /** @description Id of the owning user when metadata.owner is a user: the user's personal bot. Mirrors the owner; ignored on write. */
+            readonly userId?: string;
         };
         ShareAccountRef: {
             /** @description Id of the shared account. */
