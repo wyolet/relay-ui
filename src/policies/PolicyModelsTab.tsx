@@ -18,6 +18,7 @@ import {
 	usePolicyExcludedModels,
 	usePolicyModels,
 } from "@/policies/usePolicyModels";
+import { logoSize } from "@/shared/CatalogIcon";
 import { EmptyPanel } from "@/shared/EmptyPanel";
 import { OptionRow } from "@/shared/OptionRow";
 
@@ -175,9 +176,9 @@ function HostGroup({ rows }: { rows: PolicyModelView[] }) {
 		<section className="rounded-md border border-border bg-card overflow-hidden">
 			<header className="flex items-center gap-3 px-3 py-2 border-b border-border bg-muted/30">
 				{host ? (
-					<HostLogo host={hostRefLogo(host)} size={20} />
+					<HostLogo host={hostRefLogo(host)} size={logoSize.stacked} />
 				) : (
-					<div className="w-5 h-5 rounded bg-muted" aria-hidden />
+					<div className="size-8 rounded bg-muted" aria-hidden />
 				)}
 				<div className="min-w-0 flex-1">
 					<div className="text-sm font-medium text-foreground truncate">

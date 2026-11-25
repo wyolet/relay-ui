@@ -1,6 +1,7 @@
 import type { Host } from "@/api/types/host";
 import { HostLogo } from "@/hosts/HostLogo";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
+import { logoSize as catalogLogoSize } from "@/shared/CatalogIcon";
 
 interface HostCellProps {
 	host: Host | undefined;
@@ -21,7 +22,7 @@ export function HostCell({
 	size = "md",
 	accessory,
 }: HostCellProps) {
-	const logoSize = size === "sm" ? 24 : 32;
+	const logoSize = catalogLogoSize.stacked;
 	const labelClass =
 		size === "sm"
 			? "text-sm text-foreground"

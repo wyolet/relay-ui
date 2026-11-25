@@ -12,6 +12,7 @@ import {
 	type ProviderReferences,
 	useProviderReferences,
 } from "@/providers/useProviderReferences";
+import { logoSize } from "@/shared/CatalogIcon";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
 import { DetailTable, Td } from "@/shared/DetailTable";
 import { EmptyState } from "@/shared/EmptyState";
@@ -135,11 +136,7 @@ function Header({
 	return (
 		<div className="flex items-start justify-between gap-4">
 			<div className="min-w-0 flex items-start gap-3">
-				<ProviderLogo
-					provider={provider}
-					size={44}
-					className="mt-0.5 shrink-0"
-				/>
+				<ProviderLogo provider={provider} size={logoSize.header} />
 				<div className="min-w-0">
 					<h1 className="text-xl font-semibold text-foreground truncate flex items-center gap-2 flex-wrap">
 						{displayLabel(provider.metadata)}

@@ -19,6 +19,7 @@ import {
 } from "@/policies/usePolicyLinkChoices";
 import { usePolicyModels } from "@/policies/usePolicyModels";
 import { SharedLinkLabel } from "@/rate-limits/SharedLinkLabel";
+import { logoSize } from "@/shared/CatalogIcon";
 import { DetailEmpty } from "@/shared/DetailCard";
 import { SectionTitle } from "@/shared/SectionTitle";
 import { StatCard, StatGrid } from "@/shared/StatCard";
@@ -184,7 +185,7 @@ function HostsPanel({ policy }: { policy: Policy }) {
 					const keyCount = hostKeys?.length ?? 0;
 					return (
 						<li key={host.id} className="flex items-center gap-3 px-3 py-2">
-							<HostLogo host={hostRefLogo(host)} size={22} />
+							<HostLogo host={hostRefLogo(host)} size={logoSize.stacked} />
 							<div className="flex-1 min-w-0">
 								<div className="text-sm text-foreground truncate">
 									{host.displayName?.trim() || host.name}

@@ -13,6 +13,7 @@ import { activeCapabilities } from "@/models/modelDetail";
 import { useModelLineActions } from "@/models/useModelLineActions";
 import { RateValue } from "@/pricing/MeterGrid";
 import { AddPriceLink } from "@/pricing/ModelPrice";
+import { logoSize } from "@/shared/CatalogIcon";
 import {
 	LineColumns,
 	LineRow,
@@ -58,7 +59,7 @@ export function ModelLineRow({ line }: { line: ModelLine }) {
 	return (
 		<LineRow cols={COLS} dimmed={!actions.enabled}>
 			<span className="flex min-w-0 items-center gap-2.5">
-				<ModelLogo model={model} size={20} />
+				<ModelLogo model={model} size={logoSize.stacked} />
 				<span className="grid min-w-0">
 					<span className="flex min-w-0 items-center gap-2">
 						<Link

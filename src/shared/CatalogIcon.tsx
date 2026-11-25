@@ -1,5 +1,8 @@
 import { useState } from "react";
 
+/** Logo edge in px: beside one line of text, beside a title over its slug, and in a detail page header. */
+export const logoSize = { line: 20, stacked: 32, header: 48 } as const;
+
 /**
  * A catalog object's square icon by `path`, or its initial when there is none
  * or the file fails to load. Catalog icons carry their own background (a tile
@@ -31,10 +34,10 @@ export function CatalogIcon({
 				aria-hidden="true"
 				title={title}
 				className={[
-					"inline-flex shrink-0 items-center justify-center rounded-sm bg-muted text-[10px] font-medium text-muted-foreground",
+					"inline-flex shrink-0 items-center justify-center rounded-sm bg-muted font-medium text-muted-foreground",
 					className ?? "",
 				].join(" ")}
-				style={style}
+				style={{ ...style, fontSize: Math.max(10, Math.round(size * 0.45)) }}
 			>
 				{label.trim().charAt(0).toUpperCase() || "?"}
 			</span>

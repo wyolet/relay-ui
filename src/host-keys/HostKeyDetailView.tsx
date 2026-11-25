@@ -9,6 +9,7 @@ import type { LinkedPolicyRow } from "@/host-keys/linkedPolicies";
 import { SecretRotateDialog } from "@/host-keys/SecretRotateDialog";
 import { useHostKeyDetail } from "@/host-keys/useHostKeyDetail";
 import { HostLogo } from "@/hosts/HostLogo";
+import { logoSize } from "@/shared/CatalogIcon";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import {
 	DetailCard,
@@ -78,9 +79,9 @@ export function HostKeyDetailView({ name }: { name: string }) {
 			<header className="flex items-start justify-between gap-4">
 				<div className="min-w-0 flex items-start gap-3">
 					{view.host ? (
-						<HostLogo host={view.host} size={36} className="mt-0.5 shrink-0" />
+						<HostLogo host={view.host} size={logoSize.header} />
 					) : (
-						<div className="mt-0.5 w-9 h-9 rounded-md bg-muted border border-border shrink-0" />
+						<div className="size-12 rounded-md bg-muted border border-border shrink-0" />
 					)}
 					<div className="min-w-0">
 						<h1 className="text-xl font-semibold text-foreground truncate flex items-center gap-2">

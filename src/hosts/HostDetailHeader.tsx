@@ -3,6 +3,7 @@ import type { Host } from "@/api/types/host";
 import { HostLogo } from "@/hosts/HostLogo";
 import { useHostHeader } from "@/hosts/useHostHeader";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
+import { logoSize } from "@/shared/CatalogIcon";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
 import {
 	CatalogDetachedBadge,
@@ -29,7 +30,7 @@ export function HostDetailHeader({
 	return (
 		<div className="flex items-start justify-between gap-4">
 			<div className="min-w-0 flex items-start gap-3">
-				<HostLogo host={host} size={44} className="mt-0.5 shrink-0" />
+				<HostLogo host={host} size={logoSize.header} />
 				<div className="min-w-0">
 					<h1 className="text-xl font-semibold text-foreground truncate flex items-center gap-2">
 						{displayLabel(host.metadata)}
