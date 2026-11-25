@@ -9,8 +9,9 @@ import {
 } from "@/settings/useGovernanceLevel";
 import { useSystemSettings } from "@/settings/useSystemSettings";
 import { useTrafficSettings } from "@/settings/useTrafficSettings";
-import { LineTable, SwitchCell } from "@/shared/LineGrid";
+import { LineTable } from "@/shared/LineGrid";
 import { PermissionLevelSwitch } from "@/shared/PermissionLevelSwitch";
+import { Switch } from "@/shared/Switch";
 
 function Rows({ children }: { children: React.ReactNode }) {
 	return <LineTable minWidth="min-w-[34rem]">{children}</LineTable>;
@@ -31,12 +32,14 @@ function AccessSection() {
 							: "Off for everyone"
 				}
 				control={
-					<SwitchCell
-						checked={s.personalOn ?? false}
-						onChange={s.setPersonalOn}
-						disabled={s.personalOn === undefined || s.personalPending}
-						label="Personal accounts"
-					/>
+					s.personalOn !== undefined && (
+						<Switch
+							checked={s.personalOn}
+							onChange={s.setPersonalOn}
+							disabled={s.personalPending}
+							label="Personal accounts"
+						/>
+					)
 				}
 			/>
 			<SettingRow
@@ -74,12 +77,14 @@ function TrafficSection() {
 				hint="Accept requests that bring their own upstream credentials."
 				state={s.proxyOn === undefined ? undefined : s.proxyOn ? "On" : "Off"}
 				control={
-					<SwitchCell
-						checked={s.proxyOn ?? false}
-						onChange={s.setProxyOn}
-						disabled={s.proxyOn === undefined || s.pending}
-						label="Proxy mode"
-					/>
+					s.proxyOn !== undefined && (
+						<Switch
+							checked={s.proxyOn}
+							onChange={s.setProxyOn}
+							disabled={s.pending}
+							label="Proxy mode"
+						/>
+					)
 				}
 			/>
 			<SettingRow
@@ -93,12 +98,14 @@ function TrafficSection() {
 							: "A key is required"
 				}
 				control={
-					<SwitchCell
-						checked={s.unauthenticatedOn ?? false}
-						onChange={s.setUnauthenticatedOn}
-						disabled={!s.proxyOn || s.pending}
-						label="Requests without a key"
-					/>
+					s.unauthenticatedOn !== undefined && (
+						<Switch
+							checked={s.unauthenticatedOn}
+							onChange={s.setUnauthenticatedOn}
+							disabled={!s.proxyOn || s.pending}
+							label="Requests without a key"
+						/>
+					)
 				}
 			/>
 			<SettingRow
@@ -122,12 +129,14 @@ function DataSection() {
 					s.captureOn === undefined ? undefined : s.captureOn ? "On" : "Off"
 				}
 				control={
-					<SwitchCell
-						checked={s.captureOn ?? false}
-						onChange={s.setCaptureOn}
-						disabled={s.captureOn === undefined || s.pending}
-						label="Payload capture"
-					/>
+					s.captureOn !== undefined && (
+						<Switch
+							checked={s.captureOn}
+							onChange={s.setCaptureOn}
+							disabled={s.pending}
+							label="Payload capture"
+						/>
+					)
 				}
 			/>
 			<SettingRow

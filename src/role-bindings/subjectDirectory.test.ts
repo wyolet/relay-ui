@@ -24,16 +24,18 @@ describe("subjectFilterOptions", () => {
 describe("subjectDisplay", () => {
 	test("names a known subject", () => {
 		expect(subjectDisplay({ kind: "user", id: "u1" }, dir)).toEqual({
-			text: "User · alice",
+			kind: "User",
+			label: "alice",
 			known: true,
 		});
-		expect(subjectDisplay({ kind: "group", name: "eng" }, dir).text).toBe(
-			"Group · Engineering",
+		expect(subjectDisplay({ kind: "group", name: "eng" }, dir).label).toBe(
+			"Engineering",
 		);
 	});
 	test("keeps the raw reference for one it can't look up", () => {
 		expect(subjectDisplay({ kind: "user", id: "u9" }, dir)).toEqual({
-			text: "user:u9",
+			kind: "User",
+			label: "u9",
 			known: false,
 		});
 	});

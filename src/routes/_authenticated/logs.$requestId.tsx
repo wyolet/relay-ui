@@ -25,9 +25,7 @@ function LogDetailPage() {
 				<ChevronLeft className="size-3.5" aria-hidden="true" />
 				Back to logs
 			</Link>
-			<div className="max-w-3xl">
-				<LogDetailPanel requestId={requestId} labelFor={labelFor} />
-			</div>
+			<LogDetailPanel requestId={requestId} labelFor={labelFor} />
 		</div>
 	);
 }

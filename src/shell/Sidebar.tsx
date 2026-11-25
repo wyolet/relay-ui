@@ -82,12 +82,14 @@ export function Sidebar() {
 			</SidebarContent>
 
 			<SidebarFooter>
-				<SidebarMenu>
-					<NavMenuItem
-						item={SETTINGS_ITEM}
-						active={isActive(path, SETTINGS_ITEM)}
-					/>
-				</SidebarMenu>
+				{visible(SETTINGS_ITEM) && (
+					<SidebarMenu>
+						<NavMenuItem
+							item={SETTINGS_ITEM}
+							active={isActive(path, SETTINGS_ITEM)}
+						/>
+					</SidebarMenu>
+				)}
 				<AccountMenu />
 			</SidebarFooter>
 

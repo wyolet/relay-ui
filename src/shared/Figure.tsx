@@ -25,16 +25,16 @@ export function Figure({
 			{/* Joined by hand: tailwind-merge reads text-mini-figure as a color and
 			    would drop it against text-foreground. */}
 			<span
-				className={`truncate font-display text-mini-figure text-foreground tabular-nums ${size === "hero" ? "lg:text-figure" : ""}`}
+				className={`truncate font-display text-mini-figure text-foreground tabular-nums ${size === "hero" ? "xl:text-figure" : ""}`}
+				title={value}
 			>
 				{value}
 			</span>
 			<span className="truncate text-label text-ink-2">{label}</span>
-			{note && (
-				<span className="truncate text-meta text-ink-3" title={note}>
-					{note}
-				</span>
-			)}
+			{/* The note line always holds its height, so a figure without one stays level with its row. */}
+			<span className="truncate text-meta text-ink-3" title={note}>
+				{note ?? <>&nbsp;</>}
+			</span>
 		</div>
 	);
 }
@@ -84,7 +84,7 @@ export function FigureSkeleton({
 		<div className="grid min-w-0 content-end gap-1.5" aria-hidden>
 			{trend && <Trend values={Array<null>(7).fill(null)} />}
 			<span
-				className={`font-display text-mini-figure ${size === "hero" ? "lg:text-figure" : ""}`}
+				className={`font-display text-mini-figure ${size === "hero" ? "xl:text-figure" : ""}`}
 			>
 				<TextPlaceholder width="w-[2.2em]" />
 			</span>

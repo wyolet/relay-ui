@@ -13,6 +13,7 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as SetupRouteImport } from './routes/setup'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedSplatRouteImport } from './routes/_authenticated/$'
 import { Route as AuthenticatedAuditRouteImport } from './routes/_authenticated/audit'
 import { Route as AuthenticatedBootstrapRouteImport } from './routes/_authenticated/bootstrap'
 import { Route as AuthenticatedGroupsRouteImport } from './routes/_authenticated/groups'
@@ -132,6 +133,11 @@ const SetupRoute = SetupRouteImport.update({
 const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedSplatRoute = AuthenticatedSplatRouteImport.update({
+  id: '/$',
+  path: '/$',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedAuditRoute = AuthenticatedAuditRouteImport.update({
@@ -708,6 +714,7 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/login': typeof LoginRoute
   '/setup': typeof SetupRoute
+  '/$': typeof AuthenticatedSplatRoute
   '/audit': typeof AuthenticatedAuditRoute
   '/bootstrap': typeof AuthenticatedBootstrapRoute
   '/groups': typeof AuthenticatedGroupsRouteWithChildren
@@ -813,6 +820,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/setup': typeof SetupRoute
+  '/$': typeof AuthenticatedSplatRoute
   '/audit': typeof AuthenticatedAuditRoute
   '/bootstrap': typeof AuthenticatedBootstrapRoute
   '/keys': typeof AuthenticatedKeysRoute
@@ -908,6 +916,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
   '/setup': typeof SetupRoute
+  '/_authenticated/$': typeof AuthenticatedSplatRoute
   '/_authenticated/audit': typeof AuthenticatedAuditRoute
   '/_authenticated/bootstrap': typeof AuthenticatedBootstrapRoute
   '/_authenticated/groups': typeof AuthenticatedGroupsRouteWithChildren
@@ -1017,6 +1026,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/setup'
+    | '/$'
     | '/audit'
     | '/bootstrap'
     | '/groups'
@@ -1122,6 +1132,7 @@ export interface FileRouteTypes {
   to:
     | '/login'
     | '/setup'
+    | '/$'
     | '/audit'
     | '/bootstrap'
     | '/keys'
@@ -1216,6 +1227,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/login'
     | '/setup'
+    | '/_authenticated/$'
     | '/_authenticated/audit'
     | '/_authenticated/bootstrap'
     | '/_authenticated/groups'
@@ -1354,6 +1366,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/$': {
+      id: '/_authenticated/$'
+      path: '/$'
+      fullPath: '/$'
+      preLoaderRoute: typeof AuthenticatedSplatRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/audit': {
@@ -2343,6 +2362,7 @@ const AuthenticatedUsersRouteWithChildren =
   AuthenticatedUsersRoute._addFileChildren(AuthenticatedUsersRouteChildren)
 
 interface AuthenticatedRouteChildren {
+  AuthenticatedSplatRoute: typeof AuthenticatedSplatRoute
   AuthenticatedAuditRoute: typeof AuthenticatedAuditRoute
   AuthenticatedBootstrapRoute: typeof AuthenticatedBootstrapRoute
   AuthenticatedGroupsRoute: typeof AuthenticatedGroupsRouteWithChildren
@@ -2383,6 +2403,7 @@ interface AuthenticatedRouteChildren {
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedSplatRoute: AuthenticatedSplatRoute,
   AuthenticatedAuditRoute: AuthenticatedAuditRoute,
   AuthenticatedBootstrapRoute: AuthenticatedBootstrapRoute,
   AuthenticatedGroupsRoute: AuthenticatedGroupsRouteWithChildren,

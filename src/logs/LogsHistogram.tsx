@@ -67,9 +67,11 @@ export function LogsHistogram({ filter }: { filter: LogsFilter }) {
 	return (
 		<div>
 			<div className="mb-3 flex items-center justify-between text-meta text-ink-3">
-				<span>
-					{metric === "tokens" ? "Tokens" : "Requests"} over time ·{" "}
-					{windowLabel}
+				<span className="inline-flex items-baseline gap-2">
+					<span className="text-ink-2">
+						{metric === "tokens" ? "Tokens" : "Requests"} over time
+					</span>
+					<span>{windowLabel}</span>
 				</span>
 				<span className="inline-flex items-center gap-3">
 					{metric === "requests" && (

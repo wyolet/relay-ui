@@ -44,11 +44,11 @@ export function subjectFilterOptions(dir: SubjectDirectory): FilterOption[] {
 	];
 }
 
-/** "User · alice"; a subject the caller can't look up keeps its raw reference. */
+/** Kind "User", label "alice"; a subject the caller can't look up keeps its raw id or name. */
 export function subjectDisplay(
 	s: Subject,
 	dir: SubjectDirectory,
-): { text: string; known: boolean } {
+): { kind: string; label: string; known: boolean } {
 	const rows =
 		s.kind === "user"
 			? dir.users
@@ -58,7 +58,9 @@ export function subjectDisplay(
 	const row = rows.find((r) =>
 		s.kind === "group" ? r.name === s.name || r.id === s.id : r.id === s.id,
 	);
-	return row
-		? { text: `${KIND_LABEL[s.kind]} · ${row.label}`, known: true }
-		: { text: `${s.kind}:${s.name ?? s.id ?? ""}`, known: false };
+	return {
+		kind: KIND_LABEL[s.kind],
+		label: row ? row.label : (s.name ?? s.id ?? ""),
+		known: row !== undefined,
+	};
 }

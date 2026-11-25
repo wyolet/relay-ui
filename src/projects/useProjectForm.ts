@@ -192,6 +192,13 @@ export function useProjectForm({
 	const teamIdError = useStore(form.store, (s) =>
 		shownError(s.fieldMeta?.teamId, s.submissionAttempts),
 	);
+	const pickedTeam = scopeOptions(contexts, "team").find(
+		(o) => o.value === values.teamId,
+	);
+	const pickedPlacement =
+		placement && pickedTeam
+			? { ...placement, scope: pickedTeam.label }
+			: undefined;
 
 	return {
 		form,
@@ -201,17 +208,9 @@ export function useProjectForm({
 		displayNameError,
 		descriptionError,
 		picksTeam,
-		// A picked team is where the row lands, whatever the context.
-		placement:
-			placement && picksTeam
-				? {
-						...placement,
-						scope:
-							scopeOptions(contexts, "team").find(
-								(o) => o.value === values.teamId,
-							)?.label ?? placement.scope,
-					}
-				: placement,
+		// A picked team is where the row lands, whatever the context; until one
+		// is picked the Team field says so, not the context's scope.
+		placement: picksTeam ? pickedPlacement : placement,
 		teamOptions: scopeOptions(contexts, "team"),
 		teamIdError,
 	};

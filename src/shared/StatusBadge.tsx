@@ -32,6 +32,15 @@ export function QuietBadge({ children }: { children: React.ReactNode }) {
 	return <span className={quietBadgeClass}>{children}</span>;
 }
 
+/** A tag for a state that needs a look: off, deprecated. */
+export function WarnBadge({ children }: { children: React.ReactNode }) {
+	return (
+		<span className="inline-flex items-center whitespace-nowrap px-1.5 py-0.5 rounded text-[10px] font-medium bg-warning/10 text-warning border border-warning/30">
+			{children}
+		</span>
+	);
+}
+
 export function OwnerBadge({
 	label,
 	title = `${label}-owned and managed by Relay.`,

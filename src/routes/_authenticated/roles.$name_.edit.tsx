@@ -1,20 +1,30 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ChevronLeft } from "lucide-react";
 import { Suspense } from "react";
+import { licenseQueryOptions } from "@/api/hooks/license";
 import { roleDetailQueryOptions, useRole } from "@/api/hooks/roles";
 import { displayLabel } from "@/lib/displayLabel";
+import {
+	BuiltinRoleNotice,
+	CustomRolesNotice,
+} from "@/roles/CustomRolesNotice";
 import { RoleForm } from "@/roles/RoleForm";
+import { useRoleAuthoring } from "@/roles/useRoleAuthoring";
 import { PageLoader } from "@/shared/Spinner";
 
 export const Route = createFileRoute("/_authenticated/roles/$name_/edit")({
 	loader: ({ context, params }) =>
-		context.queryClient.ensureQueryData(roleDetailQueryOptions(params.name)),
+		Promise.all([
+			context.queryClient.ensureQueryData(roleDetailQueryOptions(params.name)),
+			context.queryClient.ensureQueryData(licenseQueryOptions),
+		]),
 	component: EditRolePage,
 });
 
 function EditRoleInner() {
 	const { name } = Route.useParams();
 	const { data: role } = useRole(name);
+	const { builtin, editable } = useRoleAuthoring(role);
 	const navigate = useNavigate();
 
 	return (
@@ -32,13 +42,21 @@ function EditRoleInner() {
 					Edit role
 				</h1>
 			</div>
-			<RoleForm
-				role={role}
-				onSaved={(savedName) =>
-					void navigate({ to: "/roles/$name", params: { name: savedName } })
-				}
-				onCancel={() => void navigate({ to: "/roles/$name", params: { name } })}
-			/>
+			{editable ? (
+				<RoleForm
+					role={role}
+					onSaved={(savedName) =>
+						void navigate({ to: "/roles/$name", params: { name: savedName } })
+					}
+					onCancel={() =>
+						void navigate({ to: "/roles/$name", params: { name } })
+					}
+				/>
+			) : builtin ? (
+				<BuiltinRoleNotice />
+			) : (
+				<CustomRolesNotice />
+			)}
 		</div>
 	);
 }

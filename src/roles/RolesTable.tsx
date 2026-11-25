@@ -15,7 +15,7 @@ import { activeFilterCount } from "@/filters/toQueryParams";
 import type { FilterDef, FilterState } from "@/filters/types";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { CustomRolesNotice } from "@/roles/CustomRolesNotice";
-import { ruleSummary } from "@/roles/RuleChips";
+import { RuleSummary } from "@/roles/RuleChips";
 import { isBuiltinRole } from "@/roles/vocabulary";
 import { Chip } from "@/shared/Chip";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
@@ -154,7 +154,7 @@ export function RolesTable() {
 												)}
 											</td>
 											<td className="px-3 py-2 text-xs text-muted-foreground">
-												{ruleSummary(role.spec.rules)}
+												<RuleSummary rules={role.spec.rules} />
 											</td>
 											<td className="px-3 py-2 text-right">
 												{builtin ? null : (

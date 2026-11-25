@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/popover";
 import type { FilterOption } from "@/filters/types";
 import { cn } from "@/lib/utils";
+import { MetaParts } from "@/shared/MetaParts";
 import { OptionRow } from "@/shared/OptionRow";
 import { SearchBox } from "@/shared/SearchBox";
 import { WarningNotes } from "@/shared/WarningNotes";
@@ -35,15 +36,24 @@ export function MultiSelect({
 	options,
 	selected,
 	onToggle,
+	invalid,
+	describedBy,
 }: {
 	label: string;
 	options: readonly FilterOption[];
 	selected: readonly string[];
 	onToggle: (value: string) => void;
+	/** Marks the trigger as a form field with an error. */
+	invalid?: boolean;
+	describedBy?: string;
 }) {
 	return (
 		<Popover>
-			<PopoverTrigger className={filterTriggerClassName}>
+			<PopoverTrigger
+				className={filterTriggerClassName}
+				aria-invalid={invalid ? true : undefined}
+				aria-describedby={describedBy}
+			>
 				{label}
 				{selected.length > 0 && <CountBadge n={selected.length} />}
 				<ChevronDown
@@ -66,7 +76,8 @@ export function MultiSelect({
 /** A check-list entry; a disabled one shows its state but can't be toggled. */
 export interface CheckOption extends FilterOption {
 	disabled?: boolean;
-	hint?: string;
+	/** Quiet text at the row's end; a list shows as separate parts. */
+	hint?: string | readonly string[];
 	/** Shown in the checked box in place of the tick, for an ordered pick. */
 	rank?: number;
 	/** Warnings under the row. */
@@ -83,7 +94,7 @@ interface MultiCheckListProps {
 /** The check list in a bordered box, as a form field. */
 export function BoxedCheckList(props: MultiCheckListProps) {
 	return (
-		<div className="max-w-md rounded-md border border-border p-2">
+		<div className="rounded-md border border-border p-2">
 			<MultiCheckList {...props} />
 		</div>
 	);
@@ -157,9 +168,10 @@ export function MultiCheckList({
 									<span className="sr-only">{`, rank ${o.rank}`}</span>
 								)}
 								{o.hint && (
-									<span className="ml-auto shrink-0 text-[11px] text-muted-foreground">
-										{o.hint}
-									</span>
+									<MetaParts
+										parts={o.hint}
+										className="ml-auto shrink-0 flex-nowrap"
+									/>
 								)}
 							</OptionRow>
 							{o.notes && (

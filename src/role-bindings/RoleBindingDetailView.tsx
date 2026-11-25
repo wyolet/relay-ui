@@ -4,7 +4,7 @@ import { useDeleteRoleBinding, useRoleBinding } from "@/api/hooks/roleBindings";
 import { useRoles } from "@/api/hooks/roles";
 import { displayLabel } from "@/lib/displayLabel";
 import { OwnerLink } from "@/projects/OwnerLink";
-import { subjectLabel } from "@/role-bindings/SubjectsEditor";
+import { SubjectChips } from "@/role-bindings/SubjectChips";
 import { isGlobalScope } from "@/role-bindings/scope";
 import { Chip } from "@/shared/Chip";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
@@ -112,16 +112,7 @@ export function RoleBindingDetailView({ name }: { name: string }) {
 				{subjects.length === 0 ? (
 					<DetailEmpty>This binding names no subjects.</DetailEmpty>
 				) : (
-					<div className="flex flex-wrap gap-1.5">
-						{subjects.map((s) => (
-							<Chip
-								key={subjectLabel(s)}
-								label={subjectLabel(s)}
-								mono
-								shape="box"
-							/>
-						))}
-					</div>
+					<SubjectChips subjects={subjects} />
 				)}
 			</DetailCard>
 

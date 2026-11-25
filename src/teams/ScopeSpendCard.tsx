@@ -1,8 +1,9 @@
 import { CircleDollarSign } from "lucide-react";
 import type { ScopeSpend } from "@/api/hooks/usage";
-import { DetailCard, DetailEmpty } from "@/shared/DetailCard";
+import { DetailCard, DetailEmpty, DetailListRow } from "@/shared/DetailCard";
+import { MetaParts } from "@/shared/MetaParts";
 import { StatCard } from "@/shared/StatCard";
-import { fmtCompact, fmtInt, fmtMoney } from "@/usage/format";
+import { fmtCompact, fmtInt, fmtMoneyCompact } from "@/usage/format";
 
 /**
  * This period's spend for a team or project. Renders nothing when the
@@ -22,7 +23,7 @@ export function ScopeSpendCard({
 }) {
 	if (unavailable || !spend) return null;
 	const total =
-		spend.total.usd === null ? "—" : fmtMoney(spend.total.usd, "USD");
+		spend.total.usd === null ? "—" : fmtMoneyCompact(spend.total.usd, "USD");
 	return (
 		<DetailCard title="Spend this period" icon={CircleDollarSign}>
 			<div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -39,16 +40,18 @@ export function ScopeSpendCard({
 				) : (
 					<ul className="divide-y divide-border">
 						{spend.rows.map((row) => (
-							<li
-								key={row.key}
-								className="flex items-center justify-between gap-3 py-2 first:pt-0 last:pb-0 text-xs"
-							>
+							<DetailListRow key={row.key}>
 								<span className="min-w-0 truncate">{renderKey(row.key)}</span>
-								<span className="font-mono text-muted-foreground shrink-0">
-									{row.cost.usd === null ? "—" : fmtMoney(row.cost.usd, "USD")}{" "}
-									· {fmtInt(row.requests)} req
-								</span>
-							</li>
+								<MetaParts
+									className="shrink-0 font-mono text-xs tabular-nums"
+									parts={[
+										row.cost.usd === null
+											? "—"
+											: fmtMoneyCompact(row.cost.usd, "USD"),
+										`${fmtInt(row.requests)} ${row.requests === 1 ? "request" : "requests"}`,
+									]}
+								/>
+							</DetailListRow>
 						))}
 					</ul>
 				)}

@@ -1,7 +1,9 @@
-import { useRouter } from "@tanstack/react-router";
-import { Lock } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Link, useRouter } from "@tanstack/react-router";
+import { ChevronLeft, Lock, SearchX } from "lucide-react";
+import type { ReactNode } from "react";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { AlertBanner } from "@/shared/AlertBanner";
+import { EmptyState } from "@/shared/EmptyState";
 
 function hasHttpStatus(error: unknown): error is { status: number } {
 	return (
@@ -41,8 +43,8 @@ export function NoAccessState({
 
 /**
  * Router-wide fallback for thrown query/loader errors. 403s degrade to
- * {@link NoAccessState}; everything else gets a compact AlertBanner with a
- * retry.
+ * {@link NoAccessState}, 404s to {@link NotFoundState} with a way back;
+ * everything else gets a compact AlertBanner with a retry.
  */
 export function RouteErrorState({ error }: { error: unknown }) {
 	const router = useRouter();
@@ -50,19 +52,46 @@ export function RouteErrorState({ error }: { error: unknown }) {
 	if (hasHttpStatus(error) && error.status === 403) {
 		return <NoAccessState />;
 	}
+	if (hasHttpStatus(error) && error.status === 404) {
+		return (
+			<NotFoundState
+				body={errorMessage(error)}
+				action={
+					<Link
+						to=".."
+						className={buttonVariants({ variant: "outline", size: "sm" })}
+					>
+						<ChevronLeft aria-hidden />
+						Back
+					</Link>
+				}
+			/>
+		);
+	}
 
 	return (
-		<div className="p-4">
-			<AlertBanner severity="error" title={errorMessage(error)}>
-				<Button
-					variant="outline"
-					size="sm"
-					className="mt-2"
-					onClick={() => router.invalidate()}
-				>
-					Try again
-				</Button>
-			</AlertBanner>
-		</div>
+		<AlertBanner severity="error" title={errorMessage(error)}>
+			<Button
+				variant="outline"
+				size="sm"
+				className="mt-2"
+				onClick={() => router.invalidate()}
+			>
+				Try again
+			</Button>
+		</AlertBanner>
+	);
+}
+
+/** A page or resource that doesn't exist; `action` leads somewhere that does. */
+export function NotFoundState({
+	body,
+	action,
+}: {
+	body: string;
+	action: ReactNode;
+}) {
+	return (
+		<EmptyState icon={SearchX} title="Not found" body={body} action={action} />
 	);
 }

@@ -5,6 +5,7 @@ import { useLogDetail, useLogs } from "@/api/hooks/logs";
 import { Button } from "@/components/ui/button";
 import { refusalLabel } from "@/lib/refusal";
 import { cn } from "@/lib/utils";
+import { Facts } from "@/shared/Facts";
 import { failureAttribution, failureReason } from "./attribution";
 import { FailureLayerBadge } from "./FailureLayerBadge";
 import { Field } from "./Field";
@@ -86,10 +87,12 @@ export function LogsTable({
 	return (
 		<div className="flex flex-col gap-2">
 			{matching !== undefined && (
-				<p className="text-meta text-ink-3 tabular-nums">
-					{matching} matching {matching === "1" ? "request" : "requests"} ·{" "}
-					{fmtInt(events.length)} loaded
-				</p>
+				<Facts
+					items={[
+						{ label: "Matching", value: matching },
+						{ label: "Loaded", value: fmtInt(events.length) },
+					]}
+				/>
 			)}
 			<div className="overflow-x-auto">
 				<table className="w-full text-meta">

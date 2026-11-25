@@ -1,22 +1,14 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import {
-	Boxes,
-	Building2,
-	ChevronLeft,
-	Link2,
-	ShieldCheck,
-	Users,
-} from "lucide-react";
+import { Boxes, Building2, ChevronLeft, Link2, Users } from "lucide-react";
 import { useProjectsInTeam } from "@/api/hooks/projects";
-import { useRoleBindingsAtScope } from "@/api/hooks/roleBindings";
 import { useDeleteTeam, useTeam, useTeamReferences } from "@/api/hooks/teams";
 import { resolveWindow, useScopeSpend } from "@/api/hooks/usage";
 import { displayLabel } from "@/lib/displayLabel";
 import { AccountPolicy } from "@/policy-bindings/AccountPolicy";
-import { subjectLabel } from "@/role-bindings/SubjectsEditor";
+import { ScopeRoleBindingsCard } from "@/role-bindings/ScopeRoleBindingsCard";
 import { Chip } from "@/shared/Chip";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
-import { DetailCard, DetailEmpty, DetailRow } from "@/shared/DetailCard";
+import { DetailCard, DetailEmpty, DetailListRow } from "@/shared/DetailCard";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
 import { DetailPageHeader } from "@/shared/DetailPageHeader";
 import { ReferencesList } from "@/shared/ReferencesList";
@@ -31,7 +23,6 @@ export function TeamDetailView({ name }: { name: string }) {
 	const { data: refs } = useTeamReferences(team.metadata.id);
 	const teamId = team.metadata.id ?? "";
 	const projects = useProjectsInTeam(teamId);
-	const bindings = useRoleBindingsAtScope("team", teamId);
 	const period = resolveWindow("month");
 	const { spend, unavailable } = useScopeSpend(
 		"team_id",
@@ -163,10 +154,7 @@ export function TeamDetailView({ name }: { name: string }) {
 				) : (
 					<ul className="divide-y divide-border">
 						{projectItems.map((p) => (
-							<li
-								key={p.metadata.name}
-								className="flex items-center justify-between gap-3 py-2 first:pt-0 last:pb-0 text-xs"
-							>
+							<DetailListRow key={p.metadata.name}>
 								<Link
 									to="/projects/$name"
 									params={{ name: p.metadata.name }}
@@ -175,52 +163,13 @@ export function TeamDetailView({ name }: { name: string }) {
 									{displayLabel(p.metadata)}
 								</Link>
 								<StatusBadge enabled={p.spec.enabled !== false} />
-							</li>
+							</DetailListRow>
 						))}
 					</ul>
 				)}
 			</DetailCard>
 
-			<DetailCard
-				title="Access at team scope"
-				icon={ShieldCheck}
-				action={
-					<Link
-						to="/role-bindings/new"
-						search={{ scope_kind: "team", scope_id: teamId }}
-						className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
-					>
-						New role binding
-					</Link>
-				}
-			>
-				{(bindings.data?.items ?? []).length === 0 ? (
-					<DetailEmpty>
-						No role bindings grant access at this team's scope.
-					</DetailEmpty>
-				) : (
-					<ul className="divide-y divide-border">
-						{(bindings.data?.items ?? []).map((b) => (
-							<li key={b.metadata.name} className="py-2 first:pt-0 last:pb-0">
-								<DetailRow
-									label={
-										<Link
-											to="/role-bindings/$name"
-											params={{ name: b.metadata.name }}
-											className="hover:underline"
-										>
-											{displayLabel(b.metadata)}
-										</Link>
-									}
-								>
-									{(b.spec.subjects ?? []).map(subjectLabel).join(", ") ||
-										"no subjects"}
-								</DetailRow>
-							</li>
-						))}
-					</ul>
-				)}
-			</DetailCard>
+			<ScopeRoleBindingsCard scopeKind="team" scopeId={teamId} />
 
 			<DetailCard title="References" icon={Link2}>
 				<ReferencesList

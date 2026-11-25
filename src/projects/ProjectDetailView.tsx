@@ -16,7 +16,6 @@ import {
 	useProject,
 	useProjectReferences,
 } from "@/api/hooks/projects";
-import { useRoleBindingsAtScope } from "@/api/hooks/roleBindings";
 import { useServiceAccountsInProject } from "@/api/hooks/serviceAccounts";
 import { useTeams } from "@/api/hooks/teams";
 import { resolveWindow, useScopeSpend } from "@/api/hooks/usage";
@@ -26,10 +25,15 @@ import { AccountChips } from "@/policy-bindings/AccountChips";
 import { AccountPolicy } from "@/policy-bindings/AccountPolicy";
 import { InheritedPolicies } from "@/policy-bindings/InheritedPolicies";
 import { useToggleProjectEnabled } from "@/projects/useToggleProjectEnabled";
-import { subjectLabel } from "@/role-bindings/SubjectsEditor";
+import { ScopeRoleBindingsCard } from "@/role-bindings/ScopeRoleBindingsCard";
 import { Chip } from "@/shared/Chip";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
-import { DetailCard, DetailEmpty, DetailRow } from "@/shared/DetailCard";
+import {
+	DetailCard,
+	DetailEmpty,
+	DetailListRow,
+	DetailRow,
+} from "@/shared/DetailCard";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
 import { DetailPageHeader } from "@/shared/DetailPageHeader";
 import { ReferencesList } from "@/shared/ReferencesList";
@@ -50,7 +54,6 @@ export function ProjectDetailView({ name }: { name: string }) {
 	const keys = useKeysForPrincipals(serviceAccountIds);
 	const policies = useProjectPolicies(projectId);
 	const policyBindings = usePolicyBindingsOwnedBy(projectId);
-	const roleBindings = useRoleBindingsAtScope("project", projectId);
 	const period = resolveWindow("month");
 	const { spend, unavailable } = useScopeSpend(
 		"project_id",
@@ -186,10 +189,7 @@ export function ProjectDetailView({ name }: { name: string }) {
 				) : (
 					<ul className="divide-y divide-border">
 						{(serviceAccounts.data?.items ?? []).map((sa) => (
-							<li
-								key={sa.metadata.name}
-								className="flex items-center justify-between gap-3 py-2 first:pt-0 last:pb-0 text-xs"
-							>
+							<DetailListRow key={sa.metadata.name}>
 								<Link
 									to="/service-accounts/$name"
 									params={{ name: sa.metadata.name }}
@@ -198,7 +198,7 @@ export function ProjectDetailView({ name }: { name: string }) {
 									{displayLabel(sa.metadata)}
 								</Link>
 								<StatusBadge enabled={sa.spec.enabled !== false} />
-							</li>
+							</DetailListRow>
 						))}
 					</ul>
 				)}
@@ -212,10 +212,7 @@ export function ProjectDetailView({ name }: { name: string }) {
 				) : (
 					<ul className="divide-y divide-border">
 						{(keys.data?.items ?? []).map((k) => (
-							<li
-								key={k.metadata.name}
-								className="flex items-center justify-between gap-3 py-2 first:pt-0 last:pb-0 text-xs"
-							>
+							<DetailListRow key={k.metadata.name}>
 								<Link
 									to="/keys/$name"
 									params={{ name: k.metadata.name }}
@@ -226,7 +223,7 @@ export function ProjectDetailView({ name }: { name: string }) {
 								<span className="text-muted-foreground">
 									{serviceAccountNames.get(k.spec.principal.id) ?? "—"}
 								</span>
-							</li>
+							</DetailListRow>
 						))}
 					</ul>
 				)}
@@ -238,10 +235,7 @@ export function ProjectDetailView({ name }: { name: string }) {
 				) : (
 					<ul className="divide-y divide-border">
 						{(policies.data?.items ?? []).map((p) => (
-							<li
-								key={p.metadata.name}
-								className="flex items-center justify-between gap-3 py-2 first:pt-0 last:pb-0 text-xs"
-							>
+							<DetailListRow key={p.metadata.name}>
 								<Link
 									to="/policies/$name"
 									params={{ name: p.metadata.name }}
@@ -250,7 +244,7 @@ export function ProjectDetailView({ name }: { name: string }) {
 									{displayLabel(p.metadata)}
 								</Link>
 								<StatusBadge enabled={p.spec.enabled !== false} />
-							</li>
+							</DetailListRow>
 						))}
 					</ul>
 				)}
@@ -274,70 +268,26 @@ export function ProjectDetailView({ name }: { name: string }) {
 				) : (
 					<ul className="divide-y divide-border">
 						{(policyBindings.data?.items ?? []).map((b) => (
-							<li key={b.metadata.name} className="py-2 first:pt-0 last:pb-0">
-								<DetailRow
-									label={
-										<Link
-											to="/policy-bindings/$name"
-											params={{ name: b.metadata.name }}
-											className="hover:underline"
-										>
-											{displayLabel(b.metadata)}
-										</Link>
-									}
+							<DetailListRow key={b.metadata.name}>
+								<Link
+									to="/policy-bindings/$name"
+									params={{ name: b.metadata.name }}
+									className="min-w-0 truncate text-foreground hover:underline"
 								>
-									{(b.spec.accountIds ?? []).length > 0 ? (
-										<AccountChips accountIds={b.spec.accountIds ?? []} />
-									) : (
-										<span className="text-muted-foreground">no accounts</span>
-									)}
-								</DetailRow>
-							</li>
+									{displayLabel(b.metadata)}
+								</Link>
+								{(b.spec.accountIds ?? []).length > 0 ? (
+									<AccountChips accountIds={b.spec.accountIds ?? []} />
+								) : (
+									<span className="text-muted-foreground">No accounts</span>
+								)}
+							</DetailListRow>
 						))}
 					</ul>
 				)}
 			</DetailCard>
 
-			<DetailCard
-				title="Access at project scope"
-				icon={ShieldCheck}
-				action={
-					<Link
-						to="/role-bindings/new"
-						search={{ scope_kind: "project", scope_id: projectId }}
-						className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
-					>
-						New role binding
-					</Link>
-				}
-			>
-				{(roleBindings.data?.items ?? []).length === 0 ? (
-					<DetailEmpty>
-						No role bindings grant access at this project's scope.
-					</DetailEmpty>
-				) : (
-					<ul className="divide-y divide-border">
-						{(roleBindings.data?.items ?? []).map((b) => (
-							<li key={b.metadata.name} className="py-2 first:pt-0 last:pb-0">
-								<DetailRow
-									label={
-										<Link
-											to="/role-bindings/$name"
-											params={{ name: b.metadata.name }}
-											className="hover:underline"
-										>
-											{displayLabel(b.metadata)}
-										</Link>
-									}
-								>
-									{(b.spec.subjects ?? []).map(subjectLabel).join(", ") ||
-										"no subjects"}
-								</DetailRow>
-							</li>
-						))}
-					</ul>
-				)}
-			</DetailCard>
+			<ScopeRoleBindingsCard scopeKind="project" scopeId={projectId} />
 
 			<DetailCard title="References" icon={Link2}>
 				<ReferencesList

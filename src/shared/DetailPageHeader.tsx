@@ -29,16 +29,16 @@ export function DetailPageHeader({
 }) {
 	const description = metadata.description?.trim();
 	return (
-		<header className="flex items-start justify-between gap-4">
+		<header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
 			<div className="min-w-0 flex items-start gap-3">
 				<div className="mt-0.5 w-9 h-9 rounded-md bg-muted border border-border shrink-0 flex items-center justify-center">
 					<Icon className="w-4 h-4 text-muted-foreground" aria-hidden />
 				</div>
 				<div className="min-w-0">
-					<h1 className="text-xl font-semibold text-foreground truncate flex items-center gap-2">
-						{displayLabel(metadata)}
+					<h1 className="flex min-w-0 items-center gap-2 text-xl font-semibold text-foreground">
+						<span className="min-w-0 truncate">{displayLabel(metadata)}</span>
 						{!hasDisplayName(metadata) && (
-							<span className="text-[11px] text-muted-foreground font-normal">
+							<span className="shrink-0 text-[11px] text-muted-foreground font-normal">
 								(no display name)
 							</span>
 						)}

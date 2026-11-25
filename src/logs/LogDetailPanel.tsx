@@ -4,7 +4,9 @@ import { type LogDetail, useLogDetail } from "@/api/hooks/logs";
 import { Button } from "@/components/ui/button";
 import { refusalLabel } from "@/lib/refusal";
 import { cn } from "@/lib/utils";
+import { EmptyPanel } from "@/shared/EmptyPanel";
 import { Segmented } from "@/shared/Segmented";
+import { ShortId } from "@/shared/ShortId";
 import { failureAttribution, failureReason } from "./attribution";
 import { FailureLayerBadge } from "./FailureLayerBadge";
 import { Field } from "./Field";
@@ -137,15 +139,15 @@ function PanelBody({
 						<Field label="Attempts">{String(log.attempts)}</Field>
 					)}
 					{log.streamed && <Field label="Streamed">yes</Field>}
+					<Field label="Request id">
+						<ShortId value={log.request_id} />
+					</Field>
 				</div>
 
 				{reason && <p className="mt-3 text-meta text-ink-2">{reason}</p>}
 				{log.error_message && (
 					<p className="mt-3 text-meta text-destructive">{log.error_message}</p>
 				)}
-				<code className="mt-3 block truncate font-mono text-meta text-ink-3">
-					{log.request_id}
-				</code>
 			</div>
 
 			{transcript && (
@@ -194,10 +196,9 @@ function Transcript({ messages }: { messages: ChatMessage[] }) {
 function RawBodies({ payload }: { payload: LogDetail["payload"] }) {
 	if (!payload) {
 		return (
-			<div className="m-3 rounded-md border border-dashed border-border px-3 py-4 text-center text-xs text-muted-foreground">
-				No bodies captured — this request's policy or key isn't opted into
-				payload logging.
-			</div>
+			<EmptyPanel title="No bodies captured" className="mt-4">
+				This request's policy or key isn't opted into payload logging.
+			</EmptyPanel>
 		);
 	}
 	return (

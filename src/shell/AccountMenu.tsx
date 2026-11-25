@@ -70,6 +70,7 @@ export function AccountMenu() {
 	const tokensEnabled = feature("tokens");
 	const label = username ?? "Account";
 	const initial = label.charAt(0).toUpperCase();
+	const roleLabel = isAdmin ? "Relay admin" : "Member";
 
 	return (
 		<>
@@ -93,7 +94,7 @@ export function AccountMenu() {
 									{label}
 								</span>
 								<span className="truncate text-[11px] text-muted-foreground">
-									{isAdmin ? "Relay admin" : "Member"}
+									{roleLabel}
 								</span>
 							</span>
 							<ChevronsUpDown className="ml-auto text-muted-foreground" />
@@ -109,18 +110,13 @@ export function AccountMenu() {
 								<span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-medium text-primary-foreground">
 									{initial}
 								</span>
-								<div className="min-w-0">
+								<div className="min-w-0" title={userId}>
 									<div className="truncate text-sm font-medium text-foreground">
 										{label}
 									</div>
-									{userId && (
-										<div
-											className="truncate font-mono text-[11px] text-muted-foreground"
-											title={userId}
-										>
-											{userId.slice(0, 8)}
-										</div>
-									)}
+									<div className="truncate text-[11px] text-muted-foreground">
+										{roleLabel}
+									</div>
 								</div>
 							</div>
 

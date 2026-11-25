@@ -3,8 +3,8 @@ import type { ReactNode } from "react";
 import type { SettingsDetailRoute } from "@/settings/sections";
 import { LineRow } from "@/shared/LineGrid";
 
-const COLS =
-	"grid-cols-[minmax(14rem,1.5fr)_minmax(10rem,1fr)_minmax(7rem,auto)]";
+// A fixed control track, so the state column starts at one x in every section.
+const COLS = "grid-cols-[minmax(14rem,1.5fr)_minmax(10rem,1fr)_16rem]";
 
 /** One setting: what it is, where it stands now, and the way to change it. */
 export function SettingRow({
@@ -29,7 +29,8 @@ export function SettingRow({
 			<span className="min-w-0 truncate text-ink-2">
 				{state === undefined ? <span className="text-ink-3">—</span> : state}
 			</span>
-			<span className="flex justify-end">{control}</span>
+			{/* pr-3 holds a switch's enlarged hit area inside the scroll box; every control shares it so right edges align. */}
+			<span className="flex justify-end pr-3">{control}</span>
 		</LineRow>
 	);
 }

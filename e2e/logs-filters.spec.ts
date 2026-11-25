@@ -42,7 +42,7 @@ test("a Logs dimension filter reaches the feed request", async ({ page }) => {
 
 	await page.goto("/logs");
 	// The first page asks for the match count; a capped answer reads "10,000+".
-	await expect(page.getByText("10,000+ matching requests · 1 loaded")).toBeVisible();
+	await expect(page.getByText("10,000+", { exact: true })).toBeVisible();
 	expect(feeds[0]?.get("count")).toBe("true");
 	await page.getByRole("button", { name: "Filter", exact: true }).click();
 	await page.getByRole("button", { name: "Team" }).click();
