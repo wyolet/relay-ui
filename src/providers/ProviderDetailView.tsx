@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useMutability } from "@/hooks/useMutability";
 import { HostCell } from "@/hosts/HostCell";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
-import { modelFamily } from "@/models/groupModelsByFamily";
+import { modelFamily } from "@/lib/modelsByHost";
 import { ModelsByFamily } from "@/models/ModelsByFamily";
 import { ProviderLogo } from "@/providers/ProviderLogo";
 import {

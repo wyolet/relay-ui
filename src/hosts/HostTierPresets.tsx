@@ -2,8 +2,10 @@ import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { type HostPolicies, useHostPolicies } from "@/api/hooks/hosts";
 import { RateLimitRuleChips } from "@/rate-limits/RateLimitRuleChips";
+import { Dash, LineColumns, LineRow, QuietTag } from "@/shared/LineGrid";
 import { StatusInline } from "@/shared/StatusBadge";
-import { Th } from "@/shared/Th";
+
+const COLS = "grid-cols-[minmax(10rem,1fr)_minmax(0,3fr)_5rem]";
 
 type PresetRateLimit = NonNullable<
 	NonNullable<HostPolicies["policies"]>[number]["rateLimits"]
@@ -28,68 +30,54 @@ export function HostTierPresets({
 	if (presets.length === 0) return empty;
 
 	return (
-		<div className="mt-2 flex flex-col gap-2">
-			<p className="text-[11px] text-muted-foreground">
+		<div className="mt-4 grid grid-cols-1 gap-3">
+			<p className="text-meta text-ink-3">
 				Policies this host owns. A preset applies once it is bound to an
 				account.
 			</p>
-			<div className="rounded-md border border-border bg-card overflow-hidden">
-				<table className="w-full text-sm">
-					<thead className="bg-muted/30 text-[10px] uppercase tracking-wide text-muted-foreground">
-						<tr>
-							<Th>Preset</Th>
-							<Th>Rate limits</Th>
-							<Th className="text-right">Status</Th>
-						</tr>
-					</thead>
-					<tbody className="divide-y divide-border">
-						{presets.map((p) => {
-							const rateLimits = p.rateLimits ?? [];
-							return (
-								<tr key={p.id} className="align-top">
-									<td className="px-3 py-2">
-										<Link
-											to="/policies/$name"
-											params={{ name: p.name }}
-											className="text-foreground hover:underline font-medium"
+			<div className="grid grid-cols-1">
+				<LineColumns cols={COLS}>
+					<span>Preset</span>
+					<span>Rate limits</span>
+					<span className="text-right">Status</span>
+				</LineColumns>
+				{presets.map((p) => {
+					const rateLimits = p.rateLimits ?? [];
+					return (
+						<LineRow key={p.id} cols={COLS} className="items-start">
+							<Link
+								to="/policies/$name"
+								params={{ name: p.name }}
+								className="truncate font-medium text-foreground hover:underline"
+							>
+								{p.name}
+							</Link>
+							{rateLimits.length === 0 ? (
+								<Dash />
+							) : (
+								<ul className="grid grid-cols-1 gap-1">
+									{rateLimits.map((rl) => (
+										<li
+											key={rl.id}
+											className="flex flex-wrap items-center gap-x-2 gap-y-1"
 										>
-											{p.name}
-										</Link>
-									</td>
-									<td className="px-3 py-2">
-										{rateLimits.length === 0 ? (
-											<span className="text-xs text-muted-foreground">—</span>
-										) : (
-											<ul className="flex flex-col gap-1">
-												{rateLimits.map((rl) => (
-													<li
-														key={rl.id}
-														className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs"
-													>
-														<span className="text-foreground">{rl.name}</span>
-														<span className="text-muted-foreground">
-															{scopeLabel(rl)}
-														</span>
-														{rl.limits?.length ? (
-															<RateLimitRuleChips limits={rl.limits} />
-														) : (
-															<span className="font-mono text-[11px] text-foreground">
-																no rules
-															</span>
-														)}
-													</li>
-												))}
-											</ul>
-										)}
-									</td>
-									<td className="px-3 py-2 text-right">
-										<StatusInline enabled={p.enabled} />
-									</td>
-								</tr>
-							);
-						})}
-					</tbody>
-				</table>
+											<span className="text-foreground">{rl.name}</span>
+											<QuietTag>{scopeLabel(rl)}</QuietTag>
+											{rl.limits?.length ? (
+												<RateLimitRuleChips limits={rl.limits} />
+											) : (
+												<QuietTag>no rules</QuietTag>
+											)}
+										</li>
+									))}
+								</ul>
+							)}
+							<span className="text-right">
+								<StatusInline enabled={p.enabled} />
+							</span>
+						</LineRow>
+					);
+				})}
 			</div>
 		</div>
 	);

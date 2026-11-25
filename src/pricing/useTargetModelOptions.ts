@@ -1,4 +1,5 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
+import { bindingsByHost, useBindings } from "@/api/hooks/bindings";
 import { modelsListQueryOptions } from "@/api/hooks/models";
 import { displayLabel } from "@/lib/displayLabel";
 
@@ -19,6 +20,27 @@ export function useTargetModelOptions(): TargetModelOption[] {
 			return [{ id, label: displayLabel(m.metadata), slug: m.metadata.name }];
 		})
 		.sort((a, b) => a.label.localeCompare(b.label));
+}
+
+export interface TargetModelGroups {
+	/** Models the owning host binds; empty until a host is picked. */
+	served: TargetModelOption[];
+	others: TargetModelOption[];
+}
+
+/** The picker's options split by whether the owning host serves them. */
+export function useTargetModelGroups(hostId: string): TargetModelGroups {
+	const options = useTargetModelOptions();
+	const { data } = useBindings();
+	const servedIds = new Set(
+		(bindingsByHost(data.items ?? []).get(hostId) ?? []).map(
+			(b) => b.spec.modelId,
+		),
+	);
+	return {
+		served: options.filter((o) => servedIds.has(o.id)),
+		others: options.filter((o) => !servedIds.has(o.id)),
+	};
 }
 
 /** Resolve stored targetModels values to display labels (id → slug → raw). */

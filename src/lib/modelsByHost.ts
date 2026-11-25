@@ -53,6 +53,15 @@ export function modelFamilyName(m: Model): string {
 	return parts.filter(Boolean).join(" ") || OTHER_FAMILY;
 }
 
+/** The lineage alone ("claude"), without the vendor's line. */
+export function modelFamily(m: Model): string {
+	return m.spec.family?.trim() || OTHER_FAMILY;
+}
+
+export function modelProductLine(m: Model): string | undefined {
+	return m.spec.productLine?.trim() || undefined;
+}
+
 const OTHER_FAMILY = "Other";
 
 /** Whether a filter is narrowing beyond the default (deprecated hidden). */
@@ -192,6 +201,15 @@ export function groupByFamily(
 		.map(({ key, label, lines }) => ({ key, label, lines }));
 }
 
+/** A detail page's models under the models page's family headings and in its
+ * default order. */
+export function groupModelsByFamily(models: readonly Model[]): LineGroup[] {
+	return groupByFamily(
+		models.map((model) => ({ model })),
+		{ key: "spend", dir: "desc" },
+	);
+}
+
 /** One rail entry: a host and how many of its models the filter keeps. */
 export interface RailHost {
 	host: MatrixHost;
@@ -199,8 +217,8 @@ export interface RailHost {
 	usage?: ModelUsage;
 }
 
-/** Every host serving a model, in the pricing page's order: spend, requests,
- * catalog size, name. */
+/** Every host serving a model: spend, requests, then the count the filter
+ * keeps (the number the rail shows), then name. */
 export function railHosts(
 	matrix: readonly HostPrices[],
 	modelsById: ReadonlyMap<string, Model>,
@@ -208,14 +226,22 @@ export function railHosts(
 	filter: ModelsFilter,
 ): RailHost[] {
 	const pricesById = new Map(matrix.map((p) => [p.host.id, p]));
-	return hostCards(matrix, byHost).flatMap((card) => {
-		const prices = pricesById.get(card.host.id);
-		if (!prices) return [];
-		const count = hostLines(prices, modelsById).filter((l) =>
-			modelMatches(l.model, filter),
-		).length;
-		return [{ host: card.host, count, usage: card.usage }];
-	});
+	return hostCards(matrix, byHost)
+		.flatMap((card) => {
+			const prices = pricesById.get(card.host.id);
+			if (!prices) return [];
+			const count = hostLines(prices, modelsById).filter((l) =>
+				modelMatches(l.model, filter),
+			).length;
+			return [{ host: card.host, count, usage: card.usage }];
+		})
+		.sort(
+			(a, b) =>
+				(b.usage?.usd ?? 0) - (a.usage?.usd ?? 0) ||
+				(b.usage?.requests ?? 0) - (a.usage?.requests ?? 0) ||
+				b.count - a.count ||
+				a.host.label.localeCompare(b.host.label),
+		);
 }
 
 /** In use always lists what carried traffic, deprecated or not. */

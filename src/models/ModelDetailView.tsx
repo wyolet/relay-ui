@@ -53,14 +53,16 @@ export function ModelDetailView({
 			</div>
 
 			<div className="grid grid-cols-1 gap-12 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-				<div className="grid min-w-0 grid-cols-1 content-start gap-12">
+				{/* One column below xl, so Spec reads between the hosts and who may call it. */}
+				<div className="contents xl:grid xl:min-w-0 xl:grid-cols-1 xl:content-start xl:gap-12">
 					{id && <WeekTraffic scope={modelWeekScope(id)} />}
 					<ModelHostList lines={hostLines} modelId={id} />
+					<div className="min-w-0 max-xl:order-last">
+						<ModelPolicyList policies={policies} />
+					</div>
 				</div>
 				<ModelSpec model={model} provider={provider} />
 			</div>
-
-			<ModelPolicyList policies={policies} />
 		</div>
 	);
 }

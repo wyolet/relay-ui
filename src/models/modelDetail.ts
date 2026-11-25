@@ -1,6 +1,6 @@
 import type { Model, ModelCapabilities } from "@/api/types/model";
 import { fmtTokens } from "@/lib/format";
-import { modelProductLine } from "@/models/groupModelsByFamily";
+import { modelProductLine } from "@/lib/modelsByHost";
 
 /** A model's deprecation as a sentence: status and sunset. */
 export function deprecationNote(m: Model): string | null {

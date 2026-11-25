@@ -12,9 +12,9 @@ import type {
 import type { components } from "@/api/types.gen";
 import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
+import { useSlugFor } from "@/hooks/useSlugFor";
 import { displayLabel } from "@/lib/displayLabel";
 import { firstError, shownError, zodFieldValidator } from "@/lib/formErrors";
-import { randomSuffix, slugify } from "@/lib/slug";
 import { PRICING_METERS, type PRICING_UNITS } from "@/lib/usage-math/pricing";
 import { toast } from "@/shared/Toast";
 
@@ -169,14 +169,7 @@ export function usePricingForm({
 			pricing ? pricingToValues(pricing) : emptyValues(prefillRef.current),
 		[pricing],
 	);
-	const suffixRef = useRef<string>(randomSuffix());
-	const computeSlug = (displayName: string): string => {
-		if (pricing) return pricing.metadata.name;
-		const trimmed = displayName.trim();
-		if (!trimmed) return "";
-		const base = slugify(trimmed) || "pricing";
-		return `${base}-${suffixRef.current}`;
-	};
+	const computeSlug = useSlugFor(pricing?.metadata.name, "pricing");
 
 	const runValidation = zodFieldValidator<PricingFormValues>(schema);
 

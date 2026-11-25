@@ -128,7 +128,7 @@ function ModelsCatalog() {
 				</p>
 			) : (
 				<StaleContent stale={isStale}>
-					<div className="grid gap-8 lg:grid-cols-[15rem_minmax(0,1fr)] lg:items-start">
+					<div className="grid gap-8 xl:grid-cols-[15rem_minmax(0,1fr)] xl:items-start">
 						<ModelsHostRail rail={rail} open={pane.key} />
 						<ModelsPane pane={pane} narrowing={rail.narrowing} />
 					</div>

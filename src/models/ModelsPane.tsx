@@ -1,8 +1,12 @@
 import { Link } from "@tanstack/react-router";
 import { Activity } from "lucide-react";
-import type { LineGroup } from "@/lib/modelsByHost";
 import type { ModelUsage } from "@/lib/pricingMatrix";
-import { ModelLineColumns, ModelLineRow } from "@/models/ModelLineRow";
+import { FamilyHeading } from "@/models/FamilyHeading";
+import {
+	MODEL_LINE_MIN_WIDTH,
+	ModelLineColumns,
+	ModelLineRow,
+} from "@/models/ModelLineRow";
 import type { ModelsPaneView } from "@/models/useModelsByHost";
 import { MatrixHostLogo } from "@/pricing/PricingHostGrid";
 import { type Fact, Facts } from "@/shared/Facts";
@@ -18,17 +22,17 @@ export function ModelsPane({
 	narrowing: boolean;
 }) {
 	return (
-		<section className="grid min-w-0 content-start gap-5">
+		<section className="@container grid min-w-0 content-start gap-5">
 			<PaneHeader pane={pane} />
 			{pane.groups.length === 0 ? (
 				<p className="text-label text-ink-2">{emptyText(pane, narrowing)}</p>
 			) : (
 				<div className="overflow-x-auto">
-					<div className="grid min-w-[52rem] grid-cols-1 gap-6">
+					<div className={`grid grid-cols-1 gap-6 ${MODEL_LINE_MIN_WIDTH}`}>
 						<ModelLineColumns />
 						{pane.groups.map((group) => (
 							<div key={group.key} className="grid grid-cols-1">
-								<GroupHeading group={group} />
+								{group.label && <FamilyHeading label={group.label} />}
 								{group.lines.map((line) => (
 									<ModelLineRow
 										key={line.model.metadata.id ?? line.model.metadata.name}
@@ -88,14 +92,4 @@ function paneFacts(models: number, usage: ModelUsage | undefined): Fact[] {
 	else if (usage?.requests)
 		facts.push({ label: "Spend, 7 days", value: "Unpriced" });
 	return facts;
-}
-
-/** A family heading, or a host's (logo, and a link to its own pane). */
-function GroupHeading({ group }: { group: LineGroup }) {
-	if (!group.label) return null;
-	return (
-		<h3 className="border-b border-rule py-2 text-foot font-medium tracking-wide text-ink-2 uppercase">
-			{group.label}
-		</h3>
-	);
 }

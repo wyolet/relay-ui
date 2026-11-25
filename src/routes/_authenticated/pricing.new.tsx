@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ChevronLeft } from "lucide-react";
 import { Suspense } from "react";
 import { z } from "zod";
+import { bindingsListQueryOptions } from "@/api/hooks/bindings";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
 import { modelsListQueryOptions } from "@/api/hooks/models";
 import { PricingForm } from "@/pricing/PricingForm";
@@ -17,6 +18,7 @@ export const Route = createFileRoute("/_authenticated/pricing/new")({
 		Promise.all([
 			context.queryClient.ensureQueryData(modelsListQueryOptions),
 			context.queryClient.ensureQueryData(hostsListQueryOptions),
+			context.queryClient.ensureQueryData(bindingsListQueryOptions),
 		]),
 	component: NewPricingPage,
 });

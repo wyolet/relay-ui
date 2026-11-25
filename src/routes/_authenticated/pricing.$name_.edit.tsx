@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ChevronLeft } from "lucide-react";
 import { Suspense } from "react";
+import { bindingsListQueryOptions } from "@/api/hooks/bindings";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
 import { modelsListQueryOptions } from "@/api/hooks/models";
 import { pricingDetailQueryOptions, usePricing } from "@/api/hooks/pricings";
@@ -16,6 +17,7 @@ export const Route = createFileRoute("/_authenticated/pricing/$name_/edit")({
 			),
 			context.queryClient.ensureQueryData(modelsListQueryOptions),
 			context.queryClient.ensureQueryData(hostsListQueryOptions),
+			context.queryClient.ensureQueryData(bindingsListQueryOptions),
 		]),
 	component: EditPricingPage,
 });
