@@ -1,16 +1,32 @@
 import { Link } from "@tanstack/react-router";
-import { Bot, User } from "lucide-react";
+import { Bot, Building2, User } from "lucide-react";
 import type { HolderView } from "@/accounts/accountView";
 
 const linkClass =
 	"inline-flex items-baseline gap-1 text-xs text-foreground hover:underline";
+
+/** The organization as an account's owner, in the holder links' shape. */
+export function OrganizationOwner() {
+	return (
+		<span className="inline-flex items-baseline gap-1 text-xs text-foreground">
+			<Building2
+				className="w-3 h-3 self-center text-muted-foreground"
+				aria-hidden
+			/>
+			Organization
+		</span>
+	);
+}
 
 /** A user or service account, linked to its page once it resolves. */
 export function AccountHolderLink({ holder }: { holder: HolderView }) {
 	if (holder.kind === "user") {
 		return (
 			<Link to="/users/$id" params={{ id: holder.id }} className={linkClass}>
-				<User className="w-3 h-3 self-center text-muted-foreground" aria-hidden />
+				<User
+					className="w-3 h-3 self-center text-muted-foreground"
+					aria-hidden
+				/>
 				{holder.label}
 			</Link>
 		);
@@ -22,7 +38,10 @@ export function AccountHolderLink({ holder }: { holder: HolderView }) {
 				params={{ name: holder.serviceAccountName }}
 				className={linkClass}
 			>
-				<Bot className="w-3 h-3 self-center text-muted-foreground" aria-hidden />
+				<Bot
+					className="w-3 h-3 self-center text-muted-foreground"
+					aria-hidden
+				/>
 				{holder.label}
 			</Link>
 		);

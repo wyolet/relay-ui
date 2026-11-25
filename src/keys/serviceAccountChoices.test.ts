@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 import type { ServiceAccount } from "@/api/types/serviceAccount";
 import {
 	ownedServiceAccountChoices,
-	serviceAccountOwnerChoices,
+	serviceAccountOwnerGroups,
 } from "@/keys/serviceAccountChoices";
 
 const sa = (
@@ -26,19 +26,25 @@ const all = [
 	sa("d", "team", "t1"),
 ];
 
-describe("serviceAccountOwnerChoices", () => {
-	it("lists the projects, then each team or user owning a service account once", () => {
+describe("serviceAccountOwnerGroups", () => {
+	it("groups the projects, then each team or user owning a service account once", () => {
 		expect(
-			serviceAccountOwnerChoices(
+			serviceAccountOwnerGroups(
 				[{ value: "p1", label: "Search" }],
 				all,
-				(scope) => `${scope.kind} ${scope.id}`,
+				(scope) => scope.id,
 			),
 		).toEqual([
-			{ value: "p1", label: "Search" },
-			{ value: "t1", label: "team t1" },
-			{ value: "u1", label: "personal u1" },
+			{ label: "Projects", options: [{ value: "p1", label: "Search" }] },
+			{ label: "Teams", options: [{ value: "t1", label: "t1" }] },
+			{ label: "Users", options: [{ value: "u1", label: "u1" }] },
 		]);
+	});
+
+	it("leaves out kinds without owners", () => {
+		expect(
+			serviceAccountOwnerGroups([], [all[1]], (scope) => scope.id),
+		).toEqual([{ label: "Teams", options: [{ value: "t1", label: "t1" }] }]);
 	});
 });
 

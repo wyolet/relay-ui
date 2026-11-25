@@ -1,7 +1,10 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Building2, ChevronLeft, Shield } from "lucide-react";
 import type { ReactNode } from "react";
-import { AccountHolderLink } from "@/accounts/AccountHolderLink";
+import {
+	AccountHolderLink,
+	OrganizationOwner,
+} from "@/accounts/AccountHolderLink";
 import { PAYLOAD_LOGGING_RULE } from "@/accounts/accountCopy";
 import { ACCOUNT_KIND_LABELS } from "@/accounts/accountView";
 import { EffectiveLimits } from "@/accounts/EffectiveLimits";
@@ -39,6 +42,7 @@ export function AccountDetailView({
 		isProvider,
 		holder,
 		ownerUser,
+		ownerIsOrganization,
 		binding,
 		limits,
 		sharedBy,
@@ -130,6 +134,8 @@ export function AccountDetailView({
 					<DetailRow label="Owner">
 						{ownerUser ? (
 							<AccountHolderLink holder={ownerUser} />
+						) : ownerIsOrganization ? (
+							<OrganizationOwner />
 						) : (
 							<OwnerLink owner={metadata.owner} />
 						)}

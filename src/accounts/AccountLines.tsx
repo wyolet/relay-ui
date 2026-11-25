@@ -21,6 +21,7 @@ import { displayLabel } from "@/lib/displayLabel";
 import { fmtCompact } from "@/lib/format";
 import { CatalogIcon } from "@/shared/CatalogIcon";
 import {
+	Dash,
 	LineColumns,
 	LineName,
 	LineRow,
@@ -57,10 +58,6 @@ function UsageCells({ usage }: { usage: AccountRow["usage"] }) {
 			/>
 		</>
 	);
-}
-
-function Dash() {
-	return <span className="text-ink-3">—</span>;
 }
 
 /** The account's linked name, with its tags and plan issues beside it. */

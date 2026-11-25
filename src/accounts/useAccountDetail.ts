@@ -73,6 +73,7 @@ export function useAccountDetail({
 			owner?.kind === "user" && owner.id
 				? toHolder({ kind: "user", id: owner.id })
 				: undefined,
+		ownerIsOrganization: owner === undefined || owner.kind === "organization",
 		binding: binding && {
 			name: binding.metadata.name,
 			label: displayLabel(binding.metadata),

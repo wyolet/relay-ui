@@ -42,6 +42,9 @@ function EditServiceAccountInner() {
 				<h1 className="mt-2 text-xl font-semibold text-foreground">
 					Edit service account
 				</h1>
+				<p className="mt-1 text-xs text-muted-foreground">
+					Change its name or switch it off. The slug and owner stay the same.
+				</p>
 			</div>
 			<ServiceAccountForm
 				serviceAccount={sa}

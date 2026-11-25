@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { KeyRound } from "lucide-react";
 import { UpstreamKeyList } from "@/accounts/UpstreamKeyList";
+import { buttonVariants } from "@/components/ui/button";
 import type { KeyHealthTone } from "@/host-keys/keyHealth";
 import { SecretRotateDialog } from "@/host-keys/SecretRotateDialog";
 import {
@@ -33,7 +34,7 @@ export function AccountKeysCard({ accountName }: { accountName: string }) {
 function SharedAccountKeysCard({ accountName }: { accountName: string }) {
 	const { rows } = useSharedAccountKeyList(accountName);
 	return (
-		<DetailCard title={`Keys · ${rows.length}`} icon={KeyRound}>
+		<DetailCard title="Keys" count={rows.length} icon={KeyRound}>
 			<UpstreamKeyList
 				keys={rows}
 				empty="The account this one was shared from has no keys yet."
@@ -83,13 +84,14 @@ function OwnAccountKeysCard({ accountName }: { accountName: string }) {
 
 	return (
 		<DetailCard
-			title={`Keys · ${rows.length}`}
+			title="Keys"
+			count={rows.length}
 			icon={KeyRound}
 			action={
 				<Link
 					to="/host-keys/new"
 					search={{ accountId }}
-					className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+					className={buttonVariants({ variant: "outline", size: "sm" })}
 				>
 					Add key
 				</Link>

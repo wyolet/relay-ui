@@ -83,7 +83,7 @@ export function PoolDetailView({ name }: { name: string }) {
 				</dl>
 			</DetailCard>
 
-			<DetailCard title={`Accounts · ${accounts.length}`} icon={Building2}>
+			<DetailCard title="Accounts" count={accounts.length} icon={Building2}>
 				{accounts.length === 0 ? (
 					<DetailEmpty>
 						No whole accounts; the pool draws on the keys below.
@@ -91,8 +91,7 @@ export function PoolDetailView({ name }: { name: string }) {
 				) : (
 					<>
 						<p className="mb-2 text-[11px] text-muted-foreground">
-							Each brings all of its keys, in this order, ahead of the single
-							keys in the list below.
+							Each brings all of its keys, now and later, in this order.
 						</p>
 						<ol className="divide-y divide-border">
 							{accounts.map((a, i) => (
@@ -128,7 +127,13 @@ export function PoolDetailView({ name }: { name: string }) {
 				)}
 			</DetailCard>
 
-			<DetailCard title={`Keys · ${keys.length}`} icon={KeyRound}>
+			<DetailCard title="Keys" count={keys.length} icon={KeyRound}>
+				{keys.length > 0 && (
+					<p className="mb-2 text-[11px] text-muted-foreground">
+						Every key the pool draws on, the accounts' keys first, then the keys
+						added one by one.
+					</p>
+				)}
 				<UpstreamKeyList
 					keys={keys}
 					ordered={selection === "prioritized"}

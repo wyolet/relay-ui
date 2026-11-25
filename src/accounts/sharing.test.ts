@@ -124,11 +124,11 @@ describe("shareUsageText", () => {
 	test("requests and cost", () => {
 		expect(
 			shareUsageText({ requests: 4, costNanos: 2_500_000_000, unpriced: 0 }),
-		).toMatch(/^4 req · .*2[.,]50/);
+		).toMatch(/^4 req, .*2[.,]50/);
 	});
 	test("unpriced traffic never reads as $0", () => {
 		expect(shareUsageText({ requests: 3, costNanos: 0, unpriced: 3 })).toBe(
-			"3 req · —",
+			"3 req",
 		);
 	});
 	test("no usage reader", () => {

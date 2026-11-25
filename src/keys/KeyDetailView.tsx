@@ -57,7 +57,7 @@ export function KeyDetailView({ name }: { name: string }) {
 				metadata={rk.metadata}
 				badges={
 					<>
-						<StatusBadge enabled={enabled} enabledLabel="Active" />
+						<StatusBadge enabled={enabled} />
 						{rk.spec.passthroughAllowed && (
 							<span
 								className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium uppercase tracking-wide bg-warning/10 text-warning border border-warning/30"
@@ -151,15 +151,6 @@ export function KeyDetailView({ name }: { name: string }) {
 								Previous secret valid until{" "}
 								{new Date(rk.spec.graceUntil).toLocaleString()}
 							</span>
-						) : (
-							<span className="text-muted-foreground">—</span>
-						)}
-					</DetailRow>
-					<DetailRow label="Prefix">
-						{rk.spec.prefix ? (
-							<code className="font-mono text-foreground">
-								{rk.spec.prefix}…
-							</code>
 						) : (
 							<span className="text-muted-foreground">—</span>
 						)}

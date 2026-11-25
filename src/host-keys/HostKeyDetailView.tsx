@@ -15,21 +15,15 @@ import {
 	DetailCard,
 	DetailEmpty,
 	DetailInline,
+	DetailListRow,
 	DetailRow,
 } from "@/shared/DetailCard";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
-import { DetailTable, Td } from "@/shared/DetailTable";
 import { LastUsed } from "@/shared/LastUsed";
-import { QuietBadge, StatusBadge } from "@/shared/StatusBadge";
+import { QuietBadge, StatusBadge, StatusInline } from "@/shared/StatusBadge";
 
 const backLinkClass =
 	"inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors";
-
-const POLICY_COLUMNS = [
-	{ label: "Policy" },
-	{ label: "Status", className: "text-right" },
-	{ label: "Pools", className: "text-right" },
-];
 
 export function HostKeyDetailView({ name }: { name: string }) {
 	const navigate = useNavigate();
@@ -212,60 +206,33 @@ export function HostKeyDetailView({ name }: { name: string }) {
 }
 
 function PoliciesPanel({ rows }: { rows: LinkedPolicyRow[] }) {
-	if (rows.length === 0) {
-		return (
-			<DetailCard title="Linked by policies" icon={Link2}>
+	return (
+		<DetailCard title="Linked by policies" count={rows.length} icon={Link2}>
+			{rows.length === 0 ? (
 				<DetailEmpty>
 					No policy links a pool holding this credential. Requests whose
 					policies link no pools still reach it when it belongs to their own
 					scope or to the system.
 				</DetailEmpty>
-			</DetailCard>
-		);
-	}
-
-	return (
-		<section>
-			<div className="mb-2 flex items-baseline justify-between gap-2">
-				<h2 className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-					Linked by policies
-				</h2>
-				<span className="text-[10px] text-muted-foreground tabular-nums">
-					{rows.length} polic{rows.length === 1 ? "y" : "ies"}
-				</span>
-			</div>
-			<DetailTable columns={POLICY_COLUMNS} className="mt-0">
-				{rows.map((row) => (
-					<tr key={row.id} className="hover:bg-muted/30 transition-colors">
-						<Td>
-							<div className="min-w-0">
-								<Link
-									to="/policies/$name"
-									params={{ name: row.name }}
-									className="text-foreground hover:underline truncate font-medium"
-								>
-									{row.label}
-								</Link>
-								<div className="text-[11px] text-muted-foreground font-mono truncate">
-									{row.name}
-								</div>
-							</div>
-						</Td>
-						<Td className="text-right">
-							{row.enabled ? (
-								<span className="text-[11px] text-success">Enabled</span>
-							) : (
-								<span className="text-[11px] text-muted-foreground">
-									Disabled
-								</span>
-							)}
-						</Td>
-						<Td className="text-right">
-							<LinkedPolicyAction row={row} />
-						</Td>
-					</tr>
-				))}
-			</DetailTable>
-		</section>
+			) : (
+				<ul className="divide-y divide-border">
+					{rows.map((row) => (
+						<DetailListRow key={row.id}>
+							<Link
+								to="/policies/$name"
+								params={{ name: row.name }}
+								className="min-w-0 truncate text-foreground hover:underline"
+							>
+								{row.label}
+							</Link>
+							<span className="flex shrink-0 items-center gap-3">
+								<LinkedPolicyAction row={row} />
+								<StatusInline enabled={row.enabled} />
+							</span>
+						</DetailListRow>
+					))}
+				</ul>
+			)}
+		</DetailCard>
 	);
 }

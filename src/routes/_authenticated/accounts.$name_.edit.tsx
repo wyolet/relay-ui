@@ -38,6 +38,10 @@ function EditAccountInner() {
 				<h1 className="mt-2 text-xl font-semibold text-foreground">
 					Edit account
 				</h1>
+				<p className="mt-1 text-xs text-muted-foreground">
+					Change its name, organization id or labels. The slug and host stay the
+					same.
+				</p>
 			</div>
 			<AccountForm
 				account={account}

@@ -27,6 +27,10 @@ function NewAccountPage() {
 				<h1 className="mt-2 text-xl font-semibold text-foreground">
 					New provider account
 				</h1>
+				<p className="mt-1 text-xs text-muted-foreground">
+					An organization at a provider. Its keys share the provider's limits,
+					and a policy bound to the account caps them.
+				</p>
 			</div>
 			<Suspense fallback={<PageLoader />}>
 				<AccountForm

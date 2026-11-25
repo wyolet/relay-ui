@@ -1,6 +1,6 @@
 import { useId } from "react";
 import { Input } from "@/components/ui/input";
-import { HostSelect } from "@/hosts/HostSelect";
+import { type HostOption, HostSelect } from "@/hosts/HostSelect";
 
 /** Host and organization id of a provider account. */
 export function ProviderAccountFields({
@@ -14,7 +14,7 @@ export function ProviderAccountFields({
 	orgIdError,
 }: {
 	hostId: string;
-	hostOptions: readonly { value: string; label: string }[];
+	hostOptions: readonly HostOption[];
 	onHostChange: (hostId: string) => void;
 	hostError?: string;
 	/** Set on edit: the account's keys are at its host. */

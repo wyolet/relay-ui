@@ -5,7 +5,9 @@ import type { Key } from "@/api/types/key";
 import {
 	Select,
 	SelectContent,
+	SelectGroup,
 	SelectItem,
+	SelectLabel,
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
@@ -52,9 +54,11 @@ export function KeyForm({
 	const laneErrorId = useId();
 
 	const { userId } = useAuth();
-	const { ownerOptions, serviceAccountOptions } = useServiceAccountPicker(
-		values.ownerId,
-	);
+	const { ownerGroups, ownerOptions, serviceAccountOptions, principalLabel } =
+		useServiceAccountPicker(values.ownerId, {
+			kind: values.principalKind,
+			id: values.principalId,
+		});
 
 	return (
 		<form
@@ -84,11 +88,11 @@ export function KeyForm({
 					description="Who this key authenticates as — a service account, or you. Fixed once the key exists."
 				>
 					{isEdit ? (
-						<p className="text-xs text-foreground">
+						<p className="text-xs text-muted-foreground">
 							{values.principalKind === "user" ? "User" : "Service account"}{" "}
-							<code className="font-mono text-[11px] text-muted-foreground">
-								{values.principalId}
-							</code>
+							<span className="font-medium text-foreground">
+								{principalLabel}
+							</span>
 						</p>
 					) : (
 						<div className="flex flex-col gap-3">
@@ -103,70 +107,80 @@ export function KeyForm({
 								}
 							/>
 
-							{values.principalKind === "serviceaccount" ? (
-								<div className="flex flex-col gap-2">
-									<Select
-										value={values.ownerId}
-										items={ownerOptions}
-										onValueChange={(v) => {
-											form.setFieldValue("ownerId", v ?? "");
-											choosePrincipal("serviceaccount", "");
-										}}
-									>
-										<SelectTrigger
-											className="w-full max-w-md"
-											aria-label="Owner"
+							<div>
+								{values.principalKind === "serviceaccount" ? (
+									<div className="flex flex-col gap-2">
+										<Select
+											value={values.ownerId}
+											items={ownerOptions}
+											onValueChange={(v) => {
+												form.setFieldValue("ownerId", v ?? "");
+												choosePrincipal("serviceaccount", "");
+											}}
 										>
-											<SelectValue placeholder="Pick an owner…" />
-										</SelectTrigger>
-										<SelectContent>
-											{ownerOptions.map((p) => (
-												<SelectItem key={p.value} value={p.value}>
-													{p.label}
-												</SelectItem>
-											))}
-										</SelectContent>
-									</Select>
-									<Select
-										value={values.principalId}
-										items={serviceAccountOptions}
-										onValueChange={(v) =>
-											choosePrincipal("serviceaccount", v ?? "")
-										}
-									>
-										<SelectTrigger
-											className="w-full max-w-md"
-											disabled={!values.ownerId}
-											aria-invalid={principalIdError ? true : undefined}
+											<SelectTrigger
+												className="w-full max-w-md"
+												aria-label="Owner"
+											>
+												<SelectValue placeholder="Pick an owner…" />
+											</SelectTrigger>
+											<SelectContent>
+												{ownerGroups.map((g) => (
+													<SelectGroup key={g.label}>
+														<SelectLabel>{g.label}</SelectLabel>
+														{g.options.map((p) => (
+															<SelectItem key={p.value} value={p.value}>
+																{p.label}
+															</SelectItem>
+														))}
+													</SelectGroup>
+												))}
+											</SelectContent>
+										</Select>
+										<Select
+											value={values.principalId}
+											items={serviceAccountOptions}
+											onValueChange={(v) =>
+												choosePrincipal("serviceaccount", v ?? "")
+											}
 										>
-											<SelectValue
-												placeholder={
-													values.ownerId
-														? "Pick a service account…"
-														: "Pick an owner first"
-												}
-											/>
-										</SelectTrigger>
-										<SelectContent>
-											{serviceAccountOptions.map((a) => (
-												<SelectItem key={a.value} value={a.value}>
-													{a.label}
-												</SelectItem>
-											))}
-										</SelectContent>
-									</Select>
-								</div>
-							) : (
-								<p className="text-xs text-muted-foreground">
-									The key authenticates as you —{" "}
-									<code className="font-mono text-[11px]">{userId ?? "?"}</code>
-								</p>
-							)}
-							{principalIdError && (
-								<p className="text-[11px] text-destructive">
-									{principalIdError}
-								</p>
-							)}
+											<SelectTrigger
+												className="w-full max-w-md"
+												disabled={!values.ownerId}
+												aria-invalid={principalIdError ? true : undefined}
+											>
+												<SelectValue
+													placeholder={
+														values.ownerId
+															? "Pick a service account…"
+															: "Pick an owner first"
+													}
+												/>
+											</SelectTrigger>
+											<SelectContent>
+												{serviceAccountOptions.map((a) => (
+													<SelectItem key={a.value} value={a.value}>
+														{a.label}
+													</SelectItem>
+												))}
+											</SelectContent>
+										</Select>
+									</div>
+								) : (
+									<p className="text-xs text-muted-foreground">
+										The key authenticates as you,{" "}
+										<span className="font-medium text-foreground">
+											{principalLabel}
+										</span>
+										.
+									</p>
+								)}
+								{principalIdError && (
+									<p className="mt-1.5 text-[11px] text-destructive">
+										{principalIdError}
+									</p>
+								)}
+							</div>
 						</div>
 					)}
 				</FormSection>

@@ -38,6 +38,10 @@ function EditPoolInner() {
 				<h1 className="mt-2 text-xl font-semibold text-foreground">
 					Edit pool
 				</h1>
+				<p className="mt-1 text-xs text-muted-foreground">
+					Change its members, their order or how a request picks among them. The
+					slug and host stay the same.
+				</p>
 			</div>
 			<PoolForm
 				pool={pool}

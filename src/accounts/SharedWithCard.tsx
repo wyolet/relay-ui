@@ -32,7 +32,8 @@ export function SharedWithCard({ account }: { account: Account }) {
 
 	return (
 		<DetailCard
-			title={`Shared with · ${rows.length}`}
+			title="Shared with"
+			count={rows.length}
 			icon={Share2}
 			action={
 				<Button type="button" variant="outline" size="sm" onClick={openShare}>
