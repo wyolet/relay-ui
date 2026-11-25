@@ -14,18 +14,17 @@ import {
 import { activeFilterCount } from "@/filters/toQueryParams";
 import type { FilterDef, FilterState } from "@/filters/types";
 import { useOwnerFilter } from "@/hooks/useOwnerFilter";
-import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
-import { serviceAccountOwner } from "@/lib/serviceAccountScope";
-import { AccountPolicy } from "@/policy-bindings/AccountPolicy";
-import { OwnerLink } from "@/projects/OwnerLink";
-import { useToggleServiceAccountEnabled } from "@/service-accounts/useToggleServiceAccountEnabled";
+import { displayLabel } from "@/lib/displayLabel";
+import {
+	SERVICE_ACCOUNT_MIN_W,
+	ServiceAccountColumns,
+	ServiceAccountRow,
+} from "@/service-accounts/ServiceAccountRow";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
+import { LineTable } from "@/shared/LineGrid";
 import { OwnerFilter } from "@/shared/OwnerFilter";
-import { RowMenu } from "@/shared/RowMenu";
 import { StaleContent } from "@/shared/StaleContent";
-import { Switch } from "@/shared/Switch";
 import { TableEmpty } from "@/shared/TableEmpty";
-import { Th } from "@/shared/Th";
 import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 import { useDeferredSearch } from "@/shared/useDeferredSearch";
 
@@ -73,7 +72,6 @@ export function ServiceAccountsTable() {
 	const del = useConfirmedDelete(useDeleteServiceAccount(), {
 		noun: "service account",
 	});
-	const { setEnabled } = useToggleServiceAccountEnabled();
 
 	const owner = useOwnerFilter(data.items ?? []);
 	const items = owner.visible;
@@ -138,105 +136,22 @@ export function ServiceAccountsTable() {
 						)}
 					</TableEmpty>
 				) : (
-					<div className="overflow-x-auto rounded-lg border border-border bg-card">
-						<table className="w-full border-collapse">
-							<thead className="bg-muted/40">
-								<tr>
-									<Th variant="column">Name</Th>
-									<Th variant="column">Owner</Th>
-									<Th variant="column">Account · policy</Th>
-									<th
-										scope="col"
-										className="w-12 px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground"
-									>
-										On
-									</th>
-									<th
-										scope="col"
-										className="w-10 px-3 py-2"
-										aria-label="Actions"
-									/>
-								</tr>
-							</thead>
-							<tbody>
-								{items.map((sa) => {
-									const enabled = sa.spec.enabled ?? true;
-									return (
-										<tr
-											key={sa.metadata.name}
-											className={[
-												"border-t border-border transition-colors",
-												enabled
-													? "hover:bg-muted/40"
-													: "bg-muted/30 text-muted-foreground/70",
-											].join(" ")}
-										>
-											<td className="px-3 py-2">
-												<Link
-													to="/service-accounts/$name"
-													params={{ name: sa.metadata.name }}
-													className="text-sm font-medium text-foreground hover:underline"
-												>
-													{displayLabel(sa.metadata)}
-												</Link>
-												{hasDisplayName(sa.metadata) && (
-													<div className="font-mono text-[11px] text-muted-foreground">
-														{sa.metadata.name}
-													</div>
-												)}
-											</td>
-											<td className="px-3 py-2 text-xs text-foreground">
-												<OwnerLink owner={serviceAccountOwner(sa)} showUser />
-											</td>
-											<td className="px-3 py-2 text-xs">
-												<AccountPolicy
-													accountRef={{
-														ownerOf: {
-															kind: "serviceaccount",
-															id: sa.metadata.id ?? "",
-														},
-													}}
-													compact
-												/>
-											</td>
-											<td className="px-3 py-2">
-												<Switch
-													checked={enabled}
-													onChange={(next) => void setEnabled(sa, next)}
-													label={`Toggle ${sa.metadata.name}`}
-												/>
-											</td>
-											<td className="px-3 py-2 text-right">
-												<RowMenu
-													actions={[
-														{
-															label: "Edit",
-															render: (
-																<Link
-																	to="/service-accounts/$name/edit"
-																	params={{ name: sa.metadata.name }}
-																/>
-															),
-														},
-														{
-															label: "Delete",
-															danger: true,
-															onClick: () =>
-																del.request({
-																	id: sa.metadata.id ?? "",
-																	name: sa.metadata.name,
-																	label: displayLabel(sa.metadata),
-																}),
-														},
-													]}
-												/>
-											</td>
-										</tr>
-									);
-								})}
-							</tbody>
-						</table>
-					</div>
+					<LineTable minWidth={SERVICE_ACCOUNT_MIN_W}>
+						<ServiceAccountColumns />
+						{items.map((sa) => (
+							<ServiceAccountRow
+								key={sa.metadata.id ?? sa.metadata.name}
+								sa={sa}
+								onDelete={() =>
+									del.request({
+										id: sa.metadata.id ?? "",
+										name: sa.metadata.name,
+										label: displayLabel(sa.metadata),
+									})
+								}
+							/>
+						))}
+					</LineTable>
 				)}
 			</StaleContent>
 			{del.target && (

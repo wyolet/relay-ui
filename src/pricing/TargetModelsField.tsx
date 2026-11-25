@@ -1,42 +1,35 @@
-import { useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Chip } from "@/shared/Chip";
 import { SearchBox } from "@/shared/SearchBox";
-import {
-	type TargetModelOption,
-	useTargetModelOptions,
-} from "./useTargetModelOptions";
+import type { TargetModelOption } from "./useTargetModelOptions";
+import { useTargetModelPicker } from "./useTargetModelPicker";
 
 interface TargetModelsFieldProps {
 	/** Selected model ids (PricingSpec.targetModels). */
 	value: string[];
 	onChange: (ids: string[]) => void;
+	/** The owning host's id; its models list first. */
+	hostId: string;
+	/** The id of the field's error, when one shows. */
+	errorId?: string;
 }
 
-/**
- * Searchable checkbox list over registered models. An empty selection means
- * the pricing applies to whichever bindings reference it, unscoped.
- */
-export function TargetModelsField({ value, onChange }: TargetModelsFieldProps) {
-	const options = useTargetModelOptions();
-	const [q, setQ] = useState("");
+/** Searchable checkbox list over registered models, the owning host's first. */
+export function TargetModelsField({
+	value,
+	onChange,
+	hostId,
+	errorId,
+}: TargetModelsFieldProps) {
+	const { q, setQ, served, others, empty, labelOf } =
+		useTargetModelPicker(hostId);
 
 	const selected = new Set(value);
-	const needle = q.trim().toLowerCase();
-	const visible = needle
-		? options.filter(
-				(o) =>
-					o.label.toLowerCase().includes(needle) ||
-					o.slug.toLowerCase().includes(needle),
-			)
-		: options;
-
 	function toggle(id: string) {
 		onChange(selected.has(id) ? value.filter((v) => v !== id) : [...value, id]);
 	}
-
-	const labelOf = (id: string): string =>
-		options.find((o) => o.id === id)?.label ?? id;
+	const split = hostId !== "";
+	const nothingShown = served.length === 0 && others.length === 0;
 
 	return (
 		<div className="flex flex-col gap-2">
@@ -59,16 +52,34 @@ export function TargetModelsField({ value, onChange }: TargetModelsFieldProps) {
 				hotkey={false}
 				placeholder="Search models"
 			/>
-			<div className="max-h-56 overflow-y-auto rounded-md border border-border bg-card">
-				{visible.length === 0 ? (
+			<fieldset
+				aria-label="Target models"
+				aria-describedby={errorId}
+				className="max-h-56 min-w-0 overflow-y-auto rounded-md border border-border bg-card"
+			>
+				{nothingShown ? (
 					<p className="px-3 py-4 text-center text-xs text-muted-foreground">
-						{options.length === 0
+						{empty
 							? "No models registered yet."
 							: "No models match the search."}
 					</p>
 				) : (
 					<ul className="divide-y divide-border">
-						{visible.map((o) => (
+						{split && served.length > 0 && (
+							<OptionHeading>Served by this host</OptionHeading>
+						)}
+						{served.map((o) => (
+							<OptionRow
+								key={o.id}
+								option={o}
+								checked={selected.has(o.id)}
+								onToggle={() => toggle(o.id)}
+							/>
+						))}
+						{split && others.length > 0 && (
+							<OptionHeading>Not served by this host</OptionHeading>
+						)}
+						{others.map((o) => (
 							<OptionRow
 								key={o.id}
 								option={o}
@@ -78,12 +89,20 @@ export function TargetModelsField({ value, onChange }: TargetModelsFieldProps) {
 						))}
 					</ul>
 				)}
-			</div>
+			</fieldset>
 			<p className="text-[11px] text-muted-foreground">
 				The owning host's bindings to these models get this rate sheet. At least
 				one model is required.
 			</p>
 		</div>
+	);
+}
+
+function OptionHeading({ children }: { children: string }) {
+	return (
+		<li className="sticky top-0 bg-muted px-3 py-1.5 text-foot font-medium text-ink-3">
+			{children}
+		</li>
 	);
 }
 

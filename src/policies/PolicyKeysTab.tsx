@@ -2,8 +2,19 @@ import { Link } from "@tanstack/react-router";
 import { AlertTriangle, KeyRound, Plus } from "lucide-react";
 import type { Policy } from "@/api/types/policy";
 import { HostLogo, hostRefLogo } from "@/hosts/HostLogo";
-import { type PolicyHostView, usePolicyHosts } from "@/policies/usePolicyHosts";
+import { cn } from "@/lib/utils";
+import {
+	type HostKeyState,
+	hostLabel,
+	KEYLESS_HOST_TEXT,
+} from "@/policies/policyReachRows";
+import {
+	type PolicyHostView,
+	usePolicyHostsByKeyState,
+} from "@/policies/usePolicyHosts";
 import { EmptyPanel } from "@/shared/EmptyPanel";
+import { QuietBadge, StatusBadge, WarnBadge } from "@/shared/StatusBadge";
+import { Th } from "@/shared/Th";
 
 interface Props {
 	policy: Policy;
@@ -17,10 +28,10 @@ interface Props {
  * same models. All state (host/key enabled, sharing, requirement) is server-fed.
  */
 export function PolicyKeysTab({ policy }: Props) {
-	const hosts = usePolicyHosts(policy.metadata.name);
+	const rows = usePolicyHostsByKeyState(policy.metadata.name);
 	const policyName = policy.metadata.name;
 
-	if (hosts.length === 0) {
+	if (rows.length === 0) {
 		return (
 			<EmptyPanel title="Nothing to show" className="mt-2">
 				Link pools in the edit form; their host keys show here.
@@ -28,35 +39,27 @@ export function PolicyKeysTab({ policy }: Props) {
 		);
 	}
 
-	// Hosts missing a key surface first — they're the actionable items —
-	// then required before optional, then by label.
-	const rows = [...hosts].sort((a, b) => {
-		const am = missingScore(a);
-		const bm = missingScore(b);
-		if (am !== bm) return am - bm;
-		return hostLabel(a).localeCompare(hostLabel(b));
-	});
-
 	return (
 		<div className="flex flex-col gap-3 pt-2">
 			<div className="rounded-md border border-border bg-card overflow-hidden">
 				<table className="w-full text-sm">
 					<thead>
-						<tr className="border-b border-border bg-muted/30 text-left">
-							<th className="px-3 py-1.5 text-[10px] uppercase tracking-wide text-muted-foreground font-medium">
-								Host
-							</th>
-							<th className="px-3 py-1.5 text-[10px] uppercase tracking-wide text-muted-foreground font-medium">
-								Credentials
-							</th>
-							<th className="px-3 py-1.5 text-[10px] uppercase tracking-wide text-muted-foreground font-medium text-right">
+						<tr className="border-b border-border bg-muted/30">
+							<Th variant="column">Host</Th>
+							<Th variant="column">Credentials</Th>
+							<Th variant="column" align="right">
 								Status
-							</th>
+							</Th>
 						</tr>
 					</thead>
 					<tbody className="divide-y divide-border">
-						{rows.map((row) => (
-							<HostRow key={row.host.id} row={row} policyName={policyName} />
+						{rows.map(({ row, state }) => (
+							<HostRow
+								key={row.host.id}
+								row={row}
+								state={state}
+								policyName={policyName}
+							/>
 						))}
 					</tbody>
 				</table>
@@ -67,22 +70,19 @@ export function PolicyKeysTab({ policy }: Props) {
 
 function HostRow({
 	row,
+	state,
 	policyName,
 }: {
 	row: PolicyHostView;
+	state: HostKeyState;
 	policyName: string;
 }) {
 	const keys = row.hostKeys ?? [];
-	const missing = keys.length === 0;
-	const required = row.requirement === "required";
-	const hostOff = row.host.enabled === false;
-	// A missing key only truly breaks routing when the host is required.
-	const showAsBreaking = missing && required;
 
 	return (
 		<tr
 			className={
-				showAsBreaking
+				state === "breaking"
 					? "bg-warning/5 hover:bg-warning/10"
 					: "hover:bg-muted/40"
 			}
@@ -94,22 +94,11 @@ function HostRow({
 					<span className="text-[11px] text-muted-foreground font-mono truncate">
 						{row.host.name}
 					</span>
-					{hostOff && <StatusPill tone="warn">host off</StatusPill>}
+					{row.host.enabled === false && <WarnBadge>host off</WarnBadge>}
 				</div>
 			</td>
 			<td className="px-3 py-2">
-				{missing ? (
-					<span
-						className={`inline-flex items-center gap-1.5 text-[11px] ${
-							showAsBreaking ? "text-warning" : "text-muted-foreground"
-						}`}
-					>
-						<AlertTriangle className="w-3.5 h-3.5" aria-hidden />
-						{showAsBreaking
-							? "No key — requests here will fail"
-							: "No key — a sibling host can cover these models"}
-					</span>
-				) : (
+				{state === "keyed" ? (
 					<ul className="flex flex-wrap gap-x-3 gap-y-1">
 						{keys.map((k) => (
 							<li key={k.id} className="flex items-center gap-1.5">
@@ -124,7 +113,7 @@ function HostRow({
 											aria-hidden
 										/>
 										{k.name}
-										<StatusPill tone="muted">shared</StatusPill>
+										<QuietBadge>shared</QuietBadge>
 									</span>
 								) : (
 									<Link
@@ -139,9 +128,7 @@ function HostRow({
 										{k.name}
 									</Link>
 								)}
-								{k.enabled === false && (
-									<StatusPill tone="warn">key off</StatusPill>
-								)}
+								{k.enabled === false && <WarnBadge>key off</WarnBadge>}
 								{k.sharedWithPolicyCount > 0 && (
 									<span
 										className="text-[10px] text-muted-foreground tabular-nums"
@@ -154,62 +141,34 @@ function HostRow({
 							</li>
 						))}
 					</ul>
+				) : (
+					<span
+						className={cn(
+							"inline-flex items-center gap-1.5 text-[11px]",
+							state === "breaking" ? "text-warning" : "text-muted-foreground",
+						)}
+					>
+						<AlertTriangle className="w-3.5 h-3.5" aria-hidden />
+						{KEYLESS_HOST_TEXT[state]}
+					</span>
 				)}
 			</td>
 			<td className="px-3 py-2 text-right">
-				{missing ? (
-					showAsBreaking ? (
-						<Link
-							to="/policies/$name/edit"
-							params={{ name: policyName }}
-							className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline"
-						>
-							<Plus className="w-3 h-3" />
-							Link a pool
-						</Link>
-					) : (
-						<StatusPill tone="muted">optional</StatusPill>
-					)
+				{state === "breaking" ? (
+					<Link
+						to="/policies/$name/edit"
+						params={{ name: policyName }}
+						className="inline-flex h-5 items-center gap-1 whitespace-nowrap text-[11px] text-primary hover:underline"
+					>
+						<Plus className="w-3 h-3" aria-hidden />
+						Link a pool
+					</Link>
+				) : state === "optional" ? (
+					<QuietBadge>optional</QuietBadge>
 				) : (
-					<StatusPill tone="ok">reachable</StatusPill>
+					<StatusBadge enabled enabledLabel="reachable" />
 				)}
 			</td>
 		</tr>
-	);
-}
-
-/** Sort weight: breaking (required+missing) first, then optional-missing, then keyed. */
-function missingScore(row: PolicyHostView): number {
-	const missing = (row.hostKeys?.length ?? 0) === 0;
-	if (!missing) return 2;
-	return row.requirement === "required" ? 0 : 1;
-}
-
-function hostLabel(row: PolicyHostView): string {
-	return row.host.displayName?.trim() || row.host.name;
-}
-
-function StatusPill({
-	tone,
-	title,
-	children,
-}: {
-	tone: "ok" | "warn" | "muted";
-	title?: string;
-	children: React.ReactNode;
-}) {
-	const className =
-		tone === "ok"
-			? "bg-success-soft text-success border-success/30"
-			: tone === "warn"
-				? "bg-warning/10 text-warning border-warning/30"
-				: "bg-muted text-muted-foreground border-border";
-	return (
-		<span
-			title={title}
-			className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border whitespace-nowrap ${className}`}
-		>
-			{children}
-		</span>
 	);
 }

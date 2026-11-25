@@ -14,8 +14,8 @@ const METER_OPTIONS: { value: RateLimitMeter; label: string }[] = [
 ];
 
 const AMOUNT_PLACEHOLDER: Record<RateLimitMeter, string> = {
-	requests: "60",
-	tokens: "100000",
+	requests: "e.g. 60",
+	tokens: "e.g. 100000",
 };
 
 const FIELD_LABEL =

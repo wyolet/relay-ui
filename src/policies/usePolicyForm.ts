@@ -14,10 +14,10 @@ import type { Policy, PolicyCreate, PolicyUpdate } from "@/api/types/policy";
 import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { useScopePrefetch } from "@/hooks/useScopePrefetch";
+import { useSlugFor } from "@/hooks/useSlugFor";
 import { useFormOwner } from "@/hooks/useWorkContext";
 import { displayLabel } from "@/lib/displayLabel";
 import { shownError, zodFieldValidator } from "@/lib/formErrors";
-import { randomSuffix, slugify } from "@/lib/slug";
 import {
 	unavailablePicks,
 	unavailablePicksError,
@@ -112,15 +112,7 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 		() => (policy ? policyToValues(policy) : emptyValues()),
 		[policy],
 	);
-	const suffixRef = useRef<string>(
-		policy?.metadata.name.match(/-(\d{4,8})$/)?.[1] ?? randomSuffix(),
-	);
-	const computeSlug = (displayName: string): string => {
-		const trimmed = displayName.trim();
-		if (!trimmed) return "";
-		const base = slugify(trimmed) || "policy";
-		return `${base}-${suffixRef.current}`;
-	};
+	const computeSlug = useSlugFor(policy?.metadata.name, "policy");
 
 	const runValidation = zodFieldValidator<PolicyFormValues>(schema);
 
@@ -207,9 +199,7 @@ export function usePolicyForm({ open, policy, onSaved }: UsePolicyFormOptions) {
 	}, [resetKey, open, initial, form]);
 
 	const values = useStore(form.store, (s) => s.values);
-	const slugPreview = isEdit
-		? (policy?.metadata.name ?? "")
-		: computeSlug(values.displayName);
+	const slugPreview = computeSlug(values.displayName);
 	const displayNameError = useStore(form.store, (s) =>
 		shownError(s.fieldMeta?.displayName, s.submissionAttempts),
 	);

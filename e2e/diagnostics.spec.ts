@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
 import { EMPTY_GRAPH, type MockPlanIssue, mockApi } from "./fixtures/mockApi";
 
 const policy = (id: string, name: string, displayName: string) => ({
@@ -59,6 +59,12 @@ const rlIssue = issue({
 	refs: [{ kind: "ratelimit", id: "rl-1", name: "default" }],
 });
 
+const policyRow = (page: Page, name: string | RegExp) =>
+	page
+		.getByRole("link", { name })
+		.first()
+		.locator("xpath=ancestor::div[contains(@class,'grid')][1]");
+
 test.describe("Plan issues", () => {
 	test("a policy's error shows as a dot in the list and on its page with its pools' issues", async ({
 		page,
@@ -70,9 +76,9 @@ test.describe("Plan issues", () => {
 		});
 
 		await page.goto("/policies");
-		const broken = page.locator("tr", { hasText: "Broken policy" });
+		const broken = policyRow(page, "Broken policy");
 		await expect(broken.getByLabel("1 error")).toBeVisible();
-		const clean = page.locator("tr", { hasText: "Clean policy" });
+		const clean = policyRow(page, "Clean policy");
 		await expect(clean).toBeVisible();
 		await expect(clean.getByLabel(/error|warning/)).toHaveCount(0);
 

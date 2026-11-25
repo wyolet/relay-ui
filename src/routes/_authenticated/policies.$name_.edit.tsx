@@ -1,5 +1,4 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ChevronLeft } from "lucide-react";
 import { Suspense } from "react";
 import { bindingsListQueryOptions } from "@/api/hooks/bindings";
 import { budgetListQueryOptions } from "@/api/hooks/budgets";
@@ -20,6 +19,8 @@ import { useMutability } from "@/hooks/useMutability";
 import { displayLabel } from "@/lib/displayLabel";
 import { PolicyForm } from "@/policies/PolicyForm";
 import { PolicyInUseNotice } from "@/policies/PolicyInUseNotice";
+import { BackLink } from "@/shared/BackLink";
+import { PageHeader } from "@/shared/PageHeader";
 import { PageLoader } from "@/shared/Spinner";
 
 export const Route = createFileRoute("/_authenticated/policies/$name_/edit")({
@@ -53,30 +54,27 @@ function EditPolicyInner() {
 
 	if (!canEdit) {
 		return (
-			<div className="flex flex-col gap-3 max-w-xl">
-				<Link
-					to="/policies/$name"
-					params={{ name }}
-					className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-				>
-					<ChevronLeft className="w-3.5 h-3.5" />
-					{displayLabel(policy.metadata)}
-				</Link>
-				<h1 className="text-xl font-semibold text-foreground">
-					Host-owned policy
-				</h1>
-				<p className="text-sm text-muted-foreground">
-					This policy is managed by Relay and can't be edited from the UI.
-					Unlock editing for host-owned policies under{" "}
-					<Link
-						to="/settings/permissions"
-						className="text-foreground underline hover:no-underline"
-					>
-						Settings → Edit permissions
-					</Link>
-					.
-				</p>
-			</div>
+			<PageHeader
+				back={
+					<BackLink to="/policies/$name" params={{ name }}>
+						{displayLabel(policy.metadata)}
+					</BackLink>
+				}
+				title="Host-owned policy"
+				description={
+					<>
+						This policy is managed by Relay and can't be edited from the UI.
+						Unlock editing for host-owned policies under{" "}
+						<Link
+							to="/settings/permissions"
+							className="text-foreground underline hover:no-underline"
+						>
+							Settings → Edit permissions
+						</Link>
+						.
+					</>
+				}
+			/>
 		);
 	}
 
@@ -85,20 +83,15 @@ function EditPolicyInner() {
 	const blocked = policy.editable === false && policy.editBlockedBy;
 
 	return (
-		<div className="flex flex-col gap-4">
-			<div>
-				<Link
-					to="/policies/$name"
-					params={{ name }}
-					className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-				>
-					<ChevronLeft className="w-3.5 h-3.5" />
-					{displayLabel(policy.metadata)}
-				</Link>
-				<h1 className="mt-2 text-xl font-semibold text-foreground">
-					{blocked ? "Used by accounts you can't change" : "Edit policy"}
-				</h1>
-			</div>
+		<div>
+			<PageHeader
+				back={
+					<BackLink to="/policies/$name" params={{ name }}>
+						{displayLabel(policy.metadata)}
+					</BackLink>
+				}
+				title={blocked ? "Used by accounts you can't change" : "Edit policy"}
+			/>
 			{blocked ? (
 				<PolicyInUseNotice policy={policy} blockers={blocked} />
 			) : (

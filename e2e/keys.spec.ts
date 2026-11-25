@@ -104,9 +104,7 @@ test.describe("API keys", () => {
 		await expect(page.getByText("in 12 days")).toBeVisible();
 		await expect(page.getByText("Expired", { exact: true })).toBeVisible();
 		await expect(page.getByText("Never", { exact: true })).toBeVisible();
-		await expect(
-			page.getByRole("img", { name: "Passthrough allowed" }),
-		).toHaveCount(1);
+		await expect(page.getByText("passthrough", { exact: true })).toHaveCount(1);
 		await expect(
 			page.getByRole("switch", { name: "Enable Old key" }),
 		).not.toBeChecked();

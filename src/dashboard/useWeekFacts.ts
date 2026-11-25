@@ -6,14 +6,14 @@ import {
 } from "@/api/hooks/usage";
 import { daySliceStarts, totalsBySlice } from "@/lib/usage-math/window";
 import type { FigureData } from "@/shared/FigureRow";
-import { fmtBucket, fmtCompact, fmtMoneyCompact, fmtPct } from "@/usage/format";
+import {
+	fmtBucketTick,
+	fmtCompact,
+	fmtMoneyCompact,
+	fmtPct,
+} from "@/usage/format";
 import { useGroupLabeler } from "@/usage/useGroupLabeler";
 import { pointTotals, useDashboardWindow } from "./useDashboardWindow";
-
-/** "Friday 16": a weekday-first date in any locale. */
-function fmtWeekday(d: Date): string {
-	return `${d.toLocaleDateString(undefined, { weekday: "long" })} ${d.getDate()}`;
-}
 
 /** The period's less obvious facts: when it peaked, what a request costs and
  * carries, and how concentrated the traffic is. */
@@ -40,6 +40,7 @@ export function useWeekFacts(): FigureData[] {
 		at: 0,
 		value: 0,
 	});
+	const peakAt = new Date(peakHour.at).toISOString();
 	// Calendar days even for the rolling period: "busiest day" names a date.
 	const dayStarts = daySliceStarts(dw.hourly, false);
 	const days = totalsBySlice(hourly, dayStarts, dw.nowMs);
@@ -55,18 +56,18 @@ export function useWeekFacts(): FigureData[] {
 		{
 			key: "peak-hour",
 			label: "Busiest hour",
-			value:
+			value: peakHour.value > 0 ? fmtBucketTick(peakAt, "1h") : "—",
+			note:
 				peakHour.value > 0
-					? fmtBucket(new Date(peakHour.at).toISOString(), "1h")
-					: "—",
-			note: `${fmtCompact(peakHour.value)} requests`,
+					? `${fmtBucketTick(peakAt, "1d")}, ${fmtCompact(peakHour.value)} requests`
+					: `${fmtCompact(peakHour.value)} requests`,
 		},
 		{
 			key: "peak-day",
 			label: "Busiest day",
 			value:
 				(days[peakDay] ?? 0) > 0 && peakDayStart !== undefined
-					? fmtWeekday(new Date(peakDayStart))
+					? fmtBucketTick(new Date(peakDayStart).toISOString(), "1d")
 					: "—",
 			note: `${fmtCompact(days[peakDay] ?? 0)} requests`,
 		},

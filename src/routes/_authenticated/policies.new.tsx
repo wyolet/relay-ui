@@ -1,5 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ChevronLeft } from "lucide-react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { bindingsListQueryOptions } from "@/api/hooks/bindings";
 import { budgetListQueryOptions } from "@/api/hooks/budgets";
@@ -12,6 +11,8 @@ import { poolListQueryOptions } from "@/api/hooks/pools";
 import { providersListQueryOptions } from "@/api/hooks/providers";
 import { rateLimitsListQueryOptions } from "@/api/hooks/ratelimits";
 import { PolicyForm } from "@/policies/PolicyForm";
+import { BackLink } from "@/shared/BackLink";
+import { PageHeader } from "@/shared/PageHeader";
 import { PageLoader } from "@/shared/Spinner";
 
 export const Route = createFileRoute("/_authenticated/policies/new")({
@@ -37,24 +38,16 @@ export const Route = createFileRoute("/_authenticated/policies/new")({
 function NewPolicyInner() {
 	const navigate = useNavigate();
 	return (
-		<div className="flex flex-col gap-4">
-			<div>
-				<Link
-					to="/policies"
-					search={{ tab: "policies" }}
-					className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-				>
-					<ChevronLeft className="w-3.5 h-3.5" />
-					Policies
-				</Link>
-				<h1 className="mt-2 text-xl font-semibold text-foreground">
-					New policy
-				</h1>
-				<p className="mt-1 text-xs text-muted-foreground">
-					Which pools and models requests may use, and the limits on them. Teams,
-					projects and service accounts attach it from their own page.
-				</p>
-			</div>
+		<div>
+			<PageHeader
+				back={
+					<BackLink to="/policies" search={{ tab: "policies" }}>
+						Policies
+					</BackLink>
+				}
+				title="New policy"
+				description="Which pools and models requests may use, and the limits on them. Teams, projects and service accounts attach it from their own page."
+			/>
 			<PolicyForm
 				onSaved={(name) =>
 					void navigate({ to: "/policies/$name", params: { name } })

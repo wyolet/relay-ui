@@ -5,6 +5,7 @@ import { modelsListQueryOptions } from "@/api/hooks/models";
 import type { Model } from "@/api/types/model";
 import {
 	type CapabilityFilter,
+	firstMatchingHost,
 	groupByFamily,
 	hostLines,
 	IN_USE,
@@ -100,7 +101,21 @@ export function useModelsByHost(search: ModelsSearch) {
 
 	const rail = railHosts(matrix, modelsById, byHost ?? new Map(), filter);
 	const anyTraffic = byHost && [...byHost.values()].some((u) => u.requests > 0);
-	const key = pickPane(search.host, rail, anyTraffic);
+	const inUse = inUseLines(
+		matrix,
+		modelsById,
+		byModel ?? new Map(),
+		filter,
+		sort,
+	);
+	const filterEmptiesInUse =
+		search.host === undefined &&
+		isNarrowing(filter) &&
+		byModel !== undefined &&
+		inUse.length === 0;
+	const key =
+		(filterEmptiesInUse && firstMatchingHost(rail)) ||
+		pickPane(search.host, rail, anyTraffic);
 
 	const open = rail.find((r) => r.host.slug === key);
 	const usageByHost = useHostModelUsage(
@@ -109,13 +124,7 @@ export function useModelsByHost(search: ModelsSearch) {
 
 	let pane: ModelsPaneView;
 	if (key === IN_USE) {
-		const lines = inUseLines(
-			matrix,
-			modelsById,
-			byModel ?? new Map(),
-			filter,
-			sort,
-		);
+		const lines = inUse;
 		pane = {
 			key,
 			title: "In use",

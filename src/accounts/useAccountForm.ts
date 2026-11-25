@@ -26,6 +26,7 @@ import { useHosts } from "@/api/hooks/hosts";
 import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { useFormOwner } from "@/hooks/useWorkContext";
+import { toHostOptions } from "@/hosts/HostSelect";
 import { displayLabel } from "@/lib/displayLabel";
 import { shownError, zodFieldValidator } from "@/lib/formErrors";
 import { accountOwnerError } from "@/lib/personalAccount";
@@ -220,10 +221,7 @@ export function useAccountForm({
 		account !== undefined &&
 		canSetPayloadLogging(account, { isAdmin, userId, scopes });
 
-	const hostOptions = (hostsData.items ?? []).map((h) => ({
-		value: h.metadata.id ?? "",
-		label: displayLabel(h.metadata),
-	}));
+	const hostOptions = toHostOptions(hostsData.items ?? []);
 
 	return {
 		form,

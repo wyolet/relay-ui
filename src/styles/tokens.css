@@ -49,6 +49,8 @@
   --scale-8: oklch(0.601 0.065 304);
   --scale-9: oklch(0.551 0.073 302);
   --scale-10: oklch(0.500 0.080 300);
+  /* Rose-leaning off the scale so the second series parts from the first by hue too. */
+  --data-2: oklch(0.80 0.075 340);
   --data-other: oklch(0.86 0.008 323);
   --good: #1d7a3e;
   --warn: #a15c00;
@@ -90,6 +92,7 @@
   --scale-8: oklch(0.672 0.065 306);
   --scale-9: oklch(0.731 0.070 304);
   --scale-10: oklch(0.790 0.075 302);
+  --data-2: oklch(0.45 0.09 340);
   --data-other: oklch(0.38 0.018 322);
   --good: #4cc27a;
   --warn: #e0a24a;
@@ -109,7 +112,6 @@
    heat ramp walks the scale evenly from the ground. */
 :root {
   --data-1: var(--scale-8);
-  --data-2: var(--scale-5);
   --data-3: var(--scale-10);
   --data-4: var(--scale-3);
   --q0: var(--grid);

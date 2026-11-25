@@ -8,8 +8,9 @@ import type { WeekUsageScope } from "@/usage/weekUsageQueries";
 
 interface Props {
 	scope: WeekUsageScope;
-	/** What the resource's traffic would show, said when it had none. */
-	emptyBody: string;
+	/** What the resource's traffic would show, said when it had none; without
+	 * it a quiet week renders nothing. */
+	emptyBody?: string;
 }
 
 /** A resource's last 7 days in headline figures, or one statement when it
@@ -31,6 +32,7 @@ export function WeekFigures(props: Props) {
 function Figures({ scope, emptyBody }: Props) {
 	const { hasTraffic, figures } = useWeekFigures(scope);
 	if (!hasTraffic) {
+		if (emptyBody === undefined) return null;
 		return (
 			<NoTraffic
 				title="No traffic in the last 7 days"

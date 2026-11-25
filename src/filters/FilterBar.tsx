@@ -123,8 +123,7 @@ export function FilterBar<Q extends string = string>({
 			<div className="flex flex-wrap items-start justify-between gap-3">
 				<div
 					className={cn(
-						"w-full min-w-0 overflow-hidden transition-[max-width]",
-						open ? "max-w-3xl" : "max-w-xl",
+						"min-w-0 max-w-xl grow basis-80 overflow-hidden",
 						fieldFrameClassName,
 						fieldInputFocusWithinClassName,
 					)}
@@ -168,34 +167,6 @@ export function FilterBar<Q extends string = string>({
 						{quick && <QuickSegments quick={quick} />}
 						{sort && <SortSegment sort={sort} />}
 					</div>
-					{hasFilters && open && (
-						<div className="grid gap-2 border-t border-field-border px-3 py-2.5">
-							{selects.map((def) => (
-								<FacetRow
-									key={def.key}
-									def={def}
-									value={readText(state, def.key)}
-									onPick={(v) => onChange({ [def.key]: v })}
-								/>
-							))}
-							{(toggles.length > 0 || extra != null) && (
-								<div className="flex flex-wrap items-center gap-1.5">
-									{toggles.map((def) => (
-										<Pill
-											key={def.key}
-											selected={readBool(state, def.key)}
-											onClick={() =>
-												onChange({ [def.key]: !readBool(state, def.key) })
-											}
-										>
-											{def.label}
-										</Pill>
-									))}
-									{extra}
-								</div>
-							)}
-						</div>
-					)}
 				</div>
 				{actions && (
 					<div className="flex shrink-0 flex-wrap items-center gap-2">
@@ -203,6 +174,39 @@ export function FilterBar<Q extends string = string>({
 					</div>
 				)}
 			</div>
+			{hasFilters && open && (
+				<div
+					className={cn(
+						"grid w-fit min-w-[min(100%,36rem)] max-w-full gap-2 px-3 py-2.5",
+						fieldFrameClassName,
+					)}
+				>
+					{selects.map((def) => (
+						<FacetRow
+							key={def.key}
+							def={def}
+							value={readText(state, def.key)}
+							onPick={(v) => onChange({ [def.key]: v })}
+						/>
+					))}
+					{(toggles.length > 0 || extra != null) && (
+						<FacetGrid label="">
+							{toggles.map((def) => (
+								<Pill
+									key={def.key}
+									selected={readBool(state, def.key)}
+									onClick={() =>
+										onChange({ [def.key]: !readBool(state, def.key) })
+									}
+								>
+									{def.label}
+								</Pill>
+							))}
+							{extra}
+						</FacetGrid>
+					)}
+				</div>
+			)}
 			{summary && <p className="text-meta text-ink-3">{summary}</p>}
 		</div>
 	);
@@ -259,20 +263,33 @@ function FacetRow({
 			)
 		: def.options;
 	return (
-		<div className="grid grid-cols-[5.5rem_minmax(0,1fr)] items-baseline gap-2">
-			<span className="text-meta text-ink-3">{def.label}</span>
-			<div className="flex flex-wrap items-center gap-1.5">
-				{shown.map((o) => (
-					<Pill
-						key={o.value}
-						selected={o.value === value}
-						onClick={() => onPick(o.value)}
-					>
-						{o.label}
-					</Pill>
-				))}
-				{long && <FacetSearch def={def} value={value} onPick={onPick} />}
-			</div>
+		<FacetGrid label={def.label}>
+			{shown.map((o) => (
+				<Pill
+					key={o.value}
+					selected={o.value === value}
+					onClick={() => onPick(o.value)}
+				>
+					{o.label}
+				</Pill>
+			))}
+			{long && <FacetSearch def={def} value={value} onPick={onPick} />}
+		</FacetGrid>
+	);
+}
+
+/** One row of the filter panel: its label, then its controls on the shared column. */
+function FacetGrid({
+	label,
+	children,
+}: {
+	label: string;
+	children: ReactNode;
+}) {
+	return (
+		<div className="grid grid-cols-[5.5rem_minmax(0,1fr)] items-center gap-2">
+			<span className="text-meta text-ink-3">{label}</span>
+			<div className="flex flex-wrap items-center gap-1.5">{children}</div>
 		</div>
 	);
 }

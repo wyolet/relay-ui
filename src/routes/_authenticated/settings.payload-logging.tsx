@@ -14,8 +14,9 @@ import { ApiError } from "@/api/types/errors";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { AlertBanner } from "@/shared/AlertBanner";
+import { PageHeader } from "@/shared/PageHeader";
 import { NoAccessState } from "@/shared/RouteError";
-import { SettingsPageHeader, SettingsSaveBar } from "@/shared/SettingsPage";
+import { SettingsSaveBar } from "@/shared/SettingsPage";
 import { SettingsSection } from "@/shared/SettingsSection";
 import { PageLoader } from "@/shared/Spinner";
 import { toast } from "@/shared/Toast";
@@ -72,14 +73,19 @@ function PayloadLoggingSettingsForm({
 	}
 
 	return (
-		<div className="flex flex-col">
-			<SettingsPageHeader title="Payload logging">
-				Capture full request and response bodies for inspection under Logs. This
-				is the global default — it overrides the per-policy and per-key toggles
-				(global › policy › key). Bodies are stored via the{" "}
-				<code className="font-mono">{base.backend || "—"}</code> backend
-				configured on the relay.
-			</SettingsPageHeader>
+		<div>
+			<PageHeader
+				title="Payload logging"
+				description={
+					<>
+						Capture full request and response bodies for inspection under Logs.
+						This is the global default — it overrides the per-policy and per-key
+						toggles (global › policy › key). Bodies are stored via the{" "}
+						<code className="font-mono">{base.backend || "—"}</code> backend
+						configured on the relay.
+					</>
+				}
+			/>
 
 			{readOnly && (
 				<AlertBanner

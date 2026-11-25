@@ -1,5 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ChevronLeft } from "lucide-react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { z } from "zod";
 import { bindingsListQueryOptions } from "@/api/hooks/bindings";
@@ -29,7 +28,10 @@ import { toast } from "@/shared/Toast";
 import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 
 const searchSchema = z.object({
-	tab: z.enum(["overview", "models", "hosts"]).optional().default("overview"),
+	tab: z
+		.enum(["overview", "models", "hosts"])
+		.catch("overview")
+		.default("overview"),
 });
 
 export const Route = createFileRoute("/_authenticated/providers/$name")({
@@ -81,14 +83,7 @@ function ProviderDetailInner() {
 	}
 
 	return (
-		<div className="flex flex-col gap-4">
-			<Link
-				to="/models"
-				className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-			>
-				<ChevronLeft className="w-3.5 h-3.5" />
-				Models
-			</Link>
+		<div>
 			<ProviderDetailView
 				provider={provider}
 				tab={tab}

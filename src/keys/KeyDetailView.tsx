@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Building2, ChevronLeft, KeyRound, RotateCw } from "lucide-react";
+import { Building2, KeyRound, RotateCw } from "lucide-react";
 import { useState } from "react";
 import { AccountHolderLink } from "@/accounts/AccountHolderLink";
 import { EffectiveLimits } from "@/accounts/EffectiveLimits";
@@ -13,6 +13,7 @@ import { KeyRotateDialog } from "@/keys/KeyRotateDialog";
 import { useToggleKeyEnabled } from "@/keys/useToggleKeyEnabled";
 import { displayLabel } from "@/lib/displayLabel";
 import { AccountPolicy } from "@/policy-bindings/AccountPolicy";
+import { BackLink } from "@/shared/BackLink";
 import { CopyableValue } from "@/shared/CopyableValue";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { DetailCard, DetailRow } from "@/shared/DetailCard";
@@ -42,22 +43,18 @@ export function KeyDetailView({ name }: { name: string }) {
 	const enabled = rk.spec.enabled !== false;
 
 	return (
-		<div className="flex flex-col gap-5">
-			<Link
-				to="/keys"
-				search={{ tab: "relay", q: "" }}
-				className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-			>
-				<ChevronLeft className="w-3.5 h-3.5" />
-				API keys
-			</Link>
-
+		<div>
 			<DetailPageHeader
+				back={
+					<BackLink to="/keys" search={{ tab: "relay", q: "" }}>
+						API keys
+					</BackLink>
+				}
 				icon={KeyRound}
 				metadata={rk.metadata}
 				badges={
 					<>
-						<StatusBadge enabled={enabled} enabledLabel="Active" />
+						<StatusBadge enabled={enabled} />
 						{rk.spec.passthroughAllowed && (
 							<span
 								className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium uppercase tracking-wide bg-warning/10 text-warning border border-warning/30"
@@ -108,105 +105,100 @@ export function KeyDetailView({ name }: { name: string }) {
 				</DetailHeaderActions>
 			</DetailPageHeader>
 
-			<DiagnosticList diagnostics={diagnostics} />
+			<div className="flex flex-col gap-5">
+				<DiagnosticList diagnostics={diagnostics} />
 
-			<DetailCard title="Account" icon={Building2}>
-				<dl className="divide-y divide-border">
-					<AccountPolicy accountRef={{ accountId: rk.spec.accountId ?? "" }} />
-					<DetailRow label="Switch account">
-						<p className="mb-2 text-muted-foreground">
-							A request can run in another account the principal holds, by
-							header or by base-URL prefix:
-						</p>
-						<div className="flex flex-col gap-2 max-w-md">
-							<CopyableValue value="X-WR-Account: <account>" />
-							<CopyableValue value="/a/<account>/" />
-						</div>
-					</DetailRow>
-				</dl>
-			</DetailCard>
+				<DetailCard title="Account" icon={Building2}>
+					<dl className="divide-y divide-border">
+						<AccountPolicy
+							accountRef={{ accountId: rk.spec.accountId ?? "" }}
+						/>
+						<DetailRow label="Switch account">
+							<p className="mb-2 text-muted-foreground">
+								A request can run in another account the principal holds, by
+								header or by base-URL prefix:
+							</p>
+							<div className="flex flex-col gap-2 max-w-md">
+								<CopyableValue value="X-WR-Account: <account>" />
+								<CopyableValue value="/a/<account>/" />
+							</div>
+						</DetailRow>
+					</dl>
+				</DetailCard>
 
-			<EffectiveLimits state={limits} />
+				<EffectiveLimits state={limits} />
 
-			<DetailCard title="Configuration" icon={KeyRound}>
-				<dl className="divide-y divide-border">
-					<DetailRow label="Principal">
-						<AccountHolderLink holder={resolveHolder(rk.spec.principal)} />
-					</DetailRow>
-					<DetailRow label="Expires">
-						{rk.spec.expiresAt ? (
-							<span className="text-foreground">
-								{new Date(rk.spec.expiresAt).toLocaleString()}
-							</span>
-						) : (
-							<span className="text-muted-foreground">Never</span>
-						)}
-					</DetailRow>
-					<DetailRow label="Last used">
-						<LastUsed at={rk.status?.lastUsedAt} />
-					</DetailRow>
-					<DetailRow label="Rotation grace">
-						{rk.spec.graceUntil ? (
-							<span className="text-foreground">
-								Previous secret valid until{" "}
-								{new Date(rk.spec.graceUntil).toLocaleString()}
-							</span>
-						) : (
-							<span className="text-muted-foreground">—</span>
-						)}
-					</DetailRow>
-					<DetailRow label="Prefix">
-						{rk.spec.prefix ? (
-							<code className="font-mono text-foreground">
-								{rk.spec.prefix}…
-							</code>
-						) : (
-							<span className="text-muted-foreground">—</span>
-						)}
-					</DetailRow>
-					<DetailRow label="Passthrough">
-						{rk.spec.passthroughAllowed ? (
-							<span className="text-foreground">
-								Allowed —{" "}
-								<span className="text-muted-foreground">
-									requests may target models outside the policy's grant
+				<DetailCard title="Configuration" icon={KeyRound}>
+					<dl className="divide-y divide-border">
+						<DetailRow label="Principal">
+							<AccountHolderLink holder={resolveHolder(rk.spec.principal)} />
+						</DetailRow>
+						<DetailRow label="Expires">
+							{rk.spec.expiresAt ? (
+								<span className="text-foreground">
+									{new Date(rk.spec.expiresAt).toLocaleString()}
 								</span>
-							</span>
-						) : (
-							<span className="text-foreground">
-								Blocked —{" "}
-								<span className="text-muted-foreground">
-									requests must match a policy-granted model
+							) : (
+								<span className="text-muted-foreground">Never</span>
+							)}
+						</DetailRow>
+						<DetailRow label="Last used">
+							<LastUsed at={rk.status?.lastUsedAt} />
+						</DetailRow>
+						<DetailRow label="Rotation grace">
+							{rk.spec.graceUntil ? (
+								<span className="text-foreground">
+									Previous secret valid until{" "}
+									{new Date(rk.spec.graceUntil).toLocaleString()}
 								</span>
-							</span>
-						)}
-					</DetailRow>
-				</dl>
-			</DetailCard>
+							) : (
+								<span className="text-muted-foreground">—</span>
+							)}
+						</DetailRow>
+						<DetailRow label="Passthrough">
+							{rk.spec.passthroughAllowed ? (
+								<span className="text-foreground">
+									Allowed —{" "}
+									<span className="text-muted-foreground">
+										requests may target models outside the policy's grant
+									</span>
+								</span>
+							) : (
+								<span className="text-foreground">
+									Blocked —{" "}
+									<span className="text-muted-foreground">
+										requests must match a policy-granted model
+									</span>
+								</span>
+							)}
+						</DetailRow>
+					</dl>
+				</DetailCard>
 
-			{rk.spec.keyHash && (
-				<WeekUsage
-					scope={{
-						filter: { relay_key_hash: [rk.spec.keyHash] },
-						splitBy: "model_id",
-					}}
-					emptyBody="Requests made with this key show up here: spend, latency, errors and the models they called."
-				/>
-			)}
+				{rk.spec.keyHash && (
+					<WeekUsage
+						scope={{
+							filter: { relay_key_hash: [rk.spec.keyHash] },
+							splitBy: "model_id",
+						}}
+						emptyBody="Requests made with this key show up here: spend, latency, errors and the models they called."
+					/>
+				)}
 
-			{rotating && (
-				<KeyRotateDialog rk={rk} onClose={() => setRotating(false)} />
-			)}
+				{rotating && (
+					<KeyRotateDialog rk={rk} onClose={() => setRotating(false)} />
+				)}
 
-			{del.target && (
-				<DeleteConfirm
-					resourceName={del.target.name}
-					onConfirm={() => void del.confirm()}
-					onCancel={del.cancel}
-					isPending={del.isPending}
-					error={del.error}
-				/>
-			)}
+				{del.target && (
+					<DeleteConfirm
+						resourceName={del.target.name}
+						onConfirm={() => void del.confirm()}
+						onCancel={del.cancel}
+						isPending={del.isPending}
+						error={del.error}
+					/>
+				)}
+			</div>
 		</div>
 	);
 }

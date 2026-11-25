@@ -1,10 +1,11 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ChevronLeft } from "lucide-react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { AccountForm } from "@/accounts/AccountForm";
 import { accountDetailQueryOptions, useAccount } from "@/api/hooks/accounts";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
 import { displayLabel } from "@/lib/displayLabel";
+import { BackLink } from "@/shared/BackLink";
+import { PageHeader } from "@/shared/PageHeader";
 import { PageLoader } from "@/shared/Spinner";
 
 export const Route = createFileRoute("/_authenticated/accounts/$name_/edit")({
@@ -25,20 +26,16 @@ function EditAccountInner() {
 	const back = () => void navigate({ to: "/accounts/$name", params: { name } });
 
 	return (
-		<div className="flex flex-col gap-4">
-			<div>
-				<Link
-					to="/accounts/$name"
-					params={{ name }}
-					className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-				>
-					<ChevronLeft className="w-3.5 h-3.5" />
-					{displayLabel(account.metadata)}
-				</Link>
-				<h1 className="mt-2 text-xl font-semibold text-foreground">
-					Edit account
-				</h1>
-			</div>
+		<div>
+			<PageHeader
+				back={
+					<BackLink to="/accounts/$name" params={{ name }}>
+						{displayLabel(account.metadata)}
+					</BackLink>
+				}
+				title="Edit account"
+				description="Change its name, organization id or labels. The slug and host stay the same."
+			/>
 			<AccountForm
 				account={account}
 				onSaved={(savedName) =>

@@ -1,4 +1,5 @@
 import { Banknote, Boxes, Plus, X } from "lucide-react";
+import { useId } from "react";
 import type { Pricing } from "@/api/types/pricing";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +23,8 @@ import {
 	type RateDraft,
 	usePricingForm,
 } from "@/pricing/usePricingForm";
+import { FieldError } from "@/shared/FieldError";
+import { FieldLabel } from "@/shared/FieldLabel";
 import { FormFooter } from "@/shared/FormFooter";
 import { FormSection } from "@/shared/FormSection";
 import { IdentitySection } from "@/shared/IdentitySection";
@@ -82,6 +85,12 @@ export function PricingForm({
 		setTargetModels,
 	} = usePricingForm({ pricing, prefill, onSaved });
 	const hostOptions = useHostOptions();
+	const hostId = useId();
+	const hostErrorId = useId();
+	const currencyId = useId();
+	const currencyErrorId = useId();
+	const ratesErrorId = useId();
+	const targetModelsErrorId = useId();
 
 	return (
 		<form
@@ -111,7 +120,7 @@ export function PricingForm({
 				>
 					<div className="mb-3 grid grid-cols-[1fr_120px] gap-2 max-w-md">
 						<div>
-							<RowLabel>Owning host</RowLabel>
+							<FieldLabel htmlFor={hostId}>Owning host</FieldLabel>
 							<Select
 								value={values.host || null}
 								items={hostOptions.map((h) => ({
@@ -123,8 +132,10 @@ export function PricingForm({
 								}}
 							>
 								<SelectTrigger
+									id={hostId}
 									className="w-full"
 									aria-invalid={hostError ? true : undefined}
+									aria-describedby={hostError ? hostErrorId : undefined}
 								>
 									<SelectValue placeholder="Pick a host" />
 								</SelectTrigger>
@@ -143,19 +154,17 @@ export function PricingForm({
 									))}
 								</SelectContent>
 							</Select>
-							{hostError && (
-								<p className="mt-1.5 text-[11px] text-destructive">
-									{hostError}
-								</p>
-							)}
+							<FieldError id={hostErrorId} message={hostError} />
 						</div>
 						<div>
-							<RowLabel>Currency</RowLabel>
+							<FieldLabel htmlFor={currencyId}>Currency</FieldLabel>
 							<Input
+								id={currencyId}
 								type="text"
 								value={values.currency}
 								maxLength={3}
 								aria-invalid={currencyError ? true : undefined}
+								aria-describedby={currencyError ? currencyErrorId : undefined}
 								onChange={(e) =>
 									form.setFieldValue(
 										"currency",
@@ -165,11 +174,7 @@ export function PricingForm({
 								placeholder="USD"
 								className="font-mono uppercase"
 							/>
-							{currencyError && (
-								<p className="mt-1.5 text-[11px] text-destructive">
-									{currencyError}
-								</p>
-							)}
+							<FieldError id={currencyErrorId} message={currencyError} />
 						</div>
 					</div>
 					<div className="flex flex-col gap-2">
@@ -197,9 +202,7 @@ export function PricingForm({
 						<Plus data-icon="inline-start" className="size-3.5" />
 						Add rate
 					</Button>
-					{ratesError && (
-						<p className="mt-1.5 text-[11px] text-destructive">{ratesError}</p>
-					)}
+					<FieldError id={ratesErrorId} message={ratesError} />
 				</FormSection>
 
 				<FormSection
@@ -210,12 +213,10 @@ export function PricingForm({
 					<TargetModelsField
 						value={values.targetModels}
 						onChange={setTargetModels}
+						hostId={values.host}
+						errorId={targetModelsError ? targetModelsErrorId : undefined}
 					/>
-					{targetModelsError && (
-						<p className="mt-1.5 text-[11px] text-destructive">
-							{targetModelsError}
-						</p>
-					)}
+					<FieldError id={targetModelsErrorId} message={targetModelsError} />
 				</FormSection>
 			</div>
 
@@ -253,6 +254,12 @@ function RateRow({
 }: RateRowProps) {
 	const hasError = Boolean(amountError || thresholdError);
 	const isTier = rate.aboveTokens !== "";
+	const meterId = useId();
+	const amountId = useId();
+	const amountErrorId = useId();
+	const unitId = useId();
+	const thresholdId = useId();
+	const thresholdErrorId = useId();
 	return (
 		<div
 			className={[
@@ -262,7 +269,7 @@ function RateRow({
 		>
 			<div className="grid grid-cols-[2fr_1.5fr_1.5fr_2fr_auto] gap-2 items-end p-3">
 				<div>
-					<RowLabel>Meter</RowLabel>
+					<FieldLabel htmlFor={meterId}>Meter</FieldLabel>
 					<Select
 						value={rate.meter}
 						items={PRICING_METERS.map((m) => ({
@@ -273,7 +280,7 @@ function RateRow({
 							if (v !== null) onChange({ meter: v });
 						}}
 					>
-						<SelectTrigger className="w-full">
+						<SelectTrigger id={meterId} className="w-full">
 							<SelectValue />
 						</SelectTrigger>
 						<SelectContent>
@@ -289,12 +296,16 @@ function RateRow({
 					</Select>
 				</div>
 				<div>
-					<RowLabel>Amount ({currency || "USD"})</RowLabel>
+					<FieldLabel htmlFor={amountId}>
+						Amount ({currency || "USD"})
+					</FieldLabel>
 					<Input
+						id={amountId}
 						type="text"
 						inputMode="decimal"
 						value={rate.amount}
 						aria-invalid={amountError ? true : undefined}
+						aria-describedby={amountError ? amountErrorId : undefined}
 						onChange={(e) =>
 							onChange({ amount: decimalOnly(e.currentTarget.value) })
 						}
@@ -302,7 +313,7 @@ function RateRow({
 					/>
 				</div>
 				<div>
-					<RowLabel>Per</RowLabel>
+					<FieldLabel htmlFor={unitId}>Per</FieldLabel>
 					<Select
 						value={rate.unit}
 						items={PRICING_UNITS.map((u) => ({
@@ -313,7 +324,7 @@ function RateRow({
 							if (v !== null) onChange({ unit: v });
 						}}
 					>
-						<SelectTrigger className="w-full">
+						<SelectTrigger id={unitId} className="w-full">
 							<SelectValue />
 						</SelectTrigger>
 						<SelectContent>
@@ -326,12 +337,19 @@ function RateRow({
 					</Select>
 				</div>
 				<div>
-					<RowLabel hint={isTier ? "tier" : "base rate"}>Above tokens</RowLabel>
+					<FieldLabel
+						htmlFor={thresholdId}
+						hint={isTier ? "tier" : "base rate"}
+					>
+						Above tokens
+					</FieldLabel>
 					<Input
+						id={thresholdId}
 						type="text"
 						inputMode="numeric"
 						value={rate.aboveTokens}
 						aria-invalid={thresholdError ? true : undefined}
+						aria-describedby={thresholdError ? thresholdErrorId : undefined}
 						onChange={(e) =>
 							onChange({
 								aboveTokens: e.currentTarget.value.replace(/\D/g, ""),
@@ -357,36 +375,9 @@ function RateRow({
 					role="alert"
 					className="border-t border-destructive/40 bg-destructive/10 px-3 py-2 text-[11px] text-destructive space-y-0.5"
 				>
-					{amountError && (
-						<div>
-							<span className="font-medium">Amount:</span> {amountError}
-						</div>
-					)}
-					{thresholdError && (
-						<div>
-							<span className="font-medium">Threshold:</span> {thresholdError}
-						</div>
-					)}
+					{amountError && <p id={amountErrorId}>{amountError}</p>}
+					{thresholdError && <p id={thresholdErrorId}>{thresholdError}</p>}
 				</div>
-			)}
-		</div>
-	);
-}
-
-function RowLabel({
-	children,
-	hint,
-}: {
-	children: React.ReactNode;
-	hint?: string;
-}) {
-	return (
-		<div className="flex items-center justify-between gap-2 mb-1 h-3.5">
-			<div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-				{children}
-			</div>
-			{hint && (
-				<div className="text-[10px] text-muted-foreground/70">{hint}</div>
 			)}
 		</div>
 	);

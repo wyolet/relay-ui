@@ -15,14 +15,10 @@ import { activeFilterCount } from "@/filters/toQueryParams";
 import type { FilterDef, FilterState } from "@/filters/types";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { OwnerLink } from "@/projects/OwnerLink";
-import { subjectLabel } from "@/role-bindings/SubjectsEditor";
+import { SubjectChips } from "@/role-bindings/SubjectChips";
 import { isGlobalScope } from "@/role-bindings/scope";
-import {
-	subjectDisplay,
-	subjectFilterOptions,
-} from "@/role-bindings/subjectDirectory";
+import { subjectFilterOptions } from "@/role-bindings/subjectDirectory";
 import { useSubjectDirectory } from "@/role-bindings/useSubjectDirectory";
-import { Chip } from "@/shared/Chip";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { RowMenu } from "@/shared/RowMenu";
 import { StaleContent } from "@/shared/StaleContent";
@@ -252,19 +248,7 @@ export function RoleBindingsTable() {
 												)}
 											</td>
 											<td className="px-3 py-2">
-												<div className="flex flex-wrap gap-1">
-													{(binding.spec.subjects ?? []).map((s) => {
-														const shown = subjectDisplay(s, subjects);
-														return (
-															<Chip
-																key={subjectLabel(s)}
-																label={shown.text}
-																mono={!shown.known}
-																shape="box"
-															/>
-														);
-													})}
-												</div>
+												<SubjectChips subjects={binding.spec.subjects ?? []} />
 											</td>
 											<td className="px-3 py-2 text-right">
 												<RowMenu

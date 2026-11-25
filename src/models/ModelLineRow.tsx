@@ -1,14 +1,8 @@
-import { Link } from "@tanstack/react-router";
-import { PlanIssueDot } from "@/diagnostics/DiagnosticDot";
 import { displayLabel } from "@/lib/displayLabel";
 import { fmtCompact } from "@/lib/format";
-import {
-	fmtReleaseMonth,
-	isDeprecatedModel,
-	type ModelLine,
-} from "@/lib/modelsByHost";
+import { fmtReleaseMonth, type ModelLine } from "@/lib/modelsByHost";
 import { ModelCapabilityIcons } from "@/models/ModelCapabilities";
-import { ModelLogo } from "@/models/ModelLogo";
+import { ModelNameCell } from "@/models/ModelNameCell";
 import { activeCapabilities } from "@/models/modelDetail";
 import { useModelLineActions } from "@/models/useModelLineActions";
 import { RateValue } from "@/pricing/MeterGrid";
@@ -17,22 +11,26 @@ import {
 	LineColumns,
 	LineRow,
 	NumberCell,
-	QuietTag,
 	SwitchCell,
 } from "@/shared/LineGrid";
 import { fmtMoneyCompact } from "@/usage/format";
 
+// Under 53.5rem (the full tracks plus gaps) the `@container` pane drops two columns rather than scroll.
 const COLS =
-	"grid-cols-[minmax(10rem,2fr)_minmax(5.5rem,1fr)_minmax(3.5rem,1fr)_minmax(4rem,1fr)_repeat(2,minmax(4.5rem,1fr))_minmax(3.5rem,1fr)_minmax(4.5rem,1fr)_4.5rem]";
+	"grid-cols-[minmax(13rem,2fr)_minmax(5.5rem,1fr)_minmax(3.5rem,1fr)_minmax(4rem,1fr)_repeat(2,minmax(4.5rem,1fr))_minmax(3.5rem,1fr)_minmax(4.5rem,1fr)_4.5rem] @max-[53.5rem]:grid-cols-[minmax(13rem,2fr)_minmax(3.5rem,1fr)_repeat(2,minmax(4.5rem,1fr))_minmax(3.5rem,1fr)_minmax(4.5rem,1fr)_4.5rem]";
+const WIDE_ONLY = "@max-[53.5rem]:hidden";
+
+/** The narrow template's minimum, for the pane's scroll box. */
+export const MODEL_LINE_MIN_WIDTH = "min-w-[42.5rem]";
 
 /** The pane's column labels, on the rows' grid. */
 export function ModelLineColumns() {
 	return (
 		<LineColumns cols={COLS}>
 			<span>Model</span>
-			<span>Capabilities</span>
+			<span className={WIDE_ONLY}>Capabilities</span>
 			<span className="text-right">Context</span>
-			<span className="text-right">Released</span>
+			<span className={`text-right ${WIDE_ONLY}`}>Released</span>
 			<span className="text-right" title="Per 1M tokens">
 				Input
 			</span>
@@ -57,29 +55,12 @@ export function ModelLineRow({ line }: { line: ModelLine }) {
 
 	return (
 		<LineRow cols={COLS} dimmed={!actions.enabled}>
-			<span className="flex min-w-0 items-center gap-2.5">
-				<ModelLogo model={model} size={20} />
-				<span className="grid min-w-0">
-					<span className="flex min-w-0 items-center gap-2">
-						<Link
-							to="/models/$name"
-							params={{ name: model.metadata.name }}
-							className="truncate text-foreground hover:underline"
-						>
-							{displayLabel(model.metadata)}
-						</Link>
-						{!actions.enabled && <QuietTag>off</QuietTag>}
-						{isDeprecatedModel(model) && <QuietTag>deprecated</QuietTag>}
-						<PlanIssueDot kind="model" id={model.metadata.id} />
-					</span>
-					<code className="truncate font-mono text-foot text-ink-3">
-						{model.metadata.name}
-					</code>
-				</span>
+			<ModelNameCell model={model} enabled={actions.enabled} />
+			<span className={WIDE_ONLY}>
+				<ModelCapabilityIcons
+					caps={activeCapabilities(model.spec.capabilities)}
+				/>
 			</span>
-			<ModelCapabilityIcons
-				caps={activeCapabilities(model.spec.capabilities)}
-			/>
 			<NumberCell
 				value={
 					model.spec.contextWindowTotal
@@ -87,7 +68,10 @@ export function ModelLineRow({ line }: { line: ModelLine }) {
 						: null
 				}
 			/>
-			<NumberCell value={fmtReleaseMonth(model.spec.releaseDate)} />
+			<NumberCell
+				value={fmtReleaseMonth(model.spec.releaseDate)}
+				className={WIDE_ONLY}
+			/>
 			{!price || !host ? (
 				<span className="col-span-2 text-right text-ink-3">—</span>
 			) : price.unpriced ? (

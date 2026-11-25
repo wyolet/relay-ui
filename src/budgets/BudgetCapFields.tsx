@@ -50,7 +50,7 @@ export function BudgetCapFields({
 					inputMode="decimal"
 					value={amountUsd}
 					onChange={(e) => onAmountChange(e.currentTarget.value)}
-					placeholder="2000"
+					placeholder="e.g. 2000"
 					className="w-full max-w-xs tabular-nums"
 					aria-label="Amount in USD"
 					aria-invalid={amountError ? true : undefined}

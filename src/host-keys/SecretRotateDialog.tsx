@@ -81,8 +81,8 @@ export function SecretRotateDialog({ hk, onClose }: SecretRotateDialogProps) {
 						</span>
 					</DialogTitle>
 					<DialogDescription>
-						Paste the new secret. It's hashed at rest; the plaintext leaves your
-						browser once.
+						Paste the new secret. Relay encrypts it at rest; the plaintext
+						leaves your browser once.
 					</DialogDescription>
 				</DialogHeader>
 

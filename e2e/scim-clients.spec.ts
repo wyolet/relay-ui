@@ -310,7 +310,7 @@ test.describe("SCIM for non-admins", () => {
 		await page.goto("/scim-clients");
 		await expect(page.getByText("Only admins can manage SCIM clients")).toBeVisible();
 		await expect(page.getByRole("link", { name: "SCIM clients" })).toHaveCount(0);
-		await expect(page.getByRole("link", { name: "Groups" })).toBeVisible();
+		await expect(page.getByRole("link", { name: "Users" })).toBeVisible();
 		expect(mock.requests).toHaveLength(0);
 	});
 

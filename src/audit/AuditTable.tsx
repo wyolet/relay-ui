@@ -5,6 +5,7 @@ import { useAudit } from "@/api/hooks/audit";
 import { Button } from "@/components/ui/button";
 import { fmtTs } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { fmtLogTime } from "@/logs/format";
 import { LogsEmpty } from "@/logs/LogsEmpty";
 import { OwnerLink } from "@/projects/OwnerLink";
 import { Chip } from "@/shared/Chip";
@@ -66,12 +67,12 @@ export function AuditTable({
 					<thead>
 						<tr className="border-b border-border text-left text-[10px] uppercase tracking-wide text-muted-foreground">
 							<th className="w-8" />
-							<th className="px-3 py-2 font-medium">Time</th>
-							<th className="px-3 py-2 font-medium">Actor</th>
-							<th className="px-3 py-2 font-medium">Action</th>
-							<th className="px-3 py-2 font-medium">Resource</th>
-							<th className="px-3 py-2 font-medium">Scope</th>
-							<th className="px-3 py-2 font-medium">Outcome</th>
+							<th className="px-2.5 py-2 font-medium">Time</th>
+							<th className="px-2.5 py-2 font-medium">Actor</th>
+							<th className="px-2.5 py-2 font-medium">Action</th>
+							<th className="px-2.5 py-2 font-medium">Resource</th>
+							<th className="px-2.5 py-2 font-medium">Scope</th>
+							<th className="px-2.5 py-2 font-medium">Outcome</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -147,10 +148,13 @@ function AuditRow({
 					aria-hidden="true"
 				/>
 			</td>
-			<td className="whitespace-nowrap px-3 py-2 font-mono tabular-nums text-muted-foreground">
-				{fmtTs(event.ts)}
+			<td
+				className="whitespace-nowrap px-2.5 py-2 font-mono tabular-nums text-muted-foreground"
+				title={fmtTs(event.ts)}
+			>
+				{fmtLogTime(event.ts)}
 			</td>
-			<td className="px-3 py-2">
+			<td className="px-2.5 py-2">
 				<Filterable
 					value={event.actor.name ?? ""}
 					onFilter={
@@ -167,7 +171,7 @@ function AuditRow({
 					</span>
 				</Filterable>
 			</td>
-			<td className="px-3 py-2">
+			<td className="px-2.5 py-2">
 				<Filterable
 					value={event.action}
 					onFilter={onFilter && ((v) => onFilter("action", v))}
@@ -175,12 +179,15 @@ function AuditRow({
 					<span className="font-mono text-foreground">{event.action}</span>
 				</Filterable>
 			</td>
-			<td className="px-3 py-2">
+			<td className="px-2.5 py-2">
 				<Filterable
 					value={event.resource.kind}
 					onFilter={onFilter && ((v) => onFilter("kind", v))}
 				>
-					<span className="block max-w-[16rem] truncate text-foreground">
+					<span
+						className="block max-w-[11rem] truncate text-foreground"
+						title={event.resource.name || event.resource.id}
+					>
 						{event.resource.name || event.resource.id || event.resource.kind}
 					</span>
 					{(event.resource.name || event.resource.id) && (
@@ -190,10 +197,10 @@ function AuditRow({
 					)}
 				</Filterable>
 			</td>
-			<td className="px-3 py-2">
+			<td className="px-2.5 py-2">
 				<ScopeChips scope={event.resource.scope} />
 			</td>
-			<td className="px-3 py-2">
+			<td className="px-2.5 py-2">
 				<span className="inline-flex items-center gap-1.5">
 					<span
 						className={cn(

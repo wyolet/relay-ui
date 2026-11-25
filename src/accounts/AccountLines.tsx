@@ -21,6 +21,7 @@ import { displayLabel } from "@/lib/displayLabel";
 import { fmtCompact } from "@/lib/format";
 import { CatalogIcon } from "@/shared/CatalogIcon";
 import {
+	Dash,
 	LineColumns,
 	LineName,
 	LineRow,
@@ -57,10 +58,6 @@ function UsageCells({ usage }: { usage: AccountRow["usage"] }) {
 			/>
 		</>
 	);
-}
-
-function Dash() {
-	return <span className="text-ink-3">—</span>;
 }
 
 /** The account's linked name, with its tags and plan issues beside it. */
@@ -150,16 +147,12 @@ export function AccountLine({
 	return (
 		<LineRow cols={ACCOUNT_COLS} dimmed={account.spec.closed}>
 			<span className="flex min-w-0 items-center gap-2.5">
-				{kind === "provider" ? (
-					<CatalogIcon
-						path={provider?.host?.spec.icon?.path}
-						label={provider?.hostLabel ?? ""}
-						size={24}
-						titleTooltip
-					/>
-				) : (
-					<KindMark kind={kind} />
-				)}
+				<AccountMark
+					kind={kind}
+					logoPath={provider?.host?.spec.icon?.path}
+					logoLabel={provider?.hostLabel ?? ""}
+					size={24}
+				/>
 				<AccountName row={row} />
 			</span>
 			<span className="truncate">{ACCOUNT_KIND_LABELS[kind]}</span>
@@ -190,11 +183,30 @@ export function AccountLine({
 	);
 }
 
-function KindMark({ kind }: { kind: Exclude<AccountKind, "provider"> }) {
+/** A provider account's host logo, or a relay account's kind icon on a tile, `size` px square. */
+export function AccountMark({
+	kind,
+	logoPath,
+	logoLabel,
+	size,
+}: {
+	kind: AccountKind;
+	logoPath: string | undefined;
+	logoLabel: string;
+	size: number;
+}) {
+	if (kind === "provider") {
+		return (
+			<CatalogIcon path={logoPath} label={logoLabel} size={size} titleTooltip />
+		);
+	}
 	const Icon = KIND_ICONS[kind];
 	return (
-		<span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-muted text-ink-3">
-			<Icon className="size-3.5" aria-hidden />
+		<span
+			className="flex shrink-0 items-center justify-center rounded-md bg-muted text-ink-3"
+			style={{ width: size, height: size }}
+		>
+			<Icon size={Math.round((size * 7) / 12)} aria-hidden />
 		</span>
 	);
 }

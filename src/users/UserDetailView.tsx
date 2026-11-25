@@ -1,11 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import {
-	ChevronLeft,
-	KeySquare,
-	ShieldOff,
-	UserRound,
-	UsersRound,
-} from "lucide-react";
+import { KeySquare, ShieldOff, UserRound, UsersRound } from "lucide-react";
 import { CheckAccessButton } from "@/access-review/CheckAccessButton";
 import { useGroups } from "@/api/hooks/groups";
 import { useRoleBindingsList } from "@/api/hooks/roleBindings";
@@ -17,9 +11,11 @@ import { PERSONAL_ACCOUNT_CHOICE_OPTIONS } from "@/lib/personalAccount";
 import { EraseBodiesButton } from "@/logs/EraseBodiesButton";
 import { OwnerLink } from "@/projects/OwnerLink";
 import { isGlobalScope } from "@/role-bindings/scope";
+import { BackLink } from "@/shared/BackLink";
 import { Chip } from "@/shared/Chip";
 import { confirm } from "@/shared/ConfirmDialog";
 import { DetailCard, DetailEmpty, DetailRow } from "@/shared/DetailCard";
+import { DetailPageHeader } from "@/shared/DetailPageHeader";
 import { Segmented } from "@/shared/Segmented";
 import { StatusBadge } from "@/shared/StatusBadge";
 import { toast } from "@/shared/Toast";
@@ -32,7 +28,7 @@ export function UserDetailView({ id }: { id: string }) {
 	if (!user) {
 		return (
 			<div className="flex flex-col gap-5">
-				<BackLink />
+				<UsersBackLink />
 				<p className="text-sm text-muted-foreground">
 					No account with id <code className="font-mono text-xs">{id}</code>.
 				</p>
@@ -61,25 +57,14 @@ export function UserDetailView({ id }: { id: string }) {
 	}
 
 	return (
-		<div className="flex flex-col gap-5">
-			<BackLink />
-
-			<header className="flex items-start justify-between gap-4">
-				<div className="flex min-w-0 items-start gap-3">
-					<div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border bg-muted">
-						<UserRound className="h-4 w-4 text-muted-foreground" aria-hidden />
-					</div>
-					<div className="min-w-0">
-						<h1 className="flex items-center gap-2 truncate text-xl font-semibold text-foreground">
-							{user.username}
-							<StatusBadge enabled={!user.disabled} enabledLabel="Active" />
-						</h1>
-						<p className="mt-1 truncate font-mono text-xs text-muted-foreground">
-							{user.id}
-						</p>
-					</div>
-				</div>
-				<div className="flex shrink-0 items-center gap-2">
+		<div>
+			<DetailPageHeader
+				back={<UsersBackLink />}
+				icon={UserRound}
+				metadata={{ name: user.id, displayName: user.username }}
+				badges={<StatusBadge enabled={!user.disabled} enabledLabel="Active" />}
+			>
+				<div className="flex shrink-0 flex-wrap items-center gap-2">
 					<CheckAccessButton
 						subject={{ kind: "user", id: user.id }}
 						subjectLabel={user.username}
@@ -106,32 +91,34 @@ export function UserDetailView({ id }: { id: string }) {
 						{revokeTokens.isPending ? "Revoking…" : "Revoke all tokens"}
 					</Button>
 				</div>
-			</header>
+			</DetailPageHeader>
 
-			<DetailCard title="Account" icon={UserRound}>
-				<dl className="divide-y divide-border">
-					<DetailRow label="Email">{user.email || "—"}</DetailRow>
-					<DetailRow label="Roles">
-						{(user.roles ?? []).length === 0 ? (
-							<span className="text-muted-foreground">
-								None — access comes from role bindings.
-							</span>
-						) : (
-							<div className="flex flex-wrap gap-1">
-								{(user.roles ?? []).map((r) => (
-									<Chip key={r} label={r} mono shape="box" />
-								))}
-							</div>
-						)}
-					</DetailRow>
-					<DetailRow label="Personal account">
-						<UserPersonalAccount user={user} />
-					</DetailRow>
-				</dl>
-			</DetailCard>
+			<div className="flex flex-col gap-5">
+				<DetailCard title="Account" icon={UserRound}>
+					<dl className="divide-y divide-border">
+						<DetailRow label="Email">{user.email || "—"}</DetailRow>
+						<DetailRow label="Roles">
+							{(user.roles ?? []).length === 0 ? (
+								<span className="text-muted-foreground">
+									None — access comes from role bindings.
+								</span>
+							) : (
+								<div className="flex flex-wrap gap-1">
+									{(user.roles ?? []).map((r) => (
+										<Chip key={r} label={r} mono shape="box" />
+									))}
+								</div>
+							)}
+						</DetailRow>
+						<DetailRow label="Personal account">
+							<UserPersonalAccount user={user} />
+						</DetailRow>
+					</dl>
+				</DetailCard>
 
-			<UserRoleBindings id={id} />
-			<UserGroups id={id} />
+				<UserRoleBindings id={id} />
+				<UserGroups id={id} />
+			</div>
 		</div>
 	);
 }
@@ -171,16 +158,8 @@ function UserPersonalAccount({ user }: { user: UserRow }) {
 	);
 }
 
-function BackLink() {
-	return (
-		<Link
-			to="/users"
-			className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
-		>
-			<ChevronLeft className="h-3.5 w-3.5" />
-			Users
-		</Link>
-	);
+function UsersBackLink() {
+	return <BackLink to="/users">Users</BackLink>;
 }
 
 /** The bindings that name this user directly. Bindings reaching them through a

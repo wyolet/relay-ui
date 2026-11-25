@@ -62,7 +62,7 @@ function HostTile({ card, open }: { card: HostCard; open: boolean }) {
 			search={(prev) => ({ ...prev, host: open ? undefined : host.slug })}
 			aria-pressed={open}
 			className={cn(
-				"grid gap-3 rounded-lg border p-4 transition-colors",
+				"grid content-start gap-3 rounded-lg border p-4 transition-colors",
 				open ? "border-primary bg-muted/40" : "border-rule hover:border-ink-3",
 			)}
 		>

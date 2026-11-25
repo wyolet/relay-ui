@@ -2,6 +2,8 @@ import type { components } from "@/api/types.gen";
 import { findWindowPreset } from "@/lib/timeWindow";
 
 type RateLimitRule = components["schemas"]["RateLimitRule"];
+type RateLimitMeter = RateLimitRule["meter"];
+type RateLimitStrategy = NonNullable<RateLimitRule["strategy"]>;
 
 /**
  * Compact number: "999", "1k", "1.5k", "10k", "1M", "1.2M", "1B".
@@ -39,67 +41,114 @@ const WINDOW_LETTER: Record<number, string> = {
 	86400: "D",
 };
 
-/**
- * Short token for a meter:
- *   requests           → "R"   (combines into RPM/RPS/RPH/RPD)
- *   tokens             → "T"
- *   concurrency        → "C"
- *   tokens.input       → "Tin"
- *   tokens.output      → "Tout"
- *   tokens.cache_read  → "Tcr"
- *   etc.
- */
-function meterShort(meter: string): string {
-	switch (meter) {
-		case "requests":
-			return "R";
-		case "concurrency":
-			return "C";
-		case "tokens":
-			return "T";
-		case "tokens.input":
-			return "Tin";
-		case "tokens.output":
-			return "Tout";
-		case "tokens.cache_read":
-			return "Tcr";
-		case "tokens.cache_creation":
-			return "Tcc";
-		case "tokens.reasoning":
-			return "Trsn";
-		case "tokens.server_tool_use_input":
-			return "Tsti";
-		case "tokens.server_tool_use_output":
-			return "Tsto";
-		default:
-			return meter;
-	}
-}
+/** A meter's unit letter (R, T, C) and the token kind it narrows to, if any. */
+const METER_SHORT: Record<RateLimitMeter, { letter: string; kind?: string }> = {
+	requests: { letter: "R" },
+	concurrency: { letter: "C" },
+	tokens: { letter: "T" },
+	"tokens.input": { letter: "T", kind: "input" },
+	"tokens.output": { letter: "T", kind: "output" },
+	"tokens.cache_read": { letter: "T", kind: "cache read" },
+	"tokens.cache_creation": { letter: "T", kind: "cache write" },
+	"tokens.reasoning": { letter: "T", kind: "reasoning" },
+	"tokens.server_tool_use_input": { letter: "T", kind: "tool input" },
+	"tokens.server_tool_use_output": { letter: "T", kind: "tool output" },
+};
 
 /**
- * Minimal rule label: `{amount}{meter}P{window}` for the four canonical
- * windows (e.g. "1k RPM", "10k TPS"); falls back to `{amount} {meter}/{N}s`
- * for custom windows.
+ * Minimal rule label: `{amount} {kind} {unit}P{window}` for the four canonical
+ * windows (e.g. "1k RPM", "1.5M input TPM"); falls back to
+ * `{amount} {kind} {unit}/{N}s` for custom windows.
  */
 export function formatRuleShort(rule: RateLimitRule): string {
 	const amount = compactNumber(rule.amount);
-	const meter = meterShort(rule.meter);
-	const seconds = rule.window;
-	const preset = findWindowPreset(seconds);
+	const { letter, kind } = METER_SHORT[rule.meter];
+	const lead = kind ? `${amount} ${kind}` : amount;
+	const preset = findWindowPreset(rule.window);
 	if (preset) {
-		const w = WINDOW_LETTER[preset.value] ?? "?";
-		return `${amount} ${meter}P${w}`;
+		return `${lead} ${letter}P${WINDOW_LETTER[preset.value] ?? "?"}`;
 	}
-	return `${amount} ${meter}/${seconds}s`;
+	return `${lead} ${letter}/${rule.window}s`;
 }
 
-/**
- * One-liner summary of every rule on a rate limit, joined with " · ".
- * Returns "no rules" for an empty list.
- */
+/** Each rule of a rate limit in its short form. */
 export function formatRulesShort(
 	rules: readonly RateLimitRule[] | null | undefined,
-): string {
-	if (!rules || rules.length === 0) return "no rules";
-	return rules.map(formatRuleShort).join(" · ");
+): string[] {
+	return (rules ?? []).map(formatRuleShort);
+}
+
+export const STRATEGY_OPTIONS: Record<
+	RateLimitStrategy,
+	{ label: string; hint: string }
+> = {
+	"token-bucket": {
+		label: "Token bucket",
+		hint: "Refills steadily; allows short bursts up to the bucket size.",
+	},
+	"sliding-window": {
+		label: "Sliding window",
+		hint: "Smooth, accurate count over a moving window — no boundary bursts.",
+	},
+	"fixed-window": {
+		label: "Fixed window",
+		hint: "Counter resets at fixed intervals. Cheapest, but allows edge bursts.",
+	},
+	"leaky-bucket": {
+		label: "Leaky bucket",
+		hint: "Constant outflow; excess requests queue or get dropped.",
+	},
+	"session-window": {
+		label: "Session window",
+		hint: "Per-session counter — resets after a quiet period.",
+	},
+};
+
+export const METER_OPTIONS: Record<
+	RateLimitMeter,
+	{ label: string; hint: string }
+> = {
+	requests: { label: "Requests", hint: "One unit per API call." },
+	concurrency: {
+		label: "Concurrency",
+		hint: "Caps in-flight requests at any moment.",
+	},
+	tokens: {
+		label: "Tokens (all)",
+		hint: "Sum of every token sub-meter.",
+	},
+	"tokens.input": {
+		label: "Input tokens",
+		hint: "Prompt tokens sent to the provider.",
+	},
+	"tokens.output": {
+		label: "Output tokens",
+		hint: "Generated completion tokens.",
+	},
+	"tokens.cache_read": {
+		label: "Cache read tokens",
+		hint: "Tokens served from prompt cache.",
+	},
+	"tokens.cache_creation": {
+		label: "Cache write tokens",
+		hint: "Tokens written into prompt cache.",
+	},
+	"tokens.reasoning": {
+		label: "Reasoning tokens",
+		hint: "Hidden reasoning / thinking tokens.",
+	},
+	"tokens.server_tool_use_input": {
+		label: "Server tool input tokens",
+		hint: "Input tokens spent on server-side tool calls.",
+	},
+	"tokens.server_tool_use_output": {
+		label: "Server tool output tokens",
+		hint: "Output tokens from server-side tool calls.",
+	},
+};
+
+export function strategyLabel(
+	strategy: RateLimitStrategy | undefined,
+): string | undefined {
+	return strategy ? STRATEGY_OPTIONS[strategy].label : undefined;
 }

@@ -14,7 +14,7 @@ import { displayLabel } from "@/lib/displayLabel";
 import { shownError, zodFieldValidator } from "@/lib/formErrors";
 import { serviceAccountOwner } from "@/lib/serviceAccountScope";
 import { randomSuffix, slugify } from "@/lib/slug";
-import { scopeOptions } from "@/lib/workContext";
+import { type FormPlacement, scopeOptions } from "@/lib/workContext";
 import { toast } from "@/shared/Toast";
 
 export interface ServiceAccountFormValues {
@@ -56,6 +56,19 @@ function buildSchema(picksProject: boolean) {
 			: z.string(),
 		enabled: z.boolean(),
 	});
+}
+
+/** A create lands in the picked project; before a pick only a team workspace is worth naming. */
+function projectPlacement(
+	placement: FormPlacement | undefined,
+	inTeamWorkspace: boolean,
+	projects: readonly { value: string; label: string }[],
+	projectId: string,
+): FormPlacement | undefined {
+	if (!placement) return undefined;
+	const picked = projects.find((o) => o.value === projectId);
+	if (picked) return { ...placement, scope: picked.label };
+	return inTeamWorkspace ? placement : undefined;
 }
 
 interface UseServiceAccountFormOptions {
@@ -198,16 +211,14 @@ export function useServiceAccountForm({
 		displayNameError,
 		descriptionError,
 		picksProject,
-		// A picked project is where the row lands, whatever the context.
-		placement:
-			placement && picksProject
-				? {
-						...placement,
-						scope:
-							projectOptions.find((o) => o.value === values.projectId)?.label ??
-							placement.scope,
-					}
-				: placement,
+		placement: picksProject
+			? projectPlacement(
+					placement,
+					context?.kind === "team",
+					projectOptions,
+					values.projectId,
+				)
+			: placement,
 		projectOptions,
 		projectIdError,
 	};

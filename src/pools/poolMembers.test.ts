@@ -78,10 +78,10 @@ describe("keyCountByAccount", () => {
 
 describe("accountMeta", () => {
 	test("names the count when keys are visible", () => {
-		expect(accountMeta(1)).toBe("Account · 1 key, and any added later");
-		expect(accountMeta(3)).toBe("Account · 3 keys, and any added later");
+		expect(accountMeta(1)).toBe("Account with 1 key, and any added later");
+		expect(accountMeta(3)).toBe("Account with 3 keys, and any added later");
 		expect(accountMeta(undefined)).toBe(
-			"Account · all its keys, now and later",
+			"Account with all its keys, now and later",
 		);
 	});
 });

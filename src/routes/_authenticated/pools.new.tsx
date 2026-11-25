@@ -1,9 +1,10 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ChevronLeft } from "lucide-react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
 import { PoolForm } from "@/pools/PoolForm";
+import { BackLink } from "@/shared/BackLink";
+import { PageHeader } from "@/shared/PageHeader";
 import { PageLoader } from "@/shared/Spinner";
 
 export const Route = createFileRoute("/_authenticated/pools/new")({
@@ -18,22 +19,16 @@ export const Route = createFileRoute("/_authenticated/pools/new")({
 function NewPoolPage() {
 	const navigate = useNavigate();
 	return (
-		<div className="flex flex-col gap-4">
-			<div>
-				<Link
-					to="/keys"
-					search={{ tab: "pools" }}
-					className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-				>
-					<ChevronLeft className="w-3.5 h-3.5" />
-					Pools
-				</Link>
-				<h1 className="mt-2 text-xl font-semibold text-foreground">New pool</h1>
-				<p className="mt-1 text-xs text-muted-foreground">
-					Order credentials at one host; link the pool from a policy to route
-					through it.
-				</p>
-			</div>
+		<div>
+			<PageHeader
+				back={
+					<BackLink to="/keys" search={{ tab: "pools" }}>
+						Pools
+					</BackLink>
+				}
+				title="New pool"
+				description="Order credentials at one host; link the pool from a policy to route through it."
+			/>
 			<Suspense fallback={<PageLoader />}>
 				<PoolForm
 					onSaved={(name) =>

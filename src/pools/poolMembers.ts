@@ -83,6 +83,6 @@ export function keyCountByAccount(
 
 /** An account member's second line; keys the caller can't see leave it uncounted. */
 export function accountMeta(keyCount: number | undefined): string {
-	if (!keyCount) return "Account · all its keys, now and later";
-	return `Account · ${keyCount === 1 ? "1 key" : `${keyCount} keys`}, and any added later`;
+	if (!keyCount) return "Account with all its keys, now and later";
+	return `Account with ${keyCount === 1 ? "1 key" : `${keyCount} keys`}, and any added later`;
 }

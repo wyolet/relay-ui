@@ -11,12 +11,13 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { ModelPicker } from "@/models/ModelPicker";
+import { RuleShortList } from "@/rate-limits/RuleShortList";
 import { OptionRow } from "@/shared/OptionRow";
 
 export interface RLMeta {
 	id: string;
 	label: string;
-	rules: string;
+	rules: string[];
 }
 
 export interface AttachRateLimitModalProps {
@@ -55,7 +56,7 @@ export function AttachRateLimitModal({
 				if (!open) onClose();
 			}}
 		>
-			<DialogContent className="sm:max-w-3xl lg:max-w-4xl max-h-[85vh] overflow-y-auto">
+			<DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
 				<DialogHeader>
 					<DialogTitle>
 						{isEdit ? "Edit rate limit" : "Attach rate limit"}
@@ -132,7 +133,7 @@ function Step1RateLimit({ value, onChange, options }: Step1Props) {
 				? options.filter(
 						(o) =>
 							o.label.toLowerCase().includes(q.toLowerCase()) ||
-							o.rules.toLowerCase().includes(q.toLowerCase()),
+							o.rules.some((r) => r.toLowerCase().includes(q.toLowerCase())),
 					)
 				: options,
 		[q, options],
@@ -167,10 +168,10 @@ function Step1RateLimit({ value, onChange, options }: Step1Props) {
 							<OptionRow
 								onClick={() => onChange(opt.id)}
 								selected={selected}
-								className="items-start gap-2 px-2 hover:bg-muted/50"
+								className="items-center gap-2 px-2 hover:bg-muted/50"
 							>
 								<span
-									className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${
+									className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${
 										selected ? "border-primary bg-primary" : "border-input"
 									}`}
 								>
@@ -178,15 +179,11 @@ function Step1RateLimit({ value, onChange, options }: Step1Props) {
 										<span className="h-1.5 w-1.5 rounded-full bg-primary-foreground" />
 									)}
 								</span>
-								<span className="flex flex-col min-w-0">
-									<span className="text-sm font-medium text-foreground truncate">
+								<span className="flex flex-col gap-0.5 min-w-0">
+									<span className="text-sm text-foreground truncate">
 										{opt.label}
 									</span>
-									{opt.rules && (
-										<span className="font-mono text-[10px] text-muted-foreground truncate">
-											{opt.rules}
-										</span>
-									)}
+									<RuleShortList rules={opt.rules} />
 								</span>
 							</OptionRow>
 						</li>

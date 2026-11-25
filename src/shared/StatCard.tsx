@@ -40,23 +40,24 @@ export function StatCard({
 }
 
 const GRID_COLUMNS = {
+	2: "sm:grid-cols-2",
 	3: "sm:grid-cols-3",
 	4: "sm:grid-cols-4",
 };
 
-/** Titled section holding a detail page's stat tiles. */
+/** A section holding a detail page's stat tiles; untitled when its tab already names it. */
 export function StatGrid({
 	title,
 	columns = 4,
 	children,
 }: {
-	title: string;
+	title?: string;
 	columns?: keyof typeof GRID_COLUMNS;
 	children: ReactNode;
 }) {
 	return (
 		<section>
-			<SectionTitle>{title}</SectionTitle>
+			{title && <SectionTitle>{title}</SectionTitle>}
 			<div className={`grid grid-cols-2 ${GRID_COLUMNS[columns]} gap-3`}>
 				{children}
 			</div>

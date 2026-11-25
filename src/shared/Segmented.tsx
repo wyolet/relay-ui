@@ -17,7 +17,7 @@ export interface SegmentedOption<T extends string> {
 }
 
 const CONTAINER = {
-	pill: "inline-flex items-center gap-0.5 rounded-md bg-muted p-0.5",
+	pill: "inline-flex w-fit items-center gap-0.5 rounded-md bg-muted p-0.5",
 	underline: "flex gap-1 border-b border-border px-2",
 } as const;
 

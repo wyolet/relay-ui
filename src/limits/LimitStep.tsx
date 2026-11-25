@@ -6,6 +6,7 @@ import type { LimitKind } from "@/limits/limitWrites";
 import { RateLimitFields } from "@/limits/RateLimitFields";
 import type { useAddLimitForm } from "@/limits/useAddLimitForm";
 import { ModelPicker } from "@/models/ModelPicker";
+import { PolicyLine } from "@/policy-bindings/PolicyLine";
 import { FieldError } from "@/shared/FieldError";
 import { FormSection } from "@/shared/FormSection";
 import { Segmented } from "@/shared/Segmented";
@@ -44,7 +45,7 @@ export function LimitStep({ limit }: { limit: AddLimitForm }) {
 	);
 	return (
 		<div className="flex flex-col gap-6">
-			<p className="text-xs text-muted-foreground">{limit.caseLine}</p>
+			<PolicyLine line={limit.caseLine} />
 			<div className="divide-y divide-border">
 				<FormSection
 					icon={Gauge}
@@ -111,7 +112,7 @@ export function LimitStep({ limit }: { limit: AddLimitForm }) {
 				>
 					<Input
 						type="text"
-						className="w-full max-w-md"
+						className="w-full"
 						value={values.displayName}
 						onChange={(e) =>
 							form.setFieldValue("displayName", e.currentTarget.value)

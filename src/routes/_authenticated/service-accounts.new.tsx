@@ -1,8 +1,9 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ChevronLeft } from "lucide-react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { projectsListQueryOptions } from "@/api/hooks/projects";
 import { ServiceAccountForm } from "@/service-accounts/ServiceAccountForm";
+import { BackLink } from "@/shared/BackLink";
+import { PageHeader } from "@/shared/PageHeader";
 import { PageLoader } from "@/shared/Spinner";
 
 export const Route = createFileRoute("/_authenticated/service-accounts/new")({
@@ -14,23 +15,12 @@ export const Route = createFileRoute("/_authenticated/service-accounts/new")({
 function NewServiceAccountInner() {
 	const navigate = useNavigate();
 	return (
-		<div className="flex flex-col gap-4">
-			<div>
-				<Link
-					to="/service-accounts"
-					className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-				>
-					<ChevronLeft className="w-3.5 h-3.5" />
-					Service accounts
-				</Link>
-				<h1 className="mt-2 text-xl font-semibold text-foreground">
-					New service account
-				</h1>
-				<p className="mt-1 text-xs text-muted-foreground">
-					Keys are issued to an account, so rotating a secret leaves everything
-					bound to the account untouched.
-				</p>
-			</div>
+		<div>
+			<PageHeader
+				back={<BackLink to="/service-accounts">Service accounts</BackLink>}
+				title="New service account"
+				description="Keys are issued to an account, so rotating a secret leaves everything bound to the account untouched."
+			/>
 			<ServiceAccountForm
 				onSaved={(name) =>
 					void navigate({ to: "/service-accounts/$name", params: { name } })

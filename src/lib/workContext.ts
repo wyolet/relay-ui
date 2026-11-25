@@ -204,8 +204,13 @@ export function contextName(ctx: WorkContext): string {
 			return "Personal";
 		case "organization":
 			return "Organization";
-		default:
-			return `${KIND_LABEL[ctx.kind]} ${ctx.displayName}`;
+		default: {
+			const kind = KIND_LABEL[ctx.kind];
+			// A team named "Team Alpha" reads as itself, not "Team Team Alpha".
+			return ctx.displayName.toLowerCase().startsWith(`${kind.toLowerCase()} `)
+				? ctx.displayName
+				: `${kind} ${ctx.displayName}`;
+		}
 	}
 }
 

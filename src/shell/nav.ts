@@ -3,6 +3,7 @@ import {
 	BarChart3,
 	Bot,
 	Boxes,
+	BrainCircuit,
 	Cog,
 	KeyRound,
 	LayoutDashboard,
@@ -60,22 +61,22 @@ export const NAV_GROUPS: NavGroup[] = [
 			{
 				to: "/models",
 				label: "Models",
-				icon: Boxes,
-				prefix: "/models",
+				icon: BrainCircuit,
+				prefix: ["/models", "/hosts", "/providers"],
 				capability: "models",
 			},
 			{
 				to: "/keys",
 				label: "Keys",
 				icon: KeyRound,
-				prefix: "/keys",
+				prefix: ["/keys", "/host-keys", "/accounts", "/pools", "/me/accounts"],
 				capability: "keys",
 			},
 			{
 				to: "/policies",
 				label: "Policies",
 				icon: ShieldCheck,
-				prefix: "/policies",
+				prefix: ["/policies", "/policy-bindings"],
 				capability: "policies",
 			},
 			{
@@ -132,7 +133,9 @@ export const SETTINGS_ITEM: NavItem = {
 	to: "/settings",
 	label: "Settings",
 	icon: Cog,
-	prefix: "/settings",
+	// Audit and SCIM clients open from Settings rows.
+	prefix: ["/settings", "/audit", "/scim-clients"],
+	adminOnly: true,
 };
 
 /** The nav entry a path sits under; none for pages outside the nav. */

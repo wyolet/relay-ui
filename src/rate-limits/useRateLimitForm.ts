@@ -16,6 +16,7 @@ import type {
 } from "@/api/types/ratelimit";
 import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
+import { useSlugFor } from "@/hooks/useSlugFor";
 import { useFormOwner } from "@/hooks/useWorkContext";
 import { displayLabel } from "@/lib/displayLabel";
 import { firstError, shownError, zodFieldValidator } from "@/lib/formErrors";
@@ -24,7 +25,6 @@ import {
 	tightestRequestCap,
 	validateRequestRate,
 } from "@/lib/rateLimitValidation";
-import { randomSuffix, slugify } from "@/lib/slug";
 import { WINDOW_PRESETS } from "@/lib/timeWindow";
 import { toast } from "@/shared/Toast";
 
@@ -78,7 +78,7 @@ export interface RateLimitFormValues {
 const ruleSchema = z.object({
 	amount: z.coerce
 		.number()
-		.int("Whole numbers only")
+		.int("Amount must be a whole number")
 		.min(1, "Amount must be at least 1"),
 	meter: z.enum(METER_VALUES as readonly [RateLimitMeter, ...RateLimitMeter[]]),
 	strategy: z.enum(
@@ -86,8 +86,8 @@ const ruleSchema = z.object({
 	),
 	window: z.coerce
 		.number()
-		.int("Whole seconds only")
-		.min(1, "Window must be at least 1"),
+		.int("Window must be whole seconds")
+		.min(1, "Window must be at least 1 second"),
 });
 
 function buildSchema(tightest: SystemReqCap | undefined) {
@@ -193,15 +193,7 @@ export function useRateLimitForm({
 		() => (rateLimit ? rlToValues(rateLimit) : emptyValues()),
 		[rateLimit],
 	);
-	const suffixRef = useRef<string>(
-		rateLimit?.metadata.name.match(/-(\d{4,8})$/)?.[1] ?? randomSuffix(),
-	);
-	const computeSlug = (displayName: string): string => {
-		const trimmed = displayName.trim();
-		if (!trimmed) return "";
-		const base = slugify(trimmed) || "ratelimit";
-		return `${base}-${suffixRef.current}`;
-	};
+	const computeSlug = useSlugFor(rateLimit?.metadata.name, "ratelimit");
 
 	const runValidation = zodFieldValidator<RateLimitFormValues>(schema);
 

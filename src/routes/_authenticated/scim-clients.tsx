@@ -4,6 +4,7 @@ import { useAuth, whoamiQueryOptions } from "@/api/auth";
 import { scimClientsQueryOptions } from "@/api/hooks/scimClients";
 import { authSCIMQueryOptions } from "@/api/hooks/settings";
 import { ScimClientsView } from "@/scim/ScimClientsView";
+import { PageHeader } from "@/shared/PageHeader";
 import { NoAccessState } from "@/shared/RouteError";
 import { PageLoader } from "@/shared/Spinner";
 
@@ -28,15 +29,10 @@ function ScimClientsPage() {
 	const { isAdmin } = useAuth();
 	return (
 		<div>
-			<div className="mb-4">
-				<h1 className="text-lg font-semibold text-foreground">SCIM clients</h1>
-				<p className="mt-0.5 max-w-2xl text-xs text-muted-foreground">
-					Identity providers such as Microsoft Entra ID or Okta that create,
-					update and deactivate users and groups through SCIM 2.0. Each client
-					acts only on what it provisioned; what a provisioned group may do is
-					decided by the role bindings on it.
-				</p>
-			</div>
+			<PageHeader
+				title="SCIM clients"
+				description="Identity providers such as Microsoft Entra ID or Okta that create, update and deactivate users and groups through SCIM 2.0. Each client acts only on what it provisioned; what a provisioned group may do is decided by the role bindings on it."
+			/>
 			{isAdmin ? (
 				<Suspense fallback={<PageLoader className="min-h-[40vh]" />}>
 					<ScimClientsView />

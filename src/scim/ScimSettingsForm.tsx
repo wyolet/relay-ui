@@ -11,7 +11,8 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { AlertBanner } from "@/shared/AlertBanner";
 import { CopyableValue } from "@/shared/CopyableValue";
-import { SettingsPageHeader, SettingsSaveBar } from "@/shared/SettingsPage";
+import { PageHeader } from "@/shared/PageHeader";
+import { SettingsSaveBar } from "@/shared/SettingsPage";
 import { SettingsSection } from "@/shared/SettingsSection";
 import {
 	isLinkClaim,
@@ -31,12 +32,11 @@ export function ScimSettingsForm({
 	const { values } = form;
 
 	return (
-		<div className="flex flex-col">
-			<SettingsPageHeader title="SCIM provisioning">
-				Let an identity provider such as Microsoft Entra ID or Okta create,
-				update and deactivate users and groups. Each provider authenticates with
-				the token of a SCIM client.
-			</SettingsPageHeader>
+		<div>
+			<PageHeader
+				title="SCIM provisioning"
+				description="Let an identity provider such as Microsoft Entra ID or Okta create, update and deactivate users and groups. Each provider authenticates with the token of a SCIM client."
+			/>
 
 			{readOnly && (
 				<AlertBanner

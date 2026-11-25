@@ -1,11 +1,12 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { ChevronLeft, Globe, ShieldCheck, Users } from "lucide-react";
+import { Globe, ShieldCheck, Users } from "lucide-react";
 import { useDeleteRoleBinding, useRoleBinding } from "@/api/hooks/roleBindings";
 import { useRoles } from "@/api/hooks/roles";
 import { displayLabel } from "@/lib/displayLabel";
 import { OwnerLink } from "@/projects/OwnerLink";
-import { subjectLabel } from "@/role-bindings/SubjectsEditor";
+import { SubjectChips } from "@/role-bindings/SubjectChips";
 import { isGlobalScope } from "@/role-bindings/scope";
+import { BackLink } from "@/shared/BackLink";
 import { Chip } from "@/shared/Chip";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { DetailCard, DetailEmpty, DetailRow } from "@/shared/DetailCard";
@@ -32,17 +33,13 @@ export function RoleBindingDetailView({ name }: { name: string }) {
 	);
 
 	return (
-		<div className="flex flex-col gap-5">
-			<Link
-				to="/users"
-				search={{ tab: "role-bindings" }}
-				className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-			>
-				<ChevronLeft className="w-3.5 h-3.5" />
-				Role bindings
-			</Link>
-
+		<div>
 			<DetailPageHeader
+				back={
+					<BackLink to="/users" search={{ tab: "role-bindings" }}>
+						Role bindings
+					</BackLink>
+				}
 				icon={ShieldCheck}
 				metadata={binding.metadata}
 				badges={<StatusBadge enabled={enabled} />}
@@ -70,70 +67,63 @@ export function RoleBindingDetailView({ name }: { name: string }) {
 				/>
 			</DetailPageHeader>
 
-			<DetailCard title="Configuration" icon={Globe}>
-				<dl className="divide-y divide-border">
-					<DetailRow label="Role">
-						{role ? (
-							<Link
-								to="/roles/$name"
-								params={{ name: role.metadata.name }}
-								className="text-foreground hover:underline"
-							>
-								{displayLabel(role.metadata)}
-							</Link>
-						) : (
-							<code className="font-mono text-[11px]">
-								{binding.spec.roleId}
-							</code>
-						)}
-					</DetailRow>
-					<DetailRow label="Scope">
-						{isGlobalScope(binding.spec.scope) ? (
-							<span className="text-muted-foreground">
-								Global — grants everywhere
-							</span>
-						) : (
-							<OwnerLink owner={binding.spec.scope} />
-						)}
-					</DetailRow>
-					{labels.length > 0 && (
-						<DetailRow label="Labels">
-							<div className="flex flex-wrap gap-1.5">
-								{labels.map(([k, v]) => (
-									<Chip key={k} label={`${k}=${v}`} mono />
-								))}
-							</div>
+			<div className="flex flex-col gap-5">
+				<DetailCard title="Configuration" icon={Globe}>
+					<dl className="divide-y divide-border">
+						<DetailRow label="Role">
+							{role ? (
+								<Link
+									to="/roles/$name"
+									params={{ name: role.metadata.name }}
+									className="text-foreground hover:underline"
+								>
+									{displayLabel(role.metadata)}
+								</Link>
+							) : (
+								<code className="font-mono text-[11px]">
+									{binding.spec.roleId}
+								</code>
+							)}
 						</DetailRow>
+						<DetailRow label="Scope">
+							{isGlobalScope(binding.spec.scope) ? (
+								<span className="text-muted-foreground">
+									Global — grants everywhere
+								</span>
+							) : (
+								<OwnerLink owner={binding.spec.scope} />
+							)}
+						</DetailRow>
+						{labels.length > 0 && (
+							<DetailRow label="Labels">
+								<div className="flex flex-wrap gap-1.5">
+									{labels.map(([k, v]) => (
+										<Chip key={k} label={`${k}=${v}`} mono />
+									))}
+								</div>
+							</DetailRow>
+						)}
+					</dl>
+				</DetailCard>
+
+				<DetailCard title="Subjects" icon={Users}>
+					{subjects.length === 0 ? (
+						<DetailEmpty>This binding names no subjects.</DetailEmpty>
+					) : (
+						<SubjectChips subjects={subjects} />
 					)}
-				</dl>
-			</DetailCard>
+				</DetailCard>
 
-			<DetailCard title="Subjects" icon={Users}>
-				{subjects.length === 0 ? (
-					<DetailEmpty>This binding names no subjects.</DetailEmpty>
-				) : (
-					<div className="flex flex-wrap gap-1.5">
-						{subjects.map((s) => (
-							<Chip
-								key={subjectLabel(s)}
-								label={subjectLabel(s)}
-								mono
-								shape="box"
-							/>
-						))}
-					</div>
+				{del.target && (
+					<DeleteConfirm
+						resourceName={del.target.name}
+						onConfirm={() => void del.confirm()}
+						onCancel={del.cancel}
+						isPending={del.isPending}
+						error={del.error}
+					/>
 				)}
-			</DetailCard>
-
-			{del.target && (
-				<DeleteConfirm
-					resourceName={del.target.name}
-					onConfirm={() => void del.confirm()}
-					onCancel={del.cancel}
-					isPending={del.isPending}
-					error={del.error}
-				/>
-			)}
+			</div>
 		</div>
 	);
 }

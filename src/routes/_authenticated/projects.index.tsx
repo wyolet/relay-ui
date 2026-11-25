@@ -5,6 +5,7 @@ import { projectsListQuery } from "@/api/hooks/projects";
 import { teamsListQueryOptions } from "@/api/hooks/teams";
 import { awaitOnEnter } from "@/lib/awaitOnEnter";
 import { ProjectsTable, toProjectsParams } from "@/projects/ProjectsTable";
+import { PageHeader } from "@/shared/PageHeader";
 import { PageLoader } from "@/shared/Spinner";
 
 const searchSchema = z.object({
@@ -36,13 +37,10 @@ export const Route = createFileRoute("/_authenticated/projects/")({
 function ProjectsPage() {
 	return (
 		<div>
-			<div className="mb-4">
-				<h1 className="text-lg font-semibold text-foreground">Projects</h1>
-				<p className="text-xs text-muted-foreground mt-0.5">
-					A project lives in a team and owns the service accounts, keys, and
-					policies that author requests.
-				</p>
-			</div>
+			<PageHeader
+				title="Projects"
+				description="A project lives in a team and owns the service accounts, keys, and policies that author requests."
+			/>
 			<Suspense fallback={<PageLoader className="min-h-[40vh]" />}>
 				<ProjectsTable />
 			</Suspense>

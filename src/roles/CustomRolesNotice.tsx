@@ -13,3 +13,12 @@ export function CustomRolesNotice() {
 		</p>
 	);
 }
+
+/** Why a built-in role has no edit affordances. */
+export function BuiltinRoleNotice() {
+	return (
+		<p className="text-[11px] text-muted-foreground">
+			Built-in roles are seeded on every deployment and are read-only.
+		</p>
+	);
+}

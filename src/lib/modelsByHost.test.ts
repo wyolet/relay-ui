@@ -3,6 +3,7 @@ import type { Model, ModelSpec } from "@/api/types/model";
 import {
 	fmtReleaseMonth,
 	groupByFamily,
+	groupModelsByFamily,
 	hostLines,
 	IN_USE,
 	inUseCount,
@@ -244,6 +245,31 @@ describe("railHosts", () => {
 			["anthropic", 1],
 			["openai", 0],
 		]);
+	});
+
+	test("without traffic, orders by the shown count, not the catalog size", () => {
+		const searched = railHosts(matrix, modelsById, new Map(), {
+			...ALL,
+			q: "gpt",
+		});
+		expect(searched.map((r) => [r.host.slug, r.count])).toEqual([
+			["openai", 1],
+			["anthropic", 0],
+		]);
+	});
+});
+
+describe("groupModelsByFamily", () => {
+	test("uses the models page's headings and order", () => {
+		const shown = models.filter((m) => modelMatches(m, ALL));
+		const groups = groupModelsByFamily(shown);
+		expect(groups.map((g) => g.label)).toEqual([
+			"claude opus",
+			"claude fable",
+			"gpt",
+			"Other",
+		]);
+		expect(ids(groups[0]?.lines ?? [])).toEqual(["opus-5", "opus-4"]);
 	});
 });
 

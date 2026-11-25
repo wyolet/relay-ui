@@ -47,25 +47,30 @@ describe("formatRuleShort", () => {
 		expect(formatRuleShort(r(5, "concurrency", 1))).toBe("5 CPS");
 	});
 
-	it("uses Tin/Tout for sub-token meters", () => {
-		expect(formatRuleShort(r(1000, "tokens.input", 60))).toBe("1k TinPM");
-		expect(formatRuleShort(r(500, "tokens.output", 3600))).toBe("500 ToutPH");
+	it("names the token kind for sub-token meters", () => {
+		expect(formatRuleShort(r(1000, "tokens.input", 60))).toBe("1k input TPM");
+		expect(formatRuleShort(r(500, "tokens.output", 3600))).toBe(
+			"500 output TPH",
+		);
 	});
 
 	it("falls back to /Ns for custom windows", () => {
 		expect(formatRuleShort(r(100, "requests", 30))).toBe("100 R/30s");
+		expect(formatRuleShort(r(100, "tokens.reasoning", 30))).toBe(
+			"100 reasoning T/30s",
+		);
 	});
 });
 
 describe("formatRulesShort", () => {
-	it("joins rules with ·", () => {
+	it("gives one short form per rule", () => {
 		expect(
 			formatRulesShort([r(1000, "requests", 60), r(10_000, "tokens", 60)]),
-		).toBe("1k RPM · 10k TPM");
+		).toEqual(["1k RPM", "10k TPM"]);
 	});
 
 	it("handles null/empty", () => {
-		expect(formatRulesShort(null)).toBe("no rules");
-		expect(formatRulesShort([])).toBe("no rules");
+		expect(formatRulesShort(null)).toEqual([]);
+		expect(formatRulesShort([])).toEqual([]);
 	});
 });

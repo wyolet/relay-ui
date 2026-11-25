@@ -1,5 +1,6 @@
 import type { FilterOption } from "@/filters/types";
 import type { UnavailablePicks } from "@/lib/workContext";
+import { AccountChipLabel } from "@/policy-bindings/AccountChips";
 import { useAccountLabels } from "@/policy-bindings/useAccountLabels";
 import { Chip } from "@/shared/Chip";
 import { MultiSelect } from "@/shared/MultiSelect";
@@ -11,6 +12,7 @@ export function AccountsPicker({
 	selected,
 	onChange,
 	invalidId,
+	invalid,
 	describedBy,
 	unavailable,
 }: {
@@ -19,6 +21,8 @@ export function AccountsPicker({
 	onChange: (next: string[]) => void;
 	/** Id of an account the server refused. */
 	invalidId?: string;
+	/** The field as a whole has an error, such as no account picked. */
+	invalid?: boolean;
 	describedBy?: string;
 	/** Picked accounts the form's workspace can't use. */
 	unavailable?: UnavailablePicks;
@@ -54,7 +58,7 @@ export function AccountsPicker({
 							<Chip
 								key={id}
 								shape="box"
-								label={labelOf(id).label}
+								label={<AccountChipLabel account={labelOf(id)} link={false} />}
 								onRemove={() => toggle(id)}
 								className={
 									id === invalidId
@@ -71,6 +75,8 @@ export function AccountsPicker({
 				options={options}
 				selected={selected}
 				onToggle={toggle}
+				invalid={invalid}
+				describedBy={describedBy}
 			/>
 		</fieldset>
 	);

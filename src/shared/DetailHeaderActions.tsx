@@ -33,7 +33,8 @@ export function DetailHeaderActions({
 	children?: ReactNode;
 }) {
 	return (
-		<div className="flex items-center gap-2 shrink-0">
+		// Takes only the room the title leaves, so a long row of actions wraps instead of truncating the name.
+		<div className="flex min-w-min grow basis-0 flex-wrap items-center justify-end gap-2">
 			{showToggle && (
 				<Button
 					type="button"

@@ -3,20 +3,28 @@ import { Gauge, ShieldCheck } from "lucide-react";
 import { useMemo } from "react";
 import type { RateLimit, RateLimitRule } from "@/api/types/ratelimit";
 import { PlanIssuesPanel } from "@/diagnostics/IssuesPanel";
-import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
-import { compactNumber } from "@/lib/rateLimitFormat";
+import { displayLabel } from "@/lib/displayLabel";
+import {
+	compactNumber,
+	METER_OPTIONS,
+	strategyLabel,
+} from "@/lib/rateLimitFormat";
 import { isProviderOwned, isSystemOwned } from "@/lib/systemRateLimits";
 import { windowLabel } from "@/lib/timeWindow";
 import { SharedLinkLabel } from "@/rate-limits/SharedLinkLabel";
 import { useRateLimitReferences } from "@/rate-limits/useRateLimitReferences";
+import { BackLink } from "@/shared/BackLink";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
+import { DetailPageHeader } from "@/shared/DetailPageHeader";
 import { DetailTable, Td } from "@/shared/DetailTable";
 import { EmptyPanel } from "@/shared/EmptyPanel";
 import { SectionTitle } from "@/shared/SectionTitle";
 import {
 	CatalogDetachedBadge,
 	OwnerBadge,
+	QuietBadge,
 	StatusBadge,
+	StatusInline,
 } from "@/shared/StatusBadge";
 
 interface Props {
@@ -35,7 +43,7 @@ export function RateLimitDetailView({
 	toggling,
 }: Props) {
 	return (
-		<div className="flex flex-col gap-6">
+		<div>
 			<Header
 				rateLimit={rateLimit}
 				onDelete={onDelete}
@@ -43,9 +51,11 @@ export function RateLimitDetailView({
 				deleting={deleting}
 				toggling={toggling}
 			/>
-			<PlanIssuesPanel kind="ratelimit" id={rateLimit.metadata.id} />
-			<RulesPanel rules={rateLimit.spec.rules ?? []} />
-			<PoliciesPanel rateLimit={rateLimit} />
+			<div className="flex flex-col gap-6">
+				<PlanIssuesPanel kind="ratelimit" id={rateLimit.metadata.id} />
+				<RulesPanel rules={rateLimit.spec.rules ?? []} />
+				<PoliciesPanel rateLimit={rateLimit} />
+			</div>
 		</div>
 	);
 }
@@ -64,35 +74,25 @@ function Header({
 	const canMutate = !system;
 
 	return (
-		<div className="flex items-start justify-between gap-4">
-			<div className="min-w-0">
-				<h1 className="text-xl font-semibold text-foreground truncate flex items-center gap-2">
-					<Gauge
-						className="w-4 h-4 text-muted-foreground shrink-0"
-						aria-hidden
-					/>
-					{displayLabel(rateLimit.metadata)}
-					{!hasDisplayName(rateLimit.metadata) && (
-						<span className="text-[11px] text-muted-foreground font-normal">
-							(no display name)
-						</span>
-					)}
+		<DetailPageHeader
+			back={
+				<BackLink to="/policies" search={{ tab: "ratelimits" }}>
+					Rate limits
+				</BackLink>
+			}
+			icon={Gauge}
+			metadata={rateLimit.metadata}
+			badges={
+				<>
 					<StatusBadge enabled={enabled} />
 					{system && <OwnerBadge label="System" />}
 					{provider && <OwnerBadge label="Provider" />}
 					<CatalogDetachedBadge
 						detachedAt={rateLimit.metadata.catalogDetachedAt}
 					/>
-				</h1>
-				<p className="mt-1 text-xs text-muted-foreground font-mono truncate">
-					{name}
-				</p>
-				{rateLimit.metadata.description && (
-					<p className="mt-1.5 text-sm text-muted-foreground max-w-2xl">
-						{rateLimit.metadata.description}
-					</p>
-				)}
-			</div>
+				</>
+			}
+		>
 			{canMutate && (
 				<DetailHeaderActions
 					enabled={enabled}
@@ -111,7 +111,7 @@ function Header({
 					)}
 				/>
 			)}
-		</div>
+		</DetailPageHeader>
 	);
 }
 
@@ -142,15 +142,17 @@ function RulesPanel({ rules }: { rules: readonly RateLimitRule[] }) {
 										className="flex items-baseline justify-between gap-3 px-3 py-1.5"
 									>
 										<div className="min-w-0">
-											<div className="text-sm font-mono tabular-nums text-foreground">
-												{compactNumber(rule.amount)}{" "}
+											<div className="text-sm tabular-nums text-foreground">
+												<span className="font-mono">
+													{compactNumber(rule.amount)}
+												</span>{" "}
 												<span className="text-muted-foreground text-[11px]">
-													{rule.meter}
+													{METER_OPTIONS[rule.meter].label.toLowerCase()}
 												</span>
 											</div>
-											<div className="text-[10px] text-muted-foreground">
-												{windowLabel(rule.window)} ·{" "}
-												<span className="font-mono">{rule.strategy}</span>
+											<div className="flex gap-3 text-[10px] text-muted-foreground">
+												<span>{windowLabel(rule.window)}</span>
+												<span>{strategyLabel(rule.strategy)}</span>
 											</div>
 										</div>
 									</li>
@@ -218,13 +220,11 @@ function PoliciesPanel({ rateLimit }: { rateLimit: RateLimit }) {
 									>
 										{displayLabel(ref.policy.metadata)}
 									</Link>
-									<div className="text-[11px] text-muted-foreground font-mono truncate">
-										{name}
-										{hostOwned && (
-											<span className="ml-1.5 text-[9px] uppercase tracking-wide">
-												· host-owned
-											</span>
-										)}
+									<div className="flex min-w-0 items-center gap-2">
+										<span className="text-[11px] text-muted-foreground font-mono truncate">
+											{name}
+										</span>
+										{hostOwned && <QuietBadge>host-owned</QuietBadge>}
 									</div>
 								</div>
 							</Td>
@@ -246,13 +246,7 @@ function PoliciesPanel({ rateLimit }: { rateLimit: RateLimit }) {
 								)}
 							</Td>
 							<Td className="text-right">
-								{enabled ? (
-									<span className="text-[11px] text-success">Enabled</span>
-								) : (
-									<span className="text-[11px] text-muted-foreground">
-										Disabled
-									</span>
-								)}
+								<StatusInline enabled={enabled} />
 							</Td>
 						</tr>
 					);
@@ -297,7 +291,7 @@ function Badge({
 		tone === "default"
 			? "bg-info/10 text-info border-info/30"
 			: tone === "scoped"
-				? "bg-violet-500/10 text-violet-700 dark:text-violet-300 border-violet-500/30"
+				? "bg-primary/10 text-primary border-primary/30"
 				: "bg-muted text-muted-foreground border-border";
 	return (
 		<span

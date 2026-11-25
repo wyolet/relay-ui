@@ -1,6 +1,6 @@
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Pencil, Plus, X } from "lucide-react";
 import { useMemo, useState } from "react";
-import { Button } from "@/components/ui/button";
+import { IconButton } from "@/components/ui/icon-button";
 import {
 	parseCatalogRef,
 	refsOverlap,
@@ -17,7 +17,9 @@ import type { RateLimitLinkValue } from "@/policies/policyFormSpec";
 import { SharedLinkSwitch } from "@/policies/SharedLinkSwitch";
 import { usePolicyRLResolution } from "@/policies/usePolicyRLResolution";
 import { AttachRateLimitModal } from "@/rate-limits/AttachRateLimitModal";
+import { RuleShortList } from "@/rate-limits/RuleShortList";
 import { AlertBanner } from "@/shared/AlertBanner";
+import { filterTriggerClassName } from "@/shared/MultiSelect";
 import { NotAvailableTag } from "@/shared/ScopeNotes";
 
 interface PolicyRLPickerProps {
@@ -108,9 +110,10 @@ export function PolicyRLPicker({
 					unlimited.
 				</p>
 			) : (
-				<ul className="flex flex-col gap-2">
+				<ul className="rounded-md border border-border bg-card divide-y divide-border">
 					{links.map((l, i) => {
 						const meta = rlMetaById.get(l.rateLimitId);
+						const label = meta?.label ?? l.rateLimitId;
 						const refScopes = scopes[i] ?? [];
 						const orphans = orphansFor(l.models);
 						const fullyOrphaned =
@@ -119,9 +122,6 @@ export function PolicyRLPicker({
 							<li
 								// Relay refuses one rate limit linked twice over the same models.
 								key={`${l.rateLimitId}|${l.models.join(",")}`}
-								className={`rounded-md border bg-card overflow-hidden shadow-sm ${
-									fullyOrphaned ? "border-warning/40" : "border-border"
-								}`}
 							>
 								{fullyOrphaned && (
 									<div className="border-b border-warning/30 bg-warning/5 px-3 py-2">
@@ -144,55 +144,39 @@ export function PolicyRLPicker({
 										</AlertBanner>
 									</div>
 								)}
-								<div className="px-3 py-2.5">
-									<div className="flex items-start justify-between gap-3">
-										<div className="min-w-0 flex-1">
-											<div className="text-sm font-medium text-foreground truncate">
-												{meta?.label ?? l.rateLimitId ?? "unknown rate limit"}
-											</div>
-											{meta?.rules && (
-												<div className="font-mono text-[10px] text-muted-foreground truncate">
-													{meta.rules}
-												</div>
-											)}
-											{unavailable?.ids.includes(l.rateLimitId) && (
-												<NotAvailableTag scope={unavailable.scope} />
-											)}
-										</div>
-										<div className="flex items-center gap-1 shrink-0">
-											<SharedLinkSwitch
-												value={l.shared}
-												onChange={(next) => setShared(i, next)}
-												linkLabel={meta?.label ?? l.rateLimitId}
-											/>
-											<Button
-												type="button"
-												variant="ghost"
-												size="icon"
-												onClick={() => setEditing({ kind: "edit", idx: i })}
-												className="text-muted-foreground"
-												aria-label="Edit"
-											>
-												<Pencil className="size-3.5" />
-											</Button>
-											<Button
-												type="button"
-												variant="ghost"
-												size="icon"
-												onClick={() => remove(i)}
-												className="text-muted-foreground hover:text-destructive"
-												aria-label="Remove"
-											>
-												<Trash2 className="size-3.5" />
-											</Button>
-										</div>
-									</div>
+								<div className="flex items-center gap-3 px-3 py-2">
+									<span className="flex min-w-0 flex-1 flex-col">
+										<span className="truncate text-sm text-foreground">
+											{label}
+										</span>
+										<RuleShortList rules={meta?.rules ?? []} />
+									</span>
+									{unavailable?.ids.includes(l.rateLimitId) && (
+										<NotAvailableTag scope={unavailable.scope} />
+									)}
+									<IconButton
+										icon={Pencil}
+										label={`Edit ${label}`}
+										onClick={() => setEditing({ kind: "edit", idx: i })}
+									/>
+									<SharedLinkSwitch
+										value={l.shared}
+										onChange={(next) => setShared(i, next)}
+										linkLabel={label}
+									/>
+									<IconButton
+										icon={X}
+										label={`Remove ${label}`}
+										onClick={() => remove(i)}
+									/>
+								</div>
+								<div className="px-3 pb-2">
 									{l.models.length === 0 ? (
-										<p className="mt-1.5 text-[11px] text-muted-foreground italic">
-											applies to every request
+										<p className="text-[11px] text-muted-foreground">
+											Applies to every request.
 										</p>
 									) : (
-										<ul className="mt-1.5 flex flex-col rounded-md border border-border bg-muted/20 divide-y divide-border">
+										<ul className="flex flex-col rounded-md border border-border bg-muted/20 divide-y divide-border">
 											{refScopes.map((s) => (
 												<RefBlock key={s.raw} coverage={s} labels={labels} />
 											))}
@@ -205,15 +189,15 @@ export function PolicyRLPicker({
 				</ul>
 			)}
 
-			<Button
+			{/* The budget picker's Add trigger, opening the attach dialog instead of a popover. */}
+			<button
 				type="button"
-				variant="default"
-				className="self-start"
+				className={`${filterTriggerClassName} self-start`}
 				onClick={() => setEditing({ kind: "new" })}
 			>
-				<Plus data-icon="inline-start" className="w-3.5 h-3.5" />
+				<Plus className="size-3.5" aria-hidden />
 				Add rate limit
-			</Button>
+			</button>
 
 			{editing && (
 				<AttachRateLimitModal
@@ -252,19 +236,15 @@ function RefBlock({
 			<div className="text-[12px] text-foreground">
 				{describeRef(coverage.parsed, labels, coverage.coveredBindings)}
 			</div>
-			<div className="mt-0.5 flex items-center gap-2">
+			<div className="mt-0.5 flex items-center gap-3">
 				<code className="font-mono text-[10px] text-muted-foreground">
 					{coverage.raw}
 				</code>
-				{coverage.coveredBindings.length === 0 ? (
-					<span className="text-[10px] text-muted-foreground">
-						— no matching models
-					</span>
-				) : (
-					<span className="text-[10px] text-muted-foreground tabular-nums">
-						· {formatScope(coverage.models, coverage.hosts)}
-					</span>
-				)}
+				<span className="text-[10px] text-muted-foreground tabular-nums">
+					{coverage.coveredBindings.length === 0
+						? "No matching models"
+						: formatScope(coverage.models, coverage.hosts)}
+				</span>
 			</div>
 		</li>
 	);

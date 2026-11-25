@@ -1,5 +1,4 @@
 import { Link } from "@tanstack/react-router";
-import { Check } from "lucide-react";
 import { PlanIssueDot } from "@/diagnostics/DiagnosticDot";
 import type { KeyTableLine } from "@/keys/useKeysTable";
 import { useToggleKeyEnabled } from "@/keys/useToggleKeyEnabled";
@@ -20,6 +19,7 @@ import { useAccountPolicy } from "@/policy-bindings/useAccountPolicy";
 import { OwnerLink } from "@/projects/OwnerLink";
 import { LastUsed } from "@/shared/LastUsed";
 import {
+	Dash,
 	LineColumns,
 	LineName,
 	LineRow,
@@ -30,9 +30,9 @@ import {
 import { RowMenu } from "@/shared/RowMenu";
 import { fmtMoneyCompact } from "@/usage/format";
 
-// The tracks' minimums plus gaps come to 67rem, the table's min-w.
+// The tracks' minimums plus gaps fit the table's 67rem min-w.
 const COLS =
-	"grid-cols-[minmax(10rem,2fr)_minmax(7rem,1.2fr)_repeat(2,minmax(6rem,1fr))_minmax(4rem,0.6fr)_minmax(4.5rem,0.6fr)_minmax(6rem,0.8fr)_5.5rem_minmax(5rem,0.7fr)_3.5rem_2rem]";
+	"grid-cols-[minmax(15.5rem,2.6fr)_minmax(7rem,1.2fr)_repeat(2,minmax(6rem,1fr))_minmax(4rem,0.6fr)_minmax(4.5rem,0.6fr)_minmax(6rem,0.8fr)_minmax(5rem,0.7fr)_3.5rem_2rem]";
 
 /** The table's column labels, on the rows' grid. */
 export function KeyColumns() {
@@ -49,7 +49,6 @@ export function KeyColumns() {
 				Spend 7d
 			</span>
 			<span>Expires</span>
-			<span>Passthrough</span>
 			<span>Last used</span>
 			<span className="pr-3 text-right">On</span>
 			<span />
@@ -103,6 +102,11 @@ export function KeyRow({
 						revoked
 					</QuietTag>
 				)}
+				{rk.spec.passthroughAllowed && (
+					<QuietTag title="The caller may forward its own provider key">
+						passthrough
+					</QuietTag>
+				)}
 				<span className="shrink-0 empty:hidden">
 					<OwnerLink owner={rk.metadata.owner} />
 				</span>
@@ -143,15 +147,6 @@ export function KeyRow({
 			>
 				{expiry.text}
 			</span>
-			<span>
-				{rk.spec.passthroughAllowed && (
-					<Check
-						role="img"
-						aria-label="Passthrough allowed"
-						className="size-3.5 text-ink-2"
-					/>
-				)}
-			</span>
 			<LastUsed at={rk.status?.lastUsedAt} className="truncate" />
 			<SwitchCell
 				checked={enabled}
@@ -175,13 +170,5 @@ export function KeyRow({
 				/>
 			</span>
 		</LineRow>
-	);
-}
-
-function Dash({ title }: { title?: string }) {
-	return (
-		<span className="text-ink-3" title={title}>
-			—
-		</span>
 	);
 }

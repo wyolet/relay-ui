@@ -29,6 +29,14 @@ export interface LadderNames {
 	policy: (policy: BoundPolicy) => string;
 }
 
+/** "Team Platform" from kind "Team" and name "Platform"; a name that already
+ * starts with its kind ("Team Alpha") keeps it once. */
+export function scopeName(kindLabel: string, name: string): string {
+	return name.toLowerCase().startsWith(`${kindLabel.toLowerCase()} `)
+		? name
+		: `${kindLabel} ${name}`;
+}
+
 /** "A's", "A's and B's", "A's, B's and C's". */
 function possessives(scopes: readonly string[]): string {
 	const owned = scopes.map((s) => `${s}'s`);

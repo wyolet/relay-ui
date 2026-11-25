@@ -32,16 +32,8 @@ export const Route = createFileRoute("/_authenticated/limits/add")({
 function AddLimitPage() {
 	const { targetKind, id } = Route.useSearch();
 	return (
-		<div className="flex flex-col gap-6">
-			<div>
-				<h1 className="text-xl font-semibold text-foreground">Add a limit</h1>
-				<p className="mt-1 text-xs text-muted-foreground">
-					Put a spend cap or a rate limit on a team, project or agent.
-				</p>
-			</div>
-			<Suspense fallback={<PageLoader />}>
-				<AddLimit kind={targetKind} id={id ?? ""} />
-			</Suspense>
-		</div>
+		<Suspense fallback={<PageLoader />}>
+			<AddLimit kind={targetKind} id={id ?? ""} />
+		</Suspense>
 	);
 }

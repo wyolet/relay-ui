@@ -1,5 +1,5 @@
 import type { components } from "@/api/types.gen";
-import { DetailEmpty } from "@/shared/DetailCard";
+import { DetailEmpty, DetailListRow } from "@/shared/DetailCard";
 
 type Reference = components["schemas"]["referenceItem"];
 
@@ -15,15 +15,13 @@ export function ReferencesList({
 	return (
 		<ul className="divide-y divide-border">
 			{items.map((r) => (
-				<li
-					key={`${r.kind}:${r.id}:${r.via}`}
-					className="flex items-center justify-between gap-3 py-2 first:pt-0 last:pb-0 text-xs"
-				>
-					<span className="text-foreground">{r.name}</span>
-					<span className="text-muted-foreground">
-						{r.kind} · <code className="font-mono">{r.via}</code>
+				<DetailListRow key={`${r.kind}:${r.id}:${r.via}`}>
+					<span className="min-w-0 truncate text-foreground">{r.name}</span>
+					<span className="flex shrink-0 flex-wrap justify-end gap-x-3 text-muted-foreground">
+						<span>{r.kind}</span>
+						<code className="font-mono">{r.via}</code>
 					</span>
-				</li>
+				</DetailListRow>
 			))}
 		</ul>
 	);

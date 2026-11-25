@@ -1,19 +1,31 @@
 import { Link } from "@tanstack/react-router";
-import { Activity, Boxes, Gauge, KeyRound, LayoutGrid } from "lucide-react";
+import {
+	Activity,
+	Boxes,
+	Gauge,
+	KeyRound,
+	LayoutGrid,
+	ShieldCheck,
+} from "lucide-react";
 import { Suspense } from "react";
 import type { Policy } from "@/api/types/policy";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useMutability } from "@/hooks/useMutability";
-import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { PolicyKeysTab } from "@/policies/PolicyKeysTab";
 import { PolicyModelsTab } from "@/policies/PolicyModelsTab";
 import { PolicyOverviewTab } from "@/policies/PolicyOverviewTab";
 import { PolicyRateLimitsTab } from "@/policies/PolicyRateLimitsTab";
 import { POLICY_NO_TRAFFIC, policyWeekScope } from "@/policies/policyWeekUsage";
+import { BackLink } from "@/shared/BackLink";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
+import { DetailPageHeader } from "@/shared/DetailPageHeader";
 import { EmptyState } from "@/shared/EmptyState";
 import { PageLoader } from "@/shared/Spinner";
-import { CatalogDetachedBadge, StatusBadge } from "@/shared/StatusBadge";
+import {
+	CatalogDetachedBadge,
+	OwnerBadge,
+	StatusBadge,
+} from "@/shared/StatusBadge";
 import { WeekUsage } from "@/usage/WeekUsage";
 
 export type PolicyDetailTab =
@@ -57,7 +69,7 @@ export function PolicyDetailView({
 	const enabled = policy.spec.enabled !== false;
 
 	return (
-		<div className="flex flex-col gap-5">
+		<div>
 			<Header
 				policy={policy}
 				enabled={enabled}
@@ -145,37 +157,25 @@ function Header({
 	const isHostOwned = policy.metadata.owner?.kind === "host";
 	const { canEdit, canDelete } = useMutability(policy.metadata, "policy");
 	return (
-		<div className="flex items-start justify-between gap-4">
-			<div className="min-w-0">
-				<h1 className="text-xl font-semibold text-foreground truncate flex items-center gap-2">
-					{displayLabel(policy.metadata)}
-					{!hasDisplayName(policy.metadata) && (
-						<span className="text-[11px] text-muted-foreground font-normal">
-							(no display name)
-						</span>
-					)}
+		<DetailPageHeader
+			back={<BackLink to="/policies">Policies</BackLink>}
+			icon={ShieldCheck}
+			metadata={policy.metadata}
+			badges={
+				<>
 					<StatusBadge enabled={enabled} />
 					{isHostOwned && (
-						<span
-							className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground border border-border"
+						<OwnerBadge
+							label="Host"
 							title="This policy is owned by a host and managed by Relay."
-						>
-							Host-owned
-						</span>
+						/>
 					)}
 					<CatalogDetachedBadge
 						detachedAt={policy.metadata.catalogDetachedAt}
 					/>
-				</h1>
-				<p className="mt-1 text-xs text-muted-foreground font-mono truncate">
-					{name}
-				</p>
-				{policy.metadata.description && (
-					<p className="mt-1.5 text-sm text-muted-foreground max-w-2xl">
-						{policy.metadata.description}
-					</p>
-				)}
-			</div>
+				</>
+			}
+		>
 			<DetailHeaderActions
 				enabled={enabled}
 				onToggle={onToggleEnabled}
@@ -198,6 +198,6 @@ function Header({
 						: undefined
 				}
 			/>
-		</div>
+		</DetailPageHeader>
 	);
 }

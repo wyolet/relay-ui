@@ -10,24 +10,36 @@ export interface Choice {
 	label: string;
 }
 
+export interface ChoiceGroup {
+	label: string;
+	options: Choice[];
+}
+
 /**
- * The owners the key form narrows service accounts by: every project, then
- * each team or user that owns a listed service account, by owner id.
+ * The owners the key form narrows service accounts by, grouped by kind:
+ * every project, then each team or user that owns a listed service account
+ * once. Empty groups are left out.
  */
-export function serviceAccountOwnerChoices(
+export function serviceAccountOwnerGroups(
 	projects: readonly Choice[],
 	serviceAccounts: readonly ServiceAccount[],
 	ownerLabel: (scope: ServiceAccountScope) => string,
-): Choice[] {
+): ChoiceGroup[] {
 	const listed = new Set(projects.map((p) => p.value));
-	const owners: Choice[] = [];
+	const teams: Choice[] = [];
+	const users: Choice[] = [];
 	for (const sa of serviceAccounts) {
 		const scope = serviceAccountScope(sa);
 		if (!scope || scope.kind === "project" || listed.has(scope.id)) continue;
 		listed.add(scope.id);
-		owners.push({ value: scope.id, label: ownerLabel(scope) });
+		const choice = { value: scope.id, label: ownerLabel(scope) };
+		(scope.kind === "team" ? teams : users).push(choice);
 	}
-	return [...projects, ...owners];
+	return [
+		{ label: "Projects", options: [...projects] },
+		{ label: "Teams", options: teams },
+		{ label: "Users", options: users },
+	].filter((g) => g.options.length > 0);
 }
 
 /** The service accounts the picked owner holds. */

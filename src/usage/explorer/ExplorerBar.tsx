@@ -1,5 +1,6 @@
 import { USAGE_GROUP_BY } from "@/api/hooks/usage";
 import { FilterDropdown } from "@/shared/FilterDropdown";
+import { PageHeader } from "@/shared/PageHeader";
 import { Segmented, type SegmentedOption } from "@/shared/Segmented";
 import { dimensionLabel } from "@/usage/format";
 import { ExplorerFilters } from "./ExplorerFilters";
@@ -25,30 +26,34 @@ const GROUP_BY_OPTIONS = USAGE_GROUP_BY.map((g) => ({
 export function ExplorerBar() {
 	const { live, set } = useExplorer();
 	return (
-		<div className="grid gap-5">
-			<div className="flex flex-wrap items-center justify-between gap-4">
-				<h1 className="text-2xl font-bold text-foreground">Usage</h1>
-				<div className="flex flex-wrap items-center gap-2">
-					<ExplorerRange />
-					<RequestsLink />
+		<div>
+			<PageHeader
+				title="Usage"
+				actions={
+					<>
+						<ExplorerRange />
+						<RequestsLink />
+					</>
+				}
+			/>
+			<div className="grid gap-5">
+				<div className="flex flex-wrap items-end justify-between gap-4">
+					<Segmented
+						variant="underline"
+						value={live.lens}
+						options={LENS_OPTIONS}
+						onChange={(lens) => set({ lens })}
+					/>
+					<FilterDropdown
+						label="Group by"
+						value={live.group_by}
+						options={GROUP_BY_OPTIONS}
+						onChange={(group_by) => set({ group_by })}
+						align="end"
+					/>
 				</div>
+				<ExplorerFilters />
 			</div>
-			<div className="flex flex-wrap items-end justify-between gap-4">
-				<Segmented
-					variant="underline"
-					value={live.lens}
-					options={LENS_OPTIONS}
-					onChange={(lens) => set({ lens })}
-				/>
-				<FilterDropdown
-					label="Group by"
-					value={live.group_by}
-					options={GROUP_BY_OPTIONS}
-					onChange={(group_by) => set({ group_by })}
-					align="end"
-				/>
-			</div>
-			<ExplorerFilters />
 		</div>
 	);
 }

@@ -13,8 +13,9 @@ import {
 import { ApiError } from "@/api/types/errors";
 import { Switch } from "@/components/ui/switch";
 import { AlertBanner } from "@/shared/AlertBanner";
+import { PageHeader } from "@/shared/PageHeader";
 import { NoAccessState } from "@/shared/RouteError";
-import { SettingsPageHeader, SettingsSaveBar } from "@/shared/SettingsPage";
+import { SettingsSaveBar } from "@/shared/SettingsPage";
 import { SettingsSection } from "@/shared/SettingsSection";
 import { PageLoader } from "@/shared/Spinner";
 import { toast } from "@/shared/Toast";
@@ -55,11 +56,11 @@ function AccountsSettingsForm({
 	const on = state.personalAccounts === "on";
 
 	return (
-		<div className="flex flex-col">
-			<SettingsPageHeader title="Accounts">
-				The accounts relay keeps for users. A user's own setting wins, then
-				their groups' (off wins over on), then this deployment default.
-			</SettingsPageHeader>
+		<div>
+			<PageHeader
+				title="Accounts"
+				description="The accounts relay keeps for users. A user's own setting wins, then their groups' (off wins over on), then this deployment default."
+			/>
 
 			{readOnly && (
 				<AlertBanner

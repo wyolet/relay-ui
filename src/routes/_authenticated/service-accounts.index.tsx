@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, stripSearchParams } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { z } from "zod";
 import { accountListQueryOptions } from "@/api/hooks/accounts";
@@ -11,6 +11,7 @@ import {
 	ServiceAccountsTable,
 	toServiceAccountsParams,
 } from "@/service-accounts/ServiceAccountsTable";
+import { PageHeader } from "@/shared/PageHeader";
 import { PageLoader } from "@/shared/Spinner";
 
 const searchSchema = z.object({
@@ -21,6 +22,7 @@ const searchSchema = z.object({
 
 export const Route = createFileRoute("/_authenticated/service-accounts/")({
 	validateSearch: searchSchema,
+	search: { middlewares: [stripSearchParams(searchSchema.parse({}))] },
 	loaderDeps: ({ search }) => ({
 		q: search.q,
 		enabled: search.enabled,
@@ -46,15 +48,10 @@ export const Route = createFileRoute("/_authenticated/service-accounts/")({
 function ServiceAccountsPage() {
 	return (
 		<div>
-			<div className="mb-4">
-				<h1 className="text-lg font-semibold text-foreground">
-					Service accounts
-				</h1>
-				<p className="text-xs text-muted-foreground mt-0.5">
-					Non-human principals that belong to a project, a team or a user and
-					hold API keys.
-				</p>
-			</div>
+			<PageHeader
+				title="Service accounts"
+				description="Non-human principals that belong to a project, a team or a user and hold API keys."
+			/>
 			<Suspense fallback={<PageLoader className="min-h-[40vh]" />}>
 				<ServiceAccountsTable />
 			</Suspense>

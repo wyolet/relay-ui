@@ -1,10 +1,4 @@
-import {
-	createFileRoute,
-	Link,
-	redirect,
-	useNavigate,
-} from "@tanstack/react-router";
-import { ChevronLeft } from "lucide-react";
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { z } from "zod";
 import { AddAgentLikeThis } from "@/agent-page/AddAgentLikeThis";
@@ -14,6 +8,8 @@ import { catalogGraphQueryOptions } from "@/api/hooks/catalog";
 import { myContextsQueryOptions } from "@/api/hooks/contexts";
 import { feature } from "@/api/runtimeConfig";
 import { SHORTCUT_FLAGS } from "@/lib/shortcutFlags";
+import { BackLink } from "@/shared/BackLink";
+import { PageHeader } from "@/shared/PageHeader";
 import { PageLoader } from "@/shared/Spinner";
 
 export const Route = createFileRoute(
@@ -45,22 +41,12 @@ function AddAgentPage() {
 	const { from } = Route.useSearch();
 	const cancel = () => void navigate({ to: "/service-accounts" });
 	return (
-		<div className="flex flex-col gap-6">
-			<div>
-				<Link
-					to="/service-accounts"
-					className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-				>
-					<ChevronLeft className="w-3.5 h-3.5" />
-					Service accounts
-				</Link>
-				<h1 className="mt-2 text-xl font-semibold text-foreground">
-					Add agent
-				</h1>
-				<p className="mt-1 text-xs text-muted-foreground">
-					A service account, what it may use, and a key for it, in one pass.
-				</p>
-			</div>
+		<div>
+			<PageHeader
+				back={<BackLink to="/service-accounts">Service accounts</BackLink>}
+				title="Add agent"
+				description="A service account, what it may use, and a key for it, in one pass."
+			/>
 			<Suspense fallback={<PageLoader />}>
 				{from ? (
 					<AddAgentLikeThis key={from} from={from} onCancel={cancel} />

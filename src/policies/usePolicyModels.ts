@@ -5,6 +5,7 @@ import {
 	policyModelsDebugQueryOptions,
 	policyModelsQueryOptions,
 } from "@/api/hooks/policies";
+import { distinctModelCount } from "@/policies/policyReachRows";
 
 export type { PolicyModelExclusion, PolicyModelView };
 
@@ -12,6 +13,11 @@ export type { PolicyModelExclusion, PolicyModelView };
 export function usePolicyModels(ref: string): PolicyModelView[] {
 	const { data } = useSuspenseQuery(policyModelsQueryOptions(ref));
 	return data.models ?? [];
+}
+
+/** How many distinct models the policy grants, however many hosts serve each. */
+export function usePolicyModelCount(ref: string): number {
+	return distinctModelCount(usePolicyModels(ref));
 }
 
 /**

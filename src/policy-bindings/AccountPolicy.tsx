@@ -65,59 +65,36 @@ export function BoundPolicyLink({
 }
 
 /**
- * An account and the policy bound to it. Full mode renders "Account" and
- * "Policy" rows for a detail card's <dl>; `compact` fits a table cell.
- * `attach` adds attach/change/detach actions for the entity owning the account.
+ * An account and the policy bound to it, as "Account" and "Policy" rows for a
+ * detail card's <dl>. `attach` adds attach/change/detach actions for the
+ * entity owning the account.
  */
 export function AccountPolicy({
 	accountRef,
-	compact = false,
 	attach,
 }: {
 	accountRef: AccountRef;
-	compact?: boolean;
 	attach?: AttachEntity;
 }) {
 	const { status, account, binding, policy } = useAccountPolicy(accountRef);
 
 	if (status !== "success" || !account) {
-		const text = compact && status !== "pending" ? "—" : MISSING[status];
-		return compact ? (
-			<span className="text-muted-foreground">{text}</span>
-		) : (
-			<DetailRow label="Account">
-				<span className="text-muted-foreground">{text}</span>
-			</DetailRow>
-		);
-	}
-
-	if (compact) {
 		return (
-			<span className="text-foreground">
-				<AccountLink account={account} />
-				<span className="text-muted-foreground"> · </span>
-				{binding ? (
-					<>
-						<BoundPolicyLink binding={binding} policy={policy} />
-						{binding.spec.enabled === false && (
-							<span className="text-muted-foreground"> (binding disabled)</span>
-						)}
-					</>
-				) : (
-					<span className="text-muted-foreground">no policy</span>
-				)}
-			</span>
+			<DetailRow label="Account">
+				<span className="text-muted-foreground">{MISSING[status]}</span>
+			</DetailRow>
 		);
 	}
 
 	return (
 		<>
 			<DetailRow label="Account">
-				<AccountLink account={account} />
-				<span className="text-muted-foreground">
-					{" "}
-					· {ACCOUNT_KIND_LABELS[account.spec.kind]}
-					{account.spec.closed && " (closed)"}
+				<span className="inline-flex items-baseline gap-2">
+					<AccountLink account={account} />
+					<span className="text-muted-foreground">
+						{ACCOUNT_KIND_LABELS[account.spec.kind]}
+						{account.spec.closed && " (closed)"}
+					</span>
 				</span>
 			</DetailRow>
 			<DetailRow label="Policy">

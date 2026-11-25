@@ -14,6 +14,7 @@ import {
 	formatThousands,
 	makeStepHandler,
 } from "@/lib/numberFormat";
+import { METER_OPTIONS, STRATEGY_OPTIONS } from "@/lib/rateLimitFormat";
 import { WINDOW_PRESETS } from "@/lib/timeWindow";
 import {
 	METER_VALUES,
@@ -33,72 +34,6 @@ interface RateLimitFormProps {
 	onSaved: () => void;
 	onCancel: () => void;
 }
-
-const STRATEGY_OPTIONS: Record<
-	RateLimitStrategy,
-	{ label: string; hint: string }
-> = {
-	"token-bucket": {
-		label: "Token bucket",
-		hint: "Refills steadily; allows short bursts up to the bucket size.",
-	},
-	"sliding-window": {
-		label: "Sliding window",
-		hint: "Smooth, accurate count over a moving window — no boundary bursts.",
-	},
-	"fixed-window": {
-		label: "Fixed window",
-		hint: "Counter resets at fixed intervals. Cheapest, but allows edge bursts.",
-	},
-	"leaky-bucket": {
-		label: "Leaky bucket",
-		hint: "Constant outflow; excess requests queue or get dropped.",
-	},
-	"session-window": {
-		label: "Session window",
-		hint: "Per-session counter — resets after a quiet period.",
-	},
-};
-
-const METER_OPTIONS: Record<RateLimitMeter, { label: string; hint: string }> = {
-	requests: { label: "Requests", hint: "One unit per API call." },
-	concurrency: {
-		label: "Concurrency",
-		hint: "Caps in-flight requests at any moment.",
-	},
-	tokens: {
-		label: "Tokens (all)",
-		hint: "Sum of every token sub-meter.",
-	},
-	"tokens.input": {
-		label: "Tokens · input",
-		hint: "Prompt tokens sent to the provider.",
-	},
-	"tokens.output": {
-		label: "Tokens · output",
-		hint: "Generated completion tokens.",
-	},
-	"tokens.cache_read": {
-		label: "Tokens · cache read",
-		hint: "Tokens served from prompt cache.",
-	},
-	"tokens.cache_creation": {
-		label: "Tokens · cache creation",
-		hint: "Tokens written into prompt cache.",
-	},
-	"tokens.reasoning": {
-		label: "Tokens · reasoning",
-		hint: "Hidden reasoning / thinking tokens.",
-	},
-	"tokens.server_tool_use_input": {
-		label: "Tokens · server tool input",
-		hint: "Input tokens spent on server-side tool calls.",
-	},
-	"tokens.server_tool_use_output": {
-		label: "Tokens · server tool output",
-		hint: "Output tokens from server-side tool calls.",
-	},
-};
 
 export function RateLimitForm({
 	rateLimit,
@@ -231,7 +166,7 @@ function RuleRow({
 						onKeyDown={makeStepHandler(rule.amount, (next) =>
 							onChange({ amount: next }),
 						)}
-						placeholder="100"
+						placeholder="e.g. 100"
 					/>
 				</LabeledInput>
 				<LabeledInput
@@ -265,7 +200,7 @@ function RuleRow({
 							onKeyDown={makeStepHandler(rule.window, (next) =>
 								onChange({ window: next }),
 							)}
-							placeholder="60"
+							placeholder="e.g. 60"
 						/>
 					) : (
 						<Select
@@ -367,16 +302,8 @@ function RuleRow({
 					role="alert"
 					className="border-t border-destructive/40 bg-destructive/10 px-3 py-2 text-[11px] text-destructive space-y-0.5"
 				>
-					{amountError && (
-						<div>
-							<span className="font-medium">Amount:</span> {amountError}
-						</div>
-					)}
-					{windowError && (
-						<div>
-							<span className="font-medium">Window:</span> {windowError}
-						</div>
-					)}
+					{amountError && <div>{amountError}</div>}
+					{windowError && <div>{windowError}</div>}
 				</div>
 			)}
 		</div>

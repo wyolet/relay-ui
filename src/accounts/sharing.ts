@@ -54,12 +54,14 @@ export function canShareAccount(
 	return administersOwner(account.metadata.owner, caller);
 }
 
-/** "1,204 req · $3.10" over the share's window; "—" when this deployment reads no usage. */
+/** "1,204 req, $3.10" over the share's window; "—" when this deployment reads no usage. */
 export function shareUsageText(usage: AccountShare["usage"]): string {
 	if (!usage) return "—";
 	const cost = costTotal(usage.costNanos, usage.unpriced, usage.requests);
-	const money = cost.usd === null ? "—" : fmtMoney(cost.usd, "USD");
-	return `${fmtInt(usage.requests)} req · ${money}`;
+	const requests = `${fmtInt(usage.requests)} req`;
+	return cost.usd === null
+		? requests
+		: `${requests}, ${fmtMoney(cost.usd, "USD")}`;
 }
 
 /** A share the server refused for a reason the receiver field explains. */

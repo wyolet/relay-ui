@@ -44,7 +44,8 @@ import {
 	type SystemRateLimitName,
 } from "@/lib/systemRateLimits";
 import { WINDOW_PRESETS } from "@/lib/timeWindow";
-import { SettingsPageHeader, SettingsSaveBar } from "@/shared/SettingsPage";
+import { PageHeader } from "@/shared/PageHeader";
+import { SettingsSaveBar } from "@/shared/SettingsPage";
 import { Switch } from "@/shared/Switch";
 import { toast } from "@/shared/Toast";
 
@@ -359,12 +360,11 @@ function SystemRateLimitsInner() {
 			: undefined;
 
 	return (
-		<div className="flex flex-col">
-			<SettingsPageHeader title="System rate limits">
-				Throttling for Relay's own surfaces — the control API and the inference
-				API. Only request rates are configurable here; meter and strategy are
-				managed by the backend.
-			</SettingsPageHeader>
+		<div>
+			<PageHeader
+				title="System rate limits"
+				description="Throttling for Relay's own surfaces — the control API and the inference API. Only request rates are configurable here; meter and strategy are managed by the backend."
+			/>
 
 			<div className="mt-6 divide-y divide-border">
 				<ControlSection

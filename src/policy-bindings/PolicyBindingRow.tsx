@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import type { PolicyBinding } from "@/api/types/policyBinding";
-import { displayLabel } from "@/lib/displayLabel";
+import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { AccountChips } from "@/policy-bindings/AccountChips";
 import { BindingOwner } from "@/policy-bindings/BindingOwner";
 import { LineColumns, LineName, LineRow, QuietTag } from "@/shared/LineGrid";
@@ -44,7 +44,7 @@ export function PolicyBindingRow({
 	return (
 		<LineRow cols={COLS} dimmed={!enabled}>
 			<LineName
-				slug={name}
+				slug={hasDisplayName(binding.metadata) ? name : undefined}
 				name={
 					<Link
 						to="/policy-bindings/$name"

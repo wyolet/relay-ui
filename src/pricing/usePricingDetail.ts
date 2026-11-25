@@ -24,6 +24,13 @@ export interface PricingTarget {
 	spend: string;
 }
 
+/** Spend once usage has loaded: no traffic spent $0; traffic nothing priced
+ * reads "—", never $0. */
+function spendText(usd: number | null | undefined, requests: number): string {
+	if (usd != null) return fmtMoneyCompact(usd, "USD");
+	return requests === 0 ? fmtMoneyCompact(0, "USD") : "—";
+}
+
 /** A rate sheet's host, its target models with last week's traffic on that
  * host, and the figures that say what the sheet priced. Usage loads without
  * suspending; until it does the figures read "—". */
@@ -63,8 +70,8 @@ export function usePricingDetail(pricing: Pricing) {
 			label: r.option?.label ?? r.id,
 			slug: r.option?.slug ?? r.id,
 			served: served.has(r.id),
-			requests: r.usage ? fmtCompact(r.usage.requests) : "—",
-			spend: r.usage?.usd != null ? fmtMoneyCompact(r.usage.usd, "USD") : "—",
+			requests: usage ? fmtCompact(r.usage?.requests ?? 0) : "—",
+			spend: usage ? spendText(r.usage?.usd, r.usage?.requests ?? 0) : "—",
 		}));
 
 	const typical = blendedRequestCost(pricing.spec.rates ?? []);
@@ -72,7 +79,7 @@ export function usePricingDetail(pricing: Pricing) {
 		{
 			key: "spend",
 			label: "Est. spend",
-			value: spent != null ? fmtMoneyCompact(spent, "USD") : "—",
+			value: usage ? spendText(spent, requests) : "—",
 			note: usage ? "last 7 days" : undefined,
 		},
 		{

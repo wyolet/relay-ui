@@ -26,7 +26,7 @@ test("summarises a pool's accounts and keys", () => {
 		poolMemberSummary(
 			makePool({ accountIds: ["a"], credentialIds: ["k1", "k2"] }),
 		),
-	).toBe("1 account · 2 keys");
+	).toBe("1 account, 2 keys");
 	expect(poolMemberSummary(makePool({}))).toBe("No members");
 });
 

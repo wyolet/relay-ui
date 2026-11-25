@@ -22,14 +22,15 @@ export function LineTable({
 	);
 }
 
-/** A row's lead cell: its linked name with tags beside it, the slug below. */
+/** A row's lead cell: its linked name with tags beside it, the slug below.
+ * Without a `slug` (a row named by its slug alone) the line isn't repeated. */
 export function LineName({
 	name,
 	slug,
 	children,
 }: {
 	name: ReactNode;
-	slug: string;
+	slug?: string;
 	children?: ReactNode;
 }) {
 	return (
@@ -38,7 +39,9 @@ export function LineName({
 				{name}
 				{children}
 			</span>
-			<code className="truncate font-mono text-foot text-ink-3">{slug}</code>
+			{slug && (
+				<code className="truncate font-mono text-foot text-ink-3">{slug}</code>
+			)}
 		</span>
 	);
 }
@@ -62,10 +65,12 @@ export function LineColumns({
 export function LineRow({
 	cols,
 	dimmed = false,
+	className,
 	children,
 }: {
 	cols: string;
 	dimmed?: boolean;
+	className?: string;
 	children: ReactNode;
 }) {
 	return (
@@ -75,6 +80,7 @@ export function LineRow({
 				cols,
 				"py-2 text-label tabular-nums",
 				dimmed && "opacity-60",
+				className,
 			)}
 		>
 			{children}
@@ -83,10 +89,27 @@ export function LineRow({
 }
 
 /** A right-aligned figure, or a quiet dash without one. */
-export function NumberCell({ value }: { value: string | null }) {
+export function NumberCell({
+	value,
+	className,
+}: {
+	value: string | null;
+	className?: string;
+}) {
 	return (
-		<span className={cn("text-right", value == null && "text-ink-3")}>
+		<span
+			className={cn("text-right", value == null && "text-ink-3", className)}
+		>
 			{value ?? "—"}
+		</span>
+	);
+}
+
+/** A quiet dash for a cell with nothing to show; `title` says why. */
+export function Dash({ title }: { title?: string }) {
+	return (
+		<span className="text-ink-3" title={title}>
+			—
 		</span>
 	);
 }
@@ -110,6 +133,10 @@ export function QuietTag({
 		</span>
 	);
 }
+
+/** For a text column right after a {@link NumberCell}: the column gap alone
+ * reads the figure and the text as one phrase. Put it on the label and cells. */
+export const AFTER_FIGURE = "pl-4";
 
 /** The row's on/off switch, last or near-last in the grid. */
 export function SwitchCell(props: {

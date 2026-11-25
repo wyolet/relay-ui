@@ -32,7 +32,7 @@ describe("deprecationNote", () => {
 					},
 				}),
 			),
-		).toBe("Deprecated, sunsets on 2026-06-01. Replaced by m-2.");
+		).toBe("Deprecated, sunsets on 2026-06-01.");
 		expect(deprecationNote(model({ deprecationDate: "2026-01-01" }))).toBe(
 			"Deprecated since 2026-01-01.",
 		);

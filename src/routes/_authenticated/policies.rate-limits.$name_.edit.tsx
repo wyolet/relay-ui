@@ -1,5 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ChevronLeft } from "lucide-react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Suspense } from "react";
 import {
 	rateLimitDetailQueryOptions,
@@ -11,6 +10,8 @@ import { DiagnosticList } from "@/diagnostics/DiagnosticList";
 import { usePlanDiagnostics } from "@/diagnostics/usePlanDiagnostics";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
 import { RateLimitForm } from "@/rate-limits/RateLimitForm";
+import { BackLink } from "@/shared/BackLink";
+import { PageHeader } from "@/shared/PageHeader";
 import { PageLoader } from "@/shared/Spinner";
 
 export const Route = createFileRoute(
@@ -41,31 +42,28 @@ function RateLimitEditInner() {
 		});
 
 	return (
-		<div className="flex flex-col gap-4">
-			<div>
-				<Link
-					to="/policies/rate-limits/$name"
-					params={{ name }}
-					className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-				>
-					<ChevronLeft className="w-3.5 h-3.5" />
-					{displayLabel(rateLimit.metadata)}
-				</Link>
-				<div className="mt-2">
-					<h1 className="text-xl font-semibold text-foreground truncate">
+		<div>
+			<PageHeader
+				back={
+					<BackLink to="/policies/rate-limits/$name" params={{ name }}>
+						{displayLabel(rateLimit.metadata)}
+					</BackLink>
+				}
+				title={
+					<>
 						Edit {displayLabel(rateLimit.metadata)}
 						{!hasDisplayName(rateLimit.metadata) && (
 							<span className="ml-1.5 text-[11px] text-muted-foreground font-normal">
 								(no display name)
 							</span>
 						)}
-					</h1>
-				</div>
+					</>
+				}
+			/>
+			<div className="flex flex-col gap-4">
+				<DiagnosticList diagnostics={diagnostics} />
+				<RateLimitForm rateLimit={rateLimit} onSaved={back} onCancel={back} />
 			</div>
-
-			<DiagnosticList diagnostics={diagnostics} />
-
-			<RateLimitForm rateLimit={rateLimit} onSaved={back} onCancel={back} />
 		</div>
 	);
 }

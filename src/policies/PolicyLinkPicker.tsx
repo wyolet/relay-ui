@@ -6,6 +6,7 @@ import { HostLogo } from "@/hosts/HostLogo";
 import type { UnavailablePicks } from "@/lib/workContext";
 import type { LinkChoice, LinkChoices } from "@/policies/usePolicyLinkChoices";
 import { AddPopover } from "@/shared/AddPopover";
+import { MetaParts } from "@/shared/MetaParts";
 import { NotAvailableTag } from "@/shared/ScopeNotes";
 
 interface Props {
@@ -107,9 +108,7 @@ export function LinkChoiceLabel({ choice }: { choice: LinkChoice }) {
 			{choice.host && <HostLogo host={choice.host} size={18} />}
 			<span className="flex min-w-0 flex-col">
 				<span className="truncate text-sm text-foreground">{choice.label}</span>
-				<span className="truncate text-[11px] text-muted-foreground">
-					{choice.meta}
-				</span>
+				<MetaParts parts={choice.meta} />
 			</span>
 		</span>
 	);

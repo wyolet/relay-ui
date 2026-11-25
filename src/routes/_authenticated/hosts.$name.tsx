@@ -1,5 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ChevronLeft } from "lucide-react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { z } from "zod";
 import { accountListQueryOptions } from "@/api/hooks/accounts";
@@ -96,15 +95,7 @@ function HostDetailInner() {
 	}
 
 	return (
-		<div className="flex flex-col gap-4">
-			<Link
-				to="/models"
-				search={{ host: name }}
-				className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-			>
-				<ChevronLeft className="w-3.5 h-3.5" />
-				Models
-			</Link>
+		<div>
 			<HostDetailView
 				host={host}
 				tab={tab}

@@ -1,12 +1,12 @@
 import { Link } from "@tanstack/react-router";
-import type { ModelPolicyView } from "@/api/hooks/models";
 import { fmtLimit } from "@/lib/limitsFormat";
+import type { ModelPolicyLine } from "@/models/useModelPolicies";
 import { Facts } from "@/shared/Facts";
 import { Section } from "@/shared/Section";
 
 /** The policies that grant the model, each with the rate-limit rules it
  * applies to it. */
-export function ModelPolicyList({ policies }: { policies: ModelPolicyView[] }) {
+export function ModelPolicyList({ policies }: { policies: ModelPolicyLine[] }) {
 	return (
 		<Section
 			title="Who can use it"
@@ -23,8 +23,8 @@ export function ModelPolicyList({ policies }: { policies: ModelPolicyView[] }) {
 				</p>
 			) : (
 				<ul className="grid grid-cols-1">
-					{policies.map((p) => (
-						<PolicyLine key={p.id} policy={p} />
+					{policies.map((line) => (
+						<PolicyLine key={line.policy.id} line={line} />
 					))}
 				</ul>
 			)}
@@ -32,10 +32,9 @@ export function ModelPolicyList({ policies }: { policies: ModelPolicyView[] }) {
 	);
 }
 
-function PolicyLine({ policy }: { policy: ModelPolicyView }) {
+function PolicyLine({ line: { policy, owner } }: { line: ModelPolicyLine }) {
 	// Identical rules from different rate limits read once.
 	const limits = [...new Set((policy.limits ?? []).map(fmtLimit))];
-	const { kind, name } = policy.owner;
 	return (
 		<li className="grid grid-cols-1 gap-x-6 gap-y-1 border-b border-rule py-2.5 text-label first:pt-0 lg:grid-cols-[minmax(14rem,1fr)_minmax(0,2fr)]">
 			<span className="flex min-w-0 flex-wrap items-baseline gap-x-4 gap-y-1">
@@ -46,16 +45,7 @@ function PolicyLine({ policy }: { policy: ModelPolicyView }) {
 				>
 					{policy.name}
 				</Link>
-				<Facts
-					items={[
-						name
-							? {
-									label: kind.charAt(0).toUpperCase() + kind.slice(1),
-									value: name,
-								}
-							: { label: "Owner", value: kind },
-					]}
-				/>
+				<Facts items={[owner]} />
 			</span>
 			<span className="grid min-w-0 gap-0.5 text-ink-2 tabular-nums">
 				{limits.length === 0 ? (
