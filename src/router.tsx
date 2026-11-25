@@ -8,6 +8,7 @@ export function getRouter(queryClient: QueryClient) {
 	const router = createTanStackRouter({
 		routeTree,
 		scrollRestoration: true,
+		scrollToTopSelectors: [`[data-scroll-restoration-id="page"]`],
 		defaultPreload: "intent",
 		defaultPreloadStaleTime: 0,
 		// Show a spinner while a route loader blocks on fetch. Delayed so
