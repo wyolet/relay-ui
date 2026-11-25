@@ -76,6 +76,12 @@ function baseGraph(): MockGraph {
 	};
 }
 
+const policyRow = (page: Page, name: string | RegExp) =>
+	page
+		.getByRole("link", { name })
+		.first()
+		.locator("xpath=ancestor::div[contains(@class,'grid')][1]");
+
 test.describe("Policy applies to", () => {
 	test("the policies table flags a policy that applies to no one", async ({ page }) => {
 		const graph = baseGraph();
@@ -88,9 +94,9 @@ test.describe("Policy applies to", () => {
 		await mockApi(page, graph);
 
 		await page.goto("/policies");
-		const bound = page.getByRole("row", { name: /Bound/ }).first();
+		const bound = policyRow(page, "Bound");
 		await expect(bound).toContainText("1 account");
-		await expect(page.getByRole("row", { name: /Unbound/ })).toContainText("No one");
+		await expect(policyRow(page, "Unbound")).toContainText("No one");
 	});
 });
 
@@ -107,7 +113,9 @@ test.describe("Owner filter", () => {
 		await mockApi(page, graph);
 
 		await page.goto("/policies");
-		const rows = page.locator("tbody tr");
+		const rows = page.getByRole("link", {
+			name: /^(Team policy|Project policy|My policy|Tier preset)$/,
+		});
 		await expect(rows).toHaveCount(1);
 		await expect(rows.first()).toContainText("Team policy");
 
