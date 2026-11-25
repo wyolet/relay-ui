@@ -33,7 +33,7 @@ import { PageLoader } from "@/shared/Spinner";
 const TABS = ["policies", "ratelimits", "budgets", "bindings"] as const;
 
 const searchSchema = z.object({
-	tab: z.enum(TABS).default("policies"),
+	tab: z.enum(TABS).catch("policies").default("policies"),
 	// Custom / Provider on the policies and rate-limits tabs; provider presets
 	// start hidden, none picked shows both.
 	origin: z.array(z.enum(ORIGINS)).catch(["custom"]).default(["custom"]),

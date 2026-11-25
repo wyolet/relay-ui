@@ -82,7 +82,9 @@ function RailItem({
 				<span className="flex size-[18px] shrink-0 items-center justify-center">
 					{icon}
 				</span>
-				<span className="min-w-0 flex-1 truncate text-label">{label}</span>
+				<span className="min-w-0 flex-1 truncate text-label" title={label}>
+					{label}
+				</span>
 				<span className="shrink-0 text-meta text-ink-3 tabular-nums">
 					{count ?? "…"}
 				</span>

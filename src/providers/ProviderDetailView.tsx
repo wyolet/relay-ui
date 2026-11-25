@@ -16,6 +16,7 @@ import { logoSize } from "@/shared/CatalogIcon";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
 import { DetailTable, Td } from "@/shared/DetailTable";
 import { EmptyState } from "@/shared/EmptyState";
+import { Facts } from "@/shared/Facts";
 import { StatCard, StatGrid } from "@/shared/StatCard";
 import {
 	CatalogDetachedBadge,
@@ -154,13 +155,14 @@ function Header({
 					<p className="mt-1 text-xs text-muted-foreground font-mono truncate">
 						{provider.metadata.name}
 					</p>
-					<p className="mt-0.5 text-[11px] text-muted-foreground tabular-nums">
-						<span className="text-foreground">{refs.models.length}</span> model
-						{refs.models.length === 1 ? "" : "s"}
-						<span className="text-muted-foreground/50"> · </span>
-						<span className="text-foreground">{refs.hosts.length}</span> host
-						{refs.hosts.length === 1 ? "" : "s"}
-					</p>
+					<div className="mt-1.5">
+						<Facts
+							items={[
+								{ label: "Models", value: refs.models.length },
+								{ label: "Hosts", value: refs.hosts.length },
+							]}
+						/>
+					</div>
 					{provider.metadata.description && (
 						<p className="mt-1.5 max-w-2xl text-sm text-muted-foreground">
 							{provider.metadata.description}

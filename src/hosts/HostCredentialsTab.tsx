@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { KeyRound } from "lucide-react";
 import type { Host } from "@/api/types/host";
+import { buttonVariants } from "@/components/ui/button";
 import { useHostCredentials } from "@/hosts/useHostCredentials";
 import { displayLabel } from "@/lib/displayLabel";
 import { DetailTable, Td } from "@/shared/DetailTable";
@@ -24,6 +25,11 @@ export function HostCredentialsTab({ host }: { host: Host }) {
 				icon={KeyRound}
 				title="No credentials yet"
 				body="Register an upstream credential to make this host live."
+				action={
+					<Link to="/host-keys/new" className={buttonVariants()}>
+						Add a credential
+					</Link>
+				}
 			/>
 		);
 	}

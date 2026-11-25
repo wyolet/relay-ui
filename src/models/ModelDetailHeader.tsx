@@ -1,9 +1,11 @@
+import { Link } from "@tanstack/react-router";
 import { AlertTriangle } from "lucide-react";
 import type { Model } from "@/api/types/model";
 import { useMutability } from "@/hooks/useMutability";
 import { displayLabel } from "@/lib/displayLabel";
 import { ModelLogo } from "@/models/ModelLogo";
 import { deprecationNote } from "@/models/modelDetail";
+import { useModelReplacement } from "@/models/useModelReplacement";
 import { logoSize } from "@/shared/CatalogIcon";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
 import { CatalogDetachedBadge, QuietBadge } from "@/shared/StatusBadge";
@@ -24,6 +26,7 @@ export function ModelDetailHeader({
 	const enabled = model.spec.enabled !== false;
 	const { canEdit, canDelete } = useMutability(model.metadata, "model");
 	const dep = deprecationNote(model);
+	const replacement = useModelReplacement(model);
 
 	return (
 		<header className="grid grid-cols-1 gap-3">
@@ -62,7 +65,22 @@ export function ModelDetailHeader({
 			{dep && (
 				<p className="flex items-start gap-2 rounded-md border border-warning/30 bg-warning-soft px-3 py-2 text-meta text-warning">
 					<AlertTriangle className="mt-0.5 size-3.5 shrink-0" aria-hidden />
-					{dep}
+					<span>
+						{dep}
+						{replacement && (
+							<>
+								{" Replaced by "}
+								<Link
+									to="/models/$name"
+									params={{ name: replacement.metadata.name }}
+									className="font-medium underline"
+								>
+									{displayLabel(replacement.metadata)}
+								</Link>
+								.
+							</>
+						)}
+					</span>
 				</p>
 			)}
 		</header>

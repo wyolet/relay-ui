@@ -24,7 +24,7 @@ import {
 import { fmtMoneyCompact } from "@/usage/format";
 
 const COLS =
-	"grid-cols-[minmax(10rem,2fr)_minmax(5.5rem,1fr)_minmax(3.5rem,1fr)_minmax(4rem,1fr)_repeat(2,minmax(4.5rem,1fr))_minmax(3.5rem,1fr)_minmax(4.5rem,1fr)_4.5rem]";
+	"grid-cols-[minmax(13rem,2fr)_minmax(5.5rem,1fr)_minmax(3.5rem,1fr)_minmax(4rem,1fr)_repeat(2,minmax(4.5rem,1fr))_minmax(3.5rem,1fr)_minmax(4.5rem,1fr)_4.5rem]";
 
 /** The pane's column labels, on the rows' grid. */
 export function ModelLineColumns() {
@@ -66,6 +66,7 @@ export function ModelLineRow({ line }: { line: ModelLine }) {
 							to="/models/$name"
 							params={{ name: model.metadata.name }}
 							className="truncate text-foreground hover:underline"
+							title={displayLabel(model.metadata)}
 						>
 							{displayLabel(model.metadata)}
 						</Link>
@@ -73,7 +74,10 @@ export function ModelLineRow({ line }: { line: ModelLine }) {
 						{isDeprecatedModel(model) && <QuietTag>deprecated</QuietTag>}
 						<PlanIssueDot kind="model" id={model.metadata.id} />
 					</span>
-					<code className="truncate font-mono text-foot text-ink-3">
+					<code
+						className="truncate font-mono text-foot text-ink-3"
+						title={model.metadata.name}
+					>
 						{model.metadata.name}
 					</code>
 				</span>

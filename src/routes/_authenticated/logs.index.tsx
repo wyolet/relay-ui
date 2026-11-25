@@ -25,8 +25,8 @@ const SLOW_LABEL = `Slow >${SLOW_MS / 1000}s`;
 
 const searchSchema = z.object({
 	q: z.string().default(""),
-	since: z.enum(SINCE_VALUES).default("1h"),
-	status_class: z.enum(STATUS_CLASS_VALUES).default(""),
+	since: z.enum(SINCE_VALUES).catch("1h").default("1h"),
+	status_class: z.enum(STATUS_CLASS_VALUES).catch("").default(""),
 	/** Exact HTTP status codes (e.g. [429]) — deep-link only for now; the
 	 * filter bar exposes status_class bands instead. */
 	status: z.array(z.number()).default([]),

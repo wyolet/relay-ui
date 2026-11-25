@@ -61,7 +61,7 @@ export const NAV_GROUPS: NavGroup[] = [
 				to: "/models",
 				label: "Models",
 				icon: Boxes,
-				prefix: "/models",
+				prefix: ["/models", "/hosts", "/providers"],
 				capability: "models",
 			},
 			{

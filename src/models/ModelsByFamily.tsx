@@ -5,6 +5,7 @@ import { displayLabel } from "@/lib/displayLabel";
 import { cn } from "@/lib/utils";
 import { groupModelsByFamily } from "@/models/groupModelsByFamily";
 import { ModelLogo } from "@/models/ModelLogo";
+import { Facts } from "@/shared/Facts";
 import { StatusInline } from "@/shared/StatusBadge";
 
 /** A detail page's model list, grouped by family and then product line. */
@@ -20,10 +21,12 @@ export function ModelsByFamily({
 	const families = groupModelsByFamily(models);
 	return (
 		<div className="mt-2 flex flex-col gap-3">
-			<div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-				{models.length} model{models.length === 1 ? "" : "s"} ·{" "}
-				{families.length} famil{families.length === 1 ? "y" : "ies"}
-			</div>
+			<Facts
+				items={[
+					{ label: "Models", value: models.length },
+					{ label: "Families", value: families.length },
+				]}
+			/>
 			<div className="rounded-md border border-border bg-card overflow-hidden">
 				<ul className="divide-y divide-border">
 					{families.map((g) => (

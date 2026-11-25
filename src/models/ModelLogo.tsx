@@ -1,5 +1,5 @@
-import type { components } from "@/api/types.gen";
 import type { Model } from "@/api/types/model";
+import type { components } from "@/api/types.gen";
 import { displayLabel } from "@/lib/displayLabel";
 import { useModelIconPath } from "@/models/useModelProvider";
 import { CatalogIcon } from "@/shared/CatalogIcon";

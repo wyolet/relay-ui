@@ -286,6 +286,13 @@ export function pickPane(
 	return IN_USE;
 }
 
+/** The first host with a match, for a filter that leaves the open pane empty. */
+export function firstMatchingHost(
+	rail: readonly RailHost[],
+): string | undefined {
+	return rail.find((r) => r.count > 0)?.host.slug;
+}
+
 /** Summed usage; `usd` stays null when none of it was priced. */
 export function sumUsage(
 	usages: readonly (ModelUsage | undefined)[],

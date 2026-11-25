@@ -26,7 +26,10 @@ import { useDeferredSearch } from "@/shared/useDeferredSearch";
 
 const searchSchema = z.object({
 	q: z.string().default(""),
-	tier: z.enum(["top", "high", "mid", "low", "unpriced"]).default("top"),
+	tier: z
+		.enum(["top", "high", "mid", "low", "unpriced"])
+		.catch("top")
+		.default("top"),
 	host: z.string().optional(),
 	show_deprecated: z.boolean().default(false),
 	by: z

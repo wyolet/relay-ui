@@ -169,10 +169,9 @@ export function usePricingForm({
 			pricing ? pricingToValues(pricing) : emptyValues(prefillRef.current),
 		[pricing],
 	);
-	const suffixRef = useRef<string>(
-		pricing?.metadata.name.match(/-(\d{4,8})$/)?.[1] ?? randomSuffix(),
-	);
+	const suffixRef = useRef<string>(randomSuffix());
 	const computeSlug = (displayName: string): string => {
+		if (pricing) return pricing.metadata.name;
 		const trimmed = displayName.trim();
 		if (!trimmed) return "";
 		const base = slugify(trimmed) || "pricing";

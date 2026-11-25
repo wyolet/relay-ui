@@ -72,7 +72,7 @@ const config = defineConfig({
     proxy: {
       '/api': proxy,
       '/config.json': proxy,
-      '/provider': proxy,
+      '^/provider/': proxy,
     },
   },
 })

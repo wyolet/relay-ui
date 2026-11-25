@@ -29,7 +29,10 @@ import { toast } from "@/shared/Toast";
 import { useConfirmedDelete } from "@/shared/useConfirmedDelete";
 
 const searchSchema = z.object({
-	tab: z.enum(["overview", "models", "hosts"]).optional().default("overview"),
+	tab: z
+		.enum(["overview", "models", "hosts"])
+		.catch("overview")
+		.default("overview"),
 });
 
 export const Route = createFileRoute("/_authenticated/providers/$name")({

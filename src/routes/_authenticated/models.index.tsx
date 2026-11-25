@@ -1,7 +1,7 @@
-import { bindingsListQueryOptions } from "@/api/hooks/bindings";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { z } from "zod";
+import { bindingsListQueryOptions } from "@/api/hooks/bindings";
 import { governanceQueryOptions } from "@/api/hooks/governance";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
 import { modelsListQueryOptions } from "@/api/hooks/models";

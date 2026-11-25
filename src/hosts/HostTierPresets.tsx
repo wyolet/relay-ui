@@ -68,7 +68,7 @@ export function HostTierPresets({
 													>
 														<span className="text-foreground">{rl.name}</span>
 														<span className="text-muted-foreground">
-															· {scopeLabel(rl)} ·
+															{scopeLabel(rl)}
 														</span>
 														{rl.limits?.length ? (
 															<RateLimitRuleChips limits={rl.limits} />

@@ -2,7 +2,7 @@ import type { Model, ModelCapabilities } from "@/api/types/model";
 import { fmtTokens } from "@/lib/format";
 import { modelProductLine } from "@/models/groupModelsByFamily";
 
-/** A model's deprecation as a sentence: status, sunset, successor. */
+/** A model's deprecation as a sentence: status and sunset. */
 export function deprecationNote(m: Model): string | null {
 	const d = m.spec.deprecation;
 	const date = m.spec.deprecationDate;
@@ -11,9 +11,7 @@ export function deprecationNote(m: Model): string | null {
 	let note = status.charAt(0).toUpperCase() + status.slice(1);
 	if (d?.sunsetDate) note += `, sunsets on ${d.sunsetDate}`;
 	else if (date) note += ` since ${date}`;
-	note += ".";
-	if (d?.replacement) note += ` Replaced by ${d.replacement}.`;
-	return note;
+	return `${note}.`;
 }
 
 export function activeCapabilities(

@@ -1,4 +1,5 @@
 import type { LucideIcon } from "lucide-react";
+import type { ReactNode } from "react";
 
 /** Dashed placeholder for a detail tab with nothing to list; `comingSoon`
  * adds the tag. */
@@ -7,11 +8,13 @@ export function EmptyState({
 	title,
 	body,
 	comingSoon,
+	action,
 }: {
 	icon: LucideIcon;
 	title: string;
 	body: string;
 	comingSoon?: boolean;
+	action?: ReactNode;
 }) {
 	return (
 		<div className="mt-4 rounded-md border border-dashed border-border bg-muted/30 px-6 py-10 text-center">
@@ -23,6 +26,7 @@ export function EmptyState({
 			<div className="mt-1 text-xs text-muted-foreground max-w-md mx-auto">
 				{body}
 			</div>
+			{action && <div className="mt-4">{action}</div>}
 			{comingSoon && (
 				<div className="mt-3 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground border border-border uppercase tracking-wide">
 					Coming soon

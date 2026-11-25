@@ -98,7 +98,7 @@ import { Route as AuthenticatedAccountsNameEditRouteImport } from './routes/_aut
 import { Route as AuthenticatedGroupsNameEditRouteImport } from './routes/_authenticated/groups.$name_.edit'
 import { Route as AuthenticatedHostKeysNameEditRouteImport } from './routes/_authenticated/host-keys.$name_.edit'
 import { Route as AuthenticatedKeysNameEditRouteImport } from './routes/_authenticated/keys_.$name_.edit'
-import { Route as AuthenticatedModelsNameEditRouteImport } from './routes/_authenticated/models.$name.edit'
+import { Route as AuthenticatedModelsNameEditRouteImport } from './routes/_authenticated/models.$name_.edit'
 import { Route as AuthenticatedPoliciesNameEditRouteImport } from './routes/_authenticated/policies.$name_.edit'
 import { Route as AuthenticatedPoliciesBudgetsNameRouteImport } from './routes/_authenticated/policies.budgets.$name'
 import { Route as AuthenticatedPoliciesBudgetsNewRouteImport } from './routes/_authenticated/policies.budgets.new'
@@ -609,9 +609,9 @@ const AuthenticatedKeysNameEditRoute =
   } as any)
 const AuthenticatedModelsNameEditRoute =
   AuthenticatedModelsNameEditRouteImport.update({
-    id: '/edit',
-    path: '/edit',
-    getParentRoute: () => AuthenticatedModelsNameRoute,
+    id: '/$name_/edit',
+    path: '/$name/edit',
+    getParentRoute: () => AuthenticatedModelsRoute,
   } as any)
 const AuthenticatedPoliciesNameEditRoute =
   AuthenticatedPoliciesNameEditRouteImport.update({
@@ -740,7 +740,7 @@ export interface FileRoutesByFullPath {
   '/limits/add': typeof AuthenticatedLimitsAddRoute
   '/logs/$requestId': typeof AuthenticatedLogsRequestIdRoute
   '/me/accounts': typeof AuthenticatedMeAccountsRoute
-  '/models/$name': typeof AuthenticatedModelsNameRouteWithChildren
+  '/models/$name': typeof AuthenticatedModelsNameRoute
   '/models/new': typeof AuthenticatedModelsNewRoute
   '/policies/$name': typeof AuthenticatedPoliciesNameRoute
   '/policies/new': typeof AuthenticatedPoliciesNewRoute
@@ -833,7 +833,7 @@ export interface FileRoutesByTo {
   '/limits/add': typeof AuthenticatedLimitsAddRoute
   '/logs/$requestId': typeof AuthenticatedLogsRequestIdRoute
   '/me/accounts': typeof AuthenticatedMeAccountsRoute
-  '/models/$name': typeof AuthenticatedModelsNameRouteWithChildren
+  '/models/$name': typeof AuthenticatedModelsNameRoute
   '/models/new': typeof AuthenticatedModelsNewRoute
   '/policies/$name': typeof AuthenticatedPoliciesNameRoute
   '/policies/new': typeof AuthenticatedPoliciesNewRoute
@@ -941,7 +941,7 @@ export interface FileRoutesById {
   '/_authenticated/limits/add': typeof AuthenticatedLimitsAddRoute
   '/_authenticated/logs/$requestId': typeof AuthenticatedLogsRequestIdRoute
   '/_authenticated/me/accounts': typeof AuthenticatedMeAccountsRoute
-  '/_authenticated/models/$name': typeof AuthenticatedModelsNameRouteWithChildren
+  '/_authenticated/models/$name': typeof AuthenticatedModelsNameRoute
   '/_authenticated/models/new': typeof AuthenticatedModelsNewRoute
   '/_authenticated/policies/$name': typeof AuthenticatedPoliciesNameRoute
   '/_authenticated/policies/new': typeof AuthenticatedPoliciesNewRoute
@@ -994,7 +994,7 @@ export interface FileRoutesById {
   '/_authenticated/groups/$name_/edit': typeof AuthenticatedGroupsNameEditRoute
   '/_authenticated/host-keys/$name_/edit': typeof AuthenticatedHostKeysNameEditRoute
   '/_authenticated/keys_/$name_/edit': typeof AuthenticatedKeysNameEditRoute
-  '/_authenticated/models/$name/edit': typeof AuthenticatedModelsNameEditRoute
+  '/_authenticated/models/$name_/edit': typeof AuthenticatedModelsNameEditRoute
   '/_authenticated/policies/$name_/edit': typeof AuthenticatedPoliciesNameEditRoute
   '/_authenticated/policies/budgets/$name': typeof AuthenticatedPoliciesBudgetsNameRoute
   '/_authenticated/policies/budgets/new': typeof AuthenticatedPoliciesBudgetsNewRoute
@@ -1302,7 +1302,7 @@ export interface FileRouteTypes {
     | '/_authenticated/groups/$name_/edit'
     | '/_authenticated/host-keys/$name_/edit'
     | '/_authenticated/keys_/$name_/edit'
-    | '/_authenticated/models/$name/edit'
+    | '/_authenticated/models/$name_/edit'
     | '/_authenticated/policies/$name_/edit'
     | '/_authenticated/policies/budgets/$name'
     | '/_authenticated/policies/budgets/new'
@@ -1951,12 +1951,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedKeysNameEditRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/models/$name/edit': {
-      id: '/_authenticated/models/$name/edit'
-      path: '/edit'
+    '/_authenticated/models/$name_/edit': {
+      id: '/_authenticated/models/$name_/edit'
+      path: '/$name/edit'
       fullPath: '/models/$name/edit'
       preLoaderRoute: typeof AuthenticatedModelsNameEditRouteImport
-      parentRoute: typeof AuthenticatedModelsNameRoute
+      parentRoute: typeof AuthenticatedModelsRoute
     }
     '/_authenticated/policies/$name_/edit': {
       id: '/_authenticated/policies/$name_/edit'
@@ -2104,30 +2104,18 @@ const AuthenticatedHostKeysRouteWithChildren =
     AuthenticatedHostKeysRouteChildren,
   )
 
-interface AuthenticatedModelsNameRouteChildren {
+interface AuthenticatedModelsRouteChildren {
+  AuthenticatedModelsNameRoute: typeof AuthenticatedModelsNameRoute
+  AuthenticatedModelsNewRoute: typeof AuthenticatedModelsNewRoute
+  AuthenticatedModelsIndexRoute: typeof AuthenticatedModelsIndexRoute
   AuthenticatedModelsNameEditRoute: typeof AuthenticatedModelsNameEditRoute
 }
 
-const AuthenticatedModelsNameRouteChildren: AuthenticatedModelsNameRouteChildren =
-  {
-    AuthenticatedModelsNameEditRoute: AuthenticatedModelsNameEditRoute,
-  }
-
-const AuthenticatedModelsNameRouteWithChildren =
-  AuthenticatedModelsNameRoute._addFileChildren(
-    AuthenticatedModelsNameRouteChildren,
-  )
-
-interface AuthenticatedModelsRouteChildren {
-  AuthenticatedModelsNameRoute: typeof AuthenticatedModelsNameRouteWithChildren
-  AuthenticatedModelsNewRoute: typeof AuthenticatedModelsNewRoute
-  AuthenticatedModelsIndexRoute: typeof AuthenticatedModelsIndexRoute
-}
-
 const AuthenticatedModelsRouteChildren: AuthenticatedModelsRouteChildren = {
-  AuthenticatedModelsNameRoute: AuthenticatedModelsNameRouteWithChildren,
+  AuthenticatedModelsNameRoute: AuthenticatedModelsNameRoute,
   AuthenticatedModelsNewRoute: AuthenticatedModelsNewRoute,
   AuthenticatedModelsIndexRoute: AuthenticatedModelsIndexRoute,
+  AuthenticatedModelsNameEditRoute: AuthenticatedModelsNameEditRoute,
 }
 
 const AuthenticatedModelsRouteWithChildren =

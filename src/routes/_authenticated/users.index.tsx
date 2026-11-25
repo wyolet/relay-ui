@@ -39,7 +39,7 @@ const TAB_LABELS: Record<UsersPageTab, string> = {
 };
 
 const searchSchema = z.object({
-	tab: z.enum(USERS_PAGE_TABS).default("users"),
+	tab: z.enum(USERS_PAGE_TABS).catch("users").default("users"),
 	// Filters of the groups, roles and role-bindings tabs; a tab change clears them.
 	q: z.string().default(""),
 	enabled: z.enum(["all", "true", "false"]).catch("all").default("all"),

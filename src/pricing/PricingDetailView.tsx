@@ -3,6 +3,7 @@ import type { Pricing } from "@/api/types/pricing";
 import { displayLabel } from "@/lib/displayLabel";
 import { MeterGrid } from "@/pricing/MeterGrid";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
+import { Facts } from "@/shared/Facts";
 import { FigureRow } from "@/shared/FigureRow";
 import { Section } from "@/shared/Section";
 import { CatalogDetachedBadge } from "@/shared/StatusBadge";
@@ -39,28 +40,36 @@ export function PricingDetailView({
 					<h1 className="truncate text-2xl font-bold text-foreground">
 						{displayLabel(pricing.metadata)}
 					</h1>
-					<p className="mt-1 flex flex-wrap items-baseline gap-x-2 text-label text-ink-2">
-						<span className="font-mono text-meta text-ink-3">{name}</span>
-						<span aria-hidden>·</span>
-						{host ? (
-							<Link
-								to="/hosts/$name"
-								params={{ name: host.slug }}
-								className="hover:text-foreground hover:underline"
-							>
-								Billed by {host.label}
-							</Link>
-						) : (
-							<span>No host</span>
-						)}
-						<span aria-hidden>·</span>
-						<span className={enabled ? undefined : "text-foreground"}>
-							{enabled ? "Enabled" : "Disabled: prices nothing"}
-						</span>
+					<code className="mt-1 block truncate font-mono text-meta text-ink-2">
+						{name}
+					</code>
+					<div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-1">
+						<Facts
+							items={[
+								{
+									label: "Billed by",
+									value: host ? (
+										<Link
+											to="/hosts/$name"
+											params={{ name: host.slug }}
+											className="hover:underline"
+										>
+											{host.label}
+										</Link>
+									) : (
+										"No host"
+									),
+								},
+								{
+									label: "Status",
+									value: enabled ? "Enabled" : "Disabled, prices nothing",
+								},
+							]}
+						/>
 						<CatalogDetachedBadge
 							detachedAt={pricing.metadata.catalogDetachedAt}
 						/>
-					</p>
+					</div>
 					{pricing.metadata.description && (
 						<p className="mt-2 max-w-2xl text-label text-ink-2">
 							{pricing.metadata.description}
@@ -154,10 +163,15 @@ function MetadataFooter({ pricing }: { pricing: Pricing }) {
 	const { createdAt, updatedAt } = pricing.metadata;
 	if (!createdAt && !updatedAt) return null;
 	return (
-		<p className="text-meta text-ink-3">
-			{createdAt && <>Created {new Date(createdAt).toLocaleString()}</>}
-			{createdAt && updatedAt && " · "}
-			{updatedAt && <>Updated {new Date(updatedAt).toLocaleString()}</>}
-		</p>
+		<Facts
+			items={[
+				...(createdAt
+					? [{ label: "Created", value: new Date(createdAt).toLocaleString() }]
+					: []),
+				...(updatedAt
+					? [{ label: "Updated", value: new Date(updatedAt).toLocaleString() }]
+					: []),
+			]}
+		/>
 	);
 }

@@ -54,7 +54,7 @@ function HostLine({
 		<li
 			className={`grid grid-cols-1 gap-1.5 border-b border-rule py-3 first:pt-0 ${line.enabled ? "" : "opacity-60"}`}
 		>
-			<div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+			<div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
 				<span className="flex min-w-0 items-center gap-2">
 					<HostLogo host={hostRefLogo(line.host)} size={18} />
 					<Link
