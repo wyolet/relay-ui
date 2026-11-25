@@ -1,9 +1,9 @@
 import { Link, linkOptions, useNavigate } from "@tanstack/react-router";
 import type { ReactNode } from "react";
-import type { AccessTargetKind } from "@/access/accessTarget";
+import type { ShortcutTargetKind } from "@/shortcuts/registry";
 
 /** The target's page; with no `name`, the list of its kind (the dashboard without a kind). */
-function targetPage(kind: AccessTargetKind | undefined, name?: string) {
+function targetPage(kind: ShortcutTargetKind | undefined, name?: string) {
 	switch (kind) {
 		case "team":
 			return name
@@ -28,7 +28,7 @@ export function TargetLink({
 	className,
 	children,
 }: {
-	kind: AccessTargetKind | undefined;
+	kind: ShortcutTargetKind | undefined;
 	name?: string;
 	className?: string;
 	children: ReactNode;
@@ -43,6 +43,6 @@ export function TargetLink({
 /** Opens the target's page, as {@link TargetLink} links it. */
 export function useOpenTarget() {
 	const navigate = useNavigate();
-	return (kind: AccessTargetKind | undefined, name?: string) =>
+	return (kind: ShortcutTargetKind | undefined, name?: string) =>
 		void navigate(targetPage(kind, name));
 }

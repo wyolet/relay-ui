@@ -19,10 +19,10 @@ import {
 } from "@/budgets/budgetFormat";
 import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
+import { useSlugFor } from "@/hooks/useSlugFor";
 import { useFormOwner } from "@/hooks/useWorkContext";
 import { displayLabel } from "@/lib/displayLabel";
 import { shownError, zodFieldValidator } from "@/lib/formErrors";
-import { randomSuffix, slugify } from "@/lib/slug";
 import { toast } from "@/shared/Toast";
 
 export interface BudgetFormValues {
@@ -92,12 +92,7 @@ export function useBudgetForm({ budget, onSaved }: UseBudgetFormOptions) {
 		() => (budget ? toValues(budget) : emptyValues()),
 		[budget],
 	);
-	const suffixRef = useRef<string>(randomSuffix());
-	const computeSlug = (displayName: string): string => {
-		const trimmed = displayName.trim();
-		if (!trimmed) return "";
-		return `${slugify(trimmed) || "budget"}-${suffixRef.current}`;
-	};
+	const computeSlug = useSlugFor(budget?.metadata.name, "budget");
 
 	const runValidation = zodFieldValidator<BudgetFormValues>(schema);
 
@@ -176,9 +171,7 @@ export function useBudgetForm({ budget, onSaved }: UseBudgetFormOptions) {
 		values,
 		errors,
 		isEdit,
-		slugPreview: budget
-			? budget.metadata.name
-			: computeSlug(values.displayName),
+		slugPreview: computeSlug(values.displayName),
 		placement,
 		setAmount,
 	};

@@ -4,9 +4,11 @@ import type { RateLimit } from "@/api/types/ratelimit";
 import { PlanIssueDot } from "@/diagnostics/DiagnosticDot";
 import { useMutability } from "@/hooks/useMutability";
 import { displayLabel } from "@/lib/displayLabel";
+import { cn } from "@/lib/utils";
 import { useTogglePolicyEnabled } from "@/policies/useTogglePolicyEnabled";
 import { OwnerLink } from "@/projects/OwnerLink";
 import {
+	AFTER_FIGURE,
 	LineColumns,
 	LineName,
 	LineRow,
@@ -17,10 +19,12 @@ import {
 import { type MenuAction, RowMenu } from "@/shared/RowMenu";
 import { CatalogDetachedBadge } from "@/shared/StatusBadge";
 
-// The tracks' minimums plus gaps come to 57rem, the table's min-w.
+// Below xl the Pools and Budgets counts drop so the switch and menu stay in
+// view; the tracks' minimums plus gaps come to 42.25rem, and 57rem from xl.
 const COLS =
-	"grid-cols-[minmax(13rem,2fr)_minmax(6rem,0.9fr)_minmax(6rem,0.8fr)_minmax(3.5rem,0.4fr)_minmax(8rem,1.1fr)_minmax(4rem,0.5fr)_3.5rem_2rem]";
-export const POLICY_MIN_W = "min-w-[57rem]";
+	"grid-cols-[minmax(13rem,2fr)_minmax(6rem,0.9fr)_minmax(6rem,0.8fr)_minmax(8rem,1.1fr)_3.5rem_2rem] xl:grid-cols-[minmax(13rem,2fr)_minmax(6rem,0.9fr)_minmax(6rem,0.8fr)_minmax(3.5rem,0.4fr)_minmax(8rem,1.1fr)_minmax(4rem,0.5fr)_3.5rem_2rem]";
+export const POLICY_MIN_W = "min-w-[42.25rem] xl:min-w-[57rem]";
+const WIDE_ONLY = "hidden xl:block";
 
 /** The table's column labels, on the rows' grid. */
 export function PolicyColumns() {
@@ -29,9 +33,9 @@ export function PolicyColumns() {
 			<span>Name</span>
 			<span>Applies to</span>
 			<span>Models</span>
-			<span className="text-right">Pools</span>
-			<span>Rate limits</span>
-			<span className="text-right">Budgets</span>
+			<span className={cn(WIDE_ONLY, "text-right")}>Pools</span>
+			<span className={AFTER_FIGURE}>Rate limits</span>
+			<span className={cn(WIDE_ONLY, "text-right")}>Budgets</span>
 			<span className="pr-3 text-right">On</span>
 			<span />
 		</LineColumns>
@@ -74,8 +78,7 @@ export function PolicyRow({
 	if (canEdit) {
 		actions.push({
 			label: "Edit",
-			// The detail page, as before: editing a shared policy is guarded there.
-			render: <Link to="/policies/$name" params={{ name }} />,
+			render: <Link to="/policies/$name/edit" params={{ name }} />,
 		});
 	}
 	if (canDelete)
@@ -118,8 +121,11 @@ export function PolicyRow({
 			<span className={models.all ? "truncate text-ink-3" : "truncate"}>
 				{models.text}
 			</span>
-			<NumberCell value={String((policy.spec.poolIds ?? []).length)} />
-			<span className="min-w-0 truncate">
+			<NumberCell
+				value={String((policy.spec.poolIds ?? []).length)}
+				className={WIDE_ONLY}
+			/>
+			<span className={cn("min-w-0 truncate", AFTER_FIGURE)}>
 				{onlyRateLimit ? (
 					<Link
 						to="/policies/rate-limits/$name"
@@ -134,7 +140,10 @@ export function PolicyRow({
 					<span className="text-ink-3">—</span>
 				)}
 			</span>
-			<NumberCell value={String((policy.spec.budgets ?? []).length)} />
+			<NumberCell
+				value={String((policy.spec.budgets ?? []).length)}
+				className={WIDE_ONLY}
+			/>
 			{canEdit ? (
 				<SwitchCell
 					checked={enabled}

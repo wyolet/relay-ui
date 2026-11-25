@@ -6,8 +6,8 @@ import {
 	usePolicyBindingsOf,
 } from "@/api/hooks/policyBindings";
 import { displayLabel } from "@/lib/displayLabel";
-import type { LinkChoice } from "@/policies/usePolicyLinkChoices";
 import { boundAccountIds } from "@/policies/policyReach";
+import type { LinkChoice } from "@/policies/usePolicyLinkChoices";
 
 /** The accounts the policy's bindings hold, as link rows; undefined while loading. */
 export function usePolicyAppliesTo(
@@ -26,9 +26,9 @@ export function usePolicyAppliesTo(
 					id,
 					name: account.metadata.name,
 					label: displayLabel(account.metadata),
-					meta: `${ACCOUNT_KIND_LABELS[account.spec.kind]} account`,
+					meta: [`${ACCOUNT_KIND_LABELS[account.spec.kind]} account`],
 				}
-			: { id, name: id, label: `${id.slice(0, 8)}…`, meta: "Account" };
+			: { id, name: id, label: `${id.slice(0, 8)}…`, meta: ["Account"] };
 	});
 }
 

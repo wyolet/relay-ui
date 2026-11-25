@@ -3,7 +3,7 @@ import { poolCheckOptions } from "@/policies/poolCheckOptions";
 import type { LinkChoice } from "@/policies/usePolicyLinkChoices";
 
 function pool(id: string): LinkChoice {
-	return { id, name: id, label: `Pool ${id}`, meta: `host · ${id}` };
+	return { id, name: id, label: `Pool ${id}`, meta: ["host", id] };
 }
 
 describe("poolCheckOptions", () => {
@@ -15,9 +15,9 @@ describe("poolCheckOptions", () => {
 			unavailable: undefined,
 		});
 		expect(options).toEqual([
-			{ value: "a", label: "Pool a", hint: "host · a", rank: 2 },
-			{ value: "b", label: "Pool b", hint: "host · b" },
-			{ value: "c", label: "Pool c", hint: "host · c", rank: 1 },
+			{ value: "a", label: "Pool a", hint: ["host", "a"], rank: 2 },
+			{ value: "b", label: "Pool b", hint: ["host", "b"] },
+			{ value: "c", label: "Pool c", hint: ["host", "c"], rank: 1 },
 		]);
 	});
 

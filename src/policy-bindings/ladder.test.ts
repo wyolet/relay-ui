@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import type { AccountLimits } from "@/api/hooks/accounts";
 import type { components } from "@/api/types.gen";
-import { type LadderNames, toLadder } from "./ladder";
+import { type LadderNames, scopeName, toLadder } from "./ladder";
 
 type LimitsRung = components["schemas"]["LimitsRung"];
 
@@ -101,5 +101,18 @@ describe("toLadder", () => {
 		expect(
 			toLadder(limits([rung(team, "tp"), rung(lane)]), names, true).kind,
 		).toBe("also");
+	});
+});
+
+describe("scopeName", () => {
+	it("prefixes the kind", () => {
+		expect(scopeName("Team", "Platform")).toBe("Team Platform");
+	});
+	it("keeps a kind the name already starts with once", () => {
+		expect(scopeName("Team", "Team Alpha")).toBe("Team Alpha");
+		expect(scopeName("Team", "team alpha")).toBe("team alpha");
+	});
+	it("prefixes a name that only starts with the kind's letters", () => {
+		expect(scopeName("Team", "Teamwork")).toBe("Team Teamwork");
 	});
 });

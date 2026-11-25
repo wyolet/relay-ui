@@ -5,8 +5,8 @@ import {
 	linkModelLines,
 	savedCaseLine,
 } from "@/limits/limitWrites";
-import { TargetLink } from "@/limits/TargetLink";
 import type { AddedLimit } from "@/limits/useLimitWrites";
+import { TargetLink } from "@/shortcuts/TargetLink";
 
 export function LimitAdded({ added }: { added: AddedLimit }) {
 	const { target } = added;

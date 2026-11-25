@@ -55,7 +55,7 @@ export function resolveRateLimitScopes(
 export function formatScope(models: number, hosts: number): string {
 	const m = `${models} ${models === 1 ? "model" : "models"}`;
 	const h = `${hosts} ${hosts === 1 ? "host" : "hosts"}`;
-	return `${m} · ${h}`;
+	return `${m} on ${h}`;
 }
 
 export function providerLabel(

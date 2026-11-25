@@ -10,6 +10,7 @@ import { RateLimitRuleChips } from "@/rate-limits/RateLimitRuleChips";
 import { SharedLinkLabel } from "@/rate-limits/SharedLinkLabel";
 import { AlertBanner } from "@/shared/AlertBanner";
 import { EmptyPanel } from "@/shared/EmptyPanel";
+import { QuietBadge } from "@/shared/StatusBadge";
 
 interface Props {
 	policy: Policy;
@@ -54,13 +55,9 @@ export function PolicyRateLimitsTab({ policy }: Props) {
 								params={{ name: row.name }}
 								className="text-sm text-foreground hover:underline truncate"
 							>
-								{row.name}
+								{row.label}
 							</Link>
-							{row.default && (
-								<span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium uppercase tracking-wide bg-muted text-muted-foreground border border-border">
-									all models
-								</span>
-							)}
+							{row.default && <QuietBadge>All models</QuietBadge>}
 							<span className="ml-auto">
 								<SharedLinkLabel
 									shared={rateLimitRowShared(policy.spec.rateLimits ?? [], row)}

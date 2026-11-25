@@ -1,13 +1,18 @@
 import { Link } from "@tanstack/react-router";
 import { useUpdateRateLimit } from "@/api/hooks/ratelimits";
-import type { RateLimit } from "@/api/types/ratelimit";
+import type { RateLimit, RateLimitRule } from "@/api/types/ratelimit";
 import { PlanIssueDot } from "@/diagnostics/DiagnosticDot";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
-import { compactNumber } from "@/lib/rateLimitFormat";
+import {
+	compactNumber,
+	METER_OPTIONS,
+	strategyLabel,
+} from "@/lib/rateLimitFormat";
 import { windowShort } from "@/lib/timeWindow";
 import { cn } from "@/lib/utils";
 import {
+	AFTER_FIGURE,
 	LineColumns,
 	LineName,
 	LineRow,
@@ -29,7 +34,7 @@ export function RateLimitColumns() {
 			<span>Name</span>
 			<span>Strategy</span>
 			<span className="text-right">Window</span>
-			<span>Rules</span>
+			<span className={AFTER_FIGURE}>Rules</span>
 			<span className="pr-3 text-right">On</span>
 			<span />
 		</LineColumns>
@@ -79,10 +84,10 @@ export function RateLimitRow({
 				<CatalogDetachedBadge detachedAt={rl.metadata.catalogDetachedAt} />
 			</LineName>
 			<span className={cn("truncate", strategy == null && "text-ink-3")}>
-				{strategy ?? "—"}
+				{strategyLabel(strategy) ?? "—"}
 			</span>
 			<NumberCell value={firstRule ? windowShort(firstRule.window) : null} />
-			<span className="truncate">{summarizeRules(rl)}</span>
+			<span className={cn("truncate", AFTER_FIGURE)}>{summarizeRules(rl)}</span>
 			<SwitchCell
 				checked={enabled}
 				onChange={(next) => void toggleEnabled(next)}
@@ -95,7 +100,7 @@ export function RateLimitRow({
 						{
 							label: "Edit",
 							render: (
-								<Link to="/policies/rate-limits/$name" params={{ name }} />
+								<Link to="/policies/rate-limits/$name/edit" params={{ name }} />
 							),
 						},
 						{ label: "Delete", danger: true, onClick: onDelete },
@@ -112,10 +117,14 @@ function summarizeRules(rl: RateLimit): string {
 		return "—";
 	}
 	if (rules.length === 1) {
-		return `${compactNumber(rules[0].amount)} ${rules[0].meter}`;
+		return `${compactNumber(rules[0].amount)} ${meterWord(rules[0].meter)}`;
 	}
 	return `${rules.length} rules on ${rules
 		.slice(0, 2)
-		.map((r) => r.meter)
+		.map((r) => meterWord(r.meter))
 		.join(", ")}${rules.length > 2 ? " and more" : ""}`;
+}
+
+function meterWord(meter: RateLimitRule["meter"]): string {
+	return METER_OPTIONS[meter].label.toLowerCase();
 }

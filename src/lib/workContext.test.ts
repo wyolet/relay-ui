@@ -188,6 +188,15 @@ describe("placement", () => {
 		expect(contextName(project)).toBe("Project Search");
 	});
 
+	test("doesn't repeat the kind a name already starts with", () => {
+		expect(contextName({ ...team, displayName: "Team Alpha" })).toBe(
+			"Team Alpha",
+		);
+		expect(contextName({ ...team, displayName: "Teamwork" })).toBe(
+			"Team Teamwork",
+		);
+	});
+
 	test("names a row's owner from the caller's contexts", () => {
 		expect(ownerName({ kind: "team", id: "t1" }, contexts, "u1")).toBe(
 			"Team Platform",

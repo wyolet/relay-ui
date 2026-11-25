@@ -22,10 +22,10 @@ import type { PolicyBinding } from "@/api/types/policyBinding";
 import { useLoadedResourceVersion } from "@/hooks/useLoadedResourceVersion";
 import { useSaveErrorToast } from "@/hooks/useSaveErrorToast";
 import { useScopePrefetch } from "@/hooks/useScopePrefetch";
+import { useSlugFor } from "@/hooks/useSlugFor";
 import { useFormOwner } from "@/hooks/useWorkContext";
 import { displayLabel } from "@/lib/displayLabel";
 import { shownError, zodFieldValidator } from "@/lib/formErrors";
-import { randomSuffix, slugify } from "@/lib/slug";
 import {
 	unavailablePicks,
 	unavailablePicksError,
@@ -134,15 +134,7 @@ export function usePolicyBindingForm({
 		() => (binding ? toValues(binding) : emptyValues()),
 		[binding],
 	);
-	const suffixRef = useRef<string>(
-		binding?.metadata.name.match(/-(\d{4,8})$/)?.[1] ?? randomSuffix(),
-	);
-	const computeSlug = (displayName: string): string => {
-		const trimmed = displayName.trim();
-		if (!trimmed) return "";
-		const base = slugify(trimmed) || "policy-binding";
-		return `${base}-${suffixRef.current}`;
-	};
+	const computeSlug = useSlugFor(binding?.metadata.name, "policy-binding");
 
 	const accounts = accountsData.items ?? [];
 
@@ -268,9 +260,7 @@ export function usePolicyBindingForm({
 		values.policyId,
 	);
 
-	const slugPreview = isEdit
-		? (binding?.metadata.name ?? "")
-		: computeSlug(values.displayName);
+	const slugPreview = computeSlug(values.displayName);
 	const displayNameError = useStore(form.store, (s) =>
 		shownError(s.fieldMeta?.displayName, s.submissionAttempts),
 	);

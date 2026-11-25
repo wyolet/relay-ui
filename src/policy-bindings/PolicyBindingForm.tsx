@@ -88,7 +88,7 @@ export function PolicyBindingForm({
 							onValueChange={(v) => form.setFieldValue("policyId", v ?? "")}
 						>
 							<SelectTrigger
-								className="w-full max-w-md"
+								className="w-full"
 								aria-invalid={policyIdError ? true : undefined}
 							>
 								<SelectValue placeholder="Pick a policy…" />
@@ -122,6 +122,7 @@ export function PolicyBindingForm({
 							selected={values.accountIds}
 							onChange={setAccountIds}
 							invalidId={duplicateAccountId}
+							invalid={Boolean(accountIdsError)}
 							describedBy={accountIdsError ? accountIdsErrorId : undefined}
 							unavailable={unavailableAccounts}
 						/>

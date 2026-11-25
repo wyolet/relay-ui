@@ -12,7 +12,11 @@ import {
 import { useState } from "react";
 import type { Policy } from "@/api/types/policy";
 import { HostLogo, hostRefLogo } from "@/hosts/HostLogo";
+import { fmtCompact } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import { ModelRefLogo } from "@/models/ModelLogo";
+import { everyCredentialFor } from "@/policies/policyReach";
+import { distinctModelCount } from "@/policies/policyReachRows";
 import {
 	type PolicyModelView,
 	usePolicyExcludedModels,
@@ -21,6 +25,7 @@ import {
 import { logoSize } from "@/shared/CatalogIcon";
 import { EmptyPanel } from "@/shared/EmptyPanel";
 import { OptionRow } from "@/shared/OptionRow";
+import { WarnBadge } from "@/shared/StatusBadge";
 
 interface Props {
 	policy: Policy;
@@ -36,14 +41,17 @@ export function PolicyModelsTab({ policy }: Props) {
 	const rows = usePolicyModels(policy.metadata.name);
 	const grants = policy.spec.models ?? [];
 	const allAvailable = grants.length === 0;
+	const source = everyCredentialFor(policy.spec.poolIds)
+		? "the credentials in its scope"
+		: "its pools";
 
 	if (rows.length === 0) {
 		return (
 			<div className="flex flex-col gap-3">
 				<EmptyPanel title="No reachable models" className="mt-2">
 					{allAvailable
-						? "This policy allows every model its pools serve, and no linked pool serves one yet."
-						: "The models listed on this policy don't match any model a linked pool serves. They may match models added later, or you may need to revisit them."}
+						? `This policy allows every model ${source} serve, and none serves one yet.`
+						: `The models listed on this policy don't match any model ${source} serve. They may match models added later, or you may need to revisit them.`}
 				</EmptyPanel>
 				<ExcludedModelsPanel policyName={policy.metadata.name} />
 			</div>
@@ -67,21 +75,17 @@ export function PolicyModelsTab({ policy }: Props) {
 	const hostIds = [...byHost.keys()].sort((a, b) =>
 		hostLabel(byHost.get(a)?.[0]).localeCompare(hostLabel(byHost.get(b)?.[0])),
 	);
-	const distinctModels = new Set(
-		rows.map((r) => `${r.provider.name}/${r.model.name}`),
-	);
+	const modelCount = distinctModelCount(rows);
 
 	return (
 		<div className="flex flex-col gap-4 pt-2">
 			<div className="text-[11px] text-muted-foreground">
 				Grouped by host.{" "}
 				{allAvailable
-					? "All available models: the pools reach "
+					? `All available models: ${source} reach `
 					: `${grants.length} entr${grants.length === 1 ? "y reaches" : "ies reach"} `}
-				<span className="text-foreground tabular-nums">
-					{distinctModels.size}
-				</span>{" "}
-				model{distinctModels.size === 1 ? "" : "s"} across{" "}
+				<span className="text-foreground tabular-nums">{modelCount}</span> model
+				{modelCount === 1 ? "" : "s"} across{" "}
 				<span className="text-foreground tabular-nums">{hostIds.length}</span>{" "}
 				host{hostIds.length === 1 ? "" : "s"}.
 			</div>
@@ -263,11 +267,9 @@ function ModelRow({ row }: { row: PolicyModelView }) {
 				)}
 			</div>
 			<CapabilityIcons caps={model.capabilities} />
-			{ctx && (
-				<span className="text-[11px] text-muted-foreground tabular-nums whitespace-nowrap min-w-[3.5rem] text-right">
-					{ctx} ctx
-				</span>
-			)}
+			<span className="w-16 shrink-0 text-[11px] text-muted-foreground tabular-nums whitespace-nowrap text-right">
+				{ctx ? `${ctx} ctx` : "—"}
+			</span>
 		</li>
 	);
 }
@@ -280,15 +282,18 @@ const CAPS: { key: string; Icon: LucideIcon; label: string }[] = [
 	{ key: "embeddings", Icon: Network, label: "Embeddings" },
 ];
 
+/** One fixed slot per capability, so each icon keeps its column down the list. */
 function CapabilityIcons({ caps }: { caps: string[] | null | undefined }) {
-	if (!caps || caps.length === 0) return null;
-	const set = new Set(caps);
-	const active = CAPS.filter((c) => set.has(c.key));
-	if (active.length === 0) return null;
+	const set = new Set(caps ?? []);
 	return (
 		<div className="flex items-center gap-1 text-muted-foreground shrink-0">
-			{active.map(({ key, Icon, label }) => (
-				<Icon key={key} className="w-3.5 h-3.5" aria-label={label} />
+			{CAPS.map(({ key, Icon, label }) => (
+				<Icon
+					key={key}
+					className={cn("w-3.5 h-3.5", !set.has(key) && "invisible")}
+					aria-label={set.has(key) ? label : undefined}
+					aria-hidden={!set.has(key)}
+				/>
 			))}
 		</div>
 	);
@@ -298,23 +303,14 @@ function pickContextWindow(
 	model: PolicyModelView["model"],
 ): string | undefined {
 	const n = model.contextWindowTotal ?? model.contextWindowInput ?? undefined;
-	if (!n || n <= 0) return undefined;
-	if (n >= 1_000_000) {
-		const m = n / 1_000_000;
-		return `${m % 1 === 0 ? m.toFixed(0) : m.toFixed(1)}M`;
-	}
-	if (n >= 1_000) {
-		return `${Math.round(n / 1_000)}K`;
-	}
-	return `${n}`;
+	return n && n > 0 ? fmtCompact(n) : undefined;
 }
 
 function DeprecationBadge({ status }: { status: string }) {
-	const label = status.toLowerCase() === "sunset" ? "Sunset" : "Deprecated";
 	return (
-		<span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium uppercase tracking-wide bg-warning/10 text-warning border border-warning/30 whitespace-nowrap">
-			{label}
-		</span>
+		<WarnBadge>
+			{status.toLowerCase() === "sunset" ? "Sunset" : "Deprecated"}
+		</WarnBadge>
 	);
 }
 

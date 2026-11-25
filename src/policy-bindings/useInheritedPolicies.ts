@@ -7,7 +7,7 @@ import {
 } from "@/api/hooks/accounts";
 import { policiesListQueryOptions } from "@/api/hooks/policies";
 import { displayLabel } from "@/lib/displayLabel";
-import { type Ladder, toLadder } from "@/policy-bindings/ladder";
+import { type Ladder, scopeName, toLadder } from "@/policy-bindings/ladder";
 import {
 	type AccountRef,
 	useAccountPolicy,
@@ -31,7 +31,10 @@ export function useInheritedPolicies(ref: AccountRef): Ladder | undefined {
 		{
 			scope: (a) => {
 				const row = accountItems.find((x) => x.metadata.id === a.id);
-				return `${ACCOUNT_KIND_LABELS[a.kind]} ${row ? displayLabel(row.metadata) : a.name}`;
+				return scopeName(
+					ACCOUNT_KIND_LABELS[a.kind],
+					row ? displayLabel(row.metadata) : a.name,
+				);
 			},
 			policy: (p) => {
 				const row = policyItems.find((x) => x.metadata.id === p.id);

@@ -1,10 +1,8 @@
-import { ChevronLeft } from "lucide-react";
 import { Suspense } from "react";
 import type { AccessTarget, AccessTargetKind } from "@/access/accessTarget";
 import { ReviewStep } from "@/access/ReviewStep";
 import { SavedStep } from "@/access/SavedStep";
 import { SetAccessStep } from "@/access/SetAccessStep";
-import { TargetLink, useOpenTarget } from "@/access/TargetLink";
 import {
 	type AccessOffers,
 	type KnownCase,
@@ -21,6 +19,8 @@ import {
 import { PolicySetAbove } from "@/policy-bindings/PolicyLine";
 import { PageLoader } from "@/shared/Spinner";
 import { StepForm } from "@/shared/StepForm";
+import { ShortcutHeader } from "@/shortcuts/ShortcutHeader";
+import { useOpenTarget } from "@/shortcuts/TargetLink";
 
 const STEP_LABELS: Record<AccessFormStep, string> = {
 	access: "Access",
@@ -31,9 +31,6 @@ const STEPS = [
 	...ACCESS_FORM_STEPS.map((id) => ({ id, label: STEP_LABELS[id] })),
 	{ id: "saved", label: "Done" },
 ];
-
-const BACK_LINK_CLASS =
-	"inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors";
 
 function Header({
 	kind,
@@ -47,18 +44,17 @@ function Header({
 	subject?: string;
 }) {
 	return (
-		<div>
-			<TargetLink kind={kind} name={name} className={BACK_LINK_CLASS}>
-				<ChevronLeft className="w-3.5 h-3.5" />
-				{back}
-			</TargetLink>
-			<h1 className="mt-2 text-xl font-semibold text-foreground">Set access</h1>
-			<p className="mt-1 text-xs text-muted-foreground">
-				{subject
+		<ShortcutHeader
+			kind={kind}
+			name={name}
+			back={back}
+			title="Set access"
+			description={
+				subject
 					? `What ${subject} may use: provider accounts and models. Saving replaces what it has now.`
-					: "What a team, project or agent may use."}
-			</p>
-		</div>
+					: "What a team, project or agent may use."
+			}
+		/>
 	);
 }
 

@@ -58,14 +58,14 @@ describe("joinList", () => {
 
 describe("formatScope", () => {
 	it("singular model and host", () => {
-		expect(formatScope(1, 1)).toBe("1 model · 1 host");
+		expect(formatScope(1, 1)).toBe("1 model on 1 host");
 	});
 	it("plural models and hosts", () => {
-		expect(formatScope(3, 2)).toBe("3 models · 2 hosts");
+		expect(formatScope(3, 2)).toBe("3 models on 2 hosts");
 	});
 	it("mixed singular/plural", () => {
-		expect(formatScope(1, 2)).toBe("1 model · 2 hosts");
-		expect(formatScope(2, 1)).toBe("2 models · 1 host");
+		expect(formatScope(1, 2)).toBe("1 model on 2 hosts");
+		expect(formatScope(2, 1)).toBe("2 models on 1 host");
 	});
 });
 

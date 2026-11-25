@@ -2,7 +2,9 @@ import { type Budget, useBudgets, useUsableBudgets } from "@/api/hooks/budgets";
 import { useHosts } from "@/api/hooks/hosts";
 import { type Pool, usePools, useUsablePools } from "@/api/hooks/pools";
 import type { Host } from "@/api/types/host";
+import { capText, DEFAULT_MODE, MODE_LABELS } from "@/budgets/budgetFormat";
 import { displayLabel } from "@/lib/displayLabel";
+import { fmtUsd } from "@/lib/limitsFormat";
 import type { UnavailablePicks } from "@/lib/workContext";
 import { poolCheckOptions } from "@/policies/poolCheckOptions";
 import { poolMemberSummary } from "@/pools/poolKeys";
@@ -13,7 +15,8 @@ export interface LinkChoice {
 	id: string;
 	name: string;
 	label: string;
-	meta: string;
+	/** Quiet facts under the label, each its own part. */
+	meta: readonly string[];
 	host?: Host;
 }
 
@@ -42,7 +45,7 @@ function selectedChoices(
 ): LinkChoice[] {
 	const byId = new Map(all.map((c) => [c.id, c]));
 	return selectedIds.map(
-		(id) => byId.get(id) ?? { id, name: id, label: id, meta: "not found" },
+		(id) => byId.get(id) ?? { id, name: id, label: id, meta: ["not found"] },
 	);
 }
 
@@ -56,18 +59,20 @@ function poolChoice(pool: Pool, hosts: readonly Host[]): LinkChoice {
 			host ? displayLabel(host.metadata) : pool.spec.hostId,
 			pool.spec.selection ?? "prioritized",
 			poolMemberSummary(pool),
-		].join(" · "),
+		],
 		host,
 	};
 }
 
 function budgetChoice(budget: Budget): LinkChoice {
-	const { amountUsd, period = "month", mode = "hard" } = budget.spec;
 	return {
 		id: budget.metadata.id ?? budget.metadata.name,
 		name: budget.metadata.name,
 		label: displayLabel(budget.metadata),
-		meta: `$${amountUsd} / ${period} · ${mode}`,
+		meta: [
+			capText(budget.spec, fmtUsd),
+			MODE_LABELS[budget.spec.mode ?? DEFAULT_MODE].label,
+		],
 	};
 }
 

@@ -3,21 +3,23 @@ import { objectRef } from "@/api/hooks/planIssues";
 import type { Policy } from "@/api/types/policy";
 import { PlanIssuesPanel } from "@/diagnostics/IssuesPanel";
 import { HostLogo, hostRefLogo } from "@/hosts/HostLogo";
+import { cn } from "@/lib/utils";
 import {
 	type LinkChoiceRoute,
 	LinkChoiceRow,
 } from "@/policies/PolicyLinkPicker";
 import { budgetLinkShared } from "@/policies/policyFormSpec";
-import { POLICY_NO_TRAFFIC, policyWeekScope } from "@/policies/policyWeekUsage";
+import { hostLabel, KEYLESS_HOST_TEXT } from "@/policies/policyReachRows";
+import { policyWeekScope } from "@/policies/policyWeekUsage";
 import { UnpricedUnderBudget } from "@/policies/UnpricedUnderBudget";
 import { usePolicyAppliesTo } from "@/policies/usePolicyAppliesTo";
-import { usePolicyHosts } from "@/policies/usePolicyHosts";
+import { usePolicyHostsByKeyState } from "@/policies/usePolicyHosts";
 import {
 	type LinkChoice,
 	useSelectedBudgets,
 	useSelectedPools,
 } from "@/policies/usePolicyLinkChoices";
-import { usePolicyModels } from "@/policies/usePolicyModels";
+import { usePolicyModelCount } from "@/policies/usePolicyModels";
 import { SharedLinkLabel } from "@/rate-limits/SharedLinkLabel";
 import { logoSize } from "@/shared/CatalogIcon";
 import { DetailEmpty } from "@/shared/DetailCard";
@@ -42,10 +44,7 @@ export function PolicyOverviewTab({ policy }: Props) {
 			<StatsGrid policy={policy} />
 
 			{policy.metadata.id && (
-				<WeekFigures
-					scope={policyWeekScope(policy.metadata.id)}
-					emptyBody={POLICY_NO_TRAFFIC}
-				/>
+				<WeekFigures scope={policyWeekScope(policy.metadata.id)} />
 			)}
 
 			<LinksPanel policy={policy} />
@@ -131,42 +130,34 @@ function LinkList({
 }
 
 function StatsGrid({ policy }: { policy: Policy }) {
-	const models = usePolicyModels(policy.metadata.name);
-	const hosts = usePolicyHosts(policy.metadata.name);
+	const modelCount = usePolicyModelCount(policy.metadata.name);
+	const hosts = usePolicyHostsByKeyState(policy.metadata.name);
+	const breaking = hosts.filter((h) => h.state === "breaking").length;
 
 	return (
-		<StatGrid title="Overview">
+		<StatGrid columns={2}>
 			<StatCard
 				label="Models"
-				value={models.length}
+				value={modelCount}
 				sub="granted by this policy"
 			/>
 			<StatCard
 				label="Hosts"
 				value={hosts.length}
-				sub={hosts.length === 0 ? "no host resolved" : "serving requests"}
+				sub={
+					hosts.length === 0
+						? "no host resolved"
+						: breaking > 0
+							? `${breaking} need a key`
+							: "serving requests"
+				}
 			/>
-			<AppliesToStatCard policyId={policy.metadata.id} />
 		</StatGrid>
 	);
 }
 
-function AppliesToStatCard({ policyId }: { policyId: string | undefined }) {
-	const appliesTo = usePolicyAppliesTo(policyId);
-	if (!appliesTo) {
-		return <StatCard label="Applies to" value="…" sub="loading" />;
-	}
-	return (
-		<StatCard
-			label="Applies to"
-			value={appliesTo.length}
-			sub={appliesTo.length === 0 ? "no one: never used" : "accounts"}
-		/>
-	);
-}
-
 function HostsPanel({ policy }: { policy: Policy }) {
-	const hosts = usePolicyHosts(policy.metadata.name);
+	const hosts = usePolicyHostsByKeyState(policy.metadata.name);
 	if (hosts.length === 0) {
 		return (
 			<section>
@@ -181,19 +172,26 @@ function HostsPanel({ policy }: { policy: Policy }) {
 		<section>
 			<SectionTitle>Hosts in this policy</SectionTitle>
 			<ul className="divide-y divide-border rounded-md border border-border">
-				{hosts.map(({ host, hostKeys }) => {
-					const keyCount = hostKeys?.length ?? 0;
+				{hosts.map(({ row, state }) => {
+					const keyCount = row.hostKeys?.length ?? 0;
 					return (
-						<li key={host.id} className="flex items-center gap-3 px-3 py-2">
-							<HostLogo host={hostRefLogo(host)} size={logoSize.stacked} />
+						<li key={row.host.id} className="flex items-center gap-3 px-3 py-2">
+							<HostLogo host={hostRefLogo(row.host)} size={logoSize.stacked} />
 							<div className="flex-1 min-w-0">
 								<div className="text-sm text-foreground truncate">
-									{host.displayName?.trim() || host.name}
+									{hostLabel(row)}
 								</div>
-								<div className="text-[11px] text-muted-foreground truncate">
-									{keyCount === 0
-										? "no credential — requests will fail"
-										: `${keyCount} credential${keyCount === 1 ? "" : "s"}`}
+								<div
+									className={cn(
+										"text-[11px] truncate",
+										state === "breaking"
+											? "text-warning"
+											: "text-muted-foreground",
+									)}
+								>
+									{state === "keyed"
+										? `${keyCount} credential${keyCount === 1 ? "" : "s"}`
+										: KEYLESS_HOST_TEXT[state]}
 								</div>
 							</div>
 						</li>

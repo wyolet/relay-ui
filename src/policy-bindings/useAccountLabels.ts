@@ -1,6 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
-import { accountLabel } from "@/accounts/accountView";
+import {
+	ACCOUNT_KIND_LABELS,
+	accountLabel,
+	sharedByName,
+} from "@/accounts/accountView";
 import { type Account, accountListQueryOptions } from "@/api/hooks/accounts";
+import { displayLabel } from "@/lib/displayLabel";
 
 /**
  * "Kind · name" per account id, plus the account's slug for a link. Loads
@@ -13,11 +18,26 @@ export function useAccountLabels() {
 		if (a.metadata.id) byId.set(a.metadata.id, a);
 	}
 
-	function labelOf(id: string): { label: string; name: string | undefined } {
+	function labelOf(id: string): {
+		label: string;
+		name: string | undefined;
+		/** The label's parts, for a chip that sets the kind apart from the name. */
+		kind?: string;
+		title: string;
+		sharedBy?: string;
+	} {
 		const account = byId.get(id);
-		return account
-			? { label: accountLabel(account), name: account.metadata.name }
-			: { label: `${id.slice(0, 8)}…`, name: undefined };
+		if (!account) {
+			const short = `${id.slice(0, 8)}…`;
+			return { label: short, name: undefined, title: short };
+		}
+		return {
+			label: accountLabel(account),
+			name: account.metadata.name,
+			kind: ACCOUNT_KIND_LABELS[account.spec.kind],
+			title: displayLabel(account.metadata),
+			sharedBy: sharedByName(account),
+		};
 	}
 
 	return { labelOf };

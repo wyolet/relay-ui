@@ -1,9 +1,9 @@
 import { Link } from "@tanstack/react-router";
 import { hiddenPoolsLine } from "@/access/accessOptions";
 import type { AccessTarget } from "@/access/accessTarget";
-import { TargetLink } from "@/access/TargetLink";
 import type { SavedAccess } from "@/access/useSetAccessWrites";
 import { buttonVariants } from "@/components/ui/button";
+import { TargetLink } from "@/shortcuts/TargetLink";
 
 export function SavedStep({
 	saved,

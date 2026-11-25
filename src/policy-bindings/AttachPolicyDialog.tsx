@@ -48,7 +48,7 @@ export function AttachPolicyDialog({
 			<DialogContent className="sm:max-w-md">
 				<DialogHeader>
 					<DialogTitle>
-						{binding ? "Change policy" : "Attach policy"} · {entity.label}
+						{binding ? "Change policy of" : "Attach a policy to"} {entity.label}
 					</DialogTitle>
 					<DialogDescription>
 						Requests in this account must pass the policy, on top of any policy

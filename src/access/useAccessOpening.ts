@@ -57,6 +57,7 @@ export type OpenedAccess =
 	| {
 			path: "oneRequest";
 			accessCase: AccessCase;
+			/** The target's policy by its display name. */
 			policyName?: string;
 			/** Beside the policy line when the binding holding the target is off. */
 			bindingOffLine?: string;
@@ -176,7 +177,9 @@ export function useAccessOpening(
 			opened: {
 				path: "oneRequest",
 				accessCase: answer.case,
-				policyName: answer.current?.policy.name,
+				policyName: answer.current
+					? displayLabel(answer.current.policy)
+					: undefined,
 				bindingOffLine: bindingOffLine(answer.current),
 				prefill: currentAccessPrefill(
 					answer.current,

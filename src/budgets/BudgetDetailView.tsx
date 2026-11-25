@@ -67,7 +67,9 @@ export function BudgetDetailView({
 					</DetailRow>
 					<DetailRow label="Period">
 						{PERIOD_LABELS[period]}
-						<span className="text-muted-foreground"> · calendar, UTC</span>
+						<p className="mt-0.5 text-[11px] text-muted-foreground leading-snug">
+							Calendar {PERIOD_LABELS[period].toLowerCase()}, in UTC.
+						</p>
 					</DetailRow>
 					<DetailRow label="Mode">
 						{MODE_LABELS[mode].label}

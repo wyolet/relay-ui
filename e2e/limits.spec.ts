@@ -491,7 +491,7 @@ test.describe("Add a limit", () => {
 		).toBeVisible();
 		await expect(page.getByRole("textbox", { name: "Amount in USD" })).toHaveCount(0);
 		await expect(page.getByRole("button", { name: "Next" })).toHaveCount(0);
-		await expect(page.getByRole("link", { name: "Back to Platform" })).toBeVisible();
+		await expect(page.getByRole("link", { name: "Platform", exact: true })).toBeVisible();
 		expect(sent).toEqual([]);
 	});
 

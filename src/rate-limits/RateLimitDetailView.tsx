@@ -4,7 +4,11 @@ import { useMemo } from "react";
 import type { RateLimit, RateLimitRule } from "@/api/types/ratelimit";
 import { PlanIssuesPanel } from "@/diagnostics/IssuesPanel";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
-import { compactNumber } from "@/lib/rateLimitFormat";
+import {
+	compactNumber,
+	METER_OPTIONS,
+	strategyLabel,
+} from "@/lib/rateLimitFormat";
 import { isProviderOwned, isSystemOwned } from "@/lib/systemRateLimits";
 import { windowLabel } from "@/lib/timeWindow";
 import { SharedLinkLabel } from "@/rate-limits/SharedLinkLabel";
@@ -16,7 +20,9 @@ import { SectionTitle } from "@/shared/SectionTitle";
 import {
 	CatalogDetachedBadge,
 	OwnerBadge,
+	QuietBadge,
 	StatusBadge,
+	StatusInline,
 } from "@/shared/StatusBadge";
 
 interface Props {
@@ -142,15 +148,17 @@ function RulesPanel({ rules }: { rules: readonly RateLimitRule[] }) {
 										className="flex items-baseline justify-between gap-3 px-3 py-1.5"
 									>
 										<div className="min-w-0">
-											<div className="text-sm font-mono tabular-nums text-foreground">
-												{compactNumber(rule.amount)}{" "}
+											<div className="text-sm tabular-nums text-foreground">
+												<span className="font-mono">
+													{compactNumber(rule.amount)}
+												</span>{" "}
 												<span className="text-muted-foreground text-[11px]">
-													{rule.meter}
+													{METER_OPTIONS[rule.meter].label.toLowerCase()}
 												</span>
 											</div>
-											<div className="text-[10px] text-muted-foreground">
-												{windowLabel(rule.window)} ·{" "}
-												<span className="font-mono">{rule.strategy}</span>
+											<div className="flex gap-3 text-[10px] text-muted-foreground">
+												<span>{windowLabel(rule.window)}</span>
+												<span>{strategyLabel(rule.strategy)}</span>
 											</div>
 										</div>
 									</li>
@@ -218,13 +226,11 @@ function PoliciesPanel({ rateLimit }: { rateLimit: RateLimit }) {
 									>
 										{displayLabel(ref.policy.metadata)}
 									</Link>
-									<div className="text-[11px] text-muted-foreground font-mono truncate">
-										{name}
-										{hostOwned && (
-											<span className="ml-1.5 text-[9px] uppercase tracking-wide">
-												· host-owned
-											</span>
-										)}
+									<div className="flex min-w-0 items-center gap-2">
+										<span className="text-[11px] text-muted-foreground font-mono truncate">
+											{name}
+										</span>
+										{hostOwned && <QuietBadge>host-owned</QuietBadge>}
 									</div>
 								</div>
 							</Td>
@@ -246,13 +252,7 @@ function PoliciesPanel({ rateLimit }: { rateLimit: RateLimit }) {
 								)}
 							</Td>
 							<Td className="text-right">
-								{enabled ? (
-									<span className="text-[11px] text-success">Enabled</span>
-								) : (
-									<span className="text-[11px] text-muted-foreground">
-										Disabled
-									</span>
-								)}
+								<StatusInline enabled={enabled} />
 							</Td>
 						</tr>
 					);
@@ -297,7 +297,7 @@ function Badge({
 		tone === "default"
 			? "bg-info/10 text-info border-info/30"
 			: tone === "scoped"
-				? "bg-violet-500/10 text-violet-700 dark:text-violet-300 border-violet-500/30"
+				? "bg-primary/10 text-primary border-primary/30"
 				: "bg-muted text-muted-foreground border-border";
 	return (
 		<span
