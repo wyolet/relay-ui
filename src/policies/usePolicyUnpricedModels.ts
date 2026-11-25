@@ -30,23 +30,34 @@ function unpricedOf(
 }
 
 /**
+ * Granted models some reached host serves unpriced; null while it resolves or
+ * when not `enabled`. Grants are the saved policy's (relay resolves them).
+ */
+export function usePolicyUnpricedGrants(
+	ref: string | undefined,
+	enabled = true,
+): UnpricedGrant[] | null {
+	const { data } = useQuery({
+		...policyModelsQueryOptions(ref ?? ""),
+		enabled: ref != null && enabled,
+	});
+	const prices = useModelPrices();
+	if (!enabled || !data || !prices) return null;
+	return unpricedOf(prices, data.models ?? []);
+}
+
+/**
  * Granted models some reached host serves unpriced, and the budgets that
- * refuse them; null without budgets or gaps. Grants are the saved policy's
- * (relay resolves them), so a draft's model or pool edits show after save.
+ * refuse them; null without budgets or gaps. A draft's model or pool edits
+ * show after save.
  */
 export function useUnpricedUnderBudget(
 	ref: string | undefined,
 	budgetIds: readonly string[],
 ): { grants: UnpricedGrant[]; budgets: string[] } | null {
 	const budgets = useSelectedBudgets(budgetIds);
-	const { data } = useQuery({
-		...policyModelsQueryOptions(ref ?? ""),
-		enabled: ref != null && budgetIds.length > 0,
-	});
-	const prices = useModelPrices();
-	if (budgetIds.length === 0 || !data || !prices) return null;
-	const grants = unpricedOf(prices, data.models ?? []);
-	if (grants.length === 0) return null;
+	const grants = usePolicyUnpricedGrants(ref, budgetIds.length > 0);
+	if (!grants || grants.length === 0) return null;
 	return { grants, budgets: budgets.map((b) => b.label) };
 }
 

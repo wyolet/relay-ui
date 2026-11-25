@@ -1,0 +1,172 @@
+import { describe, expect, it } from "bun:test";
+import type { AgentAccount } from "@/agents/agentAccounts";
+import {
+	type AgentAnswers,
+	accessErrors,
+	agentServiceAccountBody,
+	agentWrites,
+} from "@/agents/agentWrites";
+import type { AgentSettings } from "@/agents/useAgentWrites";
+
+const anthropic: AgentAccount = {
+	id: "a1",
+	label: "Anthropic org",
+	hostId: "h-anthropic",
+	hostLabel: "Anthropic",
+	needsShare: false,
+};
+const mine: AgentAccount = {
+	id: "a2",
+	label: "My Anthropic",
+	hostId: "h-anthropic",
+	hostLabel: "Anthropic",
+	needsShare: true,
+};
+const openai: AgentAccount = {
+	id: "a3",
+	label: "OpenAI org",
+	hostId: "h-openai",
+	hostLabel: "OpenAI",
+	needsShare: false,
+};
+
+function answers(patch: Partial<AgentAnswers>): AgentAnswers {
+	return {
+		displayName: "Indexer",
+		access: "choose",
+		reach: "all",
+		accounts: [],
+		poolIds: [],
+		models: [],
+		policyId: "",
+		...patch,
+	};
+}
+
+const kinds = (a: AgentAnswers) => agentWrites(a).map((w) => w.kind);
+
+describe("agentWrites", () => {
+	it("makes no policy when nothing is narrowed", () => {
+		expect(kinds(answers({}))).toEqual([
+			"serviceAccount",
+			"laneAccount",
+			"key",
+		]);
+	});
+
+	it("makes a pool-less policy for models over every credential", () => {
+		const writes = agentWrites(answers({ models: ["anthropic"] }));
+		expect(writes.map((w) => w.kind)).toEqual([
+			"serviceAccount",
+			"laneAccount",
+			"policy",
+			"bind",
+			"key",
+		]);
+	});
+
+	it("ignores picked accounts while the reach is every credential", () => {
+		expect(kinds(answers({ accounts: [anthropic] }))).toEqual([
+			"serviceAccount",
+			"laneAccount",
+			"key",
+		]);
+	});
+
+	it("shares own accounts, then pools the picks per host", () => {
+		const writes = agentWrites(
+			answers({ reach: "accounts", accounts: [anthropic, openai, mine] }),
+		);
+		expect(writes.map((w) => w.id)).toEqual([
+			"service-account",
+			"lane-account",
+			"share:a2",
+			"pool:h-anthropic",
+			"pool:h-openai",
+			"policy",
+			"bind",
+			"key",
+		]);
+		const pool = writes.find((w) => w.id === "pool:h-anthropic");
+		expect(pool).toMatchObject({
+			accountIds: ["a1", "a2"],
+			displayName: "Indexer Anthropic pool",
+		});
+	});
+
+	it("binds an existing policy without creating one", () => {
+		const writes = agentWrites(
+			answers({ access: "policy", policyId: "p1", accounts: [anthropic] }),
+		);
+		expect(writes.map((w) => w.kind)).toEqual([
+			"serviceAccount",
+			"laneAccount",
+			"bind",
+			"key",
+		]);
+		expect(writes[2]).toMatchObject({ policyId: "p1" });
+	});
+});
+
+describe("accessErrors", () => {
+	it("asks for an account when none of the picks is still offered", () => {
+		expect(accessErrors(answers({ reach: "accounts" }), [])).toEqual({
+			accountIds: "Pick an account, or use every credential.",
+		});
+		expect(
+			accessErrors(answers({ reach: "accounts", accounts: [anthropic] }), []),
+		).toEqual({});
+		expect(
+			accessErrors(answers({ reach: "accounts", poolIds: ["pool-local"] }), []),
+		).toEqual({});
+		expect(accessErrors(answers({ reach: "all" }), [])).toEqual({});
+	});
+
+	it("takes a policy only from the scope's options", () => {
+		const policy = (policyId: string) =>
+			answers({ access: "policy", policyId, reach: "accounts" });
+		expect(accessErrors(policy("p1"), ["p1", "p2"])).toEqual({});
+		expect(accessErrors(policy("p-stale"), ["p1"])).toEqual({
+			policyId: "Pick a policy.",
+		});
+		expect(accessErrors(policy(""), [""])).toEqual({
+			policyId: "Pick a policy.",
+		});
+	});
+});
+
+describe("agentServiceAccountBody", () => {
+	const named = { name: "bot-ab12", displayName: "Bot", description: "" };
+
+	it("restates a project owner as spec.projectId", () => {
+		expect(
+			agentServiceAccountBody({
+				...named,
+				scope: { kind: "project", id: "p1" },
+			}),
+		).toEqual({
+			metadata: {
+				...named,
+				labels: { "sa-type": "agent" },
+				owner: { kind: "project", id: "p1" },
+			},
+			spec: { projectId: "p1", enabled: true },
+		});
+	});
+
+	it("names a team or the user as owner with no project", () => {
+		const body = (scope: AgentSettings["scope"]) =>
+			agentServiceAccountBody({ ...named, scope });
+		expect(body({ kind: "team", id: "t1" })).toMatchObject({
+			metadata: { owner: { kind: "team", id: "t1" } },
+			spec: { enabled: true },
+		});
+		expect(body({ kind: "personal", id: "u1" }).metadata.owner).toEqual({
+			kind: "user",
+			id: "u1",
+		});
+		expect(body({ kind: "personal", id: "u1" }).spec).toEqual({
+			enabled: true,
+		});
+	});
+});

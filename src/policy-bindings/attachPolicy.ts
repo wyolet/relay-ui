@@ -11,7 +11,7 @@ type Owner = components["schemas"]["Owner"];
 /** A team, project or service account whose own account a policy is attached to. */
 export interface AttachEntity {
 	label: string;
-	/** Owner of a binding made for it: the team, or the project (a service account's too). */
+	/** Owner of a binding made for it: the team or project, or a service account's owner. */
 	owner: Owner;
 }
 

@@ -31,6 +31,7 @@ import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedTeamsRouteImport } from './routes/_authenticated/teams'
 import { Route as AuthenticatedUsageRouteImport } from './routes/_authenticated/usage'
 import { Route as AuthenticatedUsersRouteImport } from './routes/_authenticated/users'
+import { Route as AuthenticatedAccessSetRouteImport } from './routes/_authenticated/access.set'
 import { Route as AuthenticatedAccountsIndexRouteImport } from './routes/_authenticated/accounts.index'
 import { Route as AuthenticatedAccountsNameRouteImport } from './routes/_authenticated/accounts.$name'
 import { Route as AuthenticatedAccountsNewRouteImport } from './routes/_authenticated/accounts.new'
@@ -39,10 +40,12 @@ import { Route as AuthenticatedGroupsNameRouteImport } from './routes/_authentic
 import { Route as AuthenticatedGroupsNewRouteImport } from './routes/_authenticated/groups.new'
 import { Route as AuthenticatedHostKeysIndexRouteImport } from './routes/_authenticated/host-keys.index'
 import { Route as AuthenticatedHostKeysNameRouteImport } from './routes/_authenticated/host-keys.$name'
+import { Route as AuthenticatedHostKeysByokRouteImport } from './routes/_authenticated/host-keys.byok'
 import { Route as AuthenticatedHostKeysNewRouteImport } from './routes/_authenticated/host-keys.new'
 import { Route as AuthenticatedHostsNameRouteImport } from './routes/_authenticated/hosts.$name'
 import { Route as AuthenticatedKeysNameRouteImport } from './routes/_authenticated/keys_.$name'
 import { Route as AuthenticatedKeysNewRouteImport } from './routes/_authenticated/keys_.new'
+import { Route as AuthenticatedLimitsAddRouteImport } from './routes/_authenticated/limits.add'
 import { Route as AuthenticatedLogsIndexRouteImport } from './routes/_authenticated/logs.index'
 import { Route as AuthenticatedLogsRequestIdRouteImport } from './routes/_authenticated/logs.$requestId'
 import { Route as AuthenticatedMeAccountsRouteImport } from './routes/_authenticated/me.accounts'
@@ -73,6 +76,7 @@ import { Route as AuthenticatedRolesNameRouteImport } from './routes/_authentica
 import { Route as AuthenticatedRolesNewRouteImport } from './routes/_authenticated/roles.new'
 import { Route as AuthenticatedServiceAccountsIndexRouteImport } from './routes/_authenticated/service-accounts.index'
 import { Route as AuthenticatedServiceAccountsNameRouteImport } from './routes/_authenticated/service-accounts.$name'
+import { Route as AuthenticatedServiceAccountsAddAgentRouteImport } from './routes/_authenticated/service-accounts.add-agent'
 import { Route as AuthenticatedServiceAccountsNewRouteImport } from './routes/_authenticated/service-accounts.new'
 import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated/settings.index'
 import { Route as AuthenticatedSettingsSectionRouteImport } from './routes/_authenticated/settings.$section'
@@ -224,6 +228,11 @@ const AuthenticatedUsersRoute = AuthenticatedUsersRouteImport.update({
   path: '/users',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedAccessSetRoute = AuthenticatedAccessSetRouteImport.update({
+  id: '/access/set',
+  path: '/access/set',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedAccountsIndexRoute =
   AuthenticatedAccountsIndexRouteImport.update({
     id: '/accounts/',
@@ -270,6 +279,12 @@ const AuthenticatedHostKeysNameRoute =
     path: '/$name',
     getParentRoute: () => AuthenticatedHostKeysRoute,
   } as any)
+const AuthenticatedHostKeysByokRoute =
+  AuthenticatedHostKeysByokRouteImport.update({
+    id: '/byok',
+    path: '/byok',
+    getParentRoute: () => AuthenticatedHostKeysRoute,
+  } as any)
 const AuthenticatedHostKeysNewRoute =
   AuthenticatedHostKeysNewRouteImport.update({
     id: '/new',
@@ -289,6 +304,11 @@ const AuthenticatedKeysNameRoute = AuthenticatedKeysNameRouteImport.update({
 const AuthenticatedKeysNewRoute = AuthenticatedKeysNewRouteImport.update({
   id: '/keys_/new',
   path: '/keys/new',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedLimitsAddRoute = AuthenticatedLimitsAddRouteImport.update({
+  id: '/limits/add',
+  path: '/limits/add',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedLogsIndexRoute = AuthenticatedLogsIndexRouteImport.update({
@@ -458,6 +478,12 @@ const AuthenticatedServiceAccountsNameRoute =
   AuthenticatedServiceAccountsNameRouteImport.update({
     id: '/$name',
     path: '/$name',
+    getParentRoute: () => AuthenticatedServiceAccountsRoute,
+  } as any)
+const AuthenticatedServiceAccountsAddAgentRoute =
+  AuthenticatedServiceAccountsAddAgentRouteImport.update({
+    id: '/add-agent',
+    path: '/add-agent',
     getParentRoute: () => AuthenticatedServiceAccountsRoute,
   } as any)
 const AuthenticatedServiceAccountsNewRoute =
@@ -700,15 +726,18 @@ export interface FileRoutesByFullPath {
   '/teams': typeof AuthenticatedTeamsRouteWithChildren
   '/usage': typeof AuthenticatedUsageRoute
   '/users': typeof AuthenticatedUsersRouteWithChildren
+  '/access/set': typeof AuthenticatedAccessSetRoute
   '/accounts/$name': typeof AuthenticatedAccountsNameRoute
   '/accounts/new': typeof AuthenticatedAccountsNewRoute
   '/groups/$name': typeof AuthenticatedGroupsNameRoute
   '/groups/new': typeof AuthenticatedGroupsNewRoute
   '/host-keys/$name': typeof AuthenticatedHostKeysNameRoute
+  '/host-keys/byok': typeof AuthenticatedHostKeysByokRoute
   '/host-keys/new': typeof AuthenticatedHostKeysNewRoute
   '/hosts/$name': typeof AuthenticatedHostsNameRoute
   '/keys/$name': typeof AuthenticatedKeysNameRoute
   '/keys/new': typeof AuthenticatedKeysNewRoute
+  '/limits/add': typeof AuthenticatedLimitsAddRoute
   '/logs/$requestId': typeof AuthenticatedLogsRequestIdRoute
   '/me/accounts': typeof AuthenticatedMeAccountsRoute
   '/models/$name': typeof AuthenticatedModelsNameRouteWithChildren
@@ -729,6 +758,7 @@ export interface FileRoutesByFullPath {
   '/roles/$name': typeof AuthenticatedRolesNameRoute
   '/roles/new': typeof AuthenticatedRolesNewRoute
   '/service-accounts/$name': typeof AuthenticatedServiceAccountsNameRoute
+  '/service-accounts/add-agent': typeof AuthenticatedServiceAccountsAddAgentRoute
   '/service-accounts/new': typeof AuthenticatedServiceAccountsNewRoute
   '/settings/$section': typeof AuthenticatedSettingsSectionRoute
   '/settings/accounts': typeof AuthenticatedSettingsAccountsRoute
@@ -789,15 +819,18 @@ export interface FileRoutesByTo {
   '/scim-clients': typeof AuthenticatedScimClientsRoute
   '/usage': typeof AuthenticatedUsageRoute
   '/': typeof AuthenticatedIndexRoute
+  '/access/set': typeof AuthenticatedAccessSetRoute
   '/accounts/$name': typeof AuthenticatedAccountsNameRoute
   '/accounts/new': typeof AuthenticatedAccountsNewRoute
   '/groups/$name': typeof AuthenticatedGroupsNameRoute
   '/groups/new': typeof AuthenticatedGroupsNewRoute
   '/host-keys/$name': typeof AuthenticatedHostKeysNameRoute
+  '/host-keys/byok': typeof AuthenticatedHostKeysByokRoute
   '/host-keys/new': typeof AuthenticatedHostKeysNewRoute
   '/hosts/$name': typeof AuthenticatedHostsNameRoute
   '/keys/$name': typeof AuthenticatedKeysNameRoute
   '/keys/new': typeof AuthenticatedKeysNewRoute
+  '/limits/add': typeof AuthenticatedLimitsAddRoute
   '/logs/$requestId': typeof AuthenticatedLogsRequestIdRoute
   '/me/accounts': typeof AuthenticatedMeAccountsRoute
   '/models/$name': typeof AuthenticatedModelsNameRouteWithChildren
@@ -818,6 +851,7 @@ export interface FileRoutesByTo {
   '/roles/$name': typeof AuthenticatedRolesNameRoute
   '/roles/new': typeof AuthenticatedRolesNewRoute
   '/service-accounts/$name': typeof AuthenticatedServiceAccountsNameRoute
+  '/service-accounts/add-agent': typeof AuthenticatedServiceAccountsAddAgentRoute
   '/service-accounts/new': typeof AuthenticatedServiceAccountsNewRoute
   '/settings/$section': typeof AuthenticatedSettingsSectionRoute
   '/settings/accounts': typeof AuthenticatedSettingsAccountsRoute
@@ -893,15 +927,18 @@ export interface FileRoutesById {
   '/_authenticated/usage': typeof AuthenticatedUsageRoute
   '/_authenticated/users': typeof AuthenticatedUsersRouteWithChildren
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/access/set': typeof AuthenticatedAccessSetRoute
   '/_authenticated/accounts/$name': typeof AuthenticatedAccountsNameRoute
   '/_authenticated/accounts/new': typeof AuthenticatedAccountsNewRoute
   '/_authenticated/groups/$name': typeof AuthenticatedGroupsNameRoute
   '/_authenticated/groups/new': typeof AuthenticatedGroupsNewRoute
   '/_authenticated/host-keys/$name': typeof AuthenticatedHostKeysNameRoute
+  '/_authenticated/host-keys/byok': typeof AuthenticatedHostKeysByokRoute
   '/_authenticated/host-keys/new': typeof AuthenticatedHostKeysNewRoute
   '/_authenticated/hosts/$name': typeof AuthenticatedHostsNameRoute
   '/_authenticated/keys_/$name': typeof AuthenticatedKeysNameRoute
   '/_authenticated/keys_/new': typeof AuthenticatedKeysNewRoute
+  '/_authenticated/limits/add': typeof AuthenticatedLimitsAddRoute
   '/_authenticated/logs/$requestId': typeof AuthenticatedLogsRequestIdRoute
   '/_authenticated/me/accounts': typeof AuthenticatedMeAccountsRoute
   '/_authenticated/models/$name': typeof AuthenticatedModelsNameRouteWithChildren
@@ -922,6 +959,7 @@ export interface FileRoutesById {
   '/_authenticated/roles/$name': typeof AuthenticatedRolesNameRoute
   '/_authenticated/roles/new': typeof AuthenticatedRolesNewRoute
   '/_authenticated/service-accounts/$name': typeof AuthenticatedServiceAccountsNameRoute
+  '/_authenticated/service-accounts/add-agent': typeof AuthenticatedServiceAccountsAddAgentRoute
   '/_authenticated/service-accounts/new': typeof AuthenticatedServiceAccountsNewRoute
   '/_authenticated/settings/$section': typeof AuthenticatedSettingsSectionRoute
   '/_authenticated/settings/accounts': typeof AuthenticatedSettingsAccountsRoute
@@ -997,15 +1035,18 @@ export interface FileRouteTypes {
     | '/teams'
     | '/usage'
     | '/users'
+    | '/access/set'
     | '/accounts/$name'
     | '/accounts/new'
     | '/groups/$name'
     | '/groups/new'
     | '/host-keys/$name'
+    | '/host-keys/byok'
     | '/host-keys/new'
     | '/hosts/$name'
     | '/keys/$name'
     | '/keys/new'
+    | '/limits/add'
     | '/logs/$requestId'
     | '/me/accounts'
     | '/models/$name'
@@ -1026,6 +1067,7 @@ export interface FileRouteTypes {
     | '/roles/$name'
     | '/roles/new'
     | '/service-accounts/$name'
+    | '/service-accounts/add-agent'
     | '/service-accounts/new'
     | '/settings/$section'
     | '/settings/accounts'
@@ -1086,15 +1128,18 @@ export interface FileRouteTypes {
     | '/scim-clients'
     | '/usage'
     | '/'
+    | '/access/set'
     | '/accounts/$name'
     | '/accounts/new'
     | '/groups/$name'
     | '/groups/new'
     | '/host-keys/$name'
+    | '/host-keys/byok'
     | '/host-keys/new'
     | '/hosts/$name'
     | '/keys/$name'
     | '/keys/new'
+    | '/limits/add'
     | '/logs/$requestId'
     | '/me/accounts'
     | '/models/$name'
@@ -1115,6 +1160,7 @@ export interface FileRouteTypes {
     | '/roles/$name'
     | '/roles/new'
     | '/service-accounts/$name'
+    | '/service-accounts/add-agent'
     | '/service-accounts/new'
     | '/settings/$section'
     | '/settings/accounts'
@@ -1189,15 +1235,18 @@ export interface FileRouteTypes {
     | '/_authenticated/usage'
     | '/_authenticated/users'
     | '/_authenticated/'
+    | '/_authenticated/access/set'
     | '/_authenticated/accounts/$name'
     | '/_authenticated/accounts/new'
     | '/_authenticated/groups/$name'
     | '/_authenticated/groups/new'
     | '/_authenticated/host-keys/$name'
+    | '/_authenticated/host-keys/byok'
     | '/_authenticated/host-keys/new'
     | '/_authenticated/hosts/$name'
     | '/_authenticated/keys_/$name'
     | '/_authenticated/keys_/new'
+    | '/_authenticated/limits/add'
     | '/_authenticated/logs/$requestId'
     | '/_authenticated/me/accounts'
     | '/_authenticated/models/$name'
@@ -1218,6 +1267,7 @@ export interface FileRouteTypes {
     | '/_authenticated/roles/$name'
     | '/_authenticated/roles/new'
     | '/_authenticated/service-accounts/$name'
+    | '/_authenticated/service-accounts/add-agent'
     | '/_authenticated/service-accounts/new'
     | '/_authenticated/settings/$section'
     | '/_authenticated/settings/accounts'
@@ -1432,6 +1482,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedUsersRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/access/set': {
+      id: '/_authenticated/access/set'
+      path: '/access/set'
+      fullPath: '/access/set'
+      preLoaderRoute: typeof AuthenticatedAccessSetRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/accounts/': {
       id: '/_authenticated/accounts/'
       path: '/accounts'
@@ -1488,6 +1545,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedHostKeysNameRouteImport
       parentRoute: typeof AuthenticatedHostKeysRoute
     }
+    '/_authenticated/host-keys/byok': {
+      id: '/_authenticated/host-keys/byok'
+      path: '/byok'
+      fullPath: '/host-keys/byok'
+      preLoaderRoute: typeof AuthenticatedHostKeysByokRouteImport
+      parentRoute: typeof AuthenticatedHostKeysRoute
+    }
     '/_authenticated/host-keys/new': {
       id: '/_authenticated/host-keys/new'
       path: '/new'
@@ -1514,6 +1578,13 @@ declare module '@tanstack/react-router' {
       path: '/keys/new'
       fullPath: '/keys/new'
       preLoaderRoute: typeof AuthenticatedKeysNewRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/limits/add': {
+      id: '/_authenticated/limits/add'
+      path: '/limits/add'
+      fullPath: '/limits/add'
+      preLoaderRoute: typeof AuthenticatedLimitsAddRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/logs/': {
@@ -1724,6 +1795,13 @@ declare module '@tanstack/react-router' {
       path: '/$name'
       fullPath: '/service-accounts/$name'
       preLoaderRoute: typeof AuthenticatedServiceAccountsNameRouteImport
+      parentRoute: typeof AuthenticatedServiceAccountsRoute
+    }
+    '/_authenticated/service-accounts/add-agent': {
+      id: '/_authenticated/service-accounts/add-agent'
+      path: '/add-agent'
+      fullPath: '/service-accounts/add-agent'
+      preLoaderRoute: typeof AuthenticatedServiceAccountsAddAgentRouteImport
       parentRoute: typeof AuthenticatedServiceAccountsRoute
     }
     '/_authenticated/service-accounts/new': {
@@ -2007,6 +2085,7 @@ const AuthenticatedGroupsRouteWithChildren =
 
 interface AuthenticatedHostKeysRouteChildren {
   AuthenticatedHostKeysNameRoute: typeof AuthenticatedHostKeysNameRoute
+  AuthenticatedHostKeysByokRoute: typeof AuthenticatedHostKeysByokRoute
   AuthenticatedHostKeysNewRoute: typeof AuthenticatedHostKeysNewRoute
   AuthenticatedHostKeysIndexRoute: typeof AuthenticatedHostKeysIndexRoute
   AuthenticatedHostKeysNameEditRoute: typeof AuthenticatedHostKeysNameEditRoute
@@ -2014,6 +2093,7 @@ interface AuthenticatedHostKeysRouteChildren {
 
 const AuthenticatedHostKeysRouteChildren: AuthenticatedHostKeysRouteChildren = {
   AuthenticatedHostKeysNameRoute: AuthenticatedHostKeysNameRoute,
+  AuthenticatedHostKeysByokRoute: AuthenticatedHostKeysByokRoute,
   AuthenticatedHostKeysNewRoute: AuthenticatedHostKeysNewRoute,
   AuthenticatedHostKeysIndexRoute: AuthenticatedHostKeysIndexRoute,
   AuthenticatedHostKeysNameEditRoute: AuthenticatedHostKeysNameEditRoute,
@@ -2186,6 +2266,7 @@ const AuthenticatedRolesRouteWithChildren =
 
 interface AuthenticatedServiceAccountsRouteChildren {
   AuthenticatedServiceAccountsNameRoute: typeof AuthenticatedServiceAccountsNameRoute
+  AuthenticatedServiceAccountsAddAgentRoute: typeof AuthenticatedServiceAccountsAddAgentRoute
   AuthenticatedServiceAccountsNewRoute: typeof AuthenticatedServiceAccountsNewRoute
   AuthenticatedServiceAccountsIndexRoute: typeof AuthenticatedServiceAccountsIndexRoute
   AuthenticatedServiceAccountsNameEditRoute: typeof AuthenticatedServiceAccountsNameEditRoute
@@ -2195,6 +2276,8 @@ const AuthenticatedServiceAccountsRouteChildren: AuthenticatedServiceAccountsRou
   {
     AuthenticatedServiceAccountsNameRoute:
       AuthenticatedServiceAccountsNameRoute,
+    AuthenticatedServiceAccountsAddAgentRoute:
+      AuthenticatedServiceAccountsAddAgentRoute,
     AuthenticatedServiceAccountsNewRoute: AuthenticatedServiceAccountsNewRoute,
     AuthenticatedServiceAccountsIndexRoute:
       AuthenticatedServiceAccountsIndexRoute,
@@ -2291,11 +2374,13 @@ interface AuthenticatedRouteChildren {
   AuthenticatedUsageRoute: typeof AuthenticatedUsageRoute
   AuthenticatedUsersRoute: typeof AuthenticatedUsersRouteWithChildren
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedAccessSetRoute: typeof AuthenticatedAccessSetRoute
   AuthenticatedAccountsNameRoute: typeof AuthenticatedAccountsNameRoute
   AuthenticatedAccountsNewRoute: typeof AuthenticatedAccountsNewRoute
   AuthenticatedHostsNameRoute: typeof AuthenticatedHostsNameRoute
   AuthenticatedKeysNameRoute: typeof AuthenticatedKeysNameRoute
   AuthenticatedKeysNewRoute: typeof AuthenticatedKeysNewRoute
+  AuthenticatedLimitsAddRoute: typeof AuthenticatedLimitsAddRoute
   AuthenticatedLogsRequestIdRoute: typeof AuthenticatedLogsRequestIdRoute
   AuthenticatedMeAccountsRoute: typeof AuthenticatedMeAccountsRoute
   AuthenticatedPoolsNameRoute: typeof AuthenticatedPoolsNameRoute
@@ -2331,11 +2416,13 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedUsageRoute: AuthenticatedUsageRoute,
   AuthenticatedUsersRoute: AuthenticatedUsersRouteWithChildren,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedAccessSetRoute: AuthenticatedAccessSetRoute,
   AuthenticatedAccountsNameRoute: AuthenticatedAccountsNameRoute,
   AuthenticatedAccountsNewRoute: AuthenticatedAccountsNewRoute,
   AuthenticatedHostsNameRoute: AuthenticatedHostsNameRoute,
   AuthenticatedKeysNameRoute: AuthenticatedKeysNameRoute,
   AuthenticatedKeysNewRoute: AuthenticatedKeysNewRoute,
+  AuthenticatedLimitsAddRoute: AuthenticatedLimitsAddRoute,
   AuthenticatedLogsRequestIdRoute: AuthenticatedLogsRequestIdRoute,
   AuthenticatedMeAccountsRoute: AuthenticatedMeAccountsRoute,
   AuthenticatedPoolsNameRoute: AuthenticatedPoolsNameRoute,

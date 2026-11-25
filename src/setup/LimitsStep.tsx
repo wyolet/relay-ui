@@ -6,13 +6,16 @@ import {
 	InputGroupInput,
 } from "@/components/ui/input-group";
 import { Switch } from "@/components/ui/switch";
+import {
+	type EasyRateLimit,
+	type EasyRateLimitRule,
+	PER_OPTIONS,
+	parseAmount,
+	type RateLimitPer,
+	validAmount,
+} from "@/rate-limits/easyRateLimit";
 import { Segmented } from "@/shared/Segmented";
 import { wizardGhost, wizardPrimary } from "./ui";
-import type {
-	EasyRateLimit,
-	EasyRateLimitRule,
-	RateLimitPer,
-} from "./useSetupWizard";
 
 interface LimitsStepProps {
 	providerLabel: string;
@@ -20,12 +23,6 @@ interface LimitsStepProps {
 	error: string | null;
 	onSubmit: (limit: EasyRateLimit | null) => void;
 }
-
-const PER_OPTIONS: { value: RateLimitPer; label: string }[] = [
-	{ value: "minute", label: "minute" },
-	{ value: "hour", label: "hour" },
-	{ value: "day", label: "day" },
-];
 
 /** Compact period pills, sized to sit blended inside an InputGroup addon. */
 function PerSegmented({
@@ -44,20 +41,14 @@ interface LimitBlockState {
 	per: RateLimitPer;
 }
 
-function parseAmount(amount: string): number {
-	return Number.parseInt(amount.replace(/[,_\s]/g, ""), 10);
-}
-
 function blockValid(b: LimitBlockState): boolean {
-	if (!b.enabled) return true;
-	const n = parseAmount(b.amount);
-	return Number.isFinite(n) && n >= 1;
+	return !b.enabled || validAmount(parseAmount(b.amount));
 }
 
 function blockRule(b: LimitBlockState): EasyRateLimitRule | undefined {
 	if (!b.enabled) return undefined;
 	const n = parseAmount(b.amount);
-	if (!Number.isFinite(n) || n < 1) return undefined;
+	if (!validAmount(n)) return undefined;
 	return { amount: n, per: b.per };
 }
 

@@ -12,16 +12,19 @@ export function usePolicyDuplicate(policy: Policy) {
 	const toastSaveError = useSaveErrorToast();
 
 	function run() {
-		duplicate.mutate(policy.metadata.name, {
-			onSuccess: (copy) => {
-				toast("success", `Created ${displayLabel(copy.metadata)}`);
-				void navigate({
-					to: "/policies/$name/edit",
-					params: { name: copy.metadata.name },
-				});
+		duplicate.mutate(
+			{ ref: policy.metadata.name },
+			{
+				onSuccess: (copy) => {
+					toast("success", `Created ${displayLabel(copy.metadata)}`);
+					void navigate({
+						to: "/policies/$name/edit",
+						params: { name: copy.metadata.name },
+					});
+				},
+				onError: (err) => toastSaveError(err, "Failed to duplicate policy."),
 			},
-			onError: (err) => toastSaveError(err, "Failed to duplicate policy."),
-		});
+		);
 	}
 
 	return { duplicate: run, pending: duplicate.isPending };

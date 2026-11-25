@@ -282,15 +282,23 @@ export function useSetPolicyEnabled() {
 	});
 }
 
-/** Copies a policy (same spec and links, bound to nothing) under a new slug. */
+type DuplicatePolicyBody = Pick<
+	components["schemas"]["duplicatePolicyBody"],
+	"displayName" | "owner"
+>;
+
+/** Copies a policy (same spec and links, bound to nothing) under a new slug; `displayName` and `owner` default as the endpoint says. */
 export function useDuplicatePolicy() {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: async (ref: string): Promise<Policy> =>
+		mutationFn: async ({
+			ref,
+			...body
+		}: { ref: string } & DuplicatePolicyBody): Promise<Policy> =>
 			unwrap(
 				await apiClient.POST("/policies/{ref}/duplicate", {
 					params: { path: { ref } },
-					body: {},
+					body,
 				}),
 			),
 		onSuccess: () => {

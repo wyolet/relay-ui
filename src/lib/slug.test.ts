@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { from, MAX_LEN, valid, withSuffix } from "@/lib/slug";
+import { from, MAX_LEN, slugEndingIn, valid, withSuffix } from "@/lib/slug";
 
 describe("slug.from — must match Go pkg/slug.From", () => {
 	const cases: [string, string][] = [
@@ -56,5 +56,19 @@ describe("slug.withSuffix", () => {
 		const out = withSuffix(longBase, 12);
 		expect(out.length).toBeLessThanOrEqual(MAX_LEN);
 		expect(out.endsWith("-12")).toBe(true);
+	});
+});
+
+describe("slug.slugEndingIn", () => {
+	test("slugs the name and ends in the given suffix", () => {
+		expect(slugEndingIn("Platform cap", "042817")).toBe("platform-cap-042817");
+	});
+	test("cuts the base so the whole fits MAX_LEN, with no dash before the suffix", () => {
+		const out = slugEndingIn(`${"a".repeat(55)} ${"b".repeat(20)}`, "123456");
+		expect(out.length).toBeLessThanOrEqual(MAX_LEN);
+		expect(out).toBe(`${"a".repeat(55)}-123456`);
+	});
+	test("falls back to a base for a name with no slug characters", () => {
+		expect(slugEndingIn("***", "123456")).toBe("item-123456");
 	});
 });

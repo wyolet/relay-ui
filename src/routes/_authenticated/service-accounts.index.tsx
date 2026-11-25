@@ -51,7 +51,8 @@ function ServiceAccountsPage() {
 					Service accounts
 				</h1>
 				<p className="text-xs text-muted-foreground mt-0.5">
-					Non-human principals that live in a project and hold API keys.
+					Non-human principals that belong to a project, a team or a user and
+					hold API keys.
 				</p>
 			</div>
 			<Suspense fallback={<PageLoader className="min-h-[40vh]" />}>

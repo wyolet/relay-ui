@@ -7,11 +7,15 @@ import {
 } from "@/api/hooks/serviceAccounts";
 import { buttonVariants } from "@/components/ui/button";
 import { FilterBar } from "@/filters/FilterBar";
-import { toolbarMainActionClassName } from "@/filters/ToolbarActions";
+import {
+	toolbarActionClassName,
+	toolbarMainActionClassName,
+} from "@/filters/ToolbarActions";
 import { activeFilterCount } from "@/filters/toQueryParams";
 import type { FilterDef, FilterState } from "@/filters/types";
 import { useOwnerFilter } from "@/hooks/useOwnerFilter";
 import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
+import { serviceAccountOwner } from "@/lib/serviceAccountScope";
 import { AccountPolicy } from "@/policy-bindings/AccountPolicy";
 import { OwnerLink } from "@/projects/OwnerLink";
 import { useToggleServiceAccountEnabled } from "@/service-accounts/useToggleServiceAccountEnabled";
@@ -91,13 +95,19 @@ export function ServiceAccountsTable() {
 				extraActive={owner.isDefault ? 0 : 1}
 				className="mb-3"
 				actions={
-					<Link
-						to="/service-accounts/new"
-						className={toolbarMainActionClassName}
-					>
-						<Plus data-icon="inline-start" className="w-3.5 h-3.5" />
-						New service account
-					</Link>
+					<>
+						<Link
+							to="/service-accounts/add-agent"
+							className={toolbarMainActionClassName}
+						>
+							<Bot data-icon="inline-start" className="w-3.5 h-3.5" />
+							Add agent
+						</Link>
+						<Link to="/service-accounts/new" className={toolbarActionClassName}>
+							<Plus data-icon="inline-start" className="w-3.5 h-3.5" />
+							New service account
+						</Link>
+					</>
 				}
 			/>
 
@@ -111,7 +121,7 @@ export function ServiceAccountsTable() {
 								</p>
 								<p className="text-sm text-muted-foreground mb-5 max-w-sm mx-auto">
 									A service account is the non-human principal a key
-									authenticates as. It lives in a project.
+									authenticates as. It belongs to a project, a team or a user.
 								</p>
 								<Link
 									to="/service-accounts/new"
@@ -133,7 +143,7 @@ export function ServiceAccountsTable() {
 							<thead className="bg-muted/40">
 								<tr>
 									<Th variant="column">Name</Th>
-									<Th variant="column">Project</Th>
+									<Th variant="column">Owner</Th>
 									<Th variant="column">Account · policy</Th>
 									<th
 										scope="col"
@@ -176,9 +186,7 @@ export function ServiceAccountsTable() {
 												)}
 											</td>
 											<td className="px-3 py-2 text-xs text-foreground">
-												<OwnerLink
-													owner={{ kind: "project", id: sa.spec.projectId }}
-												/>
+												<OwnerLink owner={serviceAccountOwner(sa)} showUser />
 											</td>
 											<td className="px-3 py-2 text-xs">
 												<AccountPolicy

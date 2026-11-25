@@ -58,7 +58,7 @@ export interface paths {
         get?: never;
         /**
          * Update account by id
-         * @description Replaces the account. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field.
+         * @description Replaces the account. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.teamId on a project, spec.scope on a role binding) take it from that field. A service account keeps the project, team or user it was made under: a spec.projectId that contradicts its owner answers 400, a new owner 409 resource_in_use.
          */
         put: operations["update_account"];
         post?: never;
@@ -227,7 +227,7 @@ export interface paths {
         put?: never;
         /**
          * Share a provider account with a user, team, project or service account
-         * @description Creates an account owned by the receiver (a service account's by its project, held by it so only its lane draws on it) that reaches the real account's keys: current ones, keys added later, and their rotations. The shared account holds no keys and never shows a secret; its requests count on the real account's tier, and a policy bound to it only narrows them. It changes no routing by itself: the receiving scope uses it by listing it in one of its pools. Only the real account's owner shares it: its user alone for a personal account (no admin), an admin of its team, project or the system otherwise (403). A receiver that does not exist, or that the caller may not see, answers 404. One share per receiver: a second answers 409 share_exists. A shared account is not shared on: 409 reshare_refused. A receiver that already reaches the account through ownership (a project of the team that owns it, any scope for a system account) answers 409 already_reachable. A user whose personal accounts are turned off answers 403 personal_account_off: share with their team or project instead.
+         * @description Creates an account owned by the receiver (a service account's by the service account's project, team or user, held by it so only its lane draws on it) that reaches the real account's keys: current ones, keys added later, and their rotations. The shared account holds no keys and never shows a secret; its requests count on the real account's tier, and a policy bound to it only narrows them. It changes no routing by itself: the receiving scope uses it by listing it in one of its pools. Only the real account's owner shares it: its user alone for a personal account (no admin), an admin of its team, project or the system otherwise (403). A receiver that does not exist, or that the caller may not see, answers 404. One share per receiver: a second answers 409 share_exists. A shared account is not shared on: 409 reshare_refused. A receiver that already reaches the account through ownership (a project of the team that owns it, any scope for a system account) answers 409 already_reachable. A user whose personal accounts are turned off, or a service account that user owns, answers 403 personal_account_off: share with their team or project instead.
          */
         post: operations["share_account"];
         delete?: never;
@@ -470,7 +470,7 @@ export interface paths {
         get?: never;
         /**
          * Update budget by id
-         * @description Replaces the budget. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field. The update is refused with 403 policy_in_use while a policy linking the budget is applied to an account whose policy the caller may not set, as an update of that policy would be; blockedBy lists those accounts.
+         * @description Replaces the budget. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.teamId on a project, spec.scope on a role binding) take it from that field. A service account keeps the project, team or user it was made under: a spec.projectId that contradicts its owner answers 400, a new owner 409 resource_in_use. The update is refused with 403 policy_in_use while a policy linking the budget is applied to an account whose policy the caller may not set, as an update of that policy would be; blockedBy lists those accounts.
          */
         put: operations["update_budget"];
         post?: never;
@@ -738,7 +738,7 @@ export interface paths {
         get?: never;
         /**
          * Update group by id
-         * @description Replaces the group. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field.
+         * @description Replaces the group. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.teamId on a project, spec.scope on a role binding) take it from that field. A service account keeps the project, team or user it was made under: a spec.projectId that contradicts its owner answers 400, a new owner 409 resource_in_use.
          */
         put: operations["update_group"];
         post?: never;
@@ -866,7 +866,7 @@ export interface paths {
         get?: never;
         /**
          * Update host-binding by id
-         * @description Replaces the host-binding. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field.
+         * @description Replaces the host-binding. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.teamId on a project, spec.scope on a role binding) take it from that field. A service account keeps the project, team or user it was made under: a spec.projectId that contradicts its owner answers 400, a new owner 409 resource_in_use.
          */
         put: operations["update_host-binding"];
         post?: never;
@@ -934,7 +934,7 @@ export interface paths {
         get?: never;
         /**
          * Update host-key by id
-         * @description Replaces the host-key. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field.
+         * @description Replaces the host-key. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.teamId on a project, spec.scope on a role binding) take it from that field. A service account keeps the project, team or user it was made under: a spec.projectId that contradicts its owner answers 400, a new owner 409 resource_in_use.
          */
         put: operations["update_host-key"];
         post?: never;
@@ -1102,7 +1102,7 @@ export interface paths {
         get?: never;
         /**
          * Update host by id
-         * @description Replaces the host. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field.
+         * @description Replaces the host. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.teamId on a project, spec.scope on a role binding) take it from that field. A service account keeps the project, team or user it was made under: a spec.projectId that contradicts its owner answers 400, a new owner 409 resource_in_use.
          */
         put: operations["update_host"];
         post?: never;
@@ -1270,7 +1270,7 @@ export interface paths {
         get?: never;
         /**
          * Update key by id
-         * @description Replaces the key. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field.
+         * @description Replaces the key. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.teamId on a project, spec.scope on a role binding) take it from that field. A service account keeps the project, team or user it was made under: a spec.projectId that contradicts its owner answers 400, a new owner 409 resource_in_use.
          */
         put: operations["update_key"];
         post?: never;
@@ -1542,7 +1542,7 @@ export interface paths {
         get?: never;
         /**
          * Update model by id
-         * @description Replaces the model. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field.
+         * @description Replaces the model. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.teamId on a project, spec.scope on a role binding) take it from that field. A service account keeps the project, team or user it was made under: a spec.projectId that contradicts its owner answers 400, a new owner 409 resource_in_use.
          */
         put: operations["update_model"];
         post?: never;
@@ -1758,7 +1758,7 @@ export interface paths {
         get?: never;
         /**
          * Update policy by id
-         * @description Replaces the policy. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field. The update is refused with 403 policy_in_use while the policy is applied, through an enabled policy binding, to an account whose policy the caller may not set (the check PUT /accounts/{ref}/policy runs on the binding holding it); blockedBy lists those accounts. An admin is never refused. A policy bound nowhere is not checked. POST /policies/{ref}/duplicate makes a copy to edit instead.
+         * @description Replaces the policy. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.teamId on a project, spec.scope on a role binding) take it from that field. A service account keeps the project, team or user it was made under: a spec.projectId that contradicts its owner answers 400, a new owner 409 resource_in_use. The update is refused with 403 policy_in_use while the policy is applied, through an enabled policy binding, to an account whose policy the caller may not set (the check PUT /accounts/{ref}/policy runs on the binding holding it); blockedBy lists those accounts. An admin is never refused. A policy bound nowhere is not checked. POST /policies/{ref}/duplicate makes a copy to edit instead.
          */
         put: operations["update_policy"];
         post?: never;
@@ -1966,7 +1966,7 @@ export interface paths {
         get?: never;
         /**
          * Update policy-binding by id
-         * @description Replaces the policy-binding. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field.
+         * @description Replaces the policy-binding. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.teamId on a project, spec.scope on a role binding) take it from that field. A service account keeps the project, team or user it was made under: a spec.projectId that contradicts its owner answers 400, a new owner 409 resource_in_use.
          */
         put: operations["update_policy-binding"];
         post?: never;
@@ -2034,7 +2034,7 @@ export interface paths {
         get?: never;
         /**
          * Update pool by id
-         * @description Replaces the pool. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field.
+         * @description Replaces the pool. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.teamId on a project, spec.scope on a role binding) take it from that field. A service account keeps the project, team or user it was made under: a spec.projectId that contradicts its owner answers 400, a new owner 409 resource_in_use.
          */
         put: operations["update_pool"];
         post?: never;
@@ -2162,7 +2162,7 @@ export interface paths {
         get?: never;
         /**
          * Update pricing by id
-         * @description Replaces the pricing. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field.
+         * @description Replaces the pricing. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.teamId on a project, spec.scope on a role binding) take it from that field. A service account keeps the project, team or user it was made under: a spec.projectId that contradicts its owner answers 400, a new owner 409 resource_in_use.
          */
         put: operations["update_pricing"];
         post?: never;
@@ -2270,7 +2270,7 @@ export interface paths {
         get?: never;
         /**
          * Update project by id
-         * @description Replaces the project. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field.
+         * @description Replaces the project. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.teamId on a project, spec.scope on a role binding) take it from that field. A service account keeps the project, team or user it was made under: a spec.projectId that contradicts its owner answers 400, a new owner 409 resource_in_use.
          */
         put: operations["update_project"];
         post?: never;
@@ -2378,7 +2378,7 @@ export interface paths {
         get?: never;
         /**
          * Update provider by id
-         * @description Replaces the provider. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field.
+         * @description Replaces the provider. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.teamId on a project, spec.scope on a role binding) take it from that field. A service account keeps the project, team or user it was made under: a spec.projectId that contradicts its owner answers 400, a new owner 409 resource_in_use.
          */
         put: operations["update_provider"];
         post?: never;
@@ -2452,6 +2452,106 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/pseudo-access": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Set what a team, project or service account may use
+         * @description In one transaction, sets the whole access of the target's account (a team's or project's own account, a service account's account): access has the meaning and rules of POST /pseudo-agents' access. The policy the account is under is changed by case: none (the account is in no binding) makes a policy owned by the target's scope and binds the account alone; own (bound alone to a policy of the target's scope the caller may update) changes it in place; copy (a policy bound to other accounts too, a preset, or one owned elsewhere) copies it into the target's scope with its models, links, description and labels, changes the copy and binds the account to it alone, as PUT /accounts/{ref}/policy does. A policy or binding the caller may not see or change answers 403 policy_set_above naming the scope that holds it. The policy's pools become poolIds, then one pool per host of accountIds; its models become access.models; its rate limits and budgets stay. The pools made are owned by the target's scope and labelled access-for=<account id>; a labelled pool counts as this route's only while the target's scope owns it, the caller sees it and no policy but the account's links it. On a later call such a pool of a host is updated in place when only the policy changed in place links it, and one the policy no longer links is deleted when the caller may delete it, else only unlinked. Other pools are only linked or unlinked. everyCredential links no pools; in case none without models nothing is written. A copy that would carry links the target's scope may not link answers 400 links_not_carried, unless access drops them. Each row passes what its own create, update or delete call passes, with the same answers; then the result is checked against the plans (422 plan_issue) and against what every other account reaches (422 other_accounts_changed). dryRun=true answers 200 with the same body and writes nothing; with access omitted it answers only case and current.
+         */
+        post: operations["create_pseudo_access"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/pseudo-agent-removals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Delete a service account and what was made for it
+         * @description In one transaction, deletes the service account's keys, takes its account out of the policy binding holding it as PUT /accounts/{ref}/policy with a null policyId does (the binding is deleted when it held only that account, else shrinks), revokes the shares the service account holds as DELETE /accounts/by-id/{id} does, deletes the service account, which takes its account along, then the policies and pools labelled agent-id=<service account id> that its scope owns, the caller may see and delete, spec.keep does not name, and no binding or policy left after the earlier deletes uses, those the caller may not see included. The other labelled rows stay and are listed in kept with why; one owned outside the scope that the caller may not see is neither touched nor listed. Each delete passes the grant, governance and reference check of its own delete call, with the same answers, pointer /spec/serviceAccountId; a refused delete refuses the request and nothing is deleted. Then the result is checked against the plans (422 plan_issue: an error on a row that stays that is not there now) and against what every other account reaches (422 other_accounts_changed). A deleted key stops authenticating once this pod's plans hear the delete, as after DELETE /keys/by-id/{id}. dryRun=true does everything but the commit and answers 200 with the same body. spec.expect, given, must be exactly the ids of the deleted list: when the set differs, the request answers 409 changed with the current deleted and kept lists and deletes nothing. Each row deleted or changed is audited as its own delete call records it.
+         */
+        post: operations["create_pseudo_agent_removal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/pseudo-agents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create a service account with what it may use and its first key
+         * @description In one transaction, makes the service account, its account (its keys' default lane, answered in account), and either a policy binding of that account to policyId, or from access: a share with the owner of each listed provider account the owner neither reaches nor holds a share of, one pool per host of accountIds (its accounts in the order given), a policy linking poolIds in the order given and then the pools made in the order each host first appears in accountIds, with models, and its binding; then the key when spec.key is given. With everyCredential and no models nothing more is made: the account's default reach is the access. An account at a host that takes no key answers 400: name that host's pool in poolIds. The pools and policy made are owned by the service account's owner and labelled agent-id=<service account id>. Each row passes exactly what its own create call passes (POST /service-accounts, /accounts/{ref}/shares, /pools, /policies, PUT /accounts/{ref}/policy, POST /keys), with the same answers; a refusal names the row by pointer, the JSON pointer of the part of the body it came from, and nothing is written. Once every row passed, the rows are checked against the plans as a whole: errors they would raise that the plans do not have now refuse the request with 422 plan_issue. dryRun=true does everything but the commit and answers 200 with the same body, ids included and the key's plaintext left out. Each row made is audited as its own create. A repeated request makes a second set, its names suffixed.
+         */
+        post: operations["create_pseudo_agent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/pseudo-host-keys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create a provider key with its account, the account's tier and its shares
+         * @description First asks the create grants the host key and a new account will ask for the owner, with the owner rules of POST /host-keys: a refusal answers as that create would, before the host is asked anything or a value is stored. Then runs the whole write rolled back, without the value: every row's checks and the plan check refuse here, before the host is asked. Then asks the host which organization spec.value belongs to, with the one read POST /host-keys/by-id/{id}/detect-account makes, to the host's own base URL: a 401 or 403 refuses the request with 422 provider_refused_key and nothing is stored; a host that names no organization, or does not answer, refuses nothing and is answered in detection. A detected organization another account of the owner at the host holds answers 409 organization_taken with that account. Then, in one transaction, makes the account (spec.account, taking the detected orgId) or uses spec.accountId, binds it alone to spec.tierPolicyId (one of the host's tier presets, else 400) as PUT /accounts/{ref}/policy does, makes the host key in it, and shares the account with each spec.shareWith receiver that neither holds a share of it nor reaches it by ownership; those are answered with existing: true. A host that takes no key takes no value and gets no host key. spec.value is sealed under the owner's scope before the transaction and removed if the transaction does not commit. Each row passes exactly what its own create call passes (POST /accounts, PUT /accounts/{ref}/policy, POST /host-keys, POST /accounts/{ref}/shares), with the same answers; a refusal names the row by pointer, the JSON pointer of the part of the body it came from, and nothing is written. Once every row passed, the rows are checked against the plans as a whole: errors they would raise that the plans do not have now refuse the request with 422 plan_issue. dryRun=true asks the host the same once and does everything else but storing the value and the commit, and answers 200 with the same body, ids included. Each row made is audited as its own create; a dry run that asked the host is audited as one pseudo-host-keys.dry-run row on the host, whatever it answered. The value never appears in an answer or audit row.
+         */
+        post: operations["create_pseudo_host_key"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/pseudo-limits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Put a budget or rate limit on a team, project or service account
+         * @description In one transaction, makes the budget or rate limit (exactly one of spec.budget and spec.rateLimit, each the spec its own create takes) owned by the target's scope, then links it from the policy over the target's account beside what that policy links already, by the cases POST /pseudo-access describes: none, own, copy, and 403 policy_set_above. A copy that would carry links the target's scope may not link answers 400 links_not_carried. spec.link sets the link's own fields: shared (omitted means true) counts the limit once for everyone under the target, false once per account under it; models, with a rate limit only, scopes it to those models, checked as a policy update checks a rate-limit link's models (400 at /spec/link/models, as is models with a budget). The answer's budget or rateLimit carries the link as stored. Each row passes what its own create, update or delete call passes, with the same answers; then the result is checked against the plans (422 plan_issue) and against what every other account reaches (422 other_accounts_changed). A budget's answer lists unpricedModels, the models the target uses now that the budget would refuse for want of pricing; it does not refuse. dryRun=true answers 200 with the same body and writes nothing; with both limits omitted it answers only case and current.
+         */
+        post: operations["create_pseudo_limits"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/rate-limits": {
         parameters: {
             query?: never;
@@ -2486,7 +2586,7 @@ export interface paths {
         get?: never;
         /**
          * Update rate-limit by id
-         * @description Replaces the rate-limit. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field. The update is refused with 403 policy_in_use while a policy linking the rate limit is applied to an account whose policy the caller may not set, as an update of that policy would be; blockedBy lists those accounts.
+         * @description Replaces the rate-limit. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.teamId on a project, spec.scope on a role binding) take it from that field. A service account keeps the project, team or user it was made under: a spec.projectId that contradicts its owner answers 400, a new owner 409 resource_in_use. The update is refused with 403 policy_in_use while a policy linking the rate limit is applied to an account whose policy the caller may not set, as an update of that policy would be; blockedBy lists those accounts.
          */
         put: operations["update_rate-limit"];
         post?: never;
@@ -2614,7 +2714,7 @@ export interface paths {
         get?: never;
         /**
          * Update role-binding by id
-         * @description Replaces the role-binding. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field.
+         * @description Replaces the role-binding. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.teamId on a project, spec.scope on a role binding) take it from that field. A service account keeps the project, team or user it was made under: a spec.projectId that contradicts its owner answers 400, a new owner 409 resource_in_use.
          */
         put: operations["update_role-binding"];
         post?: never;
@@ -2682,7 +2782,7 @@ export interface paths {
         get?: never;
         /**
          * Update role by id
-         * @description Replaces the role. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field.
+         * @description Replaces the role. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.teamId on a project, spec.scope on a role binding) take it from that field. A service account keeps the project, team or user it was made under: a spec.projectId that contradicts its owner answers 400, a new owner 409 resource_in_use.
          */
         put: operations["update_role"];
         post?: never;
@@ -2934,7 +3034,7 @@ export interface paths {
         get?: never;
         /**
          * Update service-account by id
-         * @description Replaces the service-account. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field.
+         * @description Replaces the service-account. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.teamId on a project, spec.scope on a role binding) take it from that field. A service account keeps the project, team or user it was made under: a spec.projectId that contradicts its owner answers 400, a new owner 409 resource_in_use.
          */
         put: operations["update_service-account"];
         post?: never;
@@ -3466,7 +3566,7 @@ export interface paths {
         get?: never;
         /**
          * Update team by id
-         * @description Replaces the team. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.projectId, spec.teamId, spec.scope) take it from that field.
+         * @description Replaces the team. When metadata.resourceVersion is set, the update applies only while the stored row still has that version; otherwise it fails with 409 and error code stale_resource_version. Without it the update is unconditional. A metadata.owner different from the stored one moves the row to that scope: it needs create permission there, and fails with 409 resource_in_use while rows that reference it could not do so from the new scope. An omitted owner keeps the stored one; kinds whose owner follows a spec field (spec.teamId on a project, spec.scope on a role binding) take it from that field. A service account keeps the project, team or user it was made under: a spec.projectId that contradicts its owner answers 400, a new owner 409 resource_in_use.
          */
         put: operations["update_team"];
         post?: never;
@@ -3729,6 +3829,22 @@ export interface components {
             /** @description Error class, such as invalid_request_error (the request's fault), rate_limit_error, server_error or upstream_error. */
             type: string;
         };
+        Access: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Access.json
+             */
+            readonly $schema?: string;
+            /** @description The target and its whole access. */
+            spec: components["schemas"]["AccessSpec"];
+        };
+        AccessSpec: {
+            /** @description The whole access, with the meaning and rules of POST /pseudo-agents' access: pools and models the policy links now and access no longer names are unlinked; its rate limits and budgets are kept. Omitted, with dryRun=true, answers only case and current; otherwise required. */
+            access?: components["schemas"]["AgentAccess"];
+            /** @description The team, project or service account whose account's access is set. */
+            target: components["schemas"]["Target"];
+        };
         Account: {
             /**
              * Format: uri
@@ -3937,6 +4053,90 @@ export interface components {
             section: "accounts" | "audit" | "auth:oidc" | "auth:scim" | "auth:tokens" | "catalog-source" | "governance:host" | "governance:model" | "governance:policy" | "governance:provider" | "inference" | "license" | "otlp-receiver" | "parsing" | "payload-logging" | "proxy-mode" | "usage-logging";
             /** @description The section's current value. */
             value: components["schemas"]["Accounts"];
+        };
+        Agent: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Agent.json
+             */
+            readonly $schema?: string;
+            /** @description The service account's metadata. */
+            metadata: components["schemas"]["AgentMetadata"];
+            /** @description What the service account may use, and its first key. */
+            spec: components["schemas"]["AgentSpec"];
+        };
+        AgentAccess: {
+            /** @description Ids of the provider accounts the service account draws on, in order of preference. Each host gets one pool listing its accounts in the order given; the made pools follow poolIds in the policy, in the order each host first appears here. An account the owner reaches, or a share owned by the owner, is pooled as it is; an account the owner does not reach (the caller's personal account, an account outside the owner's team) is pooled through the owner's share of it, made first when there is none. An account at a host that takes no key answers 400: name that host's pool in poolIds. */
+            accountIds?: string[] | null;
+            /** @description True uses every credential the service account's account reaches by default; accountIds and poolIds must then be empty. With models, a policy of those models linking no pool is bound; without, nothing is. */
+            everyCredential?: boolean;
+            /** @description Models the service account may use, in the policy model grammar (provider or provider/model). Omitted allows every model the pools serve. */
+            models?: string[] | null;
+            /** @description Ids of existing pools the policy links first, in the order given, before the pools made from accountIds; each must be one a policy of the owner may link. Name a keyless host's pool here: its accounts are never pooled from accountIds. Unless everyCredential is true, poolIds or accountIds must not be empty. */
+            poolIds?: string[] | null;
+        };
+        AgentKey: {
+            /** @description Free-text name of the key; its slug is derived from it. */
+            displayName?: string;
+            /**
+             * Format: date-time
+             * @description When the key stops authenticating. Omitted or null never expires.
+             */
+            expiresAt?: string;
+            /** @description Let the key send its own upstream credential in proxy mode. */
+            passthroughAllowed?: boolean;
+            /** @description Capture request and response bodies of this key's requests. */
+            payloadLoggingEnabled?: boolean;
+        };
+        AgentMetadata: {
+            /** @description Free-text description of the service account. */
+            description?: string;
+            /** @description Free-text name shown in the UI. */
+            displayName?: string;
+            /** @description Labels of the service account. */
+            labels?: {
+                [key: string]: string;
+            };
+            /** @description Slug of the service account. Omitted: derived from displayName, suffixed -2, -3, … while taken. A given name that is taken is refused as POST /service-accounts refuses it. */
+            name?: string;
+            /** @description The scope that owns the service account; required, with no default. The pools, policy and policy binding made for it are owned by the same scope. */
+            owner?: components["schemas"]["AgentOwner"];
+        };
+        AgentOwner: {
+            /** @description Id of the owning scope. */
+            id?: string;
+            /**
+             * @description Kind of the owning scope: one a service account may be owned by.
+             * @enum {string}
+             */
+            kind?: "project" | "team" | "user";
+        };
+        AgentRemoval: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/AgentRemoval.json
+             */
+            readonly $schema?: string;
+            /** @description The service account to remove, and what of its labelled rows to keep. */
+            spec: components["schemas"]["AgentRemovalSpec"];
+        };
+        AgentRemovalSpec: {
+            /** @description The ids of a dry run's deleted. Given, the request answers 409 changed and deletes nothing when the rows it would delete are no longer exactly these. */
+            expect?: string[] | null;
+            /** @description Ids of policies or pools labelled agent-id=<service account id> to leave in place. An id that is not one of the labelled rows the answer lists answers 400. */
+            keep?: string[] | null;
+            /** @description Id (metadata.id) of the service account; a slug answers 400. */
+            serviceAccountId: string;
+        };
+        AgentSpec: {
+            /** @description What the service account may use, made into a policy of its own. Exactly one of policyId and access. */
+            access?: components["schemas"]["AgentAccess"];
+            /** @description The service account's first key. Omitted makes no key. */
+            key?: components["schemas"]["AgentKey"];
+            /** @description Id (metadata.id) of an existing policy to bind the service account's account to; a slug answers 400. Exactly one of policyId and access. */
+            policyId?: string;
         };
         Audit: {
             /**
@@ -4214,7 +4414,7 @@ export interface components {
             pricingId?: string;
             /** @description The model's snapshot names this host serves. Empty serves them all. */
             snapshots?: string[] | null;
-            /** @description Model name sent upstream. Empty sends the model's own name. */
+            /** @description Model name sent upstream. Applies only while the binding serves one snapshot of the model (snapshots lists one, or the model has one); otherwise, or when empty, the model's own name is sent. */
             upstreamName?: string;
         };
         BindingView: {
@@ -4391,6 +4591,31 @@ export interface components {
              */
             update: number;
         };
+        CreatedRow: {
+            /** @description Id of the row; minted before the write, so a dry run answers it too. */
+            id: string;
+            /** @description API kind of the row, such as service-account or policy-binding. */
+            kind: string;
+            /** @description Slug of the row. */
+            name: string;
+        };
+        CurrentPool: {
+            /** @description The accounts the pool lists that the caller may see, in its order. */
+            accounts: components["schemas"]["RowRef"][] | null;
+            /**
+             * Format: int64
+             * @description Accounts it lists that the caller may not see: counted, not named.
+             */
+            hiddenAccounts: number;
+            /** @description The pool's host. */
+            host: components["schemas"]["RowRef"];
+            /** @description Id of the pool. */
+            id: string;
+            /** @description True for a pool POST /pseudo-access made for this account (label access-for), which it updates or deletes on a later call; any other pool is only linked or unlinked. */
+            labelled: boolean;
+            /** @description Slug of the pool. */
+            name: string;
+        };
         DataKeyStatus: {
             /**
              * Format: uri
@@ -4468,6 +4693,12 @@ export interface components {
             hidden?: number;
             /** @description Slugs of the affected policies the caller may see. */
             policies?: string[] | null;
+        };
+        DetectedOrganization: {
+            /** @description The organization's id. */
+            orgId: string;
+            /** @description The organization's display name, when the host sends one. */
+            orgName?: string;
         };
         DurationStats: {
             /**
@@ -4551,7 +4782,7 @@ export interface components {
              * @description Milliseconds from request start until the response closed.
              */
             duration_ms: number;
-            /** @description Error code of a failed request, such as model_not_allowed, rate_limit_exceeded or upstream_error. */
+            /** @description Error code of a failed request, such as model_not_allowed, rate_limited or upstream_error. */
             error_kind?: string;
             /** @description Error message of a failed request. */
             error_message?: string;
@@ -4660,6 +4891,8 @@ export interface components {
             reason: string;
             /** @description The rung that refuses: team, project, lane (caller rungs) or account (an upstream tier); empty when no rung decides, as for a disabled model. */
             rung?: string;
+            /** @description Each snapshot name of the model, with its aliases and the refusal a request naming it gets. */
+            snapshots: components["schemas"]["ReachSnapshot"][] | null;
             /** @description Each provider account whose keys could serve it, with its tier's verdict. */
             upstream: components["schemas"]["ReachUpstream"][] | null;
         };
@@ -4749,7 +4982,7 @@ export interface components {
             /** @description Identity and provenance: id, name, owner, labels. */
             metadata: components["schemas"]["MetadataCreate"];
             /** @description The row's configuration. */
-            spec: components["schemas"]["GroupSpec"];
+            spec?: components["schemas"]["GroupSpec"];
         };
         GroupExternal: {
             /** @description The group's id at that source. */
@@ -4867,6 +5100,57 @@ export interface components {
              */
             state: "ok" | "revoked";
         };
+        HostKeyForm: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/HostKeyForm.json
+             */
+            readonly $schema?: string;
+            /** @description The host key's metadata; its owner owns the account too. */
+            metadata: components["schemas"]["HostKeyFormMetadata"];
+            /** @description The key's value, the account it belongs to, the account's tier and who the account is shared with. */
+            spec: components["schemas"]["HostKeyFormSpec"];
+        };
+        HostKeyFormAccount: {
+            /** @description Free-text name of the account; its slug is derived from it. */
+            displayName?: string;
+        };
+        HostKeyFormMetadata: {
+            /** @description Free-text description of the host key. */
+            description?: string;
+            /** @description Free-text name of the host key. */
+            displayName?: string;
+            /** @description Labels of the host key. */
+            labels?: {
+                [key: string]: string;
+            };
+            /** @description Slug of the host key. Omitted: derived from displayName, suffixed -2, -3, … while taken. */
+            name?: string;
+            /** @description The scope that owns the host key and its account, as POST /host-keys takes it; a user owner without an id is the caller. */
+            owner: components["schemas"]["Owner"];
+        };
+        HostKeyFormSpec: {
+            /** @description A new provider account of the owner at the host, made for the key. Exactly one of accountId and account. */
+            account?: components["schemas"]["HostKeyFormAccount"];
+            /** @description Id (metadata.id) of an existing provider account of the owner at the host to add the key to; a slug answers 400. Exactly one of accountId and account. */
+            accountId?: string;
+            /** @description Id (metadata.id) of the host the key authenticates to; a slug answers 400. */
+            hostId: string;
+            /**
+             * @description How the key's spend is accounted, as POST /host-keys takes it. Omitted means api.
+             * @enum {string}
+             */
+            pricingStrategy?: "api" | "sub";
+            /** @description Who the account is shared with, as POST /accounts/{ref}/shares takes a receiver, by id; a slug answers 400. A receiver that already has a share of the account, or reaches it by ownership, gets none and is answered with existing: true. */
+            shareWith?: components["schemas"]["AccountReceiver"][] | null;
+            /** @description Id (metadata.id) of one of the host's tier presets (GET /hosts/{ref}/policies) to bind the account to alone, as PUT /accounts/{ref}/policy binds it; a slug answers 400. Omitted leaves the account's binding as it is. */
+            tierPolicyId?: string;
+            /** @description The secret, checked against the host, then sealed under the owner's scope and never returned. Exactly one of value and valueFrom; both omitted only for a host that takes no key, and then no host key is made. */
+            value?: string;
+            /** @description Where the secret comes from, as a host key's valueFrom takes it, such as {kind: env, env: VAR}; it is not checked against the host. Exactly one of value and valueFrom. */
+            valueFrom?: components["schemas"]["HostKeyValueFrom"];
+        };
         HostKeyList: {
             /**
              * Format: uri
@@ -4920,7 +5204,7 @@ export interface components {
              * @enum {string}
              */
             pricingStrategy?: "api" | "sub";
-            /** @description The secret, for valueFrom.kind stored or oauth (an OAuth token blob). Sealed at rest and never returned. Set on create only: an update keeps the stored value and refuses a new one (use POST /host-keys/by-id/{id}/rotate). */
+            /** @description The secret, for valueFrom.kind stored or oauth. For oauth: an OAuth token blob, or a service-account key file (JSON with type service_account) with an added scopes array, which relay exchanges for access tokens; an endpoint that rejects the key refuses the write. Sealed at rest and never returned. Set on create only: an update keeps the stored value and refuses a new one (use POST /host-keys/by-id/{id}/rotate). */
             value?: string;
             /** @description Where the secret comes from. */
             valueFrom: components["schemas"]["HostKeyValueFrom"];
@@ -4944,11 +5228,11 @@ export interface components {
             /** @description Environment variable holding the secret, for kind env. RELAY_* and WYOLET_* names are refused. */
             env?: string;
             /**
-             * @description env reads the secret from an environment variable; stored seals the value sent in spec.value; oauth stores an OAuth token blob from spec.value and refreshes it.
+             * @description env reads the secret from an environment variable; stored seals the value sent in spec.value; oauth stores an OAuth token blob or service-account key file from spec.value and renews its access token.
              * @enum {string}
              */
             kind: "env" | "stored" | "oauth";
-            /** @description OAuth provider whose settings section refreshes the token, for kind oauth. */
+            /** @description For kind oauth: the OAuth provider whose settings section refreshes a token blob. Required; a service-account key renews from the key itself, so here it is only a label. */
             provider?: string;
         };
         HostKeyView: {
@@ -4997,6 +5281,8 @@ export interface components {
             pricing: components["schemas"]["PricingView"];
         };
         HostPolicyRow: {
+            /** @description Free-text name of the policy. */
+            displayName?: string;
             /** @description Whether the policy is enabled. */
             enabled: boolean;
             /** @description Policy id. */
@@ -5021,7 +5307,7 @@ export interface components {
             name: string;
         };
         HostSpec: {
-            /** @description Backend-specific settings, such as a region or deployment name; each adapter reads the keys it needs. */
+            /** @description Backend-specific settings, such as a region or deployment name; each adapter reads the keys it needs. A {key} placeholder in path or paths takes the value of key here. */
             backend?: {
                 [key: string]: string;
             };
@@ -5039,8 +5325,12 @@ export interface components {
             icon?: components["schemas"]["Icon"];
             /** @description The upstream needs no API key (such as a self-hosted Ollama). Requests go out without credentials, reached through a pool that names the host. */
             noAuth?: boolean;
-            /** @description Upstream path used instead of the wire shape's default. An empty string means baseURL is the complete endpoint; omitted keeps the default. */
+            /** @description Upstream path used instead of the wire shape's default. An empty string means baseURL is the complete endpoint; omitted keeps the default. Each {key} placeholder (key of letters, digits and _, before any ?) is replaced with backend[key]; a request through the host answers host_misconfigured while one is unset. */
             path?: string;
+            /** @description Upstream path per wire shape (adapter name, such as openai), used instead of path for that shape: {openai: /v1beta/openai/chat/completions}. A shape not listed uses path. Placeholders are filled as in path. */
+            paths?: {
+                [key: string]: string;
+            };
             /** @description Billing modes the host offers: api (per-token metered) and sub (flat-rate subscription). A host key picks one. Omitted means [api]. */
             pricingStrategies?: ("api" | "sub")[] | null;
             /** @description Top-level request-body keys the host expects under another name, per wire shape (adapter name, such as openai): {openai: {max_tokens: max_completion_tokens}}. Relay renames them before sending; when the caller already sent the new name, the old key is dropped and the drop reported. */
@@ -5247,6 +5537,24 @@ export interface components {
             /** @description The window as a duration string, such as 1m0s. */
             window: string;
         };
+        LimitLink: {
+            /** @description With a rate limit only: the models it applies to, in the policy model grammar (provider or provider/model), checked as a policy update checks a rate-limit link's models and stored in their canonical form. Empty or omitted applies it to every model. With a budget, 400: a budget link has no model scope. */
+            models?: string[] | null;
+            /** @description True or omitted counts the limit once for everyone under the target; false counts it separately for each account under it (each lane its own counter). Stored as the link's shared field. */
+            shared?: boolean;
+        };
+        Limits: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Limits.json
+             */
+            readonly $schema?: string;
+            /** @description The budget's or rate limit's metadata; its owner is the target's scope. */
+            metadata?: components["schemas"]["LimitsMetadata"];
+            /** @description The target and the limit. */
+            spec: components["schemas"]["LimitsSpec"];
+        };
         LimitsAccount: {
             /** @description Account id. */
             id: string;
@@ -5285,6 +5593,18 @@ export interface components {
             shared: boolean;
             /** @description USD spent in the current period, as a decimal string. Omitted when the budget is perLane. */
             spentUsd?: string;
+        };
+        LimitsMetadata: {
+            /** @description Free-text description. */
+            description?: string;
+            /** @description Free-text name shown in the UI. */
+            displayName?: string;
+            /** @description Labels of the budget or rate limit. */
+            labels?: {
+                [key: string]: string;
+            };
+            /** @description Slug of the budget or rate limit. Omitted: derived from displayName, suffixed -2, -3, … while taken. */
+            name?: string;
         };
         LimitsRateLimit: {
             /** @description An organization rate limit the caller may not see: its rules and counts apply to the caller's requests and are shown, its id and name are not. */
@@ -5343,6 +5663,16 @@ export interface components {
             policy?: components["schemas"]["BoundPolicy"];
             /** @description The rate limits the policy links, disabled ones left out. */
             rateLimits: components["schemas"]["LimitsRateLimit"][] | null;
+        };
+        LimitsSpec: {
+            /** @description A spend cap, as POST /budgets takes its spec. Exactly one of budget and rateLimit; both omitted, with dryRun=true, answers only case and current. */
+            budget?: components["schemas"]["BudgetSpec"];
+            /** @description How the policy links the limit. Omitted: counted once for everyone under the target, over every model. */
+            link?: components["schemas"]["LimitLink"];
+            /** @description A rate limit, as POST /rate-limits takes its spec. Exactly one of budget and rateLimit. */
+            rateLimit?: components["schemas"]["RateLimitSpec"];
+            /** @description The team, project or service account whose account the limit applies to. */
+            target: components["schemas"]["Target"];
         };
         LimitsTightest: {
             /** @description The account whose policy links the limit. */
@@ -5999,6 +6329,23 @@ export interface components {
             /** @description The row's configuration. */
             spec: components["schemas"]["PolicySpec"];
         };
+        PolicyCurrent: {
+            /** @description False when the binding holding the account is disabled: a disabled binding binds nothing, so this policy does not govern the account now and the account is served as if in no binding. A change made through the form binds the account in an enabled binding (case copy). */
+            bindingEnabled: boolean;
+            /**
+             * Format: int64
+             * @description Pools it links that the caller may not see: counted, not named.
+             */
+            hiddenPools: number;
+            /** @description True when it links no pool: the account uses every credential its scope reaches. */
+            linksNoPools: boolean;
+            /** @description Its models; empty allows every model its pools serve. */
+            models: string[] | null;
+            /** @description The policy. */
+            policy: components["schemas"]["RowRef"];
+            /** @description The pools it links that the caller may see, in its order. */
+            pools: components["schemas"]["CurrentPool"][] | null;
+        };
         PolicyEditBlockers: {
             /** @description The blocking accounts the caller may see. */
             accounts: components["schemas"]["PolicyAccountRef"][] | null;
@@ -6204,7 +6551,7 @@ export interface components {
         PricingSpec: {
             /** @description ISO 4217 currency of the amounts, such as USD. */
             currency: string;
-            /** @description False stops costing traffic with this sheet, leaving it unpriced. Omitted means true. */
+            /** @description False stops costing traffic with this sheet, leaving it unpriced: while a budget applies, requests for its bindings are refused (403 unpriced_under_budget). A model meant to be free under a budget needs an enabled sheet with zero rates. Omitted means true. */
             enabled?: boolean;
             /** @description One entry per priced meter, context tier and service tier. */
             rates: components["schemas"]["PricingRate"][] | null;
@@ -6352,6 +6699,255 @@ export interface components {
             /** @description The section's current value. */
             value: components["schemas"]["ProxyMode"];
         };
+        PseudoAccessAnswer: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/PseudoAccessAnswer.json
+             */
+            readonly $schema?: string;
+            /**
+             * @description What the policy step did: none made a policy for an account in no binding, own changed the account's own policy in place, copy copied a policy shared or owned elsewhere into the target's scope and bound the account to the copy alone.
+             * @enum {string}
+             */
+            case: "none" | "own" | "copy";
+            /** @description Every row made, in write order. */
+            created?: components["schemas"]["CreatedRow"][] | null;
+            /** @description With spec.access omitted on a dry run: the policy the account is under now, absent for none. Nothing else is answered then. */
+            current?: components["schemas"]["PolicyCurrent"];
+            /** @description Every row deleted, in write order. */
+            deleted?: components["schemas"]["CreatedRow"][] | null;
+            /**
+             * Format: int64
+             * @description Pool links the caller may not see that the policy keeps, in their place in its order, as an update of the policy keeps them; current.hiddenPools counts them before the request. Absent when none.
+             */
+            hiddenPoolsKept?: number;
+            /** @description The policy the account is under once written. */
+            policy?: components["schemas"]["RowRef"];
+            /** @description The pools that policy links that the caller may see, in order. */
+            pools?: components["schemas"]["RowRef"][] | null;
+            /** @description The shares made of accounts the target's scope did not reach. */
+            shares?: components["schemas"]["RowRef"][] | null;
+            /** @description True when nothing needed writing: the account is in no binding and access is everyCredential without models, which is what it has already. */
+            unchanged?: boolean;
+            /** @description For a team or project target: what the change does to the lanes under it, which it applies to. Never a refusal; absent for a service account target and on the dry run without access. */
+            under?: components["schemas"]["PseudoUnder"];
+            /** @description Every row updated, in write order. */
+            updated?: components["schemas"]["CreatedRow"][] | null;
+            /** @description Plan warnings the rows written would raise that are not there now, on those rows (as the row carrying the warning, or the row it names). They refuse nothing; [] when none, and on the dry run without access. A row the caller may not see keeps its code and kind only. */
+            warnings: components["schemas"]["PseudoIssue"][] | null;
+        };
+        PseudoAgentCreated: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/PseudoAgentCreated.json
+             */
+            readonly $schema?: string;
+            /** @description The service account's account, its keys' default lane. */
+            account: components["schemas"]["RowRef"];
+            /** @description Every row made, in write order. */
+            created: components["schemas"]["CreatedRow"][] | null;
+            /** @description The key; absent when spec.key was omitted. */
+            key?: components["schemas"]["PseudoAgentKey"];
+            /** @description The policy the account is bound to: the one policyId names, or the one made from access. Absent when access made none. */
+            policy?: components["schemas"]["RowRef"];
+            /** @description The pools made, one per host of access.accountIds. */
+            pools: components["schemas"]["RowRef"][] | null;
+            /** @description The service account. */
+            serviceAccount: components["schemas"]["RowRef"];
+            /** @description The shares made of accounts the owner did not reach. */
+            shares: components["schemas"]["RowRef"][] | null;
+            /** @description Plan warnings the rows made would raise that are not there now, on those rows (as the row carrying the warning, or the row it names), such as model_ref_blocked for a model a policy above excludes. They refuse nothing; [] when none. A row the caller may not see keeps its code and kind only. */
+            warnings: components["schemas"]["PseudoIssue"][] | null;
+        };
+        PseudoAgentKey: {
+            /** @description Id of the key. */
+            id: string;
+            /** @description Slug of the key. */
+            name: string;
+            /** @description The bearer token to send as Authorization: Bearer. Returned only here; store it now. Absent on a dry run. */
+            plaintext?: string;
+        };
+        PseudoAgentRemovalAnswer: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/PseudoAgentRemovalAnswer.json
+             */
+            readonly $schema?: string;
+            /** @description Every row deleted that the caller may read, in delete order: the service account's keys, the binding that held only its account, the shares it held and bindings their revoke left empty, the service account, its account, then the labelled policies and pools that go. */
+            deleted: components["schemas"]["CreatedRow"][] | null;
+            /**
+             * Format: int64
+             * @description Rows deleted that the caller may not read, such as a binding a share's revoke left empty in another scope: counted, not named.
+             */
+            deletedHidden?: number;
+            /** @description The policies and pools labelled agent-id=<service account id> that the caller may see and that stay, with why. */
+            kept: components["schemas"]["PseudoKept"][] | null;
+            /**
+             * Format: int64
+             * @description Labelled rows of the service account's scope that stay because the caller may not see them: counted, not named. One owned elsewhere that the caller may not see is not counted.
+             */
+            keptHidden?: number;
+            /** @description Every row changed and kept that the caller may read, in write order: the binding the service account's account was taken out of when it holds other accounts too, and the bindings, keys and pools a share's revoke changed. */
+            updated: components["schemas"]["CreatedRow"][] | null;
+            /**
+             * Format: int64
+             * @description Rows changed that the caller may not read: counted, not named.
+             */
+            updatedHidden?: number;
+            /** @description Plan warnings the deletes would raise that are not there now, on the rows deleted or changed (as the row carrying the warning, or the row it names). They refuse nothing; [] when none. A row the caller may not see keeps its code and kind only. */
+            warnings: components["schemas"]["PseudoIssue"][] | null;
+        };
+        PseudoHostKeyCreated: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/PseudoHostKeyCreated.json
+             */
+            readonly $schema?: string;
+            /** @description The account the key belongs to: the one accountId names, or the one made. */
+            account: components["schemas"]["RowRef"];
+            /** @description Every row made, in write order. */
+            created: components["schemas"]["CreatedRow"][] | null;
+            /** @description The organization the host named. A new account takes it as its orgId. */
+            detected?: components["schemas"]["DetectedOrganization"];
+            /**
+             * @description What the host did when asked which organization spec.value belongs to: named it (detected), names none (unsupported), or gave no answer or another status (unreachable). Absent when no value was checked: valueFrom, or a host that takes no key.
+             * @enum {string}
+             */
+            detection?: "detected" | "unsupported" | "unreachable";
+            /** @description The host key; absent for a host that takes no key. */
+            hostKey?: components["schemas"]["RowRef"];
+            /** @description The account's share with each shareWith receiver, in order. */
+            shares: components["schemas"]["PseudoHostKeyShare"][] | null;
+            /** @description Plan warnings the rows written would raise that are not there now, on those rows (as the row carrying the warning, or the row it names). They refuse nothing; [] when none. A row the caller may not see keeps its code and kind only. */
+            warnings: components["schemas"]["PseudoIssue"][] | null;
+        };
+        PseudoHostKeyShare: {
+            /** @description True when nothing was made for the receiver: it holds this share already, or reaches the account by ownership. */
+            existing?: boolean;
+            /** @description Id of the share; for a receiver that reaches the account by ownership, the account's own. */
+            id: string;
+            /** @description Slug of that account. */
+            name: string;
+            /** @description The receiver, as shareWith names it. */
+            receiver: components["schemas"]["AccountReceiver"];
+        };
+        PseudoIssue: {
+            /** @description Stable snake_case diagnostic identifier, as GET /plan-issues answers it. */
+            code: string;
+            /** @description Spec path of the object the issue is about. */
+            field?: string;
+            /** @description Id of that object; empty when the caller may not see it. */
+            id?: string;
+            /** @description Kind of the object that would carry the issue. */
+            kind: string;
+            /** @description What would break. */
+            message: string;
+            /** @description Slug of that object; empty when the caller may not see it or it has none. */
+            name?: string;
+            /** @description JSON pointer of the part of the body the object came from; empty for an object that exists already. */
+            pointer?: string;
+        };
+        PseudoKept: {
+            /** @description Id of the row. */
+            id: string;
+            /**
+             * @description policy or pool.
+             * @enum {string}
+             */
+            kind: "policy" | "pool";
+            /** @description Slug of the row. */
+            name: string;
+            /**
+             * @description in_use: a binding or policy the request does not delete still uses it, seen by the caller or not. kept_by_request: spec.keep names it. not_deletable: it is owned outside the service account's scope, or its delete's grant or governance refuses the caller.
+             * @enum {string}
+             */
+            reason: "in_use" | "kept_by_request" | "not_deletable";
+        };
+        PseudoLimitLink: {
+            /** @description The models a rate limit applies to, canonical; omitted for every model, and for a budget. */
+            models?: string[] | null;
+            /** @description True counts the limit once for everyone under the target; false once per account under it. */
+            shared: boolean;
+        };
+        PseudoLimitRef: {
+            /** @description Id of the budget or rate limit. */
+            id: string;
+            /** @description The link as the policy stores it. */
+            link: components["schemas"]["PseudoLimitLink"];
+            /** @description Slug of the budget or rate limit. */
+            name: string;
+        };
+        PseudoLimitsAnswer: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/PseudoLimitsAnswer.json
+             */
+            readonly $schema?: string;
+            /** @description The budget made, with its link as stored. */
+            budget?: components["schemas"]["PseudoLimitRef"];
+            /**
+             * @description What the policy step did, as POST /pseudo-access answers it.
+             * @enum {string}
+             */
+            case: "none" | "own" | "copy";
+            /** @description Every row made, in write order. */
+            created?: components["schemas"]["CreatedRow"][] | null;
+            /** @description With both limits omitted on a dry run: the policy the account is under now, absent for none. Nothing else is answered then. */
+            current?: components["schemas"]["PolicyCurrent"];
+            /** @description Every row deleted, in write order. */
+            deleted?: components["schemas"]["CreatedRow"][] | null;
+            /** @description The policy the account is under once written, now linking the limit. */
+            policy?: components["schemas"]["RowRef"];
+            /** @description The rate limit made, with its link as stored. */
+            rateLimit?: components["schemas"]["PseudoLimitRef"];
+            /** @description For a team or project target: what the limit does to the lanes under it, which it applies to, such as a budget leaving a lane only unpriced models. Never a refusal; absent for a service account target and on the dry run without a limit. */
+            under?: components["schemas"]["PseudoUnder"];
+            /** @description With a budget: the models the target reaches now that have no pricing, as provider/model; requests for them answer unpriced_under_budget once the budget applies. A warning, not a refusal. */
+            unpricedModels?: string[] | null;
+            /** @description Every row updated, in write order. */
+            updated?: components["schemas"]["CreatedRow"][] | null;
+            /** @description Plan warnings the rows written would raise that are not there now, on those rows (as the row carrying the warning, or the row it names). They refuse nothing; [] when none, and on the dry run without a limit. A row the caller may not see keeps its code and kind only. */
+            warnings: components["schemas"]["PseudoIssue"][] | null;
+        };
+        PseudoUnder: {
+            /**
+             * Format: int64
+             * @description Lanes under it that both lose and gain one. narrowed, widened and changed count each lane once at most.
+             */
+            changed: number;
+            /**
+             * Format: int64
+             * @description Lanes under the target: those of its projects, service accounts and members, those the caller may not see included.
+             */
+            lanes: number;
+            /**
+             * Format: int64
+             * @description Lanes under it that lose at least one model at a host they are served at and gain none. Another pool or account serving the same model at the same host is no change.
+             */
+            narrowed: number;
+            /** @description Lanes under it whose holder the caller may see that were served at some model and host before and at none after, at most 20. */
+            unreachable: components["schemas"]["UnderLane"][] | null;
+            /**
+             * Format: int64
+             * @description Lanes whose holder the caller may not see that become unreachable: counted, not named.
+             */
+            unreachableHidden?: number;
+            /**
+             * Format: int64
+             * @description Lanes the caller may see that become unreachable beyond those listed.
+             */
+            unreachableMore?: number;
+            /**
+             * Format: int64
+             * @description Lanes under it that gain at least one model at a host and lose none.
+             */
+            widened: number;
+        };
         Rate: {
             /**
              * Format: int64
@@ -6452,6 +7048,16 @@ export interface components {
             /** @description The same in words, with what to change. */
             reason: string;
         };
+        ReachHost: {
+            /** @description Display name. */
+            displayName?: string;
+            /** @description Id (UUIDv7). */
+            id: string;
+            /** @description Slug. */
+            name: string;
+            /** @description The model's snapshot names whose requests this host serves for the lane; a request naming another is not routed here. */
+            snapshots: string[] | null;
+        };
         ReachModelRef: {
             /** @description Display name. */
             displayName?: string;
@@ -6480,6 +7086,14 @@ export interface components {
             /** @description The rung that refuses: team, project, lane (caller rungs) or account (an upstream tier); empty when no rung decides, as for a disabled model. */
             rung?: string;
         };
+        ReachSnapshot: {
+            /** @description The model's declared exact aliases that resolve to this snapshot. */
+            aliases?: string[] | null;
+            /** @description The snapshot name, usable as the model of a request. */
+            name: string;
+            /** @description The refusal a request naming this snapshot gets; omitted when it reaches a host. */
+            refused?: components["schemas"]["ReachRefusal"];
+        };
         ReachUpstream: {
             /** @description The provider account holding the keys. */
             account: components["schemas"]["ReachRef"];
@@ -6499,6 +7113,8 @@ export interface components {
             account?: components["schemas"]["ReachRef"];
             /** @description The pool; omitted for a key reached by its scope's ownership, or a pool the caller may not read. */
             pool?: components["schemas"]["ReachRef"];
+            /** @description The model's snapshot names whose requests this pool and account serve; a request naming another is not routed here. */
+            snapshots: string[] | null;
         };
         Reachable: {
             /**
@@ -6523,12 +7139,14 @@ export interface components {
         ReachedModel: {
             /** @description For a bound policy: the bound accounts that reach it. */
             accounts?: components["schemas"]["ReachRef"][] | null;
-            /** @description Hosts serving it for the lane, in failover order. */
-            hosts: components["schemas"]["ReachRef"][] | null;
+            /** @description Hosts serving it for the lane, in failover order, each with the snapshot names it serves. */
+            hosts: components["schemas"]["ReachHost"][] | null;
             /** @description The model. */
             model: components["schemas"]["ReachModelRef"];
             /** @description The model's provider. */
             provider: components["schemas"]["ReachRef"];
+            /** @description Each snapshot name of the model, with its aliases and, for a name that reaches nothing, the refusal a request naming it gets. */
+            snapshots: components["schemas"]["ReachSnapshot"][] | null;
             /** @description Each provider account whose keys could serve it, with its tier's verdict. */
             upstream: components["schemas"]["ReachUpstream"][] | null;
             /** @description What brings it, in failover order. */
@@ -6693,6 +7311,12 @@ export interface components {
             /** @description Rules the role grants; a request is allowed when any rule covers its kind and verb. */
             rules: components["schemas"]["RoleRule"][] | null;
         };
+        RowRef: {
+            /** @description Id of the row. */
+            id: string;
+            /** @description Slug of the row. */
+            name: string;
+        };
         RuntimeConfig: {
             /**
              * Format: uri
@@ -6715,6 +7339,10 @@ export interface components {
              * @enum {string}
              */
             mode?: "oss" | "cloud";
+            /** @description The pseudo kinds this relay serves, such as agents for POST /pseudo-agents; always present, empty when none. A kind not listed has no route. */
+            pseudoKinds: string[] | null;
+            /** @description The kinds of metadata.owner a service account takes on this relay, in order: project, then team and user where accepted; always present. A relay that answers without the field takes project only. */
+            serviceAccountOwnerKinds: string[] | null;
             /** @description Support link shown in the UI. */
             supportUrl?: string;
             /** @description Public client-side error reporting config. */
@@ -6774,7 +7402,7 @@ export interface components {
             /** @description Identity and provenance: id, name, owner, labels. */
             metadata: components["schemas"]["MetadataCreate"];
             /** @description The row's configuration. */
-            spec: components["schemas"]["ServiceAccountSpec"];
+            spec?: components["schemas"]["ServiceAccountSpec"];
         };
         ServiceAccountList: {
             /**
@@ -6792,10 +7420,14 @@ export interface components {
             total: number;
         };
         ServiceAccountSpec: {
-            /** @description False refuses inference with the service account's keys (403 subject_disabled). Omitted means true. */
+            /** @description False refuses inference with the service account's keys (401 unauthenticated). Omitted means true. */
             enabled?: boolean;
-            /** @description Id of the project the service account belongs to. The owner follows it. */
-            projectId: string;
+            /** @description Id of the owning project when metadata.owner is a project. A create that names only spec.projectId is owned by that project. */
+            projectId?: string;
+            /** @description Id of the owning team when metadata.owner is a team. Mirrors the owner; ignored on write. */
+            readonly teamId?: string;
+            /** @description Id of the owning user when metadata.owner is a user: the user's personal bot. Mirrors the owner; ignored on write. */
+            readonly userId?: string;
         };
         ShareAccountRef: {
             /** @description Id of the shared account. */
@@ -6970,6 +7602,15 @@ export interface components {
              */
             unpriced: number;
         };
+        Target: {
+            /** @description Id (metadata.id) of the team, project or service account; a slug answers 400. */
+            id: string;
+            /**
+             * @description What the target is: a team or a project, whose own account is changed, or a service account, whose account (its keys' default lane) is.
+             * @enum {string}
+             */
+            kind: "team" | "project" | "service-account";
+        };
         Team: {
             /**
              * Format: uri
@@ -6992,7 +7633,7 @@ export interface components {
             /** @description Identity and provenance: id, name, owner, labels. */
             metadata: components["schemas"]["MetadataCreate"];
             /** @description The row's configuration. */
-            spec: components["schemas"]["TeamSpec"];
+            spec?: components["schemas"]["TeamSpec"];
         };
         TeamList: {
             /**
@@ -7107,6 +7748,17 @@ export interface components {
             };
             /** @description Non-empty buckets in time order; zero-fill the gaps. */
             points: components["schemas"]["TimeSeriesPoint"][] | null;
+        };
+        UnderLane: {
+            /** @description Id of the holder. */
+            id: string;
+            /**
+             * @description Who holds the lane: a service account, a user (a member's lane), or a project or team for its own account.
+             * @enum {string}
+             */
+            kind: "service-account" | "user" | "project" | "team";
+            /** @description The service account's, project's or team's display name (its slug when it has none), or the user's username. */
+            name: string;
         };
         UnthrottledModel: {
             /** @description An allowed model no linked rate limit covers. */
@@ -7366,6 +8018,10 @@ export interface components {
         createKeyMetadata: {
             /** @description Free-text name shown in the UI. */
             displayName?: string;
+            /** @description Key/value selectors; GET /keys filters on them with ?label=key=value. */
+            labels?: {
+                [key: string]: string;
+            };
             /** @description Slug for the key; derived from displayName when omitted. */
             name?: string;
         };
@@ -7983,6 +8639,36 @@ export interface components {
             /** @description Allowed models no linked rate limit covers. */
             unthrottled: components["schemas"]["UnthrottledModel"][] | null;
         };
+        pseudoOrganizationRefusal: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/pseudoOrganizationRefusal.json
+             */
+            readonly $schema?: string;
+            /** @description With organization_taken: the owner's account at the host that holds the key's organization; send its id as accountId. */
+            account?: components["schemas"]["RowRef"];
+            /** @description The error. */
+            error: components["schemas"]["APIErrorBody"];
+            /** @description JSON pointer of the part of the body refused, such as /spec/accountId. */
+            pointer?: string;
+        };
+        pseudoRefusal: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/pseudoRefusal.json
+             */
+            readonly $schema?: string;
+            /** @description With resource_in_use: the rows that still reference the row a delete step refused on, grouped by kind and field as its own delete call groups them; rows in scopes the caller may not see are counted, not listed. */
+            blockers?: components["schemas"]["blockerGroup"][] | null;
+            /** @description The error. */
+            error: components["schemas"]["APIErrorBody"];
+            /** @description With plan_issue: each error the rows would raise in the plans that they do not have now. */
+            issues?: components["schemas"]["PseudoIssue"][] | null;
+            /** @description JSON pointer of the part of the body the refused row came from, such as /spec/access/accountIds/1. */
+            pointer?: string;
+        };
         refResult: {
             /** @description The (model, host) bindings it matches. */
             bindings: components["schemas"]["resolveBindingRef"][] | null;
@@ -8030,6 +8716,34 @@ export interface components {
             license?: components["schemas"]["reloadLicense"];
             /** @description ok once the snapshot is rebuilt. */
             status: string;
+        };
+        removalChanged: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/removalChanged.json
+             */
+            readonly $schema?: string;
+            /** @description With resource_in_use: the rows that still reference the row a delete step refused on, grouped by kind and field as its own delete call groups them; rows in scopes the caller may not see are counted, not listed. */
+            blockers?: components["schemas"]["blockerGroup"][] | null;
+            /** @description What the request would delete now, as a dry run answers it. */
+            deleted: components["schemas"]["CreatedRow"][] | null;
+            /**
+             * Format: int64
+             * @description As a dry run answers it.
+             */
+            deletedHidden?: number;
+            /** @description The error. */
+            error: components["schemas"]["APIErrorBody"];
+            /** @description What it would keep now, as a dry run answers it. */
+            kept: components["schemas"]["PseudoKept"][] | null;
+            /**
+             * Format: int64
+             * @description As a dry run answers it.
+             */
+            keptHidden?: number;
+            /** @description /spec/expect. */
+            pointer?: string;
         };
         resolveBindingRef: {
             /** @description Host id. */
@@ -8277,7 +8991,7 @@ export interface components {
              * @example https://example.com/schemas/setAccountPolicyInputBody.json
              */
             readonly $schema?: string;
-            /** @description Id of the policy to bind the account to; null unbinds it. */
+            /** @description Id of the policy to bind the account to; null unbinds it. An empty string is refused. */
             policyId: string | null;
         };
         settingsCatalogItem: {
@@ -14305,7 +15019,7 @@ export interface operations {
                 status_min?: number;
                 /** @description Maximum HTTP status to include. */
                 status_max?: number;
-                /** @description Match any of the given HostKey.metadata.id values. */
+                /** @description Match any of the given host_key_id values: hashes of the upstream credential's value, not HostKey.metadata.id. */
                 host_key_id?: string[] | null;
                 /** @description Match any of the model strings as the caller sent them. */
                 requested_model?: string[] | null;
@@ -19038,6 +19752,537 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    create_pseudo_access: {
+        parameters: {
+            query?: {
+                /** @description Run every check, the plan check included, and answer what would be written, without writing it. With spec.access omitted, answer only case and current. */
+                dryRun?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Access"];
+            };
+        };
+        responses: {
+            /** @description dryRun=true: what the write would make, ids included and key plaintexts left out. Nothing was written. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PseudoAccessAnswer"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PseudoAccessAnswer"];
+                };
+            };
+            /** @description The body, or a row it makes, breaks a rule the schema cannot express; error.message says which and pointer names the part of the body. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["pseudoRefusal"];
+                };
+            };
+            /** @description No valid session cookie or admin bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description A row's own grant refuses it, as its own create call would; pointer names the part of the body it came from. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["pseudoRefusal"];
+                };
+            };
+            /** @description The body names a row the caller may not see; pointer names where. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["pseudoRefusal"];
+                };
+            };
+            /** @description conflict: another change touched the same rows at the same time, retry; share_exists or already_reachable from a share; duplicate_binding from the binding; resource_in_use, with blockers, from a step that deletes a row something still references. pointer names the row. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["pseudoRefusal"];
+                };
+            };
+            /** @description plan_issue: every row passes its own checks, but together they would raise errors in the plans that are not there now, or a lane they make or bind would refuse every request; issues lists them, each with the pointer of the part of the body it came from. Nothing was written. Also a body that does not match the schema, with error.details. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["pseudoRefusal"];
+                };
+            };
+            /** @description The write failed on the server; nothing was written. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["pseudoRefusal"];
+                };
+            };
+            /** @description The plans are not loaded yet, or checking the rows against them took longer than RELAY_PLAN_CHECK_TIMEOUT_MS. Nothing was written. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["pseudoRefusal"];
+                };
+            };
+        };
+    };
+    create_pseudo_agent_removal: {
+        parameters: {
+            query?: {
+                /** @description Run every check, the plan check included, and answer what would be deleted and kept, without deleting it. */
+                dryRun?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentRemoval"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PseudoAgentRemovalAnswer"];
+                };
+            };
+            /** @description The body, or a row it makes, breaks a rule the schema cannot express; error.message says which and pointer names the part of the body. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["pseudoRefusal"];
+                };
+            };
+            /** @description No valid session cookie or admin bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description A row's own grant refuses it, as its own create call would; pointer names the part of the body it came from. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["pseudoRefusal"];
+                };
+            };
+            /** @description The body names a row the caller may not see; pointer names where. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["pseudoRefusal"];
+                };
+            };
+            /** @description changed: spec.expect is no longer exactly the set the request would delete; deleted and kept say what it is now, and nothing was deleted. resource_in_use, with blockers grouped as the row's own delete call answers them: a row still references one the request deletes, such as a role binding naming the service account. managed_by_source: an identity source manages the service account. conflict: another change touched the same rows at the same time, retry. pointer names the part of the body. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["removalChanged"];
+                };
+            };
+            /** @description plan_issue: every row passes its own checks, but together they would raise errors in the plans that are not there now, or a lane they make or bind would refuse every request; issues lists them, each with the pointer of the part of the body it came from. Nothing was written. Also a body that does not match the schema, with error.details. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["pseudoRefusal"];
+                };
+            };
+            /** @description The write failed on the server; nothing was written. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["pseudoRefusal"];
+                };
+            };
+            /** @description The plans are not loaded yet, or checking the rows against them took longer than RELAY_PLAN_CHECK_TIMEOUT_MS. Nothing was written. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["pseudoRefusal"];
+                };
+            };
+        };
+    };
+    create_pseudo_agent: {
+        parameters: {
+            query?: {
+                /** @description Run every check, the plan check included, and answer what would be made, without writing it. */
+                dryRun?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Agent"];
+            };
+        };
+        responses: {
+            /** @description dryRun=true: what the write would make, ids included and key plaintexts left out. Nothing was written. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PseudoAgentCreated"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PseudoAgentCreated"];
+                };
+            };
+            /** @description The body, or a row it makes, breaks a rule the schema cannot express; error.message says which and pointer names the part of the body. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["pseudoRefusal"];
+                };
+            };
+            /** @description No valid session cookie or admin bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description A row's own grant refuses it, as its own create call would; pointer names the part of the body it came from. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["pseudoRefusal"];
+                };
+            };
+            /** @description The body names a row the caller may not see; pointer names where. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["pseudoRefusal"];
+                };
+            };
+            /** @description conflict: another change touched the same rows at the same time, retry; share_exists, already_reachable or reshare_refused from a share; duplicate_binding from the binding; managed_by_source. pointer names the row. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["pseudoRefusal"];
+                };
+            };
+            /** @description plan_issue: every row passes its own checks, but together they would raise errors in the plans that are not there now, or a lane they make or bind would refuse every request; issues lists them, each with the pointer of the part of the body it came from. Nothing was written. Also a body that does not match the schema, with error.details. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["pseudoRefusal"];
+                };
+            };
+            /** @description The write failed on the server; nothing was written. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["pseudoRefusal"];
+                };
+            };
+            /** @description The plans are not loaded yet, or checking the rows against them took longer than RELAY_PLAN_CHECK_TIMEOUT_MS. Nothing was written. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["pseudoRefusal"];
+                };
+            };
+        };
+    };
+    create_pseudo_host_key: {
+        parameters: {
+            query?: {
+                /** @description Ask the host about the value and run every check, the plan check included, and answer what would be made, without writing it or storing the value. */
+                dryRun?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HostKeyForm"];
+            };
+        };
+        responses: {
+            /** @description dryRun=true: what the write would make, ids included and key plaintexts left out. Nothing was written. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PseudoHostKeyCreated"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PseudoHostKeyCreated"];
+                };
+            };
+            /** @description The body, or a row it makes, breaks a rule the schema cannot express; error.message says which and pointer names the part of the body. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["pseudoRefusal"];
+                };
+            };
+            /** @description No valid session cookie or admin bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description A row's own grant refuses it, as its own create call would; pointer names the part of the body it came from. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["pseudoRefusal"];
+                };
+            };
+            /** @description The body names a row the caller may not see; pointer names where. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["pseudoRefusal"];
+                };
+            };
+            /** @description organization_taken: the host named an organization another account of the owner at the host holds; account names it. organization_mismatch: the account named holds another organization. conflict: another change touched the same rows at the same time, retry; share_exists or reshare_refused from a share; duplicate_binding from the tier binding. pointer names the part of the body. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["pseudoOrganizationRefusal"];
+                };
+            };
+            /** @description provider_refused_key: the host answered 401 or 403 to spec.value; nothing was written. plan_issue: every row passes its own checks, but together they would raise errors in the plans that are not there now, or a lane they make or bind would refuse every request; issues lists them, each with the pointer of the part of the body it came from. Nothing was written. Also a body that does not match the schema, with error.details. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["pseudoRefusal"];
+                };
+            };
+            /** @description The write failed on the server; nothing was written. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["pseudoRefusal"];
+                };
+            };
+            /** @description The plans are not loaded yet, or checking the rows against them took longer than RELAY_PLAN_CHECK_TIMEOUT_MS. Nothing was written. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["pseudoRefusal"];
+                };
+            };
+        };
+    };
+    create_pseudo_limits: {
+        parameters: {
+            query?: {
+                /** @description Run every check, the plan check included, and answer what would be written, without writing it. With spec.budget and spec.rateLimit omitted, answer only case and current. */
+                dryRun?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Limits"];
+            };
+        };
+        responses: {
+            /** @description dryRun=true: what the write would make, ids included and key plaintexts left out. Nothing was written. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PseudoLimitsAnswer"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PseudoLimitsAnswer"];
+                };
+            };
+            /** @description The body, or a row it makes, breaks a rule the schema cannot express; error.message says which and pointer names the part of the body. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["pseudoRefusal"];
+                };
+            };
+            /** @description No valid session cookie or admin bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description A row's own grant refuses it, as its own create call would; pointer names the part of the body it came from. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["pseudoRefusal"];
+                };
+            };
+            /** @description The body names a row the caller may not see; pointer names where. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["pseudoRefusal"];
+                };
+            };
+            /** @description conflict: another change touched the same rows at the same time, retry; duplicate_binding from the binding; resource_in_use, with blockers, from a step that deletes a row something still references. pointer names the row. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["pseudoRefusal"];
+                };
+            };
+            /** @description plan_issue: every row passes its own checks, but together they would raise errors in the plans that are not there now, or a lane they make or bind would refuse every request; issues lists them, each with the pointer of the part of the body it came from. Nothing was written. Also a body that does not match the schema, with error.details. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["pseudoRefusal"];
+                };
+            };
+            /** @description The write failed on the server; nothing was written. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["pseudoRefusal"];
+                };
+            };
+            /** @description The plans are not loaded yet, or checking the rows against them took longer than RELAY_PLAN_CHECK_TIMEOUT_MS. Nothing was written. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["pseudoRefusal"];
                 };
             };
         };
@@ -23947,7 +25192,7 @@ export interface operations {
                 status_min?: number;
                 /** @description Maximum HTTP status to include. */
                 status_max?: number;
-                /** @description Match any of the given HostKey.metadata.id values. */
+                /** @description Match any of the given host_key_id values: hashes of the upstream credential's value, not HostKey.metadata.id. */
                 host_key_id?: string[] | null;
                 /** @description Match any of the model strings as the caller sent them. */
                 requested_model?: string[] | null;
@@ -24086,7 +25331,7 @@ export interface operations {
                 status_min?: number;
                 /** @description Maximum HTTP status to include. */
                 status_max?: number;
-                /** @description Match any of the given HostKey.metadata.id values. */
+                /** @description Match any of the given host_key_id values: hashes of the upstream credential's value, not HostKey.metadata.id. */
                 host_key_id?: string[] | null;
                 /** @description Match any of the model strings as the caller sent them. */
                 requested_model?: string[] | null;
@@ -24225,7 +25470,7 @@ export interface operations {
                 status_min?: number;
                 /** @description Maximum HTTP status to include. */
                 status_max?: number;
-                /** @description Match any of the given HostKey.metadata.id values. */
+                /** @description Match any of the given host_key_id values: hashes of the upstream credential's value, not HostKey.metadata.id. */
                 host_key_id?: string[] | null;
                 /** @description Match any of the model strings as the caller sent them. */
                 requested_model?: string[] | null;
@@ -24370,7 +25615,7 @@ export interface operations {
                 status_min?: number;
                 /** @description Maximum HTTP status to include. */
                 status_max?: number;
-                /** @description Match any of the given HostKey.metadata.id values. */
+                /** @description Match any of the given host_key_id values: hashes of the upstream credential's value, not HostKey.metadata.id. */
                 host_key_id?: string[] | null;
                 /** @description Match any of the model strings as the caller sent them. */
                 requested_model?: string[] | null;

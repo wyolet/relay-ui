@@ -25,8 +25,14 @@ export interface MockGraph {
 	/** Answers POST /access-review from the request body; absent = 404, a
 	 * relay without the endpoint. */
 	accessReview?: (body: AccessReviewBody) => MockResponse;
-	/** Runtime-config feature flags; absent = no config document. */
+	/** Runtime-config feature flags; absent with `pseudoKinds` = no config document. */
 	features?: Record<string, boolean>;
+	/** Runtime-config one-request kinds, such as "agents". */
+	pseudoKinds?: string[];
+	/** Runtime-config owner kinds a service account takes; absent = projects only. */
+	serviceAccountOwnerKinds?: string[];
+	/** whoami's state of the caller's own personal account. */
+	personalAccountEffective?: { state: "on" | "off"; source: string };
 	/** Relay's plan issues; `/plan-issues` applies its `about` filter. */
 	planIssues?: MockPlanIssue[];
 }
@@ -95,6 +101,9 @@ const GRAPH_COLLECTIONS: Record<
 		| "roles"
 		| "accessReview"
 		| "features"
+		| "pseudoKinds"
+		| "serviceAccountOwnerKinds"
+		| "personalAccountEffective"
 		| "planIssues"
 		| "contexts"
 	>
@@ -141,10 +150,14 @@ const NOT_FOUND = { error: { type: "invalid_request_error", message: "not found"
  * this; Playwright runs the latest matching route first.
  */
 export async function mockApi(page: Page, graph: MockGraph): Promise<void> {
-	const { features } = graph;
-	if (features) {
+	const { features, pseudoKinds, serviceAccountOwnerKinds } = graph;
+	if (features || pseudoKinds || serviceAccountOwnerKinds) {
 		await page.route("**/*config.json", (route) =>
-			fulfillJson(route, { features }),
+			fulfillJson(route, {
+				features,
+				pseudoKinds: pseudoKinds ?? [],
+				serviceAccountOwnerKinds,
+			}),
 		);
 	}
 	await page.route("**/api/**", (route) => {
@@ -156,6 +169,7 @@ export async function mockApi(page: Page, graph: MockGraph): Promise<void> {
 				user_id: "test-user",
 				username: "test",
 				roles: graph.roles ?? [],
+				personalAccountEffective: graph.personalAccountEffective,
 			});
 		}
 		if (path === "settings/proxy-mode") {

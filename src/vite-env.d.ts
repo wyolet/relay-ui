@@ -16,6 +16,11 @@ interface ImportMetaEnv {
 	 * bare origin). Never set in prod builds. See runtimeConfig.ts.
 	 */
 	readonly VITE_CONTROL_API_URL?: string;
+	/**
+	 * Dev-only: comma-separated feature flags to turn on when the config
+	 * document doesn't carry them. Never read in prod builds. See runtimeConfig.ts.
+	 */
+	readonly VITE_FEATURES?: string;
 }
 
 interface ImportMeta {

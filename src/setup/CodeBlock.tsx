@@ -37,12 +37,15 @@ const SH_TOKENS = [
 
 const MODEL_MARK = "@@MODEL_SLOT@@";
 const MSG_MARK = "@@MSG_SLOT@@";
-const MODEL_SPAN = new RegExp(
-	`<span class="sh__token--[a-z]+"[^>]*>${MODEL_PLACEHOLDER}</span>`,
-);
-const MSG_SPAN = new RegExp(
-	`<span class="sh__token--[a-z]+"[^>]*>${MSG_PLACEHOLDER}</span>`,
-);
+// The highlighter gives a placeholder a span of its own in code, and leaves it
+// inside the surrounding string span in a shell command; either way the span
+// is closed before the mark and reopened after it.
+function markPlaceholder(html: string, placeholder: string, mark: string) {
+	const span = new RegExp(
+		`(<span class="sh__token--[a-z]+"[^>]*>)([^<]*)${placeholder}([^<]*)</span>`,
+	);
+	return html.replace(span, `$1$2</span>${mark}$1$3</span>`);
+}
 
 interface Segment {
 	key: string;
@@ -53,9 +56,11 @@ interface Segment {
 // Highlight once, then carve out the (whole) placeholder spans so the static
 // HTML around them never re-renders — only the spliced value spans animate.
 function segmentize(template: string): Segment[] {
-	const marked = highlight(template)
-		.replace(MODEL_SPAN, MODEL_MARK)
-		.replace(MSG_SPAN, MSG_MARK);
+	const marked = markPlaceholder(
+		markPlaceholder(highlight(template), MODEL_PLACEHOLDER, MODEL_MARK),
+		MSG_PLACEHOLDER,
+		MSG_MARK,
+	);
 	let offset = 0;
 	return marked
 		.split(/(@@MODEL_SLOT@@|@@MSG_SLOT@@)/)

@@ -33,6 +33,33 @@ export class ApiError extends Error {
 	}
 }
 
+export type PseudoRefusalBody = components["schemas"]["pseudoRefusal"];
+export type PseudoOrganizationRefusalBody =
+	components["schemas"]["pseudoOrganizationRefusal"];
+export type PseudoIssue = components["schemas"]["PseudoIssue"];
+type RowRef = components["schemas"]["RowRef"];
+
+/** A refused one-request write; nothing was written. */
+export class PseudoRefusal extends ApiError {
+	/** JSON Pointer into the request body naming the refused part; "" when relay names none. */
+	readonly pointer: string;
+	/** With `plan_issue`: what the rows would break together. */
+	readonly issues: PseudoIssue[];
+	/** With `organization_taken`: the owner's account that holds the key's organization. */
+	readonly account?: RowRef;
+
+	constructor(
+		status: number,
+		body: PseudoRefusalBody | PseudoOrganizationRefusalBody,
+	) {
+		super(status, body.error, "blockers" in body ? body.blockers : null);
+		this.name = "PseudoRefusal";
+		this.pointer = body.pointer ?? "";
+		this.issues = "issues" in body ? (body.issues ?? []) : [];
+		if ("account" in body && body.account) this.account = body.account;
+	}
+}
+
 /** A delete refused because other rows still reference the target. */
 export function isResourceInUse(err: unknown): err is ApiError {
 	return (
@@ -44,6 +71,15 @@ export function isResourceInUse(err: unknown): err is ApiError {
 /** Relay refused the signed-in account itself; it has already ended the session. */
 export function isAccountDisabled(err: unknown): err is ApiError {
 	return err instanceof ApiError && err.body.code === ACCOUNT_DISABLED;
+}
+
+/** A share refused because the receiver already holds a share of the account. */
+export function isShareExists(err: unknown): err is ApiError {
+	return (
+		err instanceof ApiError &&
+		err.status === 409 &&
+		err.body.code === "share_exists"
+	);
 }
 
 /** An update refused because the row changed after the caller loaded it. */
