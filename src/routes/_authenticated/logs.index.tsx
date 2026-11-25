@@ -1,10 +1,8 @@
 import {
 	createFileRoute,
-	Link,
 	stripSearchParams,
 	useNavigate,
 } from "@tanstack/react-router";
-import { ChevronLeft } from "lucide-react";
 import { Suspense } from "react";
 import { z } from "zod";
 import { type LogsFilter, logsInfiniteQueryOptions } from "@/api/hooks/logs";
@@ -16,6 +14,8 @@ import { type LogFilterKey, LogsTable } from "@/logs/LogsTable";
 import { SINCE_VALUES, STATUS_CLASS_VALUES } from "@/logs/logFilterConfig";
 import { SLOW_MS } from "@/logs/predicates";
 import { useLogLabeler } from "@/logs/useLogsFilterOptions";
+import { BackLink } from "@/shared/BackLink";
+import { PageHeader } from "@/shared/PageHeader";
 import { PageLoader } from "@/shared/Spinner";
 import { StaleContent } from "@/shared/StaleContent";
 import { useDeferredSearch } from "@/shared/useDeferredSearch";
@@ -100,52 +100,45 @@ function LogsPage() {
 	};
 
 	return (
-		<div className="flex flex-col gap-6">
-			<div className="flex items-start justify-between gap-4">
-				<div>
-					<Link
-						to="/usage"
-						className="mb-2 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-					>
-						<ChevronLeft className="w-3.5 h-3.5" />
-						Usage
-					</Link>
-					<h1 className="text-2xl font-bold text-foreground">Logs</h1>
-					<p className="mt-1 text-label text-ink-2">
-						Requests through the relay, newest first. Expand a row for its
-						summary; open the request page for captured bodies.
-					</p>
-				</div>
-				<EraseBodiesButton />
-			</div>
-
-			<LogsHistogram filter={{ ...toLogsFilter(live), ...usageScope }} />
-
-			<LogsFilters
-				values={live}
-				scope={usageScope}
-				slowLabel={SLOW_LABEL}
-				onChange={patch}
+		<div>
+			<PageHeader
+				back={<BackLink to="/usage">Usage</BackLink>}
+				title="Logs"
+				description="Requests through the relay, newest first. Expand a row for its summary; open the request page for captured bodies."
+				actions={<EraseBodiesButton />}
 			/>
 
-			<StaleContent stale={isStale}>
-				<Suspense fallback={<Loading />}>
-					<LogsTable
-						expandedId={expand ?? null}
-						onToggle={(id) => patch({ expand: expand === id ? undefined : id })}
-						onOpenRequest={(id) =>
-							void navigate({
-								to: "/logs/$requestId",
-								params: { requestId: id },
-							})
-						}
-						onFilter={addFilter}
-						labelFor={labelFor}
-						query={search.q}
-						filter={filter}
-					/>
-				</Suspense>
-			</StaleContent>
+			<div className="flex flex-col gap-6">
+				<LogsHistogram filter={{ ...toLogsFilter(live), ...usageScope }} />
+
+				<LogsFilters
+					values={live}
+					scope={usageScope}
+					slowLabel={SLOW_LABEL}
+					onChange={patch}
+				/>
+
+				<StaleContent stale={isStale}>
+					<Suspense fallback={<Loading />}>
+						<LogsTable
+							expandedId={expand ?? null}
+							onToggle={(id) =>
+								patch({ expand: expand === id ? undefined : id })
+							}
+							onOpenRequest={(id) =>
+								void navigate({
+									to: "/logs/$requestId",
+									params: { requestId: id },
+								})
+							}
+							onFilter={addFilter}
+							labelFor={labelFor}
+							query={search.q}
+							filter={filter}
+						/>
+					</Suspense>
+				</StaleContent>
+			</div>
 		</div>
 	);
 }

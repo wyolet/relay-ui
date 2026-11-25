@@ -1,11 +1,12 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ChevronLeft } from "lucide-react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { z } from "zod";
 import { accountListQueryOptions } from "@/api/hooks/accounts";
 import { policiesListQueryOptions } from "@/api/hooks/policies";
 import { projectsListQueryOptions } from "@/api/hooks/projects";
 import { PolicyBindingForm } from "@/policy-bindings/PolicyBindingForm";
+import { BackLink } from "@/shared/BackLink";
+import { PageHeader } from "@/shared/PageHeader";
 import { PageLoader } from "@/shared/Spinner";
 
 const searchSchema = z.object({
@@ -27,24 +28,16 @@ function NewPolicyBindingInner() {
 	const { project_id } = Route.useSearch();
 	const navigate = useNavigate();
 	return (
-		<div className="flex flex-col gap-4">
-			<div>
-				<Link
-					to="/policies"
-					search={{ tab: "bindings" }}
-					className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-				>
-					<ChevronLeft className="w-3.5 h-3.5" />
-					Policy bindings
-				</Link>
-				<h1 className="mt-2 text-xl font-semibold text-foreground">
-					New policy binding
-				</h1>
-				<p className="mt-1 text-xs text-muted-foreground">
-					A request must pass the policy of every account it climbs: its team,
-					its project, and the account it runs in.
-				</p>
-			</div>
+		<div>
+			<PageHeader
+				back={
+					<BackLink to="/policies" search={{ tab: "bindings" }}>
+						Policy bindings
+					</BackLink>
+				}
+				title="New policy binding"
+				description="A request must pass the policy of every account it climbs: its team, its project, and the account it runs in."
+			/>
 			<PolicyBindingForm
 				projectId={project_id}
 				onSaved={(name) =>

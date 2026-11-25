@@ -1,13 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import {
-	Bot,
-	Boxes,
-	ChevronLeft,
-	KeyRound,
-	Link2,
-	ShieldCheck,
-	Users,
-} from "lucide-react";
+import { Bot, Boxes, KeyRound, Link2, ShieldCheck, Users } from "lucide-react";
 import { useKeysForPrincipals } from "@/api/hooks/keys";
 import { useProjectPolicies } from "@/api/hooks/policies";
 import { usePolicyBindingsOwnedBy } from "@/api/hooks/policyBindings";
@@ -26,6 +18,7 @@ import { AccountPolicy } from "@/policy-bindings/AccountPolicy";
 import { InheritedPolicies } from "@/policy-bindings/InheritedPolicies";
 import { useToggleProjectEnabled } from "@/projects/useToggleProjectEnabled";
 import { ScopeRoleBindingsCard } from "@/role-bindings/ScopeRoleBindingsCard";
+import { BackLink } from "@/shared/BackLink";
 import { Chip } from "@/shared/Chip";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import {
@@ -81,16 +74,9 @@ export function ProjectDetailView({ name }: { name: string }) {
 	);
 
 	return (
-		<div className="flex flex-col gap-5">
-			<Link
-				to="/projects"
-				className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-			>
-				<ChevronLeft className="w-3.5 h-3.5" />
-				Projects
-			</Link>
-
+		<div>
 			<DetailPageHeader
+				back={<BackLink to="/projects">Projects</BackLink>}
 				icon={Boxes}
 				metadata={project.metadata}
 				badges={<StatusBadge enabled={enabled} />}
@@ -137,174 +123,176 @@ export function ProjectDetailView({ name }: { name: string }) {
 				</DetailHeaderActions>
 			</DetailPageHeader>
 
-			<DetailCard title="Configuration" icon={Users}>
-				<dl className="divide-y divide-border">
-					<DetailRow label="Team">
-						{team ? (
-							<Link
-								to="/teams/$name"
-								params={{ name: team.metadata.name }}
-								className="text-foreground hover:underline"
-							>
-								{displayLabel(team.metadata)}
-							</Link>
-						) : (
-							<code className="font-mono text-[11px]">
-								{project.spec.teamId}
-							</code>
-						)}
-					</DetailRow>
-					<AccountPolicy
-						accountRef={{ ownerOf: { kind: "project", id: projectId } }}
-						attach={{
-							label: displayLabel(project.metadata),
-							owner: { kind: "project", id: projectId },
-						}}
-					/>
-					<InheritedPolicies
-						accountRef={{ ownerOf: { kind: "project", id: projectId } }}
-					/>
-					{labels.length > 0 && (
-						<DetailRow label="Labels">
-							<div className="flex flex-wrap gap-1.5">
-								{labels.map(([k, v]) => (
-									<Chip key={k} label={`${k}=${v}`} mono />
-								))}
-							</div>
+			<div className="flex flex-col gap-5">
+				<DetailCard title="Configuration" icon={Users}>
+					<dl className="divide-y divide-border">
+						<DetailRow label="Team">
+							{team ? (
+								<Link
+									to="/teams/$name"
+									params={{ name: team.metadata.name }}
+									className="text-foreground hover:underline"
+								>
+									{displayLabel(team.metadata)}
+								</Link>
+							) : (
+								<code className="font-mono text-[11px]">
+									{project.spec.teamId}
+								</code>
+							)}
 						</DetailRow>
+						<AccountPolicy
+							accountRef={{ ownerOf: { kind: "project", id: projectId } }}
+							attach={{
+								label: displayLabel(project.metadata),
+								owner: { kind: "project", id: projectId },
+							}}
+						/>
+						<InheritedPolicies
+							accountRef={{ ownerOf: { kind: "project", id: projectId } }}
+						/>
+						{labels.length > 0 && (
+							<DetailRow label="Labels">
+								<div className="flex flex-wrap gap-1.5">
+									{labels.map(([k, v]) => (
+										<Chip key={k} label={`${k}=${v}`} mono />
+									))}
+								</div>
+							</DetailRow>
+						)}
+					</dl>
+				</DetailCard>
+
+				<ScopeSpendCard
+					spend={spend}
+					unavailable={unavailable}
+					breakdownLabel="By model"
+					renderKey={(key) => <span className="font-mono">{key || "—"}</span>}
+				/>
+
+				<DetailCard title="Service accounts" icon={Bot}>
+					{(serviceAccounts.data?.items ?? []).length === 0 ? (
+						<DetailEmpty>This project has no service accounts yet.</DetailEmpty>
+					) : (
+						<ul className="divide-y divide-border">
+							{(serviceAccounts.data?.items ?? []).map((sa) => (
+								<DetailListRow key={sa.metadata.name}>
+									<Link
+										to="/service-accounts/$name"
+										params={{ name: sa.metadata.name }}
+										className="text-foreground hover:underline"
+									>
+										{displayLabel(sa.metadata)}
+									</Link>
+									<StatusBadge enabled={sa.spec.enabled !== false} />
+								</DetailListRow>
+							))}
+						</ul>
 					)}
-				</dl>
-			</DetailCard>
+				</DetailCard>
 
-			<ScopeSpendCard
-				spend={spend}
-				unavailable={unavailable}
-				breakdownLabel="By model"
-				renderKey={(key) => <span className="font-mono">{key || "—"}</span>}
-			/>
+				<DetailCard title="Keys" icon={KeyRound}>
+					{(keys.data?.items ?? []).length === 0 ? (
+						<DetailEmpty>
+							No keys are issued to this project's service accounts.
+						</DetailEmpty>
+					) : (
+						<ul className="divide-y divide-border">
+							{(keys.data?.items ?? []).map((k) => (
+								<DetailListRow key={k.metadata.name}>
+									<Link
+										to="/keys/$name"
+										params={{ name: k.metadata.name }}
+										className="text-foreground hover:underline"
+									>
+										{displayLabel(k.metadata)}
+									</Link>
+									<span className="text-muted-foreground">
+										{serviceAccountNames.get(k.spec.principal.id) ?? "—"}
+									</span>
+								</DetailListRow>
+							))}
+						</ul>
+					)}
+				</DetailCard>
 
-			<DetailCard title="Service accounts" icon={Bot}>
-				{(serviceAccounts.data?.items ?? []).length === 0 ? (
-					<DetailEmpty>This project has no service accounts yet.</DetailEmpty>
-				) : (
-					<ul className="divide-y divide-border">
-						{(serviceAccounts.data?.items ?? []).map((sa) => (
-							<DetailListRow key={sa.metadata.name}>
-								<Link
-									to="/service-accounts/$name"
-									params={{ name: sa.metadata.name }}
-									className="text-foreground hover:underline"
-								>
-									{displayLabel(sa.metadata)}
-								</Link>
-								<StatusBadge enabled={sa.spec.enabled !== false} />
-							</DetailListRow>
-						))}
-					</ul>
+				<DetailCard title="Policies" icon={ShieldCheck}>
+					{(policies.data?.items ?? []).length === 0 ? (
+						<DetailEmpty>This project owns no policies.</DetailEmpty>
+					) : (
+						<ul className="divide-y divide-border">
+							{(policies.data?.items ?? []).map((p) => (
+								<DetailListRow key={p.metadata.name}>
+									<Link
+										to="/policies/$name"
+										params={{ name: p.metadata.name }}
+										className="text-foreground hover:underline"
+									>
+										{displayLabel(p.metadata)}
+									</Link>
+									<StatusBadge enabled={p.spec.enabled !== false} />
+								</DetailListRow>
+							))}
+						</ul>
+					)}
+				</DetailCard>
+
+				<DetailCard
+					title="Policy bindings"
+					icon={ShieldCheck}
+					action={
+						<Link
+							to="/policy-bindings/new"
+							search={{ project_id: projectId }}
+							className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+						>
+							New policy binding
+						</Link>
+					}
+				>
+					{(policyBindings.data?.items ?? []).length === 0 ? (
+						<DetailEmpty>This project owns no policy bindings.</DetailEmpty>
+					) : (
+						<ul className="divide-y divide-border">
+							{(policyBindings.data?.items ?? []).map((b) => (
+								<DetailListRow key={b.metadata.name}>
+									<Link
+										to="/policy-bindings/$name"
+										params={{ name: b.metadata.name }}
+										className="min-w-0 truncate text-foreground hover:underline"
+									>
+										{displayLabel(b.metadata)}
+									</Link>
+									{(b.spec.accountIds ?? []).length > 0 ? (
+										<AccountChips accountIds={b.spec.accountIds ?? []} />
+									) : (
+										<span className="text-muted-foreground">No accounts</span>
+									)}
+								</DetailListRow>
+							))}
+						</ul>
+					)}
+				</DetailCard>
+
+				<ScopeRoleBindingsCard scopeKind="project" scopeId={projectId} />
+
+				<DetailCard title="References" icon={Link2}>
+					<ReferencesList
+						items={refs.items}
+						empty="Nothing points at this project yet."
+					/>
+				</DetailCard>
+
+				{del.target && (
+					<DeleteConfirm
+						resourceName={del.target.name}
+						onConfirm={() => void del.confirm()}
+						onCancel={del.cancel}
+						isPending={del.isPending}
+						error={del.error}
+					/>
 				)}
-			</DetailCard>
-
-			<DetailCard title="Keys" icon={KeyRound}>
-				{(keys.data?.items ?? []).length === 0 ? (
-					<DetailEmpty>
-						No keys are issued to this project's service accounts.
-					</DetailEmpty>
-				) : (
-					<ul className="divide-y divide-border">
-						{(keys.data?.items ?? []).map((k) => (
-							<DetailListRow key={k.metadata.name}>
-								<Link
-									to="/keys/$name"
-									params={{ name: k.metadata.name }}
-									className="text-foreground hover:underline"
-								>
-									{displayLabel(k.metadata)}
-								</Link>
-								<span className="text-muted-foreground">
-									{serviceAccountNames.get(k.spec.principal.id) ?? "—"}
-								</span>
-							</DetailListRow>
-						))}
-					</ul>
-				)}
-			</DetailCard>
-
-			<DetailCard title="Policies" icon={ShieldCheck}>
-				{(policies.data?.items ?? []).length === 0 ? (
-					<DetailEmpty>This project owns no policies.</DetailEmpty>
-				) : (
-					<ul className="divide-y divide-border">
-						{(policies.data?.items ?? []).map((p) => (
-							<DetailListRow key={p.metadata.name}>
-								<Link
-									to="/policies/$name"
-									params={{ name: p.metadata.name }}
-									className="text-foreground hover:underline"
-								>
-									{displayLabel(p.metadata)}
-								</Link>
-								<StatusBadge enabled={p.spec.enabled !== false} />
-							</DetailListRow>
-						))}
-					</ul>
-				)}
-			</DetailCard>
-
-			<DetailCard
-				title="Policy bindings"
-				icon={ShieldCheck}
-				action={
-					<Link
-						to="/policy-bindings/new"
-						search={{ project_id: projectId }}
-						className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
-					>
-						New policy binding
-					</Link>
-				}
-			>
-				{(policyBindings.data?.items ?? []).length === 0 ? (
-					<DetailEmpty>This project owns no policy bindings.</DetailEmpty>
-				) : (
-					<ul className="divide-y divide-border">
-						{(policyBindings.data?.items ?? []).map((b) => (
-							<DetailListRow key={b.metadata.name}>
-								<Link
-									to="/policy-bindings/$name"
-									params={{ name: b.metadata.name }}
-									className="min-w-0 truncate text-foreground hover:underline"
-								>
-									{displayLabel(b.metadata)}
-								</Link>
-								{(b.spec.accountIds ?? []).length > 0 ? (
-									<AccountChips accountIds={b.spec.accountIds ?? []} />
-								) : (
-									<span className="text-muted-foreground">No accounts</span>
-								)}
-							</DetailListRow>
-						))}
-					</ul>
-				)}
-			</DetailCard>
-
-			<ScopeRoleBindingsCard scopeKind="project" scopeId={projectId} />
-
-			<DetailCard title="References" icon={Link2}>
-				<ReferencesList
-					items={refs.items}
-					empty="Nothing points at this project yet."
-				/>
-			</DetailCard>
-
-			{del.target && (
-				<DeleteConfirm
-					resourceName={del.target.name}
-					onConfirm={() => void del.confirm()}
-					onCancel={del.cancel}
-					isPending={del.isPending}
-					error={del.error}
-				/>
-			)}
+			</div>
 		</div>
 	);
 }

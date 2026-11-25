@@ -1,6 +1,9 @@
 import type { Model } from "@/api/types/model";
 import { PlanIssuesPanel } from "@/diagnostics/IssuesPanel";
-import { ModelDetailHeader } from "@/models/ModelDetailHeader";
+import {
+	ModelDeprecationNotice,
+	ModelDetailHeader,
+} from "@/models/ModelDetailHeader";
 import { ModelHostList } from "@/models/ModelHostList";
 import { ModelPolicyList } from "@/models/ModelPolicyList";
 import { ModelSpec } from "@/models/ModelSpec";
@@ -34,34 +37,37 @@ export function ModelDetailView({
 	const policies = useModelPolicies(name);
 
 	return (
-		<div className="grid grid-cols-1 gap-12">
-			<div className="grid grid-cols-1 gap-8">
-				<ModelDetailHeader
-					model={model}
-					onToggleEnabled={onToggleEnabled}
-					onDelete={onDelete}
-					toggling={toggling}
-					deleting={deleting}
-				/>
-				<PlanIssuesPanel kind="model" id={id} />
-				{id && (
-					<WeekFigures
-						scope={modelWeekScope(id)}
-						emptyBody="Requests to this model show up here: spend, latency, errors and the hosts that served them."
-					/>
-				)}
-			</div>
-
-			<div className="grid grid-cols-1 gap-12 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-				{/* One column below xl, so Spec reads between the hosts and who may call it. */}
-				<div className="contents xl:grid xl:min-w-0 xl:grid-cols-1 xl:content-start xl:gap-12">
-					{id && <WeekTraffic scope={modelWeekScope(id)} />}
-					<ModelHostList lines={hostLines} modelId={id} />
-					<div className="min-w-0 max-xl:order-last">
-						<ModelPolicyList policies={policies} />
-					</div>
+		<div>
+			<ModelDetailHeader
+				model={model}
+				onToggleEnabled={onToggleEnabled}
+				onDelete={onDelete}
+				toggling={toggling}
+				deleting={deleting}
+			/>
+			<div className="grid grid-cols-1 gap-12">
+				<div className="grid grid-cols-1 gap-8">
+					<ModelDeprecationNotice model={model} />
+					<PlanIssuesPanel kind="model" id={id} />
+					{id && (
+						<WeekFigures
+							scope={modelWeekScope(id)}
+							emptyBody="Requests to this model show up here: spend, latency, errors and the hosts that served them."
+						/>
+					)}
 				</div>
-				<ModelSpec model={model} provider={provider} />
+
+				<div className="grid grid-cols-1 gap-12 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+					{/* One column below xl, so Spec reads between the hosts and who may call it. */}
+					<div className="contents xl:grid xl:min-w-0 xl:grid-cols-1 xl:content-start xl:gap-12">
+						{id && <WeekTraffic scope={modelWeekScope(id)} />}
+						<ModelHostList lines={hostLines} modelId={id} />
+						<div className="min-w-0 max-xl:order-last">
+							<ModelPolicyList policies={policies} />
+						</div>
+					</div>
+					<ModelSpec model={model} provider={provider} />
+				</div>
 			</div>
 		</div>
 	);

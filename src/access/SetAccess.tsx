@@ -130,7 +130,7 @@ export function SetAccess({
 	if (state.status === "loading") return <PageLoader />;
 	if (state.status !== "ready") {
 		return (
-			<div className="flex flex-col gap-6">
+			<div>
 				<Header kind={kind} back="Back" />
 				<p className="text-xs text-muted-foreground">
 					{state.status === "noAccount"
@@ -142,7 +142,7 @@ export function SetAccess({
 	}
 	const { target } = state;
 	return (
-		<div className="flex flex-col gap-6">
+		<div>
 			<Header
 				kind={target.kind}
 				name={target.name}

@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Bot, ChevronLeft, Link2, ShieldCheck } from "lucide-react";
+import { Bot, Link2, ShieldCheck } from "lucide-react";
 import { CheckAccessButton } from "@/access-review/CheckAccessButton";
 import {
 	useDeleteServiceAccount,
@@ -14,6 +14,7 @@ import { InheritedPolicies } from "@/policy-bindings/InheritedPolicies";
 import type { AccountRef } from "@/policy-bindings/useAccountPolicy";
 import { OwnerLink } from "@/projects/OwnerLink";
 import { useToggleServiceAccountEnabled } from "@/service-accounts/useToggleServiceAccountEnabled";
+import { BackLink } from "@/shared/BackLink";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { DetailCard, DetailRow } from "@/shared/DetailCard";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
@@ -41,16 +42,9 @@ export function ServiceAccountDetailView({ name }: { name: string }) {
 	};
 
 	return (
-		<div className="flex flex-col gap-5">
-			<Link
-				to="/service-accounts"
-				className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-			>
-				<ChevronLeft className="w-3.5 h-3.5" />
-				Service accounts
-			</Link>
-
+		<div>
 			<DetailPageHeader
+				back={<BackLink to="/service-accounts">Service accounts</BackLink>}
 				icon={Bot}
 				metadata={sa.metadata}
 				badges={<StatusBadge enabled={enabled} />}
@@ -103,37 +97,39 @@ export function ServiceAccountDetailView({ name }: { name: string }) {
 				</DetailHeaderActions>
 			</DetailPageHeader>
 
-			<DetailCard title="Configuration" icon={ShieldCheck}>
-				<dl className="divide-y divide-border">
-					<DetailRow label="Owner">
-						<OwnerLink owner={owner} showUser />
-					</DetailRow>
-					<AccountPolicy
-						accountRef={accountRef}
-						{...(owner
-							? { attach: { label: displayLabel(sa.metadata), owner } }
-							: {})}
+			<div className="flex flex-col gap-5">
+				<DetailCard title="Configuration" icon={ShieldCheck}>
+					<dl className="divide-y divide-border">
+						<DetailRow label="Owner">
+							<OwnerLink owner={owner} showUser />
+						</DetailRow>
+						<AccountPolicy
+							accountRef={accountRef}
+							{...(owner
+								? { attach: { label: displayLabel(sa.metadata), owner } }
+								: {})}
+						/>
+						<InheritedPolicies accountRef={accountRef} />
+					</dl>
+				</DetailCard>
+
+				<DetailCard title="References" icon={Link2}>
+					<ReferencesList
+						items={refs.items}
+						empty="Nothing points at this service account yet."
 					/>
-					<InheritedPolicies accountRef={accountRef} />
-				</dl>
-			</DetailCard>
+				</DetailCard>
 
-			<DetailCard title="References" icon={Link2}>
-				<ReferencesList
-					items={refs.items}
-					empty="Nothing points at this service account yet."
-				/>
-			</DetailCard>
-
-			{del.target && (
-				<DeleteConfirm
-					resourceName={del.target.name}
-					onConfirm={() => void del.confirm()}
-					onCancel={del.cancel}
-					isPending={del.isPending}
-					error={del.error}
-				/>
-			)}
+				{del.target && (
+					<DeleteConfirm
+						resourceName={del.target.name}
+						onConfirm={() => void del.confirm()}
+						onCancel={del.cancel}
+						isPending={del.isPending}
+						error={del.error}
+					/>
+				)}
+			</div>
 		</div>
 	);
 }

@@ -4,17 +4,18 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { AlertBanner } from "@/shared/AlertBanner";
 import { DurationInput } from "@/shared/DurationInput";
-import { SettingsPageHeader, SettingsSaveBar } from "@/shared/SettingsPage";
+import { PageHeader } from "@/shared/PageHeader";
+import { SettingsSaveBar } from "@/shared/SettingsPage";
 import { SettingsSection } from "@/shared/SettingsSection";
 import { TokenKeySections } from "./TokenKeySections";
 import { useTokenSettingsForm } from "./useTokenSettingsForm";
 
 export function TokenSettingsHeader() {
 	return (
-		<SettingsPageHeader title="Inference tokens">
-			Short-lived bearer tokens a signed-in user mints for one project from the
-			account menu. Relay signs them with a key it generates and rotates itself.
-		</SettingsPageHeader>
+		<PageHeader
+			title="Inference tokens"
+			description="Short-lived bearer tokens a signed-in user mints for one project from the account menu. Relay signs them with a key it generates and rotates itself."
+		/>
 	);
 }
 
@@ -29,7 +30,7 @@ export function TokenSettingsForm({
 	const { values, errors } = form;
 
 	return (
-		<div className="flex flex-col">
+		<div>
 			<TokenSettingsHeader />
 
 			{readOnly && (

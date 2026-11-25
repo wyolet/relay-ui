@@ -1,12 +1,14 @@
 import { Link } from "@tanstack/react-router";
+import { Banknote } from "lucide-react";
 import type { Pricing } from "@/api/types/pricing";
-import { displayLabel } from "@/lib/displayLabel";
 import { MeterGrid } from "@/pricing/MeterGrid";
+import { BackLink } from "@/shared/BackLink";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
+import { DetailPageHeader } from "@/shared/DetailPageHeader";
 import { Facts } from "@/shared/Facts";
 import { FigureRow } from "@/shared/FigureRow";
 import { Section } from "@/shared/Section";
-import { CatalogDetachedBadge } from "@/shared/StatusBadge";
+import { CatalogDetachedBadge, StatusBadge } from "@/shared/StatusBadge";
 import { type PricingTarget, usePricingDetail } from "./usePricingDetail";
 
 interface Props {
@@ -34,16 +36,21 @@ export function PricingDetailView({
 	const rates = pricing.spec.rates ?? [];
 
 	return (
-		<div className="grid gap-14">
-			<div className="flex items-start justify-between gap-4">
-				<div className="min-w-0">
-					<h1 className="truncate text-2xl font-bold text-foreground">
-						{displayLabel(pricing.metadata)}
-					</h1>
-					<code className="mt-1 block truncate font-mono text-meta text-ink-2">
-						{name}
-					</code>
-					<div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-1">
+		<div>
+			<DetailPageHeader
+				back={<BackLink to="/pricing">Pricing</BackLink>}
+				icon={Banknote}
+				metadata={pricing.metadata}
+				badges={
+					<>
+						<StatusBadge enabled={enabled} />
+						<CatalogDetachedBadge
+							detachedAt={pricing.metadata.catalogDetachedAt}
+						/>
+					</>
+				}
+				extra={
+					<div className="mt-1.5">
 						<Facts
 							items={[
 								{
@@ -60,22 +67,11 @@ export function PricingDetailView({
 										"No host"
 									),
 								},
-								{
-									label: "Status",
-									value: enabled ? "Enabled" : "Disabled, prices nothing",
-								},
 							]}
 						/>
-						<CatalogDetachedBadge
-							detachedAt={pricing.metadata.catalogDetachedAt}
-						/>
 					</div>
-					{pricing.metadata.description && (
-						<p className="mt-2 max-w-2xl text-label text-ink-2">
-							{pricing.metadata.description}
-						</p>
-					)}
-				</div>
+				}
+			>
 				<DetailHeaderActions
 					enabled={enabled}
 					onToggle={onToggleEnabled}
@@ -92,44 +88,46 @@ export function PricingDetailView({
 						</Link>
 					)}
 				/>
-			</div>
+			</DetailPageHeader>
 
-			<FigureRow figures={figures} />
+			<div className="grid gap-14">
+				<FigureRow figures={figures} />
 
-			<Section title="Rates" meta={currency}>
-				{rates.length === 0 ? (
-					<p className="text-label text-ink-2">
-						No rates defined: usage on the bindings this sheet covers counts as
-						unpriced.
-					</p>
-				) : (
-					<MeterGrid rates={rates} currency={currency} />
-				)}
-			</Section>
+				<Section title="Rates" meta={currency}>
+					{rates.length === 0 ? (
+						<p className="text-label text-ink-2">
+							No rates defined: usage on the bindings this sheet covers counts
+							as unpriced.
+						</p>
+					) : (
+						<MeterGrid rates={rates} currency={currency} />
+					)}
+				</Section>
 
-			<Section
-				title="Models"
-				meta={`${targets.length} model${targets.length === 1 ? "" : "s"}, last 7 days`}
-			>
-				{targets.length === 0 ? (
-					<p className="text-label text-ink-2">No target models.</p>
-				) : (
-					<div className="max-w-3xl">
-						<div
-							className={`${MODEL_GRID} border-b border-rule pb-2 text-meta text-ink-3`}
-						>
-							<span>Model</span>
-							<span className="text-right">Requests</span>
-							<span className="text-right">Est. spend</span>
+				<Section
+					title="Models"
+					meta={`${targets.length} model${targets.length === 1 ? "" : "s"}, last 7 days`}
+				>
+					{targets.length === 0 ? (
+						<p className="text-label text-ink-2">No target models.</p>
+					) : (
+						<div className="max-w-3xl">
+							<div
+								className={`${MODEL_GRID} border-b border-rule pb-2 text-meta text-ink-3`}
+							>
+								<span>Model</span>
+								<span className="text-right">Requests</span>
+								<span className="text-right">Est. spend</span>
+							</div>
+							{targets.map((t) => (
+								<TargetLine key={t.id} target={t} />
+							))}
 						</div>
-						{targets.map((t) => (
-							<TargetLine key={t.id} target={t} />
-						))}
-					</div>
-				)}
-			</Section>
+					)}
+				</Section>
 
-			<MetadataFooter pricing={pricing} />
+				<MetadataFooter pricing={pricing} />
+			</div>
 		</div>
 	);
 }

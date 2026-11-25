@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { ChevronLeft, Link2, ShieldCheck } from "lucide-react";
+import { Link2, ShieldCheck } from "lucide-react";
 import { useDeleteRole, useRole, useRoleReferences } from "@/api/hooks/roles";
 import { displayLabel } from "@/lib/displayLabel";
 import {
@@ -8,6 +8,7 @@ import {
 } from "@/roles/CustomRolesNotice";
 import { RuleChips } from "@/roles/RuleChips";
 import { useRoleAuthoring } from "@/roles/useRoleAuthoring";
+import { BackLink } from "@/shared/BackLink";
 import { Chip } from "@/shared/Chip";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { DetailCard, DetailEmpty } from "@/shared/DetailCard";
@@ -32,17 +33,13 @@ export function RoleDetailView({ name }: { name: string }) {
 	const rules = role.spec.rules ?? [];
 
 	return (
-		<div className="flex flex-col gap-5">
-			<Link
-				to="/users"
-				search={{ tab: "roles" }}
-				className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-			>
-				<ChevronLeft className="w-3.5 h-3.5" />
-				Roles
-			</Link>
-
+		<div>
 			<DetailPageHeader
+				back={
+					<BackLink to="/users" search={{ tab: "roles" }}>
+						Roles
+					</BackLink>
+				}
 				icon={ShieldCheck}
 				metadata={role.metadata}
 				badges={
@@ -77,52 +74,54 @@ export function RoleDetailView({ name }: { name: string }) {
 				)}
 			</DetailPageHeader>
 
-			{builtin && <BuiltinRoleNotice />}
-			{!builtin && !canAuthor && <CustomRolesNotice />}
+			<div className="flex flex-col gap-5">
+				{builtin && <BuiltinRoleNotice />}
+				{!builtin && !canAuthor && <CustomRolesNotice />}
 
-			<DetailCard title="Rules" icon={ShieldCheck}>
-				{rules.length === 0 ? (
-					<DetailEmpty>This role grants nothing.</DetailEmpty>
-				) : (
-					<ul className="divide-y divide-border">
-						{rules.map((rule) => (
-							<li
-								key={`${(rule.kinds ?? []).join(",")}|${(rule.verbs ?? []).join(",")}`}
-								className="py-2.5 first:pt-0 last:pb-0"
-							>
-								<RuleChips rule={rule} />
-							</li>
-						))}
-					</ul>
-				)}
-			</DetailCard>
-
-			{labels.length > 0 && (
-				<DetailCard title="Labels" icon={ShieldCheck}>
-					<div className="flex flex-wrap gap-1.5">
-						{labels.map(([k, v]) => (
-							<Chip key={k} label={`${k}=${v}`} mono />
-						))}
-					</div>
+				<DetailCard title="Rules" icon={ShieldCheck}>
+					{rules.length === 0 ? (
+						<DetailEmpty>This role grants nothing.</DetailEmpty>
+					) : (
+						<ul className="divide-y divide-border">
+							{rules.map((rule) => (
+								<li
+									key={`${(rule.kinds ?? []).join(",")}|${(rule.verbs ?? []).join(",")}`}
+									className="py-2.5 first:pt-0 last:pb-0"
+								>
+									<RuleChips rule={rule} />
+								</li>
+							))}
+						</ul>
+					)}
 				</DetailCard>
-			)}
 
-			<DetailCard title="References" icon={Link2}>
-				<ReferencesList
-					items={refs.items}
-					empty="No binding names this role yet."
-				/>
-			</DetailCard>
+				{labels.length > 0 && (
+					<DetailCard title="Labels" icon={ShieldCheck}>
+						<div className="flex flex-wrap gap-1.5">
+							{labels.map(([k, v]) => (
+								<Chip key={k} label={`${k}=${v}`} mono />
+							))}
+						</div>
+					</DetailCard>
+				)}
 
-			{del.target && (
-				<DeleteConfirm
-					resourceName={del.target.name}
-					onConfirm={() => void del.confirm()}
-					onCancel={del.cancel}
-					isPending={del.isPending}
-					error={del.error}
-				/>
-			)}
+				<DetailCard title="References" icon={Link2}>
+					<ReferencesList
+						items={refs.items}
+						empty="No binding names this role yet."
+					/>
+				</DetailCard>
+
+				{del.target && (
+					<DeleteConfirm
+						resourceName={del.target.name}
+						onConfirm={() => void del.confirm()}
+						onCancel={del.cancel}
+						isPending={del.isPending}
+						error={del.error}
+					/>
+				)}
+			</div>
 		</div>
 	);
 }

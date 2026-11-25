@@ -1,5 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ChevronLeft } from "lucide-react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { bindingsListQueryOptions } from "@/api/hooks/bindings";
 import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
@@ -69,15 +68,7 @@ function RateLimitDetailInner() {
 	}
 
 	return (
-		<div className="flex flex-col gap-4">
-			<Link
-				to="/policies"
-				search={{ tab: "ratelimits" }}
-				className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-			>
-				<ChevronLeft className="w-3.5 h-3.5" />
-				Rate limits
-			</Link>
+		<div>
 			<RateLimitDetailView
 				rateLimit={rateLimit}
 				onDelete={() =>

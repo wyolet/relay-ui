@@ -23,8 +23,9 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { AlertBanner } from "@/shared/AlertBanner";
+import { PageHeader } from "@/shared/PageHeader";
 import { NoAccessState } from "@/shared/RouteError";
-import { SettingsPageHeader, SettingsSaveBar } from "@/shared/SettingsPage";
+import { SettingsSaveBar } from "@/shared/SettingsPage";
 import { SettingsSection } from "@/shared/SettingsSection";
 import { PageLoader } from "@/shared/Spinner";
 import { toast } from "@/shared/Toast";
@@ -103,12 +104,11 @@ function SsoSettingsForm({
 	}
 
 	return (
-		<div className="flex flex-col">
-			<SettingsPageHeader title="SSO">
-				Sign operators in through your identity provider (generic OIDC: issuer
-				discovery plus the authorization-code flow). Password login keeps
-				working alongside it.
-			</SettingsPageHeader>
+		<div>
+			<PageHeader
+				title="SSO"
+				description="Sign operators in through your identity provider (generic OIDC: issuer discovery plus the authorization-code flow). Password login keeps working alongside it."
+			/>
 
 			{readOnly && (
 				<AlertBanner

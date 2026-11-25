@@ -1,10 +1,11 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { ChevronLeft, Wallet } from "lucide-react";
+import { Wallet } from "lucide-react";
 import type { ReactNode } from "react";
 import { MODE_LABELS, PERIOD_LABELS } from "@/budgets/budgetFormat";
 import { useBudgetDetail } from "@/budgets/useBudgetDetail";
 import { PlanIssuesPanel } from "@/diagnostics/IssuesPanel";
 import { fmtUsd } from "@/lib/limitsFormat";
+import { BackLink } from "@/shared/BackLink";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { DetailCard, DetailRow } from "@/shared/DetailCard";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
@@ -27,17 +28,16 @@ export function BudgetDetailView({
 	});
 
 	return (
-		<div className="flex flex-col gap-5">
-			<Link
-				to="/policies"
-				search={{ tab: "budgets" }}
-				className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+		<div>
+			<DetailPageHeader
+				back={
+					<BackLink to="/policies" search={{ tab: "budgets" }}>
+						Budgets
+					</BackLink>
+				}
+				icon={Wallet}
+				metadata={budget.metadata}
 			>
-				<ChevronLeft className="w-3.5 h-3.5" />
-				Budgets
-			</Link>
-
-			<DetailPageHeader icon={Wallet} metadata={budget.metadata}>
 				<DetailHeaderActions
 					enabled
 					onToggle={() => undefined}
@@ -56,41 +56,43 @@ export function BudgetDetailView({
 				/>
 			</DetailPageHeader>
 
-			<PlanIssuesPanel kind="budget" id={budget.metadata.id} />
+			<div className="flex flex-col gap-5">
+				<PlanIssuesPanel kind="budget" id={budget.metadata.id} />
 
-			<DetailCard title="Cap" icon={Wallet}>
-				<dl className="divide-y divide-border">
-					<DetailRow label="Amount">
-						<span className="text-sm tabular-nums">
-							{fmtUsd(budget.spec.amountUsd)}
-						</span>
-					</DetailRow>
-					<DetailRow label="Period">
-						{PERIOD_LABELS[period]}
-						<p className="mt-0.5 text-[11px] text-muted-foreground leading-snug">
-							Calendar {PERIOD_LABELS[period].toLowerCase()}, in UTC.
-						</p>
-					</DetailRow>
-					<DetailRow label="Mode">
-						{MODE_LABELS[mode].label}
-						<p className="mt-0.5 text-[11px] text-muted-foreground leading-snug">
-							{MODE_LABELS[mode].hint}
-						</p>
-					</DetailRow>
-				</dl>
-			</DetailCard>
+				<DetailCard title="Cap" icon={Wallet}>
+					<dl className="divide-y divide-border">
+						<DetailRow label="Amount">
+							<span className="text-sm tabular-nums">
+								{fmtUsd(budget.spec.amountUsd)}
+							</span>
+						</DetailRow>
+						<DetailRow label="Period">
+							{PERIOD_LABELS[period]}
+							<p className="mt-0.5 text-[11px] text-muted-foreground leading-snug">
+								Calendar {PERIOD_LABELS[period].toLowerCase()}, in UTC.
+							</p>
+						</DetailRow>
+						<DetailRow label="Mode">
+							{MODE_LABELS[mode].label}
+							<p className="mt-0.5 text-[11px] text-muted-foreground leading-snug">
+								{MODE_LABELS[mode].hint}
+							</p>
+						</DetailRow>
+					</dl>
+				</DetailCard>
 
-			{children}
+				{children}
 
-			{del.target && (
-				<DeleteConfirm
-					resourceName={del.target.name}
-					onConfirm={() => void del.confirm()}
-					onCancel={del.cancel}
-					isPending={del.isPending}
-					error={del.error}
-				/>
-			)}
+				{del.target && (
+					<DeleteConfirm
+						resourceName={del.target.name}
+						onConfirm={() => void del.confirm()}
+						onCancel={del.cancel}
+						isPending={del.isPending}
+						error={del.error}
+					/>
+				)}
+			</div>
 		</div>
 	);
 }

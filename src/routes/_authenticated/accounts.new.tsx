@@ -1,8 +1,9 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ChevronLeft } from "lucide-react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { AccountForm } from "@/accounts/AccountForm";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
+import { BackLink } from "@/shared/BackLink";
+import { PageHeader } from "@/shared/PageHeader";
 import { PageLoader } from "@/shared/Spinner";
 
 export const Route = createFileRoute("/_authenticated/accounts/new")({
@@ -14,24 +15,16 @@ export const Route = createFileRoute("/_authenticated/accounts/new")({
 function NewAccountPage() {
 	const navigate = useNavigate();
 	return (
-		<div className="flex flex-col gap-4">
-			<div>
-				<Link
-					to="/keys"
-					search={{ tab: "accounts" }}
-					className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-				>
-					<ChevronLeft className="w-3.5 h-3.5" />
-					Accounts
-				</Link>
-				<h1 className="mt-2 text-xl font-semibold text-foreground">
-					New provider account
-				</h1>
-				<p className="mt-1 text-xs text-muted-foreground">
-					An organization at a provider. Its keys share the provider's limits,
-					and a policy bound to the account caps them.
-				</p>
-			</div>
+		<div>
+			<PageHeader
+				back={
+					<BackLink to="/keys" search={{ tab: "accounts" }}>
+						Accounts
+					</BackLink>
+				}
+				title="New provider account"
+				description="An organization at a provider. Its keys share the provider's limits, and a policy bound to the account caps them."
+			/>
 			<Suspense fallback={<PageLoader />}>
 				<AccountForm
 					onSaved={(name) =>

@@ -1,11 +1,12 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ChevronLeft } from "lucide-react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { hostKeysListQueryOptions } from "@/api/hooks/hostkeys";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
 import { poolDetailQueryOptions, usePool } from "@/api/hooks/pools";
 import { displayLabel } from "@/lib/displayLabel";
 import { PoolForm } from "@/pools/PoolForm";
+import { BackLink } from "@/shared/BackLink";
+import { PageHeader } from "@/shared/PageHeader";
 import { PageLoader } from "@/shared/Spinner";
 
 export const Route = createFileRoute("/_authenticated/pools/$name_/edit")({
@@ -25,24 +26,16 @@ function EditPoolInner() {
 	const back = () => void navigate({ to: "/pools/$name", params: { name } });
 
 	return (
-		<div className="flex flex-col gap-4">
-			<div>
-				<Link
-					to="/pools/$name"
-					params={{ name }}
-					className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-				>
-					<ChevronLeft className="w-3.5 h-3.5" />
-					{displayLabel(pool.metadata)}
-				</Link>
-				<h1 className="mt-2 text-xl font-semibold text-foreground">
-					Edit pool
-				</h1>
-				<p className="mt-1 text-xs text-muted-foreground">
-					Change its members, their order or how a request picks among them. The
-					slug and host stay the same.
-				</p>
-			</div>
+		<div>
+			<PageHeader
+				back={
+					<BackLink to="/pools/$name" params={{ name }}>
+						{displayLabel(pool.metadata)}
+					</BackLink>
+				}
+				title="Edit pool"
+				description="Change its members, their order or how a request picks among them. The slug and host stay the same."
+			/>
 			<PoolForm
 				pool={pool}
 				onSaved={(savedName) =>

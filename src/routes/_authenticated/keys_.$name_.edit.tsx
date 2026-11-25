@@ -1,10 +1,11 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ChevronLeft } from "lucide-react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { keyDetailQueryOptions, useKey } from "@/api/hooks/keys";
 import { projectsListQueryOptions } from "@/api/hooks/projects";
 import { KeyForm } from "@/keys/KeyForm";
 import { displayLabel } from "@/lib/displayLabel";
+import { BackLink } from "@/shared/BackLink";
+import { PageHeader } from "@/shared/PageHeader";
 import { PageLoader } from "@/shared/Spinner";
 
 export const Route = createFileRoute("/_authenticated/keys_/$name_/edit")({
@@ -22,22 +23,16 @@ function EditKeyInner() {
 	const navigate = useNavigate();
 
 	return (
-		<div className="flex flex-col gap-4">
-			<div>
-				<Link
-					to="/keys/$name"
-					params={{ name }}
-					className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-				>
-					<ChevronLeft className="w-3.5 h-3.5" />
-					{displayLabel(rk.metadata)}
-				</Link>
-				<h1 className="mt-2 text-xl font-semibold text-foreground">Edit key</h1>
-				<p className="mt-1 text-xs text-muted-foreground">
-					Change identity, expiry, or behavior flags. The secret is not changed
-					— rotate by issuing a new key.
-				</p>
-			</div>
+		<div>
+			<PageHeader
+				back={
+					<BackLink to="/keys/$name" params={{ name }}>
+						{displayLabel(rk.metadata)}
+					</BackLink>
+				}
+				title="Edit key"
+				description="Change identity, expiry, or behavior flags. The secret is not changed — rotate by issuing a new key."
+			/>
 			<KeyForm
 				apiKey={rk}
 				onSaved={(savedName) =>

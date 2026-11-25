@@ -28,6 +28,7 @@ import { toKeysParams } from "@/keys/useKeysTable";
 import { KEYS_SORT_KEYS } from "@/lib/keyLines";
 import { PoolsTable } from "@/pools/PoolsTable";
 import { pricingWindowAt } from "@/pricing/useHostModelUsage";
+import { PageHeader } from "@/shared/PageHeader";
 import { PageLoader } from "@/shared/Spinner";
 
 const TABS = ["relay", "accounts", "pools"] as const;
@@ -104,13 +105,10 @@ function KeysPage() {
 
 	return (
 		<div>
-			<div className="mb-4">
-				<h1 className="text-lg font-semibold text-foreground">Keys</h1>
-				<p className="text-xs text-muted-foreground mt-0.5">
-					Relay API keys, and the provider accounts and pools whose keys they
-					draw on.
-				</p>
-			</div>
+			<PageHeader
+				title="Keys"
+				description="Relay API keys, and the provider accounts and pools whose keys they draw on."
+			/>
 
 			<Tabs value={search.tab} onValueChange={setTab} className="mb-4">
 				<TabsList variant="underline">

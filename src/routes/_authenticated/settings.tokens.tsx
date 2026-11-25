@@ -30,7 +30,7 @@ function TokenSettingsReadOnly() {
 	if (isPending) return <PageLoader />;
 	if (!data) {
 		return (
-			<div className="flex flex-col">
+			<div>
 				<TokenSettingsHeader />
 				<div className="mt-6 divide-y divide-border">
 					<TokenKeySections isAdmin={false} />

@@ -1,5 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ChevronLeft } from "lucide-react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { hostsListQueryOptions } from "@/api/hooks/hosts";
 import { modelsListQueryOptions } from "@/api/hooks/models";
@@ -56,14 +55,7 @@ function PricingDetailInner() {
 	}
 
 	return (
-		<div className="flex flex-col gap-4">
-			<Link
-				to="/pricing"
-				className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-			>
-				<ChevronLeft className="w-3.5 h-3.5" />
-				Pricing
-			</Link>
+		<div>
 			<PricingDetailView
 				pricing={pricing}
 				onDelete={() =>

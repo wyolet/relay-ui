@@ -17,7 +17,7 @@ import {
 	STATUS_VALUES,
 } from "@/audit/auditFilterConfig";
 import { awaitOnEnter } from "@/lib/awaitOnEnter";
-import { SettingsPageHeader } from "@/shared/SettingsPage";
+import { PageHeader } from "@/shared/PageHeader";
 import { PageLoader } from "@/shared/Spinner";
 import { StaleContent } from "@/shared/StaleContent";
 import { useDeferredSearch } from "@/shared/useDeferredSearch";
@@ -106,39 +106,42 @@ function AuditPage() {
 	};
 
 	return (
-		<div className="flex flex-col gap-4">
-			<SettingsPageHeader title="Audit log">
-				Who changed what on the control plane, newest first — every mutation,
-				every denial, every login. A change lists the fields it touched; values
-				are never recorded.
-			</SettingsPageHeader>
-
-			<AuditFilters
-				values={{
-					range: live.span,
-					status: live.outcome,
-					from: live.from,
-					to: live.to,
-					actor: live.actor,
-					action: live.action,
-					kind: live.kind,
-					scope: live.scope,
-				}}
-				actions={facets.actions}
-				kinds={facets.kinds}
-				onChange={patchFilters}
+		<div>
+			<PageHeader
+				title="Audit log"
+				description="Who changed what on the control plane, newest first — every mutation, every denial, every login. A change lists the fields it touched; values are never recorded."
 			/>
 
-			<StaleContent stale={isStale}>
-				<Suspense fallback={<Loading />}>
-					<AuditTable
-						filter={filter}
-						expandedId={expand ?? null}
-						onToggle={(id) => patch({ expand: expand === id ? undefined : id })}
-						onFilter={addFilter}
-					/>
-				</Suspense>
-			</StaleContent>
+			<div className="flex flex-col gap-4">
+				<AuditFilters
+					values={{
+						range: live.span,
+						status: live.outcome,
+						from: live.from,
+						to: live.to,
+						actor: live.actor,
+						action: live.action,
+						kind: live.kind,
+						scope: live.scope,
+					}}
+					actions={facets.actions}
+					kinds={facets.kinds}
+					onChange={patchFilters}
+				/>
+
+				<StaleContent stale={isStale}>
+					<Suspense fallback={<Loading />}>
+						<AuditTable
+							filter={filter}
+							expandedId={expand ?? null}
+							onToggle={(id) =>
+								patch({ expand: expand === id ? undefined : id })
+							}
+							onFilter={addFilter}
+						/>
+					</Suspense>
+				</StaleContent>
+			</div>
 		</div>
 	);
 }

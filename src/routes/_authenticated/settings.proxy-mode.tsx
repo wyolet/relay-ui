@@ -9,7 +9,8 @@ import {
 } from "@/api/hooks/settings";
 import { ApiError } from "@/api/types/errors";
 import { Switch } from "@/components/ui/switch";
-import { SettingsPageHeader, SettingsSaveBar } from "@/shared/SettingsPage";
+import { PageHeader } from "@/shared/PageHeader";
+import { SettingsSaveBar } from "@/shared/SettingsPage";
 import { SettingsSection } from "@/shared/SettingsSection";
 import { PageLoader } from "@/shared/Spinner";
 import { toast } from "@/shared/Toast";
@@ -67,12 +68,11 @@ function ProxyModeSettingsInner() {
 	}
 
 	return (
-		<div className="flex flex-col">
-			<SettingsPageHeader title="Proxy mode">
-				Accept requests where the caller brings their own upstream credentials.
-				Relay still tracks usage and applies rate limits, but doesn't manage the
-				secret.
-			</SettingsPageHeader>
+		<div>
+			<PageHeader
+				title="Proxy mode"
+				description="Accept requests where the caller brings their own upstream credentials. Relay still tracks usage and applies rate limits, but doesn't manage the secret."
+			/>
 
 			<div className="mt-6 divide-y divide-border">
 				<SettingsSection

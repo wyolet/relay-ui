@@ -1,5 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ChevronLeft } from "lucide-react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { z } from "zod";
 import {
@@ -9,10 +8,9 @@ import {
 } from "@/api/hooks/accounts";
 import { HostKeyForm } from "@/host-keys/HostKeyForm";
 import { displayLabel } from "@/lib/displayLabel";
+import { BackLink } from "@/shared/BackLink";
+import { PageHeader } from "@/shared/PageHeader";
 import { PageLoader } from "@/shared/Spinner";
-
-const backLinkClass =
-	"inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors";
 
 export const Route = createFileRoute("/_authenticated/host-keys/new")({
 	// Opened from an account's keys card: the key joins that account.
@@ -37,33 +35,25 @@ function NewHostKeyInner({ account }: { account?: Account }) {
 				})
 			: navigate({ to: "/keys", search: { tab: "accounts" } }));
 	return (
-		<div className="flex flex-col gap-4">
-			<div>
-				{account ? (
-					<Link
-						to="/accounts/$name"
-						params={{ name: account.metadata.name }}
-						className={backLinkClass}
-					>
-						<ChevronLeft className="w-3.5 h-3.5" />
-						{displayLabel(account.metadata)}
-					</Link>
-				) : (
-					<Link
-						to="/keys"
-						search={{ tab: "accounts" }}
-						className={backLinkClass}
-					>
-						<ChevronLeft className="w-3.5 h-3.5" />
-						Accounts
-					</Link>
-				)}
-				<h1 className="mt-2 text-xl font-semibold text-foreground">New key</h1>
-				<p className="mt-1 text-xs text-muted-foreground">
-					Register an upstream credential — stored encrypted by Relay, or
-					sourced from an environment variable on your deployment.
-				</p>
-			</div>
+		<div>
+			<PageHeader
+				back={
+					account ? (
+						<BackLink
+							to="/accounts/$name"
+							params={{ name: account.metadata.name }}
+						>
+							{displayLabel(account.metadata)}
+						</BackLink>
+					) : (
+						<BackLink to="/keys" search={{ tab: "accounts" }}>
+							Accounts
+						</BackLink>
+					)
+				}
+				title="New key"
+				description="Register an upstream credential — stored encrypted by Relay, or sourced from an environment variable on your deployment."
+			/>
 			<HostKeyForm
 				account={account}
 				onSaved={(name) =>

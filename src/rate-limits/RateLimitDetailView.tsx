@@ -3,7 +3,7 @@ import { Gauge, ShieldCheck } from "lucide-react";
 import { useMemo } from "react";
 import type { RateLimit, RateLimitRule } from "@/api/types/ratelimit";
 import { PlanIssuesPanel } from "@/diagnostics/IssuesPanel";
-import { displayLabel, hasDisplayName } from "@/lib/displayLabel";
+import { displayLabel } from "@/lib/displayLabel";
 import {
 	compactNumber,
 	METER_OPTIONS,
@@ -13,7 +13,9 @@ import { isProviderOwned, isSystemOwned } from "@/lib/systemRateLimits";
 import { windowLabel } from "@/lib/timeWindow";
 import { SharedLinkLabel } from "@/rate-limits/SharedLinkLabel";
 import { useRateLimitReferences } from "@/rate-limits/useRateLimitReferences";
+import { BackLink } from "@/shared/BackLink";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
+import { DetailPageHeader } from "@/shared/DetailPageHeader";
 import { DetailTable, Td } from "@/shared/DetailTable";
 import { EmptyPanel } from "@/shared/EmptyPanel";
 import { SectionTitle } from "@/shared/SectionTitle";
@@ -41,7 +43,7 @@ export function RateLimitDetailView({
 	toggling,
 }: Props) {
 	return (
-		<div className="flex flex-col gap-6">
+		<div>
 			<Header
 				rateLimit={rateLimit}
 				onDelete={onDelete}
@@ -49,9 +51,11 @@ export function RateLimitDetailView({
 				deleting={deleting}
 				toggling={toggling}
 			/>
-			<PlanIssuesPanel kind="ratelimit" id={rateLimit.metadata.id} />
-			<RulesPanel rules={rateLimit.spec.rules ?? []} />
-			<PoliciesPanel rateLimit={rateLimit} />
+			<div className="flex flex-col gap-6">
+				<PlanIssuesPanel kind="ratelimit" id={rateLimit.metadata.id} />
+				<RulesPanel rules={rateLimit.spec.rules ?? []} />
+				<PoliciesPanel rateLimit={rateLimit} />
+			</div>
 		</div>
 	);
 }
@@ -70,35 +74,25 @@ function Header({
 	const canMutate = !system;
 
 	return (
-		<div className="flex items-start justify-between gap-4">
-			<div className="min-w-0">
-				<h1 className="text-xl font-semibold text-foreground truncate flex items-center gap-2">
-					<Gauge
-						className="w-4 h-4 text-muted-foreground shrink-0"
-						aria-hidden
-					/>
-					{displayLabel(rateLimit.metadata)}
-					{!hasDisplayName(rateLimit.metadata) && (
-						<span className="text-[11px] text-muted-foreground font-normal">
-							(no display name)
-						</span>
-					)}
+		<DetailPageHeader
+			back={
+				<BackLink to="/policies" search={{ tab: "ratelimits" }}>
+					Rate limits
+				</BackLink>
+			}
+			icon={Gauge}
+			metadata={rateLimit.metadata}
+			badges={
+				<>
 					<StatusBadge enabled={enabled} />
 					{system && <OwnerBadge label="System" />}
 					{provider && <OwnerBadge label="Provider" />}
 					<CatalogDetachedBadge
 						detachedAt={rateLimit.metadata.catalogDetachedAt}
 					/>
-				</h1>
-				<p className="mt-1 text-xs text-muted-foreground font-mono truncate">
-					{name}
-				</p>
-				{rateLimit.metadata.description && (
-					<p className="mt-1.5 text-sm text-muted-foreground max-w-2xl">
-						{rateLimit.metadata.description}
-					</p>
-				)}
-			</div>
+				</>
+			}
+		>
 			{canMutate && (
 				<DetailHeaderActions
 					enabled={enabled}
@@ -117,7 +111,7 @@ function Header({
 					)}
 				/>
 			)}
-		</div>
+		</DetailPageHeader>
 	);
 }
 

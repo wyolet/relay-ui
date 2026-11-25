@@ -3,7 +3,10 @@ import type { ReactNode } from "react";
 import type { ShortcutTargetKind } from "@/shortcuts/registry";
 
 /** The target's page; with no `name`, the list of its kind (the dashboard without a kind). */
-function targetPage(kind: ShortcutTargetKind | undefined, name?: string) {
+export function targetPage(
+	kind: ShortcutTargetKind | undefined,
+	name?: string,
+) {
 	switch (kind) {
 		case "team":
 			return name

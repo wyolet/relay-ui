@@ -15,7 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { fmtTs } from "@/lib/format";
 import { AlertBanner } from "@/shared/AlertBanner";
 import { Chip } from "@/shared/Chip";
-import { SettingsPageHeader } from "@/shared/SettingsPage";
+import { PageHeader } from "@/shared/PageHeader";
 import { SettingsSection } from "@/shared/SettingsSection";
 import { PageLoader } from "@/shared/Spinner";
 import { toast } from "@/shared/Toast";
@@ -135,11 +135,11 @@ function InstallLicense() {
 
 function LicenseSettingsPage() {
 	return (
-		<div className="flex flex-col">
-			<SettingsPageHeader title="License">
-				Relay runs unlicensed by default. A license unlocks the gated features —
-				SSO login and authoring roles of your own — and nothing else changes.
-			</SettingsPageHeader>
+		<div>
+			<PageHeader
+				title="License"
+				description="Relay runs unlicensed by default. A license unlocks the gated features — SSO login and authoring roles of your own — and nothing else changes."
+			/>
 
 			<div className="mt-6 divide-y divide-border">
 				<SettingsSection

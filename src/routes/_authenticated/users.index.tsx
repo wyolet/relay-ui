@@ -22,6 +22,7 @@ import {
 	toRoleBindingsParams,
 } from "@/role-bindings/RoleBindingsTable";
 import { RolesTable, toRolesParams } from "@/roles/RolesTable";
+import { PageHeader } from "@/shared/PageHeader";
 import { NoAccessState, RouteErrorState } from "@/shared/RouteError";
 import { PageLoader } from "@/shared/Spinner";
 import { UsersTable } from "@/users/UsersTable";
@@ -108,13 +109,10 @@ function UsersPage() {
 
 	return (
 		<div>
-			<div className="mb-4">
-				<h1 className="text-lg font-semibold text-foreground">Users</h1>
-				<p className="mt-0.5 text-xs text-muted-foreground">
-					Accounts that sign in, the groups they form, and the roles bound to
-					them.
-				</p>
-			</div>
+			<PageHeader
+				title="Users"
+				description="Accounts that sign in, the groups they form, and the roles bound to them."
+			/>
 			{active === undefined ? (
 				<NoAccessState />
 			) : (

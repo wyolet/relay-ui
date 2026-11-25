@@ -66,7 +66,7 @@ export function HostDetailView({
 	deleting,
 }: Props) {
 	return (
-		<div className="flex flex-col gap-5">
+		<div>
 			<HostDetailHeader
 				host={host}
 				onToggleEnabled={onToggleEnabled}

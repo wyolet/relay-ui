@@ -1,3 +1,4 @@
+import { PageHeader } from "@/shared/PageHeader";
 import { Segmented } from "@/shared/Segmented";
 import { useDashboardStore } from "@/stores/dashboard";
 import { DASHBOARD_RANGES } from "./useDashboardWindow";
@@ -9,10 +10,10 @@ export function DashboardHeader({
 	withRange?: boolean;
 }) {
 	return (
-		<header className="flex flex-wrap items-center justify-between gap-x-5 gap-y-3">
-			<h1 className="font-display text-section text-foreground">Dashboard</h1>
-			{withRange && <RangePicker />}
-		</header>
+		<PageHeader
+			title="Dashboard"
+			actions={withRange ? <RangePicker /> : undefined}
+		/>
 	);
 }
 

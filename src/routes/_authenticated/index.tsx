@@ -59,27 +59,31 @@ function AdminHome() {
 
 	if (catalogEmpty) {
 		return (
-			<div className="flex flex-col gap-6">
+			<div>
 				<DashboardHeader />
-				<ReleaseReadiness />
-				<WelcomePanel />
+				<div className="flex flex-col gap-6">
+					<ReleaseReadiness />
+					<WelcomePanel />
+				</div>
 			</div>
 		);
 	}
 
 	return (
-		<div className="grid gap-6">
+		<div>
 			<DashboardHeader withRange />
-			<ReleaseReadiness />
-			<Suspense
-				fallback={
-					<DelayedFallback>
-						<DashboardUsageSkeleton />
-					</DelayedFallback>
-				}
-			>
-				<DashboardUsage />
-			</Suspense>
+			<div className="grid gap-6">
+				<ReleaseReadiness />
+				<Suspense
+					fallback={
+						<DelayedFallback>
+							<DashboardUsageSkeleton />
+						</DelayedFallback>
+					}
+				>
+					<DashboardUsage />
+				</Suspense>
+			</div>
 		</div>
 	);
 }
@@ -90,7 +94,7 @@ function DashboardInner() {
 	const { isAdmin } = useAuth();
 	if (isAdmin) return <AdminHome />;
 	return (
-		<div className="grid gap-6">
+		<div>
 			<DashboardHeader />
 			<ScopedHome />
 		</div>

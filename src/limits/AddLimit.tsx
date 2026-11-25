@@ -106,7 +106,7 @@ export function AddLimit({
 			? state.target
 			: undefined;
 	return (
-		<div className="flex flex-col gap-6">
+		<div>
 			<ShortcutHeader
 				kind={kind}
 				name={target?.name}

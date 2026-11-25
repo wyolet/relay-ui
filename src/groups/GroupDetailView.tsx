@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { ChevronLeft, UserRound, Users } from "lucide-react";
+import { UserRound, Users } from "lucide-react";
 import { useDeleteGroup, useGroup } from "@/api/hooks/groups";
 import { useToggleGroupEnabled } from "@/groups/useToggleGroupEnabled";
 import { displayLabel } from "@/lib/displayLabel";
@@ -7,6 +7,7 @@ import {
 	groupPersonalAccountLabel,
 	groupTakesPersonalAccount,
 } from "@/lib/personalAccount";
+import { BackLink } from "@/shared/BackLink";
 import { DeleteConfirm } from "@/shared/DeleteConfirm";
 import { DetailCard, DetailRow } from "@/shared/DetailCard";
 import { DetailHeaderActions } from "@/shared/DetailHeaderActions";
@@ -27,17 +28,13 @@ export function GroupDetailView({ name }: { name: string }) {
 	const members = g.spec.memberIds ?? [];
 
 	return (
-		<div className="flex flex-col gap-5">
-			<Link
-				to="/users"
-				search={{ tab: "groups" }}
-				className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-			>
-				<ChevronLeft className="w-3.5 h-3.5" />
-				Groups
-			</Link>
-
+		<div>
 			<DetailPageHeader
+				back={
+					<BackLink to="/users" search={{ tab: "groups" }}>
+						Groups
+					</BackLink>
+				}
 				icon={Users}
 				metadata={g.metadata}
 				badges={<StatusBadge enabled={enabled} />}
@@ -65,55 +62,57 @@ export function GroupDetailView({ name }: { name: string }) {
 				/>
 			</DetailPageHeader>
 
-			{groupTakesPersonalAccount(g.metadata.owner) && (
-				<DetailCard title="Accounts" icon={UserRound}>
-					<dl className="divide-y divide-border">
-						<DetailRow label="Personal accounts">
-							{groupPersonalAccountLabel(g.spec.personalAccount)}
-						</DetailRow>
-					</dl>
-				</DetailCard>
-			)}
+			<div className="flex flex-col gap-5">
+				{groupTakesPersonalAccount(g.metadata.owner) && (
+					<DetailCard title="Accounts" icon={UserRound}>
+						<dl className="divide-y divide-border">
+							<DetailRow label="Personal accounts">
+								{groupPersonalAccountLabel(g.spec.personalAccount)}
+							</DetailRow>
+						</dl>
+					</DetailCard>
+				)}
 
-			<section className="rounded-md border border-border bg-card">
-				<header className="flex items-center gap-1.5 border-b border-border px-4 py-2.5">
-					<Users className="w-3.5 h-3.5 text-muted-foreground" aria-hidden />
-					<h2 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-						Members
-					</h2>
-					<span className="text-[11px] text-muted-foreground tabular-nums">
-						{members.length}
-					</span>
-				</header>
-				<div className="px-4 py-3">
-					{members.length === 0 ? (
-						<p className="text-xs text-muted-foreground">
-							No members. Bindings naming this group match nobody.
-						</p>
-					) : (
-						<ul className="divide-y divide-border">
-							{members.map((id) => (
-								<li
-									key={id}
-									className="py-2 first:pt-0 last:pb-0 font-mono text-[11px] text-foreground"
-								>
-									{id}
-								</li>
-							))}
-						</ul>
-					)}
-				</div>
-			</section>
+				<section className="rounded-md border border-border bg-card">
+					<header className="flex items-center gap-1.5 border-b border-border px-4 py-2.5">
+						<Users className="w-3.5 h-3.5 text-muted-foreground" aria-hidden />
+						<h2 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+							Members
+						</h2>
+						<span className="text-[11px] text-muted-foreground tabular-nums">
+							{members.length}
+						</span>
+					</header>
+					<div className="px-4 py-3">
+						{members.length === 0 ? (
+							<p className="text-xs text-muted-foreground">
+								No members. Bindings naming this group match nobody.
+							</p>
+						) : (
+							<ul className="divide-y divide-border">
+								{members.map((id) => (
+									<li
+										key={id}
+										className="py-2 first:pt-0 last:pb-0 font-mono text-[11px] text-foreground"
+									>
+										{id}
+									</li>
+								))}
+							</ul>
+						)}
+					</div>
+				</section>
 
-			{del.target && (
-				<DeleteConfirm
-					resourceName={del.target.name}
-					onConfirm={() => void del.confirm()}
-					onCancel={del.cancel}
-					isPending={del.isPending}
-					error={del.error}
-				/>
-			)}
+				{del.target && (
+					<DeleteConfirm
+						resourceName={del.target.name}
+						onConfirm={() => void del.confirm()}
+						onCancel={del.cancel}
+						isPending={del.isPending}
+						error={del.error}
+					/>
+				)}
+			</div>
 		</div>
 	);
 }

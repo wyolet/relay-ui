@@ -19,6 +19,7 @@ import {
 	pricingGraphQuery,
 	pricingsMatrixListQuery,
 } from "@/pricing/usePricingMatrix";
+import { PageHeader } from "@/shared/PageHeader";
 import { SectionSkeleton } from "@/shared/Section";
 import { StaleContent } from "@/shared/StaleContent";
 import { useDeferredSearch } from "@/shared/useDeferredSearch";
@@ -140,14 +141,11 @@ function ModelsCatalog() {
 
 function ModelsPage() {
 	return (
-		<div className="grid gap-10">
-			<div>
-				<h1 className="text-2xl font-bold text-foreground">Models</h1>
-				<p className="mt-1 text-label text-ink-2">
-					The models each host serves, what they cost there, and how much you
-					used them in the last 7 days.
-				</p>
-			</div>
+		<div>
+			<PageHeader
+				title="Models"
+				description="The models each host serves, what they cost there, and how much you used them in the last 7 days."
+			/>
 			<Suspense fallback={<SectionSkeleton height="h-96" />}>
 				<ModelsCatalog />
 			</Suspense>

@@ -20,6 +20,7 @@ import {
 	pricingsMatrixListQuery,
 } from "@/pricing/usePricingMatrix";
 import { FigureRow, FigureRowSkeleton } from "@/shared/FigureRow";
+import { PageHeader } from "@/shared/PageHeader";
 import { SectionSkeleton } from "@/shared/Section";
 import { StaleContent } from "@/shared/StaleContent";
 import { useDeferredSearch } from "@/shared/useDeferredSearch";
@@ -143,17 +144,11 @@ function PricingCatalog() {
 
 function PricingPage() {
 	return (
-		<div className="grid gap-10">
-			<div className="flex items-start justify-between gap-4">
-				<div>
-					<h1 className="text-2xl font-bold text-foreground">Pricing</h1>
-					<p className="mt-1 text-label text-ink-2">
-						What each host charges per 1M tokens for each model. Spend in Usage
-						is estimated from these rates; unpriced requests count as —, never
-						$0.
-					</p>
-				</div>
-			</div>
+		<div>
+			<PageHeader
+				title="Pricing"
+				description="What each host charges per 1M tokens for each model. Spend in Usage is estimated from these rates; unpriced requests count as —, never $0."
+			/>
 			<Suspense
 				fallback={
 					<div className="grid gap-14">

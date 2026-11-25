@@ -1,8 +1,8 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { ChevronLeft } from "lucide-react";
+import { createFileRoute } from "@tanstack/react-router";
 import { logDetailQueryOptions } from "@/api/hooks/logs";
 import { LogDetailPanel } from "@/logs/LogDetailPanel";
 import { useLogLabeler } from "@/logs/useLogsFilterOptions";
+import { BackLink } from "@/shared/BackLink";
 
 export const Route = createFileRoute("/_authenticated/logs/$requestId")({
 	loader: ({ context, params }) =>
@@ -18,13 +18,7 @@ function LogDetailPage() {
 
 	return (
 		<div className="flex flex-col gap-4">
-			<Link
-				to="/logs"
-				className="inline-flex w-fit items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-			>
-				<ChevronLeft className="size-3.5" aria-hidden="true" />
-				Back to logs
-			</Link>
+			<BackLink to="/logs">Back to logs</BackLink>
 			<LogDetailPanel requestId={requestId} labelFor={labelFor} />
 		</div>
 	);

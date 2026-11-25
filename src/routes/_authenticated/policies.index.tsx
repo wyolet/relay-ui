@@ -28,6 +28,7 @@ import {
 	toPolicyBindingsParams,
 } from "@/policy-bindings/PolicyBindingsTable";
 import { RateLimitsTable } from "@/rate-limits/RateLimitsTable";
+import { PageHeader } from "@/shared/PageHeader";
 import { PageLoader } from "@/shared/Spinner";
 
 const TABS = ["policies", "ratelimits", "budgets", "bindings"] as const;
@@ -87,15 +88,10 @@ function PoliciesPage() {
 	return (
 		<Suspense fallback={<PageLoader />}>
 			<div>
-				<div className="mb-4 flex items-start gap-2">
-					<div>
-						<h1 className="text-lg font-semibold text-foreground">Policies</h1>
-						<p className="text-xs text-muted-foreground mt-0.5">
-							Bundle upstream credentials, allowed models, and rate limits, then
-							bind them to accounts.
-						</p>
-					</div>
-				</div>
+				<PageHeader
+					title="Policies"
+					description="Bundle upstream credentials, allowed models, and rate limits, then bind them to accounts."
+				/>
 				<Tabs value={search.tab} onValueChange={setTab} className="mb-4">
 					<TabsList variant="underline">
 						<TabsTrigger value="policies" className="px-3 h-9">
